@@ -141,15 +141,18 @@ def get_daemon():
     logging_level_file = params.autoscaling_advanced.logging_level_file.get()
     logging_level_console = params.autoscaling_advanced.logging_level_console.get()
     logging_format = params.autoscaling_advanced.logging_format.get()
-    logging_task = params.autoscaling_advanced.log_task.get() or ('GridEngineAutoscaling-%s' % queue_name_short)
-    logging_file = os.path.join(logging_dir, '.autoscaler.%s.log' % queue_name)
-    logging_dir_pipe = os.path.join(logging_dir, '.autoscaler.%s.pipe.log' % queue_name)
+    logging_task = (params.autoscaling_advanced.log_task.get()
+                    or '{type}Autoscaling-{queue}'
+                       .format(type=grid_engine_type, queue=queue_name_short))
+    logging_file = os.path.join(logging_dir,
+                                'autoscaler.{type}.{queue}.log'
+                                .format(type=grid_engine_type.lower(), queue=queue_name))
 
     if logging_verbose:
         logging_level_run = 'DEBUG'
 
     # TODO: Git rid of CloudPipelineAPI usage in favor of PipelineAPI
-    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir_pipe)
+    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     api = CloudPipelineAPI(pipe=pipe)
 
     mkdir(os.path.dirname(logging_file))
@@ -393,14 +396,14 @@ def get_daemon():
     if grid_engine_type == GridEngineType.SLURM:
         grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
-                                        cluster_max_supply=cluster_supply)
+                                          cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
     else:
         grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
-                                 queue_default=queue_default)
+                                    queue_default=queue_default)
         job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
-                                               instance_max_supply=biggest_instance_supply,
-                                               cluster_max_supply=cluster_supply)
+                                                  instance_max_supply=biggest_instance_supply,
+                                                  cluster_max_supply=cluster_supply)
         demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
 
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
