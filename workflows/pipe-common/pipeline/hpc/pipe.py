@@ -273,15 +273,15 @@ class GridEngineWorkerTagsHandler:
 
 class CloudPipelineWorkerTagsHandler(GridEngineWorkerTagsHandler):
 
-    _WORKER_TAG = 'SGE_IN_USE'
-
-    def __init__(self, api, active_timeout, host_storage, static_host_storage, clock, common_utils, dry_run):
+    def __init__(self, api, active_timeout, active_tag, host_storage, static_host_storage, clock, common_utils,
+                 dry_run):
         """
         Processes active additional workers tags: if at least one job is running at the additional host
         the corresponding run shall be tagged.
 
         :param api: Cloud pipeline client.
         :param active_timeout: Indicates how many seconds must pass before the run is recognized as active.
+        :param active_tag: Active worker tag.
         :param host_storage: Additional hosts storage.
         :param static_host_storage: Static workers host storage.
         :param clock: Clock.
@@ -294,6 +294,7 @@ class CloudPipelineWorkerTagsHandler(GridEngineWorkerTagsHandler):
         self.clock = clock
         self.last_monitored_hosts = {}
         self.active_timeout = timedelta(seconds=active_timeout)
+        self.active_tag = active_tag
         self.common_utils = common_utils
         self.dry_run = dry_run
         self.static_hosts = self.static_host_storage.load_hosts()
@@ -365,12 +366,12 @@ class CloudPipelineWorkerTagsHandler(GridEngineWorkerTagsHandler):
     def _add_worker_tag(self, run_id):
         run = self.api.load_run(run_id)
         tags = run.get('tags') or {}
-        tags.update({self._WORKER_TAG: 'true'})
+        tags.update({self.active_tag: 'true'})
         self.api.update_pipeline_run_tags(run_id, tags)
 
     def _remove_worker_tag(self, run_id):
         run = self.api.load_run(run_id)
         tags = run.get('tags') or {}
-        if self._WORKER_TAG in tags:
-            del tags[self._WORKER_TAG]
+        if self.active_tag in tags:
+            del tags[self.active_tag]
             self.api.update_pipeline_run_tags(run_id, tags)

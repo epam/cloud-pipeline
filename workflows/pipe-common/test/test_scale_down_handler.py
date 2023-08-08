@@ -91,6 +91,29 @@ def test_scaling_down_if_host_has_no_running_jobs():
     assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
 
 
+def test_scaling_down_if_host_has_completed_jobs():
+    submit_datetime = datetime(2018, 12, 29, 11, 00, 00)
+    jobs = [
+        GridEngineJob(
+            id='1',
+            root_id=1,
+            name='name1',
+            user='user',
+            state=GridEngineJobState.COMPLETED,
+            datetime=submit_datetime,
+            hosts=[ANOTHER_HOSTNAME]
+        )
+    ]
+    grid_engine.get_jobs = MagicMock(return_value=jobs)
+
+    assert scale_down_handler.scale_down(HOSTNAME)
+
+    grid_engine.disable_host.assert_called()
+    grid_engine.enable_host.assert_not_called()
+    grid_engine.delete_host.assert_called()
+    assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
+
+
 def test_scaling_down_stops_pipeline():
     scale_down_handler.scale_down(HOSTNAME)
 

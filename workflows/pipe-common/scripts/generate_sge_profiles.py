@@ -88,7 +88,7 @@ def _enhance_common_profile(common_profile):
     common_profile['CP_CAP_SGE_HOSTLIST_NAME'] = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     common_profile['CP_CAP_SGE_QUEUE_STATIC'] = 'true'
     common_profile['CP_CAP_SGE_QUEUE_DEFAULT'] = 'true'
-    common_profile['CP_CAP_AUTOSCALE_TASK'] = 'GridEngineAutoscaling'
+    common_profile['CP_CAP_AUTOSCALE_TASK'] = 'SGEAutoscaling'
     common_profile['CP_CAP_SLURM'] = 'false'
     return common_profile
 

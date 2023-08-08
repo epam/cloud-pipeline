@@ -173,7 +173,7 @@ class SlurmGridEngine(GridEngine):
         return self.cmd_executor.execute_to_lines(SlurmGridEngine._SCONTROL_PARSE_HOSTLIST % nodelist)
 
     def _parse_user(self, user_id):
-        matched = re.match("(\\w+)\\(\\d+\\)", user_id)
+        matched = re.match("(.+)\\(\\d+\\)", user_id)
         if matched:
             return matched.group(1)
         else:
