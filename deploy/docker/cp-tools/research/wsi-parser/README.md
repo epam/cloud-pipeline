@@ -13,5 +13,5 @@
 - `WSI_PARSING_CONVERSION_LIMIT` - an area limit in pixels on a chunk processing during conversion to PNG
 - `WSI_PARSING_THREADS` - number of threads, that will be used for file processing (single-thread processing is the default)
 - `WSI_ACTIVE_PROCESSING_TIMEOUT_MIN` - amount of minutes a parser will consider a file being processed by another process before starting processing (based on the last modification of temporary progress stat file)
-- `MULTIPLE_TYPE_TISSUE_DELIMITER` - the separator for Tissue metadata values (default: `:`)
-- `TAG_DELIMITER` - the tag values separator in case of multiple metadata values (default: `;`)
+- `WSI_PARSING_MULTI_TISSUE_DELIMITER` - the separator for Tissue metadata values (default: `:`)
+- `WSI_PARSING_TAG_DELIMITER` - the tag values separator in case of multiple metadata values (default: `;`)

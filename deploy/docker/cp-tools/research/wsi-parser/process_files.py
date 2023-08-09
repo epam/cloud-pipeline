@@ -68,6 +68,7 @@ STAIN_METHOD_MAPPINGS = {
 }
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
+UNK = 'Unk'
 
 
 class ImageDetails(object):
@@ -770,22 +771,10 @@ class WsiFileTagProcessor:
         if STAIN_METHOD_CAT_ATTR_NAME in tags:
             self._normalize_stain_tags(tags)
 
-    def _normalize_tags(self, tags, system_dictionary):
-        predefined_species_values = self._prepare_predefined_values(system_dictionary[SPECIES_CAT_ATTR_NAME])
-        predefined_tissues_values = self._prepare_predefined_values(system_dictionary[TISSUE_CAT_ATTR_NAME])
-        if SPECIES_CAT_ATTR_NAME in tags:
-            tags[SPECIES_CAT_ATTR_NAME] = self._prepare_species_tag(tags[SPECIES_CAT_ATTR_NAME],
-                                                                    predefined_species_values)
-        if TISSUE_CAT_ATTR_NAME in tags:
-            tags[TISSUE_CAT_ATTR_NAME] = self._prepare_tissues_tag(tags[TISSUE_CAT_ATTR_NAME],
-                                                                   predefined_tissues_values)
-        if STAIN_METHOD_CAT_ATTR_NAME in tags:
-            self._normalize_stain_tags(tags)
-
     def _normalize_stain_tags(self, tags):
         stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General')
         tags[STAIN_METHOD_CAT_ATTR_NAME] = {stain_method}
-        if stain_method == 'Unk':
+        if stain_method == UNK:
             return
         if stain_method == 'General':
             tags[STAIN_CAT_ATTR_NAME] = self._prepare_general_stain_tag(tags.get(STAIN_CAT_ATTR_NAME, None))
@@ -802,7 +791,7 @@ class WsiFileTagProcessor:
         for stain_mapping in STAIN_METHOD_MAPPINGS:
             if stain_mapping in stain_method:
                 return STAIN_METHOD_MAPPINGS[stain_mapping]
-        return 'Unk'
+        return UNK
 
     @staticmethod
     def _prepare_predefined_values(system_dictionary_items):
@@ -815,16 +804,16 @@ class WsiFileTagProcessor:
     @staticmethod
     def _prepare_species_tag(metadata_values, predefined_values):
         if not metadata_values:
-            return {'Unk'}
+            return {UNK}
         species = set()
         for metadata_value in metadata_values:
             if not metadata_value:
-                species.add('Unk')
+                species.add(UNK)
             metadata_value = str(metadata_value).strip().upper()
             if metadata_value in predefined_values:
                 species.add(predefined_values.get(metadata_value))
             else:
-                species.add('Unk')
+                species.add(UNK)
         return species
 
     @staticmethod
@@ -840,11 +829,11 @@ class WsiFileTagProcessor:
     @classmethod
     def _prepare_tissues_tag(cls, metadata_values, predefined_values):
         if not metadata_values:
-            return {'Unk'}
+            return {UNK}
         tissues = list()
         for metadata_value in metadata_values:
             if not metadata_value:
-                tissues.append('Unk')
+                tissues.append(UNK)
             metadata_value = str(metadata_value).strip()
 
             if MULTIPLE_TYPE_TISSUE_DELIMITER in metadata_value:
@@ -853,7 +842,7 @@ class WsiFileTagProcessor:
                 tissues.extend(tissue_values)
             else:
                 tissues.append(metadata_value.upper())
-        return set(cls._find_value_by_prefix(tissue, predefined_values) or 'Unk' for tissue in tissues)
+        return set(cls._find_value_by_prefix(tissue, predefined_values) or UNK for tissue in tissues)
 
     @staticmethod
     def _prepare_general_stain_tag(metadata_values):
@@ -862,7 +851,7 @@ class WsiFileTagProcessor:
         metadata_value = str(list(metadata_values)[0]).strip().upper()
         if metadata_value == 'H&E' or metadata_value == 'HE':
             return {'H&E'}
-        return {'Unk'}
+        return {UNK}
 
     def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
         attribute_updates = list()
@@ -883,7 +872,7 @@ class WsiFileTagProcessor:
             existing_attribute_id = existing_values[0]['attributeId']
             existing_values_names = [existing_value['value'] for existing_value in existing_values]
             need_to_update_attributes = False
-            for value in tags_to_push:
+            for value in values_to_push:
                 if value not in existing_values_names:
                     existing_values.append({'key': attribute_name, 'value': value})
                     need_to_update_attributes = True
