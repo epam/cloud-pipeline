@@ -2016,13 +2016,17 @@ export default `
   color: @primary-text-color;
   outline: none;
 }
-@THEME .cp-runs-advanced-filter-input {
+@THEME .cp-runs-advanced-filter-input .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @input-border;
 }
-@THEME .cp-runs-advanced-filter-input-error {
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @color-red;
+}
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-line span,
+@THEME .cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: @application-color !important;
 }
 @THEME .cp-run-instance-tag {
   background-color: @card-header-background;
