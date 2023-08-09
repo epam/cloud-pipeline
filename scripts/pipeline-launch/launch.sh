@@ -729,7 +729,7 @@ function configure_owner_account() {
     if [ "$OWNER" ]; then
         # Crop OWNER account by @ if present
         IFS='@' read -r -a owner_info <<< "$OWNER"
-        export REMOTE_OWNER="$OWNER"
+        export OWNER_CP_ACCOUNT="$OWNER"
         export OWNER="${owner_info[0]}"
         export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
         export OWNER_GROUPS="${OWNER_GROUPS:-root}"
