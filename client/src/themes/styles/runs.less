@@ -76,14 +76,19 @@
   outline: none;
 }
 
-.cp-runs-advanced-filter-input {
+.cp-runs-advanced-filter-input .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @input-border;
 }
 
-.cp-runs-advanced-filter-input-error {
+.cp-runs-advanced-filter-input-error .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @color-red;
+}
+
+.cp-runs-advanced-filter-input-error .CodeMirror-line span,
+.cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: @application-color !important;
 }
 
 .cp-run-instance-tag {
