@@ -1221,6 +1221,14 @@ fi
 echo "Creating default common code directory at ${COMMON_REPO_DIR}"
 create_sys_dir $COMMON_REPO_DIR
 
+export COMMON_REPO_DIR_MUTUAL_LOC="${COMMON_REPO_DIR_MUTUAL_LOC:-/usr/local/CommonRepo}"
+echo "Linking CommonRepo dir '$COMMON_REPO_DIR' to mutual location '$COMMON_REPO_DIR_MUTUAL_LOC'"
+
+if [ -L $COMMON_REPO_DIR_MUTUAL_LOC ]; then
+    unlink $COMMON_REPO_DIR_MUTUAL_LOC
+fi
+[ -d $COMMON_REPO_DIR ] && ln -s -f $COMMON_REPO_DIR $COMMON_REPO_DIR_MUTUAL_LOC || echo "$COMMON_REPO_DIR not found, and will not be linked to $COMMON_REPO_DIR_MUTUAL_LOC"
+
 # Setup log directory
 if [ -z "$LOG_DIR" ] ;
     then 

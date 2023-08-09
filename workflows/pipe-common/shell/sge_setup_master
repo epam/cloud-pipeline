@@ -40,6 +40,13 @@ delete_existing_hostlists() {
     done
 }
 
+reset_local_host_config() {
+    qconf -sconf $HOSTNAME &> /dev/null
+    if [ "$?" -eq "0" ]; then
+        qconf -dconf $HOSTNAME
+    fi
+}
+
 configure_global() {
     _MAX_PROCS_LIMIT="${MAX_PROCS_LIMIT:-65536}"
     _MAX_NOPEN_LIMIT="${MAX_NOPEN_LIMIT:-65536}"
@@ -62,21 +69,12 @@ configure_global() {
 
     # Override default mail program for SGE
     if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
-        # configure local configuration
-        qconf -sconf $HOSTNAME > ./$HOSTNAME
-        if [ "$?" -eq "0" ]; then
-            sed -i "/mailer/c\mailer $COMMON_REPO_DIR/shell/pipe_mail" ./$HOSTNAME
-            qconf -Mconf ./$HOSTNAME
-        else
-            echo "mailer $COMMON_REPO_DIR/shell/pipe_mail" > ./$HOSTNAME
-            qconf -Aconf ./$HOSTNAME
-        fi
-        rm -f ./$HOSTNAME
+        sed -i "/mailer/c\mailer $COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" ./global
     fi
 
     if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
-        sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR/shell/sge_prolog" ./global
-        sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR/shell/sge_epilog" ./global
+        sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_prolog" ./global
+        sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_epilog" ./global
     fi
 
     qconf -Mconf ./global
@@ -413,6 +411,8 @@ qconf -ah "$HOSTNAME"
 
 pipe_log_info "Configure hostlist, global, scheduler, queue" "$SGE_MASTER_SETUP_TASK"
 
+reset_local_host_config
+check_last_exit_code $? "Local host settings were reset" "Failed to reset local host settings"
 configure_global
 check_last_exit_code $? "Global settings were configured" "Failed to configure global settings"
 
