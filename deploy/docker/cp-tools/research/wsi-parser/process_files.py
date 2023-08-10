@@ -822,9 +822,17 @@ class WsiFileTagProcessor:
 
     @classmethod
     def _find_value_by_prefix(cls, metadata_value, predefined_values):
+        for predefined_key, predefined_value in predefined_values.items():
+            if metadata_value.upper() == predefined_key:
+                return predefined_value
+        possible_matches = []
         for predefined_value in predefined_values.keys():
-            if metadata_value.startswith(predefined_value):
-                return cls._replace_with_predefined_value(metadata_value, predefined_values[predefined_value])
+            if metadata_value.upper().startswith(predefined_value):
+                possible_matches.append(predefined_value)
+        if not possible_matches:
+            return UNK
+        best_match = max(possible_matches, key=len)
+        return cls._replace_with_predefined_value(metadata_value, predefined_values[best_match])
 
     @classmethod
     def _prepare_tissues_tag(cls, metadata_values, predefined_values):
@@ -837,11 +845,9 @@ class WsiFileTagProcessor:
             metadata_value = str(metadata_value).strip()
 
             if MULTIPLE_TYPE_TISSUE_DELIMITER in metadata_value:
-                tissue_values = metadata_value.split(MULTIPLE_TYPE_TISSUE_DELIMITER)
-                tissue_values = [tissue.strip().upper() for tissue in tissue_values if tissue]
-                tissues.extend(tissue_values)
+                tissues.extend(metadata_value.split(MULTIPLE_TYPE_TISSUE_DELIMITER))
             else:
-                tissues.append(metadata_value.upper())
+                tissues.append(metadata_value)
         return set(cls._find_value_by_prefix(tissue, predefined_values) or UNK for tissue in tissues)
 
     @staticmethod
