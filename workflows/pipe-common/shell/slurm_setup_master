@@ -41,7 +41,6 @@ EOL
     cat > ${SLURM_COMMON_CONFIG_DIR}/slurm.conf <<EOL
 ControlMachine=$HOSTNAME
 #
-#MailProg=/bin/mail
 MpiDefault=none
 ProctrackType=proctrack/cgroup
 ReturnToService=1
@@ -104,12 +103,17 @@ EOL
         echo "Licenses=$CP_SLURM_LICENSES" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
 
-    if [ ! -z "${CP_CAP_AUTOSCALE}" ]; then
-       echo "" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
-       echo "#" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
-       echo "#DYNAMIC CLUSTER" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
-       echo "MaxNodeCount=$(( ${CP_CAP_AUTOSCALE_WORKERS:-0} + ${node_count:-0} + 1 ))" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
-       echo "TreeWidth=65533" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    if check_cp_cap CP_CAP_AUTOSCALE; then
+        echo -e "\n# Dynamic cluster configuration" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+        echo "#DYNAMIC CLUSTER" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+        echo "MaxNodeCount=$(( ${CP_CAP_AUTOSCALE_WORKERS:-0} + ${node_count:-0} + 1 ))" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+        echo "TreeWidth=65533" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    fi
+
+    # Override default mail program for Slurm
+    if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
+        echo -e "\n# Mail notification configuration" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+        echo "MailProg=$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
 }
 

@@ -583,5 +583,12 @@
         "type": "boolean",
         "description": "Enables rescheduling run to other regions",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_GRID_ENGINE_NOTIFICATIONS",
+        "type": "boolean",
+        "defaultValue": "false",
+        "description": "Enables notifications for Slurm and SGE engines.",
+        "passToWorkers": true
     }
 ]

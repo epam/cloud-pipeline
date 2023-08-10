@@ -47,7 +47,7 @@ public enum SystemParams {
     BUCKETS("buckets", "BUCKETS", true),
     MOUNT_OPTIONS("mount-options", "MOUNT_OPTIONS", true),
     MOUNT_POINTS("mount-points", "MOUNT_POINTS", true),
-    OWNER("owner", "OWNER", true),
+    OWNER("owner", "OWNER", false),
     SSH_PASS("ssh-pass", "SSH_PASS", true),
     GIT_USER("git-user", "GIT_USER", true),
     GIT_TOKEN("git-token", "GIT_TOKEN", true),
