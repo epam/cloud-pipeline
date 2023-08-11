@@ -37,8 +37,8 @@ function get_cp_user_id {
         fi
     done
 
-    if [[ "$_effective_user_id" == "root" ]]; then
-        echo "Job owner is $_effective_user_id, changing receiver to $OWNER_CP_ACCOUNT"
+    if [[ "$_effective_user_id" == "root" ]] || [[ "$_effective_user_id" == "$OWNER" ]]; then
+        echo "Job owner is $_effective_user_id, will send notification to $OWNER_CP_ACCOUNT"
         _effective_user_id="$OWNER_CP_ACCOUNT"
     fi
 

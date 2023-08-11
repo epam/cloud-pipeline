@@ -67,11 +67,6 @@ configure_global() {
     sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
     sed -i '/gid_range/c\gid_range 20000-30000' ./global
 
-    # Override default mail program for SGE
-    if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
-        sed -i "/mailer/c\mailer $COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" ./global
-    fi
-
     if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
         sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_prolog" ./global
         sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_epilog" ./global
@@ -475,6 +470,12 @@ fi
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
+
+# Override default mail program
+if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
+    rm -rf "/usr/bin/mail" && ln -s "$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" "/usr/bin/mail"
+    check_last_exit_code $? "$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail was linked as as /usr/bin/mail" "Fail to link $COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail"
+fi
 
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 
