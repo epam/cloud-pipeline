@@ -374,7 +374,14 @@ public class PipelineLauncher {
                 .orElse(userManager.loadUserContext(run.getOwner()));
         systemParamsWithValue.put(SystemParams.API_TOKEN, authManager
                 .issueToken(owner, null).getToken());
+
+        final PipelineUser user = userManager.loadByNameOrId(run.getOwner());
         systemParamsWithValue.put(SystemParams.OWNER, run.getOwner());
+        systemParamsWithValue.put(SystemParams.OWNER_ID, String.valueOf(user.getId()));
+        if (StringUtils.hasText(user.getEmail())) {
+            systemParamsWithValue.put(SystemParams.OWNER_EMAIL, user.getEmail());
+        }
+
         if (gitCredentials != null) {
             putIfStringValuePresent(systemParamsWithValue,
                     SystemParams.GIT_USER, gitCredentials.getUserName());
