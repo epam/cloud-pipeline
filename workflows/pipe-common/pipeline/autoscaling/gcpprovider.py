@@ -66,7 +66,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
         
         maintenance_type = 'terminate'
-        if ins_type.startswith('e2'):
+        if ins_type.startswith('e2') and not is_spot:
             maintenance_type = 'migrate'
 
         body = {
