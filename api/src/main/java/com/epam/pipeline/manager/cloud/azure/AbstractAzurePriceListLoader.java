@@ -113,7 +113,7 @@ public abstract class AbstractAzurePriceListLoader {
                 .stream()
                 .map(HasInner::inner)
                 .filter(sku -> Objects.nonNull(sku.name()) && isAvailableForSubscription(sku))
-                .collect(Collectors.toMap(ResourceSkuInner::name, Function.identity()));
+                .collect(Collectors.toMap(sku -> buildVMKey(sku.name()), Function.identity()));
 
         final Map<String, ResourceSkuInner> diskSkusByName = client.computeSkus()
                 .listByResourceType(ComputeResourceType.DISKS)
@@ -248,7 +248,7 @@ public abstract class AbstractAzurePriceListLoader {
             vmSkusKey += "_" + PROMO;
         }
 
-        return virtualMachineSkus.get(vmSkusKey);
+        return virtualMachineSkus.get(buildVMKey(vmSkusKey));
     }
 
     protected ResourceSkuInner getDiskSku(final Map<String, ResourceSkuInner> disksSkus,
@@ -368,4 +368,8 @@ public abstract class AbstractAzurePriceListLoader {
         return retrofit.create(AzurePricingClient.class);
     }
 
+    private String buildVMKey(final String input) {
+        return input.replaceAll("_|-|\\s+", "")
+                .toLowerCase();
+    }
 }
