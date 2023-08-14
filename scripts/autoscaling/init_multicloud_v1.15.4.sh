@@ -42,6 +42,25 @@ function update_nameserver {
   fi
 }
 
+function wait_device() {
+    local device_name="$1"
+    local attempts="$2"
+
+    export DEVICE_UUID=""
+    for i in $(seq 1 "$attempts"); do
+        echo "Waiting for device $device_name..."
+        export DEVICE_UUID="$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$device_name"'" { print $2 }')"
+        if [ "$DEVICE_UUID" ]; then
+            echo "Device $device_name ($DEVICE_UUID) is ready"
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo "Device $device_name is NOT ready"
+    return 1
+}
+
 function setup_swap_device {
     local swap_size="${1:-0}"
     if [[ "${swap_size}" == "@"*"@" ]]; then
@@ -77,8 +96,8 @@ function setup_swap_device {
             echo "Unable to swapon at $swap_drive_name"
             return 1
         fi
-        swap_drive_uuid=$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$swap_drive_name"'" { print $2 }')
-        echo "UUID=$swap_drive_uuid none swap sw 0 0" >> /etc/fstab
+        wait_device "$swap_drive_name" 10
+        echo "UUID=$DEVICE_UUID none swap sw 0 0" >> /etc/fstab
     fi
 }
 
@@ -117,7 +136,9 @@ elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
-      DRIVE_NAME="${DRIVE_NAME}1"
+      DRIVE_NAME="$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT \
+                    | awk '$1 ~ drive_name && $2 == "part" && $3 == "" { print $1 }' drive_name="^$DRIVE_NAME" \
+                    | head -n 1)"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
       echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
       unset DRIVE_NAME
