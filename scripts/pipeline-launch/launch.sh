@@ -221,6 +221,19 @@ function cp_cap_publish {
             
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+
+            # Due to strange behavior of sge_execd with updating global config values,
+            # we need to change default mail client if favor to our custom
+            if check_cp_cap "CP_CAP_GRID_ENGINE_NOTIFICATIONS"
+            then
+                _PIPE_MAIL_ENABLER_SCRIPT="pipe_mail_enabler"
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_MASTER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_MASTER_CAP_INIT_PATH
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_WORKER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_WORKER_CAP_INIT_PATH
+            fi
       fi
 
       if check_cp_cap "CP_CAP_SLURM"
@@ -1806,6 +1819,16 @@ echo "------"
 echo
 ######################################################
 
+
+######################################################
+echo "Configure custom mail client if requested"
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_MAIL; then
+    pipe_mail_enabler
+fi
+######################################################
 
 
 ######################################################

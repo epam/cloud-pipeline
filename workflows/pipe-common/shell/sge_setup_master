@@ -471,12 +471,6 @@ fi
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
 
-# Override default mail program
-if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
-    rm -rf "/usr/bin/mail" && ln -s "$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" "/usr/bin/mail"
-    check_last_exit_code $? "$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail was linked as as /usr/bin/mail" "Fail to link $COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail"
-fi
-
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 
 # Wait for worker nodes to initiate and connect to the master
