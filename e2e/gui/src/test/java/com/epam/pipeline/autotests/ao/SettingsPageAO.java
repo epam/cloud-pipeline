@@ -749,6 +749,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
+                        $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
                         if ($(By.className(format("role-%s", value))).exists()) {
                             return this;
                         }
