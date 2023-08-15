@@ -951,7 +951,7 @@ public class SystemPreferences {
      * Specifies if interactive run ssh sessions should use root as a default user.
      */
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
-            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
     /**
      * Controls which instance types will be excluded from notification list.
      */
