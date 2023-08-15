@@ -42,22 +42,43 @@ function update_nameserver {
   fi
 }
 
-function wait_device() {
+function wait_device_uuid {
     local device_name="$1"
     local attempts="$2"
 
     export DEVICE_UUID=""
+    echo "Waiting for device uuid $device_name..."
     for i in $(seq 1 "$attempts"); do
-        echo "Waiting for device $device_name..."
-        export DEVICE_UUID="$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$device_name"'" { print $2 }')"
+        export DEVICE_UUID="$(lsblk -sdrpn -o NAME,UUID | awk -F'[ ]' '$1 ~ device_name { print $2 }' device_name="$device_name" | head -n 1)"
         if [ "$DEVICE_UUID" ]; then
-            echo "Device $device_name ($DEVICE_UUID) is ready"
+            echo "Device uuid is ready $device_name ($DEVICE_UUID)"
             return 0
         fi
+        echo "Waiting for device uuid..."
         sleep 1
     done
 
-    echo "Device $device_name is NOT ready"
+    echo "Device uuid is NOT ready after $attempts seconds"
+    return 1
+}
+
+function wait_device_part {
+    local device_prefix="$1"
+    local attempts="$2"
+
+    export DEVICE_NAME=""
+    echo "Waiting for device part $device_prefix..."
+    for i in $(seq 1 "$attempts"); do
+        export DEVICE_NAME="$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk -F'[ ]' '$1 ~ device_prefix && $2 == "part" && $3 == "" { print $1 }' device_prefix="$device_prefix" | head -n 1)"
+        if [ "$DEVICE_NAME" ]; then
+            echo "Device part is ready $DEVICE_NAME"
+            return 0
+        fi
+        echo "Waiting for device part..."
+        sleep 1
+    done
+
+    echo "Device part is NOT ready after $attempts seconds"
     return 1
 }
 
@@ -96,7 +117,7 @@ function setup_swap_device {
             echo "Unable to swapon at $swap_drive_name"
             return 1
         fi
-        wait_device "$swap_drive_name" 10
+        wait_device_uuid "$swap_drive_name" 10
         echo "UUID=$DEVICE_UUID none swap sw 0 0" >> /etc/fstab
     fi
 }
@@ -136,9 +157,8 @@ elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
-      DRIVE_NAME="$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT \
-                    | awk '$1 ~ drive_name && $2 == "part" && $3 == "" { print $1 }' drive_name="^$DRIVE_NAME" \
-                    | head -n 1)"
+      wait_device_part "$DRIVE_NAME" 10
+      DRIVE_NAME="$DEVICE_NAME"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
       echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
       unset DRIVE_NAME
