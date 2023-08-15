@@ -784,8 +784,10 @@ class WsiFileTagProcessor:
         predefined_species_values = self._prepare_predefined_values(system_dictionary[SPECIES_CAT_ATTR_NAME])
         predefined_tissues_values = self._prepare_predefined_values(system_dictionary[TISSUE_CAT_ATTR_NAME])
         if SPECIES_CAT_ATTR_NAME in tags:
+            current_species_values = [attr['value'] for attr in system_dictionary[SPECIES_CAT_ATTR_NAME]]
             tags[SPECIES_CAT_ATTR_NAME] = self._prepare_species_tag(tags[SPECIES_CAT_ATTR_NAME],
-                                                                    predefined_species_values)
+                                                                    predefined_species_values,
+                                                                    current_species_values)
         if TISSUE_CAT_ATTR_NAME in tags:
             tags[TISSUE_CAT_ATTR_NAME] = self._prepare_tissues_tag(tags[TISSUE_CAT_ATTR_NAME],
                                                                    predefined_tissues_values)
@@ -838,18 +840,23 @@ class WsiFileTagProcessor:
         return predefined_values
 
     @staticmethod
-    def _prepare_species_tag(metadata_values, predefined_values):
+    def _prepare_species_tag(metadata_values, predefined_values, current_attribute_values):
         if not metadata_values:
             return {UNK}
         species = set()
         for metadata_value in metadata_values:
             if not metadata_value:
                 species.add(UNK)
-            metadata_value = str(metadata_value).strip().upper()
-            if metadata_value in predefined_values:
-                species.add(predefined_values.get(metadata_value))
+            metadata_value = str(metadata_value).strip()
+            # case: values Ms and MS contained in attributes
+            if metadata_value in current_attribute_values:
+                species.add(metadata_value)
             else:
-                species.add(UNK)
+                metadata_value = str(metadata_value).strip().upper()
+                if metadata_value in predefined_values:
+                    species.add(predefined_values.get(metadata_value))
+                else:
+                    species.add(UNK)
         return species
 
     @staticmethod
