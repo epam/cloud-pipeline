@@ -694,7 +694,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeRenameFolderDialog();
-      await this.props.folder.fetch();
+      await Promise.all([
+        this.props.pipelinesLibrary.fetch(),
+        this.props.folder.fetch()
+      ]);
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!this._currentFolder.folder.parentId);
       }
@@ -718,7 +721,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeRenameFolderDialog();
-      await this.props.folder.fetch();
+      await Promise.all([
+        this.props.pipelinesLibrary.fetch(),
+        this.props.folder.fetch()
+      ]);
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!this._currentFolder.folder.parentId);
       }
