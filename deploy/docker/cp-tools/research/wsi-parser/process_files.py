@@ -73,11 +73,15 @@ UNK = 'Unk'
 
 
 def prepare_exception_tags_mapping():
-    if not EXCEPTIONS_MAPPINGS_FILE:
+    exceptions_mapping = EXCEPTIONS_MAPPINGS_FILE
+    if not exceptions_mapping:
         return {}
-    if not os.path.isfile(EXCEPTIONS_MAPPINGS_FILE):
+    if exceptions_mapping.lower().startswith("s3://"):
+        exceptions_mapping = os.path.join(os.getenv('WSI_PARSER_HOME', ''), 'exceptions.json')
+        os.system('pipe storage cp -f "{}" "{}"'.format(EXCEPTIONS_MAPPINGS_FILE, exceptions_mapping))
+    if not os.path.isfile(exceptions_mapping):
         return {}
-    with open(EXCEPTIONS_MAPPINGS_FILE) as json_file:
+    with open(exceptions_mapping) as json_file:
         data = json.load(json_file)
     for exceptions_key in data:
         data[exceptions_key] = dict((key.upper(), value) for key, value in data[exceptions_key].items())
