@@ -58,6 +58,7 @@ SPECIES_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SPECIES_CAT_ATTR_NAME', 'Species'
 TISSUE_CAT_ATTR_NAME = os.getenv('WSI_PARSING_TISSUE_CAT_ATTR_NAME', 'Tissue')
 MULTIPLE_TYPE_TISSUE_DELIMITER = os.getenv('WSI_PARSING_MULTI_TISSUE_DELIMITER', ':')
 TAG_DELIMITER = os.getenv('WSI_PARSING_TAG_DELIMITER', ';')
+EXCEPTIONS_MAPPINGS_FILE = os.getenv('WSI_PARSING_EXCEPTIONS_MAPPINGS_FILE')
 
 STAIN_METHOD_MAPPINGS = {
     'GENERAL': 'General',
@@ -69,6 +70,21 @@ STAIN_METHOD_MAPPINGS = {
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 UNK = 'Unk'
+
+
+def prepare_exception_tags_mapping():
+    if not EXCEPTIONS_MAPPINGS_FILE:
+        return {}
+    if not os.path.isfile(EXCEPTIONS_MAPPINGS_FILE):
+        return {}
+    with open(EXCEPTIONS_MAPPINGS_FILE) as json_file:
+        data = json.load(json_file)
+    for exceptions_key in data:
+        data[exceptions_key] = dict((key.upper(), value) for key, value in data[exceptions_key].items())
+    return data
+
+
+EXCEPTION_TAGS_MAPPING = prepare_exception_tags_mapping()
 
 
 class ImageDetails(object):
@@ -760,6 +776,7 @@ class WsiFileTagProcessor:
         return None
 
     def _normalize_tags(self, tags, system_dictionary):
+        self._process_exceptions(tags)
         predefined_species_values = self._prepare_predefined_values(system_dictionary[SPECIES_CAT_ATTR_NAME])
         predefined_tissues_values = self._prepare_predefined_values(system_dictionary[TISSUE_CAT_ATTR_NAME])
         if SPECIES_CAT_ATTR_NAME in tags:
@@ -771,8 +788,21 @@ class WsiFileTagProcessor:
         if STAIN_METHOD_CAT_ATTR_NAME in tags:
             self._normalize_stain_tags(tags)
 
+    def _process_exceptions(self, tags):
+        if not EXCEPTION_TAGS_MAPPING:
+            return
+        for tag_key, tag_values in tags.items():
+            exceptions = EXCEPTION_TAGS_MAPPING.get(tag_key, None)
+            if not exceptions:
+                continue
+            values = set()
+            for tag_value in tag_values:
+                exception_value = exceptions.get(tag_value.upper(), None)
+                values.add(tag_value if not exception_value else exception_value)
+            tags[tag_key] = values
+
     def _normalize_stain_tags(self, tags):
-        stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General')
+        stain_method = self._determine_stain_method(list(tags[STAIN_METHOD_CAT_ATTR_NAME])[0] or 'General', tags)
         tags[STAIN_METHOD_CAT_ATTR_NAME] = {stain_method}
         if stain_method == UNK:
             return
@@ -784,13 +814,15 @@ class WsiFileTagProcessor:
                 tags[STAIN_CAT_ATTR_NAME] = set([str(stain).strip().upper() for stain in tags[STAIN_CAT_ATTR_NAME]])
 
     @staticmethod
-    def _determine_stain_method(stain_method):
+    def _determine_stain_method(stain_method, tags):
         stain_method = str(stain_method).strip().upper()
         if stain_method in STAIN_METHOD_MAPPINGS:
             return STAIN_METHOD_MAPPINGS[stain_method]
         for stain_mapping in STAIN_METHOD_MAPPINGS:
             if stain_mapping in stain_method:
                 return STAIN_METHOD_MAPPINGS[stain_mapping]
+        if stain_method == 'HE' and not tags.get(STAIN_CAT_ATTR_NAME):
+            return 'General'
         return UNK
 
     @staticmethod

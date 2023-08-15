@@ -15,3 +15,4 @@
 - `WSI_ACTIVE_PROCESSING_TIMEOUT_MIN` - amount of minutes a parser will consider a file being processed by another process before starting processing (based on the last modification of temporary progress stat file)
 - `WSI_PARSING_MULTI_TISSUE_DELIMITER` - the separator for Tissue metadata values (default: `:`)
 - `WSI_PARSING_TAG_DELIMITER` - the tag values separator in case of multiple metadata values (default: `;`)
+- `WSI_PARSING_EXCEPTIONS_MAPPINGS_FILE` - path to file with exceptions
