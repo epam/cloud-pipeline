@@ -369,7 +369,7 @@ def resolve_run_ssh_mode(conn_info):
     return conn_info.parameters.get('CP_CAP_SSH_MODE') \
            or ('owner-sshpass' if conn_info.platform == 'windows'
                else 'root' if is_ssh_default_root_user_enabled()
-               else 'user')
+               else 'owner')
 
 
 def resolve_run_ssh_user(run_ssh_mode, run_owner):
