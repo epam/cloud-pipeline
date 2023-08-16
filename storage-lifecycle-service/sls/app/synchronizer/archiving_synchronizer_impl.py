@@ -44,6 +44,11 @@ ROLE_ADMIN_ID = 1
 
 class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
+    STORAGE_LIFECYCLE_TYPE = "TRANSITION"
+
+    def _load_storages(self):
+        return self.pipeline_api_client.load_storages_with_lifecycle(self.STORAGE_LIFECYCLE_TYPE)
+
     def _sync_storage(self, storage):
         if storage.shared:
             self.logger.log("Storage {} marked as shared, skipping".format(storage.path))
