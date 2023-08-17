@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source ~/venv2.7.18/bin/activate
+pip install PyYAML==3.12
+pip install mkdocs==1.0.4
+
 # Authenticate to have an increased pull limit
 # https://www.docker.com/increase-rate-limit
 docker login -u "$DOCKER_USER" -p "$DOCKER_TOKEN"
