@@ -61,7 +61,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
 
-        network_interfaces = self.__build_networks()
+        network_interfaces = self.__build_networks(instance_type)
         if is_spot:
             utils.pipe_log('Preemptible instance with run id: ' + run_id + ' will be launched')
         
@@ -310,7 +310,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
 
             time.sleep(1)
 
-    def __build_networks(self):
+    def __build_networks(self, instance_type):
         region_name = self.cloud_region[:self.cloud_region.rfind('-')]
         allowed_networks = utils.get_networks_config(self.cloud_region)
         subnet_id = 'default'
@@ -335,6 +335,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
                 project=self.project_id, subnet=subnet_id, region=region_name)
         }
+        if instance_type.startswith('c3'):
+            network['nicType'] = 'GVNIC'
         if not disable_external_access:
             network['accessConfigs'] = [
                 {
