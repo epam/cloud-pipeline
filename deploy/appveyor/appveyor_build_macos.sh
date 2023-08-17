@@ -25,7 +25,7 @@ source ~/venv2.7.18/bin/activate
 
 deactivate
 
-source ~/venv3.8.17/bin/activate
+source ~/venv3.8.12/bin/activate
 pip install awscli
 
 cd pipe-cli
