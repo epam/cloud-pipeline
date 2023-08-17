@@ -18,6 +18,9 @@ API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 
+source ~/venv2.7.18/bin/activate
+pip install PyYAML==3.12
+pip install mkdocs==1.0.4
 
 _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
@@ -29,6 +32,11 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
                     -Pfast \
                     --no-daemon
 
+deactivate
+
+source ~/venv3.8.17/bin/activate
+pip install awscli
+
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
@@ -38,3 +46,5 @@ if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${APPVEYOR_REPO_BRANCH}/
     fi
 fi
+
+deactivate
