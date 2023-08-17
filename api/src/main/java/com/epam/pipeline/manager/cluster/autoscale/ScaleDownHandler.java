@@ -17,10 +17,13 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -66,6 +69,7 @@ public class ScaleDownHandler {
     private static final Duration FALLBACK_CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD = Duration.ofMinutes(30);
     private static final String NODE_UNAVAILABLE_TAG = "NODE_UNAVAILABLE";
     private static final String NODE_AVAILABILITY_MONITOR = "NodeAvailabilityMonitor";
+    public static final String EMPTY_TERMINATION_STATE = "empty";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -139,6 +143,10 @@ public class ScaleDownHandler {
         return node.getMetadata().getLabels().get(KubernetesConstants.RUN_ID_LABEL);
     }
 
+    private String getNodeCloudInstanceId(final Node node) {
+        return node.getMetadata().getLabels().get(KubernetesConstants.CLOUD_INSTANCE_ID);
+    }
+
     private boolean isPaused(final Node node) {
         return node.getMetadata().getLabels().get(KubernetesConstants.PAUSED_NODE_LABEL) != null;
     }
@@ -160,6 +168,12 @@ public class ScaleDownHandler {
                 labelUnavailableNodeRun(run, timestamp);
                 logUnavailableNodeRun(run, timestamp);
             });
+
+            // check if instance already stopped or preempted/un-spotted and if so - scale down
+            if (!isNodeAliveOnCloud(node)) {
+                scaleDownUnavailableNode(client, node);
+            }
+
             return;
         }
         scaleDownUnavailableNode(client, node);
@@ -196,6 +210,32 @@ public class ScaleDownHandler {
                 .taskName(NODE_AVAILABILITY_MONITOR)
                 .logText(text)
                 .build());
+    }
+
+    private boolean isNodeAliveOnCloud(final Node node) {
+        final String instanceId = getNodeCloudInstanceId(node);
+        final String label = getNodeLabel(node);
+        final Optional<InstanceTerminationState> state;
+        final boolean existsOnCloud;
+        if (isPooled(node)) {
+            final NodeRegionLabels cloudRegion = kubernetesManager.getNodeRegion(label);
+            state = cloudFacade.getInstanceTerminationState(cloudRegion, instanceId);
+            existsOnCloud = cloudFacade.instanceExists(cloudRegion, instanceId);
+        } else {
+            final Long runId = Long.parseLong(label);
+            final Long cloudRegionId = pipelineRunManager.findRun(runId)
+                    .map(PipelineRun::getInstance)
+                    .map(RunInstance::getCloudRegionId)
+                    .orElseThrow(
+                            () -> new IllegalArgumentException(
+                                    String.format("Can't find region by runId: %d", runId))
+                    );
+            state = cloudFacade.getInstanceTerminationState(cloudRegionId, instanceId);
+            existsOnCloud = cloudFacade.instanceExists(cloudRegionId, instanceId);
+        }
+        log.debug("Check if unavailable node {} is alive. Exists: {}. Termination state: {}", instanceId, existsOnCloud,
+                state.map(InstanceTerminationState::getStateMessage).orElse(EMPTY_TERMINATION_STATE));
+        return existsOnCloud && !state.isPresent();
     }
 
     private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {

@@ -199,6 +199,13 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
+    public boolean instanceExists(final NodeRegionLabels nodeRegion, final String instanceId) {
+        final AbstractCloudRegion region = regionManager.load(
+                nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+        return getInstanceService(region).instanceExists(region, instanceId);
+    }
+
+    @Override
     public Map<String, String> buildContainerCloudEnvVars(final Long regionId) {
         return regionManager.loadAll().stream()
                 .map(r -> {
@@ -232,6 +239,14 @@ public class CloudFacadeImpl implements CloudFacade {
     public Optional<InstanceTerminationState> getInstanceTerminationState(
             final Long regionId, final String instanceId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return getInstanceService(region).getInstanceTerminationState(region, instanceId);
+    }
+
+    @Override
+    public Optional<InstanceTerminationState> getInstanceTerminationState(final NodeRegionLabels nodeRegion,
+                                                                          final String instanceId) {
+        final AbstractCloudRegion region = regionManager.load(
+                nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
         return getInstanceService(region).getInstanceTerminationState(region, instanceId);
     }
 

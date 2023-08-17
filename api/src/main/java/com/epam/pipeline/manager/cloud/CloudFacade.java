@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -72,6 +73,8 @@ public interface CloudFacade {
 
     boolean instanceExists(Long regionId, String instanceId);
 
+    boolean instanceExists(NodeRegionLabels nodeRegion, String instanceId);
+
     Map<String, String> buildContainerCloudEnvVars(Long regionId);
 
     List<InstanceOffer> refreshPriceListForRegion(Long regionId);
@@ -82,6 +85,8 @@ public interface CloudFacade {
     double getSpotPrice(Long regionId, String instanceType);
 
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
+
+    Optional<InstanceTerminationState> getInstanceTerminationState(NodeRegionLabels nodeRegion, String instanceId);
 
     List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 
