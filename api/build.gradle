@@ -190,7 +190,7 @@ dependencies {
     compile group: "io.springfox", name: "springfox-swagger-ui", version: "2.6.1"
 
     //AWS
-    compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.11.377"
+    compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.12.256"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
     compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.12.256"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-sts

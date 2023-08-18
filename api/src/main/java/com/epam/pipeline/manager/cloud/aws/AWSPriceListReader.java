@@ -17,10 +17,11 @@
 package com.epam.pipeline.manager.cloud.aws;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -28,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
@@ -37,20 +39,26 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Slf4j
-public class AWSPriceListReader {
+@RequiredArgsConstructor
+public class AWSPriceListReader implements Closeable {
 
-    private final Long regionId;
-    private final Set<String> computeFamily;
+    private static final int COLUMNS_LINE_INDEX = 5;
 
-    public AWSPriceListReader(final Long regionId, final Set<String> computeFamily) {
-        this.regionId = regionId;
-        this.computeFamily = CollectionUtils.isEmpty(computeFamily) ?
-                Collections.singleton(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY) :
-                computeFamily;
-    }
+    private final BufferedReader reader;
+    private final AwsRegion region;
+    private final Set<String> computeFamilies;
 
+    public List<InstanceOffer> read() throws IOException {
+        //skip first lines
+        int skipLines = COLUMNS_LINE_INDEX;
+        while (skipLines > 0) {
+            final String line = reader.readLine();
+            if (line == null) {
+                return Collections.emptyList();
+            }
+            skipLines--;
+        }
 
-    public List<InstanceOffer> readPriceCsv(BufferedReader reader) {
         try(CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
                 .withFirstRecordAsHeader()
                 .withIgnoreHeaderCase()
@@ -84,13 +92,13 @@ public class AWSPriceListReader {
         offer.setVCPU(parseInteger(record.get("vcpu")));
         offer.setGpu(parseInteger(record.get("gpu")));
         offer.setInstanceFamily(record.get("instance family"));
-        offer.setRegionId(regionId);
+        offer.setRegionId(region.getId());
         parseMemoryValue(offer, record.get("memory"));
         return offer;
     }
 
     private String parseProductFamily(final String productFamily) {
-        if (computeFamily.contains(productFamily)) {
+        if (computeFamilies.contains(productFamily)) {
             return CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY;
         }
         return productFamily;
@@ -122,5 +130,10 @@ public class AWSPriceListReader {
             return 0.0f;
         }
         return Float.parseFloat(value);
+    }
+
+    @Override
+    public void close() throws IOException {
+        reader.close();
     }
 }
