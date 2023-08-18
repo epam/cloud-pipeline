@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.utils.StreamUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -50,17 +51,14 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     @SuppressWarnings("unchecked")
     public void insertInstanceOffers(List<InstanceOffer> offerList) {
-        for (int i = 0; i < offerList.size(); i += INSERT_BATCH_SIZE) {
-            final List<InstanceOffer> batchList = offerList.subList(i,
-                    i + INSERT_BATCH_SIZE > offerList.size() ? offerList.size() : i + INSERT_BATCH_SIZE);
-
+        StreamUtils.chunked(offerList.stream(), INSERT_BATCH_SIZE).forEach(batchList -> {
             Map<String, Object>[] batchValues = new Map[batchList.size()];
             for (int j = 0; j < batchList.size(); j++) {
                 InstanceOffer offer = batchList.get(j);
                 batchValues[j] = InstanceOfferParameters.getParameters(offer).getValues();
             }
             getNamedParameterJdbcTemplate().batchUpdate(createInstanceOfferQuery, batchValues);
-        }
+        });
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -212,6 +210,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
+        GPU_TYPE,
+        GPU_CORES,
         REGION,
         CLOUD_PROVIDER;
 
@@ -235,6 +235,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
             params.addValue(MEMORY_UNIT.name(), instanceOffer.getMemoryUnit());
             params.addValue(INSTANCE_FAMILY.name(), instanceOffer.getInstanceFamily());
             params.addValue(GPU.name(), instanceOffer.getGpu());
+            params.addValue(GPU_TYPE.name(), instanceOffer.getGpuType());
+            params.addValue(GPU_CORES.name(), instanceOffer.getGpuCores());
             params.addValue(REGION.name(), instanceOffer.getRegionId());
             return params;
         }
@@ -259,6 +261,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceOffer.setMemoryUnit(rs.getString(MEMORY_UNIT.name()));
                 instanceOffer.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceOffer.setGpu(rs.getInt(GPU.name()));
+                instanceOffer.setGpuType(rs.getString(GPU_TYPE.name()));
+                instanceOffer.setGpuCores(rs.getInt(GPU_CORES.name()));
                 instanceOffer.setRegionId(rs.getLong(REGION.name()));
                 String cloudProviderName = rs.getString(CLOUD_PROVIDER.name());
                 if (!rs.wasNull()) {
@@ -278,6 +282,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
+        GPU_TYPE,
+        GPU_CORES,
         REGION,
         TERM_TYPE;
 
@@ -292,6 +298,11 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceType.setMemoryUnit(rs.getString(MEMORY_UNIT.name()));
                 instanceType.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceType.setGpu(rs.getInt(GPU.name()));
+                instanceType.setGpuType(rs.getString(GPU_TYPE.name()));
+                final int gpuCores = rs.getInt(GPU_CORES.name());
+                if (!rs.wasNull()) {
+                    instanceType.setGpuCores(gpuCores);
+                }
                 instanceType.setRegionId(rs.getLong(REGION.name()));
                 instanceType.setTermType(rs.getString(TERM_TYPE.name()));
                 return instanceType;
