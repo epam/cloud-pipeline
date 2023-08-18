@@ -89,6 +89,8 @@ public class GCPMachine extends AbstractGCPObject {
                 .instanceFamily(WordUtils.capitalizeFully(getFamily()))
                 .vCPU(getCpu())
                 .gpu(getGpu())
+                .gpuType(getGpuType())
+                .gpuCores(null)
                 .memory(getRam())
                 .build();
     }

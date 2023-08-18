@@ -46,11 +46,11 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         return CollectionUtils.emptyIfNull(region.getCustomInstanceTypes())
                 .stream()
                 .filter(type -> type.getCpu() > 0 && type.getRam() >= 0)
-                .map(this::toGcpMachine)
+                .map(this::toMachine)
                 .collect(Collectors.toList());
     }
 
-    private GCPMachine toGcpMachine(final GCPCustomInstanceType type) {
+    private GCPMachine toMachine(final GCPCustomInstanceType type) {
         final String name = type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
                 ? gpuCustomGpuMachine(type)
                 : customCpuMachine(type);
@@ -60,7 +60,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
                 : 0.0;
         final double defaultMemory = type.getRam() - extendedMemory;
         return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
-                type.getGpu(), type.getGpuType());
+                type.getGpu(), StringUtils.upperCase(type.getGpuType()));
     }
 
     private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {
