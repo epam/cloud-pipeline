@@ -40,7 +40,8 @@
                         memory_unit,
                         instance_family,
                         gpu,
-                        gpu_type,
+                        gpu_name,
+                        gpu_manufacturer,
                         gpu_cores,
                         region)
                     VALUES (
@@ -61,7 +62,8 @@
                         :MEMORY_UNIT,
                         :INSTANCE_FAMILY,
                         :GPU,
-                        :GPU_TYPE,
+                        :GPU_NAME,
+                        :GPU_MANUFACTURER,
                         :GPU_CORES,
                         :REGION)
                 ]]>
@@ -103,7 +105,8 @@
                         i.memory_unit,
                         i.instance_family,
                         i.gpu,
-                        i.gpu_type,
+                        i.gpu_name,
+                        i.gpu_manufacturer,
                         i.gpu_cores,
                         i.region,
                         r.cloud_provider
@@ -118,7 +121,7 @@
         <constructor-arg name="loadInstanceTypesQuery">
             <value>
                 <![CDATA[
-                    SELECT DISTINCT ON (term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, gpu_type, gpu_cores, region)
+                    SELECT DISTINCT ON (term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, gpu_name, gpu_manufacturer, gpu_cores, region)
                         i.sku,
                         i.term_type,
                         i.instance_type,
@@ -128,7 +131,8 @@
                         i.memory_unit,
                         i.instance_family,
                         i.gpu,
-                        i.gpu_type,
+                        i.gpu_name,
+                        i.gpu_manufacturer,
                         i.gpu_cores,
                         i.region,
                         i.price_per_unit,
@@ -138,7 +142,7 @@
                     INNER JOIN pipeline.cloud_region r
                     ON (r.region_id = i.region)
                     @WHERE@
-                    ORDER BY term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, gpu_type, gpu_cores, region, price_per_unit ASC;
+                    ORDER BY term_type, instance_type, operating_system, vcpu, memory, memory_unit, instance_family, gpu, gpu_name, gpu_manufacturer, gpu_cores, region, price_per_unit ASC;
                 ]]>
             </value>
         </constructor-arg>
@@ -163,7 +167,8 @@
                         i.memory_unit,
                         i.instance_family,
                         i.gpu,
-                        i.gpu_type,
+                        i.gpu_name,
+                        i.gpu_manufacturer,
                         i.gpu_cores,
                         i.region,
                         r.cloud_provider

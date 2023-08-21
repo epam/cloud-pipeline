@@ -36,7 +36,6 @@ import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
 import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
 import com.amazonaws.services.ec2.model.Filter;
-import com.amazonaws.services.ec2.model.GpuDeviceInfo;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
@@ -58,6 +57,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.region.AwsRegion;
@@ -127,12 +127,12 @@ public class EC2Helper {
                 .findFirst();
     }
 
-    public Map<String, String> findGpus(final List<String> instanceTypes, final AwsRegion region) {
+    public Map<String, GpuDevice> findGpus(final List<String> instanceTypes, final AwsRegion region) {
         final AmazonEC2 client = getEC2Client(region);
         return findGpus(client, instanceTypes);
     }
 
-    private Map<String, String> findGpus(final AmazonEC2 client, final List<String> instanceTypes) {
+    private Map<String, GpuDevice> findGpus(final AmazonEC2 client, final List<String> instanceTypes) {
         try {
             return getGpus(client, instanceTypes);
         } catch (AmazonEC2Exception e) {
@@ -145,7 +145,7 @@ public class EC2Helper {
         }
     }
 
-    private Map<String, String> findGpu(final AmazonEC2 client, final String instanceType) {
+    private Map<String, GpuDevice> findGpu(final AmazonEC2 client, final String instanceType) {
         try {
             return getGpus(client, Collections.singletonList(instanceType));
         } catch (AmazonEC2Exception e) {
@@ -154,26 +154,22 @@ public class EC2Helper {
         }
     }
 
-    private Map<String, String> getGpus(final AmazonEC2 client, final List<String> instanceTypes) {
-        final DescribeInstanceTypesResult result = client
-                .describeInstanceTypes(new DescribeInstanceTypesRequest()
-                        .withInstanceTypes(instanceTypes));
+    private Map<String, GpuDevice> getGpus(final AmazonEC2 client, final List<String> instanceTypes) {
+        final DescribeInstanceTypesResult result = client.describeInstanceTypes(new DescribeInstanceTypesRequest()
+                .withInstanceTypes(instanceTypes));
         return Optional.ofNullable(result)
                 .map(DescribeInstanceTypesResult::getInstanceTypes)
                 .map(Collection::stream)
                 .orElseGet(Stream::empty)
                 .map(this::toInstanceGpu)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
     }
 
-    private Pair<String, String> toInstanceGpu(final InstanceTypeInfo info) {
-        return Pair.of(
-                info.getInstanceType(),
-                info.getGpuInfo().getGpus().stream().findFirst()
-                        .map(GpuDeviceInfo::getName)
-                        .filter(StringUtils::isNotBlank)
-                        .map(StringUtils::upperCase)
-                        .orElse(null));
+    private Optional<Pair<String, GpuDevice>> toInstanceGpu(final InstanceTypeInfo info) {
+        return info.getGpuInfo().getGpus().stream().findFirst()
+                .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.of(gpu.getName(), gpu.getManufacturer())));
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {

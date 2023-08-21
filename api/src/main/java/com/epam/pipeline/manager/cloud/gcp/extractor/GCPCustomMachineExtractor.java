@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp.extractor;
 
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
@@ -40,6 +41,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
     private static final String CUSTOM_FAMILY = "custom";
     private static final double EXTENDED_FACTOR = 6.5;
     private static final double FACTOR_PRECISION = 0.1;
+    private static final String NVIDIA = "NVIDIA";
 
     @Override
     public List<AbstractGCPObject> extract(final GCPRegion region) {
@@ -59,8 +61,11 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
                 ? type.getRam() - type.getCpu() * EXTENDED_FACTOR
                 : 0.0;
         final double defaultMemory = type.getRam() - extendedMemory;
-        return new GCPMachine(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
-                type.getGpu(), StringUtils.upperCase(type.getGpuType()));
+        if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
+            return GCPMachine.withGpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
+                    type.getGpu(), GpuDevice.of(type.getGpuType(), NVIDIA));
+        }
+        return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory);
     }
 
     private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {

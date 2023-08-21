@@ -42,9 +42,11 @@ public class InstancePriceListAspect {
     @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.create(..))",
             returning = "region")
     public void updatePriceListForNewRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
-        log.debug("Scheduling price update for new region {}", region.getRegionCode());
+        log.debug("Scheduling price list update for new region {} {} #{}",
+                region.getProvider(), region.getRegionCode(), region.getId());
         instanceOfferScheduler.updatePriceList(region);
-        log.debug("Finished price update for new region {}", region.getRegionCode());
+        log.debug("Finished price list update for new region {} {} #{}",
+                region.getProvider(), region.getRegionCode(), region.getId());
     }
 
     @Async("pauseRunExecutor")
@@ -52,9 +54,11 @@ public class InstancePriceListAspect {
             returning = "region")
     public void updatePriceListForUpdatedRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
         if (region.getProvider().equals(CloudProvider.GCP)) {
-            log.debug("Scheduling price update for updated region {}", region.getRegionCode());
+            log.debug("Scheduling price list update for updated region {} {} #{}",
+                    region.getProvider(), region.getRegionCode(), region.getId());
             instanceOfferScheduler.updatePriceList(region);
-            log.debug("Finished price update for updated region {}", region.getRegionCode());
+            log.debug("Finished price list update for updated region {} {} #{}",
+                    region.getProvider(), region.getRegionCode(), region.getId());
         }
     }
 }

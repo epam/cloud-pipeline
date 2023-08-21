@@ -17,6 +17,8 @@
 package com.epam.pipeline.dao.cluster;
 
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
+import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -32,6 +34,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
@@ -210,7 +213,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
-        GPU_TYPE,
+        GPU_NAME,
+        GPU_MANUFACTURER,
         GPU_CORES,
         REGION,
         CLOUD_PROVIDER;
@@ -235,8 +239,10 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
             params.addValue(MEMORY_UNIT.name(), instanceOffer.getMemoryUnit());
             params.addValue(INSTANCE_FAMILY.name(), instanceOffer.getInstanceFamily());
             params.addValue(GPU.name(), instanceOffer.getGpu());
-            params.addValue(GPU_TYPE.name(), instanceOffer.getGpuType());
-            params.addValue(GPU_CORES.name(), instanceOffer.getGpuCores());
+            final Optional<GpuDevice> gpu = Optional.ofNullable(instanceOffer.getGpuDevice());
+            params.addValue(GPU_NAME.name(), gpu.map(GpuDevice::getName).orElse(null));
+            params.addValue(GPU_MANUFACTURER.name(), gpu.map(GpuDevice::getManufacturer).orElse(null));
+            params.addValue(GPU_CORES.name(), gpu.map(GpuDevice::getCores).orElse(null));
             params.addValue(REGION.name(), instanceOffer.getRegionId());
             return params;
         }
@@ -261,8 +267,12 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceOffer.setMemoryUnit(rs.getString(MEMORY_UNIT.name()));
                 instanceOffer.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceOffer.setGpu(rs.getInt(GPU.name()));
-                instanceOffer.setGpuType(rs.getString(GPU_TYPE.name()));
-                instanceOffer.setGpuCores(rs.getInt(GPU_CORES.name()));
+                if (instanceOffer.getGpu() > 0) {
+                    instanceOffer.setGpuDevice(GpuDevice.of(
+                            rs.getString(GPU_NAME.name()),
+                            rs.getString(GPU_MANUFACTURER.name()),
+                            DaoHelper.parseInteger(rs, GPU_CORES.name())));
+                }
                 instanceOffer.setRegionId(rs.getLong(REGION.name()));
                 String cloudProviderName = rs.getString(CLOUD_PROVIDER.name());
                 if (!rs.wasNull()) {
@@ -282,7 +292,8 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         MEMORY_UNIT,
         INSTANCE_FAMILY,
         GPU,
-        GPU_TYPE,
+        GPU_NAME,
+        GPU_MANUFACTURER,
         GPU_CORES,
         REGION,
         TERM_TYPE;
@@ -298,10 +309,11 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceType.setMemoryUnit(rs.getString(MEMORY_UNIT.name()));
                 instanceType.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceType.setGpu(rs.getInt(GPU.name()));
-                instanceType.setGpuType(rs.getString(GPU_TYPE.name()));
-                final int gpuCores = rs.getInt(GPU_CORES.name());
-                if (!rs.wasNull()) {
-                    instanceType.setGpuCores(gpuCores);
+                if (instanceType.getGpu() > 0) {
+                    instanceType.setGpuDevice(GpuDevice.of(
+                            rs.getString(GPU_NAME.name()),
+                            rs.getString(GPU_MANUFACTURER.name()),
+                            DaoHelper.parseInteger(rs, GPU_CORES.name())));
                 }
                 instanceType.setRegionId(rs.getLong(REGION.name()));
                 instanceType.setTermType(rs.getString(TERM_TYPE.name()));

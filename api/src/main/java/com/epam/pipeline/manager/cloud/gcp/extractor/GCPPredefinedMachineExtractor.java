@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp.extractor;
 
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.GCPClient;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
@@ -91,13 +92,12 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
         final List<MachineType.Accelerators> accelerators = ListUtils.emptyIfNull(type.getAccelerators());
         final Optional<MachineType.Accelerators> accelerator = accelerators.stream().findFirst();
         final int gpu = accelerator.map(MachineType.Accelerators::getGuestAcceleratorCount).orElse(0);
-        final Optional<String> gpuType = accelerator.map(MachineType.Accelerators::getGuestAcceleratorType)
+        final Optional<GpuDevice> gpuDevice = accelerator.map(MachineType.Accelerators::getGuestAcceleratorType)
                 .map(it -> StringUtils.split(it, "-"))
-                .filter(items -> items.length > 0)
-                .map(items -> items[items.length - 1])
-                .map(StringUtils::upperCase);
+                .filter(items -> items.length > 1)
+                .map(items -> GpuDevice.of(items[items.length - 1], items[0]));
 
-        return Optional.of(new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuType.orElse(null)));
+        return Optional.of(new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuDevice.orElse(null)));
     }
 
     private double getMemory(final MachineType machineType) {

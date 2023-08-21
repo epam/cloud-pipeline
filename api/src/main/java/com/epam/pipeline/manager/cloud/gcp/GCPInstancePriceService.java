@@ -69,7 +69,7 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
             final Map<String, Integer> gpuCoresMapping = getGpuCoresMapping();
             return objects.stream()
                     .flatMap(object -> toOffers(region, object, prices))
-                    .map(offer -> withGpuDetails(offer, gpuCoresMapping))
+                    .map(offer -> withGpus(offer, gpuCoresMapping))
                     .collect(Collectors.toList());
         } catch (GCPInstancePriceException e) {
             log.error("Failed to get instance types and prices from GCP.", e);
@@ -89,11 +89,10 @@ public class GCPInstancePriceService implements CloudInstancePriceService<GCPReg
         return object.toInstanceOffer(billing, price, region.getId());
     }
 
-    private InstanceOffer withGpuDetails(final InstanceOffer offer, final Map<String, Integer> gpuCoresMapping) {
-        final Optional<String> gpuType = Optional.ofNullable(offer.getGpuType());
-        final Optional<Integer> gpuCores = gpuType.map(gpuCoresMapping::get);
-        gpuType.ifPresent(offer::setGpuType);
-        gpuCores.ifPresent(offer::setGpuCores);
+    private InstanceOffer withGpus(final InstanceOffer offer, final Map<String, Integer> gpuCoresMapping) {
+        Optional.ofNullable(offer.getGpuDevice())
+                .map(gpu -> gpu.toBuilder().cores(gpuCoresMapping.get(gpu.getManufacturerAndName())).build())
+                .ifPresent(offer::setGpuDevice);
         return offer;
     }
 

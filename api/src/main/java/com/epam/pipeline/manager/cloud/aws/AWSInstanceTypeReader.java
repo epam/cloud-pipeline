@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.aws;
 
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -46,13 +47,13 @@ public class AWSInstanceTypeReader implements Closeable {
 
     public List<InstanceOffer> read() throws IOException {
         final List<InstanceOffer> offers = reader.read();
-        final Map<String, String> gpus = resolveGpuNames(offers, region);
+        final Map<String, GpuDevice> gpus = collectGpus(offers, region);
         return offers.stream()
-                .map(offer -> withGpuDetails(offer, gpus))
+                .map(offer -> withGpus(offer, gpus))
                 .collect(Collectors.toList());
     }
 
-    private Map<String, String> resolveGpuNames(final List<InstanceOffer> offers, final AwsRegion region) {
+    private Map<String, GpuDevice> collectGpus(final List<InstanceOffer> offers, final AwsRegion region) {
         final Stream<String> instanceTypes = offers.stream()
                 .filter(it -> CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY.equals(it.getProductFamily()))
                 .filter(it -> it.getGpu() > 0)
@@ -64,11 +65,11 @@ public class AWSInstanceTypeReader implements Closeable {
                 .orElseGet(Collections::emptyMap);
     }
 
-    private InstanceOffer withGpuDetails(final InstanceOffer offer, final Map<String, String> gpus) {
-        final Optional<String> gpuType = Optional.ofNullable(offer.getInstanceType()).map(gpus::get);
-        final Optional<Integer> gpuCores = gpuType.map(gpuCoresMapping::get);
-        gpuType.ifPresent(offer::setGpuType);
-        gpuCores.ifPresent(offer::setGpuCores);
+    private InstanceOffer withGpus(final InstanceOffer offer, final Map<String, GpuDevice> gpus) {
+        Optional.ofNullable(offer.getInstanceType())
+                .map(gpus::get)
+                .map(gpu -> gpu.toBuilder().cores(gpuCoresMapping.get(gpu.getManufacturerAndName())).build())
+                .ifPresent(offer::setGpuDevice);
         return offer;
     }
 
