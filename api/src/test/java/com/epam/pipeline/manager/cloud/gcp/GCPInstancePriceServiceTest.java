@@ -76,11 +76,11 @@ public class GCPInstancePriceServiceTest {
     private static final String INSTANCE_PRODUCT_FAMILY = "instance";
     private static final String STORAGE_PRODUCT_FAMILY = "storage";
     private static final String NVIDIA = "NVIDIA";
-    private static final GpuDevice NVIDIA_A100 = GpuDevice.of("A100", NVIDIA);
+    private static final GpuDevice NVIDIA_A100 = GpuDevice.from("A100", NVIDIA);
     private static final int NVIDIA_A100_CORES = 6912;
     private static final Map<String, Integer> GPU_CORES_MAPPING = CommonUtils.toMap(
             Pair.of(NVIDIA_A100.getManufacturerAndName(), NVIDIA_A100_CORES));
-    private static final GpuDevice NVIDIA_K80 = GpuDevice.of("K80", NVIDIA);
+    private static final GpuDevice NVIDIA_K80 = GpuDevice.from("K80", NVIDIA);
     private static final GCPResourceMapping MAPPING = new GCPResourceMapping("prefix", "group");
 
     private final GCPRegion region = defaultRegion();

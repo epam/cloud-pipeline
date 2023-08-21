@@ -66,7 +66,7 @@ public class GCPCustomMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, CPU, RAM, 0,
-                GPU, GpuDevice.of(K_80, NVIDIA));
+                GPU, GpuDevice.from(K_80, NVIDIA));
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 

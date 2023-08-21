@@ -13,11 +13,11 @@ public class GpuDevice {
     String manufacturer;
     Integer cores;
 
-    public static GpuDevice of(final String name, final String manufacturer) {
-        return of(name, manufacturer, null);
+    public static GpuDevice from(final String name, final String manufacturer) {
+        return from(name, manufacturer, null);
     }
 
-    public static GpuDevice of(final String name, final String manufacturer, final Integer cores) {
+    public static GpuDevice from(final String name, final String manufacturer, final Integer cores) {
         return new GpuDevice(normalize(name), normalize(manufacturer), cores);
     }
 

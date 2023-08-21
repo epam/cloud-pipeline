@@ -268,7 +268,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceOffer.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceOffer.setGpu(rs.getInt(GPU.name()));
                 if (instanceOffer.getGpu() > 0) {
-                    instanceOffer.setGpuDevice(GpuDevice.of(
+                    instanceOffer.setGpuDevice(GpuDevice.from(
                             rs.getString(GPU_NAME.name()),
                             rs.getString(GPU_MANUFACTURER.name()),
                             DaoHelper.parseInteger(rs, GPU_CORES.name())));
@@ -310,7 +310,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
                 instanceType.setInstanceFamily(rs.getString(INSTANCE_FAMILY.name()));
                 instanceType.setGpu(rs.getInt(GPU.name()));
                 if (instanceType.getGpu() > 0) {
-                    instanceType.setGpuDevice(GpuDevice.of(
+                    instanceType.setGpuDevice(GpuDevice.from(
                             rs.getString(GPU_NAME.name()),
                             rs.getString(GPU_MANUFACTURER.name()),
                             DaoHelper.parseInteger(rs, GPU_CORES.name())));

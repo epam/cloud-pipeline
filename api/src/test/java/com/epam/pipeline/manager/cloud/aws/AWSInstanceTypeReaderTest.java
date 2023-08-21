@@ -25,9 +25,9 @@ public class AWSInstanceTypeReaderTest {
     private static final String M5_XLARGE = "m5.xlarge";
     private static final String P3_2XLARGE = "p3.2xlarge";
     private static final String G4AD_XLARGE = "g4ad.xlarge";
-    private static final GpuDevice NVIDIA_A10G = GpuDevice.of("A10G", "NVIDIA");
+    private static final GpuDevice NVIDIA_A10G = GpuDevice.from("A10G", "NVIDIA");
     private static final int NVIDIA_A10G_CORES = 9216;
-    private static final GpuDevice AMD_RADEON_PRO_V520 = GpuDevice.of("RADEON PRO V520", "AMD");
+    private static final GpuDevice AMD_RADEON_PRO_V520 = GpuDevice.from("RADEON PRO V520", "AMD");
     private static final Map<String, GpuDevice> INSTANCE_GPU_MAPPING = CommonUtils.toMap(
             Pair.of(G5_12XLARGE, NVIDIA_A10G),
             Pair.of(G4AD_XLARGE, AMD_RADEON_PRO_V520));

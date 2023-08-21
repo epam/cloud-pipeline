@@ -169,7 +169,7 @@ public class EC2Helper implements EC2GpuHelper {
 
     private Optional<Pair<String, GpuDevice>> toInstanceGpu(final InstanceTypeInfo info) {
         return info.getGpuInfo().getGpus().stream().findFirst()
-                .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.of(gpu.getName(), gpu.getManufacturer())));
+                .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.from(gpu.getName(), gpu.getManufacturer())));
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {

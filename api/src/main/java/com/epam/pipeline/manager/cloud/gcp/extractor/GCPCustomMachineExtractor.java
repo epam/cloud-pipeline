@@ -63,7 +63,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         final double defaultMemory = type.getRam() - extendedMemory;
         if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
             return GCPMachine.withGpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
-                    type.getGpu(), GpuDevice.of(type.getGpuType(), NVIDIA));
+                    type.getGpu(), GpuDevice.from(type.getGpuType(), NVIDIA));
         }
         return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory);
     }
