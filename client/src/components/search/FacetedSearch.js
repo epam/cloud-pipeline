@@ -24,7 +24,6 @@ import {
   Input,
   Dropdown,
   Menu,
-  message,
   Tabs
 } from 'antd';
 import classNames from 'classnames';
@@ -58,7 +57,7 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
-import downloadStorageItems from '../special/download-storage-items';
+import handleDownloadItems from '../special/download-storage-items';
 import getNotDownloadableStorages from './utilities/get-downloadable-storages';
 import {
   getDocumentDisplayName,
@@ -1032,28 +1031,7 @@ class FacetedSearch extends React.Component {
 
   handleDownloadItems = async (items = []) => {
     const {preferences} = this.props;
-    const hide = message.loading('Downloading...', 0);
-    try {
-      await preferences.fetchIfNeededOrWait();
-      const {maximum} = preferences.facetedFilterDownload;
-      if (maximum && maximum < items.length) {
-        message.info(
-          (
-            <span>
-              {/* eslint-disable-next-line max-len */}
-              It is allowed to download up to <b>{maximum}</b> file{maximum === 1 ? '' : 's'} at a time.
-            </span>
-          ),
-          5
-        );
-      } else {
-        await downloadStorageItems(items);
-      }
-    } catch (error) {
-      message.error(error.message, 5);
-    } finally {
-      hide();
-    }
+    await handleDownloadItems(preferences, items);
   };
 
   handleDomainSelection = (key) => this.setState({domain: parseDomainKey(key)});
