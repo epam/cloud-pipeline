@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPCustomMachineExtractor;
@@ -32,7 +33,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class CustomGCPObjectExtractorTest {
+public class GCPCustomMachineExtractorTest {
 
     private static final double DELTA = 0.01;
     private static final int CPU = 1;
@@ -42,6 +43,7 @@ public class CustomGCPObjectExtractorTest {
     private static final int GPU = 3;
     private static final String K_80 = "K80";
     public static final String CUSTOM_FAMILY = "custom";
+    private static final String NVIDIA = "NVIDIA";
 
     private final GCPObjectExtractor extractor = new GCPCustomMachineExtractor();
 
@@ -64,7 +66,7 @@ public class CustomGCPObjectExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, CPU, RAM, 0,
-                GPU, K_80);
+                GPU, GpuDevice.of(K_80, NVIDIA));
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
