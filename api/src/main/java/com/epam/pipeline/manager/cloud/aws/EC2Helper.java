@@ -92,7 +92,7 @@ import java.util.stream.Stream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class EC2Helper {
+public class EC2Helper implements EC2GpuHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EC2Helper.class);
     private static final int SPOT_REQUEST_INTERVAL = 3;

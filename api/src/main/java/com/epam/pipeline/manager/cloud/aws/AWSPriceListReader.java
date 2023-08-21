@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.InstanceOfferReader;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -40,7 +41,7 @@ import java.util.stream.StreamSupport;
 
 @Slf4j
 @RequiredArgsConstructor
-public class AWSPriceListReader implements Closeable {
+public class AWSPriceListReader implements InstanceOfferReader {
 
     private static final int COLUMNS_LINE_INDEX = 5;
 
