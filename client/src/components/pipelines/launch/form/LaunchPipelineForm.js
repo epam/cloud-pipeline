@@ -404,6 +404,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
   @observable _toolSettings;
+  @observable toolSettingsPending = false;
   @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
@@ -431,7 +432,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       (parameters || {}).parameters
     );
     const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
-    if (this.dockerImage !== currentDockerImage) {
+    if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
       if (currentDockerImage) {
         await this.loadToolSettings(currentDockerImage);
         const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
@@ -3628,7 +3629,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   loadToolSettings = async (dockerImage) => {
     await this.props.dockerRegistries.fetchIfNeededOrWait();
-    if (this.props.dockerRegistries.loaded) {
+    if (this.props.dockerRegistries.loaded && !this.toolSettingsPending) {
       const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
       const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
         .filter(r => r.path.toLowerCase() === registry);
@@ -3641,6 +3642,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             .filter(i => i.image.toLowerCase() === `${group}/${image}`);
           if (im && im.id) {
             this.toolAllowSensitive = im.allowSensitive;
+            this.toolSettingsPending = true;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
 
@@ -3691,6 +3693,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.toolDefaultCmd = undefined;
             }
+            this.toolSettingsPending = false;
           } else {
             this.toolAllowSensitive = true;
           }
