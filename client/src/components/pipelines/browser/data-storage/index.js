@@ -1086,7 +1086,9 @@ export default class DataStorage extends React.Component {
         type: item.type
       };
     });
-    event.stopPropagation();
+    if (event) {
+      event.stopPropagation();
+    }
     if (this.showVersions) {
       this.openDeleteModal(items);
     } else {
