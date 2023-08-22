@@ -45,6 +45,11 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
                     -Pfast \
                     --no-daemon
 
+deactivate
+
+source ~/venv3.8.17/bin/activate
+pip install awscli
+
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
@@ -54,3 +59,5 @@ if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
             aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${APPVEYOR_REPO_BRANCH}/
     fi
 fi
+
+deactivate
