@@ -17,13 +17,12 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.TagsVO;
-import com.epam.pipeline.entity.cloud.InstanceTerminationState;
+import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -215,27 +214,16 @@ public class ScaleDownHandler {
     private boolean isNodeAliveOnCloud(final Node node) {
         final String instanceId = getNodeCloudInstanceId(node);
         final String label = getNodeLabel(node);
-        final Optional<InstanceTerminationState> state;
-        final boolean existsOnCloud;
+        final CloudInstanceState state;
         if (isPooled(node)) {
             final NodeRegionLabels cloudRegion = kubernetesManager.getNodeRegion(label);
-            state = cloudFacade.getInstanceTerminationState(cloudRegion, instanceId);
-            existsOnCloud = cloudFacade.instanceExists(cloudRegion, instanceId);
+            state = cloudFacade.getInstanceState(cloudRegion, instanceId);
         } else {
             final Long runId = Long.parseLong(label);
-            final Long cloudRegionId = pipelineRunManager.findRun(runId)
-                    .map(PipelineRun::getInstance)
-                    .map(RunInstance::getCloudRegionId)
-                    .orElseThrow(
-                            () -> new IllegalArgumentException(
-                                    String.format("Can't find region by runId: %d", runId))
-                    );
-            state = cloudFacade.getInstanceTerminationState(cloudRegionId, instanceId);
-            existsOnCloud = cloudFacade.instanceExists(cloudRegionId, instanceId);
+            state = cloudFacade.getInstanceState(runId);
         }
-        log.debug("Check if unavailable node {} is alive. Exists: {}. Termination state: {}", instanceId, existsOnCloud,
-                state.map(InstanceTerminationState::getStateMessage).orElse(EMPTY_TERMINATION_STATE));
-        return existsOnCloud && !state.isPresent();
+        log.debug("Check if unavailable node {} is alive. Termination state: {}", instanceId, state);
+        return state != null && state != CloudInstanceState.TERMINATED;
     }
 
     private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {

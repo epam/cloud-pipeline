@@ -199,13 +199,6 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public boolean instanceExists(final NodeRegionLabels nodeRegion, final String instanceId) {
-        final AbstractCloudRegion region = regionManager.load(
-                nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
-        return getInstanceService(region).instanceExists(region, instanceId);
-    }
-
-    @Override
     public Map<String, String> buildContainerCloudEnvVars(final Long regionId) {
         return regionManager.loadAll().stream()
                 .map(r -> {
@@ -239,14 +232,6 @@ public class CloudFacadeImpl implements CloudFacade {
     public Optional<InstanceTerminationState> getInstanceTerminationState(
             final Long regionId, final String instanceId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        return getInstanceService(region).getInstanceTerminationState(region, instanceId);
-    }
-
-    @Override
-    public Optional<InstanceTerminationState> getInstanceTerminationState(final NodeRegionLabels nodeRegion,
-                                                                          final String instanceId) {
-        final AbstractCloudRegion region = regionManager.load(
-                nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
         return getInstanceService(region).getInstanceTerminationState(region, instanceId);
     }
 
@@ -295,6 +280,14 @@ public class CloudFacadeImpl implements CloudFacade {
     public CloudInstanceState getInstanceState(final Long runId) {
         final AbstractCloudRegion region = getRegionByRunId(runId);
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
+    }
+
+    @Override
+    public CloudInstanceState getInstanceState(final NodeRegionLabels nodeRegion,
+                                               final String instanceLabel) {
+        final AbstractCloudRegion region = regionManager.load(
+                nodeRegion.getCloudProvider(), nodeRegion.getRegionCode());
+        return getInstanceService(region).getInstanceState(region, instanceLabel);
     }
 
     @Override

@@ -73,8 +73,6 @@ public interface CloudFacade {
 
     boolean instanceExists(Long regionId, String instanceId);
 
-    boolean instanceExists(NodeRegionLabels nodeRegion, String instanceId);
-
     Map<String, String> buildContainerCloudEnvVars(Long regionId);
 
     List<InstanceOffer> refreshPriceListForRegion(Long regionId);
@@ -85,8 +83,6 @@ public interface CloudFacade {
     double getSpotPrice(Long regionId, String instanceType);
 
     Optional<InstanceTerminationState> getInstanceTerminationState(Long regionId, String instanceId);
-
-    Optional<InstanceTerminationState> getInstanceTerminationState(NodeRegionLabels nodeRegion, String instanceId);
 
     List<InstanceType> getAllInstanceTypes(Long regionId, boolean spot);
 
@@ -101,6 +97,8 @@ public interface CloudFacade {
     List<InstanceDisk> loadDisks(Long regionId, Long runId);
 
     CloudInstanceState getInstanceState(Long runId);
+
+    CloudInstanceState getInstanceState(NodeRegionLabels nodeRegion, String instanceLabel);
 
     InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 

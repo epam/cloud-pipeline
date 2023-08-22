@@ -267,20 +267,24 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
-        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
-        if (Objects.isNull(aliveInstance)) {
-            return CloudInstanceState.TERMINATED;
-        }
-        final String instanceStateName = aliveInstance.getState().getName();
-        if (InstanceStateName.Pending.toString().equals(instanceStateName)
-                || InstanceStateName.Running.toString().equals(instanceStateName)) {
-            return CloudInstanceState.RUNNING;
-        }
-        if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPING;
-        }
-        if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPED;
+        try {
+            final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
+            if (Objects.isNull(aliveInstance)) {
+                return CloudInstanceState.TERMINATED;
+            }
+            final String instanceStateName = aliveInstance.getState().getName();
+            if (InstanceStateName.Pending.toString().equals(instanceStateName)
+                    || InstanceStateName.Running.toString().equals(instanceStateName)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPING;
+            }
+            if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPED;
+            }
+        } catch (AwsEc2Exception e) {
+            log.error("Fail to get instance state by instance label {} for regionId {}", nodeLabel, region.getId());
         }
         return null;
     }

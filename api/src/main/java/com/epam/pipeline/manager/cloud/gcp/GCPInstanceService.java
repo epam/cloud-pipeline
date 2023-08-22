@@ -272,7 +272,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 return CloudInstanceState.STOPPING;
             }
             return CloudInstanceState.TERMINATED;
-        } catch (IOException e) {
+        } catch (IOException | GCPException e) {
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
         }
