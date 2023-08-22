@@ -425,6 +425,52 @@ def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
     return storage_usage.get(user)
 
 
+def _calculate_run_duration(run):
+    start_date = datetime.strptime(run.get('startDate'), DATE_TIME_FORMAT)
+    end_date = datetime.strptime(run.get('endDate'), DATE_TIME_FORMAT)
+    run_statuses = run.get('runStatuses', [])
+    if not run_statuses:
+        return (end_date - start_date).total_seconds()
+
+    run_statuses = sorted(run_statuses,
+                          key=lambda item: datetime.strptime(item.get('timestamp'), DATE_TIME_FORMAT))
+    time_intervals = []
+    start = None
+    previous_state = None
+    end_states = ['STOPPED', 'PAUSED', 'FAILURE', 'SUCCESS', 'PAUSING']
+    start_states = ['RUNNING']
+    for run_status in run_statuses:
+        current_state = str(run_status.get('status'))
+        timestamp = datetime.strptime(run_status.get('timestamp'), DATE_TIME_FORMAT)
+        if not start:
+            if not current_state:
+                start = start_date
+            elif current_state in end_states:
+                start = start_date
+                time_intervals.append((timestamp - start).total_seconds())
+            else:
+                start = timestamp
+            previous_state = current_state
+            continue
+
+        if previous_state not in end_states:
+            if current_state in end_states:
+                time_intervals.append((timestamp - start).total_seconds())
+                previous_state = current_state
+            continue
+
+        if previous_state in end_states:
+            if current_state in start_states:
+                start = timestamp
+                previous_state = current_state
+            continue
+
+    if previous_state not in end_states:
+        time_intervals.append((end_date - start).total_seconds())
+
+    return sum(time_intervals)
+
+
 def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
     capabilities_dict = {}
     for c in capabilities:
@@ -432,9 +478,7 @@ def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
         if len(runs) > 0:
             total_time = 0
             for r in runs:
-                start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
-                end_date = datetime.strptime(r.get('endDate'), DATE_TIME_FORMAT)
-                total_time += (end_date - start_date).total_seconds()
+                total_time += _calculate_run_duration(r)
             capabilities_dict[c] = total_time
     return sorted(capabilities_dict.items(), key=lambda item: float(item[1]), reverse=True)[:3]
 
