@@ -94,7 +94,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private final PreferenceManager preferenceManager;
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
-    private final Set<PosixFilePermission> allowedPermissions;
+    private final Set<PosixFilePermission> filePermissions;
+    private final Set<PosixFilePermission> folderPermissions;
+
 
     public NFSStorageProvider(final PreferenceManager preferenceManager,
                               final FileShareMountManager shareMountManager,
@@ -105,7 +107,14 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         this.preferenceManager = preferenceManager;
         this.shareMountManager = shareMountManager;
         this.nfsStorageMounter = nfsStorageMounter;
-        this.allowedPermissions = PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
+        final Set<PosixFilePermission> allowedPermissionsFromUMask =
+                PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
+        // default mask for folders 777 -> no need for additional filtering
+        this.folderPermissions = allowedPermissionsFromUMask;
+        // default mask for files 666 -> filter our all execute permissions
+        this.filePermissions = allowedPermissionsFromUMask.stream()
+                .filter(p -> !PosixPermissionUtils.EXECUTE_PERMISSIONS.contains(p))
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -336,7 +345,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
             IOUtils.copy(dataStream, outputStream);
-            setUmask(file);
+            setUmask(file, filePermissions);
         } catch (IOException e) {
             throw new DataStorageException(e);
         }
@@ -353,7 +362,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
         }
         try {
-            setUmask(folder);
+            setUmask(folder, folderPermissions);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_CANNOT_CREATE_FILE, folder.getPath()), e);
@@ -361,9 +370,9 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
-    private void setUmask(File file) throws IOException {
+    private void setUmask(final File file, final Set<PosixFilePermission> permissions) throws IOException {
         if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), allowedPermissions);
+            Files.setPosixFilePermissions(file.toPath(), permissions);
         }
     }
 

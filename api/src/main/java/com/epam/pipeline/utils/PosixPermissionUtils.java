@@ -26,6 +26,9 @@ import java.util.Set;
 
 public final class PosixPermissionUtils {
 
+    public static final List<PosixFilePermission> EXECUTE_PERMISSIONS = Arrays.asList(
+            PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.OTHERS_EXECUTE);
+
     public static final List<Pair<Integer, PosixFilePermission>> OWNER_PERMISSIONS = Arrays.asList(
             Pair.of(0b1, PosixFilePermission.OWNER_READ),
             Pair.of(0b10, PosixFilePermission.OWNER_WRITE),
