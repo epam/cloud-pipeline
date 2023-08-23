@@ -35,7 +35,7 @@ mount_system_fs() {
   if [ "$CLOUD_PROVIDER" == "AWS" ]; then
     export CP_SYS_FS_MOUNT_LOCATION="/opt/cp_sys_fs"
     mkdir -p $CP_SYS_FS_MOUNT_LOCATION
-    mount -t lustre -o noatime,flock $CP_SYSTEM_JOB_SYSTEM_FS $CP_SYS_FS_MOUNT_LOCATION
+    mount -t lustre -o ro,noatime,flock $CP_SYSTEM_JOB_SYSTEM_FS $CP_SYS_FS_MOUNT_LOCATION
     if [ $? -eq 0 ]; then
       pipe_log_info "System FS: $CP_SYSTEM_JOB_SYSTEM_FS successfully mounted to: $CP_SYS_FS_MOUNT_LOCATION. And location is available in CP_SYS_FS_MOUNT_LOCATION." $INIT_TASK_NAME
     else
