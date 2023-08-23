@@ -223,7 +223,7 @@ public class ScaleDownHandler {
             state = cloudFacade.getInstanceState(runId);
         }
         log.debug("Check if unavailable node {} is alive. Termination state: {}", instanceId, state);
-        return state != null && state != CloudInstanceState.TERMINATED;
+        return state == CloudInstanceState.RUNNING;
     }
 
     private void scaleDownUnavailableNode(final KubernetesClient client, final Node node) {

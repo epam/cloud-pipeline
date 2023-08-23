@@ -286,7 +286,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         } catch (AwsEc2Exception e) {
             log.error("Fail to get instance state by instance label {} for regionId {}", nodeLabel, region.getId());
         }
-        return null;
+        return CloudInstanceState.TERMINATED;
     }
 
     @Override
