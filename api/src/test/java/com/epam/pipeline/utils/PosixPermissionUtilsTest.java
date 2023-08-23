@@ -52,45 +52,45 @@ public class PosixPermissionUtilsTest {
                 false
             },
             {
-                    "1002",
-                    Arrays.asList(
-                            PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
-                            PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_EXECUTE,
-                            PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_READ,
-                            PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
-                    ),
-                    false
+                "1002",
+                Arrays.asList(
+                        PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_EXECUTE,
+                        PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
+                ),
+                false
             },
             {
-                    "002",
-                    Arrays.asList(
-                            PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
-                            PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_EXECUTE,
-                            PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_READ,
-                            PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
-                    ),
-                    false
+                "002",
+                Arrays.asList(
+                        PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.OWNER_READ, PosixFilePermission.GROUP_EXECUTE,
+                        PosixFilePermission.GROUP_WRITE, PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
+                ),
+                false
             },
             {
-                    "0022",
-                    Arrays.asList(
-                            PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
-                            PosixFilePermission.OWNER_READ,
-                            PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_READ,
-                            PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
-                    ),
-                    false
+                "0022",
+                Arrays.asList(
+                        PosixFilePermission.OWNER_EXECUTE, PosixFilePermission.OWNER_WRITE,
+                        PosixFilePermission.OWNER_READ,
+                        PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
+                ),
+                false
             },
             {
-                    "0722",
-                    Arrays.asList(
-                            PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_READ,
-                            PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
-                    ),
-                    false
+                "0722",
+                Arrays.asList(
+                        PosixFilePermission.GROUP_EXECUTE, PosixFilePermission.GROUP_READ,
+                        PosixFilePermission.OTHERS_READ, PosixFilePermission.OTHERS_EXECUTE
+                ),
+                false
             },
             {
-                    "badMask", Collections.emptyList(), true
+                "badMask", Collections.emptyList(), true
             }
         });
     }
