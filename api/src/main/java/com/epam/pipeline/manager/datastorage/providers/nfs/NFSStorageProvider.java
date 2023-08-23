@@ -43,13 +43,14 @@ import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.FileContentUtils;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.utils.PosixPermissionUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedOutputStream;
@@ -67,7 +68,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -85,19 +85,28 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  * filesystem using {@link NFSStorageMounter}.
  */
 @Service
-@RequiredArgsConstructor
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final Set<PosixFilePermission> PERMISSIONS = Arrays.stream(PosixFilePermission.values())
-                                                                      .filter(p -> !p.name().startsWith("OTHERS"))
-                                                                      .collect(Collectors.toSet());
     private static final int DEFAULT_PAGE_SIZE = 1000;
 
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
+    private final Set<PosixFilePermission> allowedPermissions;
+
+    public NFSStorageProvider(final PreferenceManager preferenceManager,
+                              final FileShareMountManager shareMountManager,
+                              final NFSStorageMounter nfsStorageMounter,
+                              @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
+                              final MessageHelper messageHelper) {
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.shareMountManager = shareMountManager;
+        this.nfsStorageMounter = nfsStorageMounter;
+        this.allowedPermissions = PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
+    }
 
     @Override
     public DataStorageType getStorageType() {
@@ -354,7 +363,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private void setUmask(File file) throws IOException {
         if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
+            Files.setPosixFilePermissions(file.toPath(), allowedPermissions);
         }
     }
 
