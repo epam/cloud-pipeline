@@ -172,6 +172,7 @@ CP_SHARE_SRV_STATIC_DIR=/opt/share-srv/static
 # cp-dav
 CP_DAV_INTERNAL_HOST=cp-dav.default.svc.cluster.local
 CP_DAV_INTERNAL_PORT=31085
+CP_DAV_EXTRA_INTERNAL_PORT=31086
 CP_DAV_URL_PATH=webdav
 CP_DAV_AUTH_URL_PATH=webdav/auth-sso
 CP_DAV_SERVE_DIR=/dav-serve

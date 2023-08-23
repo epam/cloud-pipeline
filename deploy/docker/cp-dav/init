@@ -89,6 +89,9 @@ rm -f /tmp/sync
 # Start cron
 crond
 
+# Start the extra commands service
+nohup python2 ${EXTRA_HOME}/dav-extra-command.py &> /dev/null &
+
 # Update the Apache WebDAV configuration according to the environment variables
 envsubst < /tmp/httpd.conf > ${APACHE_HOME}/conf/httpd.conf
 envsubst < /tmp/webdav.conf > ${APACHE_HOME}/conf/extra/webdav.conf
