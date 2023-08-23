@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -96,6 +97,8 @@ public interface CloudFacade {
     List<InstanceDisk> loadDisks(Long regionId, Long runId);
 
     CloudInstanceState getInstanceState(Long runId);
+
+    CloudInstanceState getInstanceState(NodeRegionLabels nodeRegion, String instanceLabel);
 
     InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 
