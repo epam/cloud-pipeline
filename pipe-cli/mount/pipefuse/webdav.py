@@ -54,7 +54,7 @@ class PermissionService(object):
         self._timeout = 5
 
     def _build_url(self, webdav_url):
-        return webdav_url.rsplit('/', 1)[0] + self.PERMISSION_SERVICE_PREFIX
+        return webdav_url.rstrip('/').rsplit('/', 1)[0] + self.PERMISSION_SERVICE_PREFIX
 
     def set_permissions(self, path):
         count = 0
@@ -73,7 +73,7 @@ class PermissionService(object):
                 if status != 'OK':
                     logging.error('%s: %s' % (status, message))
                 else:
-                    logging.info(response_data.get('payload'))
+                    logging.error(response_data.get('payload'))
                     return
             except Exception as e:
                 logging.error(str(e.message))
