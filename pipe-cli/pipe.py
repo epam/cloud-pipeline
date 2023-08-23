@@ -1368,9 +1368,11 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
               default=10000, type=int)
 @click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-p', '--fix-permissions', is_flag=True, help='Fix permission for new files uploaded using FUSE. '
+                                                            'Applied only for file system mount.')
 @common_options
 def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,
-                  timeout, show_archive):
+                  timeout, show_archive, fix_permissions):
     """
     Mounts either all available network file systems or a single object storage to a local folder.
 
@@ -1396,7 +1398,7 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
                                         quiet=quiet, threading=threads, mode=mode, timeout=timeout,
-                                        show_archive=show_archive)
+                                        show_archive=show_archive, fix_permissions=fix_permissions)
 
 
 @storage.command('umount')

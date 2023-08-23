@@ -42,9 +42,9 @@ class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
-                             log_level=None, show_archive=False):
+                             log_level=None, show_archive=False, fix_permissions=False):
         additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options,
-                                                 show_archive)
+                                                 show_archive, fix_permissions=fix_permissions)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
     def get_mount_storage_cmd(self, config, mountpoint, options, custom_options, bucket, mode, threading=False,
@@ -53,13 +53,15 @@ class AbstractMount(object):
                                                  show_archive)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def _append_arguments(self, args, threading, log_level, custom_options, show_archive):
+    def _append_arguments(self, args, threading, log_level, custom_options, show_archive, fix_permissions=False):
         if threading:
             args.append('--threads')
         if log_level:
             args.extend(['--logging-level', log_level])
         if show_archive:
             args.append('--show-archive')
+        if fix_permissions:
+            args.append('--fix-permissions')
         if custom_options:
             args.extend(self._build_custom_option_arguments(custom_options))
         return args
@@ -151,7 +153,7 @@ class Mount(object):
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
                        log_file=None, log_level=None, threading=False, mode=700, timeout=10*MS_IN_SEC,
-                       show_archive=False):
+                       show_archive=False, fix_permissions=False):
         config = Config.instance()
         username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
@@ -160,7 +162,7 @@ class Mount(object):
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
             self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
                            log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
-                           show_archive=show_archive)
+                           show_archive=show_archive, fix_permissions=fix_permissions)
         else:
             self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
                                log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
@@ -172,9 +174,11 @@ class Mount(object):
         return username.split('@')[0]
 
     def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                  log_file=None, log_level=None, threading=False, timeout=10*MS_IN_SEC, show_archive=False):
+                  log_file=None, log_level=None, threading=False, timeout=10*MS_IN_SEC, show_archive=False,
+                  fix_permissions=False):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
-                                               log_level=log_level, threading=threading, show_archive=show_archive)
+                                               log_level=log_level, threading=threading,
+                                               show_archive=show_archive, fix_permissions=fix_permissions)
         python_path = mount.get_python_path()
         self.run(config, mount_cmd, mountpoint, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 

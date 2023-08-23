@@ -65,7 +65,7 @@ from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient
+from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient, PermissionAwareWebDavFileSystemClient
 from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
     ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
 from pipefuse.archived import ArchivedFilesFilterFileSystemClient, ArchivedAttributesFileSystemClient
@@ -93,7 +93,7 @@ def start(mountpoint, webdav, bucket,
           disabled_operations, default_mode,
           mount_options, threads, monitoring_delay, recording,
           show_archived, storage_class_exclude,
-          audit_buffer_ttl, audit_buffer_size):
+          audit_buffer_ttl, audit_buffer_size, fix_permissions):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
@@ -120,6 +120,8 @@ def start(mountpoint, webdav, bucket,
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         client = WebDavClient(webdav_url=webdav, bearer=bearer)
         client = ResilientWebDavFileSystemClient(client)
+        if fix_permissions:
+            client = PermissionAwareWebDavFileSystemClient(client, webdav, bearer)
     else:
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
@@ -395,6 +397,10 @@ if __name__ == '__main__':
                         help="Data access audit buffer time to live, seconds.")
     parser.add_argument("--audit-buffer-size", type=int, required=False, default=100,
                         help="Number of entries in data access audit buffer.")
+    parser.add_argument("-f", "--fix-permissions", default=False, action='store_true',
+                        help="With this flag enabled, permissions for the uploaded files will be overriden."
+                             "Applied only to WebDav mounts.")
+
     args = parser.parse_args()
 
     if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
@@ -432,7 +438,8 @@ if __name__ == '__main__':
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
               show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude,
-              audit_buffer_ttl=args.audit_buffer_ttl, audit_buffer_size=args.audit_buffer_size)
+              audit_buffer_ttl=args.audit_buffer_ttl, audit_buffer_size=args.audit_buffer_size,
+              fix_permissions=args.fix_permissions)
     except Exception:
         logging.exception('Unhandled error')
         traceback.print_exc()

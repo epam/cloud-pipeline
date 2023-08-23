@@ -543,7 +543,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def mount_storage(cls, mountpoint, file=False, bucket=None, log_file=None, log_level=None, options=None,
-                      custom_options=None, quiet=False, threading=False, mode=700, timeout=10000, show_archive=False):
+                      custom_options=None, quiet=False, threading=False, mode=700, timeout=10000, show_archive=False,
+                      fix_permissions=False):
         if not file and not bucket:
             click.echo('Either file system mode should be enabled (-f/--file) '
                        'or bucket name should be specified (-b/--bucket BUCKET).', err=True)
@@ -553,7 +554,8 @@ class DataStorageOperations(object):
             sys.exit(1)
         Mount().mount_storages(mountpoint, file, bucket, options, custom_options=custom_options, quiet=quiet,
                                log_file=log_file, log_level=log_level,  threading=threading,
-                               mode=mode, timeout=timeout, show_archive=show_archive)
+                               mode=mode, timeout=timeout, show_archive=show_archive,
+                               fix_permissions=fix_permissions)
 
     @classmethod
     def umount_storage(cls, mountpoint, quiet=False):
