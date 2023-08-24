@@ -37,5 +37,6 @@ public class InstanceType {
     private String memoryUnit;
     private String instanceFamily;
     private int gpu;
+    private GpuDevice gpuDevice;
     private Long regionId;
 }
