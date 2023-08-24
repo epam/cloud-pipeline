@@ -201,10 +201,14 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   getParameters = () => {
-    if (this.toolRequest &&
+    if (
+      this.toolRequest &&
       !this.toolPending &&
+      !this.toolRequest.error &&
+      this.settingsRequest &&
       !this.settingsPending &&
-      !this.toolRequest.error) {
+      !this.settingsRequest.error
+    ) {
       const toolVersion = (this.props.toolVersion || 'latest').toLowerCase();
       const [versionSettings] = (this.settingsRequest.value || [])
         .filter(v => (v.version || '').toLowerCase() === toolVersion);
