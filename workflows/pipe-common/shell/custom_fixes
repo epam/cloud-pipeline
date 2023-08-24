@@ -39,6 +39,8 @@ if [[ "$IS_XSET_INSTALLED" = 0 ]]; then
 
     [ $IS_RPM_BASED == 0 ] && { rpm -qa | grep screensaver &> /dev/null ; } && yum remove -y "*-screensaver"
     [ $IS_RPM_BASED != 0 ] && { dpkg -l | grep screensaver &> /dev/null ; } && apt purge -y "*-screensaver"
+    [ $IS_RPM_BASED != 0 ] && { dpkg -l | grep light-locker &> /dev/null ; } && apt purge -y "light-locker*"
+
     sleep 1; xset s off
     sleep 1; xset s noblank
 
