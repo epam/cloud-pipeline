@@ -70,7 +70,6 @@ const DTS_ENVIRONMENT = 'DTS';
     runId: params.runId,
     configurationName: params.configuration,
     image: params.image,
-    tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
     toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
     configurations: params.id && params.version && !isVersionedStorage
@@ -93,6 +92,21 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   @observable allowedInstanceTypes;
   @observable versionedStoragesLaunchPayload;
+  @observable toolRequest;
+  @observable toolPending = false;
+
+  loadTool = async (image) => {
+    if (!image) {
+      return;
+    }
+    this.toolRequest = new LoadTool(image);
+    this.toolPending = true;
+    await this.toolRequest.fetch();
+    if (this.toolRequest.error) {
+      message.error(this.toolRequest.error, 5);
+    }
+    this.toolPending = false;
+  };
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -104,10 +118,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   get runPending () {
     return !!this.props.run && this.props.run.pending;
-  }
-
-  get toolPending () {
-    return !!this.props.tool && this.props.tool.pending;
   }
 
   get toolSettingsPending () {
@@ -207,10 +217,10 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   getParameters = () => {
-    if (this.props.tool &&
+    if (this.toolRequest &&
       !this.toolPending &&
       !this.toolSettingsPending &&
-      !this.props.tool.error) {
+      !this.toolRequest.error) {
       const toolVersion = (this.props.toolVersion || 'latest').toLowerCase();
       const [versionSettings] = (this.props.toolSettings.value || [])
         .filter(v => (v.version || '').toLowerCase() === toolVersion);
@@ -236,14 +246,14 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         parameter !== undefined &&
         `${parameter}`.trim().length > 0 &&
         (!additionalCriteria || additionalCriteria(parameter));
-      const image = `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
+      const image = `${this.toolRequest.value.registry}/${this.toolRequest.value.image}`;
       return {
-        cmd_template: versionSettingValue('cmd_template') || this.props.tool.value.defaultCommand,
+        cmd_template: versionSettingValue('cmd_template') || this.toolRequest.value.defaultCommand,
         docker_image: this.props.toolVersion
           ? `${image}:${this.props.toolVersion}`
           : image,
-        instance_disk: +versionSettingValue('instance_disk') || this.props.tool.value.disk,
-        instance_size: versionSettingValue('instance_size') || this.props.tool.value.instanceType,
+        instance_disk: +versionSettingValue('instance_disk') || this.toolRequest.value.disk,
+        instance_size: versionSettingValue('instance_size') || this.toolRequest.value.instanceType,
         is_spot: versionSettingValue('is_spot'),
         parameters: versionSettingValue('parameters'),
         node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
@@ -507,9 +517,13 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   componentDidMount () {
     this.loadVersionedStorageLaunchPayload();
+    this.loadTool(this.props.image);
   }
 
   componentDidUpdate (prevProps) {
+    if (this.props.image !== prevProps.image) {
+      this.loadTool(this.props.image);
+    }
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = this.props.image
@@ -609,9 +623,9 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         type: 'warning'
       });
     }
-    if (this.props.tool && this.props.tool.error) {
+    if (this.toolRequest && this.toolRequest.error) {
       alerts.push({
-        message: this.props.tool.error,
+        message: this.toolRequest.error,
         type: 'warning'
       });
     }
