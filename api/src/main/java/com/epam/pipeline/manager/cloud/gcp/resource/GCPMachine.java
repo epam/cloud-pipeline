@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp.resource;
 
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPBilling;
@@ -28,6 +29,7 @@ import org.apache.commons.lang3.text.WordUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -36,7 +38,7 @@ public class GCPMachine extends AbstractGCPObject {
     private final double ram;
     private final double extendedRam;
     private final int gpu;
-    private final String gpuType;
+    private final GpuDevice gpuDevice;
 
     public GCPMachine(final String name,
                       final String family,
@@ -44,13 +46,13 @@ public class GCPMachine extends AbstractGCPObject {
                       final double ram,
                       final double extendedRam,
                       final int gpu,
-                      final String gpuType) {
+                      final GpuDevice gpuDevice) {
         super(name, family);
         this.cpu = cpu;
         this.ram = ram;
         this.extendedRam = extendedRam;
         this.gpu = gpu;
-        this.gpuType = gpuType;
+        this.gpuDevice = gpuDevice;
     }
 
     public static GCPMachine withCpu(final String name,
@@ -67,8 +69,8 @@ public class GCPMachine extends AbstractGCPObject {
                                      final double ram,
                                      final double extendedRam,
                                      final int gpu,
-                                     final String gpuType) {
-        return new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuType);
+                                     final GpuDevice gpuDevice) {
+        return new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuDevice);
     }
 
     @Override
@@ -89,6 +91,7 @@ public class GCPMachine extends AbstractGCPObject {
                 .instanceFamily(WordUtils.capitalizeFully(getFamily()))
                 .vCPU(getCpu())
                 .gpu(getGpu())
+                .gpuDevice(gpuDevice)
                 .memory(getRam())
                 .build();
     }
@@ -103,7 +106,7 @@ public class GCPMachine extends AbstractGCPObject {
             case EXTENDED_RAM:
                 return extendedRam > 0;
             case GPU:
-                return gpu > 0 && StringUtils.isNotBlank(gpuType);
+                return gpu > 0 && gpuDevice != null && StringUtils.isNotBlank(gpuDevice.getName());
             default:
                 return false;
         }
@@ -132,7 +135,11 @@ public class GCPMachine extends AbstractGCPObject {
     @Override
     public String billingKey(final GCPBilling billing, final GCPResourceType type) {
         if (type == GCPResourceType.GPU) {
-            return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getGpuType().toLowerCase());
+            return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(),
+                    Optional.ofNullable(gpuDevice)
+                            .map(GpuDevice::getName)
+                            .map(StringUtils::lowerCase)
+                            .orElse(StringUtils.EMPTY));
         }
         return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getFamily());
     }

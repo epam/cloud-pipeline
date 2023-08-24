@@ -66,8 +66,10 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPrefere
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -493,6 +495,25 @@ public class SystemPreferences {
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
             "cluster.instance.device.suffixes", "defghijklmnopqrstuvwxyz", CLUSTER_GROUP,
             isNotBlank);
+    public static final ObjectPreference<Map<String, Integer>> CLUSTER_INSTANCE_GPU_CORES_MAPPING =
+            new ObjectPreference<>("cluster.instance.gpu.cores.mapping", CommonUtils.toMap(
+                                   Pair.of("NVIDIA M40", 3072),
+                                   Pair.of("NVIDIA M60", 2048),
+                                   Pair.of("NVIDIA P4", 2560),
+                                   Pair.of("NVIDIA P40", 3840),
+                                   Pair.of("NVIDIA P100", 3584),
+                                   Pair.of("NVIDIA V100", 5120),
+                                   Pair.of("NVIDIA T4", 2560),
+                                   Pair.of("NVIDIA T4G", 2560),
+                                   Pair.of("NVIDIA A100", 6912),
+                                   Pair.of("NVIDIA A10G", 9216),
+                                   Pair.of("NVIDIA H100", 18432),
+                                   Pair.of("NVIDIA K80", 4992),
+                                   Pair.of("NVIDIA K520", 3072),
+                                   Pair.of("NVIDIA L4", 7424)),
+                                   new TypeReference<Map<String, Integer>>() {}, CLUSTER_GROUP,
+                                   isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}), true);
+
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));

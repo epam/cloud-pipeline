@@ -36,6 +36,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +46,6 @@ import java.util.List;
 public class EC2InstancePriceService implements CloudInstancePriceService<AwsRegion> {
     private static final String AWS_EC2_PRICING_URL_TEMPLATE =
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv";
-    private static final int COLUMNS_LINE_INDEX = 5;
 
     private final InstanceOfferDao instanceOfferDao;
     private final EC2Helper ec2Helper;
@@ -57,24 +59,27 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
     @Override
     public List<InstanceOffer> refreshPriceListForRegion(final AwsRegion region) {
         final String url = String.format(AWS_EC2_PRICING_URL_TEMPLATE, region.getRegionCode());
-        try (InputStream input = new URL(url).openStream();
-             BufferedReader reader = new BufferedReader(new InputStreamReader(input))) {
-            //skip first lines
-            int skipLines = COLUMNS_LINE_INDEX;
-            while (skipLines > 0) {
-                final String line = reader.readLine();
-                if (line == null) {
-                    return Collections.emptyList();
-                }
-                skipLines--;
-            }
-            return new AWSPriceListReader(region.getId(),
-                    preferenceManager.getPreference(SystemPreferences.INSTANCE_COMPUTE_FAMILY_NAMES))
-                    .readPriceCsv(reader);
+        try (InputStream is = new URL(url).openStream();
+             BufferedReader br = new BufferedReader(new InputStreamReader(is));
+             AWSPriceListReader plr = new AWSPriceListReader(br, region, getComputeFamilies());
+             AWSInstanceTypeReader itr = new AWSInstanceTypeReader(plr, region, ec2Helper, getGpuCoresMapping())) {
+            return itr.read();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private Set<String> getComputeFamilies() {
+        return Optional.of(SystemPreferences.INSTANCE_COMPUTE_FAMILY_NAMES)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptySet);
+    }
+
+    private Map<String, Integer> getGpuCoresMapping() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_GPU_CORES_MAPPING)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptyMap);
     }
 
     @Override
