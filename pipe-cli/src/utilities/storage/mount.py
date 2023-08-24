@@ -31,6 +31,7 @@ import psutil
 
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
+from src.utilities.ssh_operations import is_ssh_default_root_user_enabled
 
 if platform.system() == 'Windows':
     import win32api
@@ -159,6 +160,7 @@ class Mount(object):
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
+            fix_permissions = not is_ssh_default_root_user_enabled() or fix_permissions
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
             self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
                            log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
