@@ -42,8 +42,10 @@ import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.FileContentUtils;
 import com.epam.pipeline.utils.PosixPermissionUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -85,15 +87,16 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  * filesystem using {@link NFSStorageMounter}.
  */
 @Service
+@Slf4j
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
     private static final int DEFAULT_PAGE_SIZE = 1000;
-
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
+    private final AuthManager authManager;
     private final Set<PosixFilePermission> filePermissions;
     private final Set<PosixFilePermission> folderPermissions;
 
@@ -101,12 +104,14 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public NFSStorageProvider(final PreferenceManager preferenceManager,
                               final FileShareMountManager shareMountManager,
                               final NFSStorageMounter nfsStorageMounter,
+                              final AuthManager authManager,
                               @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
                               final MessageHelper messageHelper) {
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
         this.shareMountManager = shareMountManager;
         this.nfsStorageMounter = nfsStorageMounter;
+        this.authManager = authManager;
         final Set<PosixFilePermission> allowedPermissionsFromUMask =
                 PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
         // default mask for folders 777 -> no need for additional filtering
@@ -345,7 +350,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
             IOUtils.copy(dataStream, outputStream);
-            setUmask(file, filePermissions);
+            initFile(file, filePermissions);
         } catch (IOException e) {
             throw new DataStorageException(e);
         }
@@ -362,7 +367,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
         }
         try {
-            setUmask(folder, folderPermissions);
+            initFile(folder, folderPermissions);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_CANNOT_CREATE_FILE, folder.getPath()), e);
@@ -370,9 +375,15 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
-    private void setUmask(final File file, final Set<PosixFilePermission> permissions) throws IOException {
+    private void initFile(final File file, final Set<PosixFilePermission> permissions) throws IOException {
         if (!SystemUtils.IS_OS_WINDOWS) {
             Files.setPosixFilePermissions(file.toPath(), permissions);
+            if (!preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED)) {
+                Optional.ofNullable(authManager.getCurrentUser())
+                        .ifPresent(user ->
+                                nfsStorageMounter.chown(file, user,
+                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED)));
+            }
         }
     }
 
