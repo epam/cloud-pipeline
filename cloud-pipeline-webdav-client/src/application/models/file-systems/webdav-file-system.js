@@ -6,9 +6,19 @@ import FileSystem from './file-system';
 import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
-import cloudPipelineAPI from '../cloud-pipeline-api';
+import cloudPipelineAPI, { APIError, NetworkError } from '../cloud-pipeline-api';
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
+
+const formatStorageName = (storage) => (storage.name || '').replace(/-/g, '_');
+
+/**
+ * Count of paths to send immediate permissions request
+ * @type {number}
+ */
+const PERMISSIONS_REQUESTS_CHUNK_SIZE = 20;
+const PERMISSIONS_REQUESTS_DEBOUNCE_MS = 1000; // 1 sec
+const PERMISSIONS_REQUESTS_RETRY_TIMEOUT_MS = 10000; //10 sec
 
 class WebdavFileSystem extends FileSystem {
   constructor() {
@@ -28,7 +38,8 @@ class WebdavFileSystem extends FileSystem {
       ignoreCertificateErrors,
       maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
       pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds,
-      api
+      api,
+      updatePermissions = false
     } = webdavClientConfig || {};
     super(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds});
     this.username = username;
@@ -39,6 +50,8 @@ class WebdavFileSystem extends FileSystem {
     this.appName = appName;
     this.separator = '/';
     this.api = api;
+    this.permissionsRequests = [];
+    this._updatePermissions = updatePermissions;
     log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
     if (this.pingAfterCopy) {
       log(`Webdav client ping after copy operation config: ping ${pingTimeoutSeconds}sec. for ${maxWaitSeconds}sec.`);
@@ -46,6 +59,10 @@ class WebdavFileSystem extends FileSystem {
       log(`Webdav client ping after copy operation config: no ping (parameters: ${JSON.stringify({maxWaitSeconds, pingTimeoutSeconds})})`);
     }
   }
+  get updatePermissions() {
+    return this.pingAfterCopy && this._updatePermissions;
+  }
+
   reInitialize() {
     return new Promise((resolve, reject) => {
       let cfg;
@@ -63,7 +80,8 @@ class WebdavFileSystem extends FileSystem {
         certificates,
         ignoreCertificateErrors,
         maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
-        pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds
+        pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds,
+        updatePermissions = false
       } = webdavClientConfig || {};
       this.appName = appName;
       super.reInitialize(server, {maxWait: maxWaitSeconds, ping: pingTimeoutSeconds})
@@ -75,6 +93,7 @@ class WebdavFileSystem extends FileSystem {
           this.rootName = `${appName} Root`;
           this.separator = '/';
           this.appName = appName;
+          this._updatePermissions = updatePermissions;
           log(`Initializing webdav client: URL ${server}; IGNORE CERTIFICATE ERRORS: ${ignoreCertificateErrors}; USER: ${username}`);
           this.initialize()
             .then(resolve)
@@ -105,9 +124,91 @@ class WebdavFileSystem extends FileSystem {
         error(e);
         utilities.rejectError(reject)(e);
       }
+      if (!this.updatePermissions) {
+        this.clearPermissionsRequestsTimeout();
+        this.permissionsRequests = [];
+      }
+      if (this.updatePermissions) {
+        (this.sendPermissionsRequest)(0);
+      }
       this.updateStorages()
         .then(resolve);
     });
+  }
+
+  updateRemotePermissions(...request) {
+    if (!this.updatePermissions) {
+      return;
+    }
+    const objectStorageNames = (this.storages || [])
+      .filter(storage => !/^nfs$/i.test(storage.type))
+      .map(formatStorageName);
+    const filtered = request.filter((path) => {
+      const storageName = path.split('/').filter((o) => o.length)[0];
+      return !objectStorageNames.includes(storageName);
+    });
+    if (filtered.length > 0) {
+      const list = '\n\n'.concat(filtered.join('\n')).concat('\n\n');
+      log(`Permissions requests added (${this.permissionsRequests.length} in queue, ${filtered.length} added):${list}`);
+    }
+    this.permissionsRequests.push(...filtered);
+    (this.sendPermissionsRequest)(
+      this.permissionsRequests.length > PERMISSIONS_REQUESTS_CHUNK_SIZE
+        ? 0
+        : PERMISSIONS_REQUESTS_DEBOUNCE_MS
+    );
+    // filtered.forEach((path) => this.pushSinglePermissionRequest(path));
+  }
+
+  clearPermissionsRequestsTimeout() {
+    clearTimeout(this.permissionsRequestTimeout);
+    this.permissionsRequestTimeout = undefined;
+  }
+
+  sendPermissionsRequest(debounce = PERMISSIONS_REQUESTS_DEBOUNCE_MS) {
+    this.clearPermissionsRequestsTimeout();
+    if (this.permissionsRequests.length > 0 && this.updatePermissions) {
+      const send = () => {
+        const path = this.permissionsRequests.slice();
+        const list = '\n\n'.concat(path.join('\n')).concat('\n\n');
+        log(`Sending ${path.length} permission${path.length === 1 ? '' : 's'} requests:${list}`);
+        this.permissionsRequests = [];
+        return new Promise((resolve) => {
+          cloudPipelineAPI
+            .initialize()
+            .sendWebdavPermissionsRequest(path)
+            .then((result) => {
+              log(`${path.length} permission${path.length === 1 ? '' : 's'} requests sent: \n\n${result || ''}\n\n`);
+              resolve();
+              (this.sendPermissionsRequest)();
+            })
+            .catch((e) => {
+              if (e instanceof NetworkError) {
+                // we should retry
+                error(`Network error sending permissions request: ${e.message}`);
+                log(`Retrying in ${Math.floor(PERMISSIONS_REQUESTS_RETRY_TIMEOUT_MS / 10000) * 10} seconds.`);
+                this.permissionsRequests.push(...path);
+                (this.sendPermissionsRequest)(PERMISSIONS_REQUESTS_RETRY_TIMEOUT_MS);
+                resolve();
+              } else if (e instanceof APIError) {
+                error(`API error sending permissions request: ${e.message}`);
+                resolve();
+              } else {
+                error(`Error sending permissions request: ${e.message}`);
+                resolve();
+              }
+            });
+        });
+      };
+      if (debounce === 0) {
+        return send();
+      } else {
+        return new Promise((resolve) => {
+          this.permissionsRequestTimeout = setTimeout(() => send().then(resolve), debounce);
+        });
+      }
+    }
+    return Promise.resolve();
   }
 
   updateStorages(skip = false) {
@@ -136,7 +237,6 @@ class WebdavFileSystem extends FileSystem {
           }
           const parentDirectory = this.joinPath(...this.parsePath(directoryCorrected).slice(0, -1));
           log(`webdav: fetching directory "${directoryCorrected}" contents...`);
-          const formatStorageName = storage => (storage.name || '').replace(/-/g, '_');
           const goBackItem = {
             name: '..',
             path: parentDirectory,
@@ -176,8 +276,6 @@ class WebdavFileSystem extends FileSystem {
               log(`webdav: fetching directory "${directoryCorrected}" contents: ${contents.length} results:`);
               contents.map(c => log(c.filename));
               log('');
-              if (!directoryCorrected || !directoryCorrected.length) {
-              }
               resolve(
                 checkStorageType(
                   (
@@ -355,6 +453,7 @@ class WebdavFileSystem extends FileSystem {
             if (await this.webdavClient.exists(aDir) === false) {
               log('creating directory', aDir);
               await this.webdavClient.createDirectory(aDir);
+              this.updateRemotePermissions(aDir);
             }
           } catch (_) {
             log(`error creating directory: ${_.message}`);
@@ -415,6 +514,7 @@ class WebdavFileSystem extends FileSystem {
       this.webdavClient.createDirectory(name)
         .then(() => {
           log(`Creating directory ${name}: done`);
+          this.updateRemotePermissions(name);
           resolve();
         })
         .catch(e => {

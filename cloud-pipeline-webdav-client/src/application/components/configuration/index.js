@@ -35,6 +35,7 @@ class Configuration extends React.Component {
     modified: false,
     version: undefined,
     pingAfterCopy: false,
+    updatePermissions: false,
     maxWaitSeconds: undefined,
     pingTimeoutSeconds: undefined,
     pending: false,
@@ -63,7 +64,8 @@ class Configuration extends React.Component {
     let {
       maxWaitSeconds = copyPingConfiguration.maxWaitSeconds,
       pingTimeoutSeconds = copyPingConfiguration.pingTimeoutSeconds,
-      name
+      name,
+      updatePermissions = false
     } = webdavClientConfig;
     if (
       Number.isNaN(Number(maxWaitSeconds)) ||
@@ -89,6 +91,7 @@ class Configuration extends React.Component {
       version: webdavClientConfig.version,
       name,
       pingAfterCopy,
+      updatePermissions,
       maxWaitSeconds,
       pingTimeoutSeconds,
       pending: false,
@@ -131,6 +134,17 @@ class Configuration extends React.Component {
       pingAfterCopy,
       maxWaitSeconds,
       pingTimeoutSeconds,
+      modified: true
+    });
+  };
+
+  onUpdatePermissionsChanged = (e) => {
+    const updatePermissions = e.target.checked;
+    const cfg = electron.remote.getGlobal('webdavClient');
+    cfg.config.updatePermissions = updatePermissions;
+    writeWebDavConfiguration(cfg.config);
+    this.setState({
+      updatePermissions,
       modified: true
     });
   };
@@ -277,6 +291,7 @@ class Configuration extends React.Component {
       maxWaitSeconds,
       pingTimeoutSeconds,
       pingAfterCopy,
+      updatePermissions,
       pending,
       webDavDiagnoseFile,
       webDavDiagnoseState,
@@ -426,6 +441,20 @@ class Configuration extends React.Component {
                   onChange={this.onSettingChanged('pingTimeoutSeconds')}
                   size="small"
                 />
+              </div>
+            )
+          }
+          {
+            pingAfterCopy && (
+              <div
+                className="row"
+              >
+                <Checkbox
+                  checked={updatePermissions}
+                  onChange={this.onUpdatePermissionsChanged}
+                >
+                  Update destination file permissions after copy / create operation
+                </Checkbox>
               </div>
             )
           }

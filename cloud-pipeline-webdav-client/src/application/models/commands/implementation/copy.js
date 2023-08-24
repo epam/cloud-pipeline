@@ -81,6 +81,7 @@ class CopyOperation extends Operation {
             )
               .then(() => destinationAdapter.ensurePathExists(element.to))
               .then(() => {
+                destinationAdapter.updateRemotePermissions(element.to);
                 progressCallback(100);
                 resolve();
               })
