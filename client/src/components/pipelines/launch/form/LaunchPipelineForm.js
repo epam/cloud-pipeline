@@ -141,6 +141,7 @@ import EnumerationParameter from './enumeration-parameter';
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
+import instanceInfoString from '../../../../utils/instanceInfoString';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -3648,10 +3649,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    const instanceTypeStr = (t) => ([
-      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, `,
-      `RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`
-    ]).join('');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3702,9 +3699,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             <Select.Option
                               key={t.sku}
                               value={t.name}
-                              title={instanceTypeStr(t)}
+                              title={instanceInfoString(t, this.hyperThreadingDisabled)}
                             >
-                              {instanceTypeStr(t)}
+                              {instanceInfoString(t, this.hyperThreadingDisabled)}
                             </Select.Option>
                           )
                       }

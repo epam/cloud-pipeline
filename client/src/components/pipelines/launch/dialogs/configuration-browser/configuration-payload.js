@@ -41,6 +41,7 @@ import ParametersLimitMounts from './parameters/limit-mounts';
 import JobNotifications from '../job-notifications';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import {mapObservableNotification} from '../job-notifications/job-notification';
+import instanceInfoString from '../../../../../utils/instanceInfoString';
 
 function getConfigurationPayload (entry) {
   if (!entry) {
@@ -554,8 +555,6 @@ class ConfigurationPayload extends React.Component {
       }
     }, this.reportChanged);
     const families = [...new Set(instanceTypes.map(o => o.instanceFamily))];
-    const instanceTypeStr = (t) =>
-      `${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
     return (
       <div
         className={styles.row}
@@ -588,9 +587,9 @@ class ConfigurationPayload extends React.Component {
                       <Select.Option
                         key={anInstanceType.name}
                         value={anInstanceType.name}
-                        title={instanceTypeStr(anInstanceType)}
+                        title={instanceInfoString(anInstanceType)}
                       >
-                        {instanceTypeStr(anInstanceType)}
+                        {instanceInfoString(anInstanceType)}
                       </Select.Option>
                     ))
                 }

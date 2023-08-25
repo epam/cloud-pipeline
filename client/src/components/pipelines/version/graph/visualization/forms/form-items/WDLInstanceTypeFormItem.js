@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import {Checkbox, Row, Select} from 'antd';
 import {quotesFn} from '../utilities';
 import {names} from '../../../../../../../models/utils/ContextualPreference';
+import instanceInfoString from '../../../../../../../utils/instanceInfoString';
 
 @observer
 export class WDLInstanceTypeFormItem extends React.Component {
@@ -171,8 +172,9 @@ export class WDLInstanceTypeFormItem extends React.Component {
                           .map(t =>
                             <Select.Option
                               key={t.sku}
-                              value={t.name}>
-                              {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}`: ''})
+                              value={t.name}
+                            >
+                              {instanceInfoString(t)}
                             </Select.Option>
                           )
                       }

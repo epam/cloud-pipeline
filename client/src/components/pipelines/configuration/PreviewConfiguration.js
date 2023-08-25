@@ -27,6 +27,7 @@ import pipelines from '../../../models/pipelines/Pipelines';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import styles from './PreviewConfiguration.css';
 import HiddenObjects from '../../../utils/hidden-objects';
+import instanceInfoString from '../../../utils/instanceInfoString';
 
 const EXEC_ENVIRONMENT = 'exec';
 const ADVANCED = 'advanced';
@@ -144,14 +145,6 @@ export default class PreviewConfiguration extends Component {
     const [instanceType] = (this.selectedEntry.configuration.is_spot
       ? this.props.spotInstanceTypes.value
       : this.props.onDemandInstanceTypes.value).filter(i => i.name === instance);
-    if (instanceType) {
-      instance = `${instanceType.name} (CPU: ${instanceType.vcpu}, RAM: ${instanceType.memory}`;
-      if (instanceType.gpu > 0) {
-        instance = `${instance}, GPU: ${instanceType.gpu})`;
-      } else {
-        instance = `${instance})`;
-      }
-    }
     res.push(
       <tr key={'instance_size_key'} className={styles.keyRow}>
         <td
@@ -163,7 +156,7 @@ export default class PreviewConfiguration extends Component {
       </tr>,
       <tr key={'instance_size_value'} className={styles.valueRow}>
         <td id={'value-column-instance_size'} colSpan={6}>
-          {instance}
+          {instanceInfoString(instanceType)}
         </td>
       </tr>,
       this.getDivider('instance_size_divider', 6)

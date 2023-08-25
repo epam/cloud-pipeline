@@ -100,6 +100,7 @@ import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
 import {getValidationError} from '../elements/EndpointInput';
+import instanceInfoString from '../../../utils/instanceInfoString';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -1233,10 +1234,11 @@ export default class EditToolForm extends React.Component {
                                   .filter(t => t.instanceFamily === instanceFamily)
                                   .map(t =>
                                     <Select.Option
-                                      title={`${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
+                                      title={instanceInfoString(t, this.hyperThreadingDisabled)}
                                       key={t.sku}
-                                      value={t.name}>
-                                      {t.name} (CPU: {this.cpuMapper(t.vcpu)}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
+                                      value={t.name}
+                                    >
+                                      {instanceInfoString(t, this.hyperThreadingDisabled)}
                                     </Select.Option>
                                   )
                               }

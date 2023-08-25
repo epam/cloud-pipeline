@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Select} from 'antd';
+import instanceInfoString from '../../../../../utils/instanceInfoString';
 
 function parseCPUConfiguration (configuration) {
   const {
@@ -183,8 +184,6 @@ const InstanceTypeSelector = (
     gpu = false
   }
 ) => {
-  const instanceTypeStr = (t) =>
-    `${t.name} (CPU: ${t.vcpu}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
   const sorted = instanceTypes.filter(t => !gpu || t.gpu);
   return (
     <Select
@@ -208,9 +207,9 @@ const InstanceTypeSelector = (
                       <Select.Option
                         key={t.sku}
                         value={t.name}
-                        title={instanceTypeStr(t)}
+                        title={instanceInfoString(t)}
                       >
-                        {instanceTypeStr(t)}
+                        {instanceInfoString(t)}
                       </Select.Option>
                     )
                 }

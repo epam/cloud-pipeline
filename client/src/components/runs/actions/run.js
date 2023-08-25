@@ -66,6 +66,7 @@ import ToolLayersCheckWarning from './check/tool-layers/warning';
 import DiskSizeWarning from './warnings/disk-size-warning';
 import PersonalToolWarning from './warnings/personal-tool-warning';
 import CudaWarning from './warnings/cuda-warning';
+import instanceInfoString from '../../../utils/instanceInfoString';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -1048,8 +1049,7 @@ export class RunConfirmation extends React.Component {
                                     key={t.sku}
                                     value={t.name}
                                   >
-                                    {/* eslint-disable-next-line max-len */}
-                                    {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
+                                    {instanceInfoString(t)}
                                   </Select.Option>
                                 )
                             }
