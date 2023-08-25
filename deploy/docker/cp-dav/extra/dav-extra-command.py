@@ -66,6 +66,7 @@ def verify_token():
     sub = payload['sub'].upper() if 'sub' in payload else None
     if not sub:
         raise RuntimeError('No user name is set in the token')
+    sub = sub.split('@')[0]
 
     user_id = int(payload['user_id']) if 'user_id' in payload else None
     if not user_id:
