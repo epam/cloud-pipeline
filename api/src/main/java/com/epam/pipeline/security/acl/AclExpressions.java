@@ -156,6 +156,9 @@ public final class AclExpressions {
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
 
+    public static final String NODE_USAGE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodeUsagePermission(#name, 'READ')";
+
     public static final String NODE_READ_FILTER = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(filterObject, 'READ')";
     

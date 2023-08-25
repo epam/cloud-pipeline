@@ -57,6 +57,7 @@ import com.epam.pipeline.entity.security.acl.AclSid;
 import com.epam.pipeline.entity.security.acl.EntityPermission;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.exception.cluster.NodeNotFoundException;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -632,6 +633,23 @@ public class GrantPermissionManager {
             node.setMask(node.getPipelineRun().getMask());
         }
         return allowed;
+    }
+
+    public boolean nodeUsagePermission(String nodeName, String permissionName) {
+        try {
+            final NodeInstance nodeInstance = nodesManager.getNode(nodeName);
+            // not labeled nodes are available only for admins
+            if (nodeInstance.getPipelineRun() == null) {
+                return false;
+            }
+            return runPermissionManager.runPermission(nodeInstance.getPipelineRun().getId(), permissionName);
+        } catch (NodeNotFoundException e) {
+            if (permissionName.equals(READ)) {
+                LOGGER.debug("Failed to find node {}, still allowing usage read access.", nodeName);
+                return true;
+            }
+            return false;
+        }
     }
 
     public boolean nodePermission(String nodeName, String permissionName) {

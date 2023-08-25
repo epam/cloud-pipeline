@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.exception.cluster.NodeNotFoundException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -180,7 +181,7 @@ public class NodesManager {
     }
 
     public NodeInstance getNode(String name, FilterPodsRequest request) {
-        return findNode(name, request).orElseThrow(() -> new IllegalArgumentException(
+        return findNode(name, request).orElseThrow(() -> new NodeNotFoundException(
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
     }
 
