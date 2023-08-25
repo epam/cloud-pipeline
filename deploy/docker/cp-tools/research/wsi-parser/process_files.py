@@ -829,6 +829,14 @@ class WsiFileTagProcessor:
                 return STAIN_METHOD_MAPPINGS[stain_mapping]
         if stain_method == 'HE' and not tags.get(STAIN_CAT_ATTR_NAME):
             return 'General'
+        if stain_method == 'IBA1':
+            if not tags.get(STAIN_CAT_ATTR_NAME):
+                tags[STAIN_CAT_ATTR_NAME] = {stain_method}
+            return 'IHC'
+        if stain_method == 'LFB':
+            if not tags.get(STAIN_CAT_ATTR_NAME):
+                tags[STAIN_CAT_ATTR_NAME] = {stain_method}
+            return 'Special'
         return UNK
 
     @staticmethod
