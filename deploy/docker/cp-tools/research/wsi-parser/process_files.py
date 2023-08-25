@@ -816,7 +816,7 @@ class WsiFileTagProcessor:
             tags[STAIN_CAT_ATTR_NAME] = self._prepare_general_stain_tag(tags.get(STAIN_CAT_ATTR_NAME, None))
             return
         if stain_method == 'Special' or stain_method == 'IHC':
-            if tags[STAIN_CAT_ATTR_NAME]:
+            if tags.get(STAIN_CAT_ATTR_NAME):
                 tags[STAIN_CAT_ATTR_NAME] = set([str(stain).strip().upper() for stain in tags[STAIN_CAT_ATTR_NAME]])
 
     @staticmethod
