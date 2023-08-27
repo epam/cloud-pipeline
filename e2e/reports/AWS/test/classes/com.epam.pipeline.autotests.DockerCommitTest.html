@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">2h4m37.42s</div>
+<div class="counter">1h21m40.74s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">92%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,56 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
-</li>
-<li>
-<a href="#tab2">Standard output</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="validateDisableCommitFunction - 2338"></a>
-<h3 class="failures">validateDisableCommitFunction - 2338</h3>
-<span class="code">
-<pre>Element should not be visible {By.tagName: a.findBy(exact text 'COMMIT')}
-Element: '&lt;a&gt;COMMIT&lt;/a&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1692501692177.15.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1692501692177.15.html
-Timeout: 210 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:63)
-	at com.codeborne.selenide.commands.ShouldNot.shouldNot(ShouldNot.java:36)
-	at com.codeborne.selenide.commands.ShouldNot.execute(ShouldNot.java:29)
-	at com.codeborne.selenide.commands.ShouldNot.execute(ShouldNot.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldNotBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.LogAO.assertCommitButtonIsNotVisible(LogAO.java:159)
-	at com.epam.pipeline.autotests.DockerCommitTest.lambda$validateDisableCommitFunction$33(DockerCommitTest.java:410)
-	at com.epam.pipeline.autotests.ao.RunsMenuAO.log(RunsMenuAO.java:149)
-	at com.epam.pipeline.autotests.DockerCommitTest.validateDisableCommitFunction(DockerCommitTest.java:410)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -122,97 +79,97 @@ Timeout: 210 s.
 </thead>
 <tr>
 <td class="success">checkListOfRegistry - EPMCMBIBPC-693</td>
-<td>2.867s</td>
+<td>2.824s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">commitDockerValidation - EPMCMBIBPC-694</td>
-<td>12m55.52s</td>
+<td>14m36.12s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">listOfGroupInRegistry - EPMCMBIBPC-1350</td>
-<td>2.408s</td>
+<td>2.314s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">pushDockerFormValidation - EPMCMBIBPC-692</td>
-<td>12m2.81s</td>
+<td>5m5.07s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommitDockerImageWithTag - EPMCMBIBPC-1408</td>
-<td>2m35.10s</td>
+<td>2m26.57s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDocker - EPMCMBIBPC-695</td>
-<td>19m1.57s</td>
+<td>12m37.46s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInGroup - EPMCMBIBPC-1353</td>
-<td>22m2.23s</td>
+<td>15m23.42s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerInPersonalGroup - EPMCMBIBPC-1352</td>
-<td>27m14.88s</td>
+<td>20m45.59s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateCommittedDockerThatHadEnabledDeleteRuntimeFilesFlag - EPMCMBIBPC-697</td>
-<td>47.165s</td>
+<td>40.811s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateDeleteRuntimeFilesFlagWorksProperly - EPMCMBIBPC-724</td>
-<td>3m44.57s</td>
+<td>3m20.74s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">validateDisableCommitFunction - 2338</td>
-<td>19m25.24s</td>
-<td class="failures">failed</td>
+<td class="success">validateDisableCommitFunction - 2338</td>
+<td>2m8.07s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateLaunchSpecificVersion - EPMCMBIBPC-1409</td>
-<td>44.528s</td>
+<td>36.308s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateStopPipelineFlagWorksProperly - EPMCMBIBPC-696</td>
-<td>3m58.54s</td>
+<td>3m55.43s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab2" class="tab">
+<div id="tab1" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 48865 from [48865]
-Returns latest run with runId 48865 from [48865]
-Returns latest run with runId 48865 from [48865]
-Returns latest run with runId 48865 from [48865]
-Returns latest run with runId 48866 from [48865, 48866]
-Returns latest run with runId 48866 from [48865, 48866]
-Returns latest run with runId 48866 from [48865, 48866]
-Returns latest run with runId 48867 from [48865, 48866, 48867]
-Returns latest run with runId 48868 from [48865, 48866, 48867, 48868]
-Returns latest run with runId 48869 from [48865, 48866, 48867, 48868, 48869]
-Returns latest run with runId 48869 from [48865, 48866, 48867, 48868, 48869]
-Returns latest run with runId 48870 from [48865, 48866, 48867, 48868, 48869, 48870]
-Returns latest run with runId 48870 from [48865, 48866, 48867, 48868, 48869, 48870]
-Returns latest run with runId 48870 from [48865, 48866, 48867, 48868, 48869, 48870]
-Returns latest run with runId 48871 from [48865, 48866, 48867, 48868, 48869, 48870, 48871]
-Returns latest run with runId 48871 from [48865, 48866, 48867, 48868, 48869, 48870, 48871]
-Returns latest run with runId 48871 from [48865, 48866, 48867, 48868, 48869, 48870, 48871]
-Returns latest run with runId 48872 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872]
-Returns latest run with runId 48872 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872]
-Returns latest run with runId 48873 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872, 48873]
-Returns latest run with runId 48873 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872, 48873]
-Returns latest run with runId 48874 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872, 48873, 48874]
-Returns latest run with runId 48875 from [48865, 48866, 48867, 48868, 48869, 48870, 48871, 48872, 48873, 48874, 48875]
+<pre>Returns latest run with runId 49174 from [49174]
+Returns latest run with runId 49174 from [49174]
+Returns latest run with runId 49174 from [49174]
+Returns latest run with runId 49174 from [49174]
+Returns latest run with runId 49175 from [49174, 49175]
+Returns latest run with runId 49175 from [49174, 49175]
+Returns latest run with runId 49175 from [49174, 49175]
+Returns latest run with runId 49176 from [49174, 49175, 49176]
+Returns latest run with runId 49177 from [49174, 49175, 49176, 49177]
+Returns latest run with runId 49178 from [49174, 49175, 49176, 49177, 49178]
+Returns latest run with runId 49178 from [49174, 49175, 49176, 49177, 49178]
+Returns latest run with runId 49179 from [49174, 49175, 49176, 49177, 49178, 49179]
+Returns latest run with runId 49179 from [49174, 49175, 49176, 49177, 49178, 49179]
+Returns latest run with runId 49179 from [49174, 49175, 49176, 49177, 49178, 49179]
+Returns latest run with runId 49180 from [49174, 49175, 49176, 49177, 49178, 49179, 49180]
+Returns latest run with runId 49180 from [49174, 49175, 49176, 49177, 49178, 49179, 49180]
+Returns latest run with runId 49180 from [49174, 49175, 49176, 49177, 49178, 49179, 49180]
+Returns latest run with runId 49181 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181]
+Returns latest run with runId 49181 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181]
+Returns latest run with runId 49182 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181, 49182]
+Returns latest run with runId 49182 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181, 49182]
+Returns latest run with runId 49183 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181, 49182, 49183]
+Returns latest run with runId 49184 from [49174, 49175, 49176, 49177, 49178, 49179, 49180, 49181, 49182, 49183, 49184]
 </pre>
 </span>
 </div>
@@ -224,7 +181,7 @@ Returns latest run with runId 48875 from [48865, 48866, 48867, 48868, 48869, 488
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 21, 2023 8:52:38 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 27, 2023 11:32:31 PM</p>
 </div>
 </div>
 </body>
