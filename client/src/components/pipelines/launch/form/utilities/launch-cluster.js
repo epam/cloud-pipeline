@@ -584,16 +584,21 @@ class ConfigureClusterDialog extends React.Component {
   renderGPUScalingParameter = (value, onChange, gpu = false) => {
     const {hybridAutoScaledClusterEnabled: hybrid} = this.state;
     const label = (
-      <span style={{marginLeft: LEFT_MARGIN, marginRight: 5}}>
+      <span style={{marginLeft: LEFT_MARGIN, marginRight: 5, whiteSpace: 'nowrap'}}>
         {gpu ? 'GPU' : 'CPU'} {hybrid ? 'family' : 'instance'}:
       </span>
     );
     return (
       <Row
         key={`gpu-scaling-${gpu ? 'gpu' : 'cpu'}-family`}
-        type="flex"
-        align="middle"
-        style={{marginTop: 5, paddingRight: 15}}
+        style={{
+          marginTop: 5,
+          paddingRight: 15,
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          width: '100%'
+        }}
       >
         {label}
         {
@@ -607,13 +612,15 @@ class ConfigureClusterDialog extends React.Component {
         }
         {
           !hybrid && (
-            <InstanceTypeSelector
-              value={value}
-              onChange={onChange}
-              instanceTypes={this.props.instanceTypes}
-              gpu={gpu}
-              style={{flex: 1}}
-            />
+            <div style={{flex: 1, overflow: 'auto'}}>
+              <InstanceTypeSelector
+                value={value}
+                onChange={onChange}
+                instanceTypes={this.props.instanceTypes}
+                gpu={gpu}
+                style={{width: '100%'}}
+              />
+            </div>
           )
         }
       </Row>
