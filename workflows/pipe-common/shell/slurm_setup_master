@@ -53,7 +53,8 @@ TaskPlugin=task/none
 
 # SCHEDULING
 SchedulerType=sched/backfill
-SelectType=select/linear
+SelectType=select/cons_tres
+SelectTypeParameters=CR_CPU
 
 # LOGGING AND ACCOUNTING
 ClusterName=cloudpipeline
