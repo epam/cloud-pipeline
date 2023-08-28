@@ -100,7 +100,7 @@ import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
 import {getValidationError} from '../elements/EndpointInput';
-import instanceInfoString from '../../../utils/instanceInfoString';
+import {getSelectOptions} from '../../special/instance-type-info';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -1222,30 +1222,7 @@ export default class EditToolForm extends React.Component {
                     filterOption={
                       (input, option) =>
                       option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                    {
-                      this.allowedInstanceTypes
-                        .map(t => t.instanceFamily)
-                        .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                        .map(instanceFamily => {
-                          return (
-                            <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
-                              {
-                                this.allowedInstanceTypes
-                                  .filter(t => t.instanceFamily === instanceFamily)
-                                  .map(t =>
-                                    <Select.Option
-                                      title={instanceInfoString(t, this.hyperThreadingDisabled)}
-                                      key={t.sku}
-                                      value={t.name}
-                                    >
-                                      {instanceInfoString(t, this.hyperThreadingDisabled)}
-                                    </Select.Option>
-                                  )
-                              }
-                            </Select.OptGroup>
-                          );
-                        })
-                    }
+                    {getSelectOptions(this.allowedInstanceTypes)}
                   </Select>
                 )}
               </Form.Item>

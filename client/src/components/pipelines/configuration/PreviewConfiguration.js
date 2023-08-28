@@ -21,13 +21,13 @@ import PropTypes from 'prop-types';
 import {Alert, Collapse, Icon, Row} from 'antd';
 import LoadingView from '../../special/LoadingView';
 import {getSpotTypeName} from '../../special/spot-instance-names';
+import {instanceInfoString} from '../../special/instance-type-info';
 import connect from '../../../utils/connect';
 import configurations from '../../../models/configuration/Configurations';
 import pipelines from '../../../models/pipelines/Pipelines';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import styles from './PreviewConfiguration.css';
 import HiddenObjects from '../../../utils/hidden-objects';
-import instanceInfoString from '../../../utils/instanceInfoString';
 
 const EXEC_ENVIRONMENT = 'exec';
 const ADVANCED = 'advanced';
@@ -37,18 +37,24 @@ const SYSTEM_PARAMETERS = 'systemParameters';
 @connect({configurations, pipelines})
 @inject('cloudProviders')
 @HiddenObjects.checkConfigurations(props => props?.configurationId)
-@inject(({cloudProviders, configurations, runDefaultParameters, pipelines, onDemandInstanceTypes, spotInstanceTypes}, params) => {
-  return {
+@inject((
+  {
     cloudProviders,
-    configuration: configurations.getConfiguration(params.configurationId),
-    configurationsCache: configurations,
-    entitiesTypes: new MetadataClassLoadAll(),
+    configurations,
     runDefaultParameters,
     pipelines,
     onDemandInstanceTypes,
     spotInstanceTypes
-  };
-})
+  }, params) => ({
+  cloudProviders,
+  configuration: configurations.getConfiguration(params.configurationId),
+  configurationsCache: configurations,
+  entitiesTypes: new MetadataClassLoadAll(),
+  runDefaultParameters,
+  pipelines,
+  onDemandInstanceTypes,
+  spotInstanceTypes
+}))
 @observer
 export default class PreviewConfiguration extends Component {
   static propTypes = {
@@ -68,8 +74,12 @@ export default class PreviewConfiguration extends Component {
   selectedRootEntity = null;
 
   @computed
-  get currentCloudProvider() {
-    if (this.selectedEntry && this.selectedEntry.configuration && this.props.cloudProviders.loaded) {
+  get currentCloudProvider () {
+    if (
+      this.selectedEntry &&
+      this.selectedEntry.configuration &&
+      this.props.cloudProviders.loaded
+    ) {
       const [provider] = (this.props.cloudProviders.value || [])
         .filter(p => p.id === this.selectedEntry.configuration.cloudProviderId);
       return provider;
@@ -156,7 +166,7 @@ export default class PreviewConfiguration extends Component {
       </tr>,
       <tr key={'instance_size_value'} className={styles.valueRow}>
         <td id={'value-column-instance_size'} colSpan={6}>
-          {instanceInfoString(instanceType)}
+          {instanceInfoString(instanceType, {plainText: false})}
         </td>
       </tr>,
       this.getDivider('instance_size_divider', 6)
@@ -513,9 +523,13 @@ export default class PreviewConfiguration extends Component {
       (this.selectedPipeline && this.selectedPipeline.pending)) {
       return <LoadingView />;
     }
-    if (this.props.configuration.error || this.props.onDemandInstanceTypes.error || this.props.spotInstanceTypes.error ||
+    if (
+      this.props.configuration.error ||
+      this.props.onDemandInstanceTypes.error ||
+      this.props.spotInstanceTypes.error ||
       this.props.entitiesTypes.error ||
-      (this.selectedPipeline && this.selectedPipeline.error)) {
+      (this.selectedPipeline && this.selectedPipeline.error)
+    ) {
       const errors = [
         this.props.configuration.error || false,
         this.props.onDemandInstanceTypes.error || false,
@@ -549,4 +563,3 @@ export default class PreviewConfiguration extends Component {
     this.initialize();
   }
 }
-

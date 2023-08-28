@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {Select} from 'antd';
-import instanceInfoString from '../../../../../utils/instanceInfoString';
+import {getSelectOptions} from '../../../../special/instance-type-info';
 
 function parseCPUConfiguration (configuration) {
   const {
@@ -191,32 +191,7 @@ const InstanceTypeSelector = (
       style={style}
       onChange={onChange}
     >
-      {
-        sorted
-          .map(t => t.instanceFamily)
-          .filter((familyName, index, array) => array.indexOf(familyName) === index)
-          .map(instanceFamily => {
-            return (
-              <Select.OptGroup
-                key={instanceFamily || 'Other'}
-                label={instanceFamily || 'Other'} >
-                {
-                  sorted
-                    .filter(t => t.instanceFamily === instanceFamily)
-                    .map(t =>
-                      <Select.Option
-                        key={t.sku}
-                        value={t.name}
-                        title={instanceInfoString(t)}
-                      >
-                        {instanceInfoString(t)}
-                      </Select.Option>
-                    )
-                }
-              </Select.OptGroup>
-            );
-          })
-      }
+      {getSelectOptions(sorted)}
     </Select>
   );
 };

@@ -21,11 +21,10 @@ import {computed} from 'mobx';
 import {Checkbox, Row, Select} from 'antd';
 import {quotesFn} from '../utilities';
 import {names} from '../../../../../../../models/utils/ContextualPreference';
-import instanceInfoString from '../../../../../../../utils/instanceInfoString';
+import {getSelectOptions} from '../../../../../../special/instance-type-info';
 
 @observer
 export class WDLInstanceTypeFormItem extends React.Component {
-
   static propTypes = {
     value: PropTypes.string,
     onChange: PropTypes.func,
@@ -159,29 +158,7 @@ export class WDLInstanceTypeFormItem extends React.Component {
             filterOption={
               (input, option) =>
                 option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-            {
-              this.instanceTypes
-                .map(t => t.instanceFamily)
-                .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                .map(instanceFamily => {
-                  return (
-                    <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
-                      {
-                        this.instanceTypes
-                          .filter(t => t.instanceFamily === instanceFamily)
-                          .map(t =>
-                            <Select.Option
-                              key={t.sku}
-                              value={t.name}
-                            >
-                              {instanceInfoString(t)}
-                            </Select.Option>
-                          )
-                      }
-                    </Select.OptGroup>
-                  );
-                })
-            }
+            {getSelectOptions(this.instanceTypes)}
           </Select>
         }
         {

@@ -41,7 +41,7 @@ import ParametersLimitMounts from './parameters/limit-mounts';
 import JobNotifications from '../job-notifications';
 import AWSRegionTag from '../../../../special/AWSRegionTag';
 import {mapObservableNotification} from '../job-notifications/job-notification';
-import instanceInfoString from '../../../../../utils/instanceInfoString';
+import {getSelectOptions} from '../../../../special/instance-type-info';
 
 function getConfigurationPayload (entry) {
   if (!entry) {
@@ -554,7 +554,6 @@ class ConfigurationPayload extends React.Component {
         instance_size: newInstanceType
       }
     }, this.reportChanged);
-    const families = [...new Set(instanceTypes.map(o => o.instanceFamily))];
     return (
       <div
         className={styles.row}
@@ -574,28 +573,7 @@ class ConfigurationPayload extends React.Component {
           disabled={disabled || (instanceTypesPending && instanceTypes.length === 0)}
           onChange={onChange}
         >
-          {
-            families.map(family => (
-              <Select.OptGroup
-                key={family || 'Other'}
-                label={family || 'Other'}
-              >
-                {
-                  instanceTypes
-                    .filter(o => o.instanceFamily === family)
-                    .map(anInstanceType => (
-                      <Select.Option
-                        key={anInstanceType.name}
-                        value={anInstanceType.name}
-                        title={instanceInfoString(anInstanceType)}
-                      >
-                        {instanceInfoString(anInstanceType)}
-                      </Select.Option>
-                    ))
-                }
-              </Select.OptGroup>
-            ))
-          }
+          {getSelectOptions(instanceTypes)}
         </Select>
       </div>
     );
