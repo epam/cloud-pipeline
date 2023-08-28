@@ -65,14 +65,10 @@ function getGPUPresentation (instance) {
   if (gpuDevice) {
     const {
       manufacturer,
-      name: gpuDeviceName,
-      cores
+      name: gpuDeviceName
     } = gpuDevice;
     if (manufacturer || name) {
       parts.push([manufacturer, gpuDeviceName].filter(Boolean).join(' '));
-      if (cores) {
-        parts.push(`${cores} cores`);
-      }
     }
   }
   if (parts.length > 0) {
