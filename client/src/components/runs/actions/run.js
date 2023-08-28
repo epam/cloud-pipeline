@@ -66,6 +66,7 @@ import ToolLayersCheckWarning from './check/tool-layers/warning';
 import DiskSizeWarning from './warnings/disk-size-warning';
 import PersonalToolWarning from './warnings/personal-tool-warning';
 import CudaWarning from './warnings/cuda-warning';
+import {getSelectOptions} from '../../special/instance-type-info';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -1030,33 +1031,7 @@ export class RunConfirmation extends React.Component {
                     .indexOf(input.toLowerCase()) >= 0
                   }
                 >
-                  {
-                    this.getInstanceTypes()
-                      .map(t => t.instanceFamily)
-                      .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                      .map(instanceFamily => {
-                        return (
-                          <Select.OptGroup
-                            key={instanceFamily || 'Other'}
-                            label={instanceFamily || 'Other'}
-                          >
-                            {
-                              this.getInstanceTypes()
-                                .filter(t => t.instanceFamily === instanceFamily)
-                                .map(t =>
-                                  <Select.Option
-                                    key={t.sku}
-                                    value={t.name}
-                                  >
-                                    {/* eslint-disable-next-line max-len */}
-                                    {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
-                                  </Select.Option>
-                                )
-                            }
-                          </Select.OptGroup>
-                        );
-                      })
-                  }
+                  {getSelectOptions(this.getInstanceTypes())}
                 </Select>
               </div>
             } />

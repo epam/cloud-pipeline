@@ -45,7 +45,7 @@ function getPaths (parameters) {
   return Object.values(parameters || {})
     .filter(v => types.indexOf(v.type) >= 0)
     .map(v => v.value)
-    .reduce((paths, value) => ([...paths, ...value.split(',')]), [])
+    .reduce((paths, value) => ([...paths, ...(value || '').split(',')]), [])
     .map(v => v.trim())
     .filter(filterUnique);
 }
