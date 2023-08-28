@@ -138,6 +138,7 @@ import {mapObservableNotification} from '../dialogs/job-notifications/job-notifi
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
+import {getSelectOptions} from '../../../special/instance-type-info';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -3542,10 +3543,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    const instanceTypeStr = (t) => ([
-      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, `,
-      `RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`
-    ]).join('');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3581,30 +3578,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               (input, option) =>
                 option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
-              this.instanceTypes
-                .map(t => t.instanceFamily)
-                .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                .map(instanceFamily => {
-                  return (
-                    <Select.OptGroup
-                      key={instanceFamily || 'Other'}
-                      label={instanceFamily || 'Other'} >
-                      {
-                        this.instanceTypes
-                          .filter(t => t.instanceFamily === instanceFamily)
-                          .map(t =>
-                            <Select.Option
-                              key={t.sku}
-                              value={t.name}
-                              title={instanceTypeStr(t)}
-                            >
-                              {instanceTypeStr(t)}
-                            </Select.Option>
-                          )
-                      }
-                    </Select.OptGroup>
-                  );
-                })
+              getSelectOptions(
+                this.instanceTypes,
+                {
+                  hyperThreadingDisabled: this.hyperThreadingDisabled
+                }
+              )
             }
           </Select>
         )}
