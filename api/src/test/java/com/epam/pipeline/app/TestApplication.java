@@ -184,6 +184,9 @@ public class TestApplication {
     @MockBean
     public StorageEventCollector events;
 
+    @MockBean
+    public InstanceOfferScheduler instanceOfferScheduler;
+
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
 
