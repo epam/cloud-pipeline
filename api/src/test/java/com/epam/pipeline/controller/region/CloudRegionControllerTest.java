@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.region;
 
+import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
@@ -52,6 +53,8 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
     private static final String LOAD_REGIONS_INFO_URL = REGION_URL + "/info";
     private static final String LOAD_AVAILABLE_REGIONS_URL = REGION_URL + "/available";
     private static final String REGION_ID_URL = REGION_URL + "/%d";
+    private static final String REGION_ID_PRICE_URL = REGION_ID_URL + "/price";
+
     private final AwsRegion awsRegion = RegionCreatorUtils.getDefaultAwsRegion();
     private final AWSRegionDTO awsRegionDTO = RegionCreatorUtils.getDefaultAwsRegionDTO();
     private final AzureRegion azureRegion = RegionCreatorUtils.getDefaultAzureRegion();
@@ -61,6 +64,9 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
 
     @Autowired
     private CloudRegionApiService mockCloudRegionApiService;
+
+    @Autowired
+    private InstanceOfferApiService mockInstanceOfferApiService;
 
     @Test
     public void shouldFailLoadProvidersForUnauthorizedUser() throws Exception {
@@ -315,5 +321,15 @@ public class CloudRegionControllerTest extends AbstractControllerTest {
         Mockito.verify(mockCloudRegionApiService).delete(ID);
 
         assertResponse(mvcResult, gcpRegion, RegionCreatorUtils.GCP_REGION_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldUpdatePriceList() throws Exception {
+        final MvcResult mvcResult = performRequest(post(String.format(REGION_ID_PRICE_URL, ID)));
+
+        Mockito.verify(mockInstanceOfferApiService).updatePriceList(ID);
+
+        assertResponse(mvcResult);
     }
 }
