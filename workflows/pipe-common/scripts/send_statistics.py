@@ -42,6 +42,7 @@ TYPE_GPU = 'GPU'
 TYPE_CPU = 'CPU'
 COST = 'Cost ($)'
 DURATION_HOURS = 'Duration (hours)'
+RUN_ID = "Run"
 ROUND = 4
 
 EMAIL_TEMPLATE = '{text}'
@@ -353,7 +354,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Usage costs: {}.'.format(usage_costs))
     usage_weight = usage_costs / platform_usage_costs
     logger.info('Usage weight: {}.'.format(usage_weight))
-    clusters_compute_secs = _get_cluster_compute_secs(api, from_date_time, to_date_time, user)
+    clusters_compute_secs = _get_cluster_compute_secs(api, from_date_time, to_date_time, user, runs)
     logger.info('Clusters compute seconds: {}.'.format(clusters_compute_secs))
     worker_nodes_count = _get_worker_nodes_count(api, from_date_time, to_date_time, user)
     logger.info('Clusters worker nodes count: {}.'.format(worker_nodes_count))
@@ -368,7 +369,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Top 3 Tools: {}.'.format(top3_tools))
     top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user_id)
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
-    top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities)
+    top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities, runs)
     logger.info('Top 3 Capabilities: {}.'.format(top3_run_capabilities))
     return Stat(compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                 gpu_hours, clusters_compute_secs, worker_nodes_count,
@@ -425,28 +426,29 @@ def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
     return storage_usage.get(user)
 
 
-def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
+def _calculate_runs_duration_seconds(filter_runs, billing_runs_stat):
+    total_time = 0
+    if not filter_runs:
+        return total_time
+    filter_run_ids = [int(run.get('id')) for run in filter_runs]
+    for run in billing_runs_stat:
+        run_id = int(run.get(RUN_ID))
+        if run_id in filter_run_ids:
+            total_time += float(run.get(DURATION_HOURS))
+    return int(total_time * 60 * 60)
+
+
+def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities, billing_runs_stat):
     capabilities_dict = {}
     for c in capabilities:
         runs = api.filter_runs_all(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
-        if len(runs) > 0:
-            total_time = 0
-            for r in runs:
-                start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
-                end_date = datetime.strptime(r.get('endDate'), DATE_TIME_FORMAT)
-                total_time += (end_date - start_date).total_seconds()
-            capabilities_dict[c] = total_time
+        capabilities_dict[c] = _calculate_runs_duration_seconds(runs, billing_runs_stat)
     return sorted(capabilities_dict.items(), key=lambda item: float(item[1]), reverse=True)[:3]
 
 
-def _get_cluster_compute_secs(api, from_date, to_date, user):
+def _get_cluster_compute_secs(api, from_date, to_date, user, billing_runs_stat):
     runs = api.filter_runs_all(from_date, to_date, user, {'masterRun': True})
-    total_time = 0
-    for r in runs:
-        start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
-        end_date = datetime.strptime(r.get('endDate'), DATE_TIME_FORMAT)
-        total_time += (end_date - start_date).total_seconds()
-    return total_time
+    return _calculate_runs_duration_seconds(runs, billing_runs_stat)
 
 
 def _get_worker_nodes_count(api, from_date, to_date, user):
