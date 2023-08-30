@@ -26,17 +26,14 @@ import java.util.List;
 public class StorageRequestStat {
     private Long userId;
     private List<Entry> statistics;
-    private Long readRequests;
-    private Long writeRequests;
-    private Long totalRequests;
 
     @Data
     @Builder
     public static class Entry {
-        private Integer storageId;
+        private Integer id;
         private String storageName;
-        private Integer readRequests;
-        private Integer writeRequests;
-        private Integer totalRequests;
+        private Long readRequests;
+        private Long writeRequests;
+        private Long totalRequests;
     }
 }
