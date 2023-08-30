@@ -508,7 +508,7 @@ def _get_used_buckets(api, from_date_time, to_date_time, user_id, storages):
         "fromDate": from_date_time,
         "toDate": to_date_time,
         "maxEntries": 3,
-        "group_by": "storage_id",
+        "groupBy": "storage_id",
         "sorting": {
             "field": "total_requests",
             "order": "DESC"
@@ -522,7 +522,8 @@ def _get_used_buckets(api, from_date_time, to_date_time, user_id, storages):
         return top3_storages
     for storage in requests_by_storage.get('statistics'):
         storage_id = int(storage.get('id'))
-        storage_name = storages.get(storage_id, 'Deleted (%d)' % storage_id)
+        storage_entity = storages.get(storage_id, None)
+        storage_name = storage_entity.get('name') if storage_entity else 'Deleted (%d)' % storage_id
         top3_storages.append((storage_name, storage.get('totalRequests')))
     return top3_storages
 
