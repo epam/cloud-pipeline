@@ -26,6 +26,7 @@ import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.utils.ElasticsearchUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -39,6 +40,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
@@ -67,6 +69,7 @@ public class StorageRequestManager {
             SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
             SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsClosed(),
             SearchRequest.DEFAULT_INDICES_OPTIONS);
+    private static final int DEFAULT_ENTRIES_NUM = 10;
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final PreferenceManager preferenceManager;
@@ -75,7 +78,7 @@ public class StorageRequestManager {
         final SearchSourceBuilder source = new SearchSourceBuilder()
                 .query(constructQueryFilter(request))
                 .sort(sorting.getField(), sorting.getOrder())
-                .size(Optional.ofNullable(request.getMaxEntries()).orElse(10));
+                .size(Optional.ofNullable(request.getMaxEntries()).orElse(DEFAULT_ENTRIES_NUM));
 
         final SearchRequest esRequest = new SearchRequest()
                 .source(source)
@@ -87,11 +90,13 @@ public class StorageRequestManager {
 
     public StorageRequestStat getGroupedStats(final StorageStatsRequest request) {
         final SearchSourceBuilder source = new SearchSourceBuilder()
-                .query(constructQueryFilter(request))
-                .size(Optional.ofNullable(request.getMaxEntries()).orElse(10));
+                .query(constructQueryFilter(request));
 
         final TermsAggregationBuilder userAggregation = AggregationBuilders.terms(request.getGroupBy())
-                .field(request.getGroupBy()).size(Integer.MAX_VALUE);
+                .order(BucketOrder.aggregation(request.getSorting().getField(),
+                        SortOrder.ASC == request.getSorting().getOrder()))
+                .field(request.getGroupBy())
+                .size(Optional.ofNullable(request.getMaxEntries()).orElse(DEFAULT_ENTRIES_NUM));
 
         userAggregation.subAggregation(AggregationBuilders.sum(READ_REQUESTS).field(READ_REQUESTS));
         userAggregation.subAggregation(AggregationBuilders.sum(WRITE_REQUESTS).field(WRITE_REQUESTS));
@@ -114,14 +119,11 @@ public class StorageRequestManager {
             return builder.build();
         }
         final Terms aggregation = aggregations.get(request.getGroupBy());
-        final Terms.Bucket bucket = aggregation.getBucketByKey(request.getUserId().toString());
-        if (Objects.isNull(bucket)) {
-            log.debug("Failed to load storage requests for user {}", request.getUserId());
-            return builder.build();
-        }
-        return builder.readRequests(parseAggregation(READ_REQUESTS, bucket.getAggregations()))
-                .writeRequests(parseAggregation(WRITE_REQUESTS, bucket.getAggregations()))
-                .totalRequests(parseAggregation(TOTAL_REQUESTS, bucket.getAggregations()))
+        return builder.statistics(
+                ListUtils.emptyIfNull(aggregation.getBuckets())
+                        .stream()
+                        .map(this::mapBucketToEntry)
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -150,11 +152,20 @@ public class StorageRequestManager {
     private StorageRequestStat.Entry mapStorageEntry(final SearchHit hit) {
         final Map<String, Object> doc = hit.getSourceAsMap();
         return StorageRequestStat.Entry.builder()
-                .storageId((Integer) doc.get("storage_id"))
+                .id((Integer) doc.get("storage_id"))
                 .storageName((String) doc.getOrDefault("storage_name", StringUtils.EMPTY))
-                .readRequests((Integer) doc.get(READ_REQUESTS))
-                .writeRequests((Integer) doc.get(WRITE_REQUESTS))
-                .totalRequests((Integer) doc.get(TOTAL_REQUESTS))
+                .readRequests((Long) doc.get(READ_REQUESTS))
+                .writeRequests((Long) doc.get(WRITE_REQUESTS))
+                .totalRequests((Long) doc.get(TOTAL_REQUESTS))
+                .build();
+    }
+
+    private StorageRequestStat.Entry mapBucketToEntry(final Terms.Bucket bucket) {
+        return StorageRequestStat.Entry.builder()
+                .id(bucket.getKeyAsNumber().intValue())
+                .readRequests(parseAggregation(READ_REQUESTS, bucket.getAggregations()))
+                .writeRequests(parseAggregation(WRITE_REQUESTS, bucket.getAggregations()))
+                .totalRequests(parseAggregation(TOTAL_REQUESTS, bucket.getAggregations()))
                 .build();
     }
 
