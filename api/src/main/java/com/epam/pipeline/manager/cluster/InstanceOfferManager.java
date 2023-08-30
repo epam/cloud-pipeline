@@ -337,22 +337,36 @@ public class InstanceOfferManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_STARTED));
-        List<InstanceOffer> instanceOffers = cloudRegionManager.loadAll()
+        List<InstanceOffer> offers = cloudRegionManager.loadAll()
                 .stream()
-                .map(this::updatePriceListForRegion)
+                .map(this::updatePriceList)
                 .flatMap(List::stream)
                 .collect(toList());
 
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_FINISHED));
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_UPDATED, instanceOffers.size()));
+        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_UPDATED, offers.size()));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<InstanceOffer> updatePriceListForRegion(AbstractCloudRegion cloudRegion) {
-        List<InstanceOffer> instanceOffers = cloudFacade.refreshPriceListForRegion(cloudRegion.getId());
-        instanceOfferDao.removeInstanceOffersForRegion(cloudRegion.getId());
-        instanceOfferDao.insertInstanceOffers(instanceOffers);
-        return instanceOffers;
+    public void refreshPriceList(Long id) {
+        AbstractCloudRegion region = cloudRegionManager.load(id);
+        updatePriceList(region);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void refreshPriceList(AbstractCloudRegion region) {
+        updatePriceList(region);
+    }
+
+    private List<InstanceOffer> updatePriceList(AbstractCloudRegion region) {
+        LOGGER.debug("Updating instance offers for {} {} region #{}...",
+                region.getProvider(), region.getRegionCode(), region.getId());
+        List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
+        instanceOfferDao.removeInstanceOffersForRegion(region.getId());
+        instanceOfferDao.insertInstanceOffers(offers);
+        LOGGER.debug("Inserted {} instance offers to {} {} region #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return offers;
     }
 
     private boolean isSpotRequest(Boolean spot) {

@@ -19,66 +19,84 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class InstanceOfferSchedulerCore {
 
-    private static final int ONE_DAY = 24;
-    private static final int PRICE_LIST_REFRESH_PERIOD = 3 * ONE_DAY;
+    private static final Duration FALLBACK_INSTANCE_OFFER_EXPIRATION_RATE = Duration.ofDays(3);
 
-    private final Lock priceUpdateLock;
+    private final Lock priceUpdateLock = new ReentrantLock();
     private final MessageHelper messageHelper;
     private final InstanceOfferManager instanceOfferManager;
-
-    public InstanceOfferSchedulerCore(final MessageHelper messageHelper,
-                                      final InstanceOfferManager instanceOfferManager) {
-        this.messageHelper = messageHelper;
-        this.instanceOfferManager = instanceOfferManager;
-        this.priceUpdateLock = new ReentrantLock();
-    }
+    private final PreferenceManager preferenceManager;
 
     @SchedulerLock(name = "InstanceOfferScheduler_checkAndUpdatePriceList", lockAtMostForString = "PT1H")
     public void checkAndUpdatePriceListIfNecessary() {
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING));
-
-        Date publishDate = instanceOfferManager.getPriceListPublishDate();
-        if (publishDate == null || isPriceListExpired(publishDate) ||
-                instanceOfferManager.getAllowedInstanceTypes().stream()
-                        .noneMatch(instanceType -> instanceType.getVCPU() > 0)) {
+        if (isPriceListMissingOrExpired() || isInstanceOfferMissing()) {
             log.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_EXPIRED));
             updatePriceList();
         }
         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_DONE));
     }
 
+    private boolean isPriceListMissingOrExpired() {
+        final Date publishDate = instanceOfferManager.getPriceListPublishDate();
+        if (publishDate == null) {
+            return true;
+        }
+        final LocalDateTime publish = DateUtils.convertDateToLocalDateTime(publishDate);
+        final LocalDateTime expiration = publish.plus(getExpirationRate());
+        final LocalDateTime now = DateUtils.nowUTC();
+        return now.isAfter(expiration);
+    }
+
+    private Duration getExpirationRate() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS)
+                .map(preferenceManager::getPreference)
+                .map(Duration::ofHours)
+                .orElse(FALLBACK_INSTANCE_OFFER_EXPIRATION_RATE);
+    }
+
+    private boolean isInstanceOfferMissing() {
+        return instanceOfferManager.getAllowedInstanceTypes()
+                .stream()
+                .noneMatch(type -> type.getVCPU() > 0);
+    }
+
     public void updatePriceList() {
+        withLock(instanceOfferManager::refreshPriceList);
+    }
+
+    public void updatePriceList(final AbstractCloudRegion region) {
+        withLock(() -> instanceOfferManager.refreshPriceList(region));
+    }
+
+    public void updatePriceList(final Long id) {
+        withLock(() -> instanceOfferManager.refreshPriceList(id));
+    }
+
+    private void withLock(final Runnable runnable) {
         try {
             priceUpdateLock.lock();
-            instanceOfferManager.refreshPriceList();
+            runnable.run();
         } finally {
             priceUpdateLock.unlock();
         }
-    }
-
-    public void updatePriceList(AbstractCloudRegion region) {
-        try {
-            priceUpdateLock.lock();
-            instanceOfferManager.updatePriceListForRegion(region);
-        } finally {
-            priceUpdateLock.unlock();
-        }
-    }
-
-    private boolean isPriceListExpired(final Date publishDate) {
-        return DateUtils.now().after(org.apache.commons.lang3.time.DateUtils.addHours(
-                publishDate, PRICE_LIST_REFRESH_PERIOD));
     }
 }
