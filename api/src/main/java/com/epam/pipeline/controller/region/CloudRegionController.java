@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.region;
 
+import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
@@ -51,6 +52,7 @@ public class CloudRegionController extends AbstractRestController {
     private static final String REGION_ID = "regionId";
 
     private final CloudRegionApiService cloudRegionApiService;
+    private final InstanceOfferApiService instanceOfferApiService;
 
     @GetMapping("/provider")
     @ApiOperation(
@@ -134,7 +136,7 @@ public class CloudRegionController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<AbstractCloudRegion> update(@PathVariable(REGION_ID) final Long id,
-                                    @RequestBody final AbstractCloudRegionDTO region) {
+                                              @RequestBody final AbstractCloudRegionDTO region) {
         return Result.success(cloudRegionApiService.update(id, region));
     }
 
@@ -150,4 +152,14 @@ public class CloudRegionController extends AbstractRestController {
         return Result.success(cloudRegionApiService.delete(id));
     }
 
+    @PostMapping(REGION_ID_URL + "/price")
+    @ApiOperation(
+            value = "Refreshes price list asynchronously",
+            notes = "Refreshes price list asynchronously",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Object> updatePriceList(@PathVariable(REGION_ID) final Long id) {
+        instanceOfferApiService.updatePriceList(id);
+        return Result.success();
+    }
 }

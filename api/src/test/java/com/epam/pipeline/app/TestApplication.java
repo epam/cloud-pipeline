@@ -188,6 +188,9 @@ public class TestApplication {
     @MockBean
     protected BitbucketMapper bitbucketMapper;
 
+    @MockBean
+    public InstanceOfferScheduler instanceOfferScheduler;
+
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
 

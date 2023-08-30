@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -549,6 +550,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UserNotificationRepository userNotificationRepository;
+
+    @MockBean
+    protected InstanceOfferScheduler instanceOfferScheduler;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
