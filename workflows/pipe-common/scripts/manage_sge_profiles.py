@@ -20,15 +20,17 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 import click
+import datetime
 import psutil
 import sys
 import time
 
 from pipeline.api import PipelineAPI, APIError
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger, PrintLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
@@ -41,8 +43,53 @@ GROUP_ADMIN = 'ROLE_ADMIN'
 DEFAULT_ALLOWED_GROUPS = 'ROLE_ADMIN,ROLE_ADVANCED_USER'
 
 
-class GridEngineProfileError(RuntimeError):
+class ProfileError(RuntimeError):
     pass
+
+
+class ProfileManager:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def create(self, profile_name):
+        pass
+
+    @abstractmethod
+    def configure(self, profile_name):
+        pass
+
+    @abstractmethod
+    def restart(self, profile_name):
+        pass
+
+    @abstractmethod
+    def list(self):
+        pass
+
+    @abstractmethod
+    def export(self, profile_names, output_path):
+        pass
+
+
+class ProfileManagerDecorator(ProfileManager):
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def create(self, profile_name):
+        self._inner.create(profile_name)
+
+    def configure(self, profile_name):
+        self._inner.configure(profile_name)
+
+    def restart(self, profile_name):
+        self._inner.restart(profile_name)
+
+    def list(self):
+        self._inner.list()
+
+    def export(self, profile_names, output_path):
+        self._inner.export(profile_names, output_path)
 
 
 class ResilientProfileManager:
@@ -66,7 +113,7 @@ class ResilientProfileManager:
                 return attr(*args, **kwargs)
             except KeyboardInterrupt:
                 self._logger.warning('Interrupted.')
-            except GridEngineProfileError:
+            except ProfileError:
                 exit(1)
             except Exception:
                 self._logger.warning('Grid engine profiles management has failed.', trace=True)
@@ -100,12 +147,47 @@ class SecurityProfileManager:
             if not any(group in self._allowed_groups for group in user_groups + user_roles):
                 self._logger.error('Access denied. Only users with explicit rights have access to sge utility. '
                                    'Please contact the support team for the access.')
-                raise GridEngineProfileError()
+                raise ProfileError()
             return attr(*args, **kwargs)
         return _wrapped_attr
 
 
-class GridEngineProfileManager:
+class BackupProfileManager(ProfileManagerDecorator):
+
+    def __init__(self, inner, logger, path):
+        super(BackupProfileManager, self).__init__(inner)
+        self._inner = inner
+        self._logger = logger
+        self._path = path
+        self._template = 'sge_export_{}.tar.gz'
+        self._datetime_format = "%Y_%m_%d_%H_%M_%S"
+
+    def create(self, profile_name):
+        self._inner.create(profile_name)
+        self._backup()
+
+    def configure(self, profile_name):
+        self._inner.configure(profile_name)
+        self._backup()
+
+    def export(self, profile_names, output_path):
+        self._inner.export(profile_names, output_path)
+        self._backup(output_path)
+
+    def _backup(self, output_path=None):
+        backup_path = self._backup_path()
+        if output_path:
+            self._logger.info('Copying to {}...'.format(backup_path))
+            mkdir(os.path.dirname(backup_path))
+            shutil.copyfile(output_path, backup_path)
+        else:
+            self._inner.export(profile_names=[], output_path=backup_path)
+
+    def _backup_path(self):
+        return os.path.join(self._path, self._template.format(datetime.datetime.now().strftime(self._datetime_format)))
+
+
+class GridEngineProfileManager(ProfileManager):
 
     def __init__(self, executor, logger, logger_warning, cap_scripts_dir, queue_profile_regexp,
                  autoscaling_script_path):
@@ -123,12 +205,12 @@ class GridEngineProfileManager:
         profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
         if profile:
             self._logger.warning('Grid engine {} profile already exists.'.format(profile_name))
-            raise GridEngineProfileError()
+            raise ProfileError()
         self._generate_profile(profile_name)
         profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
         if not profile:
             self._logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-            raise GridEngineProfileError()
+            raise ProfileError()
         self._create_queue(profile)
         modified_profile = self._configure_profile(profile, editor)
         verified = True
@@ -138,7 +220,7 @@ class GridEngineProfileManager:
                 self._persist_profile(modified_profile, profile)
         self._launch_autoscaler(profile, self._autoscaling_script_path)
         if not verified:
-            raise GridEngineProfileError()
+            raise ProfileError()
 
     def configure(self, profile_name):
         self._logger.info('Initiating grid engine profile configuration...')
@@ -146,7 +228,7 @@ class GridEngineProfileManager:
         profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
         if not profile:
             self._logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-            raise GridEngineProfileError()
+            raise ProfileError()
         modified_profile = self._configure_profile(profile, editor)
         verified = True
         if modified_profile:
@@ -156,14 +238,14 @@ class GridEngineProfileManager:
                 self._persist_profile(modified_profile, profile)
             self._launch_autoscaler(profile, self._autoscaling_script_path)
         if not verified:
-            raise GridEngineProfileError()
+            raise ProfileError()
 
     def restart(self, profile_name):
         self._logger.info('Initiating grid engine profile restart...')
         profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
         if not profile:
             self._logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-            raise GridEngineProfileError()
+            raise ProfileError()
         self._stop_autoscaler(profile, self._autoscaling_script_path)
         self._launch_autoscaler(profile, self._autoscaling_script_path)
 
@@ -220,7 +302,9 @@ done
             shutil.copyfile(profile.path_autoscaling, path_autoscaling)
 
     def _archive(self, export_dir, output_path):
-        self._logger.info('Archiving...')
+        output_path = os.path.abspath(output_path)
+        self._logger.info('Archiving to {}...'.format(output_path))
+        mkdir(os.path.dirname(output_path))
         with tarfile.open(output_path, 'w:gz') as tar:
             for item in os.listdir(export_dir):
                 item_path = os.path.join(export_dir, item)
@@ -246,7 +330,7 @@ done
                                  'Please set VISUAL/EDITOR environment variable or install vi/vim/nano using one of the commands below.\n\n'
                                  'yum install -y nano\n'
                                  'apt-get install -y nano\n\n')
-            raise GridEngineProfileError()
+            raise ProfileError()
         return editor
 
     def _preprocess_profile_name(self, profile_name):
@@ -254,7 +338,7 @@ done
         profile_name = re.sub(PROFILE_NAME_REMOVAL_PATTERN, '', profile_name.lower())
         if not profile_name:
             self._logger.warning('Grid engine profile name should consist only of alphanumeric characters and dots.')
-            raise GridEngineProfileError()
+            raise ProfileError()
         if not profile_name.endswith('.q'):
             profile_name = profile_name + '.q'
         return profile_name
@@ -270,7 +354,7 @@ done
             profile = self._find_profile(self._cap_scripts_dir, self._queue_profile_regexp, profile_name)
             if not profile:
                 self._logger.warning('Grid engine {} profile does not exist.'.format(profile_name))
-                raise GridEngineProfileError()
+                raise ProfileError()
             yield profile
 
     def _collect_profiles(self, cap_scripts_dir, profile_regexp):
@@ -349,7 +433,7 @@ sge_setup_queue
                 proc_environ = proc.environ()
             except Exception:
                 self._logger.error('Please use root account to configure grid engine profiles.')
-                raise GridEngineProfileError()
+                raise ProfileError()
             if all(arg in proc_cmdline for arg in args) \
                     and all(proc_environ.get(k) == v for k, v in kwargs.items()):
                 yield proc
@@ -390,9 +474,11 @@ def _get_manager():
     logging_level_console = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_LEVEL_CONSOLE', default='INFO')
     logging_format_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FORMAT_FILE', default='%(asctime)s [%(levelname)s] %(message)s')
     logging_format_console = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FORMAT_CONSOLE', default='%(message)s')
-    logging_task = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_TASK', default='ConfigureSGEProfiles')
+    logging_task = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_TASK', default='SGEProfiles')
     logging_dir = os.getenv('CP_CAP_SGE_UTILITY_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
-    logging_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FILE', default='configure_sge_profiles_interactively.log')
+    logging_file = os.getenv('CP_CAP_SGE_UTILITY_LOGGING_FILE', default='sge.profiles.log')
+
+    backup_path = os.getenv('CP_CAP_SGE_UTILITY_BACKUP_PATH', default=os.path.join(os.getenv('HOME'), '.pipe/backups'))
 
     api_url = os.environ['API']
     run_id = os.environ['RUN_ID']
@@ -441,6 +527,8 @@ def _get_manager():
                                        cap_scripts_dir=cap_scripts_dir,
                                        queue_profile_regexp=queue_profile_regexp,
                                        autoscaling_script_path=autoscaling_script_path)
+    if backup_path:
+        manager = BackupProfileManager(inner=manager, logger=logger, path=backup_path)
     if allowed_groups:
         manager = SecurityProfileManager(inner=manager, api=api, logger=logger, allowed_groups=allowed_groups)
     manager = ResilientProfileManager(inner=manager, logger=logger)
