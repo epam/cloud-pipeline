@@ -544,6 +544,8 @@ public class SystemPreferences {
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
         "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
+        "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_BATCH_RETRY_COUNT = new IntPreference("cluster.batch.retry.count",
             0, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(

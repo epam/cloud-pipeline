@@ -18,6 +18,7 @@ package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
+import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
@@ -282,4 +283,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected StorageRequestApiService storageRequestApiService;
+
+    @MockBean
+    protected InstanceOfferApiService instanceOfferApiService;
 }

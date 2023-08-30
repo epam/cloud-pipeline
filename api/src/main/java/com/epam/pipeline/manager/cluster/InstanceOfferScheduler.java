@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -40,15 +41,15 @@ public class InstanceOfferScheduler extends AbstractSchedulingManager {
                 "Instance Offers Expiration Status Check");
     }
 
-    public void checkAndUpdatePriceListIfNecessary() {
-        core.checkAndUpdatePriceListIfNecessary();
-    }
-
-    public void updatePriceList() {
-        core.updatePriceList();
-    }
-
+    // todo: Use price list executor
+    @Async("pauseRunExecutor")
     public void updatePriceList(final AbstractCloudRegion region) {
         core.updatePriceList(region);
+    }
+
+    // todo: Use price list executor
+    @Async("pauseRunExecutor")
+    public void updatePriceList(final Long id) {
+        core.updatePriceList(id);
     }
 }
