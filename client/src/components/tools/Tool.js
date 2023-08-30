@@ -305,7 +305,6 @@ export default class Tool extends localization.LocalizedReactComponent {
     return [];
   }
 
-
   loadTool = async (toolId) => {
     if (!toolId) {
       return;
@@ -2275,18 +2274,22 @@ export default class Tool extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate (prevProps) {
-    if (this.props.section !== 'versions' && this.versionsRequest) {
-      this.versionsRequest.clearInterval();
-    }
     if (this.props.toolId !== prevProps.toolId || this.props.section !== prevProps.section) {
       if (this.versionsRequest) {
         this.versionsRequest.clearInterval();
       }
       this.loadToolInfo();
     }
-    if (this.hasPendingScanning && !this.versionsRequest.isUpdating) {
+    if (
+      this.hasPendingScanning &&
+      !this.versionsRequest.isUpdating &&
+      this.props.section === 'versions'
+    ) {
       this.versionsRequest.startInterval();
-    } else if (!this.hasPendingScanning && this.versionsRequest.isUpdating) {
+    } else if (
+      !this.hasPendingScanning &&
+      this.versionsRequest.isUpdating
+    ) {
       this.versionsRequest.clearInterval();
     }
     if (!this.defaultVersionSettings && this.defaultTag) {
