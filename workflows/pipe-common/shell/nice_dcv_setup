@@ -21,16 +21,16 @@ function install_prerequisites {
   pipe_log_info "Installing DCV prerequisites" "$DCV_INSTALL_TASK"
   _pkg_result=0
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
-                       xorg-x11-utils xorg-x11-xauth xorg-x11-xinit xvattr \
-                       xorg*fonts* xterm libXvMC mesa-libxatracker freeglut \
-                       gnome-desktop3 gnome-terminal gnome-system-log \
-                       gnome-system-monitor nautilus evince gnome-color-manager \
-                       gnome-font-viewer gnome-shell gnome-calculator gedit gdm \
-                       metacity gnome-session gnome-classic-session \
-                       gnome-session-xsession gnu-free-fonts-common \
-                       gnu-free-mono-fonts gnu-free-sans-fonts \
-                       gnu-free-serif-fonts desktop-backgrounds-gnome && \
+     _PKG_TO_INSTALL="glx-utils mesa-dri-drivers xorg-x11-server-Xorg xorg-x11-utils xorg-x11-xauth xorg-x11-xinit
+                     xorg*fonts* xterm libXvMC mesa-libxatracker freeglut gnome-desktop3 gnome-terminal
+                     gnome-system-monitor nautilus evince gnome-color-manager gnome-font-viewer gnome-shell
+                     gnome-calculator gedit gdm metacity gnome-session gnome-classic-session gnome-session-xsession
+                     gnu-free-fonts-common gnu-free-mono-fonts gnu-free-sans-fonts gnu-free-serif-fonts
+                     desktop-backgrounds-gnome"
+     if [[ "$CP_OS" != "rocky" ]]; then
+        _PKG_TO_INSTALL="$_PKG_TO_INSTALL xvattr gnome-system-log"
+     fi
+    yum -y install "$_PKG_TO_INSTALL" && \
     yum -y groupinstall "Xfce"
     _pkg_result=$?
   else
