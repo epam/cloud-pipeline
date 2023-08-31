@@ -8,6 +8,7 @@ on:
       - develop
       - 'release/**'
       - 'stage/**'
+      - 'ci/**'
 
   workflow_dispatch:
 
