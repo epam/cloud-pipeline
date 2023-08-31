@@ -21,21 +21,21 @@ mkdir -p $PYINSTALLER_PATH
 cd $PYINSTALLER_PATH
 git clone --branch resolve_tmpdir https://github.com/mzueva/pyinstaller.git
 cd pyinstaller/bootloader/
-python2 ./waf all
+python ./waf all
 cd -
 
 ###
 # Setup common dependencies
 ###
-python2 -m pip install macholib
-python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
+python -m pip install macholib
+python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 
 ###
 # Build pipe fuse
 ###
-python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
+python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+python $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --paths "${PIPE_CLI_SOURCES_DIR}" \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
@@ -70,7 +70,7 @@ git clone https://github.com/sidoruka/ntlmaps.git && \
 cd ntlmaps && \
 git checkout 5f798a88369eddbe732364b98fbd445aacc809d0
 
-python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+python $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
         main.py -y \
         --clean \
         --distpath /tmp/ntlmaps/dist \
@@ -101,7 +101,7 @@ function build_pipe {
     local pipe_commit_hash=$(git log --pretty=tformat:"%H" -n1 .)
     echo "__component_version__='$pipe_commit_hash'" >> $version_file
 
-    python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+    python $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
                                     --hidden-import=UserList \
                                     --hidden-import=UserString \

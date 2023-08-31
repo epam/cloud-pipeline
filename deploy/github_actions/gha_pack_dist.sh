@@ -44,9 +44,7 @@ done
 # Fail script if any command will fail
 set -e
 
-curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 -
-
-python2 -m pip install mkdocs
+python -m pip install mkdocs
 
 API_STATIC_PATH=api/src/main/resources/static
 rm -rf ${API_STATIC_PATH}/*
