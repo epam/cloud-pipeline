@@ -154,7 +154,7 @@ public class PipelineExecutor {
             final OkHttpClient httpClient = HttpClientUtils.createHttpClient(client.getConfiguration());
             final ObjectMeta metadata = getObjectMeta(run, labels);
             final String verifiedKubeServiceAccount = fetchVerifiedKubeServiceAccount(client, kubeServiceAccount);
-            final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.getTolerances(),
+            final PodSpec spec = getPodSpec(run, envVars, secretName, nodeSelector, podAssignPolicy.loadTolerances(),
                     run.getActualDockerImage(), command, imagePullPolicy,
                     podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel),
                     verifiedKubeServiceAccount);
