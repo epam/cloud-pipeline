@@ -680,12 +680,6 @@ export default class AWSRegionsForm extends React.Component {
   };
 };
 
-@inject(() => {
-  const roles = new Roles();
-  roles.fetch();
-
-  return {roles};
-})
 @observer
 class AWSRegionForm extends React.Component {
   static propTypes = {
@@ -831,10 +825,20 @@ class AWSRegionForm extends React.Component {
   @observable groupsToAddPermission = [];
   @observable usersToRemovePermissions = [];
   @observable groupsToRemovePermissions = [];
+  @observable rolesRequest;
+  @observable rolesRequestPending = false;
 
   @computed
   get provider () {
     return this.props.region ? this.props.region.provider : null;
+  }
+
+  @computed
+  get roles () {
+    if (this.rolesRequest && this.rolesRequest.loaded) {
+      return this.rolesRequest.value;
+    }
+    return null;
   }
 
   static Section = ({
@@ -874,6 +878,16 @@ class AWSRegionForm extends React.Component {
         </Col>
       </Row>
     );
+  };
+
+  loadRoles = async () => {
+    this.rolesRequest = new Roles();
+    this.rolesRequestPending = true;
+    await this.rolesRequest.fetch();
+    if (this.rolesRequest.error) {
+      message.error(this.rolesRequest.error, 5);
+    }
+    this.rolesRequestPending = false;
   };
 
   getFieldClassName = (field, defaultClassName) => {
@@ -1286,8 +1300,8 @@ class AWSRegionForm extends React.Component {
   };
 
   findGroupDataSource = () => {
-    const roles = (this.props.roles.loaded && this.state.groupSearchString) ? (
-      (this.props.roles.value || [])
+    const roles = (this.roles && this.state.groupSearchString) ? (
+      (this.roles || [])
         .filter(r => r.name.toLowerCase().indexOf(this.state.groupSearchString.toLowerCase()) >= 0)
         .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
         .filter(name => !this.addedGroupPermissions.includes(name))
@@ -1367,7 +1381,7 @@ class AWSRegionForm extends React.Component {
       return <Alert type="warning" message={this.permissions.error} />;
     }
 
-    const rolesList = (this.props.roles.loaded ? (this.props.roles.value || []) : []).map(r => r);
+    const rolesList = (this.roles || []).map(r => r);
     const getSidName = (name, principal) => {
       if (principal) {
         return <UserName userName={name} />;
@@ -2245,6 +2259,7 @@ class AWSRegionForm extends React.Component {
   };
 
   componentDidMount () {
+    this.loadRoles();
     this.props.onInitialize && this.props.onInitialize(this);
     this.rebuild();
   }
