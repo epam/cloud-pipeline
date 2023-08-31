@@ -3332,4 +3332,81 @@ export default `
   color: @table-element-selected-color;
 }
 
+@THEME .cp-wdl-visualizer .visual-element .visual-element-body {
+  fill: fade(@primary-color, 0.1);
+  stroke: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 10 10;
+}
+@THEME .cp-wdl-visualizer .visual-element.selected .visual-element-body {
+  fill: fade(@primary-color, 0.2);
+  stroke: @primary-active-color;
+  stroke-width: 2;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter {
+  stroke: @panel-background-color;
+  fill: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter[connected=false] {
+  fill: @panel-background-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid {
+  stroke: @panel-background-color;
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[connected=false] {
+  fill: @color-error;
+  stroke: @panel-background-color;
+}
+@THEME .cp-wdl-visualizer .visual-element.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.selected.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional.invalid .visual-element-body {
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer #workflow-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer #default-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-connection .visual-connection-line {
+  stroke: fade(@primary-color, 0.5);
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-alias=true] {
+  fill: @application-color;
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-as=true] {
+  fill: @application-color-faded;
+}
+@THEME .cp-wdl-visualizer .joint-tools-layer .joint-tools .joint-link-tool-remove circle {
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .joint-highlight-stroke {
+  stroke: @primary-color;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content {
+  padding: 0;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding: 2px;
+}
+
 `;

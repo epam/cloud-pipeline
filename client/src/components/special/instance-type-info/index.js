@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import React from 'react';
-import {Select} from 'antd';
+import {AutoComplete, Select} from 'antd';
 import classNames from 'classnames';
 import styles from './instance-type-info.css';
 import AWSRegionTag from '../AWSRegionTag';
@@ -49,6 +49,8 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
  * @property {string} [className]
  * @property {Object} [style]
  * @property {boolean} [plainText=true]
+ * @property {'Select'|'AutoComplete'} [selectFamily=Select]
+ * @property {function} [valueFn]}
  */
 
 /**
@@ -201,10 +203,40 @@ export function getSelectOptionForInstance (instance, options = {}) {
     sku,
     name
   } = instance;
+  const {
+    valueFn = (o) => o.name
+  } = options || {};
+  if (options && options.selectFamily === 'AutoComplete') {
+    return (
+      <AutoComplete.Option
+        key={sku || name}
+        value={valueFn(instance)}
+        title={
+          instanceInfoString(
+            instance,
+            {
+              ...(options || {}),
+              plaintText: true
+            }
+          )
+        }
+      >
+        {
+          instanceInfoString(
+            instance,
+            {
+              ...(options || {}),
+              plainText: false
+            }
+          )
+        }
+      </AutoComplete.Option>
+    );
+  }
   return (
     <Select.Option
       key={sku || name}
-      value={name}
+      value={valueFn(instance)}
       title={
         instanceInfoString(
           instance,
@@ -236,15 +268,37 @@ export function getSelectOptionForInstance (instance, options = {}) {
 export function getSelectOptions (instanceTypes = [], options = {}) {
   const instanceFamilies = [...new Set(instanceTypes.map((i) => i.instanceFamily))];
   return instanceFamilies
-    .map((instanceFamily) => (
-      <Select.OptGroup
-        key={instanceFamily || 'Other'}
-        label={instanceFamily || 'Other'} >
-        {
-          instanceTypes
-            .filter(t => t.instanceFamily === instanceFamily)
-            .map(t => getSelectOptionForInstance(t, options))
-        }
-      </Select.OptGroup>
-    ));
+    .map((instanceFamily) => {
+      const selectFamily = options && options.selectFamily
+        ? options.selectFamily
+        : 'Select';
+      switch (selectFamily) {
+        case 'AutoComplete':
+          return (
+            <AutoComplete.OptGroup
+              key={instanceFamily || 'Other'}
+              label={instanceFamily || 'Other'}
+            >
+              {
+                instanceTypes
+                  .filter(t => t.instanceFamily === instanceFamily)
+                  .map(t => getSelectOptionForInstance(t, options))
+              }
+            </AutoComplete.OptGroup>
+          );
+        default:
+          return (
+            <Select.OptGroup
+              key={instanceFamily || 'Other'}
+              label={instanceFamily || 'Other'}
+            >
+              {
+                instanceTypes
+                  .filter(t => t.instanceFamily === instanceFamily)
+                  .map(t => getSelectOptionForInstance(t, options))
+              }
+            </Select.OptGroup>
+          );
+      }
+    });
 }
