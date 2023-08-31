@@ -90,6 +90,8 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
                 startVO.setWorkerCmd(configuration.getCmdTemplate());
             }
             startVO.setNonPause(configuration.isNonPause());
+            startVO.setPodAssignPolicy(configuration.getPodAssignPolicy());
+            startVO.setKubeServiceAccount(configuration.getKubeServiceAccount());
         }
         return startVO;
     }

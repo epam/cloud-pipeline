@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.pipeline.run;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Builder;
 import lombok.ToString;
 import lombok.Value;
@@ -60,6 +61,7 @@ public class RunAssignPolicy {
         return Optional.empty();
     }
 
+    @JsonIgnore
     public boolean isValid() {
         if (selector == null) {
             return false;
@@ -67,7 +69,7 @@ public class RunAssignPolicy {
         return StringUtils.isNotBlank(selector.label) && StringUtils.isNotBlank(selector.value);
     }
 
-    public Map<String, String> getTolerances() {
+    public Map<String, String> loadTolerances() {
         return ListUtils.emptyIfNull(tolerances).stream()
                 .filter(t -> StringUtils.isNotBlank(t.label))
                 .collect(Collectors.toMap(PodAssignTolerance::getLabel, PodAssignTolerance::getValue));
