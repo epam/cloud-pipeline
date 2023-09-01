@@ -72,7 +72,8 @@ public class RunAssignPolicy {
     public Map<String, String> loadTolerances() {
         return ListUtils.emptyIfNull(tolerances).stream()
                 .filter(t -> StringUtils.isNotBlank(t.label))
-                .collect(Collectors.toMap(PodAssignTolerance::getLabel, PodAssignTolerance::getValue));
+                .collect(Collectors.toMap(PodAssignTolerance::getLabel,
+                        t -> Optional.ofNullable(t.getValue()).orElse(StringUtils.EMPTY)));
     }
 
     /**
