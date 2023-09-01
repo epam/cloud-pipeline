@@ -73,7 +73,7 @@ public class RunAssignPolicy {
         return ListUtils.emptyIfNull(tolerances).stream()
                 .filter(t -> StringUtils.isNotBlank(t.label))
                 .collect(Collectors.toMap(PodAssignTolerance::getLabel,
-                        t -> Optional.ofNullable(t.getValue()).orElse(StringUtils.EMPTY)));
+                    t -> Optional.ofNullable(t.getValue()).orElse(StringUtils.EMPTY)));
     }
 
     /**
