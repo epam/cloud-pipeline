@@ -18,7 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Alert, Button, Dropdown, Icon, message} from 'antd';
+import {
+  Alert,
+  Button,
+  Dropdown,
+  Icon,
+  message,
+  Spin
+} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import LoadingView from '../../../special/LoadingView';
 import SubSettings from '../../sub-settings';
@@ -46,7 +53,8 @@ class SystemJobs extends React.Component {
     refreshToken: 0,
     launchParameters: undefined,
     jobContentPending: false,
-    selectedJobId: undefined
+    selectedJobId: undefined,
+    scriptContentPending: false
   }
 
   @observable
@@ -174,9 +182,6 @@ class SystemJobs extends React.Component {
    */
   renderSystemJob = (job) => {
     const {scriptContentPending} = this.state;
-    if (scriptContentPending) {
-      return <LoadingView />;
-    }
     const {router} = this.props;
     const openRunDetails = (run, event) => {
       if (event) {
@@ -263,63 +268,65 @@ class SystemJobs extends React.Component {
             }
           </div>
         </div>
-        <RunTable
-          columns={[Columns.run]}
-          autoUpdate={{
-            enabled: autoUpdateJobs,
-            updateToken: refreshToken
-          }}
-          className={styles.systemJobTableContainer}
-          tableClassName={styles.systemJobTable}
-          filters={
-            {
-              pipelineIds: [job.pipelineId],
-              tags: {'CP_SYSTEM_JOB': job.identifier}
+        <Spin spinning={scriptContentPending}>
+          <RunTable
+            columns={[Columns.run]}
+            autoUpdate={{
+              enabled: autoUpdateJobs,
+              updateToken: refreshToken
+            }}
+            className={styles.systemJobTableContainer}
+            tableClassName={styles.systemJobTable}
+            filters={
+              {
+                pipelineIds: [job.pipelineId],
+                tags: {'CP_SYSTEM_JOB': job.identifier}
+              }
             }
-          }
-          onRunClick={(run) => openRunLog(run)}
-          runRowClassName={() => 'cp-even-odd-element'}
-          customRunRenderer={(run) => (
-            <div
-              className={styles.systemJobRun}
-            >
-              <StatusIcon
-                className={styles.systemJobStatusIcon}
-                run={run}
-                small
-              />
-              <b
-                style={{marginLeft: 5}}
+            onRunClick={(run) => openRunLog(run)}
+            runRowClassName={() => 'cp-even-odd-element'}
+            customRunRenderer={(run) => (
+              <div
+                className={styles.systemJobRun}
               >
-                #{run.id}
-              </b>
-              <UserName
-                userName={run.owner}
-                showIcon
-                style={{marginLeft: 5}}
-              />
-              <span>
-                , launched at <b>{displayDate(run.startDate)}</b>
-              </span>
-              <div className={styles.systemJobActions}>
-                <Button
-                  className={styles.openRunButton}
-                  size="small"
-                  onClick={(event) => openRunLog(run, event)}
+                <StatusIcon
+                  className={styles.systemJobStatusIcon}
+                  run={run}
+                  small
+                />
+                <b
+                  style={{marginLeft: 5}}
                 >
-                  LOG
-                </Button>
-                <Button
-                  className={styles.openRunButton}
-                  size="small"
-                  onClick={(event) => openRunDetails(run, event)}
-                >
-                  DETAILS
-                </Button>
+                  #{run.id}
+                </b>
+                <UserName
+                  userName={run.owner}
+                  showIcon
+                  style={{marginLeft: 5}}
+                />
+                <span>
+                  , launched at <b>{displayDate(run.startDate)}</b>
+                </span>
+                <div className={styles.systemJobActions}>
+                  <Button
+                    className={styles.openRunButton}
+                    size="small"
+                    onClick={(event) => openRunLog(run, event)}
+                  >
+                    LOG
+                  </Button>
+                  <Button
+                    className={styles.openRunButton}
+                    size="small"
+                    onClick={(event) => openRunDetails(run, event)}
+                  >
+                    DETAILS
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        />
+            )}
+          />
+        </Spin>
       </div>
     );
   };
