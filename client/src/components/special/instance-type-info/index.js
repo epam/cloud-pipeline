@@ -17,6 +17,7 @@ import React from 'react';
 import {Select} from 'antd';
 import classNames from 'classnames';
 import styles from './instance-type-info.css';
+import AWSRegionTag from '../AWSRegionTag';
 
 const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
   return hyperThreadingDisabled && !Number.isNaN(Number(cpu))
@@ -44,6 +45,7 @@ const cpuMapper = (cpu, hyperThreadingDisabled = false) => {
 /**
  * @typedef {Object} InstanceInfoOptions
  * @property {boolean} [hyperThreadingDisabled=false]
+ * @property {boolean} [displayRegion=false]
  * @property {string} [className]
  * @property {Object} [style]
  * @property {boolean} [plainText=true]
@@ -88,6 +90,7 @@ export function instanceInfoString (instance, options = {}) {
   }
   const {
     hyperThreadingDisabled = false,
+    displayRegion = false,
     plainText = true,
     className,
     style
@@ -97,7 +100,9 @@ export function instanceInfoString (instance, options = {}) {
     sku,
     memory,
     vcpu,
-    name
+    name,
+    regionId,
+    regionIds = [regionId]
   } = instance;
   if (vcpu) {
     infoParts.push(plainText
@@ -134,17 +139,20 @@ export function instanceInfoString (instance, options = {}) {
     ? (plainText ? `${infoParts.join(', ')}` : infoParts)
     : undefined;
   if (info) {
+    const regionToDisplay = displayRegion && regionIds.length === 1
+      ? regionIds[0]
+      : undefined;
     return plainText
       ? `${name} (${info})`
       : (
-        <span
+        <div
           key={sku || name}
           className={classNames(className, styles.instanceTypeInfo)}
           style={style}
         >
-          <span>{name}</span>
-          <span style={{whiteSpace: 'pre'}}> </span>
-          <span
+          <div>{name}</div>
+          <div style={{whiteSpace: 'pre'}}> </div>
+          <div
             className={
               classNames(
                 styles.instanceTypeInfoParts,
@@ -153,8 +161,19 @@ export function instanceInfoString (instance, options = {}) {
             }
           >
             {infoParts}
-          </span>
-        </span>
+          </div>
+          {
+            regionToDisplay && (
+              <AWSRegionTag
+                className={classNames(styles.instanceTypeRegion, 'cp-text-not-important')}
+                regionId={regionToDisplay}
+                displayFlag={false}
+                showProvider={false}
+                displayName
+              />
+            )
+          }
+        </div>
       );
   }
   return plainText

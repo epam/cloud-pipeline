@@ -1543,6 +1543,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get instanceTypesMergedForRegions () {
+    return this.props.allowedInstanceTypes
+      && this.props.allowedInstanceTypes.regionsMerged;
+  }
+
+  @computed
   get priceTypes () {
     let availableMasterNodeTypes = [true, false];
     if (this.state.launchCluster && this.props.preferences.loaded) {
@@ -1717,6 +1723,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   instanceTypeChanged = (newType) => {
     const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
     if (instanceType) {
+      try {
+        const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
+        const currentRegion = this.props.form.getFieldValue(formField);
+        const regionId = this.correctCloudRegion(
+          currentRegion ||
+          this.defaultCloudRegionId
+        );
+        const {
+          regionId: iRegionId,
+          regionIds: iRegionIds = [iRegionId]
+        } = instanceType;
+        const changed = iRegionIds.length > 0 &&
+          !iRegionIds.some((id) => Number(id) === Number(regionId));
+        if (changed) {
+          const switchTo = iRegionIds[0];
+          this.props.form.setFieldsValue({
+            [formField]: `${switchTo}`
+          });
+        }
+      } catch (e) {
+        console.warn(e);
+      }
       this.evaluateEstimatedPrice({type: instanceType.name});
     }
   };
@@ -3687,7 +3715,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               getSelectOptions(
                 this.instanceTypes,
                 {
-                  hyperThreadingDisabled: this.hyperThreadingDisabled
+                  hyperThreadingDisabled: this.hyperThreadingDisabled,
+                  displayRegion: this.instanceTypesMergedForRegions
                 }
               )
             }
@@ -5941,8 +5970,8 @@ export default class extends React.Component {
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields[cloudRegionKey]);
     } else if (fields &&
-      fields.exec &&
-      fields.exec.cloudRegionId &&
+      fields[EXEC_ENVIRONMENT] &&
+      fields[EXEC_ENVIRONMENT].cloudRegionId &&
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields.exec.cloudRegionId);
     }

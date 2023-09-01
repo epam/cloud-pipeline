@@ -252,7 +252,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           : undefined,
         notifications: versionSettingValue('notifications') || []
       };
-    } else if (this.props.run && !this.runPending && !this.props.run.error) {
+    }
+    if (this.props.run && !this.runPending && !this.props.run.error) {
       const parameters = {
         cmd_template: this.props.run.value.cmdTemplate,
         docker_image: this.props.run.value.dockerImage,
@@ -286,9 +287,11 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         }
       }
       return parameters;
-    } else if (this.getConfigurationParameters()) {
+    }
+    if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
-    } else if (
+    }
+    if (
       this.props.isVersionedStorage &&
       this.versionedStoragesLaunchPayload &&
       this.versionedStoragesLaunchPayload.loaded &&
@@ -550,7 +553,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.allowedInstanceTypes.setParameters({
         isSpot: parameters.is_spot,
         regionId: parameters.cloudRegionId,
-        toolId: this.props.image
+        toolId: this.props.image,
+        requestAllRegionsForProviders: ['GCP']
       });
     }
     if (
