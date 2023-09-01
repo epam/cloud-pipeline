@@ -137,12 +137,6 @@ const isStandardClass = (storageClass) =>
     path: decodeURIComponent(queryParameters.path || ''),
     showVersions,
     showArchives,
-    restoreInfo: new LifeCycleEffectiveHierarchy(
-      params.id,
-      decodeURIComponent(queryParameters.path || ''),
-      'FOLDER',
-      false
-    ),
     openPreview
   };
 })
@@ -177,6 +171,7 @@ export default class DataStorage extends React.Component {
   });
 
   @observable generateDownloadUrls;
+  @observable restoreInfoRequest;
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -344,11 +339,10 @@ export default class DataStorage extends React.Component {
   @computed
   get lifeCycleRestoreInfo () {
     const {
-      restoreInfo,
       path
     } = this.props;
-    if (restoreInfo && restoreInfo.loaded) {
-      const [first, ...rest] = restoreInfo.value || [];
+    if (this.restoreInfoRequest && this.restoreInfoRequest.loaded) {
+      const [first, ...rest] = this.restoreInfoRequest.value || [];
       const currentPath = path
         ? [
           !path.startsWith('/') && '/',
@@ -366,7 +360,7 @@ export default class DataStorage extends React.Component {
         parentRestore = first;
         currentRestores = rest;
       } else {
-        currentRestores = restoreInfo.value;
+        currentRestores = this.restoreInfoRequest.value;
       }
       return {
         parentRestore,
@@ -416,6 +410,24 @@ export default class DataStorage extends React.Component {
       ? storageFileTagsEditable
       : this.storage.writeAllowed;
   }
+
+  loadRestoreInfo = async (storageId, path = '') => {
+    if (!storageId) {
+      return;
+    }
+    this.restoreInfoRequest = new LifeCycleEffectiveHierarchy(
+      storageId,
+      decodeURIComponent(path),
+      'FOLDER',
+      false
+    );
+    this.restoreInfoPending = true;
+    await this.restoreInfoRequest.fetch();
+    if (this.restoreInfoRequest.error) {
+      message.error(this.restoreInfoRequest.error, 5);
+    }
+    this.restoreInfoPending = false;
+  };
 
   onDataStorageEdit = async (storage) => {
     if (!this.storage.info) {
@@ -808,7 +820,7 @@ export default class DataStorage extends React.Component {
   };
 
   restoreFiles = (payload) => {
-    const {storageId, restoreInfo} = this.props;
+    const {storageId} = this.props;
     const request = new LifeCycleRestoreCreate(storageId);
     this.setState({restorePending: true}, async () => {
       await request.send(payload);
@@ -816,7 +828,7 @@ export default class DataStorage extends React.Component {
         message.error(request.error, 5);
         return this.setState({restorePending: false});
       }
-      restoreInfo.fetch()
+      this.loadRestoreInfo(this.props.storageId, this.props.path)
         .then(() => {
           this.setState({restorePending: false});
           this.closeRestoreFilesDialog();
@@ -2822,10 +2834,17 @@ export default class DataStorage extends React.Component {
       };
       this.openPreviewModal(file);
     }
+    this.loadRestoreInfo(this.props.storageId, this.props.path);
     this.updateStorageIfRequired();
   }
 
   componentDidUpdate (prevProps) {
+    if (
+      this.props.storageId !== prevProps.storageId ||
+      this.props.path !== prevProps.path
+    ) {
+      this.loadRestoreInfo(this.props.storageId, this.props.path);
+    }
     this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
   }
