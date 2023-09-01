@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
 import errno
 import json
 import os
@@ -33,6 +34,7 @@ from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter
 
 ANIMAL_ID_PATTERN = '[0-9]+(\.[0-9]+)?$'
+ANIMAL_ID_REMOVE_NON_DIGITS_PATTERN = '^[^0-9]+|[^0-9]+$'
 
 WSI_PROCESSING_TASK_NAME = 'WSI processing'
 TAGS_MAPPING_RULE_DELIMITER = ','
@@ -77,7 +79,7 @@ def prepare_exception_tags_mapping():
     if not exceptions_mapping:
         return {}
     if exceptions_mapping.lower().startswith("s3://"):
-        exceptions_mapping = os.path.join(os.getenv('WSI_PARSER_HOME', ''), 'exceptions.json')
+        exceptions_mapping = os.path.join(os.getenv('WSI_PARSER_HOME', ''), '%s-exceptions.json' % str(uuid.uuid4()))
         os.system('pipe storage cp -f "{}" "{}"'.format(EXCEPTIONS_MAPPINGS_FILE, exceptions_mapping))
     if not os.path.isfile(exceptions_mapping):
         return {}
@@ -689,9 +691,8 @@ class WsiFileTagProcessor:
             animal_ids_set = tags[ANIMAL_ID_CAT_ATTR_NAME]
             if len(animal_ids_set) == 1:
                 animal_id_str = list(animal_ids_set)[0]
-                if not re.match(ANIMAL_ID_PATTERN, animal_id_str):
-                    del tags[ANIMAL_ID_CAT_ATTR_NAME]
-                else:
+                animal_id_str = re.sub(ANIMAL_ID_REMOVE_NON_DIGITS_PATTERN, '', animal_id_str)
+                if re.match(ANIMAL_ID_PATTERN, animal_id_str):
                     animal_id_int = int(animal_id_str.split('.')[0])
                     if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
                         tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id_int % 1000 < 500 else {'Female'}
