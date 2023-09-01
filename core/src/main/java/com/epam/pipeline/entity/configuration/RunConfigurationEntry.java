@@ -93,6 +93,8 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
             }
             startVO.setNonPause(configuration.isNonPause());
             runSids = configuration.mergeRunSids(runSids);
+            startVO.setPodAssignPolicy(configuration.getPodAssignPolicy());
+            startVO.setKubeServiceAccount(configuration.getKubeServiceAccount());
         }
         startVO.setRunSids(runSids);
         return startVO;
