@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">9</div>
+<div class="counter">2</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">12m54.48s</div>
+<div class="counter">58m36.41s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">50%</div>
+<div class="percent">66%</div>
 <p>successful</p>
 </div>
 </td>
@@ -70,13 +70,67 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="checkNewRouteCreationWithSpecifiedIPAddress - 2232_2"></a>
-<h3 class="failures">checkNewRouteCreationWithSpecifiedIPAddress - 2232_2</h3>
+<a name="checkAddingRouteWithSeveralPorts - 2232_9"></a>
+<h3 class="failures">checkAddingRouteWithSeveralPorts - 2232_9</h3>
 <span class="code">
-<pre>Element not found {with text: Trying 10.109.53.64...}
+<pre>Element not found {[unknown locator]}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1693686733099.78.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1693686733099.78.html
+Timeout: 210 s.
+Caused by: NoSuchElementException: Cannot locate an element using [unknown locator]
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.findElements(Unknown Source)
+	at com.codeborne.selenide.impl.WebElementSelector.findElements(WebElementSelector.java:38)
+	at com.codeborne.selenide.impl.BySelectorCollection.getActualElements(BySelectorCollection.java:38)
+	at com.codeborne.selenide.impl.BySelectorCollection.getElements(BySelectorCollection.java:30)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:31)
+	at com.codeborne.selenide.commands.GetText.execute(GetText.java:13)
+	at com.codeborne.selenide.commands.GetText.execute(GetText.java:8)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.text(Unknown Source)
+	at com.epam.pipeline.autotests.ao.NATGatewayAO.getInternalIP(NATGatewayAO.java:215)
+	at com.epam.pipeline.autotests.NATGatewayTest.checkAddingRouteWithSeveralPorts(NATGatewayTest.java:457)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using [unknown locator]
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: driver.version: RemoteWebDriver
+	at org.openqa.selenium.By.findElement(By.java:162)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:90)
+	... 27 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="checkAddingRouteWithSeveralPortsDifferentProtocols - 2444_1"></a>
+<h3 class="failures">checkAddingRouteWithSeveralPortsDifferentProtocols - 2444_1</h3>
+<span class="code">
+<pre>Element not found {with text: Connected to yandex.ru (10.105.57.102) port 80}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1693172010395.85.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1693172010395.85.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1693687142398.79.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1693687142398.79.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -93,9 +147,9 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
 	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
 	at com.epam.pipeline.autotests.ao.ShellAO.assertOutputContains(ShellAO.java:90)
-	at com.epam.pipeline.autotests.NATGatewayTest.lambda$checkNewRouteCreationWithSpecifiedIPAddress$3(NATGatewayTest.java:242)
+	at com.epam.pipeline.autotests.NATGatewayTest.lambda$checkAddingRouteWithSeveralPortsDifferentProtocols$10(NATGatewayTest.java:578)
 	at com.epam.pipeline.autotests.ao.LogAO.ssh(LogAO.java:105)
-	at com.epam.pipeline.autotests.NATGatewayTest.checkNewRouteCreationWithSpecifiedIPAddress(NATGatewayTest.java:236)
+	at com.epam.pipeline.autotests.NATGatewayTest.checkAddingRouteWithSeveralPortsDifferentProtocols(NATGatewayTest.java:572)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -110,18 +164,93 @@ Caused by: NoSuchElementException: no such element: Unable to locate element: {&
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
 Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
- ', '    ')), &quot;Trying 10.109.53.64...&quot;)]/parent::*&quot;}
+ ', '    ')), &quot;Connected to yandex.ru (10.105.57.102) port 80&quot;)]/parent::*&quot;}
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '3321e238162f', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 5057fde1249a10434a90af34a9995e43
+Session ID: 7d46ea6fadcf3514bbb1ff960cbd8df3
 *** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
- ', '    ')), &quot;Trying 10.109.53.64...&quot;)]/parent::*}
+ ', '    ')), &quot;Connected to yandex.ru (10.105.57.102) port 80&quot;)]/parent::*}
+	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:371)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElementByXPath(RemoteWebDriver.java:473)
+	at org.openqa.selenium.By$ByXPath.findElement(By.java:361)
+	at org.openqa.selenium.remote.RemoteWebDriver.findElement(RemoteWebDriver.java:363)
+	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
+	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
+	... 27 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="checkNewRouteCreationWithoutSpecifiedIPAddress - 2232_3"></a>
+<h3 class="failures">checkNewRouteCreationWithoutSpecifiedIPAddress - 2232_3</h3>
+<span class="code">
+<pre>Element not found {with text: Trying 10.100.207.146...}
+Expected: visible
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1693685425501.73.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1693685425501.73.html
+Timeout: 210 s.
+Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.ShellAO.assertPageContains(ShellAO.java:66)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
+	at com.epam.pipeline.autotests.ao.ShellAO.assertOutputContains(ShellAO.java:90)
+	at com.epam.pipeline.autotests.NATGatewayTest.lambda$checkNewRouteCreationWithoutSpecifiedIPAddress$4(NATGatewayTest.java:276)
+	at com.epam.pipeline.autotests.ao.LogAO.ssh(LogAO.java:105)
+	at com.epam.pipeline.autotests.NATGatewayTest.checkNewRouteCreationWithoutSpecifiedIPAddress(NATGatewayTest.java:270)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;xpath&quot;,&quot;selector&quot;:&quot;.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Trying 10.100.207.146...&quot;)]/parent::*&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1160.49.1.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: 7d46ea6fadcf3514bbb1ff960cbd8df3
+*** Element info: {Using=xpath, value=.//*/text()[contains(normalize-space(translate(string(.), '	
+ ', '    ')), &quot;Trying 10.100.207.146...&quot;)]/parent::*}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
@@ -157,13 +286,13 @@ Session ID: 5057fde1249a10434a90af34a9995e43
 </thead>
 <tr>
 <td class="success">checkAddNewRouteForm - 2232_1</td>
-<td>16.455s</td>
+<td>16.589s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkAddingRouteWithResolvedIPToExistingRoute</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkAddingRouteWithResolvedIPToExistingRoute - 2232_7</td>
+<td>5m30.38s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
 <td class="skipped">checkAddingRouteWithResolvedIPToExistingRouteWithoutResolvedIP</td>
@@ -171,14 +300,14 @@ Session ID: 5057fde1249a10434a90af34a9995e43
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="skipped">checkAddingRouteWithSeveralPorts</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">checkAddingRouteWithSeveralPorts - 2232_9</td>
+<td>10m5.35s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">checkAddingRouteWithSeveralPortsDifferentProtocols</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="failures">checkAddingRouteWithSeveralPortsDifferentProtocols - 2444_1</td>
+<td>6m46.89s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="skipped">checkAddingRouteWithoutResolvedIPToExistingRoute</td>
@@ -186,29 +315,29 @@ Session ID: 5057fde1249a10434a90af34a9995e43
 <td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="skipped">checkAddingRouteWithoutResolvedIPToExistingRouteWithResolvedIP</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkAddingRouteWithoutResolvedIPToExistingRouteWithResolvedIP - 2232_5</td>
+<td>6m4.63s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">checkAddingSeveralRoutesWithSameServerNameButDiffPorts</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkAddingSeveralRoutesWithSameServerNameButDiffPorts - 2232_10</td>
+<td>7m11.43s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">checkNewRouteCreationWithSpecifiedIPAddress - 2232_2</td>
-<td>12m38.03s</td>
+<td class="success">checkNewRouteCreationWithSpecifiedIPAddress - 2232_2</td>
+<td>9m44.41s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">checkNewRouteCreationWithoutSpecifiedIPAddress - 2232_3</td>
+<td>6m49.85s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="skipped">checkNewRouteCreationWithoutSpecifiedIPAddress</td>
-<td>-</td>
-<td class="skipped">ignored</td>
-</tr>
-<tr>
-<td class="skipped">checkRouteWithExistingNameAndDifferentIP</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">checkRouteWithExistingNameAndDifferentIP - 2232_4</td>
+<td>6m6.90s</td>
+<td class="success">passed</td>
 </tr>
 </table>
 </div>
@@ -220,7 +349,7 @@ Session ID: 5057fde1249a10434a90af34a9995e43
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Aug 27, 2023 11:32:31 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 2, 2023 10:52:03 PM</p>
 </div>
 </div>
 </body>
