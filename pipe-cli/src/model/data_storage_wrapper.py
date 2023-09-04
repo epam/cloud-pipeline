@@ -14,6 +14,7 @@
 
 import logging
 import os
+import time
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
 
@@ -42,6 +43,12 @@ import posixpath
 
 FILE = 'File'
 FOLDER = 'Folder'
+
+
+class DefectiveFileSystemError(RuntimeError):
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
 
 class AllowedSymlinkValues(object):
@@ -384,6 +391,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
         self.symlinks = symlinks
         self.path_separator = os.sep
+        self.listing_retry_attempts = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_ATTEMPTS', '3'))
+        self.listing_retry_delay = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_DELAY', '5'))
 
     def exists(self):
         return os.path.exists(self.path)
@@ -404,61 +413,98 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         return not os.listdir(self.path)
 
     def get_items(self, quiet=False):
-        logging.debug(u'Collecting paths...')
-
-        def leaf_path(source_path):
-            head, tail = os.path.split(source_path)
-            return tail or os.path.basename(head)
+        logging.debug(u'Listing paths...')
 
         self.path = os.path.abspath(self.path)
 
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
                 return []
-            return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
-        else:
-            result = list()
-            visited_symlinks = set()
+            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path))]
 
-            def list_items(path, parent, symlinks, visited_symlinks, root=False):
-                logging.debug(u'Collecting paths under {}...'.format(path))
-                path = to_unicode(path)
-                parent = to_unicode(parent)
-                for item in os.listdir(to_string(path)):
-                    safe_item = to_unicode(item, replacing=True)
-                    safe_absolute_path = os.path.join(path, safe_item)
-                    logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
-                    try:
-                        item = to_unicode(item)
-                        absolute_path = os.path.join(path, item)
-                    except UnicodeDecodeError:
-                        err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
-                        logging.warn(err_msg)
-                        if not quiet:
-                            click.echo(err_msg)
-                        continue
-                    symlink_target = None
-                    if os.path.islink(to_string(absolute_path)) and symlinks != AllowedSymlinkValues.FOLLOW:
-                        if symlinks == AllowedSymlinkValues.SKIP:
-                            continue
-                        if symlinks == AllowedSymlinkValues.FILTER:
-                            symlink_target = os.readlink(to_string(absolute_path))
-                            if symlink_target in visited_symlinks:
-                                continue
-                            else:
-                                visited_symlinks.add(symlink_target)
-                    relative_path = item
-                    if not root and parent is not None:
-                        relative_path = os.path.join(parent, item)
-                    if os.path.isfile(to_string(absolute_path)):
-                        logging.debug(u'Collected path {}.'.format(absolute_path))
-                        result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
-                    elif os.path.isdir(to_string(absolute_path)):
-                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
-                    if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
-                        visited_symlinks.remove(symlink_target)
-            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
-            return result
+        return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
+                                root=True, quiet=quiet)
+
+    def _leaf_path(self, source_path):
+        head, tail = os.path.split(source_path)
+        return tail or os.path.basename(head)
+
+    def _list_items(self, path, parent, result, visited_symlinks, root, quiet):
+        logging.debug(u'Listing directory {}...'.format(path))
+        path = to_unicode(path)
+        parent = to_unicode(parent)
+
+        for item in self._os_listdir(path):
+            attempts = self.listing_retry_attempts
+            while attempts > 0:
+                attempts -= 1
+                try:
+                    self._collect_item(path, parent, item, result, visited_symlinks, root, quiet)
+                    break
+                except DefectiveFileSystemError:
+                    if attempts > 0:
+                        logging.warning(u'Retrying due to defective file system in {} seconds...'
+                                        .format(self.listing_retry_delay))
+                        time.sleep(self.listing_retry_delay)
+                    else:
+                        raise
+
+        return result
+
+    def _os_listdir(self, path):
+        try:
+            return os.listdir(to_string(path))
+        except OSError as e:
+            if hasattr(e, 'winerror') and getattr(e, 'winerror') == 59:
+                err_msg = u'Defective file system has been detected for path {}'.format(path)
+                logging.warning(err_msg, exc_info=True)
+                raise DefectiveFileSystemError(err_msg)
+            raise
+
+    def _collect_item(self, path, parent, item, result, visited_symlinks, root, quiet):
+        safe_item = to_unicode(item, replacing=True)
+        safe_absolute_path = os.path.join(path, safe_item)
+
+        logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
+
+        try:
+            item = to_unicode(item)
+            absolute_path = os.path.join(path, item)
+        except UnicodeDecodeError:
+            err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
+            logging.warning(err_msg)
+            if not quiet:
+                click.echo(err_msg)
+            return
+
+        relative_path = item
+        if not root and parent is not None:
+            relative_path = os.path.join(parent, item)
+
+        symlink_target = None
+        if os.path.islink(to_string(absolute_path)):
+            logging.debug(u'Collected symlink {}...'.format(safe_absolute_path))
+            if self.symlinks == AllowedSymlinkValues.FOLLOW:
+                logging.debug(u'Following symlink {}...'.format(safe_absolute_path))
+            elif self.symlinks == AllowedSymlinkValues.SKIP:
+                logging.debug(u'Skipping symlink {}...'.format(safe_absolute_path))
+                return
+            elif self.symlinks == AllowedSymlinkValues.FILTER:
+                symlink_target = os.readlink(to_string(absolute_path))
+                if symlink_target in visited_symlinks:
+                    logging.debug(u'Skipping visited symlink {}...'.format(safe_absolute_path))
+                    return
+                logging.debug(u'Following unvisited symlink {}...'.format(safe_absolute_path))
+                visited_symlinks.add(symlink_target)
+
+        if os.path.isfile(to_string(absolute_path)):
+            logging.debug(u'Collected file {}.'.format(safe_absolute_path))
+            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
+        elif os.path.isdir(to_string(absolute_path)):
+            self._list_items(absolute_path, relative_path, result, visited_symlinks, root=False, quiet=quiet)
+
+        if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
+            visited_symlinks.remove(symlink_target)
 
     def create_folder(self, relative_path):
         absolute_path = os.path.join(self.path, relative_path)
