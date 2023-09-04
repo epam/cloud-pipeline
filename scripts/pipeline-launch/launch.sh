@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -342,6 +342,7 @@ function upgrade_installed_packages {
 function configure_package_manager {
       # Get the distro name and version
       CP_OS=
+      CP_OS_FAMILY=
       CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
@@ -367,8 +368,25 @@ function configure_package_manager {
             CP_VER=$(uname -r)
       fi
 
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
+
       export CP_OS
+      export CP_OS_FAMILY
       export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+
+
+}
 
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
@@ -386,11 +404,11 @@ function configure_package_manager {
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                        
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
@@ -433,6 +451,11 @@ function get_install_command_by_current_distr {
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
+      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
+         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; } && \
+         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
+            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
 
       local _TOOL_TO_CHECK=
       local _TOOLS_TO_INSTALL_VERIFIED=
@@ -448,8 +471,10 @@ function get_install_command_by_current_distr {
       else
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
-                  if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
+                  # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
+                  if [ "$CP_REPO_ENABLED" == "true" ] && \
+                     [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
+                     [ "$CP_VER" == "7" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
@@ -1588,7 +1613,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ]; then
+    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
         _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
         if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
             echo "Systemd already active, skipping installation"
