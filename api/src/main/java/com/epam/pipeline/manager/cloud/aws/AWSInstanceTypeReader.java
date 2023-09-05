@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -47,22 +46,35 @@ public class AWSInstanceTypeReader implements InstanceOfferReader {
 
     public List<InstanceOffer> read() throws IOException {
         final List<InstanceOffer> offers = reader.read();
-        final Map<String, GpuDevice> gpus = collectGpus(offers, region);
+        final Map<String, GpuDevice> gpus = collectGpus(offers);
         return offers.stream()
                 .map(offer -> withGpus(offer, gpus))
                 .collect(Collectors.toList());
     }
 
-    private Map<String, GpuDevice> collectGpus(final List<InstanceOffer> offers, final AwsRegion region) {
-        final Stream<String> instanceTypes = offers.stream()
+    private Map<String, GpuDevice> collectGpus(final List<InstanceOffer> offers) {
+        return findGpus(getGpuInstanceTypes(offers));
+    }
+
+    private List<String> getGpuInstanceTypes(final List<InstanceOffer> offers) {
+        return offers.stream()
                 .filter(it -> CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY.equals(it.getProductFamily()))
                 .filter(it -> it.getGpu() > 0)
                 .map(InstanceOffer::getInstanceType)
-                .distinct();
-        return StreamUtils.chunked(instanceTypes, BATCH_SIZE)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private Map<String, GpuDevice> findGpus(final List<String> instanceTypes) {
+        log.debug("Retrieving {} instance type details for region {} {} #{}...",
+                instanceTypes.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        final Map<String, GpuDevice> gpus = StreamUtils.chunked(instanceTypes.stream(), BATCH_SIZE)
                 .map(chunk -> ec2GpuHelper.findGpus(chunk, region))
                 .reduce(CommonUtils::mergeMaps)
                 .orElseGet(Collections::emptyMap);
+        log.debug("Retrieved {} instance type details for region {} {} #{}.",
+                gpus.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return gpus;
     }
 
     private InstanceOffer withGpus(final InstanceOffer offer, final Map<String, GpuDevice> gpus) {
