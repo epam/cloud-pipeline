@@ -544,6 +544,10 @@ public class SystemPreferences {
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
         "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+    public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
+        "cluster.aws.ec2.pricing.url.template",
+        "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
+        CLUSTER_GROUP, isNotBlank);
     public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
         "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_BATCH_RETRY_COUNT = new IntPreference("cluster.batch.retry.count",
