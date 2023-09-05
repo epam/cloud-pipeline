@@ -135,7 +135,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final GSBucketStorage dataStorage,
                                                                        final String path) {
-        return null;
+        return getHelper(dataStorage).generateUploadUrl(dataStorage, path);
     }
 
     @Override
