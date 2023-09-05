@@ -63,15 +63,22 @@ public class AWSPriceListReader implements InstanceOfferReader {
                 .withFirstRecordAsHeader()
                 .withIgnoreHeaderCase()
                 .withTrim())) {
-
-            return StreamSupport.stream(csvParser.spliterator(), false)
-                    .map(this::parseRecord)
-                    .collect(Collectors.toList());
-
+            return read(csvParser);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private List<InstanceOffer> read(final CSVParser csvParser) {
+        log.debug("Reading price list for region {} {} #{}...",
+                region.getProvider(), region.getRegionCode(), region.getId());
+        final List<InstanceOffer> offers = StreamSupport.stream(csvParser.spliterator(), false)
+                .map(this::parseRecord)
+                .collect(Collectors.toList());
+        log.debug("Read {} price list entries for region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return offers;
     }
 
     private InstanceOffer parseRecord(CSVRecord record) {
