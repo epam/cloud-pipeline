@@ -20,7 +20,7 @@ import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cloud.InstanceOfferReader;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferReader;
 import com.epam.pipeline.utils.CommonUtils;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
-public class AWSInstanceTypeReader implements InstanceOfferReader {
+public class AWSInstanceOfferGpuReader implements InstanceOfferReader {
 
     private static final int BATCH_SIZE = 100;
 
@@ -66,13 +66,13 @@ public class AWSInstanceTypeReader implements InstanceOfferReader {
     }
 
     private Map<String, GpuDevice> findGpus(final List<String> instanceTypes) {
-        log.debug("Retrieving {} instance type details for region {} {} #{}...",
+        log.debug("Retrieving {} instance offers gpus for region {} {} #{}...",
                 instanceTypes.size(), region.getProvider(), region.getRegionCode(), region.getId());
         final Map<String, GpuDevice> gpus = StreamUtils.chunked(instanceTypes.stream(), BATCH_SIZE)
                 .map(chunk -> ec2GpuHelper.findGpus(chunk, region))
                 .reduce(CommonUtils::mergeMaps)
                 .orElseGet(Collections::emptyMap);
-        log.debug("Retrieved {} instance type details for region {} {} #{}.",
+        log.debug("Retrieved {} instance offers gpus for region {} {} #{}.",
                 gpus.size(), region.getProvider(), region.getRegionCode(), region.getId());
         return gpus;
     }

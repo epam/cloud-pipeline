@@ -1,4 +1,4 @@
-package com.epam.pipeline.manager.cloud;
+package com.epam.pipeline.manager.cloud.offer;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import lombok.RequiredArgsConstructor;
