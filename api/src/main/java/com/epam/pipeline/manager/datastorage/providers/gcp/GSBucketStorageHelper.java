@@ -56,6 +56,7 @@ import com.google.cloud.storage.Bucket;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.CopyWriter;
 import com.google.cloud.storage.Cors;
+import com.google.cloud.storage.HttpMethod;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageClass;
 import lombok.RequiredArgsConstructor;
@@ -387,6 +388,19 @@ public class GSBucketStorageHelper {
         final URL signedUrl = client.signUrl(BlobInfo.newBuilder(blob.getBlobId()).build(), 1, TimeUnit.DAYS);
         final DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
         dataStorageDownloadFileUrl.setUrl(signedUrl.toString());
+        dataStorageDownloadFileUrl.setExpires(new Date((new Date()).getTime() + URL_EXPIRATION));
+        return dataStorageDownloadFileUrl;
+    }
+
+    public DataStorageDownloadFileUrl generateUploadUrl(final GSBucketStorage storage, final String path) {
+        final Storage client = gcpClient.buildStorageClient(region);
+
+        final URL url = client.signUrl(BlobInfo.newBuilder(storage.getPath(), path).build(), 1, TimeUnit.DAYS,
+                Storage.SignUrlOption.withV4Signature(),
+                Storage.SignUrlOption.httpMethod(HttpMethod.PUT));
+
+        final DataStorageDownloadFileUrl dataStorageDownloadFileUrl = new DataStorageDownloadFileUrl();
+        dataStorageDownloadFileUrl.setUrl(url.toString());
         dataStorageDownloadFileUrl.setExpires(new Date((new Date()).getTime() + URL_EXPIRATION));
         return dataStorageDownloadFileUrl;
     }
