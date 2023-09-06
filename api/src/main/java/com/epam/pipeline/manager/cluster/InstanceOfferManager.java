@@ -372,7 +372,7 @@ public class InstanceOfferManager {
         LOGGER.debug("Retrieving instance offers for region {} {} #{}...",
                 region.getProvider(), region.getRegionCode(), region.getId());
         final List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
-        LOGGER.debug("Retrieved {} instance offers for regin {} {} #{}.",
+        LOGGER.debug("Retrieved {} instance offers for region {} {} #{}.",
                 offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
         return offers;
     }
