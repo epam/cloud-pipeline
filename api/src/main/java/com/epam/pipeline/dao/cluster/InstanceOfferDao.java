@@ -74,6 +74,12 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(removeInstanceOffersForRegionQuery, regionId);
     }
 
+    @Transactional
+    public void replaceInstanceOffersForRegion(final Long id, final List<InstanceOffer> offers) {
+        removeInstanceOffersForRegion(id);
+        insertInstanceOffers(offers);
+    }
+
     public List<InstanceOffer> loadInstanceOffers(InstanceOfferRequestVO instanceOfferRequestVO) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         String query = wherePattern.matcher(loadInstanceOfferQuery)

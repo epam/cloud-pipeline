@@ -48,8 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
@@ -337,7 +335,6 @@ public class InstanceOfferManager {
         return isPriceTypeAllowed(priceType, toolResource, false);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_STARTED));
         List<InstanceOffer> offers = cloudRegionManager.loadAll()
@@ -350,24 +347,41 @@ public class InstanceOfferManager {
         LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_UPDATED, offers.size()));
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList(Long id) {
         AbstractCloudRegion region = cloudRegionManager.load(id);
         updatePriceList(region);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList(AbstractCloudRegion region) {
         updatePriceList(region);
     }
 
-    private List<InstanceOffer> updatePriceList(AbstractCloudRegion region) {
-        LOGGER.debug("Updating instance offers for {} {} region #{}...",
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
+        try {
+            final List<InstanceOffer> offers = retrievePriceList(region);
+            return replacePriceList(region, offers);
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to update instance offers for region {} {} #{}.",
+                    region.getProvider(), region.getRegionCode(), region.getId(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<InstanceOffer> retrievePriceList(final AbstractCloudRegion region) {
+        LOGGER.debug("Retrieving instance offers for region {} {} #{}...",
                 region.getProvider(), region.getRegionCode(), region.getId());
-        List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
-        instanceOfferDao.removeInstanceOffersForRegion(region.getId());
-        instanceOfferDao.insertInstanceOffers(offers);
-        LOGGER.debug("Inserted {} instance offers to {} {} region #{}.",
+        final List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
+        LOGGER.debug("Retrieved {} instance offers for region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return offers;
+    }
+
+    private List<InstanceOffer> replacePriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
+        LOGGER.debug("Inserting {} instance offers to region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        instanceOfferDao.replaceInstanceOffersForRegion(region.getId(), offers);
+        LOGGER.debug("Inserted {} instance offers to region {} {} #{}.",
                 offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
         return offers;
     }
