@@ -23,22 +23,26 @@ import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.utils.StreamUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.RequiredArgsConstructor;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+@Slf4j
 @RequiredArgsConstructor
 public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
+
     private Pattern wherePattern = Pattern.compile("@WHERE@");
     private static final String AND = " AND ";
 
@@ -49,18 +53,14 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     private final String loadInstanceTypesQuery;
     private final String removeInstanceOffersForRegionQuery;
 
-    private static final int INSERT_BATCH_SIZE = 10000;
-
     @Transactional(propagation = Propagation.MANDATORY)
     @SuppressWarnings("unchecked")
-    public void insertInstanceOffers(List<InstanceOffer> offerList) {
-        StreamUtils.chunked(offerList.stream(), INSERT_BATCH_SIZE).forEach(batchList -> {
-            Map<String, Object>[] batchValues = new Map[batchList.size()];
-            for (int j = 0; j < batchList.size(); j++) {
-                InstanceOffer offer = batchList.get(j);
-                batchValues[j] = InstanceOfferParameters.getParameters(offer).getValues();
-            }
-            getNamedParameterJdbcTemplate().batchUpdate(createInstanceOfferQuery, batchValues);
+    public void insertInstanceOffers(final List<InstanceOffer> offers, final int batchSize) {
+        final AtomicInteger counter = new AtomicInteger();
+        StreamUtils.chunked(offers.stream(), batchSize).forEach(batch -> {
+            log.debug("Inserting {}/{} instance offers...", counter.addAndGet(batch.size()), offers.size());
+            getNamedParameterJdbcTemplate().batchUpdate(createInstanceOfferQuery,
+                    InstanceOfferParameters.getParameters(batch));
         });
     }
 
@@ -75,9 +75,9 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional
-    public void replaceInstanceOffersForRegion(final Long id, final List<InstanceOffer> offers) {
+    public void replaceInstanceOffersForRegion(final Long id, final List<InstanceOffer> offers, int batchSize) {
         removeInstanceOffersForRegion(id);
-        insertInstanceOffers(offers);
+        insertInstanceOffers(offers, batchSize);
     }
 
     public List<InstanceOffer> loadInstanceOffers(InstanceOfferRequestVO instanceOfferRequestVO) {
@@ -224,6 +224,12 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
         GPU_CORES,
         REGION,
         CLOUD_PROVIDER;
+
+        private static Map<String, Object>[] getParameters(final List<InstanceOffer> offers) {
+            return offers.stream()
+                    .map(offer -> InstanceOfferParameters.getParameters(offer).getValues())
+                    .<Map<String, Object>>toArray(Map[]::new);
+        }
 
         static MapSqlParameterSource getParameters(InstanceOffer instanceOffer) {
             MapSqlParameterSource params = new MapSqlParameterSource();

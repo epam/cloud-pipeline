@@ -32,6 +32,9 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferTermTypeFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferUniqueFilter;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
@@ -42,6 +45,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -51,11 +55,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -66,7 +75,12 @@ public class InstanceOfferManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferManager.class);
 
-    private static final String EMPTY = "";
+    private static final int FALLBACK_INSTANCE_OFFER_INSERT_BATCH_SIZE = 10_000;
+    private static final boolean FALLBACK_FILTER_UNIQUE = true;
+    private static final Set<String> FALLBACK_FILTER_TERM_TYPES =
+            Arrays.stream(CloudInstancePriceService.TermType.values())
+                    .map(CloudInstancePriceService.TermType::getName)
+                    .collect(Collectors.toSet());
 
     @Autowired
     private InstanceOfferDao instanceOfferDao;
@@ -360,7 +374,8 @@ public class InstanceOfferManager {
     private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
         try {
             final List<InstanceOffer> offers = retrievePriceList(region);
-            return replacePriceList(region, offers);
+            final List<InstanceOffer> filteredOffers = filterPriceList(region, offers);
+            return replacePriceList(region, filteredOffers);
         } catch (RuntimeException e) {
             LOGGER.error("Failed to update instance offers for region {} {} #{}.",
                     region.getProvider(), region.getRegionCode(), region.getId(), e);
@@ -377,13 +392,64 @@ public class InstanceOfferManager {
         return offers;
     }
 
+    private List<InstanceOffer> filterPriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
+        LOGGER.debug("Filtering instance offers for region {} {} #{}...",
+                region.getProvider(), region.getRegionCode(), region.getId());
+        final InstanceOfferFilter filter = getFilter();
+        final List<InstanceOffer> filteredOffers = filter.filter(offers);
+        LOGGER.debug("Filtered out {} instance offers for region {} {} #{}.",
+                offers.size() - filteredOffers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return filteredOffers;
+    }
+
+    private InstanceOfferFilter getFilter() {
+        return offers -> getFilters().stream()
+                .map(filter -> (Function<List<InstanceOffer>, List<InstanceOffer>>) filter::filter)
+                .reduce(Function::andThen)
+                .orElseGet(Function::identity)
+                .apply(offers);
+    }
+
+    private List<InstanceOfferFilter> getFilters() {
+        final List<InstanceOfferFilter> filters = new ArrayList<>();
+        final Set<String> termTypes = getTermTypes();
+        if (CollectionUtils.isNotEmpty(termTypes)) {
+            filters.add(new InstanceOfferTermTypeFilter(termTypes));
+        }
+        if (isFilterUnique()) {
+            filters.add(new InstanceOfferUniqueFilter());
+        }
+        return filters;
+    }
+
+    private Set<String> getTermTypes() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_TERM_TYPES)
+                .map(preferenceManager::getPreference)
+                .map(it -> StringUtils.split(it, ','))
+                .map(Arrays::asList)
+                .<Set<String>>map(HashSet::new)
+                .orElse(FALLBACK_FILTER_TERM_TYPES);
+    }
+
+    private boolean isFilterUnique() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_UNIQUE)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_UNIQUE);
+    }
+
     private List<InstanceOffer> replacePriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
         LOGGER.debug("Inserting {} instance offers to region {} {} #{}.",
                 offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
-        instanceOfferDao.replaceInstanceOffersForRegion(region.getId(), offers);
+        instanceOfferDao.replaceInstanceOffersForRegion(region.getId(), offers, getInstanceOfferInsertBatchSize());
         LOGGER.debug("Inserted {} instance offers to region {} {} #{}.",
                 offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
         return offers;
+    }
+
+    private int getInstanceOfferInsertBatchSize() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_INSERT_BATCH_SIZE)
+            .map(preferenceManager::getPreference)
+            .orElse(FALLBACK_INSTANCE_OFFER_INSERT_BATCH_SIZE);
     }
 
     private boolean isSpotRequest(Boolean spot) {
