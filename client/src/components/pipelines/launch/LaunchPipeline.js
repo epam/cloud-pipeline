@@ -357,7 +357,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       true,
       undefined,
       undefined,
-      undefined,
+      this.allowedInstanceTypes,
       hostedApplicationConfiguration,
       platform,
       skipCheck
