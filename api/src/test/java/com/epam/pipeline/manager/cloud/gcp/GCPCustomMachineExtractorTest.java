@@ -51,7 +51,7 @@ public class GCPCustomMachineExtractorTest {
     public void testCustomCpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(CPU, RAM)));
-        final GCPMachine expectedMachine = GCPMachine.withCpu("custom-1-2048", CUSTOM_FAMILY, CPU, RAM, 0);
+        final GCPMachine expectedMachine = GCPMachine.withCpu("custom-1-2048", CUSTOM_FAMILY, CPU, RAM, 0, null);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
@@ -66,7 +66,7 @@ public class GCPCustomMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, CPU, RAM, 0,
-                GPU, GpuDevice.from(K_80, NVIDIA));
+                GPU, GpuDevice.from(K_80, NVIDIA), null);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
@@ -82,7 +82,7 @@ public class GCPCustomMachineExtractorTest {
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(2 * CPU,
                 EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM)));
         final GCPMachine expectedMachine = GCPMachine.withCpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, 2 * CPU,
-                EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM);
+                EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM, null);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 

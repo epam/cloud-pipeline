@@ -84,14 +84,14 @@ public class GCPInstancePriceServiceTest {
     private static final GCPResourceMapping MAPPING = new GCPResourceMapping("prefix", "group");
 
     private final GCPRegion region = defaultRegion();
-    private final GCPMachine cpuMachine = GCPMachine.withCpu("n1-standard-1", STANDARD_FAMILY, 1, 4, 0);
+    private final GCPMachine cpuMachine = GCPMachine.withCpu("n1-standard-1", STANDARD_FAMILY, 1, 4, 0, null);
     private final GCPMachine gpuMachine = GCPMachine.withGpu("a2-highgpu-2g", HIGHGPU_FAMILY, 24, 170, 0, 2,
-            NVIDIA_A100);
-    private final GCPMachine customCpuMachine = GCPMachine.withCpu("custom-2-15360", CUSTOM_FAMILY, 2, 13, 2);
+            NVIDIA_A100, null);
+    private final GCPMachine customCpuMachine = GCPMachine.withCpu("custom-2-15360", CUSTOM_FAMILY, 2, 13, 2, null);
     private final GCPMachine customGpuMachine = GCPMachine.withGpu("gpu-custom-2-8192-k80-1", CUSTOM_FAMILY, 2, 8, 0, 3,
-            NVIDIA_K80);
+            NVIDIA_K80, null);
     private final GCPMachine cpuMachineWithNoPrices = GCPMachine.withCpu("n1-familywithoutprices-1",
-            "familywithoutprices", 10, 20, 0);
+            "familywithoutprices", 10, 20, 0, null);
     private final GCPDisk disk = new GCPDisk("SSD", "SSD");
     private final List<AbstractGCPObject> predefinedMachines = Arrays.asList(cpuMachine, gpuMachine,
             cpuMachineWithNoPrices);
@@ -131,7 +131,7 @@ public class GCPInstancePriceServiceTest {
     @Test
     public void refreshShouldGenerateRequestsForExtractedObject() {
         final GCPObjectExtractor extractor = mock(GCPObjectExtractor.class);
-        final GCPMachine machine = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0);
+        final GCPMachine machine = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0, null);
         when(extractor.extract(any())).thenReturn(Collections.singletonList(machine));
         final GCPInstancePriceService service = getService(extractor);
         final List<GCPResourceRequest> expectedRequests = Arrays.asList(
@@ -155,8 +155,8 @@ public class GCPInstancePriceServiceTest {
     @Test
     public void refreshShouldGenerateRequestsForAllExtractedObjects() {
         final GCPObjectExtractor extractor = mock(GCPObjectExtractor.class);
-        final GCPMachine machine1 = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0);
-        final GCPMachine machine2 = GCPMachine.withCpu("another-name", STANDARD_FAMILY, 3, 10.0, 0);
+        final GCPMachine machine1 = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0, null);
+        final GCPMachine machine2 = GCPMachine.withCpu("another-name", STANDARD_FAMILY, 3, 10.0, 0, null);
         when(extractor.extract(any())).thenReturn(Arrays.asList(machine1, machine2));
         final GCPInstancePriceService service = getService(extractor);
         final List<GCPResourceRequest> expectedRequests = Arrays.asList(

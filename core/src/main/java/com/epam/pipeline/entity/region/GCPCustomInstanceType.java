@@ -30,16 +30,17 @@ public class GCPCustomInstanceType {
     private double ram;
     private int gpu;
     private String gpuType;
+    private GCPCustomVMType family;
 
     public static GCPCustomInstanceType withCpu(final int cpu,
                                                 final double ram) {
-        return new GCPCustomInstanceType(cpu, ram, 0, null);
+        return new GCPCustomInstanceType(cpu, ram, 0, null, null);
     }
 
     public static GCPCustomInstanceType withGpu(final int cpu,
                                                 final double ram,
                                                 final int gpu,
                                                 final String gpuType) {
-        return new GCPCustomInstanceType(cpu, ram, gpu, gpuType);
+        return new GCPCustomInstanceType(cpu, ram, gpu, gpuType, null);
     }
 }
