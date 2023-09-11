@@ -30,7 +30,7 @@ public class GCPCustomInstanceType {
     private double ram;
     private int gpu;
     private String gpuType;
-    private GCPCustomVMType family;
+    private String family;
 
     public static GCPCustomInstanceType withCpu(final int cpu,
                                                 final double ram) {

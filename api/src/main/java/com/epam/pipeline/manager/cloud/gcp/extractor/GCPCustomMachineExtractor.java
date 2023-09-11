@@ -28,7 +28,6 @@ import org.apache.commons.math3.util.Precision;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -54,28 +53,27 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
     }
 
     private GCPMachine toMachine(final GCPCustomInstanceType type) {
-        if (Objects.isNull(type.getFamily())) {
-            type.setFamily(GCPCustomVMType.n1);
-        }
+        final GCPCustomVMType instanceFamily = StringUtils.isNotBlank(type.getFamily())
+                ? GCPCustomVMType.valueOf(type.getFamily())
+                : GCPCustomVMType.n1;
 
-        final boolean isExtendedInstance = isInstanceExtended(type);
-        final String name = buildMachineType(type, isExtendedInstance);
-        final double extendedMemory = calculateExtendedMemory(isExtendedInstance, type);
+        final boolean isExtendedInstance = isInstanceExtended(type, instanceFamily);
+        final String name = buildMachineType(type, isExtendedInstance, instanceFamily);
+        final double extendedMemory = calculateExtendedMemory(isExtendedInstance, type, instanceFamily);
         final double defaultMemory = type.getRam() - extendedMemory;
         if (type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())) {
             return GCPMachine.withGpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory,
-                    type.getGpu(), GpuDevice.from(type.getGpuType(), NVIDIA), type.getFamily());
+                    type.getGpu(), GpuDevice.from(type.getGpuType(), NVIDIA), instanceFamily);
         }
-        return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory, type.getFamily());
+        return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory, instanceFamily);
     }
 
-    private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {
-        final String cpuMachineName = customCpuMachine(type);
+    private String gpuCustomGpuMachine(final GCPCustomInstanceType type, final String cpuMachineName) {
         return String.format("gpu-%s-%s-%s", cpuMachineName, type.getGpuType().toLowerCase(), type.getGpu());
     }
 
-    private String customCpuMachine(final GCPCustomInstanceType type) {
-        return String.format("%s%s-%s-%s", type.getFamily().getPrefix(), CUSTOM_FAMILY, type.getCpu(),
+    private String customCpuMachine(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
+        return String.format("%s%s-%s-%s", instanceFamily.getPrefix(), CUSTOM_FAMILY, type.getCpu(),
                 (int) (type.getRam() * MEGABYTES_IN_GIGABYTE));
     }
 
@@ -83,23 +81,26 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         return isExtendedInstance ? String.format("%s-ext", name) : name;
     }
 
-    private String getCustomMachineType(final GCPCustomInstanceType type) {
+    private String getCustomMachineType(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
+        final String cpuMachineName = customCpuMachine(type, instanceFamily);
         return type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
-                ? gpuCustomGpuMachine(type)
-                : customCpuMachine(type);
+                ? gpuCustomGpuMachine(type, cpuMachineName)
+                : cpuMachineName;
     }
 
-    private String buildMachineType(final GCPCustomInstanceType type, final boolean isExtendedInstance) {
-        return withExtendedMachineType(getCustomMachineType(type), isExtendedInstance);
+    private String buildMachineType(final GCPCustomInstanceType type, final boolean isExtendedInstance,
+                                    final GCPCustomVMType instanceFamily) {
+        return withExtendedMachineType(getCustomMachineType(type, instanceFamily), isExtendedInstance);
     }
 
-    private boolean isInstanceExtended(final GCPCustomInstanceType type) {
+    private boolean isInstanceExtended(final GCPCustomInstanceType type, final GCPCustomVMType instanceFamily) {
         final double ramCpuFactor = type.getRam() / type.getCpu();
-        return type.getFamily().isSupportExternal()
-                && Precision.compareTo(ramCpuFactor, type.getFamily().getExtendedFactor(), FACTOR_PRECISION) > 0;
+        return instanceFamily.isSupportExternal()
+                && Precision.compareTo(ramCpuFactor, instanceFamily.getExtendedFactor(), FACTOR_PRECISION) > 0;
     }
 
-    private double calculateExtendedMemory(final boolean isExtendedInstance, final GCPCustomInstanceType type) {
-        return isExtendedInstance ? type.getRam() - type.getCpu() * type.getFamily().getExtendedFactor() : 0.0;
+    private double calculateExtendedMemory(final boolean isExtendedInstance, final GCPCustomInstanceType type,
+                                           final GCPCustomVMType instanceFamily) {
+        return isExtendedInstance ? type.getRam() - type.getCpu() * instanceFamily.getExtendedFactor() : 0.0;
     }
 }

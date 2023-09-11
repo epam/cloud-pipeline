@@ -357,7 +357,7 @@ public class GCPInstancePriceServiceTest {
         assertTrue(optionalOffer.isPresent());
         final InstanceOffer offer = optionalOffer.get();
         assertThat(offer.getVCPU(), is(customCpuMachine.getCpu()));
-        assertThat(offer.getMemory(), is(customCpuMachine.getRam()));
+        assertThat(offer.getMemory(), is(customCpuMachine.getRam() + customCpuMachine.getExtendedRam()));
         assertThat(offer.getGpu(), is(customCpuMachine.getGpu()));
         assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
         final double expectedNanos = CUSTOM_CPU_COST * customCpuMachine.getCpu()

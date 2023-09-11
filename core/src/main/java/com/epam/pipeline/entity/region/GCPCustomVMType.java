@@ -18,6 +18,9 @@ package com.epam.pipeline.entity.region;
 
 import lombok.Getter;
 
+/**
+ * Represents allowed instance families for GCP custom instance types.
+ */
 @Getter
 public enum GCPCustomVMType {
 
