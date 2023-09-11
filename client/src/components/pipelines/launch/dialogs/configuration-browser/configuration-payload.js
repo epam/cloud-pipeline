@@ -365,11 +365,11 @@ class ConfigurationPayload extends React.Component {
             throw new Error(`Tool ${dockerImage} not found`);
           }
         }
-        const instanceTypesRequest = new AllowedInstanceTypes(
-          tool ? tool.id : undefined,
-          cloudRegionId,
-          isSpot
-        );
+        const instanceTypesRequest = new AllowedInstanceTypes({
+          toolId: tool ? tool.id : undefined,
+          regionId: cloudRegionId,
+          spot: isSpot
+        });
         await instanceTypesRequest.fetch();
         if (instanceTypesRequest.error) {
           throw new Error(instanceTypesRequest.error);

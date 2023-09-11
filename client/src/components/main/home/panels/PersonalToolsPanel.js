@@ -422,13 +422,13 @@ export default class PersonalToolsPanel extends React.Component {
         const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
           ? versionSettingValue('cloudRegionId')
           : this.defaultCloudRegionId;
-        const allowedInstanceTypesRequest = new AllowedInstanceTypes(
-          tool.id,
-          cloudRegionIdValue,
-          parameterIsNotEmpty(versionSettingValue('is_spot'))
+        const allowedInstanceTypesRequest = new AllowedInstanceTypes({
+          toolId: tool.id,
+          regionId: cloudRegionIdValue,
+          spot: parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : this.props.preferences.useSpot
-        );
+        });
         await allowedInstanceTypesRequest.fetch();
         let availableInstanceTypes = [];
         let availablePriceTypes = [];

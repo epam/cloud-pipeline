@@ -44,7 +44,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 public class EC2InstancePriceService implements CloudInstancePriceService<AwsRegion> {
-    private static final String AWS_EC2_PRICING_URL_TEMPLATE =
+
+    private static final String FALLBACK_AWS_EC2_PRICING_URL_TEMPLATE =
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv";
 
     private final InstanceOfferDao instanceOfferDao;
@@ -58,8 +59,7 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
 
     @Override
     public List<InstanceOffer> refreshPriceListForRegion(final AwsRegion region) {
-        final String url = String.format(AWS_EC2_PRICING_URL_TEMPLATE, region.getRegionCode());
-        try (InputStream is = new URL(url).openStream();
+        try (InputStream is = new URL(getPricingUrl(region)).openStream();
              BufferedReader br = new BufferedReader(new InputStreamReader(is));
              AWSPriceListReader plr = new AWSPriceListReader(br, region, getComputeFamilies());
              AWSInstanceTypeReader itr = new AWSInstanceTypeReader(plr, region, ec2Helper, getGpuCoresMapping())) {
@@ -68,6 +68,16 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private String getPricingUrl(final AwsRegion region) {
+        return String.format(getPricingUrlTemplate(), region.getRegionCode());
+    }
+
+    private String getPricingUrlTemplate() {
+        return Optional.of(SystemPreferences.CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_AWS_EC2_PRICING_URL_TEMPLATE);
     }
 
     private Set<String> getComputeFamilies() {

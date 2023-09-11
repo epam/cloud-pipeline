@@ -1537,11 +1537,11 @@ export default class Tool extends localization.LocalizedReactComponent {
     const isSpotValue = parameterIsNotEmpty(versionSettingValue('is_spot'))
       ? versionSettingValue('is_spot')
       : this.props.preferences.useSpot;
-    const allowedInstanceTypesRequest = new AllowedInstanceTypes(
-      this.props.toolId,
-      cloudRegionIdValue,
-      isSpotValue
-    );
+    const allowedInstanceTypesRequest = new AllowedInstanceTypes({
+      toolId: this.props.toolId,
+      regionId: cloudRegionIdValue,
+      spot: isSpotValue
+    });
     await allowedInstanceTypesRequest.fetch();
     const payload = modifyPayloadForAllowedInstanceTypes({
       instanceType:

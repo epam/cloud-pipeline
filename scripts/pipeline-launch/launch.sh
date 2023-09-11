@@ -586,10 +586,10 @@ function get_install_command_by_current_distr {
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
             check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  # Centos 8 throws "No available modular metadata for modular package" if all the other repos are disabled
+                  # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
                   if [ "$CP_REPO_ENABLED" == "true" ] && \
                      [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
-                     [ "$CP_VER" != "8" ]; then
+                     [ "$CP_VER" == "7" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"

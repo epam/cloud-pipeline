@@ -122,15 +122,18 @@
 
 .wdl-graph-side-panel-content-container {
   flex: 1;
+  display: flex;
   flex-direction: column;
   padding: 5px;
   overflow: auto;
+  width: 100%;
 }
 
 .wdl-graph-side-panel-content {
   flex-direction: column;
-  overflow-y: auto;
+  overflow: auto;
   flex: 1;
+  width: 100%;
 }
 
 .wdl-graph-side-panel-content button {
@@ -223,13 +226,45 @@
   }
 }
 
-.search-item-type {
-  min-width: 40px;
-  padding: 0 2px;
-  margin-right: 5px;
-  display: inline-block;
+.search-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: stretch;
+}
+
+.search-item-row {
+  line-height: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  width: 100%;
+  overflow: hidden;
+}
+
+.search-item-description-row {
+  line-height: 10px;
+  margin: 0;
+  width: 100%;
+  font-size: smaller;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-item .entity-type {
   font-size: x-small;
-  text-align: right;
+  text-transform: uppercase;
+  margin-right: 5px;
+}
+
+.search-item .entity-name {
+  font-weight: bold;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cwl-graph {
