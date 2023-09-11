@@ -75,7 +75,7 @@ public class InstanceOfferDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional
-    public void replaceInstanceOffersForRegion(final Long id, final List<InstanceOffer> offers, int batchSize) {
+    public void replaceInstanceOffersForRegion(final Long id, final List<InstanceOffer> offers, final int batchSize) {
         removeInstanceOffersForRegion(id);
         insertInstanceOffers(offers, batchSize);
     }
