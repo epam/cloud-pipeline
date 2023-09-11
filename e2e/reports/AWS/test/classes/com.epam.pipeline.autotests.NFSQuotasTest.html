@@ -23,13 +23,13 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">8</div>
+<div class="counter">7</div>
 <p>tests</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">4</div>
+<div class="counter">3</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">50m11.55s</div>
+<div class="counter">45m56.99s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">33%</div>
+<div class="percent">40%</div>
 <p>successful</p>
 </div>
 </td>
@@ -73,64 +73,15 @@
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
 <div class="test">
-<a name="removeNodes"></a>
-<h3 class="failures">removeNodes</h3>
-<span class="code">
-<pre>Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK'])}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1693691363754.85.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1693691363754.85.html
-Timeout: 210 s.
-Caused by: Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK']).findBy(visible)}
-Expected: visible
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:51)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.impl.WebElementSource.findAndAssertElementIsVisible(WebElementSource.java:72)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
-	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.click(Unknown Source)
-	at com.epam.pipeline.autotests.ao.ClusterMenuAO.removeNode(ClusterMenuAO.java:178)
-	at com.epam.pipeline.autotests.ao.ClusterMenuAO.removeNodeIfPresent(ClusterMenuAO.java:187)
-	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.lambda$removeNodes$0(AbstractSeveralPipelineRunningTest.java:54)
-	at java.util.ArrayList.forEach(ArrayList.java:1259)
-	at com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest.removeNodes(AbstractSeveralPipelineRunningTest.java:51)
-	at sun.reflect.GeneratedMethodAccessor32.invoke(Unknown Source)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeConfigurationMethod(Invoker.java:523)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:224)
-	at org.testng.internal.Invoker.invokeConfigurations(Invoker.java:146)
-	at org.testng.internal.TestMethodWorker.invokeAfterClassMethods(TestMethodWorker.java:212)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:112)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {visible(By.xpath: .//button[normalize-space(.) = 'OK']).findBy(visible)}
-Expected: visible
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 24 more
-</pre>
-</span>
-</div>
-<div class="test">
 <a name="removeStorage"></a>
 <h3 class="failures">removeStorage</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4603213564142248987')]]}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4604799176214505403')]]}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1693691102930.84.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1693691102930.84.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694394420682.99.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694394420682.99.html
 Timeout: 210 s.
-Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4603213564142248987')]]
+Caused by: NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4604799176214505403')]]
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
@@ -160,10 +111,10 @@ Caused by: NoSuchElementException: Cannot locate an element using title of a By.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4603213564142248987')]]
+Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'epmcmbi-test-nfs-4604799176214505403')]]
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'd7961994369c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: driver.version: unknown
 	at org.openqa.selenium.By.findElement(By.java:162)
 	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
@@ -180,8 +131,8 @@ Driver info: driver.version: unknown
 <span class="code">
 <pre>Element not found {By.className: estricted-images-info__container}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1693689812397.82.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1693689812397.82.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694393125701.97.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694393125701.97.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;estricted-images-info__container&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -216,10 +167,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'd7961994369c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
+Session ID: 04f3531c9aea33952796e6d82dd076db
 *** Element info: {Using=class name, value=estricted-images-info__container}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -250,8 +201,8 @@ Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
 <span class="code">
 <pre>Element not found {By.className: estricted-images-info__container}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1693690885909.83.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1693690885909.83.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694394203060.98.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694394203060.98.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;class name&quot;,&quot;selector&quot;:&quot;estricted-images-info__container&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -286,10 +237,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '3e8f5e8ef344', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'd7961994369c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
+Session ID: 04f3531c9aea33952796e6d82dd076db
 *** Element info: {Using=class name, value=estricted-images-info__container}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -326,28 +277,23 @@ Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
 </tr>
 </thead>
 <tr>
-<td class="failures">removeNodes</td>
-<td>3m42.64s</td>
-<td class="failures">failed</td>
-</tr>
-<tr>
 <td class="failures">removeStorage</td>
-<td>3m37.05s</td>
+<td>3m37.74s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateFSMountConfigureNotifications - 2182_3</td>
-<td>23m53.73s</td>
+<td>23m19.29s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateFSMountConfigureNotificationsForm - 2182_1</td>
-<td>6.633s</td>
+<td>6.829s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validateFSMountConfigureNotificationsFormForUser - 2182_2</td>
-<td>59.824s</td>
+<td>58.159s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
@@ -362,7 +308,7 @@ Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
 </tr>
 <tr>
 <td class="failures">validateReadOnlyQuota - 2182_4</td>
-<td>17m51.67s</td>
+<td>17m54.97s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -370,7 +316,7 @@ Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
 <div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 49565 from [49563, 49565]
+<pre>Returns latest run with runId 49854 from [49853, 49854]
 </pre>
 </span>
 </div>
@@ -382,7 +328,7 @@ Session ID: b09b87886cd6fdf91ecc4dd26ab9cd0e
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 2, 2023 10:52:03 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 11, 2023 2:33:57 AM</p>
 </div>
 </div>
 </body>
