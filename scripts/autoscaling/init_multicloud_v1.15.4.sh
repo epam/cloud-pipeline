@@ -339,6 +339,12 @@ _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
+_KUBE_PULL_TIMEOUT="@kube_pull_deadline@"
+if [ -z "$_KUBE_PULL_TIMEOUT" ] || [[ "$_KUBE_PULL_TIMEOUT" == "@"*"@" ]]; then
+  _KUBE_PULL_TIMEOUT="10m"
+fi
+_KUBE_OTHER_ARGS="--image-pull-progress-deadline $_KUBE_PULL_TIMEOUT"
+
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
 _KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
 rm -f $_KUBELET_INITD_DROPIN_PATH
@@ -356,7 +362,7 @@ _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESE
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
-echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
+echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS $_KUBE_OTHER_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
 systemctl enable docker
