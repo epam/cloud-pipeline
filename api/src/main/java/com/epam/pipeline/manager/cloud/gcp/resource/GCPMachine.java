@@ -140,7 +140,7 @@ public class GCPMachine extends AbstractGCPObject {
 
     @Override
     public String billingKey(final GCPBilling billing, final GCPResourceType type) {
-        return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), calculateBillingKeyFamily(type));
+        return String.format(BILLING_KEY_PATTERN, type.alias(), billing.alias(), getBillingKeyFamily(type));
     }
 
     @Override
@@ -148,7 +148,7 @@ public class GCPMachine extends AbstractGCPObject {
         return "Compute";
     }
 
-    private String calculateBillingKeyFamily(final GCPResourceType type) {
+    private String getBillingKeyFamily(final GCPResourceType type) {
         if (type == GCPResourceType.GPU) {
             return Optional.ofNullable(gpuDevice)
                             .map(GpuDevice::getName)
