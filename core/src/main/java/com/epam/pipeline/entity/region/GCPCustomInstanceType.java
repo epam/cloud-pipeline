@@ -37,6 +37,12 @@ public class GCPCustomInstanceType {
         return new GCPCustomInstanceType(cpu, ram, 0, null, null);
     }
 
+    public static GCPCustomInstanceType withCpu(final int cpu,
+                                                final double ram,
+                                                final String family) {
+        return new GCPCustomInstanceType(cpu, ram, 0, null, family);
+    }
+
     public static GCPCustomInstanceType withGpu(final int cpu,
                                                 final double ram,
                                                 final int gpu,

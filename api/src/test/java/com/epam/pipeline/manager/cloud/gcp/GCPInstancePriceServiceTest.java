@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
@@ -88,6 +89,8 @@ public class GCPInstancePriceServiceTest {
     private final GCPMachine gpuMachine = GCPMachine.withGpu("a2-highgpu-2g", HIGHGPU_FAMILY, 24, 170, 0, 2,
             NVIDIA_A100, null);
     private final GCPMachine customCpuMachine = GCPMachine.withCpu("custom-2-15360", CUSTOM_FAMILY, 2, 13, 2, null);
+    private final GCPMachine customCpuN2Machine = GCPMachine.withCpu("n2-custom-2-15360", CUSTOM_FAMILY,
+            2, 13, 2, GCPCustomVMType.n2);
     private final GCPMachine customGpuMachine = GCPMachine.withGpu("gpu-custom-2-8192-k80-1", CUSTOM_FAMILY, 2, 8, 0, 3,
             NVIDIA_K80, null);
     private final GCPMachine cpuMachineWithNoPrices = GCPMachine.withCpu("n1-familywithoutprices-1",
@@ -95,7 +98,8 @@ public class GCPInstancePriceServiceTest {
     private final GCPDisk disk = new GCPDisk("SSD", "SSD");
     private final List<AbstractGCPObject> predefinedMachines = Arrays.asList(cpuMachine, gpuMachine,
             cpuMachineWithNoPrices);
-    private final List<AbstractGCPObject> customMachines = Arrays.asList(customGpuMachine, customCpuMachine);
+    private final List<AbstractGCPObject> customMachines =
+            Arrays.asList(customGpuMachine, customCpuMachine, customCpuN2Machine);
     private final List<AbstractGCPObject> disks = Collections.singletonList(disk);
 
     private final GCPObjectExtractor predefinedMachinesExtractor = mock(GCPObjectExtractor.class);
@@ -121,6 +125,7 @@ public class GCPInstancePriceServiceTest {
                         "cpu_ondemand_standard", "cpu_preemptible_standard",
                         "ram_ondemand_standard", "ram_preemptible_standard",
                         "cpu_ondemand_custom", "ram_ondemand_custom", "extendedram_ondemand_custom",
+                        "cpu_ondemand_n2-custom", "ram_ondemand_n2-custom", "extendedram_ondemand_n2-custom",
                         "gpu_ondemand_a100", "gpu_preemptible_a100",
                         "gpu_ondemand_k80", "gpu_preemptible_k80",
                         "disk_ondemand", "disk_preemptible"));
@@ -130,35 +135,20 @@ public class GCPInstancePriceServiceTest {
 
     @Test
     public void refreshShouldGenerateRequestsForExtractedObject() {
-        final GCPObjectExtractor extractor = mock(GCPObjectExtractor.class);
         final GCPMachine machine = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0, null);
-        when(extractor.extract(any())).thenReturn(Collections.singletonList(machine));
-        final GCPInstancePriceService service = getService(extractor);
         final List<GCPResourceRequest> expectedRequests = Arrays.asList(
                 new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.ON_DEMAND, machine, MAPPING),
                 new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.ON_DEMAND, machine, MAPPING),
                 new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.PREEMPTIBLE, machine, MAPPING),
                 new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.PREEMPTIBLE, machine, MAPPING)
         );
-
-        service.refreshPriceListForRegion(region);
-
-        final ArgumentCaptor<List<GCPResourceRequest>> captor = ArgumentCaptor.forClass((Class) List.class);
-        verify(priceLoader).load(eq(region), captor.capture());
-        final List<GCPResourceRequest> actualRequests = captor.getValue();
-        assertThat(actualRequests.size(), is(expectedRequests.size()));
-        assertTrue(expectedRequests.stream()
-                .map(request -> actualRequests.stream().filter(request::equals).findFirst())
-                .allMatch(Optional::isPresent));
+        refreshShouldGenerateRequestsForExtractedMachines(expectedRequests, Collections.singletonList(machine));
     }
 
     @Test
     public void refreshShouldGenerateRequestsForAllExtractedObjects() {
-        final GCPObjectExtractor extractor = mock(GCPObjectExtractor.class);
         final GCPMachine machine1 = GCPMachine.withCpu("name", STANDARD_FAMILY, 2, 8.0, 0, null);
         final GCPMachine machine2 = GCPMachine.withCpu("another-name", STANDARD_FAMILY, 3, 10.0, 0, null);
-        when(extractor.extract(any())).thenReturn(Arrays.asList(machine1, machine2));
-        final GCPInstancePriceService service = getService(extractor);
         final List<GCPResourceRequest> expectedRequests = Arrays.asList(
                 new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.ON_DEMAND, machine1, MAPPING),
                 new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.ON_DEMAND, machine1, MAPPING),
@@ -169,16 +159,29 @@ public class GCPInstancePriceServiceTest {
                 new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.PREEMPTIBLE, machine1, MAPPING),
                 new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.PREEMPTIBLE, machine1, MAPPING)
         );
+        refreshShouldGenerateRequestsForExtractedMachines(expectedRequests, Arrays.asList(machine1, machine2));
+    }
 
-        service.refreshPriceListForRegion(region);
+    @Test
+    public void refreshShouldGenerateRequestsForCustomExtractedMachines() {
+        final List<GCPResourceRequest> expectedRequests = Arrays.asList(
+                new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.ON_DEMAND, customCpuMachine, MAPPING),
+                new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.ON_DEMAND, customCpuMachine, MAPPING),
+                new GCPResourceRequest(GCPResourceType.EXTENDED_RAM, GCPBilling.ON_DEMAND, customCpuMachine, MAPPING)
+        );
+        final List<AbstractGCPObject> extractedMachines = Collections.singletonList(customCpuMachine);
+        refreshShouldGenerateRequestsForExtractedMachines(expectedRequests, extractedMachines);
+    }
 
-        final ArgumentCaptor<List<GCPResourceRequest>> captor = ArgumentCaptor.forClass((Class) List.class);
-        verify(priceLoader).load(eq(region), captor.capture());
-        final List<GCPResourceRequest> actualRequests = captor.getValue();
-        assertThat(actualRequests.size(), is(expectedRequests.size()));
-        assertTrue(expectedRequests.stream()
-                .map(request -> actualRequests.stream().filter(request::equals).findFirst())
-                .allMatch(Optional::isPresent));
+    @Test
+    public void refreshShouldGenerateRequestsForCustomExtractedMachinesWithFamily() {
+        final List<GCPResourceRequest> expectedRequests = Arrays.asList(
+                new GCPResourceRequest(GCPResourceType.CPU, GCPBilling.ON_DEMAND, customCpuN2Machine, MAPPING),
+                new GCPResourceRequest(GCPResourceType.RAM, GCPBilling.ON_DEMAND, customCpuN2Machine, MAPPING),
+                new GCPResourceRequest(GCPResourceType.EXTENDED_RAM, GCPBilling.ON_DEMAND, customCpuN2Machine, MAPPING)
+        );
+        final List<AbstractGCPObject> extractedMachines = Collections.singletonList(customCpuN2Machine);
+        refreshShouldGenerateRequestsForExtractedMachines(expectedRequests, extractedMachines);
     }
 
     @Test
@@ -342,29 +345,12 @@ public class GCPInstancePriceServiceTest {
 
     @Test
     public void refreshShouldReturnExtendedCustomMachineInstanceOffers() {
-        when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
-                price(GCPResourceType.CPU, GCPBilling.ON_DEMAND, customCpuMachine, CUSTOM_CPU_COST),
-                price(GCPResourceType.RAM, GCPBilling.ON_DEMAND, customCpuMachine, CUSTOM_RAM_COST),
-                price(GCPResourceType.EXTENDED_RAM, GCPBilling.ON_DEMAND, customCpuMachine, CUSTOM_EXTENDED_RAM_COST)
-        )));
-        final List<InstanceOffer> offers = service.refreshPriceListForRegion(region);
+        shouldReturnExtendedCustomMachineInstanceOffers(customCpuMachine);
+    }
 
-        final Optional<InstanceOffer> optionalOffer = offers.stream()
-                .filter(it -> it.getInstanceType().equals(customCpuMachine.getName()))
-                .filter(it -> it.getTermType().equals(CloudInstancePriceService.TermType.ON_DEMAND.getName()))
-                .findFirst();
-
-        assertTrue(optionalOffer.isPresent());
-        final InstanceOffer offer = optionalOffer.get();
-        assertThat(offer.getVCPU(), is(customCpuMachine.getCpu()));
-        assertThat(offer.getMemory(), is(customCpuMachine.getRam() + customCpuMachine.getExtendedRam()));
-        assertThat(offer.getGpu(), is(customCpuMachine.getGpu()));
-        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
-        final double expectedNanos = CUSTOM_CPU_COST * customCpuMachine.getCpu()
-                + CUSTOM_RAM_COST * customCpuMachine.getRam()
-                + CUSTOM_EXTENDED_RAM_COST * customCpuMachine.getExtendedRam();
-        final double expectedPrice = expectedNanos / GIGABYTE;
-        assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
+    @Test
+    public void refreshShouldReturnExtendedCustomMachineInstanceOffersWithFamilies() {
+        shouldReturnExtendedCustomMachineInstanceOffers(customCpuN2Machine);
     }
 
     @Test
@@ -402,5 +388,48 @@ public class GCPInstancePriceServiceTest {
         region.setProject("project");
         region.setRegionCode("us-east1-b");
         return region;
+    }
+
+    private void shouldReturnExtendedCustomMachineInstanceOffers(final GCPMachine customMachine) {
+        when(priceLoader.load(any(), any())).thenReturn(new HashSet<>(Arrays.asList(
+                price(GCPResourceType.CPU, GCPBilling.ON_DEMAND, customMachine, CUSTOM_CPU_COST),
+                price(GCPResourceType.RAM, GCPBilling.ON_DEMAND, customMachine, CUSTOM_RAM_COST),
+                price(GCPResourceType.EXTENDED_RAM, GCPBilling.ON_DEMAND, customMachine, CUSTOM_EXTENDED_RAM_COST)
+        )));
+        final List<InstanceOffer> offers = service.refreshPriceListForRegion(region);
+
+        final Optional<InstanceOffer> optionalOffer = offers.stream()
+                .filter(it -> it.getInstanceType().equals(customMachine.getName()))
+                .filter(it -> it.getTermType().equals(CloudInstancePriceService.TermType.ON_DEMAND.getName()))
+                .findFirst();
+
+        assertTrue(optionalOffer.isPresent());
+        final InstanceOffer offer = optionalOffer.get();
+        assertThat(offer.getVCPU(), is(customMachine.getCpu()));
+        assertThat(offer.getMemory(), is(customMachine.getRam() + customMachine.getExtendedRam()));
+        assertThat(offer.getGpu(), is(customMachine.getGpu()));
+        assertTrue(offer.getProductFamily().toLowerCase().contains(INSTANCE_PRODUCT_FAMILY));
+        final double expectedNanos = CUSTOM_CPU_COST * customMachine.getCpu()
+                + CUSTOM_RAM_COST * customMachine.getRam()
+                + CUSTOM_EXTENDED_RAM_COST * customMachine.getExtendedRam();
+        final double expectedPrice = expectedNanos / GIGABYTE;
+        assertEquals(expectedPrice, offer.getPricePerUnit(), DELTA);
+    }
+
+    private void refreshShouldGenerateRequestsForExtractedMachines(final List<GCPResourceRequest> expectedRequests,
+                                                                   final List<AbstractGCPObject> extractedObjects) {
+        final GCPObjectExtractor extractor = mock(GCPObjectExtractor.class);
+        when(extractor.extract(any())).thenReturn(extractedObjects);
+        final GCPInstancePriceService service = getService(extractor);
+
+        service.refreshPriceListForRegion(region);
+
+        final ArgumentCaptor<List<GCPResourceRequest>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(priceLoader).load(eq(region), captor.capture());
+        final List<GCPResourceRequest> actualRequests = captor.getValue();
+        assertThat(actualRequests.size(), is(expectedRequests.size()));
+        assertTrue(expectedRequests.stream()
+                .map(request -> actualRequests.stream().filter(request::equals).findFirst())
+                .allMatch(Optional::isPresent));
     }
 }
