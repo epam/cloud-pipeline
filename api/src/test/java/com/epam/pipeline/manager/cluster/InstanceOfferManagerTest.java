@@ -46,6 +46,7 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
     private static final String M5_PATTERN = "m5.*";
     private static final String M5_X5_PATTERN = "m5.*,x5.*";
     private static final ContextualPreferenceExternalResource NO_TOOL = null;
+    private static final int BATCH_SIZE = 10_000;
 
     @Autowired
     private PreferenceManager preferenceManager;
@@ -67,7 +68,7 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
         cloudRegionDao.create(region);
         instanceOfferDao.insertInstanceOffers(Arrays.asList(makeInstanceOffer(M5_INSTANCE_TYPE),
                                                             makeInstanceOffer(M5_LARGE_INSTANCE_TYPE),
-                                                            makeInstanceOffer(X5_INSTANCE_TYPE)));
+                                                            makeInstanceOffer(X5_INSTANCE_TYPE)), BATCH_SIZE);
     }
 
     private InstanceOffer makeInstanceOffer(String type) {
