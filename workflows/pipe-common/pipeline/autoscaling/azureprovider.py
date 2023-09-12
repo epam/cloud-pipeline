@@ -26,7 +26,8 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from msrestazure.azure_exceptions import CloudError
 
-from pipeline.autoscaling.cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from pipeline.autoscaling.cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE
 
 from pipeline.autoscaling import utils
 
@@ -403,7 +404,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
             self.__delete_all_by_run_id(node_parameters['tags']['Name'])
             error_message = client_error.__str__()
             if 'OperationNotAllowed' in error_message or 'ResourceQuotaExceeded' in error_message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error

@@ -18,7 +18,9 @@ import sys
 import time
 import uuid
 
-from cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE, \
+    INSUFFICIENT_CAPACITY_ERROR_MESSAGE, INSUFFICIENT_CAPACITY_EXIT_CODE
 from random import randint
 from time import sleep
 
@@ -122,9 +124,13 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                 body=body).execute()
             self.__wait_for_operation(response['name'])
         except Exception as client_error:
-            if 'quota' in client_error.__str__().lower():
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+            err_msg = client_error.__str__().lower()
+            if 'quota' in err_msg:
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
+            elif 'instance is currently unavailable' in err_msg:
+                utils.pipe_log_warn(INSUFFICIENT_CAPACITY_ERROR_MESSAGE)
+                sys.exit(INSUFFICIENT_CAPACITY_EXIT_CODE)
             else:
                 raise client_error
 
