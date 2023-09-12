@@ -27,7 +27,8 @@ import sys
 
 from botocore.exceptions import ClientError
 
-from .cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from .cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from pipeline import TaskStatus
 from . import utils
 
@@ -261,7 +262,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             )
         except ClientError as client_error:
             if 'InstanceLimitExceeded' in client_error.message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error
@@ -443,7 +444,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         except ClientError as client_error:
             if 'Max spot instance count exceeded' in client_error.message or \
                     'InstanceLimitExceeded' in client_error.message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error
