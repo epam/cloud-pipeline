@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import os
+import shutil
 import stat
 import sys
+import tarfile
 from abc import ABCMeta
 
 import click
@@ -85,23 +87,77 @@ class CLIVersionUpdater:
             raise RuntimeError("Failed to find Cloud Pipeline CLI download url")
         return api_path.replace(self.CP_RESTAPI_SUFFIX, self.get_download_suffix())
 
+    @staticmethod
+    def get_tmp_folder():
+        home = os.path.expanduser("~")
+        tmp_folder = os.path.join(home, '.pipe', 'tmp')
+        if not os.path.exists(tmp_folder):
+            os.makedirs(tmp_folder)
+        return tmp_folder
+
 
 class LinuxUpdater(CLIVersionUpdater):
 
+    def __init__(self):
+        self.one_file_dist, self.centos_6_dist = self.get_bundle_info()
+
+    BUNDLE_FILE_NAME = "bundle.info"
+    ONE_FOLDER = "one-folder"
+    ONE_FILE = "one-file"
+    CENTOS_6 = "centos:6"
+
     def get_download_suffix(self):
-        return 'pipe'
+        prefix = 'pipe-el6' if self.centos_6_dist else 'pipe'
+        return prefix + ('' if self.one_file_dist else '.tar.gz')
 
     def update_version(self, path):
+        if self.one_file_dist:
+            self.one_file_update(path)
+        else:
+            self.one_folder_update(path)
+
+    def one_folder_update(self, path):
+        path_to_exec_folder = sys._MEIPASS
+        self.check_write_permissions(path_to_exec_folder)
+
+        tmp_folder = self.get_tmp_folder()
+        random_prefix = str(uuid.uuid4()).replace("-", "")
+        self.check_write_permissions(tmp_folder)
+        path_to_dist_tar = os.path.join(tmp_folder, "pipe-%s.tar.gz" % random_prefix)
+        self.download_executable(path_to_dist_tar, path)
+
+        path_to_unpack = os.path.join(tmp_folder, "pipe-%s" % random_prefix)
+        with tarfile.open(path_to_dist_tar) as tar:
+            tar.extractall(path=path_to_unpack)
+        os.remove(path_to_dist_tar)
+        self.delete_folder_tree(path_to_exec_folder)
+        self.copytree(os.path.join(path_to_unpack, "pipe"), path_to_exec_folder)
+        shutil.rmtree(path_to_unpack)
+
+    def one_file_update(self, path):
         path_to_script = os.path.realpath(sys.executable)
         self.check_write_permissions(os.path.dirname(path_to_script))
-        self.replace_executable(path_to_script, path)
+        os.remove(path_to_script)
+        self.download_executable(path_to_script, path)
         self.set_x_permission(path_to_script)
 
+    def get_bundle_info(self):
+        bundle_file = self.get_bundle_file_path()
+        if not os.path.exists(bundle_file):
+            return True, False
+        dist_type, dist_version = self.get_bundle_file_content(bundle_file)
+        is_centos_6_dist = dist_version == self.CENTOS_6
+        if dist_type == self.ONE_FILE:
+            return True, is_centos_6_dist
+        elif dist_type == self.ONE_FOLDER:
+            return False, is_centos_6_dist
+        else:
+            click.echo("Failed to update Cloud Pipeline CLI: update type '%s' not found" % dist_type, err=True)
+
     @staticmethod
-    def replace_executable(path_to_script, path):
-        os.remove(path_to_script)
+    def download_executable(path_to_file, path):
         request = requests.get(path, verify=False)
-        open(path_to_script, 'wb').write(request.content)
+        open(path_to_file, 'wb').write(request.content)
 
     @staticmethod
     def set_x_permission(path_to_script):
@@ -112,6 +168,34 @@ class LinuxUpdater(CLIVersionUpdater):
     def check_write_permissions(path):
         if not os.access(path, os.R_OK) or not os.access(path, os.W_OK):
             raise RuntimeError(PERMISSION_DENIED_ERROR % path)
+
+    @staticmethod
+    def get_bundle_file_path():
+        return os.path.join(sys._MEIPASS, LinuxUpdater.BUNDLE_FILE_NAME)
+
+    @staticmethod
+    def get_bundle_file_content(bundle_file_path):
+        with open(bundle_file_path, 'r') as bundle_file:
+            content = bundle_file.readlines()
+        return content[0].strip(), content[1].strip() if len(content) > 1 else ""
+
+    @staticmethod
+    def delete_folder_tree(path):
+        for root, dirs, files in os.walk(path):
+            for f in files:
+                os.unlink(os.path.join(root, f))
+            for d in dirs:
+                shutil.rmtree(os.path.join(root, d))
+
+    @staticmethod
+    def copytree(src, dst):
+        for item in os.listdir(src):
+            source = os.path.join(src, item)
+            destination = os.path.join(dst, item)
+            if os.path.isdir(source):
+                shutil.copytree(source, destination)
+            else:
+                shutil.copy2(source, destination)
 
 
 class WindowsUpdater(CLIVersionUpdater):
@@ -221,14 +305,6 @@ class WindowsUpdater(CLIVersionUpdater):
             zip_ref.extractall(tmp_src_dir)
         os.remove(path_to_zip)
         return tmp_src_dir
-
-    @staticmethod
-    def get_tmp_folder():
-        home = os.path.expanduser("~")
-        tmp_folder = os.path.join(home, '.pipe', 'tmp')
-        if not os.path.exists(tmp_folder):
-            os.makedirs(tmp_folder)
-        return tmp_folder
 
     @staticmethod
     def check_write_permissions(path, prefix):
