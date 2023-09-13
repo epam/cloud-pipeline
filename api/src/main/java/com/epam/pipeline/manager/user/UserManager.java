@@ -26,6 +26,7 @@ import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -40,7 +41,10 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
+import com.epam.pipeline.manager.keypair.SshKeyPair;
+import com.epam.pipeline.manager.keypair.SshKeyPairManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -78,6 +82,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -87,6 +92,8 @@ import java.util.stream.StreamSupport;
 @AclSync
 public class UserManager implements SecuredEntityManager {
 
+    private static final String FALLBACK_SSH_PUB_METADATA_KEY = "ssh_pub";
+    private static final String FALLBACK_SSH_PRV_METADATA_KEY = "ssh_prv";
     public static final String EMAIL_ATTRIBUTE = "email";
 
     @Autowired
@@ -134,24 +141,77 @@ public class UserManager implements SecuredEntityManager {
     @Autowired
     private QuotaService quotaService;
 
+    @Autowired
+    private SshKeyPairManager sshKeyPairManager;
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser create(String name, List<Long> roles,
                                List<String> groups, Map<String, String> attributes,
                                Long defaultStorageId) {
-        final PipelineUser newUser = create(name, roles, groups, attributes);
+        PipelineUser user = create(name, roles, groups, attributes);
+        user = configureUserDefaultStorage(user, defaultStorageId);
+        return configureUserDefaultMetadata(user);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineUser configureUserDefaultStorage(final PipelineUser user, final Long defaultStorageId) {
         if (defaultStorageId != null) {
             storageValidator.validate(defaultStorageId);
-            assignDefaultStorageToUser(newUser, defaultStorageId);
-        } else {
-            try {
-                return initUserDefaultStorage(newUser);
-            } catch (RuntimeException e) {
-                log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                        name, e.getMessage()));
-            }
+            assignDefaultStorageToUser(user, defaultStorageId);
+            return user;
         }
-        return newUser;
+        try {
+            return initUserDefaultStorage(user);
+        } catch (RuntimeException e) {
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                    user.getUserName(), e.getMessage()));
+            return user;
+        }
+    }
+
+    private PipelineUser configureUserDefaultMetadata(final PipelineUser user) {
+        if (isSshKeysAutoCreationEnabled()) {
+            configureSshKeys(user);
+        }
+        return user;
+    }
+
+    private boolean isSshKeysAutoCreationEnabled() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_AUTO_CREATE)
+                .map(preferenceManager::getPreference)
+                .orElse(true);
+    }
+
+    private void configureSshKeys(final PipelineUser user) {
+        log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
+        final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
+        final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.getPrivateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.getPublicKey()));
+        metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
+    }
+
+    private Map<String, PipeConfValue> getCurrentMetadata(final Long userId) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(userId, AclClass.PIPELINE_USER))
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap);
+    }
+
+    private String getSshPrvMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PRV_METADATA_KEY);
+    }
+
+    private String getSshPubMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PUB_METADATA_KEY);
+    }
+
+    private PipeConfValue getMetadataValue(final String sshKeyPair) {
+        return new PipeConfValue(EntityTypeField.DEFAULT_TYPE, sshKeyPair);
     }
 
     /**

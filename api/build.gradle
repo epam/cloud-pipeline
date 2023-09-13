@@ -121,6 +121,7 @@ dependencies {
     compile group: "net.sf.ehcache", name: "ehcache", version: "2.10.4"
     compile group: "org.springframework", name: "spring-context", version: "4.3.7.RELEASE"
     compile group: "org.springframework", name: "spring-context-support", version: "4.3.7.RELEASE"
+    compile "com.jcraft:jsch:0.1.55"
 
     //Cache
     compile("org.springframework.boot:spring-boot-starter-cache")
