@@ -63,24 +63,6 @@ python $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
 chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
 
 ###
-# Build ntlm proxy
-###
-cd /tmp
-git clone https://github.com/sidoruka/ntlmaps.git && \
-cd ntlmaps && \
-git checkout 5f798a88369eddbe732364b98fbd445aacc809d0
-
-python $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
-        main.py -y \
-        --clean \
-        --distpath /tmp/ntlmaps/dist \
-        -p /tmp/ntlmaps/lib \
-        --add-data ./server.cfg:./ \
-        --name ntlmaps
-
-chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
-
-###
 # Build pipe
 ###
 function build_pipe {
@@ -124,7 +106,6 @@ function build_pipe {
                                     -y \
                                     --clean \
                                     --distpath $distpath \
-                                    --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py $onefile
 }
