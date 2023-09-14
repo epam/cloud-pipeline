@@ -97,7 +97,8 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
                 .filter(items -> items.length > 1)
                 .map(items -> GpuDevice.from(items[items.length - 1], items[0]));
 
-        return Optional.of(new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuDevice.orElse(null)));
+        return Optional.of(new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuDevice.orElse(null),
+                null));
     }
 
     private double getMemory(final MachineType machineType) {

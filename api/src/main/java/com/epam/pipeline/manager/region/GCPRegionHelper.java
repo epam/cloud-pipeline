@@ -20,15 +20,21 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Component
@@ -47,6 +53,7 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_SSH_KEY_REQUIRED));
         Assert.state(StringUtils.isNotBlank(region.getImpersonatedAccount()),
                 messageHelper.getMessage(MessageConstants.ERROR_GCP_IMP_ACC_REQUIRED));
+        ListUtils.emptyIfNull(region.getCustomInstanceTypes()).forEach(this::validateCustomInstanceType);
     }
 
     @Override
@@ -82,5 +89,23 @@ public class GCPRegionHelper implements CloudRegionHelper<GCPRegion, AbstractClo
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.GCP;
+    }
+
+    private void validateCustomInstanceType(final GCPCustomInstanceType instanceType) {
+        Assert.state(instanceType.getCpu() > 1,
+                messageHelper.getMessage(MessageConstants.ERROR_GCP_CUSTOM_INSTANCE_CPU_LOWER_LIMIT));
+        if (StringUtils.isBlank(instanceType.getFamily())) {
+            return;
+        }
+        Assert.state(EnumUtils.isValidEnum(GCPCustomVMType.class, instanceType.getFamily()),
+                messageHelper.getMessage(MessageConstants.ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_SUPPORTED,
+                        instanceType.getFamily(), Arrays.stream(GCPCustomVMType.values())
+                                .map(GCPCustomVMType::name)
+                                .collect(Collectors.joining(", "))));
+        final GCPCustomVMType family = GCPCustomVMType.valueOf(instanceType.getFamily().toLowerCase());
+        final boolean gpuEnabled = StringUtils.isNotBlank(instanceType.getGpuType()) && instanceType.getGpu() > 0;
+        Assert.state(!gpuEnabled || GCPCustomVMType.n1.equals(family),
+                messageHelper.getMessage(MessageConstants.ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_ALLOWED_WITH_GPU));
+        instanceType.setFamily(family.name());
     }
 }

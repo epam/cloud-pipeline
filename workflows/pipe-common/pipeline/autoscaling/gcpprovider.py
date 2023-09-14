@@ -41,6 +41,7 @@ GPU_CUSTOM_INSTANCE_TYPE_INDEX = 3
 GPU_CUSTOM_INSTANCE_COUNT_INDEX = 4
 GPU_NVIDIA_PREFIX = 'nvidia-tesla-'
 GPU_TYPE_PREFIX = 'gpu-'
+CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX = '-ext'
 
 
 class GCPInstanceProvider(AbstractInstanceProvider):
@@ -146,15 +147,34 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def parse_instance_type(self, ins_type):
         # Custom type with GPU: gpu-custom-4-16000-k80-1
         # Custom type with CPU only: custom-4-16000
+        # Custom type with CPU and extended RAM: custom-1-65536-ext
         # Predefined type: n1-standard-1
         if not ins_type.startswith(GPU_TYPE_PREFIX):
             return ins_type, None, 0
-        parts = ins_type[len(GPU_TYPE_PREFIX):].split('-')
-        if len(parts) != GPU_CUSTOM_INSTANCE_PARTS:
-            raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
-        gpu_type = parts[GPU_CUSTOM_INSTANCE_TYPE_INDEX]
-        gpu_count = parts[GPU_CUSTOM_INSTANCE_COUNT_INDEX]
-        return '-'.join(parts[0:GPU_CUSTOM_INSTANCE_TYPE_INDEX]), GPU_NVIDIA_PREFIX + gpu_type, gpu_count
+
+        # Custom GPU type with extended RAM: gpu-custom-4-16000-k80-1-ext
+        extended_ram = str(ins_type).endswith(CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX)
+        if extended_ram:
+            parts = ins_type[len(GPU_TYPE_PREFIX):-len(CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX)].split('-')
+        else:
+            parts = ins_type[len(GPU_TYPE_PREFIX):].split('-')
+
+        if len(parts) == GPU_CUSTOM_INSTANCE_PARTS:
+            return self.parse_gpu_instance_type(
+                parts, GPU_CUSTOM_INSTANCE_TYPE_INDEX, GPU_CUSTOM_INSTANCE_COUNT_INDEX, extended_ram)
+        # Custom GPU type with family: gpu-n2-custom-4-16000-k80-1
+        if len(parts) == GPU_CUSTOM_INSTANCE_PARTS + 1:
+            return self.parse_gpu_instance_type(
+                parts, GPU_CUSTOM_INSTANCE_TYPE_INDEX + 1, GPU_CUSTOM_INSTANCE_COUNT_INDEX + 1, extended_ram)
+        raise RuntimeError('Custom instance type with GPU "%s" does not match expected pattern.' % ins_type)
+
+    def parse_gpu_instance_type(self, parts, gpu_type_index, gpu_count_index, extended_ram):
+        gpu_type = parts[gpu_type_index]
+        gpu_count = parts[gpu_count_index]
+        machine_type = '-'.join(parts[0:gpu_type_index])
+        if extended_ram:
+            machine_type = machine_type + CUSTOM_INSTANCE_EXTENDED_MEMORY_SUFFIX
+        return machine_type, GPU_NVIDIA_PREFIX + gpu_type, gpu_count
 
     def find_and_tag_instance(self, old_id, new_id):
         instance = self.__find_instance(old_id)
