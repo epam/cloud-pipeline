@@ -1029,6 +1029,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD = new IntPreference(
             "system.user.jwt.last.login.threshold.hours", 1, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_USER_SSH_KEYS_AUTO_CREATE = new BooleanPreference(
+            "system.user.ssh.keys.auto.create", true, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.prv.metadata.key", "ssh_prv", SYSTEM_GROUP, isNotBlank);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.pub.metadata.key", "ssh_pub", SYSTEM_GROUP, isNotBlank);
 
     public static final ObjectPreference<Map<String, NotificationFilter>>
             SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS = new ObjectPreference("system.notifications.exclude.params",
