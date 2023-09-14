@@ -19,6 +19,7 @@ SLURM_MASTER_SETUP_TASK_WORKERS="SLURMMasterSetupWorkers"
 CURRENT_PID=$$
 
 configure_slurm() {
+    local _distro="$1"
 
     mkdir /var/spool/slurmctld
     chown slurm: /var/spool/slurmctld
@@ -34,6 +35,15 @@ CgroupMountpoint=/cgroup
 ConstrainCores=no
 ConstrainRAMSpace=no
 EOL
+
+if [ "$_distro" == "redhat" ]; then
+    _scheduling_config="SchedulerType=sched/backfill
+SelectType=select/cons_tres
+SelectTypeParameters=CR_CPU"
+else
+    _scheduling_config="SchedulerType=sched/backfill
+SelectType=select/linear"
+fi
 
     cat > /common/slurm.conf <<EOL
 ControlMachine=$HOSTNAME
@@ -52,9 +62,7 @@ SwitchType=switch/none
 TaskPlugin=task/none
 
 # SCHEDULING
-SchedulerType=sched/backfill
-SelectType=select/cons_tres
-SelectTypeParameters=CR_CPU
+$_scheduling_config
 
 # LOGGING AND ACCOUNTING
 ClusterName=cloudpipeline
@@ -80,8 +88,11 @@ EOL
             echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
         done
     fi
-
-    IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
+    
+    _NODE_NAMES=($(hostname))
+    if [ -f "$DEFAULT_HOSTFILE" ]; then
+        IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
+    fi
     for _NODE in ${_NODE_NAMES[*]} ; do
         if (( _NODE_GPUS_COUNT > 0 ))
         then
@@ -181,7 +192,7 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 fi
 
 _SLURM_CONFIG_LOCATION=$( slurm_config_location )
-configure_slurm
+configure_slurm "$LINUX_DISTRIBUTION"
 
 dd if=/dev/urandom bs=1 count=1024 > /common/munge.key
 cp /common/munge.key /etc/munge/
