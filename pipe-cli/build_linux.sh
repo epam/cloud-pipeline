@@ -80,7 +80,7 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --hidden-import=functools \
                                 --hidden-import=re \
                                 --hidden-import=subprocess \
-                                --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
+                                --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks/python" \
                                 -y \
                                 --clean \
                                 --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
@@ -145,7 +145,7 @@ function build_pipe {
                                     --hidden-import=functools \
                                     --hidden-import=re \
                                     --hidden-import=subprocess \
-                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
+                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks/python" \
                                     -y \
                                     --clean \
                                     --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
