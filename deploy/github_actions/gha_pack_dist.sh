@@ -63,15 +63,13 @@ _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-c
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
 mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 
-df -hT "/home/runner/work/cloud-pipeline/cloud-pipeline"
+du -sh "/home/runner/work/cloud-pipeline/cloud-pipeline"
 
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
                         -x test \
                         -Pfast \
-                        --no-daemon \
-                        --debug \
-                        --stacktrace
+                        --no-daemon
 
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
