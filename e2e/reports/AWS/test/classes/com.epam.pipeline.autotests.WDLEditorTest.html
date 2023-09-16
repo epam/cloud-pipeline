@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">26m22.27s</div>
+<div class="counter">26m32.05s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,26 +73,23 @@
 <a name="checkDiagramChange - EPMCMBIBPC-621"></a>
 <h3 class="failures">checkDiagramChange - EPMCMBIBPC-621</h3>
 <span class="code">
-<pre>Element not found {By.className: label}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694318107292.15.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694318107292.15.html
+<pre>Element should attribute aria-selected=true {.pipeline-details__tabs-menu/li.findBy(text 'GRAPH')}
+Element: '&lt;li aria-selected=&quot;false&quot; class=&quot;ant-menu-item&quot; role=&quot;menuitem&quot; value=&quot;0&quot;&gt;GRAPH&lt;/li&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694823673733.16.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694823673733.16.html
 Timeout: 210 s.
-Caused by: Element not found {By.className: label.findBy(match text 'MyTask')}
-Expected: match text 'MyTask'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:51)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
-	at com.epam.pipeline.autotests.ao.PipelineGraphTabAO.searchLabel(PipelineGraphTabAO.java:96)
-	at com.epam.pipeline.autotests.WDLEditorTest.checkDiagramChange(WDLEditorTest.java:94)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
+	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.tabShouldBeActive(AbstractPipelineTabAO.java:114)
+	at com.epam.pipeline.autotests.ao.AbstractPipelineTabAO.graphTab(AbstractPipelineTabAO.java:96)
+	at com.epam.pipeline.autotests.WDLEditorTest.checkDiagramChange(WDLEditorTest.java:93)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -106,13 +103,6 @@ Timeout: 0 ms.
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {By.className: label.findBy(match text 'MyTask')}
-Expected: match text 'MyTask'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 22 more
 </pre>
 </span>
 </div>
@@ -122,8 +112,8 @@ Timeout: 0 ms.
 <span class="code">
 <pre>Element not found {By.className: port-label}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694318342213.16.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694318342213.16.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694823908932.17.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694823908932.17.html
 Timeout: 210 s.
 Caused by: Element not found {By.className: port-label.findBy(text 'scattername')}
 Expected: text 'scattername'
@@ -169,8 +159,8 @@ Timeout: 0 ms.
 <span class="code">
 <pre>Element not found {By.className: port-label}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694318575799.17.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694318575799.17.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694824143720.18.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694824143720.18.html
 Timeout: 210 s.
 Caused by: Element not found {By.className: port-label.findBy(text 'myscatter')}
 Expected: text 'myscatter'
@@ -217,8 +207,8 @@ Timeout: 0 ms.
 <pre>Element should be enabled {By.id: wdl-graph-zoom-out-button}
 Element: '&lt;button class=&quot;ant-btn ant-btn-circle&quot; id=&quot;wdl-graph-zoom-out-button&quot; type=&quot;button&quot;&gt;&lt;/button&gt;'
 Actual value: disabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694317218876.11.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694317218876.11.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694822784067.12.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694822784067.12.html
 Timeout: 210 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -254,8 +244,8 @@ Timeout: 210 s.
 <span class="code">
 <pre>Element not found {By.id: wdl-graph-workflow-add-task-button}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694317438537.12.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694317438537.12.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694823004794.13.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694823004794.13.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;wdl-graph-workflow-add-task-button&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -290,10 +280,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'd7961994369c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '51a8ca12cd6c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 6b1b4ace1a107b69c1a36ce866b1afcf
+Session ID: 6110a4524df14b774e9c772abad18da2
 *** Element info: {Using=id, value=wdl-graph-workflow-add-task-button}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -324,8 +314,8 @@ Session ID: 6b1b4ace1a107b69c1a36ce866b1afcf
 <span class="code">
 <pre>Element not found {By.id: wdl-graph-workflow-add-scatter-button}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694317657954.13.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694317657954.13.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694823224872.14.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694823224872.14.html
 Timeout: 210 s.
 Caused by: NoSuchElementException: no such element: Unable to locate element: {&quot;method&quot;:&quot;id&quot;,&quot;selector&quot;:&quot;wdl-graph-workflow-add-scatter-button&quot;}
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
@@ -360,10 +350,10 @@ Caused by: org.openqa.selenium.NoSuchElementException: no such element: Unable t
 Command duration or timeout: 0 milliseconds
 For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'd7961994369c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
+System info: host: '51a8ca12cd6c', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 6b1b4ace1a107b69c1a36ce866b1afcf
+Session ID: 6110a4524df14b774e9c772abad18da2
 *** Element info: {Using=id, value=wdl-graph-workflow-add-scatter-button}
 	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -395,8 +385,8 @@ Session ID: 6b1b4ace1a107b69c1a36ce866b1afcf
 <pre>Element should be enabled {By.id: wdl-graph-zoom-out-button}
 Element: '&lt;button class=&quot;ant-btn ant-btn-circle&quot; id=&quot;wdl-graph-zoom-out-button&quot; type=&quot;button&quot;&gt;&lt;/button&gt;'
 Actual value: disabled
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1694317877513.14.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1694317877513.14.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1694823444596.15.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1694823444596.15.html
 Timeout: 210 s.
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
@@ -439,37 +429,37 @@ Timeout: 210 s.
 </thead>
 <tr>
 <td class="failures">checkDiagramChange - EPMCMBIBPC-621</td>
-<td>3m49.87s</td>
+<td>3m49.00s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">checkDiagramChangeForScatter - EPMCMBIBPC-638</td>
-<td>3m54.83s</td>
+<td>3m55.35s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">checkDiagramChangeForScatterWithTask - EPMCMBIBPC-640</td>
-<td>3m53.63s</td>
+<td>3m54.81s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">checkJsonAfterChangingParameters - EPMCMBIBPC-650</td>
-<td>3m45.36s</td>
+<td>3m52.59s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">checkRevertButton - EPMCMBIBPC-639</td>
-<td>3m39.64s</td>
+<td>3m40.43s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateAddTaskInScatter - EPMCMBIBPC-637</td>
-<td>3m39.42s</td>
+<td>3m40.02s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="failures">validateTaskEdit - EPMCMBIBPC-641</td>
-<td>3m39.53s</td>
+<td>3m39.85s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -482,7 +472,7 @@ Timeout: 210 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 11, 2023 2:33:57 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Sep 16, 2023 11:37:42 PM</p>
 </div>
 </div>
 </body>
