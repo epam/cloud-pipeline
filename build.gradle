@@ -173,6 +173,13 @@ task installDist() {
 
         distFiles.each {
             distFile ->
+                def command = "ls -lah /home/runner/work/cloud-pipeline/cloud-pipeline"
+                def proc = command.execute()
+                proc.waitFor()
+                println "$command"
+                println "exit code: ${proc.exitValue()}"
+                println "stderr: ${proc.err.text}"
+                println "stdout: ${proc.in.text}"
                 copy {
                     from distFile
                     into distFolder
