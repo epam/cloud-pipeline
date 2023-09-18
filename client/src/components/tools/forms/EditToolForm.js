@@ -56,7 +56,9 @@ import {
   sparkEnabled,
   slurmEnabled,
   kubeEnabled,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
+  applyChildNodeInstanceParametersAsArray,
+  parseChildNodeInstanceConfiguration
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -179,6 +181,7 @@ export default class EditToolForm extends React.Component {
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -290,6 +293,12 @@ export default class EditToolForm extends React.Component {
             }
             if (this.state.gpuScalingConfiguration) {
               applyParametersArray(this.state.gpuScalingConfiguration, params);
+            } else if (this.state.childNodeInstanceConfiguration) {
+              applyChildNodeInstanceParametersAsArray(
+                params,
+                this.state.childNodeInstanceConfiguration,
+                this.state.hybridAutoScaledClusterEnabled
+              );
             }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
@@ -518,6 +527,13 @@ export default class EditToolForm extends React.Component {
             parameters: props.configuration.parameters
           }, this.props.preferences)
           : undefined;
+        state.childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+          gpuScaling: !!state.gpuScalingConfiguration,
+          autoScaled: state.autoScaledCluster,
+          hybrid: state.hybridAutoScaledClusterEnabled,
+          provider,
+          parameters: props.configuration.parameters
+        });
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
@@ -845,9 +861,16 @@ export default class EditToolForm extends React.Component {
         autoScaled: autoScaledCluster,
         hybrid: hybridAutoScaledCluster,
         provider: this.getCloudProvider(),
-        parameters: this.props.configuration.parameters
+        parameters: this.props.configuration ? this.props.configuration.parameters : {}
       }, this.props.preferences)
       : undefined;
+    const childNodeInstanceConfiguration = this.props.configuration
+      ? parseChildNodeInstanceConfiguration({
+        gpuScaling: !!gpuScalingConfiguration,
+        autoScaled: autoScaledCluster,
+        hybrid: hybridAutoScaledCluster,
+        parameters: this.props.configuration.parameters
+      }) : undefined;
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -883,6 +906,7 @@ export default class EditToolForm extends React.Component {
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
+      childNodeInstanceConfiguration !== this.state.childNodeInstanceConfiguration ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
@@ -937,6 +961,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -959,6 +984,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -1492,6 +1518,7 @@ export default class EditToolForm extends React.Component {
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
