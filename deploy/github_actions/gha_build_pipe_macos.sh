@@ -24,9 +24,7 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           --no-daemon \
           -x :pipe-cli:test
 
-cd pipe-cli
-DIST_TGZ_NAME=pipe-osx-full.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz
-tar -zcf $DIST_TGZ_NAME dist
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
+    aws s3 cp pipe-cli/dist-file/pipe-osx s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx
+    aws s3 cp pipe-cli/dist-folder/pipe-osx.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx.tar.gz
 fi
