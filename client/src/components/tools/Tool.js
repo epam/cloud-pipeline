@@ -2070,7 +2070,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       return <Alert type="error" message={this.props.docker.error} />;
     }
     if (this.props.versionSettings.error) {
-      return <Alert type="error" message={this.props.docker.error} />;
+      return <Alert type="error" message={this.props.versionSettings.error} />;
     }
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
