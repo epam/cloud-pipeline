@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPCustomMachineExtractor;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPObjectExtractor;
@@ -40,6 +41,7 @@ public class GCPCustomMachineExtractorTest {
     private static final double RAM = 2.0;
     private static final double EXTENDED_RAM = 2.0;
     private static final double EXTENDED_RAM_FACTOR = 6.5;
+    private static final double N2_EXTENDED_RAM_FACTOR = 8.0;
     private static final int GPU = 3;
     private static final String K_80 = "K80";
     public static final String CUSTOM_FAMILY = "custom";
@@ -51,14 +53,12 @@ public class GCPCustomMachineExtractorTest {
     public void testCustomCpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(CPU, RAM)));
-        final GCPMachine expectedMachine = GCPMachine.withCpu("custom-1-2048", CUSTOM_FAMILY, CPU, RAM, 0);
+        final GCPMachine expectedMachine = GCPMachine.withCpu("custom-1-2048",
+                CUSTOM_FAMILY, CPU, RAM, 0, GCPCustomVMType.n1);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
-        assertThat(actualMachines.size(), is(1));
-        final AbstractGCPObject actualObject = actualMachines.get(0);
-        assertThat(actualObject, instanceOf(GCPMachine.class));
-        assertMachineEquals(expectedMachine, (GCPMachine) actualObject);
+        assertGCPMachine(expectedMachine, actualMachines);
     }
 
     @Test
@@ -66,14 +66,11 @@ public class GCPCustomMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, CPU, RAM, 0,
-                GPU, GpuDevice.from(K_80, NVIDIA));
+                GPU, GpuDevice.from(K_80, NVIDIA), GCPCustomVMType.n1);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
-        assertThat(actualMachines.size(), is(1));
-        final AbstractGCPObject actualObject = actualMachines.get(0);
-        assertThat(actualObject, instanceOf(GCPMachine.class));
-        assertMachineEquals(expectedMachine, (GCPMachine) actualObject);
+        assertGCPMachine(expectedMachine, actualMachines);
     }
 
     @Test
@@ -81,11 +78,42 @@ public class GCPCustomMachineExtractorTest {
         final GCPRegion region = new GCPRegion();
         region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(2 * CPU,
                 EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM)));
-        final GCPMachine expectedMachine = GCPMachine.withCpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, 2 * CPU,
-                EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM);
+        final GCPMachine expectedMachine = GCPMachine.withCpu("custom-2-15360-ext", CUSTOM_FAMILY, 2 * CPU,
+                EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM, GCPCustomVMType.n1);
 
         final List<AbstractGCPObject> actualMachines = extractor.extract(region);
 
+        assertGCPMachine(expectedMachine, actualMachines);
+    }
+
+    @Test
+    public void testExtendedCustomGpuMachineExtraction() {
+        final GCPRegion region = new GCPRegion();
+        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType
+                .withGpu(2 * CPU, EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM, GPU, K_80)));
+        final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-2-15360-k80-3-ext",
+                CUSTOM_FAMILY, 2 * CPU, EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM,
+                GPU, GpuDevice.from(K_80, NVIDIA), GCPCustomVMType.n1);
+
+        final List<AbstractGCPObject> actualMachines = extractor.extract(region);
+
+        assertGCPMachine(expectedMachine, actualMachines);
+    }
+
+    @Test
+    public void testExtendedCustomMachineWithFamilyExtraction() {
+        final GCPRegion region = new GCPRegion();
+        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(2 * CPU,
+                N2_EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM, "n2")));
+        final GCPMachine expectedMachine = GCPMachine.withCpu("n2-custom-2-18432-ext", CUSTOM_FAMILY, 2 * CPU,
+                N2_EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM, GCPCustomVMType.n2);
+
+        final List<AbstractGCPObject> actualMachines = extractor.extract(region);
+
+        assertGCPMachine(expectedMachine, actualMachines);
+    }
+
+    private void assertGCPMachine(final GCPMachine expectedMachine, final List<AbstractGCPObject> actualMachines) {
         assertThat(actualMachines.size(), is(1));
         final AbstractGCPObject actualObject = actualMachines.get(0);
         assertThat(actualObject, instanceOf(GCPMachine.class));
@@ -97,5 +125,7 @@ public class GCPCustomMachineExtractorTest {
         assertEquals(actualMachine.getRam(), expectedMachine.getRam(), DELTA);
         assertEquals(actualMachine.getExtendedRam(), expectedMachine.getExtendedRam(), DELTA);
         assertEquals(actualMachine.getGpu(), expectedMachine.getGpu());
+        assertEquals(actualMachine.getName(), expectedMachine.getName());
+        assertEquals(actualMachine.getFamily(), expectedMachine.getFamily());
     }
 }

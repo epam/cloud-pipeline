@@ -17,6 +17,7 @@
 import React from 'react';
 import {Select} from 'antd';
 import {getSelectOptions} from '../../../../special/instance-type-info';
+import {getInstanceFamily} from '../../../../../utils/instance-family';
 
 function parseCPUConfiguration (configuration) {
   const {
@@ -175,23 +176,102 @@ function getSkippedParameters (preferences, includeOther = true) {
   return [...(new Set(parameters))];
 }
 
+const emptyValueKey = '__empty__';
+
 const InstanceTypeSelector = (
   {
     value,
     onChange,
     instanceTypes = [],
     style = {},
-    gpu = false
+    gpu = false,
+    allowEmpty = false,
+    emptyName,
+    emptyTooltip
   }
 ) => {
   const sorted = instanceTypes.filter(t => !gpu || t.gpu);
+  const onChangeCallback = (newValue) => {
+    if (typeof onChange === 'function') {
+      if (newValue === emptyValueKey) {
+        onChange(undefined);
+      } else {
+        onChange(newValue);
+      }
+    }
+  };
   return (
     <Select
-      value={value}
+      value={value || (allowEmpty ? emptyValueKey : undefined)}
       style={style}
-      onChange={onChange}
+      onChange={onChangeCallback}
     >
+      {
+        allowEmpty && (
+          <Select.Option key={emptyValueKey} value={emptyValueKey} title={emptyTooltip}>
+            {emptyName || (
+              <span className="cp-text-not-important">
+                Not set
+              </span>
+            )}
+          </Select.Option>
+        )
+      }
       {getSelectOptions(sorted)}
+    </Select>
+  );
+};
+
+const InstanceFamilySelector = (
+  {
+    value,
+    onChange,
+    instanceTypes = [],
+    style = {},
+    gpu = false,
+    provider,
+    allowEmpty = false,
+    emptyName,
+    emptyTooltip
+  }
+) => {
+  const sorted = instanceTypes.filter(t => !gpu || t.gpu);
+  const families = [...new Set(sorted.map((i) => getInstanceFamily(i, provider)))]
+    .filter(Boolean)
+    .sort();
+  const onChangeCallback = (newValue) => {
+    if (typeof onChange === 'function') {
+      if (newValue === emptyValueKey) {
+        onChange(undefined);
+      } else {
+        onChange(newValue);
+      }
+    }
+  };
+  return (
+    <Select
+      value={value || (allowEmpty ? emptyValueKey : undefined)}
+      style={style}
+      onChange={onChangeCallback}
+    >
+      {
+        allowEmpty && (
+          <Select.Option key={emptyValueKey} value={emptyValueKey} title={emptyTooltip}>
+            {emptyName || (
+              <span className="cp-text-not-important">
+                Not set
+              </span>
+            )}
+          </Select.Option>
+        )
+      }
+      {
+        families.map((family) => (
+          <Select.Option key={family} value={family}>
+            {family}
+          </Select.Option>
+        ))
+      }
     </Select>
   );
 };
@@ -267,5 +347,6 @@ export {
   getScalingConfigurationForProvider,
   getGPUScalingDefaultConfiguration,
   readGPUScalingPreference,
-  InstanceTypeSelector
+  InstanceTypeSelector,
+  InstanceFamilySelector
 };

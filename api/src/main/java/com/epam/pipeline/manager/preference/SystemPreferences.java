@@ -51,6 +51,7 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -523,6 +524,10 @@ public class SystemPreferences {
             5, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_AWS_EBS_TYPE = new StringPreference(
             "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank);
+    public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
+            "cluster.aws.ec2.pricing.url.template",
+            "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
+            CLUSTER_GROUP, isNotBlank);
 
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
@@ -542,14 +547,24 @@ public class SystemPreferences {
                                                                                  CLUSTER_GROUP, isGreaterThan(0.0f));
     public static final StringPreference CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER = new StringPreference(
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
+
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
         "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
-    public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
-        "cluster.aws.ec2.pricing.url.template",
-        "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
-        CLUSTER_GROUP, isNotBlank);
     public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
         "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FETCH_GPU = new BooleanPreference(
+        "instance.offer.fetch.gpu", true, CLUSTER_GROUP, pass);
+    public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FILTER_UNIQUE = new BooleanPreference(
+        "instance.offer.filter.unique", true, CLUSTER_GROUP, pass);
+    public static final StringPreference CLUSTER_INSTANCE_OFFER_FILTER_TERM_TYPES = new StringPreference(
+        "instance.offer.filter.term.types",
+        Arrays.stream(CloudInstancePriceService.TermType.values())
+                .map(CloudInstancePriceService.TermType::getName)
+                .collect(Collectors.joining(",")),
+        CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_INSERT_BATCH_SIZE = new IntPreference(
+        "instance.offer.insert.batch.size", 10_000, CLUSTER_GROUP, isGreaterThan(0));
+
     public static final IntPreference CLUSTER_BATCH_RETRY_COUNT = new IntPreference("cluster.batch.retry.count",
             0, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
@@ -1014,6 +1029,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD = new IntPreference(
             "system.user.jwt.last.login.threshold.hours", 1, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_USER_SSH_KEYS_AUTO_CREATE = new BooleanPreference(
+            "system.user.ssh.keys.auto.create", true, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.prv.metadata.key", "ssh_prv", SYSTEM_GROUP, isNotBlank);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.pub.metadata.key", "ssh_pub", SYSTEM_GROUP, isNotBlank);
 
     public static final ObjectPreference<Map<String, NotificationFilter>>
             SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS = new ObjectPreference("system.notifications.exclude.params",

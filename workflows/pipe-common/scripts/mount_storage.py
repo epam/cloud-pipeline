@@ -25,7 +25,7 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 
-from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
+from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount, AclClass, APIError
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -256,6 +256,8 @@ class MountStorageTask:
                     mounter.check_or_install(self.task_name, sensitive_policy)
                     mounter.init_tmp_dir(tmp_dir, self.task_name)
 
+            storages_metadata = self._collect_storages_metadata(available_storages_with_mounts)
+
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
                 Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
                 return
@@ -275,7 +277,9 @@ class MountStorageTask:
                     else:
                         Logger.info(storage_not_allowed_msg + ', skipping it', task_name=self.task_name)
                         continue
+                storage_metadata = storages_metadata.get(storage_and_mount.storage.id, {})
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
+                                                                                storage_metadata,
                                                                                 storage_and_mount.file_share_mount,
                                                                                 sensitive_policy) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
@@ -297,15 +301,40 @@ class MountStorageTask:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
             traceback.print_exc()
 
+    def _collect_storages_metadata(self, available_storages_with_mounts):
+        storages_metadata_raw = self._load_storages_metadata_raw(available_storages_with_mounts)
+        storages_metadata = dict(self._prepare_storages_metadata(storages_metadata_raw))
+        return storages_metadata
+
+    def _load_storages_metadata_raw(self, available_storages_with_mounts):
+        try:
+            storage_ids = [storage_and_mount.storage.id for storage_and_mount in available_storages_with_mounts]
+            return self.api.load_all_metadata_efficiently(storage_ids, AclClass.DATA_STORAGE)
+        except APIError as e:
+            Logger.warn('Storages metadata loading has failed {}.'.format(str(e)), task_name=self.task_name)
+            traceback.print_exc()
+            return []
+
+    def _prepare_storages_metadata(self, storages_metadata):
+        for metadata_entry in storages_metadata:
+            storage_id = metadata_entry.get('entity', {}).get('entityId', 0)
+            storage_metadata_raw = metadata_entry.get('data', {})
+            storage_metadata = {
+                metadata_key: metadata_obj.get('value')
+                for metadata_key, metadata_obj in storage_metadata_raw.items()
+            }
+            yield storage_id, storage_metadata
+
 
 class StorageMounter:
 
     __metaclass__ = ABCMeta
     _cached_regions = []
 
-    def __init__(self, api, storage, share_mount, sensitive_policy):
+    def __init__(self, api, storage, metadata, share_mount, sensitive_policy):
         self.api = api
         self.storage = storage
+        self.metadata = metadata
         self.share_mount = share_mount
         self.sensitive_policy = sensitive_policy
 
@@ -752,10 +781,10 @@ class NFSMounter(StorageMounter):
         else:
             command = command.format(protocol="nfs")
 
-        permission = 'g+rwx'
+        permission = str(self.metadata.get('chmod', 'g+rwx'))
+
         mask = '0774'
         if not PermissionHelper.is_storage_writable(self.storage):
-            permission = 'g+rx'
             mask = '0554'
             if not mount_options:
                 mount_options = READ_ONLY_MOUNT_OPT

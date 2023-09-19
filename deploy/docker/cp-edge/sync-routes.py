@@ -731,6 +731,16 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
 
 
 def create_service_dns_record(service_spec, route, edge_region_id, edge_region_name):
+        if skip_custom_dns:
+                do_log('Skipping custom DNS record creation for domain {}'.format(dns_domain))
+                dns_custom_record = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"],
+                                                                  region_name=edge_region_name)
+                dns_record_domain = dns_custom_record + '.' + dns_domain
+                do_log('Setting expected DNS as {}'.format(dns_record_domain))
+
+                service_spec["custom_domain"] = dns_record_domain
+                service_spec["edge_location"] = None
+                return route
         try:
                 do_log('Creating DNS record for {}'.format(route))
                 create_dns_record(service_spec, edge_region_id, edge_region_name)
@@ -906,6 +916,12 @@ def get_affected_routes(involved_routes, all_routes):
         return set(route for route in all_routes if get_pod(route) in involved_pods)
 
 
+def is_true(value):
+        if not value:
+                return False
+        return value.lower() == 'true'
+
+
 do_log('============ Started iteration ============')
 
 if api_domain_name:
@@ -918,6 +934,9 @@ kube_api.session.verify = False
 
 edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
 edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')
+
+skip_custom_dns = is_true(os.getenv('CP_EDGE_SKIP_CUSTOM_DNS') or find_preference(API_GET_PREF, 'edge.skip.custom.dns'))
+dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN') or find_preference(API_GET_PREF, 'edge.custom.domain')
 
 # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
 # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't

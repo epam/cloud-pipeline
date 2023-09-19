@@ -4,8 +4,8 @@ import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
-import com.epam.pipeline.manager.cloud.InstanceOfferReader;
-import com.epam.pipeline.manager.cloud.StaticInstanceOfferReader;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferReader;
+import com.epam.pipeline.manager.cloud.offer.StaticInstanceOfferReader;
 import com.epam.pipeline.test.creator.region.RegionCreatorUtils;
 import com.epam.pipeline.utils.CommonUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -19,7 +19,7 @@ import java.util.Map;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class AWSInstanceTypeReaderTest {
+public class AWSInstanceOfferGpuReaderTest {
 
     private static final String G5_12XLARGE = "g5.12xlarge";
     private static final String M5_XLARGE = "m5.xlarge";
@@ -49,7 +49,7 @@ public class AWSInstanceTypeReaderTest {
     @Test
     public void readShouldCollectInstanceTypeGpuDevices() throws IOException {
         try (InstanceOfferReader ior = new StaticInstanceOfferReader(INITIAL_OFFERS);
-             AWSInstanceTypeReader itr = new AWSInstanceTypeReader(ior, region, (a, b) -> INSTANCE_GPU_MAPPING,
+             AWSInstanceOfferGpuReader itr = new AWSInstanceOfferGpuReader(ior, region, (a, b) -> INSTANCE_GPU_MAPPING,
                      GPU_CORES_MAPPING)) {
             final List<InstanceOffer> actualOffers = itr.read();
             assertThat(actualOffers.size(), is(EXPECTED_OFFERS.size()));

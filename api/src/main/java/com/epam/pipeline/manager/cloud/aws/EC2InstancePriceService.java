@@ -23,8 +23,10 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferReader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,27 +49,38 @@ public class EC2InstancePriceService implements CloudInstancePriceService<AwsReg
 
     private static final String FALLBACK_AWS_EC2_PRICING_URL_TEMPLATE =
             "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv";
+    private static final boolean FALLBACK_FETCH_GPU = true;
 
+    @Getter
+    private final CloudProvider provider = CloudProvider.AWS;
     private final InstanceOfferDao instanceOfferDao;
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
 
     @Override
-    public CloudProvider getProvider() {
-        return CloudProvider.AWS;
-    }
-
-    @Override
     public List<InstanceOffer> refreshPriceListForRegion(final AwsRegion region) {
         try (InputStream is = new URL(getPricingUrl(region)).openStream();
              BufferedReader br = new BufferedReader(new InputStreamReader(is));
-             AWSPriceListReader plr = new AWSPriceListReader(br, region, getComputeFamilies());
-             AWSInstanceTypeReader itr = new AWSInstanceTypeReader(plr, region, ec2Helper, getGpuCoresMapping())) {
-            return itr.read();
+             InstanceOfferReader reader = getReader(region, br)) {
+            return reader.read();
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             return Collections.emptyList();
         }
+    }
+
+    private InstanceOfferReader getReader(final AwsRegion region, final BufferedReader br) {
+        InstanceOfferReader reader = new AWSPriceListReader(br, region, getComputeFamilies());
+        if (isFetchGpu()) {
+            reader = new AWSInstanceOfferGpuReader(reader, region, ec2Helper, getGpuCoresMapping());
+        }
+        return reader;
+    }
+
+    private boolean isFetchGpu() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FETCH_GPU)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FETCH_GPU);
     }
 
     private String getPricingUrl(final AwsRegion region) {

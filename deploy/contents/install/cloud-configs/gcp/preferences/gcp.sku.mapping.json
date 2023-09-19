@@ -67,6 +67,18 @@
     "prefix": "Custom Extended Instance Ram",
     "group": "RAM"
   },
+  "cpu_ondemand_n2-custom": {
+    "prefix": "N2 Custom Instance Core",
+    "group": "CPU"
+  },
+  "extendedram_ondemand_n2-custom": {
+    "prefix": "N2 Custom Extended Instance Ram",
+    "group": "RAM"
+  },
+  "ram_ondemand_n2-custom": {
+    "prefix": "N2 Custom Instance Ram",
+    "group": "RAM"
+  },
   "gpu_ondemand_t4": {
     "prefix": "Nvidia Tesla T4 GPU running",
     "group": "GPU"
@@ -92,103 +104,115 @@
     "group": "GPU"
   },
   "cpu_preemptible_standard": {
-    "prefix": "Preemptible N1 Predefined Instance Core",
+    "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
   "ram_preemptible_standard": {
-    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
   "cpu_preemptible_highcpu": {
-    "prefix": "Preemptible N1 Predefined Instance Core",
+    "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
   "ram_preemptible_highcpu": {
-    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
   "cpu_preemptible_highmem": {
-    "prefix": "Preemptible N1 Predefined Instance Core",
+    "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
   },
   "ram_preemptible_highmem": {
-    "prefix": "Preemptible N1 Predefined Instance Ram",
+    "prefix": "Spot Preemptible N1 Predefined Instance Ram",
     "group": "N1Standard"
   },
   "cpu_preemptible_megamem": {
-    "prefix": "Preemptible Memory-optimized Instance Core",
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
     "group": "CPU"
   },
   "ram_preemptible_megamem": {
-    "prefix": "Preemptible Memory-optimized Instance Ram",
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
     "group": "RAM"
   },
   "cpu_preemptible_ultramem": {
-    "prefix": "Preemptible Memory-optimized Instance Core",
+    "prefix": "Spot Preemptible Memory-optimized Instance Core",
     "group": "CPU"
   },
   "ram_preemptible_ultramem": {
-    "prefix": "Preemptible Memory-optimized Instance Ram",
+    "prefix": "Spot Preemptible Memory-optimized Instance Ram",
     "group": "RAM"
   },
   "cpu_preemptible_highgpu": {
-    "prefix": "Preemptible A2 Instance Core",
+    "prefix": "Spot Preemptible A2 Instance Core",
     "group": "CPU"
   },
   "ram_preemptible_highgpu": {
-    "prefix": "Preemptible A2 Instance Ram",
+    "prefix": "Spot Preemptible A2 Instance Ram",
     "group": "RAM"
   },
   "cpu_preemptible_micro": {
-    "prefix": "Preemptible Micro Instance",
+    "prefix": "Spot Preemptible Micro Instance",
     "group": "F1Micro"
   },
   "cpu_preemptible_small": {
-    "prefix": "Preemptible Small Instance",
+    "prefix": "Spot Preemptible Small Instance",
     "group": "G1Small"
   },
   "cpu_preemptible_custom": {
-    "prefix": "Preemptible Custom Instance Core",
+    "prefix": "Spot Preemptible Custom Instance Core",
     "group": "CPU"
   },
   "ram_preemptible_custom": {
-    "prefix": "Preemptible Custom Instance Ram",
+    "prefix": "Spot Preemptible Custom Instance Ram",
     "group": "RAM"
   },
   "extendedram_preemptible_custom": {
-    "prefix": "Preemptible Custom Extended Instance Ram",
+    "prefix": "Spot Preemptible Custom Extended Instance Ram",
     "group": "RAM"
   },
   "gpu_preemptible_t4": {
-    "prefix": "Nvidia Tesla T4 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla T4 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "gpu_preemptible_p4": {
-    "prefix": "Nvidia Tesla P4 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla P4 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "gpu_preemptible_v100": {
-    "prefix": "Nvidia Tesla V100 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla V100 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "gpu_preemptible_p100": {
-    "prefix": "Nvidia Tesla P100 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla P100 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "gpu_preemptible_k80": {
-    "prefix": "Nvidia Tesla K80 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla K80 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "gpu_preemptible_a100": {
-    "prefix": "Nvidia Tesla A100 GPU attached to preemptible",
+    "prefix": "Nvidia Tesla A100 GPU attached to Spot Preemptible",
     "group": "GPU"
+  },
+  "ram_preemptible_n2-custom": {
+    "prefix": "Spot Preemptible N2 Custom Instance Ram",
+    "group": "RAM"
+  },
+  "extendedram_preemptible_n2-custom": {
+    "prefix": "Spot Preemptible N2 Custom Extended Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_n2-custom": {
+    "prefix": "Spot Preemptible N2 Custom Instance Core",
+    "group": "CPU"
   },
   "disk_ondemand": {
     "prefix": "SSD backed Local Storage",
     "group": "LocalSSD"
   },
   "disk_preemptible": {
-    "prefix": "SSD backed Local Storage attached to Preemptible VMs",
+    "prefix": "SSD backed Local Storage attached to Spot Preemptible VMs",
     "group": "LocalSSD"
   }
 }
