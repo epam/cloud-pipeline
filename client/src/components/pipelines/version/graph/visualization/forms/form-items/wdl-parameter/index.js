@@ -68,6 +68,7 @@ class WdlParameter extends React.Component {
     if (!property) {
       return null;
     }
+    const defaultValue = parameter.executableParameter?.value;
     const Component = component || Input;
     return [
       title ? (
@@ -85,7 +86,7 @@ class WdlParameter extends React.Component {
         className={className}
         style={style}
         disabled={disabled}
-        placeholder={placeholder}
+        placeholder={defaultValue || placeholder}
       />
     ];
   };
