@@ -50,8 +50,8 @@ import {
 import WdlIssues from './form-items/wdl-issues';
 import styles from './wdl-properties-form.css';
 
-function getEntityName (e) {
-  const opts = getEntityNameOptions(e);
+function getEntityName (entity, document) {
+  const opts = getEntityNameOptions(entity, document);
   if (!opts) {
     return null;
   }
@@ -107,7 +107,7 @@ class WdlPropertiesForm extends React.Component {
   }
 
   onEntityPropertiesChanged = (entityChanged = false) => this.setState({
-    ...extractEntityProperties(this.props.entity),
+    ...extractEntityProperties(this.props.entity, this.props.wdlDocument),
     onRemoveRequest: entityChanged ? false : this.state.onRemoveRequest,
     removeExecutable: entityChanged ? false : this.state.removeExecutable
   });
@@ -151,19 +151,20 @@ class WdlPropertiesForm extends React.Component {
     const {
       entity,
       disabled,
-      onRemoved
+      onRemoved,
+      wdlDocument
     } = this.props;
     if (!disabled && entity && canRemoveEntity && !isWorkflow(entity)) {
       const parts = [(
         <span key="main">
-          {getEntityName(entity)}
+          {getEntityName(entity, wdlDocument)}
         </span>
       )];
       if (removeExecutable && entity.executable) {
         parts.push((<span key="and">{' and '}</span>));
         parts.push((
           <span key="executable">
-            {getEntityName(entity.executable)}
+            {getEntityName(entity.executable, wdlDocument)}
           </span>
         ));
       }
@@ -240,7 +241,8 @@ class WdlPropertiesForm extends React.Component {
 
   renderHeader = () => {
     const {
-      disabled
+      disabled,
+      wdlDocument
     } = this.props;
     const {
       type,
@@ -321,7 +323,7 @@ class WdlPropertiesForm extends React.Component {
                           {
                             executables.map((executable) => (
                               <MenuItem key={`call_${executable.name}`}>
-                                Add <b>{executable.name}</b> call
+                                Add {getEntityName(executable, wdlDocument)} call
                               </MenuItem>
                             ))
                           }
@@ -670,7 +672,7 @@ class WdlPropertiesForm extends React.Component {
       scatterItems = [],
       scatterItemsAvailable = false,
       outputs = [],
-      outputsOwner = entity,
+      executable = entity,
       outputsAvailable = false,
       outputsEditable = false,
       expandedKeys = []
@@ -725,7 +727,7 @@ class WdlPropertiesForm extends React.Component {
             addTitle: 'Add output',
             contextType: ContextTypes.output,
             key: 'outputs',
-            owner: outputsOwner
+            owner: executable
           })
         }
         {this.renderRuntimeAttributes()}
@@ -737,7 +739,8 @@ class WdlPropertiesForm extends React.Component {
     const {
       task,
       runtime = [],
-      runtimeAttributesAvailable
+      runtimeAttributesAvailable,
+      runtimeAttributesEditable
     } = this.state;
     const {
       entity,
@@ -747,7 +750,8 @@ class WdlPropertiesForm extends React.Component {
     if (
       entity &&
       task &&
-      runtimeAttributesAvailable
+      runtimeAttributesAvailable &&
+      (runtime.length > 0 || runtimeAttributesEditable)
     ) {
       const header = runtime.length === 0 ? 'Runtime' : `Runtime (${runtime.length})`;
       const onChangeRuntimeProperty = (property, value) => {
@@ -770,7 +774,7 @@ class WdlPropertiesForm extends React.Component {
         if (r.docker) {
           return (
             <WdlRuntimeDocker
-              disabled={disabled}
+              disabled={disabled || !runtimeAttributesEditable}
               value={r.value}
               className={
                 classNames(
@@ -787,7 +791,7 @@ class WdlPropertiesForm extends React.Component {
         if (r.node) {
           return (
             <WdlRuntimeNode
-              disabled={disabled}
+              disabled={disabled || !runtimeAttributesEditable}
               value={r.value}
               className={
                 classNames(
@@ -804,7 +808,7 @@ class WdlPropertiesForm extends React.Component {
         }
         return (
           <Input
-            disabled={disabled}
+            disabled={disabled || !runtimeAttributesEditable}
             value={r.value}
             className={
               classNames(
@@ -850,7 +854,9 @@ class WdlPropertiesForm extends React.Component {
                   </div>
                   {renderInput(r)}
                   {
-                    (r.removable === undefined || r.removable) && !disabled && (
+                    (r.removable === undefined || r.removable) &&
+                    !disabled &&
+                    runtimeAttributesEditable && (
                       <div
                         className={styles.deleteButton}
                         onClick={() => onRemoveClick(r)}
@@ -868,7 +874,7 @@ class WdlPropertiesForm extends React.Component {
             ))
           }
           {
-            !hasDocker && !disabled && (
+            !hasDocker && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('docker')}>
                   <Icon type="plus" /> add docker configuration
@@ -877,7 +883,7 @@ class WdlPropertiesForm extends React.Component {
             )
           }
           {
-            !hasNode && !disabled && (
+            !hasNode && !disabled && runtimeAttributesEditable && (
               <div className={styles.propertiesRow}>
                 <a onClick={() => addRuntime('node')}>
                   <Icon type="plus" /> add compute node configuration
@@ -943,7 +949,8 @@ class WdlPropertiesForm extends React.Component {
   renderRemoveConfirmationModal = () => {
     const {
       entity,
-      disabled
+      disabled,
+      wdlDocument
     } = this.props;
     const renderFooter = () => (
       <div
@@ -1006,7 +1013,7 @@ class WdlPropertiesForm extends React.Component {
             style={{fontSize: 'x-large'}}
           />
           <b>
-            Are you sure you want to remove {getEntityName(entity)}?
+            Are you sure you want to remove {getEntityName(entity, wdlDocument)}?
           </b>
         </div>
         {
@@ -1016,7 +1023,7 @@ class WdlPropertiesForm extends React.Component {
                 checked={removeExecutable}
                 onChange={(e) => this.setState({removeExecutable: e.target.checked})}
               >
-                Also remove {getEntityName(entity.executable)}
+                Also remove {getEntityName(entity.executable, wdlDocument)}
               </Checkbox>
             </div>
           )

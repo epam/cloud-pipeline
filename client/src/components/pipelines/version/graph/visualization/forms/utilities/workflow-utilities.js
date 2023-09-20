@@ -86,9 +86,16 @@ export function getEntityType (entity) {
   }
 }
 
-export function getEntityNameOptions (entity) {
+export function getEntityNameOptions (entity, document) {
   if (!entity) {
     return undefined;
+  }
+  const type = getEntityType(entity);
+  if (document !== entity.document && entity.document && entity.document.reference) {
+    return {
+      type,
+      name: `${entity.document.reference}.${entity.reference}`
+    };
   }
   return {
     type: getEntityType(entity),
@@ -164,4 +171,11 @@ export function removeTask (task) {
   if (task && task.document) {
     task.remove();
   }
+}
+
+export function getParameterAllowedStructs (parameter) {
+  if (parameter && parameter.executableParameter) {
+    return getParameterAllowedStructs(parameter.executableParameter);
+  }
+  return (parameter && parameter.document ? parameter.document.globalStructs : []) || [];
 }

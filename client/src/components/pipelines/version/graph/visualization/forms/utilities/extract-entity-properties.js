@@ -85,7 +85,7 @@ function extractTaskProperties (task) {
   return task;
 }
 
-export default function extractEntityProperties (entity) {
+export default function extractEntityProperties (entity, wdlDocument) {
   let name,
     type,
     alias,
@@ -96,7 +96,7 @@ export default function extractEntityProperties (entity) {
     inputs,
     declarations,
     outputs,
-    outputsOwner,
+    executable,
     task,
     runtime,
     command,
@@ -117,6 +117,7 @@ export default function extractEntityProperties (entity) {
   let scatterItemsAvailable = false;
   let expressionAvailable = false;
   let runtimeAttributesAvailable = false;
+  let runtimeAttributesEditable = false;
   let commandAvailable = false;
   let commandEditable = false;
   let isPipelineTask = false;
@@ -127,8 +128,6 @@ export default function extractEntityProperties (entity) {
     canRemoveEntity = !isWorkflow(entity);
     canAddSubAction = !isCall(entity);
     issues = entity.entityIssues || [];
-    nameIssues = issues.filter((issue) => issue instanceof WdlErrors.UniqueNameRequiredError);
-    commandIssues = issues.filter((issue) => issue instanceof WdlErrors.CommandRequiredError);
     if (isWorkflow(entity) || isTask(entity)) {
       name = entity.name;
       nameAvailable = true;
@@ -138,11 +137,16 @@ export default function extractEntityProperties (entity) {
       executableName = entity.executableName;
       executableNameAvailable = true;
       executableType = getEntityType(entity.executable);
+      issues = entity.issues || [];
+      if (entity.executable) {
+        issues = issues.concat((entity.executable.issues || []));
+      }
     }
     if (isCall(entity) || isTask(entity)) {
       task = isCall(entity) ? entity.executable : entity;
       if (task) {
         runtimeAttributesAvailable = true;
+        runtimeAttributesEditable = task.document === wdlDocument;
         const {
           runtime: taskRuntime = [],
           command: taskCommand
@@ -158,7 +162,7 @@ export default function extractEntityProperties (entity) {
           removable: r.removable === undefined || r.removable
         }));
         commandAvailable = true;
-        commandEditable = !isPipelineTask;
+        commandEditable = !isPipelineTask && task.document === wdlDocument;
         command = taskCommand;
       }
     }
@@ -170,16 +174,17 @@ export default function extractEntityProperties (entity) {
     ) {
       const eInputs = entity.getActionInputs();
       const eDeclarations = entity.getActionDeclarations();
-      outputsOwner = isCall(entity) ? (entity.executable || entity) : entity;
-      const eOutputs = isWorkflow(outputsOwner) || isTask(outputsOwner)
-        ? outputsOwner.getActionOutputs()
+      executable = isCall(entity) ? (entity.executable || entity) : entity;
+      const eOutputs = isWorkflow(executable) || isTask(executable)
+        ? executable.getActionOutputs()
         : [];
-      outputsEditable = !isScatter(outputsOwner);
+      inputsEditable = !isScatter(entity) && executable.document === wdlDocument;
+      declarationsEditable = !isCall(entity) && executable.document === wdlDocument;
+      outputsEditable = !isScatter(entity) && executable.document === wdlDocument;
       inputsAvailable = !isScatter(entity);
-      declarationsAvailable = entity.supports(WdlVersion.draft3) && !isCall(entity);
-      outputsAvailable = isWorkflow(outputsOwner) || isTask(outputsOwner);
-      inputsEditable = !isScatter(entity);
-      declarationsEditable = !isCall(entity);
+      declarationsAvailable = isScatter(entity) ||
+        (entity.supports(WdlVersion.draft3) && !isCall(entity));
+      outputsAvailable = isWorkflow(executable) || isTask(executable);
       if (isScatter(entity)) {
         scatterItemsAvailable = true;
         scatterItems = [].concat(eInputs);
@@ -203,8 +208,11 @@ export default function extractEntityProperties (entity) {
       issues = (issues || []).concat(entity.iterator.issues || []);
     }
     if (entity.document) {
-      executables = (entity.document.tasks || []);
+      executables = (entity.document.executables || [])
+        .filter((e) => !isWorkflow(e) || e.document !== wdlDocument);
     }
+    nameIssues = issues.filter((issue) => issue instanceof WdlErrors.UniqueNameRequiredError);
+    commandIssues = issues.filter((issue) => issue instanceof WdlErrors.CommandRequiredError);
   }
   return {
     type,
@@ -222,7 +230,7 @@ export default function extractEntityProperties (entity) {
     declarationsAvailable,
     declarationsEditable,
     outputs,
-    outputsOwner,
+    executable,
     outputsAvailable,
     outputsEditable,
     scatterItems,
@@ -232,6 +240,7 @@ export default function extractEntityProperties (entity) {
     expressionAvailable,
     runtime,
     runtimeAttributesAvailable,
+    runtimeAttributesEditable,
     task,
     command,
     commandAvailable,

@@ -21,7 +21,7 @@ import {
 } from 'antd';
 import {CompoundTypes, PrimitiveTypes} from '../../../../../../../utils/pipeline-builder';
 
-function getSuggestions (typeString) {
+function getSuggestions (typeString, structs = []) {
   const e = /([^[\],?+]+)$/.exec(typeString);
   let current = typeString || '';
   let filter = '';
@@ -60,7 +60,8 @@ function getSuggestions (typeString) {
       CompoundTypes.array,
       CompoundTypes.object,
       CompoundTypes.pair,
-      CompoundTypes.map
+      CompoundTypes.map,
+      ...[...new Set((structs || []).map((s) => s.alias))].filter(Boolean)
     ].filter(filterSuggestion).map(suggest);
   }
   return [];
@@ -72,10 +73,11 @@ function WdlTypeSelector (
     style,
     disabled,
     value,
-    onChange
+    onChange,
+    structs
   }
 ) {
-  const options = getSuggestions(value)
+  const options = getSuggestions(value, structs)
     .map((o) => (
       <AutoComplete.Option key={o.value} vlaue={o.value}>
         {o.name}

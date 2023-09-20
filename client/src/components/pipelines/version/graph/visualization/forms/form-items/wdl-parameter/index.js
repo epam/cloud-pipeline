@@ -23,8 +23,13 @@ import styles from './wdl-parameter.css';
 import WdlTypeSelector from '../wdl-type-selector';
 import WdlIssues from '../wdl-issues';
 import {isCall, isScatterIterator} from '../../../../../../../../utils/pipeline-builder';
+import {getParameterAllowedStructs} from '../../utilities/workflow-utilities';
 
 class WdlParameter extends React.Component {
+  get structs () {
+    const {parameter} = this.props;
+    return getParameterAllowedStructs(parameter);
+  }
   onPropertyChanged = (property, isEvent = true) => (event) => {
     const {
       parameter
@@ -41,6 +46,7 @@ class WdlParameter extends React.Component {
    * @property {string} [title]
    * @property {string} [className]
    * @property {*} [component]
+   * @property {*} [componentOptions]
    * @property {boolean} [changeParameterIsEvent=true]
    * @property {Object} [style]
    */
@@ -59,6 +65,7 @@ class WdlParameter extends React.Component {
     const {
       property,
       component,
+      componentOptions = {},
       className,
       changeParameterIsEvent = true,
       style,
@@ -80,6 +87,7 @@ class WdlParameter extends React.Component {
         </span>
       ) : null,
       <Component
+        {...componentOptions}
         key={property}
         value={parameter[property]}
         onChange={this.onPropertyChanged(property, changeParameterIsEvent)}
@@ -103,6 +111,9 @@ class WdlParameter extends React.Component {
     title: 'Type',
     placeholder: 'Parameter type',
     component: WdlTypeSelector,
+    componentOptions: {
+      structs: this.structs
+    },
     changeParameterIsEvent: false,
     className: styles.wdlParameterType
   });

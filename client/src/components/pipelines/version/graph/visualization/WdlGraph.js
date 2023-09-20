@@ -61,9 +61,11 @@ import {
   serializeWorkflowParameters,
   workflowParametersEquals
 } from './forms/utilities/workflow-utilities';
-import WdlTasks from './forms/form-items/wdl-tasks';
+import WdlExecutables from './forms/form-items/wdl-executables';
 import WdlDocumentProperties from './forms/form-items/wdl-document-properties';
 import {clearQuotes} from './forms/utilities/string-utilities';
+import buildWdlContentsResolver from './utilities/wdl-contents-resolver';
+import getPipelineFilePath from './utilities/get-pipeline-file-path';
 
 const graphFitContentOpts = {
   padding: 24,
@@ -102,13 +104,17 @@ function reportWDLError (error) {
 @observer
 export default class WdlGraph extends Graph {
   wdlVisualizer;
+  wdlDocument;
+  wdlProject;
   workflow;
   workflowParameters;
   @observable previousSuccessfulCode;
 
   initializeContainer = async (container) => {
     if (container && !this.wdlVisualizer) {
-      const script = atob(this._mainFileRequest.response);
+      const {
+        script
+      } = this.state;
       this.wdlVisualizer = new Visualizer({
         element: container,
         displayWorkflowConnections: this.state.showAllLinks,
@@ -294,7 +300,7 @@ export default class WdlGraph extends Graph {
         success,
         error,
         content
-      } = Project.default.generateWdl(this.wdlDocument);
+      } = (this.wdlProject || Project.default).generateWdl(this.wdlDocument);
       if (error) {
         console.log('Error in generated code:', error.message);
         if (content) {
@@ -331,7 +337,17 @@ export default class WdlGraph extends Graph {
       }
     };
     try {
-      const wdlDocument = await Project.default.loadDocumentByContents(code);
+      const {
+        uri
+      } = this.state;
+      this.wdlProject = new Project({
+        baseURI: uri,
+        contentsResolver: buildWdlContentsResolver(
+          this.props.pipelineId,
+          this.props.pipelineVersion
+        )
+      });
+      const wdlDocument = await this.wdlProject.loadDocumentByContents(code);
       if (wdlDocument) {
         if (this.wdlDocument) {
           this.wdlDocument.off(WdlEvent.changed, this.modelChanged, this);
@@ -514,10 +530,7 @@ export default class WdlGraph extends Graph {
   }
 
   getFilePath () {
-    if (this._mainFileRequest) {
-      return this._mainFileRequest.path;
-    }
-    return null;
+    return this.state.uri;
   }
 
   draw () {
@@ -546,18 +559,14 @@ export default class WdlGraph extends Graph {
     }
   };
 
-  @observable _mainFileRequest;
-
   async revertChanges () {
-    if (this._mainFileRequest) {
-      const script = atob(this._mainFileRequest.response);
-      await this.applyCode(script);
-      this.setState({
-        modified: false,
-        wdlError: undefined,
-        modifiedParameters: undefined
-      });
-    }
+    const {script} = this.state;
+    await this.applyCode(script);
+    this.setState({
+      modified: false,
+      wdlError: undefined,
+      modifiedParameters: undefined
+    });
   }
 
   addCall = (task, parent = this.workflow) => {
@@ -683,7 +692,7 @@ export default class WdlGraph extends Graph {
           }
           {
             !selectedElement && (
-              <WdlTasks
+              <WdlExecutables
                 document={this.wdlDocument}
                 disabled={!this.canModifySources}
                 onSelect={this.onSelectItem}
@@ -742,7 +751,7 @@ export default class WdlGraph extends Graph {
       const {
         type,
         name
-      } = getEntityNameOptions(element);
+      } = getEntityNameOptions(element, this.wdlDocument);
       let description;
       if (isScatter(element) && element.iterator && element.iterator.value) {
         description = `${element.iterator.name} in ${element.iterator.value}`;
@@ -999,28 +1008,23 @@ export default class WdlGraph extends Graph {
   );
 
   renderGraph () {
-    if (
-      (this.props.parameters.pending && !this.props.parameters.loaded) ||
-      (this.props.pipeline.pending && !this.props.pipeline.loaded) ||
-      (
-        !this._mainFileRequest ||
-        (this._mainFileRequest.pending && !this._mainFileRequest.loaded)
-      )
-    ) {
+    const {
+      loaded,
+      error,
+      loadError
+    } = this.state;
+    if (!loaded) {
       return <LoadingView />;
     }
-    if (this.props.parameters.error) {
-      return <Alert type="warning" message={this.props.parameters.error} />;
+    if (loadError) {
+      return <Alert type="warning" message={loadError} />;
     }
-    if (this._mainFileRequest && this._mainFileRequest.error) {
-      return <Alert type="warning" message={this._mainFileRequest.error} />;
-    }
-    if (this.state.error) {
-      const error = this.state.error.message || this.state.error;
+    if (error) {
+      const errorText = error.message || error;
       const errorContent = (
         <Row>
           <Row>Error parsing wdl script:</Row>
-          <Row>{error}</Row>
+          <Row>{errorText}</Row>
         </Row>
       );
       return (
@@ -1051,18 +1055,20 @@ export default class WdlGraph extends Graph {
     );
   }
 
-  componentDidUpdate () {
-    this.loadMainFile();
-    super.componentDidUpdate();
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.pipelineId !== this.props.pipelineId ||
+      prevProps.pipelineVersion !== this.props.pipelineVersion
+    ) {
+      console.log('pipeline id or version changed');
+      this.loadMainFile();
+    }
+    super.componentDidUpdate(prevProps, prevState, snapshot);
   }
 
   renderBottomGraphControls = () => {
     return null;
   };
-
-  async afterSaveChanges () {
-    this._mainFileRequest = null;
-  }
 
   async afterCommit () {
     return new Promise(resolve => {
@@ -1105,38 +1111,74 @@ export default class WdlGraph extends Graph {
   }
 
   componentWillUnmount () {
-    this._mainFileRequest = null;
+    this._loadMainFileToken = {};
     if (this._removeRouterListener) {
       this._removeRouterListener();
     }
   }
 
   loadMainFile = () => {
-    if (this.props.parameters.loaded && this.props.pipeline.loaded &&
-      (!this._mainFileRequest || this._mainFileRequest.version !== this.props.version)) {
-      let codePath = this.props.pipeline.value.codePath || '';
-      if (codePath.startsWith('/')) {
-        codePath = codePath.slice(1);
+    const {
+      parameters,
+      pipeline,
+      pipelineId,
+      pipelineVersion
+    } = this.props;
+    this._loadMainFileToken = {};
+    const token = this._loadMainFileToken;
+    const commit = (state) => {
+      if (token === this._loadMainFileToken) {
+        this.setState(state);
       }
-      if (codePath.endsWith('/')) {
-        codePath = codePath.slice(0, -1);
-      }
-      const filePathParts = this.props.parameters.value.main_file.split('.');
-      if (filePathParts[filePathParts.length - 1].toLowerCase() === 'wdl') {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `${codePath}/${this.props.parameters.value.main_file}`,
-          this.props.version
+    };
+    this.setState({
+      loaded: false,
+      loadError: undefined,
+      error: undefined,
+      script: undefined,
+      uri: undefined
+    }, async () => {
+      const state = {loaded: true};
+      try {
+        await Promise.all([
+          parameters.fetchIfNeededOrWait(),
+          pipeline.fetchIfNeededOrWait()
+        ]);
+        if (pipeline.error) {
+          throw new Error(pipeline.error);
+        }
+        if (parameters.error) {
+          throw new Error(parameters.error);
+        }
+        const {
+          codePath: pipelineCodePath = ''
+        } = pipeline.value || {};
+        const {
+          main_file: mainFile = ''
+        } = parameters.value || {};
+        const mainFilePath = (() => {
+          const extension = mainFile.split('.').pop().toLowerCase();
+          if (extension === 'wdl') {
+            return getPipelineFilePath(mainFile, pipelineCodePath);
+          }
+          return getPipelineFilePath(`${mainFile}.wdl`, pipelineCodePath);
+        })();
+        const request = new VersionFile(
+          pipelineId,
+          mainFilePath,
+          pipelineVersion
         );
-        this._mainFileRequest.fetch();
-      } else {
-        this._mainFileRequest = new VersionFile(
-          this.props.pipelineId,
-          `${codePath}/${this.props.pipeline.value.name}.wdl`,
-          this.props.version
-        );
-        this._mainFileRequest.fetch();
+        await request.fetch();
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        state.script = atob(request.response);
+        state.uri = mainFilePath;
+      } catch (error) {
+        state.loadError = error.message;
+      } finally {
+        commit(state);
       }
-    }
+    });
   };
 }
