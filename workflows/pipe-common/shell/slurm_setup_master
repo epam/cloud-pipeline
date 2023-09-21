@@ -20,17 +20,23 @@ SLURM_MASTER_SETUP_TASK_WORKERS="SLURMMasterSetupWorkers"
 CURRENT_PID=$$
 
 configure_slurm() {
-    local _distro="$1"
+    _SLURM_CONFIG_LOCATION=$( slurm_config_location )
 
     mkdir -p ${SLURM_COMMON_CONFIG_DIR}
 
-    mkdir /var/spool/slurmctld
-    chown slurm: /var/spool/slurmctld
-    chmod 755 /var/spool/slurmctld
-    touch /var/log/slurmctld.log
-    chown slurm: /var/log/slurmctld.log
-    touch /var/log/slurm_jobacct.log /var/log/slurm_jobcomp.log
-    chown slurm: /var/log/slurm_jobacct.log /var/log/slurm_jobcomp.log
+    mkdir -p /var/spool/slurmctld \
+             /var/spool/slurmd
+    chown slurm: /var/spool/slurmctld \
+                 /var/spool/slurmd
+    chmod 755 /var/spool/slurmctld \
+              /var/spool/slurmd
+
+    touch /var/log/slurmctld.log \
+          /var/log/slurm_jobacct.log \
+          /var/log/slurm_jobcomp.log
+    chown slurm: /var/log/slurmctld.log \
+                 /var/log/slurm_jobacct.log \
+                 /var/log/slurm_jobcomp.log
 
     cat > ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf <<EOL
 CgroupAutomount=yes
@@ -38,15 +44,6 @@ CgroupMountpoint=/cgroup
 ConstrainCores=no
 ConstrainRAMSpace=no
 EOL
-
-if [ "$_distro" == "redhat" ]; then
-    _scheduling_config="SchedulerType=sched/backfill
-SelectType=select/cons_tres
-SelectTypeParameters=CR_CPU"
-else
-    _scheduling_config="SchedulerType=sched/backfill
-SelectType=select/linear"
-fi
 
     cat > ${SLURM_COMMON_CONFIG_DIR}/slurm.conf <<EOL
 ControlMachine=$HOSTNAME
@@ -64,7 +61,9 @@ SwitchType=switch/none
 TaskPlugin=task/none
 
 # SCHEDULING
-$_scheduling_config
+SchedulerType=sched/backfill
+SelectType=select/cons_tres
+SelectTypeParameters=CR_CPU
 
 # LOGGING AND ACCOUNTING
 ClusterName=cloudpipeline
@@ -123,21 +122,15 @@ EOL
         echo -e "\n# Mail notification configuration" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
         echo "MailProg=$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
-}
 
-get_linux_dist() {
-    result=
-    command -v apt-get > /dev/null
-    if [ $? -eq 0 ]; then
-        result="debian"
-    fi
+    dd if=/dev/urandom bs=1 count=1024 > ${SLURM_COMMON_CONFIG_DIR}/munge.key
+    cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
+    chown munge: /etc/munge/munge.key
+    chmod 400 /etc/munge/munge.key
+    su -c /usr/sbin/munged -s /bin/bash munge
 
-    command -v yum > /dev/null
-    if [ $? -eq 0 ]; then
-        result="redhat"
-    fi
-
-    echo "$result"
+    ln -s ${SLURM_COMMON_CONFIG_DIR}/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf "$_SLURM_CONFIG_LOCATION"
 }
 
 check_last_exit_code() {
@@ -164,28 +157,58 @@ slurm_config_location() {
    fi
 }
 
-pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
+install_slurm() {
+    create_slurm_user
 
-LINUX_DISTRIBUTION=$( get_linux_dist )
-
-if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-    apt-get update && apt-get install -y munge slurm-wlm
-    mkdir -p /var/run/munge
-    chown munge: /var/run/munge
-    mkdir -p /run/munge
-    chown munge: /run/munge
-    chmod +t /run/munge
-elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-
-    if [ -z $CP_SLURM_PACKAGE_URL ]; then
-        CP_SLURM_PACKAGE_URL="${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"
-        CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-22.05.5.tar.bz2"
+    if [ "$CP_OS_FAMILY" == "debian" ]; then
+        if [ "$CP_OS" == "ubuntu" ] && [ "$CP_VER" == "16.04" ]; then
+            pipe_log_fail "SLURM support for Ubuntu 16.04 has been dropped. Please use Ubuntu 18.04 instead." "$SLURM_MASTER_SETUP_TASK"
+            return 1
+        fi
+        install_slurm_debian
+    elif [ "$CP_OS_FAMILY" == "rhel" ]; then
+        install_slurm_rhel
+    else
+        return 1
     fi
+}
 
+create_slurm_user() {
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
+}
 
+install_slurm_debian() {
+    apt-get update -y
+    apt-get install -y munge
+
+    mkdir -p /var/run/munge \
+             /run/munge
+    chown munge: /var/run/munge \
+                 /run/munge
+    chmod +t /run/munge
+
+    wget -q "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
+    if ! apt-get install -y -f /tmp/slurm.deb; then
+        return 1
+    fi
+    rm -f /tmp/slurm.deb
+
+    mkdir -p /etc/slurm \
+             /etc/slurm/prolog.d \
+             /etc/slurm/epilog.d
+    chown slurm: /etc/slurm \
+                 /etc/slurm/prolog.d \
+                 /etc/slurm/epilog.d
+
+    ln -s /usr/local/slurm/bin/* /usr/bin/
+    ln -s /usr/local/slurm/sbin/* /usr/sbin/
+
+    return 0
+}
+
+install_slurm_rhel() {
     yum install epel-release -y
     yum install gcc gcc-c++ mariadb-server mariadb-devel  munge munge-libs munge-devel openssl openssl-devel \
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
@@ -193,10 +216,10 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
 
     _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
     mkdir -p /common/slurm-pkgs
-    wget $CP_SLURM_PACKAGE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+    wget -q "$CP_SLURM_PACKAGE_RPM_URL" --directory-prefix=$_TMP_PACKAGE_DIR
     if [[ $? -ne 0 ]]; then
         rm -rf /root/rpmbuild/RPMS/x86_64/*
-        wget $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+        wget -q $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
         rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
         cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
     else
@@ -205,41 +228,36 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     fi
 
     yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
-    check_last_exit_code $? "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
+}
+
+pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
+
+export CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+export CP_SLURM_PACKAGE_DEB_URL="${CP_SLURM_PACKAGE_DEB_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/deb/slurm_22.05.5_amd64.deb"}"
+export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"}"
+
+if check_cp_cap CP_CAP_SLURM_PREINSTALLED; then
+    pipe_log_info "Skipping SLURM packages installation because packages are preinstalled" "$SLURM_MASTER_SETUP_TASK"
+elif check_cp_cap RESUMED_RUN; then
+    pipe_log_info "Skipping SLURM packages installation because run is resumed" "$SLURM_MASTER_SETUP_TASK"
+else
+    pipe_log_info "Installing SLURM packages" "$SLURM_MASTER_SETUP_TASK"
+    install_slurm
+    check_last_exit_code $? "SLURM packages have been installed" "Can't install SLURM packages"
 fi
 
-_SLURM_CONFIG_LOCATION=$( slurm_config_location )
-configure_slurm "$LINUX_DISTRIBUTION"
-
-dd if=/dev/urandom bs=1 count=1024 > ${SLURM_COMMON_CONFIG_DIR}/munge.key
-cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
-chown munge: /etc/munge/munge.key
-chmod 400 /etc/munge/munge.key
-su -c /usr/sbin/munged -s /bin/bash munge
-
-ln -s ${SLURM_COMMON_CONFIG_DIR}/slurm.conf "$_SLURM_CONFIG_LOCATION"
-ln -s  ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+if check_cp_cap RESUMED_RUN; then
+    pipe_log_info "Skipping SLURM cluster configuration because run is resumed" "$SLURM_MASTER_SETUP_TASK"
+else
+    pipe_log_info "Configuring SLURM cluster" "$SLURM_MASTER_SETUP_TASK"
+    configure_slurm
+    pipe_log_info "SLURM cluster has been configured" "$SLURM_MASTER_SETUP_TASK"
+fi
 
 slurmctld && slurmd
+check_last_exit_code $? "SLURM daemons have started" "Fail to start SLURM daemons."
 
-check_last_exit_code $? "SLURM demons have started" "Fail to start SLURM demons."
-
-pipe_log_success "Master ENV is ready" "$SLURM_MASTER_SETUP_TASK"
-
-
-# Verify whether it is a resumed run - if so, do not reinstall SLURM, instead - just rerun master and worker daemon
-if [ "$RESUMED_RUN" = true ]; then
-    pipe_log_info "Run is resumed - SLURM master node won't be reconfigured. Starting master and worker daemons" "$SLURM_MASTER_SETUP_TASK"
-    slurmctld -f /etc/slurm/slurm.conf && slurmd -f /etc/slurm/slurm.conf
-    _SLURM_RESUME_RESULT=$?
-
-    if [ $_SLURM_RESUME_RESULT -eq 0 ]; then
-        pipe_log_success "SLURM daemons started" "$SLURM_MASTER_SETUP_TASK"
-    else
-        pipe_log_fail "SLURM daemons start failed. See any errors in the ConsoleOutput" "$SLURM_MASTER_SETUP_TASK"
-    fi
-    exit 0
-fi
+pipe_log_success "SLURM master node has been successfully configured" "$SLURM_MASTER_SETUP_TASK"
 
 # Wait for worker nodes to initiate and connect to the master
 if [ -z "$node_count" ] || (( "$node_count" == 0 )); then
@@ -255,11 +273,14 @@ else
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
-            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SLURM_MASTER_SETUP_TASK_WORKERS"
-            exit 0
+            break
         fi
     done
-    pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
+    if [ "$node_count" -gt "$_CURRENT_EXEC_HOSTS_COUNT" ]; then
+        pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SLURM_MASTER_SETUP_TASK_WORKERS"
+    else
+        pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
+    fi
 fi
 
 (
