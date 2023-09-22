@@ -100,6 +100,9 @@ jobs:
         with:
           python-version: '3.9'
           architecture: 'x64'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 14
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
