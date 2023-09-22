@@ -64,6 +64,7 @@ aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.
                         -x test \
                         -x :pipe-cli:buildLinux \
                         -x :pipe-cli:buildMac \
+                        -x :pipe-cli:buildMacPy3 \
                         -x :pipe-cli:buildWin \
                         -Pfast \
                         --no-daemon

@@ -20,7 +20,7 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
 
 ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
           -Pprofile=release \
-          pipe-cli:buildMac \
+          pipe-cli:buildMacPy39 \
           --no-daemon \
           -x :pipe-cli:test
 
