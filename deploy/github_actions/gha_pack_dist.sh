@@ -51,13 +51,20 @@ rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe ${API_STATIC_PATH}/pipe
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.tar.gz ${API_STATIC_PATH}/pipe.tar.gz
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6 ${API_STATIC_PATH}/pipe-el6
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx ${API_STATIC_PATH}/pipe-osx
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
-aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.zip ${API_STATIC_PATH}/pipe.zip
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe ${API_STATIC_PATH}/pipe
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.tar.gz ${API_STATIC_PATH}/pipe.tar.gz
+
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6 ${API_STATIC_PATH}/pipe-el6
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
+
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx ${API_STATIC_PATH}/pipe-osx
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
+
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.zip ${API_STATIC_PATH}/pipe.zip
+
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/client.tar.gz ${API_STATIC_PATH}/client.tar.gz
+tar -xzf ${API_STATIC_PATH}/client.tar.gz -C ${API_STATIC_PATH}
+rm -f ${API_STATIC_PATH}/client.tar.gz
 
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
@@ -66,6 +73,7 @@ aws s3 cp s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.
                         -x :pipe-cli:buildMac \
                         -x :pipe-cli:buildMacPy3 \
                         -x :pipe-cli:buildWin \
+                        -x :client:buildUI \
                         -Pfast \
                         --no-daemon
 
