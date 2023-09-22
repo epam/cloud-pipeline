@@ -1,13 +1,7 @@
 
 task clean(type: Delete) {
     group = 'build'
-    delete("$project.rootDir/pipe-cli/build")
-    delete("$project.rootDir/pipe-cli/__pycache__")
-    delete("$project.rootDir/pipe-cli/pipe.spec")
     delete("$project.rootDir/pipe-cli/dist")
-    delete("$project.rootDir/pipe-cli/mount/build")
-    delete("$project.rootDir/pipe-cli/mount/__pycache__")
-    delete("$project.rootDir/pipe-cli/mount/pipe-fuse.spec")
 }
 
 task build(type: Exec, dependsOn: ':pipe-cli:test') {

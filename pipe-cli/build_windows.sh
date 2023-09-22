@@ -115,7 +115,7 @@ pyinstaller --paths "/pipe-cli" \
             --hidden-import=re \
             --hidden-import=subprocess \
             --hidden-import=pkg_resources.py2_warn \
-            --additional-hooks-dir="/pipe-cli/mount/hooks/python" \
+            --additional-hooks-dir="/pipe-cli/mount/hooks" \
             -y \
             --clean \
             --distpath /tmp/mount/dist \
@@ -143,7 +143,7 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             --hidden-import=re \
             --hidden-import=subprocess \
             --hidden-import=pkg_resources.py2_warn \
-            --additional-hooks-dir="/pipe-cli/hooks/python" \
+            --additional-hooks-dir="/pipe-cli/hooks" \
             -y \
             --clean \
             --workpath /tmp \

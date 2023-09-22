@@ -50,8 +50,8 @@ pyinstaller \
                                 --hidden-import=re \
                                 --hidden-import=subprocess \
                                 --hidden-import=_sysconfigdata \
-                                --additional-hooks-dir="$PIPE_MOUNT_SOURCES_DIR/hooks/python" \
-                                --additional-hooks-dir="$PIPE_MOUNT_SOURCES_DIR/hooks/python39" \
+                                --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
+                                --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
                                 -y \
                                 --clean \
                                 --distpath /tmp/mount/dist \
@@ -99,8 +99,8 @@ function build_pipe {
                                     --hidden-import=re \
                                     --hidden-import=subprocess \
                                     --hidden-import=_sysconfigdata \
-                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks/python" \
-                                    --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks/python39" \
+                                    --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
+                                    --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks-py39" \
                                     -y \
                                     --clean \
                                     --distpath $distpath \
