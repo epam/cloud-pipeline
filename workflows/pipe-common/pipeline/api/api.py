@@ -362,6 +362,11 @@ class PipelineAPI:
         raise exceptions[-1]
 
     def _download(self, http_method, endpoint, output_path, data=None):
+        # Make sure the output_path's directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
         url = '{}/{}'.format(self.api_url, endpoint)
         count = 0
         exceptions = []
