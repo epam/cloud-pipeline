@@ -5,9 +5,9 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD"}
+          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD", "size": 127},
+          {"key": "data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD", "size": 127},
+          {"key": "data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD", "size": 127}
         ]
       }
     ]
@@ -30,18 +30,10 @@
             },
             "transitions": [
               {
-                "transitionAfterDays": 30,
-                "storageClass": "GLACIER"
+                "transitionAfterDays": 5,
+                "storageClass": "GLACIER_IR"
               }
-            ],
-            "notification": {
-              "notifyBeforeDays": 10,
-              "prolongDays": 10,
-              "recipients": [{"name": "ROLE_ADMIN", "principal": false}],
-              "enabled": true,
-              "subject": "Lifecycle rule is about to be applied!",
-              "body": "Lifecycle rule is about to be applied!"
-            }
+            ]
           }
         ],
         "executions": []

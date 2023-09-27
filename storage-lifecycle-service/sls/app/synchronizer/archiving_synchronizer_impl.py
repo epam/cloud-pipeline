@@ -21,6 +21,7 @@ import re
 from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.app.model.sync_event_model import StorageLifecycleRuleActionItems
+from sls.cloud import cloud_utils
 from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
 from sls.util import path_utils, date_utils
 
@@ -151,10 +152,12 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 date_of_action = self._calculate_transition_date(file, transition)
                 today = datetime.datetime.now(datetime.timezone.utc).date()
 
+                storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
                 if date_utils.is_date_after_that(date_of_action, today):
                     should_be_transferred = \
                         file.storage_class != transition.storage_class and \
-                        (transition_date is None or date_utils.is_date_after_that(transition_date, date_of_action))
+                        (transition_date is None or date_utils.is_date_after_that(transition_date, date_of_action)) and \
+                        storage_class_file_filter(file)
                     if not should_be_transferred:
                         continue
                     transition_class = transition.storage_class
@@ -255,6 +258,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             trn_subject_files = [
                 trn_file for trn_file in trn_subject_files if trn_file.creation_date.date() < transition_date
             ]
+
+        storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
+        trn_subject_files = [trn_file for trn_file in trn_subject_files if storage_class_file_filter(trn_file)]
+
         return trn_subject_files
 
     def _apply_action_items(self, storage, rule, action_items):
@@ -326,9 +333,11 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         # So if we found a file in source location,
         # and creation date is before execution start date
         # (if transition was confgured with date - file should be created before that date) - then action is failed
+        storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
         file_in_wrong_location = next(
             filter(lambda file: file.creation_date < execution.updated and
-                                (transition.transition_date is None or file.creation_date.date() < transition.transition_date),
+                                (transition.transition_date is None or file.creation_date.date() < transition.transition_date) and
+                                storage_class_file_filter(file),
                    subject_files
             ), None
         )
