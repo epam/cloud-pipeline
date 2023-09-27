@@ -1012,6 +1012,49 @@ function tag_run() {
     }'
 }
 
+function is_jq_null() {
+  [ -z "$1" ] || [ "$1" == "null" ]
+}
+
+function jwt_b64_padding() {
+  local len=$(( ${#1} % 4 ))
+  local padded_b64=''
+  if [ ${len} = 2 ]; then
+    padded_b64="${1}=="
+  elif [ ${len} = 3 ]; then
+    padded_b64="${1}="
+  else
+    padded_b64="${1}"
+  fi
+  echo -n "$padded_b64"
+}
+
+function jwt_get_attribute() {
+  if [ -z "$API_TOKEN" ]; then
+    return 1
+  fi
+
+  local _jwt_attribute="$1"
+
+  IFS='.' read -r _jwt_header _jwt_payload _jwt_signature <<< "$API_TOKEN"
+  
+  _jwt_payload=$(jwt_b64_padding "${_jwt_payload}" | tr -- '-_' '+/')
+  _jwt_payload=$(echo "${_jwt_payload}" | base64 -d)
+  _jwt_payload=$(echo "$_jwt_payload" | jq -r ".${_jwt_attribute}")
+  if is_jq_null "$_jwt_payload"; then
+    return 1
+  else
+    echo "$_jwt_payload"
+  fi
+}
+
+function jwt_get_user_groups() {
+  local _jwt_groups=$(jwt_get_attribute "groups" | jq '. | join(" ")' -r)
+  local _jwt_roles=$(jwt_get_attribute "roles" | jq '. | join(" ")' -r)
+
+  echo ${_jwt_groups} ${_jwt_roles}
+}
+
 ######################################################
 
 
@@ -1379,8 +1422,15 @@ fi
 
 if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
     then
-        export CP_CAP_SUDO_ENABLE="true"
-        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+        _user_groups=$(jwt_get_user_groups)
+        if [[ " ${_user_groups} " =~ " ROLE_ADMIN " ]]; then
+            export CP_CAP_SUDO_ENABLE="true"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\" as the user is a member of ROLE_ADMIN"
+        else
+            _default_root_user_enabled=$(get_pipe_preference_low_level "system.ssh.default.root.user.enabled" "true")
+            export CP_CAP_SUDO_ENABLE="$_default_root_user_enabled"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\""
+        fi
 fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
