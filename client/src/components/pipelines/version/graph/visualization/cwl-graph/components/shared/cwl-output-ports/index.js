@@ -71,7 +71,8 @@ class CWLOutputPorts extends React.Component {
     const {
       className,
       style,
-      step
+      step,
+      disabled
     } = this.props;
     const {
       outputs = []
@@ -84,6 +85,7 @@ class CWLOutputPorts extends React.Component {
         {
           outputs.map((input, index) => (
             <CWLPort
+              disabled={disabled}
               key={`input-port-${index}`}
               port={input}
               onChange={this.onChangePort(index)}
@@ -92,9 +94,13 @@ class CWLOutputPorts extends React.Component {
             />
           ))
         }
-        <div style={{margin: '2px 0'}}>
-          <a onClick={this.onAddPort}>Add output port</a>
-        </div>
+        {
+          !disabled && (
+            <div style={{margin: '2px 0'}}>
+              <a onClick={this.onAddPort}>Add output port</a>
+            </div>
+          )
+        }
       </div>
     );
   }

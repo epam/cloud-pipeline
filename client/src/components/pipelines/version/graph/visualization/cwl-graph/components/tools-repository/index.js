@@ -78,6 +78,9 @@ class CWLToolsRepository extends React.Component {
   }
 
   onDragStart = (tool) => (event) => {
+    if (this.props.disabled) {
+      return;
+    }
     const {
       registry,
       image
@@ -230,7 +233,8 @@ class CWLToolsRepository extends React.Component {
 
 CWLToolsRepository.propTypes = {
   className: PropTypes.string,
-  style: PropTypes.object
+  style: PropTypes.object,
+  disabled: PropTypes.bool
 };
 
 export default CWLToolsRepository;

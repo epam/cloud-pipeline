@@ -103,6 +103,7 @@ class CWLPort extends React.Component {
           onChange={this.onChangeId}
         />
         <Select
+          disabled={disabled}
           style={{marginLeft: 5, width: 150}}
           value={type ? type.type : undefined}
           onChange={this.onChangeType}

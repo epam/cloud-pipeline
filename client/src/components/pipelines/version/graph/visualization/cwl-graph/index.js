@@ -54,6 +54,8 @@ import 'cwl-svg/src/assets/styles/theme.scss';
 import 'cwl-svg/src/plugins/selection/theme.scss';
 import './cwl-styles.scss';
 
+const readOnly = true;
+
 @inject('dockerRegistries')
 @inject(({pipelines}, params) => ({
   parameters: pipelines.getVersionParameters(params.pipelineId, params.version),
@@ -191,7 +193,7 @@ export default class CwlGraph extends Graph {
             new ZoomPlugin(),
             new DeletionPlugin()
           ],
-          editingEnabled: true
+          editingEnabled: !readOnly
         });
         this.cwlWorkflow.fitToViewport();
         this.initializeGraphEventListeners(this.cwlWorkflow);
@@ -228,12 +230,15 @@ export default class CwlGraph extends Graph {
   }
 
   onDragOver = (event) => {
-    if (this.model) {
+    if (this.model && !readOnly) {
       event.preventDefault();
     }
   };
 
   onDrop = (event) => {
+    if (readOnly) {
+      return;
+    }
     const data = event.dataTransfer.getData('text/plain');
     if (
       data &&
@@ -254,6 +259,9 @@ export default class CwlGraph extends Graph {
   };
 
   addTool = async (docker, position) => {
+    if (readOnly) {
+      return;
+    }
     const hide = message.loading(
       (<span>Adding <b>{docker}</b></span>),
       0
@@ -463,7 +471,7 @@ export default class CwlGraph extends Graph {
             shape="circle"
             style={{zIndex: 1}}
             type="primary"
-            disabled={!modified}
+            disabled={!modified || readOnly}
             onClick={this.openCommitFormDialog}
           >
             <Icon type="save" />
@@ -479,6 +487,7 @@ export default class CwlGraph extends Graph {
               buttonTitle: 'Properties',
               component: (
                 <CWLCommandLineTool
+                  disabled={readOnly}
                   tool={this.commandLineTool}
                   step={this.selected}
                   onRedraw={this.reDraw}
@@ -486,11 +495,11 @@ export default class CwlGraph extends Graph {
                 />
               )
             } : false,
-            {
+            readOnly ? false : {
               key: 'tools',
               title: 'Tools repository',
               buttonTitle: 'Tools',
-              component: (<CWLToolsRepository />)
+              component: (<CWLToolsRepository disabled={readOnly} />)
             }
           ].filter(Boolean)}
         />
