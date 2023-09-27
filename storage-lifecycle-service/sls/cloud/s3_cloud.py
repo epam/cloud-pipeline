@@ -411,6 +411,7 @@ class S3StorageOperations(StorageOperations):
             S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
             s3_object["LastModified"],
             s3_object["StorageClass"],
+            s3_object["Size"],
             s3_object["VersionId"] if 'VersionId' in s3_object else None
         )
 
