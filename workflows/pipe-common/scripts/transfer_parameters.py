@@ -294,7 +294,7 @@ class InputDataTask:
                 if self.is_upload:
                     for location in metadata_locations:
                         Logger.info('Downloading metadata entities for folder {} #{} {}...'.format(
-                                    location.entity_class, location.folder_id, location.entity_ids))
+                                    location.entity_class, location.folder_id, location.entity_ids), task_name=self.task_name)
                         self.api.download_metadata_entities(output_path=location.local_path,
                                                             folder_id=location.folder_id,
                                                             entity_class=location.entity_class,
