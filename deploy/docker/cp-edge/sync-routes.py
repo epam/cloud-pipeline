@@ -583,7 +583,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location = edge_location_id
                                         else:
                                                 pretty_url_path = pretty_url["path"]
-                                                if endpoints_count == 1 or (is_default_endpoint.lower() == "true" and EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT):
+                                                if endpoints_count == 1 or (str(is_default_endpoint).lower() == "true" and EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT):
                                                         edge_location = pretty_url_path
                                                 else:
                                                         pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
