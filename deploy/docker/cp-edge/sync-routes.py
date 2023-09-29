@@ -53,6 +53,7 @@ EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
+EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
@@ -595,7 +596,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location = edge_location_id
                                         else:
                                                 pretty_url_path = pretty_url["path"]
-                                                if endpoints_count == 1:
+                                                if endpoints_count == 1 or (is_default_endpoint and EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT):
                                                         edge_location = pretty_url_path
                                                 else:
                                                         pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
