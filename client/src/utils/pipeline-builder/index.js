@@ -23,7 +23,7 @@ const {
   Scatter,
   Task,
   Workflow,
-  ContextTypes,
+  ContextTypes = {},
   WdlEvent,
   WdlDocument,
   Project,
