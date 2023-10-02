@@ -25,6 +25,12 @@ import WdlIssues from '../wdl-issues';
 import {isCall, isScatterIterator} from '../../../../../../../../utils/pipeline-builder';
 import {getParameterAllowedStructs} from '../../utilities/workflow-utilities';
 
+function parameterValueEditable (parameter, wdlDocument) {
+  return !parameter ||
+    !parameter.isOutput ||
+    parameter.document === wdlDocument;
+}
+
 class WdlParameter extends React.Component {
   get structs () {
     const {parameter} = this.props;
@@ -45,6 +51,7 @@ class WdlParameter extends React.Component {
    * @property {string} [placeholder]
    * @property {string} [title]
    * @property {string} [className]
+   * @property {boolean} [editable]
    * @property {*} [component]
    * @property {*} [componentOptions]
    * @property {boolean} [changeParameterIsEvent=true]
@@ -70,7 +77,8 @@ class WdlParameter extends React.Component {
       changeParameterIsEvent = true,
       style,
       title,
-      placeholder
+      placeholder,
+      editable = true
     } = options || {};
     if (!property) {
       return null;
@@ -93,7 +101,7 @@ class WdlParameter extends React.Component {
         onChange={this.onPropertyChanged(property, changeParameterIsEvent)}
         className={className}
         style={style}
-        disabled={disabled}
+        disabled={disabled || !editable}
         placeholder={defaultValue || placeholder}
       />
     ];
@@ -103,6 +111,7 @@ class WdlParameter extends React.Component {
     property: 'name',
     title: 'Name',
     placeholder: 'Parameter name',
+    editable: this.props.editable,
     className: styles.wdlParameterName
   });
 
@@ -115,25 +124,27 @@ class WdlParameter extends React.Component {
       structs: this.structs
     },
     changeParameterIsEvent: false,
-    className: styles.wdlParameterType
+    className: styles.wdlParameterType,
+    editable: this.props.editable
   });
 
   renderValue = () => this.renderProperty({
     property: 'value',
     title: 'Value',
     placeholder: 'Parameter value',
-    className: styles.wdlParameterValue
+    className: styles.wdlParameterValue,
+    editable: parameterValueEditable(this.props.parameter, this.props.wdlDocument)
   });
 
   renderRemoveButton = () => {
     const {
       disabled,
-      removable,
+      editable,
       parameter
     } = this.props;
     if (
       disabled ||
-      !removable ||
+      !editable ||
       !parameter
     ) {
       return null;
@@ -168,11 +179,11 @@ class WdlParameter extends React.Component {
       return null;
     }
     const {
-      entityIssues = []
+      issues = []
     } = parameter;
     return (
       <WdlIssues
-        issues={entityIssues}
+        issues={issues}
       />
     );
   };
@@ -229,7 +240,8 @@ WdlParameter.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   parameter: PropTypes.object,
-  removable: PropTypes.bool
+  editable: PropTypes.bool,
+  wdlDocument: PropTypes.object
 };
 
 export default WdlParameter;

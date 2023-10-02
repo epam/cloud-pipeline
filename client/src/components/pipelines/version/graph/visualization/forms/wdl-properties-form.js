@@ -550,7 +550,8 @@ class WdlPropertiesForm extends React.Component {
   renderParametersBlock = (options = {}) => {
     const {
       entity,
-      disabled
+      disabled,
+      wdlDocument
     } = this.props;
     const {
       available = true,
@@ -641,7 +642,8 @@ class WdlPropertiesForm extends React.Component {
               }
               parameter={parameter}
               disabled={disabled}
-              removable={editable}
+              editable={editable}
+              wdlDocument={wdlDocument}
             />
           ))
         }

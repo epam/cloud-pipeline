@@ -26124,10 +26124,12 @@ __webpack_require__.r(__webpack_exports__);
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const action_1 = __webpack_require__(3354);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const events_1 = __webpack_require__(2445);
 const parameter_1 = __webpack_require__(5761);
 const wdl_generation_1 = __webpack_require__(2158);
+const dependencies_1 = __webpack_require__(3872);
 /**
  * Base class for actions with outputs (Call and executables - Task & Workflow)
  */
@@ -26153,7 +26155,7 @@ class ActionWithOutputs extends action_1.default {
         ]);
         this.muteAction(() => {
             this.registerChildrenContainer(this._outputs);
-            this._outputs.push(...parameter_1.default.deserializeCollection(outputs, types_1.ContextTypes.output, action_1.default.getInitializerForType(types_1.ContextTypes.output, initializers)));
+            this._outputs.push(...parameter_1.default.deserializeCollection(outputs, context_types_1.ContextTypes.output, action_1.default.getInitializerForType(context_types_1.ContextTypes.output, initializers)));
         });
         this.informTreeChanged();
     }
@@ -26196,7 +26198,7 @@ class ActionWithOutputs extends action_1.default {
     }
     getArrayForParameter(parameter) {
         switch (parameter.contextType) {
-            case types_1.ContextTypes.output:
+            case context_types_1.ContextTypes.output:
                 return this._outputs;
             default:
                 return super.getArrayForParameter(parameter);
@@ -26206,7 +26208,7 @@ class ActionWithOutputs extends action_1.default {
         return [
             ...super.getWdlContentItems(),
             [
-                (0, wdl_generation_1.getScopedContent)('output', this.outputs),
+                (0, wdl_generation_1.getScopedContent)('output', (0, dependencies_1.getBodyElementsExecutionOrder)(this.outputs)),
                 action_1.ActionWdlContentBlock.postFinalization,
             ],
         ];
@@ -26225,6 +26227,7 @@ exports["default"] = ActionWithOutputs;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.ActionWdlContentBlock = void 0;
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const parameter_1 = __webpack_require__(5761);
 const events_1 = __webpack_require__(2445);
@@ -26279,7 +26282,7 @@ class Action extends wdl_entity_1.default {
         if (isIAction(options)) {
             return options;
         }
-        const type = options.type || options[types_1.ContextTypeSymbol];
+        const type = options.type || options[context_types_1.ContextTypeSymbol];
         if (!type) {
             console.warn('Action type is not specified');
             return undefined;
@@ -26353,8 +26356,8 @@ class Action extends wdl_entity_1.default {
         this.registerChildrenContainer(this._declarations);
         this.registerChildrenContainer(this._actions);
         this.muteAction(() => {
-            this._inputs.push(...parameter_1.default.deserializeCollection(inputs, types_1.ContextTypes.input, Action.getInitializerForType(types_1.ContextTypes.input, initializers)));
-            this._declarations.push(...parameter_1.default.deserializeCollection(declarations, types_1.ContextTypes.declaration, Action.getInitializerForType(types_1.ContextTypes.declaration, initializers)));
+            this._inputs.push(...parameter_1.default.deserializeCollection(inputs, context_types_1.ContextTypes.input, Action.getInitializerForType(context_types_1.ContextTypes.input, initializers)));
+            this._declarations.push(...parameter_1.default.deserializeCollection(declarations, context_types_1.ContextTypes.declaration, Action.getInitializerForType(context_types_1.ContextTypes.declaration, initializers)));
             this._actions.push(...Action.deserializeArray(actions));
         });
         this.on(types_1.WdlEvent.parametersChanged, this.validateChildrenEntities, this);
@@ -26441,9 +26444,9 @@ class Action extends wdl_entity_1.default {
     }
     getArrayForParameter(parameter) {
         switch (parameter.contextType) {
-            case types_1.ContextTypes.input:
+            case context_types_1.ContextTypes.input:
                 return this._inputs;
-            case types_1.ContextTypes.declaration:
+            case context_types_1.ContextTypes.declaration:
                 return this._declarations;
             default:
                 return new events_1.WdlEventDispatcherArray();
@@ -26506,9 +26509,9 @@ class Action extends wdl_entity_1.default {
             const callsAliases = (this.stack.pop() || this).getChildrenActionsAliases();
             const globalAliases = this.document
                 ? this.document
-                    .getAliases(types_1.ContextTypes.workflow, types_1.ContextTypes.task)
+                    .getAliases(context_types_1.ContextTypes.workflow, context_types_1.ContextTypes.task)
                     .filter((alias) => !(0, types_1.isCall)(actionInstance) || actionInstance.executableName !== alias)
-                    .concat(this.document.getAliases(types_1.ContextTypes.struct))
+                    .concat(this.document.getAliases(context_types_1.ContextTypes.struct))
                 : [];
             const aliases = [...globalAliases, ...callsAliases];
             const alias = (0, generate_name_1.default)(actionInstance.reference, aliases);
@@ -26873,6 +26876,7 @@ exports["default"] = EventForwarder;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable no-param-reassign, @typescript-eslint/no-explicit-any */
 const events_1 = __webpack_require__(2445);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const types_2 = __webpack_require__(4051);
 const fully_qualified_name_1 = __webpack_require__(2390);
@@ -26881,17 +26885,17 @@ const escape_reg_exp_1 = __webpack_require__(3721);
 const event_forwarder_1 = __webpack_require__(1623);
 function requiresName(contextType) {
     return [
-        types_1.ContextTypes.workflow,
-        types_1.ContextTypes.task,
-        types_1.ContextTypes.declaration,
-        types_1.ContextTypes.input,
-        types_1.ContextTypes.output,
-        types_1.ContextTypes.struct,
+        context_types_1.ContextTypes.workflow,
+        context_types_1.ContextTypes.task,
+        context_types_1.ContextTypes.declaration,
+        context_types_1.ContextTypes.input,
+        context_types_1.ContextTypes.output,
+        context_types_1.ContextTypes.struct,
     ].includes(contextType);
 }
 function requiresReference(contextType) {
     return requiresName(contextType) || [
-        types_1.ContextTypes.call,
+        context_types_1.ContextTypes.call,
     ].includes(contextType);
 }
 function requiresOptions(contextType) {
@@ -26926,7 +26930,7 @@ class WdlEntity extends events_1.WdlEventDispatcher {
             throw new Error(`${contextType} name is not provided`);
         }
         super();
-        this[types_1.ContextTypeSymbol] = contextType;
+        this[context_types_1.ContextTypeSymbol] = contextType;
         this._uuid = WdlEntity.generateUUID(contextType.toString());
         this._issues = [];
         this._entityIssues = [];
@@ -26975,7 +26979,7 @@ class WdlEntity extends events_1.WdlEventDispatcher {
         return this._uuid;
     }
     get contextType() {
-        return this[types_1.ContextTypeSymbol];
+        return this[context_types_1.ContextTypeSymbol];
     }
     get version() {
         if (this.document) {
@@ -27046,22 +27050,22 @@ class WdlEntity extends events_1.WdlEventDispatcher {
      * @returns {IWdlDocument|undefined}
      */
     get document() {
-        return this.getClosestWdlEntityOfType(types_1.ContextTypes.document);
+        return this.getClosestWdlEntityOfType(context_types_1.ContextTypes.document);
     }
     /**
      * @returns {IExecutable|undefined}
      */
     get currentExecutable() {
-        return this.getClosestWdlEntityOfType(types_1.ContextTypes.workflow, types_1.ContextTypes.task);
+        return this.getClosestWdlEntityOfType(context_types_1.ContextTypes.workflow, context_types_1.ContextTypes.task);
     }
     /**
      * @returns {IWorkflow|undefined}
      */
     get currentWorkflow() {
-        return this.getClosestWdlEntityOfType(types_1.ContextTypes.workflow);
+        return this.getClosestWdlEntityOfType(context_types_1.ContextTypes.workflow);
     }
     get currentAction() {
-        return this.getClosestWdlEntityOfType(types_1.ContextTypes.workflow, types_1.ContextTypes.task, types_1.ContextTypes.call, types_1.ContextTypes.scatter, types_1.ContextTypes.conditional);
+        return this.getClosestWdlEntityOfType(context_types_1.ContextTypes.workflow, context_types_1.ContextTypes.task, context_types_1.ContextTypes.call, context_types_1.ContextTypes.scatter, context_types_1.ContextTypes.conditional);
     }
     get root() {
         if (this.parent === undefined) {
@@ -27238,7 +27242,7 @@ class WdlEntity extends events_1.WdlEventDispatcher {
             return [];
         }
         const types = type.length === 0
-            ? Object.values(types_1.ContextTypes)
+            ? Object.values(context_types_1.ContextTypes)
             : type;
         const criteria = (() => {
             if (typeof search === 'string') {
@@ -27304,25 +27308,39 @@ class WdlEntity extends events_1.WdlEventDispatcher {
         }
         return this.contextType;
     }
-    getValidationErrors() {
+    /**
+     * Returns current object validation issues
+     * @protected
+     */
+    getSelfValidationErrors() {
         const errors = [];
-        if (requiresName(this.contextType)) {
-            if (!this.name) {
-                errors.push(new validation_1.NameRequiredError(this));
-            }
-            else if (this.name && !validation_1.WrongIdentifierError.check(this.name)) {
-                errors.push(new validation_1.WrongIdentifierError(this, this.name));
-            }
+        const nameIsRequired = (requiresName(this.contextType) && !this.name)
+            || (requiresReference(this.contextType) && !this.reference);
+        if (nameIsRequired) {
+            errors.push(new validation_1.NameRequiredError(this));
         }
-        if (requiresReference(this.contextType)) {
-            if (!this.reference) {
-                errors.push(new validation_1.NameRequiredError(this));
+        const identifiersToCheck = getUniqueObjects([
+            requiresName(this.contextType) ? this.name : undefined,
+            requiresReference(this.contextType) ? this.reference : undefined,
+        ].filter(Boolean));
+        identifiersToCheck.forEach((identifier) => {
+            if (!validation_1.WrongIdentifierError.check(identifier)) {
+                errors.push(new validation_1.WrongIdentifierError(this, identifier));
             }
-            else if (this.reference && !validation_1.WrongIdentifierError.check(this.reference)) {
-                errors.push(new validation_1.WrongIdentifierError(this, this.reference));
+            if (!validation_1.ReservedKeywordError.check(identifier)) {
+                errors.push(new validation_1.ReservedKeywordError(this, identifier));
             }
-        }
+        });
         return errors;
+    }
+    /**
+     * Returns current object and its children / dependencies validation issues
+     * @protected
+     */
+    getValidationErrors() {
+        return []
+            .concat(this._entityIssues)
+            .concat(this.children.reduce((childrenErrors, child) => (childrenErrors.concat(child.issues)), []));
     }
     checkRequiresValidation(event, sender) {
         if (sender === this
@@ -27337,7 +27355,7 @@ class WdlEntity extends events_1.WdlEventDispatcher {
         this.validateEntity(true);
     }
     validateEntity(fireEvent) {
-        this._entityIssues = getUniqueObjects(this.getValidationErrors());
+        this._entityIssues = getUniqueObjects(this.getSelfValidationErrors());
         if (fireEvent) {
             this.bubble(events_1.WdlEvent.validation);
         }
@@ -27347,9 +27365,7 @@ class WdlEntity extends events_1.WdlEventDispatcher {
         return this.valid;
     }
     onValidated() {
-        this._issues = getUniqueObjects([]
-            .concat(this._entityIssues)
-            .concat(this.children.reduce((childrenErrors, child) => (childrenErrors.concat(child.issues)), [])));
+        this._issues = getUniqueObjects(this.getValidationErrors());
     }
     validate(throwError = false) {
         if (throwError && this.errors.length > 0) {
@@ -27374,6 +27390,7 @@ exports["default"] = WdlEntity;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const resolve_identifier_1 = __webpack_require__(2859);
 class CallAfter extends wdl_entity_1.default {
@@ -27399,7 +27416,7 @@ class CallAfter extends wdl_entity_1.default {
             }
             return options.call;
         })();
-        super(types_1.ContextTypes.callAfter, { name: callName });
+        super(context_types_1.ContextTypes.callAfter, { name: callName });
         this._callName = callName;
         this.setCall(call);
     }
@@ -27419,7 +27436,7 @@ class CallAfter extends wdl_entity_1.default {
     onTreeChanged() {
         super.onTreeChanged();
         if (!this._call) {
-            const callInstance = (0, resolve_identifier_1.default)(this.root, this._callName, types_1.ContextTypes.call);
+            const callInstance = (0, resolve_identifier_1.default)(this.root, this._callName, context_types_1.ContextTypes.call);
             if (callInstance && (0, types_1.isCall)(callInstance)) {
                 this.setCall(callInstance);
             }
@@ -27437,6 +27454,7 @@ exports["default"] = CallAfter;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const call_parameter_1 = __webpack_require__(389);
 const parameter_1 = __webpack_require__(5761);
@@ -27444,14 +27462,14 @@ const validation_1 = __webpack_require__(2215);
 class CallInput extends call_parameter_1.default {
     constructor(executableInput) {
         if (executableInput instanceof parameter_1.default) {
-            super(executableInput, types_1.ContextTypes.input);
+            super(executableInput, context_types_1.ContextTypes.input);
         }
         else {
             super(executableInput);
         }
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (!this.executableParameter) {
             issues.push(new validation_1.UnknownInputError(this, `"${this.name}" is not found among caller inputs`, types_1.WdlErrorLevel.warning));
         }
@@ -27474,6 +27492,7 @@ exports["default"] = CallInput;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const call_parameter_1 = __webpack_require__(389);
 const parameter_1 = __webpack_require__(5761);
@@ -27481,7 +27500,7 @@ const validation_1 = __webpack_require__(2215);
 class CallOutput extends call_parameter_1.default {
     constructor(executableOutput) {
         if (executableOutput instanceof parameter_1.default) {
-            super(executableOutput, types_1.ContextTypes.output);
+            super(executableOutput, context_types_1.ContextTypes.output);
         }
         else {
             super(executableOutput);
@@ -27502,8 +27521,8 @@ class CallOutput extends call_parameter_1.default {
     get dependencies() {
         return [];
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (!this.executableParameter) {
             issues.push(new validation_1.UnknownInputError(this, `${this.name} is not found among caller outputs`, types_1.WdlErrorLevel.warning));
         }
@@ -27529,6 +27548,7 @@ class CallParameter extends parameter_1.default {
             if (executableParameter instanceof parameter_1.default) {
                 return {
                     name: executableParameter.name,
+                    type: executableParameter.type,
                 };
             }
             return executableParameter;
@@ -27575,6 +27595,13 @@ class CallParameter extends parameter_1.default {
         if (this.executableParameter) {
             this.executableParameter.type = type;
         }
+    }
+    get typeIssues() {
+        const { executableParameter } = this;
+        if (executableParameter && executableParameter instanceof parameter_1.default) {
+            return executableParameter.typeIssues;
+        }
+        return [];
     }
     destroy() {
         super.destroy();
@@ -27625,6 +27652,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const action_1 = __webpack_require__(1585);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const call_input_1 = __webpack_require__(441);
 const call_output_1 = __webpack_require__(1679);
@@ -27637,8 +27665,8 @@ const events_1 = __webpack_require__(2445);
 const call_after_1 = __webpack_require__(2417);
 const validation_1 = __webpack_require__(2215);
 const CallParameterInitializers = new Map();
-CallParameterInitializers.set(types_1.ContextTypes.input, call_input_1.default);
-CallParameterInitializers.set(types_1.ContextTypes.output, call_output_1.default);
+CallParameterInitializers.set(context_types_1.ContextTypes.input, call_input_1.default);
+CallParameterInitializers.set(context_types_1.ContextTypes.output, call_output_1.default);
 class Call extends action_1.ActionWithOutputs {
     /**
      * @param {ICallOptions} options
@@ -27669,7 +27697,7 @@ class Call extends action_1.ActionWithOutputs {
         if (typeof executable === 'string') {
             executableName = executable;
         }
-        super(types_1.ContextTypes.call, restOptions, CallParameterInitializers);
+        super(context_types_1.ContextTypes.call, restOptions, CallParameterInitializers);
         this._executableName = executableName;
         this._after = (0, events_1.createEventDispatcherArray)(this, undefined, undefined, undefined);
         this.registerChildrenContainer(this._after);
@@ -27747,7 +27775,7 @@ class Call extends action_1.ActionWithOutputs {
     setExecutable(executable) {
         let executableObj;
         if (typeof executable === 'string') {
-            const wdlEntity = (0, resolve_identifier_1.default)(this.root, executable, types_1.ContextTypes.task, types_1.ContextTypes.workflow);
+            const wdlEntity = (0, resolve_identifier_1.default)(this.root, executable, context_types_1.ContextTypes.task, context_types_1.ContextTypes.workflow);
             if (wdlEntity instanceof executable_1.default) {
                 executableObj = wdlEntity;
             }
@@ -27916,8 +27944,8 @@ class Call extends action_1.ActionWithOutputs {
             allowEmpty: true,
         };
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         // unique name
         if (this.rootAction
             .getNestedActions()
@@ -27959,6 +27987,10 @@ class Call extends action_1.ActionWithOutputs {
         }
         return issues;
     }
+    getValidationErrors() {
+        return super.getValidationErrors()
+            .concat(this.executable ? this.executable.issues : []);
+    }
     toString() {
         return `call "${this.reference || ''}"`;
     }
@@ -27975,11 +28007,12 @@ exports["default"] = Call;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const expression_1 = __webpack_require__(9397);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const validation_1 = __webpack_require__(2215);
 class ConditionalExpression extends expression_1.default {
     constructor(expression) {
-        super({ value: expression }, types_1.ContextTypes.conditionalExpression);
+        super({ value: expression }, context_types_1.ContextTypes.conditionalExpression);
     }
     get eventsRequireValidation() {
         return new Set([
@@ -27995,8 +28028,8 @@ class ConditionalExpression extends expression_1.default {
     canBindTo(source, throwError) {
         return true;
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (!this.value || !this.value.length) {
             issues.push(new validation_1.ConditionalExpressionRequiredError(this));
         }
@@ -28019,6 +28052,7 @@ exports["default"] = ConditionalExpression;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const action_1 = __webpack_require__(1585);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const conditional_expression_1 = __webpack_require__(657);
 class Conditional extends action_1.Action {
@@ -28033,7 +28067,7 @@ class Conditional extends action_1.Action {
         if (!options) {
             throw new Error('Conditional options are not provided');
         }
-        super(types_1.ContextTypes.conditional, options);
+        super(context_types_1.ContextTypes.conditional, options);
         const { expression, } = options;
         this._expression = new conditional_expression_1.default(expression || '');
         this.children.push(this._expression);
@@ -28077,6 +28111,45 @@ exports["default"] = Conditional;
 
 /***/ }),
 
+/***/ 9740:
+/***/ (function(__unused_webpack_module, exports) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.ContextTypeSymbol = exports.ContextTypes = void 0;
+var ContextTypes;
+(function (ContextTypes) {
+    ContextTypes["document"] = "document";
+    ContextTypes["import"] = "import";
+    ContextTypes["importAlias"] = "importAlias";
+    ContextTypes["struct"] = "struct";
+    ContextTypes["structProperty"] = "struct-property";
+    ContextTypes["workflow"] = "workflow";
+    ContextTypes["task"] = "task";
+    ContextTypes["inputs"] = "inputs";
+    ContextTypes["outputs"] = "outputs";
+    ContextTypes["declaration"] = "declaration";
+    ContextTypes["input"] = "input";
+    ContextTypes["output"] = "output";
+    ContextTypes["scatter"] = "scatter";
+    ContextTypes["call"] = "call";
+    ContextTypes["callAfter"] = "call-after";
+    ContextTypes["conditional"] = "conditional";
+    ContextTypes["conditionalExpression"] = "conditional-expression";
+    ContextTypes["parameterMeta"] = "parameter-meta";
+    ContextTypes["meta"] = "meta";
+    ContextTypes["metaElement"] = "meta-element";
+    ContextTypes["runtime"] = "runtime";
+    ContextTypes["command"] = "command";
+    ContextTypes["expression"] = "expression";
+    ContextTypes["type"] = "type";
+})(ContextTypes || (exports.ContextTypes = ContextTypes = {}));
+exports.ContextTypeSymbol = Symbol('type');
+
+
+/***/ }),
+
 /***/ 8386:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -28093,6 +28166,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const events_1 = __webpack_require__(2445);
 const workflow_1 = __webpack_require__(8539);
@@ -28108,7 +28182,7 @@ class WdlDocument extends wdl_entity_1.default {
         if (!project) {
             throw new Error('Default project is missing');
         }
-        super(types_1.ContextTypes.document, options);
+        super(context_types_1.ContextTypes.document, options);
         const { uri, structs = [], imports = [], tasks = [], workflows = [], version = project.wdlVersion, [types_1.ImportDepthSymbol]: importDepth = 0, } = options || {};
         this[types_1.ImportDepthSymbol] = importDepth;
         this._project = project;
@@ -28243,23 +28317,23 @@ class WdlDocument extends wdl_entity_1.default {
         ]), []));
     }
     getAliases(...type) {
-        const types = new Set(type.length === 0 ? Object.values(types_1.ContextTypes) : type);
+        const types = new Set(type.length === 0 ? Object.values(context_types_1.ContextTypes) : type);
         let aliases = []
             .concat(this.imports.reduce((importAliases, i) => importAliases
             .concat(i.getAliases(...type)), []));
-        if (types.has(types_1.ContextTypes.struct)) {
+        if (types.has(context_types_1.ContextTypes.struct)) {
             aliases = aliases
                 .concat(this.globalStructs.map((o) => o.alias));
         }
-        if (types.has(types_1.ContextTypes.workflow)) {
+        if (types.has(context_types_1.ContextTypes.workflow)) {
             aliases = aliases
                 .concat(this.workflows.map((wf) => wf.name));
         }
-        if (types.has(types_1.ContextTypes.task)) {
+        if (types.has(context_types_1.ContextTypes.task)) {
             aliases = aliases
                 .concat(this.tasks.map((wf) => wf.name));
         }
-        if (types.has(types_1.ContextTypes.call)) {
+        if (types.has(context_types_1.ContextTypes.call)) {
             aliases = aliases
                 .concat(this.workflows.reduce((wfAliases, i) => wfAliases
                 .concat(i.getChildrenActionsAliases()), []));
@@ -28912,6 +28986,7 @@ exports["default"] = Executable;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 class Meta extends wdl_entity_1.default {
     static deserialize(options) {
@@ -28925,7 +29000,7 @@ class Meta extends wdl_entity_1.default {
      */
     constructor(options) {
         const { parameter, meta, } = options || {};
-        super(types_1.ContextTypes.metaElement, Object.assign({ name: parameter }, (options || {})));
+        super(context_types_1.ContextTypes.metaElement, Object.assign({ name: parameter }, (options || {})));
         /**
          * @type {string}
          * @private
@@ -28970,6 +29045,7 @@ exports["default"] = Meta;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const events_1 = __webpack_require__(2445);
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const antlr4_1 = __webpack_require__(956);
 const validation_1 = __webpack_require__(2215);
@@ -28990,7 +29066,7 @@ class Expression extends wdl_entity_1.default {
         return dependency.dependency;
     }
     constructor(options, contextType = undefined) {
-        const optionsContextType = options ? options[types_1.ContextTypeSymbol] : undefined;
+        const optionsContextType = options ? options[context_types_1.ContextTypeSymbol] : undefined;
         super(contextType || optionsContextType, options);
         const { default: oDefault, // legacy, deprecated
         expression = oDefault, // legacy, deprecated
@@ -29142,21 +29218,10 @@ class Expression extends wdl_entity_1.default {
             // - scatter declarations (if we're processing
             //      - declaration / output of a call or workflow
             //      - input of a call)
-            // - current workflow inputs (if we're processing
-            //      - declaration of a call or workflow,
-            //      - or output of a call or workflow
-            //      - or input of a call)
-            // - current workflow declarations (if we're processing
-            //      - declaration of a call or workflow,
-            //      - or output of a call or workflow
-            //      - or input of a call)
+            // - current workflow inputs and declarations
             // - other workflows outputs
             // - outputs of other actions (calls) within current workflow
             // - all workflow calls outputs (if we're processing scatter declaration)
-            const processInputsAndDeclarations = [types_1.ContextTypes.declaration, types_1.ContextTypes.output]
-                .includes(this.contextType)
-                || currentAction.contextType === types_1.ContextTypes.call
-                || currentAction.contextType === types_1.ContextTypes.scatter;
             const list = []
                 // scatter iterators within current execution stack
                 .concat(scattersStack
@@ -29168,7 +29233,7 @@ class Expression extends wdl_entity_1.default {
                 // - parent execution stack inputs and declarations (if we're processing
                 //      input of a call)
                 .concat(currentStack.reduce((result, executable) => {
-                if (executable !== currentAction || this.contextType !== types_1.ContextTypes.input) {
+                if (executable !== currentAction || this.contextType !== context_types_1.ContextTypes.input) {
                     return result.concat(executable.inputs || []).concat(executable.declarations || []);
                 }
                 return result;
@@ -29176,17 +29241,13 @@ class Expression extends wdl_entity_1.default {
                 // - scatter declarations (if we're processing
                 //      - declaration / output of a call or workflow
                 //      - input of a call)
-                .concat(!(0, types_1.isWorkflow)(currentAction) || this.contextType !== types_1.ContextTypes.input
+                .concat(!(0, types_1.isWorkflow)(currentAction) || this.contextType !== context_types_1.ContextTypes.input
                 ? scattersDeclarations
                 : [])
                 // current workflow inputs
-                .concat(processInputsAndDeclarations
-                ? (currentWorkflow.inputs || [])
-                : [])
+                .concat(currentWorkflow.inputs || [])
                 // current workflow declarations
-                .concat(processInputsAndDeclarations
-                ? (currentWorkflow.declarations || [])
-                : [])
+                .concat(currentWorkflow.declarations || [])
                 // other workflows outputs
                 .concat(otherWorkflows.reduce((result, workflow) => result
                 .concat(workflow.outputs || []), []))
@@ -29214,6 +29275,7 @@ class Expression extends wdl_entity_1.default {
             // Possible connections could be found among
             // task inputs and declarations
             const inputs = currentAction.getActionInputs();
+            const outputs = currentAction.getActionOutputs();
             const declarations = currentAction.getActionDeclarations();
             const list = []
                 .concat(declarations)
@@ -29221,9 +29283,18 @@ class Expression extends wdl_entity_1.default {
                 .filter((d) => d !== this);
             const getInboundConnectionForDependency = (dependency) => list
                 .find((o) => this.parameterMatchesDependency(o, dependency));
+            const getOutboundConnectionForDependency = (dependency) => {
+                // Outputs can reference another outputs in the same block for a Task
+                if (this.contextType === context_types_1.ContextTypes.output && dependency !== this.name) {
+                    return outputs
+                        .find((o) => this.parameterMatchesDependency(o, dependency));
+                }
+                return undefined;
+            };
             notResolvedDependencies.forEach((dependency) => {
                 // eslint-disable-next-line no-param-reassign
-                dependency.resolved = getInboundConnectionForDependency(dependency.dependency);
+                dependency.resolved = getInboundConnectionForDependency(dependency.dependency)
+                    || getOutboundConnectionForDependency(dependency.dependency);
             });
         }
         return this.dependencies
@@ -29377,8 +29448,8 @@ class Expression extends wdl_entity_1.default {
             console.warn(`Error parsing expression dependencies: ${error.message}. Expression:\n${this._expression}`);
         }
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (this._expressionError) {
             issues.push(this._expressionError);
         }
@@ -29409,9 +29480,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const remove_quotes_1 = __webpack_require__(8719);
-const parse_url_1 = __webpack_require__(6383);
+const url_1 = __webpack_require__(1189);
 const wdl_generation_1 = __webpack_require__(2158);
 const reduce_struct_aliases_1 = __webpack_require__(9764);
 class Import extends wdl_entity_1.default {
@@ -29424,8 +29496,8 @@ class Import extends wdl_entity_1.default {
             throw new Error('Import source not specified');
         }
         const url = (0, remove_quotes_1.default)(source);
-        const { name, } = (0, parse_url_1.default)(url);
-        super(types_1.ContextTypes.import, Object.assign({ name }, (options || {})));
+        const { name, } = (0, url_1.parseURL)(url);
+        super(context_types_1.ContextTypes.import, Object.assign({ name }, (options || {})));
         this._source = url;
         this._structs = [];
         this._structAliases = structs.slice();
@@ -29443,8 +29515,8 @@ class Import extends wdl_entity_1.default {
         return (0, reduce_struct_aliases_1.default)(this.structs, this.importedDocument ? this.importedDocument.globalStructs : []);
     }
     getAliases(...type) {
-        const types = type.length === 0 ? Object.values(types_1.ContextTypes) : type;
-        const withoutStructs = types.filter((t) => t !== types_1.ContextTypes.struct);
+        const types = type.length === 0 ? Object.values(context_types_1.ContextTypes) : type;
+        const withoutStructs = types.filter((t) => t !== context_types_1.ContextTypes.struct);
         const mapAlias = (alias) => (this.alias ? `${this.alias}.${alias}` : alias);
         const mapStruct = (struct) => {
             const structAlias = this._structAliases.find((o) => o.struct === struct);
@@ -29458,9 +29530,9 @@ class Import extends wdl_entity_1.default {
             ? this.importedDocument
                 .getAliases(...withoutStructs).map(mapAlias)
             : [])
-            .concat(this.importedDocument && types.includes(types_1.ContextTypes.struct)
+            .concat(this.importedDocument && types.includes(context_types_1.ContextTypes.struct)
             ? this.importedDocument
-                .getAliases(types_1.ContextTypes.struct).map(mapStruct)
+                .getAliases(context_types_1.ContextTypes.struct).map(mapStruct)
             : []);
     }
     load() {
@@ -29533,12 +29605,12 @@ exports["default"] = Import;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.WdlErrorType = exports.WdlErrors = exports.WdlVersion = exports.isConditional = exports.isTask = exports.isWorkflow = exports.isScatterIterator = exports.isExecutable = exports.isAction = exports.isScatter = exports.isCall = exports.CompoundTypes = exports.PrimitiveTypes = exports.print = exports.Project = exports.WdlDocument = exports.WdlEvent = exports.ContextTypes = exports.Workflow = exports.Task = exports.DeclarationParameter = exports.OutputParameter = exports.InputParameter = exports.Scatter = exports.Conditional = exports.Call = exports.ContextTypeSymbol = void 0;
+exports.WdlErrorType = exports.WdlErrors = exports.WdlVersion = exports.isConditional = exports.isTask = exports.isWorkflow = exports.isScatterIterator = exports.isExecutable = exports.isAction = exports.isScatter = exports.isCall = exports.CompoundTypes = exports.PrimitiveTypes = exports.print = exports.Project = exports.WdlDocument = exports.WdlEvent = exports.ContextTypes = exports.Workflow = exports.Task = exports.DeclarationParameter = exports.OutputParameter = exports.InputParameter = exports.Scatter = exports.Conditional = exports.Call = void 0;
 const events_1 = __webpack_require__(2445);
 Object.defineProperty(exports, "WdlEvent", ({ enumerable: true, get: function () { return events_1.WdlEvent; } }));
+const context_types_1 = __webpack_require__(9740);
+Object.defineProperty(exports, "ContextTypes", ({ enumerable: true, get: function () { return context_types_1.ContextTypes; } }));
 const types_1 = __webpack_require__(3582);
-Object.defineProperty(exports, "ContextTypes", ({ enumerable: true, get: function () { return types_1.ContextTypes; } }));
-Object.defineProperty(exports, "ContextTypeSymbol", ({ enumerable: true, get: function () { return types_1.ContextTypeSymbol; } }));
 Object.defineProperty(exports, "PrimitiveTypes", ({ enumerable: true, get: function () { return types_1.PrimitiveTypes; } }));
 Object.defineProperty(exports, "CompoundTypes", ({ enumerable: true, get: function () { return types_1.CompoundTypes; } }));
 Object.defineProperty(exports, "isCall", ({ enumerable: true, get: function () { return types_1.isCall; } }));
@@ -29575,9 +29647,9 @@ Object.defineProperty(exports, "InputParameter", ({ enumerable: true, get: funct
 Object.defineProperty(exports, "OutputParameter", ({ enumerable: true, get: function () { return parameter_1.OutputParameter; } }));
 Object.defineProperty(exports, "DeclarationParameter", ({ enumerable: true, get: function () { return parameter_1.DeclarationParameter; } }));
 document_1.default.defaultProject = project_1.default.default;
-action_1.Action.registerActionInitializer(types_1.ContextTypes.call, call_1.default);
-action_1.Action.registerActionInitializer(types_1.ContextTypes.conditional, conditional_1.default);
-action_1.Action.registerActionInitializer(types_1.ContextTypes.scatter, scatter_1.default);
+action_1.Action.registerActionInitializer(context_types_1.ContextTypes.call, call_1.default);
+action_1.Action.registerActionInitializer(context_types_1.ContextTypes.conditional, conditional_1.default);
+action_1.Action.registerActionInitializer(context_types_1.ContextTypes.scatter, scatter_1.default);
 
 
 /***/ }),
@@ -29588,6 +29660,7 @@ action_1.Action.registerActionInitializer(types_1.ContextTypes.scatter, scatter_
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 function canBindParameters(source, target, throwError) {
     if (source === target) {
@@ -29598,15 +29671,15 @@ function canBindParameters(source, target, throwError) {
     }
     const sourceContextType = source.contextType;
     const targetContextType = target.contextType;
-    if (targetContextType === types_1.ContextTypes.output
-        && target.parent.contextType === types_1.ContextTypes.call) {
+    if (targetContextType === context_types_1.ContextTypes.output
+        && target.parent.contextType === context_types_1.ContextTypes.call) {
         // We cannot bind parameters to call outputs
         if (throwError) {
             throw new Error('cannot bind parameter to call output');
         }
         return false;
     }
-    if (targetContextType !== types_1.ContextTypes.output
+    if (targetContextType !== context_types_1.ContextTypes.output
         && !(0, types_1.isScatterDeclaration)(target)
         && target.parent
         && target.parent.isParentFor(source)) {
@@ -29616,8 +29689,8 @@ function canBindParameters(source, target, throwError) {
         // - `source` is input or declaration and `target` is declaration / output
         const check = source.parent === target.parent
             && !!source.parent
-            && [types_1.ContextTypes.input, types_1.ContextTypes.declaration].includes(sourceContextType)
-            && [types_1.ContextTypes.output, types_1.ContextTypes.declaration].includes(targetContextType);
+            && [context_types_1.ContextTypes.input, context_types_1.ContextTypes.declaration].includes(sourceContextType)
+            && [context_types_1.ContextTypes.output, context_types_1.ContextTypes.declaration].includes(targetContextType);
         if (!check && throwError) {
             throw new Error('cannot bind parameter to parent input');
         }
@@ -29625,7 +29698,7 @@ function canBindParameters(source, target, throwError) {
             return false;
         }
     }
-    if (sourceContextType !== types_1.ContextTypes.output
+    if (sourceContextType !== context_types_1.ContextTypes.output
         && source.parent
         && !source.parent.isParentFor(target)
         && !(0, types_1.isScatterDeclaration)(source)) {
@@ -29635,7 +29708,7 @@ function canBindParameters(source, target, throwError) {
         }
         return false;
     }
-    if (sourceContextType === types_1.ContextTypes.output
+    if (sourceContextType === context_types_1.ContextTypes.output
         && source.parent
         && source.parent.isParentFor(target)) {
         // Cannot bind output to self or children parameters
@@ -29655,8 +29728,8 @@ function canBindParameters(source, target, throwError) {
         const stackReversed = parameter.stack.slice().reverse();
         const idx = stackReversed.indexOf(firstInCommon) + 1;
         const sliced = stackReversed.slice(idx);
-        const scatter = sliced.some((o) => o.contextType === types_1.ContextTypes.scatter);
-        const conditional = sliced.some((o) => o.contextType === types_1.ContextTypes.conditional);
+        const scatter = sliced.some((o) => o.contextType === context_types_1.ContextTypes.scatter);
+        const conditional = sliced.some((o) => o.contextType === context_types_1.ContextTypes.conditional);
         return {
             scatter,
             conditional,
@@ -29688,14 +29761,14 @@ function canBindParameters(source, target, throwError) {
         let type = parameter.parameterType.clone();
         // if parameter is output and execution stack (from common parent) contains
         // conditional, then output parameter type should be modified to optional type.
-        if (parameter.contextType === types_1.ContextTypes.output
+        if (parameter.contextType === context_types_1.ContextTypes.output
             && type
             && conditional) {
             type = type.makeOptional();
         }
         // if parameter is output and execution stack (from common parent) contains
         // scatter, then output parameter type should be modified to Array type.
-        if (parameter.contextType === types_1.ContextTypes.output
+        if (parameter.contextType === context_types_1.ContextTypes.output
             && type
             && scatter) {
             type = type.makeArray();
@@ -29743,26 +29816,34 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.OutputParameter = exports.DeclarationParameter = exports.InputParameter = void 0;
 // eslint-disable-next-line max-classes-per-file
 const parameter_1 = __webpack_require__(5505);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const validation_1 = __webpack_require__(2215);
 class InputParameter extends parameter_1.default {
     constructor(options) {
-        super(options, types_1.ContextTypes.input);
+        super(options, context_types_1.ContextTypes.input);
     }
 }
 exports.InputParameter = InputParameter;
 class DeclarationParameter extends parameter_1.default {
     constructor(options) {
-        super(options, types_1.ContextTypes.declaration);
+        super(options, context_types_1.ContextTypes.declaration);
+    }
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
+        if (this.isDeclaration && !this.value) {
+            issues.push(new validation_1.ValueRequiredError(this));
+        }
+        return issues;
     }
 }
 exports.DeclarationParameter = DeclarationParameter;
 class OutputParameter extends parameter_1.default {
     constructor(options) {
-        super(options, types_1.ContextTypes.output);
+        super(options, context_types_1.ContextTypes.output);
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (this.parent
             && (0, types_1.isExecutable)(this.parent)
             && !this.value) {
@@ -29772,9 +29853,9 @@ class OutputParameter extends parameter_1.default {
     }
 }
 exports.OutputParameter = OutputParameter;
-parameter_1.default.registerInitializer(types_1.ContextTypes.input, InputParameter);
-parameter_1.default.registerInitializer(types_1.ContextTypes.declaration, DeclarationParameter);
-parameter_1.default.registerInitializer(types_1.ContextTypes.output, OutputParameter);
+parameter_1.default.registerInitializer(context_types_1.ContextTypes.input, InputParameter);
+parameter_1.default.registerInitializer(context_types_1.ContextTypes.declaration, DeclarationParameter);
+parameter_1.default.registerInitializer(context_types_1.ContextTypes.output, OutputParameter);
 exports["default"] = parameter_1.default;
 
 
@@ -29797,6 +29878,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const expression_1 = __webpack_require__(9397);
 const type_1 = __webpack_require__(459);
@@ -29820,7 +29902,7 @@ class Parameter extends expression_1.default {
         if (Parameter.isIParameter(options)) {
             return options;
         }
-        const type = contextType || options[types_1.ContextTypeSymbol] || types_1.ContextTypes.declaration;
+        const type = contextType || options[context_types_1.ContextTypeSymbol] || context_types_1.ContextTypes.declaration;
         const Initializer = initializer || Parameter.getInitializer(type);
         return new Initializer(options);
     }
@@ -29859,13 +29941,13 @@ class Parameter extends expression_1.default {
             throw new Error('Parameter options are not provided');
         }
         const { bind, default: oDefault, expression, value } = options, rest = __rest(options, ["bind", "default", "expression", "value"]);
-        super(Object.assign({ value: value || expression || oDefault || bind }, rest), contextType || options[types_1.ContextTypeSymbol] || types_1.ContextTypes.declaration);
+        super(Object.assign({ value: value || expression || oDefault || bind }, rest), contextType || options[context_types_1.ContextTypeSymbol] || context_types_1.ContextTypes.declaration);
         const { type, } = options;
         /**
          * @type {string}
          * @private
          */
-        this._type = new type_1.default(type);
+        this._type = new type_1.default(this, type);
         this.startForwardEventsFrom(this._type, types_1.WdlEvent.typeChanged, types_1.WdlEvent.validation);
     }
     get eventsRequireValidation() {
@@ -29875,7 +29957,7 @@ class Parameter extends expression_1.default {
         ]);
     }
     get parameterType() {
-        return this._type || (new type_1.default(''));
+        return this._type || (new type_1.default(this, ''));
     }
     get type() {
         return this._type ? this._type.value : undefined;
@@ -29916,18 +29998,21 @@ class Parameter extends expression_1.default {
         return !!this._type && this._type.isPrimitive;
     }
     get isInput() {
-        return this.contextType === types_1.ContextTypes.input
-            || (this.contextType === types_1.ContextTypes.declaration
+        return this.contextType === context_types_1.ContextTypes.input
+            || (this.contextType === context_types_1.ContextTypes.declaration
                 && !this.supports(types_1.WdlVersion.draft3)
                 && !!this.parent
                 && (0, types_1.isAction)(this.parent)
                 && !(0, types_1.isScatter)(this.parent));
     }
     get isDeclaration() {
-        return this.contextType === types_1.ContextTypes.declaration && !this.isInput;
+        return this.contextType === context_types_1.ContextTypes.declaration && !this.isInput;
     }
     get isOutput() {
-        return this.contextType === types_1.ContextTypes.output;
+        return this.contextType === context_types_1.ContextTypes.output;
+    }
+    get typeIssues() {
+        return this._type ? this._type.issues : [];
     }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars,class-methods-use-this
     canBindTo(source, throwError = false) {
@@ -29942,8 +30027,8 @@ class Parameter extends expression_1.default {
             this.parent = undefined;
         }
     }
-    getValidationErrors() {
-        let issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (this.parent
             && (0, types_1.isExecutable)(this.parent)) {
             const parametersOfTheSameScope = (() => {
@@ -29964,13 +30049,13 @@ class Parameter extends expression_1.default {
                 issues.push(new validation_1.UniqueNameRequiredError(this));
             }
         }
-        if (this._type) {
-            issues = issues.concat(this._type.issues);
-        }
-        else {
+        if (!this._type) {
             issues.push(new validation_1.TypeRequiredError(this));
         }
         return issues;
+    }
+    getValidationErrors() {
+        return super.getValidationErrors().concat(this.typeIssues);
     }
     generateWdl() {
         if (this.validate(true)) {
@@ -30096,7 +30181,7 @@ const configuration_1 = __webpack_require__(8304);
 const generate_name_1 = __webpack_require__(8611);
 const antlr4_1 = __webpack_require__(956);
 const default_contents_resolver_1 = __webpack_require__(5383);
-const parse_url_1 = __webpack_require__(6383);
+const url_1 = __webpack_require__(1189);
 const measure_1 = __webpack_require__(2719);
 const parsers = new Map();
 parsers.set(types_1.SupportedFormats.wdl, antlr4_1.default);
@@ -30122,24 +30207,23 @@ class Project extends configuration_1.default {
             throw new Error('URI not provided');
         }
         if (/^(https?|ftp):\/\//i.test(relativeURI)) {
-            return (0, parse_url_1.default)(relativeURI);
+            return (0, url_1.parseURL)(relativeURI);
         }
         const baseURI = base || this.baseURI;
         if (!baseURI || !baseURI.length) {
-            return (0, parse_url_1.default)(relativeURI);
+            return (0, url_1.parseURL)(relativeURI);
         }
         if (/^(https?|ftp):\/\//i.test(baseURI)) {
             try {
                 const url = new URL(relativeURI, baseURI);
-                return (0, parse_url_1.default)(url.href);
+                return (0, url_1.parseURL)(url.href);
             }
             catch (e) {
                 throw new Error(`Couldn't build URI for base "${baseURI}" and relative "${relativeURI}": ${e.message}`);
             }
         }
         try {
-            const url = new URL(relativeURI, `file:///${baseURI}`);
-            return (0, parse_url_1.default)(url.pathname);
+            return (0, url_1.parseURL)((0, url_1.getPathUri)(relativeURI, baseURI));
         }
         catch (e) {
             throw new Error(`Couldn't build file URI for base "${baseURI}" and relative "${relativeURI}": ${e.message}`);
@@ -30285,7 +30369,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const action_1 = __webpack_require__(1585);
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const scatter_iterator_1 = __webpack_require__(9714);
 class Scatter extends action_1.Action {
     /**
@@ -30297,7 +30381,7 @@ class Scatter extends action_1.Action {
         }
         const { iterator, binding } = options, rest = __rest(options, ["iterator", "binding"]);
         const scatterIterator = new scatter_iterator_1.default(options);
-        super(types_1.ContextTypes.scatter, Object.assign(Object.assign({}, rest), { inputs: [scatterIterator] }));
+        super(context_types_1.ContextTypes.scatter, Object.assign(Object.assign({}, rest), { inputs: [scatterIterator] }));
         this._scatterIterator = scatterIterator;
     }
     get iterator() {
@@ -30321,6 +30405,9 @@ class Scatter extends action_1.Action {
     getWdlContentHeader() {
         return `scatter (${this.iterator.name} in ${this.iterator.value})`;
     }
+    getValidationErrors() {
+        return super.getValidationErrors().concat(this.iterator.issues);
+    }
     toString() {
         if (this.iterator && this.iterator.name && this.iterator.value) {
             return `scatter (${this.iterator.name} in ${this.iterator.value})`;
@@ -30340,6 +30427,7 @@ exports["default"] = Scatter;
 
 var _a;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const parameter_1 = __webpack_require__(5761);
 const validation_1 = __webpack_require__(2215);
@@ -30353,7 +30441,7 @@ class ScatterIterator extends parameter_1.default {
             name: iterator,
             value: binding,
             type: iteratorType,
-        }, types_1.ContextTypes.input);
+        }, context_types_1.ContextTypes.input);
         this[_a] = true;
         this[types_1.ScatterIteratorSymbol] = true;
         this.on(types_1.WdlEvent.connectionsChanged, this.updateTypes, this);
@@ -30384,8 +30472,8 @@ class ScatterIterator extends parameter_1.default {
             this.type = undefined;
         }
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors()
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors()
             .filter((issue) => issue.type !== types_1.WdlErrorType.typeRequired);
         if (!this.value) {
             issues.push(new validation_1.ValueRequiredError(this));
@@ -30408,19 +30496,20 @@ exports["default"] = ScatterIterator;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const parameter_1 = __webpack_require__(5761);
 const wdl_entity_1 = __webpack_require__(3968);
 const struct_property_1 = __webpack_require__(4901);
 const events_1 = __webpack_require__(2445);
 const wdl_generation_1 = __webpack_require__(2158);
-parameter_1.default.registerInitializer(types_1.ContextTypes.structProperty, struct_property_1.default);
+parameter_1.default.registerInitializer(context_types_1.ContextTypes.structProperty, struct_property_1.default);
 class Struct extends wdl_entity_1.default {
     static deserialize(options) {
         return new Struct(options);
     }
     constructor(options) {
-        super(types_1.ContextTypes.struct, options);
+        super(context_types_1.ContextTypes.struct, options);
         const { properties = {}, } = options;
         this._properties = (0, events_1.createEventDispatcherArray)(this, [
             types_1.WdlEvent.structPropertiesAdded,
@@ -30436,7 +30525,7 @@ class Struct extends wdl_entity_1.default {
         ]);
         this.registerChildrenContainer(this._properties);
         this.muteAction(() => {
-            this._properties.push(...parameter_1.default.deserializeCollection(properties, types_1.ContextTypes.structProperty));
+            this._properties.push(...parameter_1.default.deserializeCollection(properties, context_types_1.ContextTypes.structProperty));
         });
         this.informTreeChanged();
     }
@@ -30467,14 +30556,14 @@ exports["default"] = Struct;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const parameter_1 = __webpack_require__(5761);
 class StructProperty extends parameter_1.default {
     constructor(options) {
         if (!options) {
             throw new Error('Struct property should be initialized with options');
         }
-        super(options, types_1.ContextTypes.structProperty);
+        super(options, context_types_1.ContextTypes.structProperty);
     }
 }
 exports["default"] = StructProperty;
@@ -30488,6 +30577,7 @@ exports["default"] = StructProperty;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const wdl_entity_1 = __webpack_require__(3968);
 const command_prettier_1 = __webpack_require__(903);
@@ -30503,7 +30593,7 @@ const CommandEndSyntax = {
 };
 class Command extends wdl_entity_1.default {
     constructor(options, task) {
-        super(types_1.ContextTypes.command, options);
+        super(context_types_1.ContextTypes.command, options);
         const { begin, commandType = begin || types_1.CommandTypes.hereDoc, command = '', } = options || {};
         this._task = task;
         this._prettierOptions = (0, command_prettier_1.getCommandPrettierOptions)(command);
@@ -30543,8 +30633,8 @@ class Command extends wdl_entity_1.default {
             this.bubble(types_1.WdlEvent.changed, { changed: 'command' });
         }
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (!this.command || this.command.trim().length === 0) {
             issues.push(new validation_1.CommandRequiredError(this));
         }
@@ -30587,6 +30677,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const executable_1 = __webpack_require__(5390);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const command_1 = __webpack_require__(9307);
 const events_1 = __webpack_require__(2445);
@@ -30638,7 +30729,7 @@ class Task extends executable_1.default {
         if (!options) {
             throw new Error('Task should be initialized with options');
         }
-        super(types_1.ContextTypes.task, options);
+        super(context_types_1.ContextTypes.task, options);
         const opts = (() => {
             if (isSingleCommandOptions(options)) {
                 return options;
@@ -30718,11 +30809,8 @@ class Task extends executable_1.default {
         super.remove();
     }
     getValidationErrors() {
-        let issues = super.getValidationErrors();
-        if (this._command) {
-            issues = issues.concat(this._command.issues);
-        }
-        return issues;
+        return super.getValidationErrors()
+            .concat(this._command ? this._command.issues : []);
     }
     getWdlContentHeader() {
         return `task ${this.name}`;
@@ -30755,6 +30843,7 @@ exports["default"] = Task;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const expression_1 = __webpack_require__(9397);
 const wdl_generation_1 = __webpack_require__(2158);
@@ -30779,7 +30868,7 @@ class Runtime extends expression_1.default {
     }
     constructor(options) {
         const { property } = options || {};
-        super(options, types_1.ContextTypes.runtime);
+        super(options, context_types_1.ContextTypes.runtime);
         this._property = property;
     }
     get eventsRequireValidation() {
@@ -31096,6 +31185,7 @@ const base_1 = __webpack_require__(7617);
 const primitive_1 = __webpack_require__(4008);
 const compound_1 = __webpack_require__(6459);
 const wdl_entity_1 = __webpack_require__(3968);
+const context_types_1 = __webpack_require__(9740);
 const types_1 = __webpack_require__(3582);
 const validation_1 = __webpack_require__(2215);
 base_1.CommonType.registerInitializer(primitive_1.default.isPrimitiveType, primitive_1.default.parsePrimitive);
@@ -31104,10 +31194,12 @@ base_1.CommonType.registerInitializer(compound_1.WdlPair.isWdlPairType, compound
 base_1.CommonType.registerInitializer(compound_1.WdlArray.isWdlArrayType, compound_1.WdlArray.parseWdlArray);
 base_1.CommonType.registerInitializer(compound_1.Compound.isCompoundType, compound_1.Compound.parseCompound);
 class ParameterType extends wdl_entity_1.default {
-    constructor(type) {
-        super(types_1.ContextTypes.type);
+    constructor(parameter, type) {
+        super(context_types_1.ContextTypes.type);
+        this._parameter = parameter;
         this._parsedType = undefined;
         this.setType(type);
+        this.validateEntity(false);
     }
     get eventsRequireValidation() {
         return new Set([
@@ -31245,8 +31337,8 @@ class ParameterType extends wdl_entity_1.default {
         }
         return undefined;
     }
-    getValidationErrors() {
-        const issues = super.getValidationErrors();
+    getSelfValidationErrors() {
+        const issues = super.getSelfValidationErrors();
         if (!this._parsedType
             && this._rawType
             && validation_1.WrongTypeError.check(this._rawType)) {
@@ -31256,6 +31348,12 @@ class ParameterType extends wdl_entity_1.default {
             issues.push(new validation_1.TypeRequiredError(this));
         }
         return issues;
+    }
+    toString() {
+        if (this._parameter) {
+            return this._parameter.toString();
+        }
+        return super.toString();
     }
 }
 exports["default"] = ParameterType;
@@ -31313,37 +31411,11 @@ exports["default"] = Primitive;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ImportDepthSymbol = exports.WdlVersion = exports.SupportedFormats = exports.WdlEvent = exports.CommandTypes = exports.ScatterIteratorSymbol = exports.ContextTypeSymbol = exports.ContextTypes = exports.CompoundTypes = exports.PrimitiveTypes = exports.isTask = exports.isWorkflow = exports.isExecutable = exports.isScatterDeclaration = exports.isScatterIterator = exports.isScatter = exports.isConditional = exports.isCall = exports.isAction = exports.isWdlEntityWithNameOptions = exports.compareVersions = exports.isExecutableCallOptions = exports.isWorkflowCallOptions = exports.isTaskCallOptions = exports.isParametersArray = exports.WdlErrorLevel = exports.WdlErrorType = void 0;
+exports.ImportDepthSymbol = exports.WdlVersion = exports.SupportedFormats = exports.WdlEvent = exports.CommandTypes = exports.ScatterIteratorSymbol = exports.CompoundTypes = exports.PrimitiveTypes = exports.isTask = exports.isWorkflow = exports.isExecutable = exports.isScatterDeclaration = exports.isScatterIterator = exports.isScatter = exports.isConditional = exports.isCall = exports.isAction = exports.isWdlEntityWithNameOptions = exports.compareVersions = exports.isExecutableCallOptions = exports.isWorkflowCallOptions = exports.isTaskCallOptions = exports.isParametersArray = exports.WdlErrorLevel = exports.WdlErrorType = void 0;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const types_1 = __webpack_require__(4051);
 Object.defineProperty(exports, "WdlEvent", ({ enumerable: true, get: function () { return types_1.WdlEvent; } }));
-var ContextTypes;
-(function (ContextTypes) {
-    ContextTypes["document"] = "document";
-    ContextTypes["import"] = "import";
-    ContextTypes["importAlias"] = "importAlias";
-    ContextTypes["struct"] = "struct";
-    ContextTypes["structProperty"] = "struct-property";
-    ContextTypes["workflow"] = "workflow";
-    ContextTypes["task"] = "task";
-    ContextTypes["inputs"] = "inputs";
-    ContextTypes["outputs"] = "outputs";
-    ContextTypes["declaration"] = "declaration";
-    ContextTypes["input"] = "input";
-    ContextTypes["output"] = "output";
-    ContextTypes["scatter"] = "scatter";
-    ContextTypes["call"] = "call";
-    ContextTypes["callAfter"] = "call-after";
-    ContextTypes["conditional"] = "conditional";
-    ContextTypes["conditionalExpression"] = "conditional-expression";
-    ContextTypes["parameterMeta"] = "parameter-meta";
-    ContextTypes["meta"] = "meta";
-    ContextTypes["metaElement"] = "meta-element";
-    ContextTypes["runtime"] = "runtime";
-    ContextTypes["command"] = "command";
-    ContextTypes["expression"] = "expression";
-    ContextTypes["type"] = "type";
-})(ContextTypes || (exports.ContextTypes = ContextTypes = {}));
+const context_types_1 = __webpack_require__(9740);
 var PrimitiveTypes;
 (function (PrimitiveTypes) {
     PrimitiveTypes["boolean"] = "Boolean";
@@ -31360,8 +31432,6 @@ var CompoundTypes;
     CompoundTypes["object"] = "Object";
     CompoundTypes["struct"] = "struct";
 })(CompoundTypes || (exports.CompoundTypes = CompoundTypes = {}));
-const ContextTypeSymbol = Symbol('type');
-exports.ContextTypeSymbol = ContextTypeSymbol;
 var WdlErrorType;
 (function (WdlErrorType) {
     // General errors
@@ -31372,6 +31442,7 @@ var WdlErrorType;
     WdlErrorType["typeRequired"] = "type-required";
     WdlErrorType["valueRequired"] = "value-required";
     WdlErrorType["wrongIdentifier"] = "wrong-identifier";
+    WdlErrorType["reservedKeyword"] = "reserved-keyword";
     WdlErrorType["wrongType"] = "wrong-type";
     // Call errors
     WdlErrorType["unknownExecutable"] = "unknown-executable";
@@ -31457,49 +31528,49 @@ function isWdlEntityWithNameOptions(options) {
 exports.isWdlEntityWithNameOptions = isWdlEntityWithNameOptions;
 function isAction(entity) {
     return !!entity && [
-        ContextTypes.task,
-        ContextTypes.workflow,
-        ContextTypes.call,
-        ContextTypes.scatter,
-        ContextTypes.conditional,
+        context_types_1.ContextTypes.task,
+        context_types_1.ContextTypes.workflow,
+        context_types_1.ContextTypes.call,
+        context_types_1.ContextTypes.scatter,
+        context_types_1.ContextTypes.conditional,
     ].includes(entity.contextType);
 }
 exports.isAction = isAction;
 function isCall(entity) {
-    return isAction(entity) && entity.contextType === ContextTypes.call;
+    return isAction(entity) && entity.contextType === context_types_1.ContextTypes.call;
 }
 exports.isCall = isCall;
 function isConditional(entity) {
-    return isAction(entity) && entity.contextType === ContextTypes.conditional;
+    return isAction(entity) && entity.contextType === context_types_1.ContextTypes.conditional;
 }
 exports.isConditional = isConditional;
 function isScatter(entity) {
-    return isAction(entity) && entity.contextType === ContextTypes.scatter;
+    return isAction(entity) && entity.contextType === context_types_1.ContextTypes.scatter;
 }
 exports.isScatter = isScatter;
 function isScatterIterator(iterator) {
-    return iterator.contextType === ContextTypes.input
+    return iterator.contextType === context_types_1.ContextTypes.input
         && iterator[ScatterIteratorSymbol] === true;
 }
 exports.isScatterIterator = isScatterIterator;
 function isScatterDeclaration(entity) {
-    return entity.contextType === ContextTypes.declaration
+    return entity.contextType === context_types_1.ContextTypes.declaration
         && entity.parent
         && isScatter(entity.parent);
 }
 exports.isScatterDeclaration = isScatterDeclaration;
 function isExecutable(entity) {
     return isAction(entity)
-        && (entity.contextType === ContextTypes.task
-            || entity.contextType === ContextTypes.workflow);
+        && (entity.contextType === context_types_1.ContextTypes.task
+            || entity.contextType === context_types_1.ContextTypes.workflow);
 }
 exports.isExecutable = isExecutable;
 function isWorkflow(entity) {
-    return isExecutable(entity) && entity.contextType === ContextTypes.workflow;
+    return isExecutable(entity) && entity.contextType === context_types_1.ContextTypes.workflow;
 }
 exports.isWorkflow = isWorkflow;
 function isTask(entity) {
-    return isExecutable(entity) && entity.contextType === ContextTypes.task;
+    return isExecutable(entity) && entity.contextType === context_types_1.ContextTypes.task;
 }
 exports.isTask = isTask;
 
@@ -31774,43 +31845,13 @@ exports["default"] = parseFormat;
 
 /***/ }),
 
-/***/ 6383:
-/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const types_1 = __webpack_require__(3582);
-const parse_format_1 = __webpack_require__(3481);
-function parseURL(url) {
-    const path = url.split('?')[0].split(/[\\/]/).pop();
-    let name = path;
-    let format = types_1.SupportedFormats.wdl;
-    const formatsString = Object.values(types_1.SupportedFormats).join('|');
-    const e = (new RegExp(`^(.+)\\.(${formatsString})$`, 'i')).exec(path);
-    if (e && e[1] && e[2] && e[1].length && e[2].length) {
-        // eslint-disable-next-line prefer-destructuring
-        name = e[1];
-        format = (0, parse_format_1.default)(e[2]);
-    }
-    return {
-        url,
-        name,
-        format,
-    };
-}
-exports["default"] = parseURL;
-
-
-/***/ }),
-
 /***/ 9537:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const wdl_entity_1 = __webpack_require__(3968);
 const command_1 = __webpack_require__(9307);
 const expression_1 = __webpack_require__(9397);
@@ -31822,16 +31863,16 @@ const executable_1 = __webpack_require__(5390);
 const struct_1 = __webpack_require__(6581);
 const struct_property_1 = __webpack_require__(4901);
 const PRINT_COLORS = {
-    [types_1.ContextTypes.workflow]: '#033186',
-    [types_1.ContextTypes.import]: '#330386',
-    [types_1.ContextTypes.task]: '#4f0394',
-    [types_1.ContextTypes.call]: '#126501',
-    [types_1.ContextTypes.conditional]: '#810259',
-    [types_1.ContextTypes.scatter]: '#810259',
-    [types_1.ContextTypes.declaration]: '#111111',
-    [types_1.ContextTypes.input]: '#005c65',
-    [types_1.ContextTypes.output]: '#005b40',
-    [types_1.ContextTypes.command]: '#ab2e2e',
+    [context_types_1.ContextTypes.workflow]: '#033186',
+    [context_types_1.ContextTypes.import]: '#330386',
+    [context_types_1.ContextTypes.task]: '#4f0394',
+    [context_types_1.ContextTypes.call]: '#126501',
+    [context_types_1.ContextTypes.conditional]: '#810259',
+    [context_types_1.ContextTypes.scatter]: '#810259',
+    [context_types_1.ContextTypes.declaration]: '#111111',
+    [context_types_1.ContextTypes.input]: '#005c65',
+    [context_types_1.ContextTypes.output]: '#005b40',
+    [context_types_1.ContextTypes.command]: '#ab2e2e',
     default: '#333333',
     uuid: '#999999',
 };
@@ -31996,23 +32037,23 @@ function print(entity, options) {
             type.forEach((t) => usedTypes.add(t));
             printGroupOfEntities(group, getChildrenOfType(...type), { collapsed: true, withParent: false });
         };
-        printData('imports', types_1.ContextTypes.import);
-        printData('structs', types_1.ContextTypes.struct);
+        printData('imports', context_types_1.ContextTypes.import);
+        printData('structs', context_types_1.ContextTypes.struct);
         if (entity instanceof executable_1.default) {
-            usedTypes.add(types_1.ContextTypes.declaration);
-            usedTypes.add(types_1.ContextTypes.input);
-            usedTypes.add(types_1.ContextTypes.output);
+            usedTypes.add(context_types_1.ContextTypes.declaration);
+            usedTypes.add(context_types_1.ContextTypes.input);
+            usedTypes.add(context_types_1.ContextTypes.output);
             printGroupOfEntities('inputs', entity.getActionInputs(), { collapsed: true, withParent: false });
             printGroupOfEntities('declarations', entity.getActionDeclarations(), { collapsed: true, withParent: false });
             printGroupOfEntities('outputs', entity.getActionOutputs(), { collapsed: true, withParent: false });
         }
         else {
-            printData('inputs', types_1.ContextTypes.input);
-            printData('declarations', types_1.ContextTypes.declaration);
-            printData('outputs', types_1.ContextTypes.output);
+            printData('inputs', context_types_1.ContextTypes.input);
+            printData('declarations', context_types_1.ContextTypes.declaration);
+            printData('outputs', context_types_1.ContextTypes.output);
         }
-        printData('meta', types_1.ContextTypes.metaElement);
-        printData('runtime', types_1.ContextTypes.runtime);
+        printData('meta', context_types_1.ContextTypes.metaElement);
+        printData('runtime', context_types_1.ContextTypes.runtime);
         getChildrenNotOfType(...usedTypes)
             .forEach((child) => print(child, Object.assign(Object.assign({}, (options || {})), { collapsed: true, withParent: false })));
     }
@@ -32081,7 +32122,7 @@ exports["default"] = removeQuotes;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const import_1 = __webpack_require__(8947);
 const document_1 = __webpack_require__(8386);
 /**
@@ -32114,7 +32155,7 @@ function resolveIdentifierRecursively(context, identifier, types) {
         return context;
     }
     if (context instanceof document_1.default
-        && types.has(types_1.ContextTypes.struct)) {
+        && types.has(context_types_1.ContextTypes.struct)) {
         // Check structs
         const { globalStructs = [] } = context;
         for (let s = 0; s < globalStructs.length; s += 1) {
@@ -32144,13 +32185,13 @@ function resolveIdentifier(context, identifier, ...type) {
     }
     const identifiers = identifier.split('.');
     let current = context;
-    const types = new Set(type.length === 0 ? Object.values(types_1.ContextTypes) : type);
+    const types = new Set(type.length === 0 ? Object.values(context_types_1.ContextTypes) : type);
     const containerTypes = new Set([
-        types_1.ContextTypes.import,
-        types_1.ContextTypes.workflow,
-        types_1.ContextTypes.task,
-        types_1.ContextTypes.call,
-        types_1.ContextTypes.struct,
+        context_types_1.ContextTypes.import,
+        context_types_1.ContextTypes.workflow,
+        context_types_1.ContextTypes.task,
+        context_types_1.ContextTypes.call,
+        context_types_1.ContextTypes.struct,
     ]);
     for (let i = 0; i < identifiers.length; i += 1) {
         const last = i === identifiers.length - 1;
@@ -32162,6 +32203,49 @@ function resolveIdentifier(context, identifier, ...type) {
     return current;
 }
 exports["default"] = resolveIdentifier;
+
+
+/***/ }),
+
+/***/ 1189:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getPathUri = exports.parseURL = void 0;
+const types_1 = __webpack_require__(3582);
+const parse_format_1 = __webpack_require__(3481);
+function parseURL(url) {
+    const path = url.split('?')[0].split(/[\\/]/).pop();
+    let name = path;
+    let format = types_1.SupportedFormats.wdl;
+    const formatsString = Object.values(types_1.SupportedFormats).join('|');
+    const e = (new RegExp(`^(.+)\\.(${formatsString})$`, 'i')).exec(path);
+    if (e && e[1] && e[2] && e[1].length && e[2].length) {
+        // eslint-disable-next-line prefer-destructuring
+        name = e[1];
+        format = (0, parse_format_1.default)(e[2]);
+    }
+    return {
+        url,
+        name,
+        format,
+    };
+}
+exports.parseURL = parseURL;
+function getPathUri(uri, baseUri) {
+    if (!baseUri || !baseUri.length) {
+        return uri;
+    }
+    let base = baseUri;
+    if (base.startsWith('/')) {
+        base = base.slice(1);
+    }
+    const url = new URL(uri, `file:///${base}`);
+    return url.pathname;
+}
+exports.getPathUri = getPathUri;
 
 
 /***/ }),
@@ -32307,11 +32391,13 @@ exports["default"] = WdlError;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.ConditionalExpressionRequiredError = exports.WrongTypeError = exports.WrongIdentifierError = exports.CommandRequiredError = exports.WrongExpressionError = exports.WdlValidationError = exports.UnknownIdentifierError = exports.UnknownInputError = exports.UnknownOutputError = exports.MissingOutputError = exports.MissingInputError = exports.ExecutableRequiredError = exports.UnknownExecutableError = exports.UnsupportedError = exports.ValueRequiredError = exports.TypeRequiredError = exports.UniqueNameRequiredError = exports.NameRequiredError = exports.WdlError = exports.getIssuesDescription = exports.filterWarnings = exports.filterErrors = void 0;
+exports.ConditionalExpressionRequiredError = exports.ReservedKeywordError = exports.WrongTypeError = exports.WrongIdentifierError = exports.CommandRequiredError = exports.WrongExpressionError = exports.WdlValidationError = exports.UnknownIdentifierError = exports.UnknownInputError = exports.UnknownOutputError = exports.MissingOutputError = exports.MissingInputError = exports.ExecutableRequiredError = exports.UnknownExecutableError = exports.UnsupportedError = exports.ValueRequiredError = exports.TypeRequiredError = exports.UniqueNameRequiredError = exports.NameRequiredError = exports.WdlError = exports.getIssuesDescription = exports.filterWarnings = exports.filterErrors = void 0;
 // eslint-disable-next-line max-classes-per-file
 const error_1 = __webpack_require__(3357);
 exports.WdlError = error_1.default;
 const types_1 = __webpack_require__(3582);
+const reserved_keyword_error_1 = __webpack_require__(8962);
+exports.ReservedKeywordError = reserved_keyword_error_1.default;
 const wrong_identifier_error_1 = __webpack_require__(6116);
 exports.WrongIdentifierError = wrong_identifier_error_1.default;
 const wrong_type_error_1 = __webpack_require__(1524);
@@ -32428,6 +32514,7 @@ const WdlErrorMessages = {
     [types_1.WdlErrorType.wrongExpression]: 'Invalid expression',
     [types_1.WdlErrorType.commandRequired]: 'Command required',
     [types_1.WdlErrorType.wrongIdentifier]: 'Invalid identifier',
+    [types_1.WdlErrorType.reservedKeyword]: 'Reserved keyword',
     [types_1.WdlErrorType.wrongType]: 'Invalid type',
     [types_1.WdlErrorType.expressionRequired]: 'Conditional expression required',
 };
@@ -32436,7 +32523,7 @@ exports["default"] = WdlErrorMessages;
 
 /***/ }),
 
-/***/ 6116:
+/***/ 8962:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -32476,13 +32563,34 @@ const keywords = new Set([
     'command',
     'None',
 ]);
+class ReservedKeywordError extends error_1.default {
+    static check(identifier) {
+        return !keywords.has(identifier);
+    }
+    constructor(entity, identifier) {
+        super(entity, types_1.WdlErrorType.reservedKeyword, types_1.WdlErrorLevel.error, `keyword "${identifier}" is reserved`);
+    }
+}
+exports["default"] = ReservedKeywordError;
+
+
+/***/ }),
+
+/***/ 6116:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+const error_1 = __webpack_require__(3357);
+const types_1 = __webpack_require__(3582);
 const identifierRegExp = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 class WrongIdentifierError extends error_1.default {
     static check(identifier) {
-        return identifierRegExp.test(identifier) && !keywords.has(identifier);
+        return identifierRegExp.test(identifier);
     }
     constructor(entity, identifier) {
-        super(entity, types_1.WdlErrorType.wrongIdentifier, types_1.WdlErrorLevel.error, `Invalid identifier: reserved keyword "${identifier}"`);
+        super(entity, types_1.WdlErrorType.wrongIdentifier, types_1.WdlErrorLevel.error, `invalid identifier "${identifier}"`);
     }
 }
 exports["default"] = WrongIdentifierError;
@@ -32519,13 +32627,13 @@ exports["default"] = WrongTypeError;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const executable_1 = __webpack_require__(5390);
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 class Workflow extends executable_1.default {
     static deserializeWorkflow(options) {
         return new Workflow(options);
     }
     constructor(options) {
-        super(types_1.ContextTypes.workflow, options);
+        super(context_types_1.ContextTypes.workflow, options);
     }
     getWdlContentHeader() {
         return `workflow ${this.name}`;
@@ -32550,15 +32658,15 @@ exports["default"] = Workflow;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 // eslint-disable-next-line max-classes-per-file
 const utilities_1 = __webpack_require__(8603);
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 class ContextElement {
     constructor(type) {
-        this[types_1.ContextTypeSymbol] = type;
+        this[context_types_1.ContextTypeSymbol] = type;
     }
 }
 class ContextProcessor {
     constructor() {
-        this.context = new ContextElement(types_1.ContextTypes.document);
+        this.context = new ContextElement(context_types_1.ContextTypes.document);
         this._stack = [this.context];
     }
     getCurrent(...type) {
@@ -32568,7 +32676,7 @@ class ContextProcessor {
             }
             return undefined;
         }
-        return this._stack.slice().reverse().find((o) => type.includes(o[types_1.ContextTypeSymbol]));
+        return this._stack.slice().reverse().find((o) => type.includes(o[context_types_1.ContextTypeSymbol]));
     }
     popItem(...type) {
         const current = this.getCurrent(...type);
@@ -36567,7 +36675,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const antlr4_1 = __webpack_require__(2529);
 const context_processor_1 = __webpack_require__(2042);
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const error_listener_1 = __webpack_require__(2326);
 const parser_error_1 = __webpack_require__(6677);
 const ParserListenerEvents = {
@@ -36695,7 +36803,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         importStart(ctx) {
             this.context
-                .pushItem('imports', types_1.ContextTypes.import)
+                .pushItem('imports', context_types_1.ContextTypes.import)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.importStart, {
                 source: 'string',
                 alias: 'import_as.Identifier',
@@ -36706,7 +36814,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         importAlias(ctx) {
             this.context
-                .pushItem('structs', types_1.ContextTypes.importAlias, types_1.ContextTypes.import)
+                .pushItem('structs', context_types_1.ContextTypes.importAlias, context_types_1.ContextTypes.import)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.importAlias, {
                 struct: 'Identifier[0]',
                 alias: 'Identifier[1]',
@@ -36715,22 +36823,22 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         structStart(ctx) {
             this.context
-                .pushItem('structs', types_1.ContextTypes.struct, types_1.ContextTypes.document)
+                .pushItem('structs', context_types_1.ContextTypes.struct, context_types_1.ContextTypes.document)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.structStart, {
                 name: 'Identifier',
             }));
         }
         structEnd() {
-            const struct = this.context.getCurrent(types_1.ContextTypes.struct);
+            const struct = this.context.getCurrent(context_types_1.ContextTypes.struct);
             if (struct) {
-                struct.properties = (struct.elements || []).map((o) => (Object.assign(Object.assign({}, o), { [types_1.ContextTypeSymbol]: types_1.ContextTypes.structProperty })));
+                struct.properties = (struct.elements || []).map((o) => (Object.assign(Object.assign({}, o), { [context_types_1.ContextTypeSymbol]: context_types_1.ContextTypes.structProperty })));
                 delete struct.elements;
             }
             this.context.popItem();
         }
         workflowStart(ctx) {
             this.context
-                .pushItem('workflows', types_1.ContextTypes.workflow, types_1.ContextTypes.document)
+                .pushItem('workflows', context_types_1.ContextTypes.workflow, context_types_1.ContextTypes.document)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.workflowStart, {
                 name: 'Identifier',
             }));
@@ -36739,28 +36847,28 @@ function createCommonListener(TreeWalker, processors = {}) {
             const obj = this.context.getCurrent(type);
             if (obj) {
                 const { elements = [], } = obj;
-                obj.declarations = elements.filter((element) => element[types_1.ContextTypeSymbol] === types_1.ContextTypes.declaration);
-                obj.actions = elements.filter((element) => element[types_1.ContextTypeSymbol] !== types_1.ContextTypes.declaration);
+                obj.declarations = elements.filter((element) => element[context_types_1.ContextTypeSymbol] === context_types_1.ContextTypes.declaration);
+                obj.actions = elements.filter((element) => element[context_types_1.ContextTypeSymbol] !== context_types_1.ContextTypes.declaration);
                 delete obj.elements;
             }
         }
         workflowEnd() {
-            this.processElements(types_1.ContextTypes.workflow);
+            this.processElements(context_types_1.ContextTypes.workflow);
             this.context.popItem();
         }
         taskStart(ctx) {
             this.context
-                .pushItem('tasks', types_1.ContextTypes.task, types_1.ContextTypes.document)
+                .pushItem('tasks', context_types_1.ContextTypes.task, context_types_1.ContextTypes.document)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskStart, {
                 name: 'Identifier',
             }));
         }
         taskEnd() {
-            this.processElements(types_1.ContextTypes.task);
+            this.processElements(context_types_1.ContextTypes.task);
             this.context.popItem();
         }
         callStart(ctx) {
-            this.context.pushItem('elements', types_1.ContextTypes.call)
+            this.context.pushItem('elements', context_types_1.ContextTypes.call)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.callStart, {
                 executable: 'call_name',
                 alias: 'call_alias.Identifier',
@@ -36771,7 +36879,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         callInputStart(ctx) {
             this.context
-                .pushItem('inputs', types_1.ContextTypes.input, types_1.ContextTypes.call)
+                .pushItem('inputs', context_types_1.ContextTypes.input, context_types_1.ContextTypes.call)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.callInput, {
                 name: 'Identifier',
                 expression: 'expr',
@@ -36782,7 +36890,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         callAfterStart(ctx) {
             this.context
-                .pushItem('after', types_1.ContextTypes.callAfter, types_1.ContextTypes.call)
+                .pushItem('after', context_types_1.ContextTypes.callAfter, context_types_1.ContextTypes.call)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.callAfterStart, {
                 call: 'Identifier',
             }));
@@ -36804,50 +36912,50 @@ function createCommonListener(TreeWalker, processors = {}) {
             }
         }
         workflowInputsStart(ctx) {
-            this.context.pushItem('inputs', types_1.ContextTypes.inputs, types_1.ContextTypes.workflow)
+            this.context.pushItem('inputs', context_types_1.ContextTypes.inputs, context_types_1.ContextTypes.workflow)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.workflowInputsStart));
         }
         workflowInputsEnd() {
             this.context.popItem();
             this.reduceChildrenArray({
-                parentType: types_1.ContextTypes.workflow,
+                parentType: context_types_1.ContextTypes.workflow,
                 property: 'inputs',
             });
         }
         workflowOutputsStart(ctx) {
-            this.context.pushItem('outputs', types_1.ContextTypes.outputs, types_1.ContextTypes.workflow)
+            this.context.pushItem('outputs', context_types_1.ContextTypes.outputs, context_types_1.ContextTypes.workflow)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.workflowOutputsStart));
         }
         workflowOutputsEnd() {
             this.context.popItem();
             this.reduceChildrenArray({
-                parentType: types_1.ContextTypes.workflow,
+                parentType: context_types_1.ContextTypes.workflow,
                 property: 'outputs',
             });
         }
         scatterStart(ctx) {
-            this.context.pushItem('elements', types_1.ContextTypes.scatter)
+            this.context.pushItem('elements', context_types_1.ContextTypes.scatter)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.scatterStart, {
                 iterator: 'Identifier',
                 binding: 'expr',
             }));
         }
         scatterEnd() {
-            this.processElements(types_1.ContextTypes.scatter);
+            this.processElements(context_types_1.ContextTypes.scatter);
             this.context.popItem();
         }
         conditionalStart(ctx) {
-            this.context.pushItem('elements', types_1.ContextTypes.conditional)
+            this.context.pushItem('elements', context_types_1.ContextTypes.conditional)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.conditionalStart, {
                 expression: 'expr',
             }));
         }
         conditionalEnd() {
-            this.processElements(types_1.ContextTypes.conditional);
+            this.processElements(context_types_1.ContextTypes.conditional);
             this.context.popItem();
         }
         parametersMetaStart(ctx) {
-            this.context.pushItem('parametersMeta', types_1.ContextTypes.parameterMeta)
+            this.context.pushItem('parametersMeta', context_types_1.ContextTypes.parameterMeta)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.parametersMetaStart));
         }
         parametersMetaEnd() {
@@ -36858,15 +36966,19 @@ function createCommonListener(TreeWalker, processors = {}) {
             });
         }
         metaElementsStart(ctx) {
-            this.context.pushItem('meta', types_1.ContextTypes.meta)
+            this.context.pushItem('meta', context_types_1.ContextTypes.meta)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.metaElementsStart));
         }
         metaElementsEnd() {
             this.context.popItem();
+            this.reduceChildrenArray({
+                property: 'meta',
+                childrenProperty: 'meta',
+            });
         }
         metaElement(ctx) {
             this.context
-                .pushItem('meta', types_1.ContextTypes.metaElement, types_1.ContextTypes.parameterMeta, types_1.ContextTypes.meta)
+                .pushItem('meta', context_types_1.ContextTypes.metaElement, context_types_1.ContextTypes.parameterMeta, context_types_1.ContextTypes.meta)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.metaElement, {
                 parameter: 'MetaIdentifier',
                 meta: 'meta_value',
@@ -36875,7 +36987,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         taskRuntime(ctx) {
             this.context
-                .pushItem('runtime', types_1.ContextTypes.runtime, types_1.ContextTypes.task)
+                .pushItem('runtime', context_types_1.ContextTypes.runtime, context_types_1.ContextTypes.task)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskRuntime, {
                 property: 'Identifier',
                 value: 'expr',
@@ -36883,35 +36995,35 @@ function createCommonListener(TreeWalker, processors = {}) {
                 .popItem();
         }
         taskInputsStart(ctx) {
-            this.context.pushItem('inputs', types_1.ContextTypes.inputs, types_1.ContextTypes.task)
+            this.context.pushItem('inputs', context_types_1.ContextTypes.inputs, context_types_1.ContextTypes.task)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskInputsStart));
         }
         taskInputsEnd() {
             this.context.popItem();
             this.reduceChildrenArray({
-                parentType: types_1.ContextTypes.task,
+                parentType: context_types_1.ContextTypes.task,
                 property: 'inputs',
             });
         }
         taskOutputsStart(ctx) {
-            this.context.pushItem('outputs', types_1.ContextTypes.outputs, types_1.ContextTypes.task)
+            this.context.pushItem('outputs', context_types_1.ContextTypes.outputs, context_types_1.ContextTypes.task)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskOutputsStart));
         }
         taskOutputsEnd() {
             this.context.popItem();
             this.reduceChildrenArray({
-                parentType: types_1.ContextTypes.task,
+                parentType: context_types_1.ContextTypes.task,
                 property: 'outputs',
             });
         }
         taskCommandStart(ctx) {
             this.context
-                .pushItem('commands', types_1.ContextTypes.command, types_1.ContextTypes.task)
+                .pushItem('commands', context_types_1.ContextTypes.command, context_types_1.ContextTypes.task)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskCommandStart, {
                 begin: (o) => o.BeginLBrace() || o.BeginHereDoc(),
                 end: 'EndCommand',
             }))
-                .pushItem('parts', '__command_part__', types_1.ContextTypes.command)
+                .pushItem('parts', '__command_part__', context_types_1.ContextTypes.command)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskCommandStart, {
                 command: 'task_command_string_part',
             }))
@@ -36919,7 +37031,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         taskCommandEnd() {
             const current = this.context
-                .getCurrent(types_1.ContextTypes.command);
+                .getCurrent(context_types_1.ContextTypes.command);
             if (current) {
                 const { parts = [] } = current;
                 current.command = parts.map((part) => part.command).join('');
@@ -36929,7 +37041,7 @@ function createCommonListener(TreeWalker, processors = {}) {
         }
         taskCommand(ctx) {
             this.context
-                .pushItem('parts', '__command_part__', types_1.ContextTypes.command)
+                .pushItem('parts', '__command_part__', context_types_1.ContextTypes.command)
                 .setPropertiesFromContext(ctx, getProcessorProperties(ParserListenerEvents.taskCommand, {
                 command: (o) => o,
             }))
@@ -36938,15 +37050,15 @@ function createCommonListener(TreeWalker, processors = {}) {
         getDeclarationType() {
             const current = this.context.getCurrent();
             if (!current) {
-                return types_1.ContextTypes.declaration;
+                return context_types_1.ContextTypes.declaration;
             }
-            switch (current[types_1.ContextTypeSymbol]) {
-                case types_1.ContextTypes.inputs:
-                    return types_1.ContextTypes.input;
-                case types_1.ContextTypes.outputs:
-                    return types_1.ContextTypes.output;
+            switch (current[context_types_1.ContextTypeSymbol]) {
+                case context_types_1.ContextTypes.inputs:
+                    return context_types_1.ContextTypes.input;
+                case context_types_1.ContextTypes.outputs:
+                    return context_types_1.ContextTypes.output;
                 default:
-                    return types_1.ContextTypes.declaration;
+                    return context_types_1.ContextTypes.declaration;
             }
         }
         unboundDeclaration(ctx) {
@@ -36998,6 +37110,7 @@ function createParser(Lexer, Parser, ParserListener, version) {
             if (e instanceof parser_error_1.default) {
                 throw e;
             }
+            console.log(e);
             throw new Error(`Error parsing wdl: ${e}`);
         }
     };
@@ -71237,12 +71350,12 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const jointjs_1 = __webpack_require__(9792);
 const get_parameter_identifier_1 = __webpack_require__(8084);
 const visual_element_1 = __webpack_require__(9370);
-const types_1 = __webpack_require__(3582);
+const context_types_1 = __webpack_require__(9740);
 const parameter_1 = __webpack_require__(5761);
-const types_2 = __webpack_require__(4511);
+const types_1 = __webpack_require__(4511);
 const boolean_prop_1 = __webpack_require__(3525);
 function parseParameterConnection(parameter) {
-    if ((0, types_2.isParameterConnection)(parameter)) {
+    if ((0, types_1.isParameterConnection)(parameter)) {
         const { id, port, } = parameter;
         return {
             id,
@@ -71301,7 +71414,7 @@ class VisualConnection extends jointjs_1.shapes.standard.Link {
         const { sourceElement, targetElement, } = this;
         const parameterParent = (parameter) => (parameter
             && parameter.parent
-            && parameter[types_1.ContextTypeSymbol] === types_1.ContextTypes.declaration
+            && parameter.contextType === context_types_1.ContextTypes.declaration
             ? parameter.parent
             : undefined);
         return !!sourceElement
@@ -71329,11 +71442,11 @@ class VisualConnection extends jointjs_1.shapes.standard.Link {
     getIsWorkflowConnection() {
         const isWorkflowInputOrDeclaration = (parameter) => parameter
             && parameter.parent
-            && parameter.parent[types_1.ContextTypeSymbol] === types_1.ContextTypes.workflow
+            && parameter.parent.contextType === context_types_1.ContextTypes.workflow
             && [
-                types_1.ContextTypes.input,
-                types_1.ContextTypes.declaration,
-            ].includes(parameter[types_1.ContextTypeSymbol]);
+                context_types_1.ContextTypes.input,
+                context_types_1.ContextTypes.declaration,
+            ].includes(parameter.contextType);
         return isWorkflowInputOrDeclaration(this.sourceParameter)
             || isWorkflowInputOrDeclaration(this.targetParameter);
     }
@@ -71376,8 +71489,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const defaults_deep_1 = __webpack_require__(7953);
 const visual_element_1 = __webpack_require__(9370);
 const get_entity_identifier_1 = __webpack_require__(2218);
-const types_1 = __webpack_require__(3582);
-const types_2 = __webpack_require__(4511);
+const model_1 = __webpack_require__(9303);
+const types_1 = __webpack_require__(4511);
 const action_1 = __webpack_require__(1585);
 class VisualDeclarations extends visual_element_1.default {
     constructor(options) {
@@ -71412,7 +71525,7 @@ class VisualDeclarations extends visual_element_1.default {
     // eslint-disable-next-line class-methods-use-this,no-unused-vars,@typescript-eslint/no-unused-vars
     getPortConfiguration(port, group) {
         return {
-            shape: types_2.PortShapes.rectangle,
+            shape: types_1.PortShapes.rectangle,
         };
     }
     // eslint-disable-next-line class-methods-use-this
@@ -71432,7 +71545,7 @@ class VisualDeclarations extends visual_element_1.default {
     }
     shouldHandleParameter(parameter) {
         return super.shouldHandleParameter(parameter)
-            && parameter.contextType === types_1.ContextTypes.declaration;
+            && parameter.contextType === model_1.ContextTypes.declaration;
     }
 }
 exports["default"] = VisualDeclarations;
@@ -71667,13 +71780,16 @@ class VisualElement extends jointjs_1.shapes.standard.Rectangle {
                         const { source, target, } = args[0];
                         if (this.shouldHandleParameter(source)) {
                             this.updateParameterConnected(source);
+                            this.updateParameterHasValue(source);
                         }
                         if (this.shouldHandleParameter(target)) {
                             this.updateParameterConnected(target);
+                            this.updateParameterHasValue(target);
                         }
                     }
                     break;
                 default:
+                    this.updateParameterHasValue(sender);
                     break;
             }
         }
@@ -71704,6 +71820,9 @@ class VisualElement extends jointjs_1.shapes.standard.Rectangle {
         if (sender === this.entity
             || (sender.parent === this.entity && sender instanceof parameter_1.default)) {
             this.updateValidationStatus();
+            if (sender instanceof parameter_1.default) {
+                this.updateParameterHasValue(sender);
+            }
         }
     }
     /**
@@ -71834,6 +71953,9 @@ class VisualElement extends jointjs_1.shapes.standard.Rectangle {
     updateParameterConnected(parameter) {
         this.portPropSafe((0, get_parameter_identifier_1.getParameterIdentifier)(parameter), 'attrs/portBody/connected', `${parameter.inboundConnections.length > 0 || parameter.outboundConnections.length > 0}`);
     }
+    updateParameterHasValue(parameter) {
+        this.portPropSafe((0, get_parameter_identifier_1.getParameterIdentifier)(parameter), 'attrs/portBody/hasValue', !!parameter.value);
+    }
     getParameterProperty(parameter, property) {
         let id;
         if (parameter_1.default.isIParameter(parameter)) {
@@ -71868,6 +71990,7 @@ class VisualElement extends jointjs_1.shapes.standard.Rectangle {
         portsToUpdate.forEach((port) => {
             this.updateParameterName(port);
             this.updateParameterConnected(port);
+            this.updateParameterHasValue(port);
         });
         portsToAdd.forEach((port) => {
             const { shape: portShape, } = this.getPortConfiguration(port, group);
@@ -71890,6 +72013,7 @@ class VisualElement extends jointjs_1.shapes.standard.Rectangle {
             });
             this.updateParameterName(port);
             this.updateParameterConnected(port);
+            this.updateParameterHasValue(port);
         });
         this._portsSizes.set(group, this.getParametersSize(ports));
         this.ensureMinimumSize();
@@ -72259,8 +72383,8 @@ class VisualAction extends visual_element_1.default {
         VisualAction.initializersDefaultOptions.set(contextType, options || initializer.defaultOptions || {});
     }
     static initialize(options) {
-        const { entity = {}, } = options || {};
-        const type = entity[model_1.ContextTypeSymbol];
+        const { entity, } = options || { entity: undefined };
+        const type = entity ? entity.contextType : undefined;
         const Initializer = VisualAction.initializers.get(type);
         const defaultOptions = VisualAction.initializersDefaultOptions.get(type) || {};
         const opts = (0, defaults_deep_1.default)(options, defaultOptions);

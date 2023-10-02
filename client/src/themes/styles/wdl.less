@@ -46,7 +46,7 @@
   stroke-width: 1;
 }
 
-.cp-wdl-visualizer .visual-element .visual-parameter[connected=false] {
+.cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
   fill: @panel-background-color;
   stroke: @primary-color;
 }
@@ -56,7 +56,12 @@
   fill: @color-error;
 }
 
-.cp-wdl-visualizer .visual-element .visual-parameter.invalid[connected=false] {
+.cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @color-error;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
   fill: @color-error;
   stroke: @panel-background-color;
 }

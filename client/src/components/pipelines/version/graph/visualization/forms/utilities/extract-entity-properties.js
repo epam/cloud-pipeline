@@ -101,6 +101,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
     runtime,
     command,
     issues,
+    entityIssues,
     nameIssues,
     commandIssues,
     executables;
@@ -127,7 +128,8 @@ export default function extractEntityProperties (entity, wdlDocument) {
     type = getEntityType(entity);
     canRemoveEntity = !isWorkflow(entity);
     canAddSubAction = !isCall(entity);
-    issues = entity.entityIssues || [];
+    issues = entity.issues || [];
+    entityIssues = entity.entityIssues || [];
     if (isWorkflow(entity) || isTask(entity)) {
       name = entity.name;
       nameAvailable = true;
@@ -137,10 +139,6 @@ export default function extractEntityProperties (entity, wdlDocument) {
       executableName = entity.executableName;
       executableNameAvailable = true;
       executableType = getEntityType(entity.executable);
-      issues = entity.issues || [];
-      if (entity.executable) {
-        issues = issues.concat((entity.executable.issues || []));
-      }
     }
     if (isCall(entity) || isTask(entity)) {
       task = isCall(entity) ? entity.executable : entity;
@@ -202,17 +200,13 @@ export default function extractEntityProperties (entity, wdlDocument) {
     if (isConditional(entity)) {
       expressionAvailable = true;
       expression = entity.expression;
-      issues = entity.issues || [];
-    }
-    if (isScatter(entity) && entity.iterator) {
-      issues = (issues || []).concat(entity.iterator.issues || []);
     }
     if (entity.document) {
       executables = (entity.document.executables || [])
         .filter((e) => !isWorkflow(e) || e.document !== wdlDocument);
     }
-    nameIssues = issues.filter((issue) => issue instanceof WdlErrors.UniqueNameRequiredError);
-    commandIssues = issues.filter((issue) => issue instanceof WdlErrors.CommandRequiredError);
+    nameIssues = entityIssues.filter((issue) => issue instanceof WdlErrors.UniqueNameRequiredError);
+    commandIssues = entityIssues.filter((issue) => issue instanceof WdlErrors.CommandRequiredError);
   }
   return {
     type,

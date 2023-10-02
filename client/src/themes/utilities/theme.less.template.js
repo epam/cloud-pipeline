@@ -3357,7 +3357,7 @@ export default `
   fill: @primary-color;
   stroke-width: 1;
 }
-@THEME .cp-wdl-visualizer .visual-element .visual-parameter[connected=false] {
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
   fill: @panel-background-color;
   stroke: @primary-color;
 }
@@ -3365,7 +3365,11 @@ export default `
   stroke: @panel-background-color;
   fill: @color-error;
 }
-@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[connected=false] {
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
   fill: @color-error;
   stroke: @panel-background-color;
 }
