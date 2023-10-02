@@ -465,7 +465,8 @@ class Logs extends localization.LocalizedReactComponent {
           </td>
         </tr>
       );
-    } else if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
+    }
+    if (runParameter.name === CP_CAP_LIMIT_MOUNTS) {
       const values = (valueSelector() || '').split(',').map(v => v.trim());
       const isNone = /^none$/i.test(valueSelector());
       return (
@@ -486,59 +487,82 @@ class Logs extends localization.LocalizedReactComponent {
           </td>
         </tr>
       );
-    } else {
-      let values = (valueSelector() || '').split(',').map(v => v.trim());
-      if (values.length === 1) {
+    }
+    if (/^metadata$/i.test(runParameter.type)) {
+      const [metadataFolder, metadataClassName, itemsStr] = (valueSelector() || '').split(':');
+      if (metadataFolder && metadataClassName && itemsStr) {
+        const itemsCount = itemsStr.split(/[,;]/).length;
         return (
           <tr
             key={runParameter.name}>
             <td className={styles.taskParameterName}>{runParameter.name}:</td>
-            <td>{values[0]}</td>
-          </tr>
-        );
-      } else if (values.length <= MAX_PARAMETER_VALUES_TO_DISPLAY + 1) {
-        return (
-          <tr key={runParameter.name}>
-            <td className={styles.taskParameterName}>
-              <span>{runParameter.name}:</span>
-            </td>
             <td>
-              <ul>
-                {values.map((value, index) => <li key={index}>{value}</li>)}
-              </ul>
-            </td>
-          </tr>
-        );
-      } else {
-        return (
-          <tr key={runParameter.name}>
-            <td className={styles.taskParameterName}>
-              <span>{runParameter.name}:</span>
-            </td>
-            <td>
-              <ul>
-                {
-                  values
-                    .filter((value, index) => index < MAX_PARAMETER_VALUES_TO_DISPLAY)
-                    .map((value, index) => <li key={index}>{value}</li>)
-                }
-                <li>
-                  <Popover
-                    placement="right"
-                    content={
-                      <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
-                        {values.map((value, index) => <Row key={index}>{value}</Row>)}
-                      </div>
-                    }>
-                    <a>And {values.length - MAX_PARAMETER_VALUES_TO_DISPLAY} more</a>
-                  </Popover>
-                </li>
-              </ul>
+              <Link to={`/folder/${metadataFolder}/metadata/${metadataClassName}`}>
+                {metadataClassName} ({itemsCount})
+              </Link>
             </td>
           </tr>
         );
       }
+      return (
+        <tr
+          key={runParameter.name}>
+          <td className={styles.taskParameterName}>{runParameter.name}:</td>
+          <td>{valueSelector()}</td>
+        </tr>
+      );
     }
+    let values = (valueSelector() || '').split(',').map(v => v.trim());
+    if (values.length === 1) {
+      return (
+        <tr
+          key={runParameter.name}>
+          <td className={styles.taskParameterName}>{runParameter.name}:</td>
+          <td>{values[0]}</td>
+        </tr>
+      );
+    }
+    if (values.length <= MAX_PARAMETER_VALUES_TO_DISPLAY + 1) {
+      return (
+        <tr key={runParameter.name}>
+          <td className={styles.taskParameterName}>
+            <span>{runParameter.name}:</span>
+          </td>
+          <td>
+            <ul>
+              {values.map((value, index) => <li key={index}>{value}</li>)}
+            </ul>
+          </td>
+        </tr>
+      );
+    }
+    return (
+      <tr key={runParameter.name}>
+        <td className={styles.taskParameterName}>
+          <span>{runParameter.name}:</span>
+        </td>
+        <td>
+          <ul>
+            {
+              values
+                .filter((value, index) => index < MAX_PARAMETER_VALUES_TO_DISPLAY)
+                .map((value, index) => <li key={index}>{value}</li>)
+            }
+            <li>
+              <Popover
+                placement="right"
+                content={
+                  <div style={{maxHeight: '50vh', overflow: 'auto', paddingRight: 20}}>
+                    {values.map((value, index) => <Row key={index}>{value}</Row>)}
+                  </div>
+                }>
+                <a>And {values.length - MAX_PARAMETER_VALUES_TO_DISPLAY} more</a>
+              </Popover>
+            </li>
+          </ul>
+        </td>
+      </tr>
+    );
   };
 
   @computed
