@@ -116,7 +116,7 @@ export default class MetadataBrowser extends React.Component {
         selectedMetadataClassEntity = this.state.selectedMetadataClassEntity[0].name;
         folderId = this.state.selectedMetadataClassEntity[0].parent.parentId;
       }
-      const entitiesIds = this.state.selectedMetadata.map(metadata => metadata.rowKey.value);
+      const entitiesIds = this.state.selectedMetadata.slice();
       const metadataLibraryLocation = {
         folderId: this.state.folderId,
         metadataClassName: this.state.metadataClassName
@@ -373,7 +373,15 @@ export default class MetadataBrowser extends React.Component {
   };
 
   onSelectMetadataItems = (items) => {
-    const selectedMetadata = items || [];
+    const selectedMetadata = (items || []).map((o) => {
+      if (typeof o === 'number') {
+        return o;
+      }
+      if (typeof o === 'object' && o.rowKey) {
+        return Number(o.rowKey.value);
+      }
+      return undefined;
+    }).filter(Boolean);
     this.setState({selectedMetadata});
   };
 
