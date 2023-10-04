@@ -33,8 +33,14 @@ def test_gcp_familes():
     assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2-highcpu-2") == "n2-highcpu"
     assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2d-highcpu-128") == "n2d-highcpu"
     assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "e2-small") == "e2-small"
-    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "custom-12-16") is None
-    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "gpu-custom-4-16384-k80-1") is None
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "c3-standard-4") == "c3-standard"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "c3-standard-4-lssd") == "c3-standard-lssd"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "a2-highgpu-1g") == "a2-highgpu"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "a2-ultragpu-4g") == "a2-ultragpu"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "custom-12-16384") == "custom"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "n2-custom-12-16384") == "n2-custom"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "gpu-custom-4-16384-k80-1") == "gpu-custom-k80"
+    assert utils.extract_family_from_instance_type(CloudProvider.gcp(), "gpu-n2-custom-4-16384-k80-1") == "gpu-n2-custom-k80"
 
 
 def test_azure_familes():
