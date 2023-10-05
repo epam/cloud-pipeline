@@ -296,6 +296,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     currentProjectMetadata: null,
     estimatedPrice: {
       pending: false,
+      isValid: false,
       pricePerHour: 0,
       maximumPrice: 0,
       averagePrice: 0,
@@ -936,6 +937,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -992,6 +994,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterKey: null,
         bucketPathParameterSection: null,
         estimatedPrice: {
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -1666,6 +1669,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
             return cents / 100;
           };
+          estimatedPriceState.isValid = request.value.diskPricePerHour > 0 &&
+            request.value.computePricePerHour > 0;
           estimatedPriceState.averagePrice = adjustPrice(request.value.averageTimePrice);
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
@@ -1728,49 +1733,56 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Spin>);
   };
   renderEstimatedPriceInfo = () => {
-    if (this.state.estimatedPrice.pending) {
+    const {
+      pricePerHour,
+      isValid,
+      averagePrice,
+      pending
+    } = this.state.estimatedPrice;
+    if (pending) {
       return undefined;
     }
-    const className = classNames(
-      styles.price,
-      {'cp-text-not-important': this.state.estimatedPrice.pending}
-    );
-    if (this.state.estimatedPrice.averagePrice > 0) {
-      const info = (
-        <Popover
-          placement="bottom"
-          content={this.renderEstimatedPriceTable(this.multiplyValueBy)}
-          trigger="hover">
-          <Icon
-            className={styles.hint}
-            type="info-circle"
-          />
-        </Popover>
-      );
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+    let priceContent;
+    let infoContent;
+    if (!isValid) {
+      priceContent = <span> &mdash; </span>;
+      infoContent = 'Price cannot be estimated for the selected node type / disk configuration';
+    } else if (averagePrice > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
       );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr} {info}</span>
-        </span>
-      );
-    } else if (this.state.estimatedPrice.pricePerHour > 0) {
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+      infoContent = this.renderEstimatedPriceTable(this.multiplyValueBy);
+    } else if (pricePerHour > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
-      );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr}</span>
-        </span>
       );
     }
+    return (
+      <span style={{marginLeft: 5}}>
+        Estimated price per hour:
+        <span className={classNames(
+          styles.price,
+          {'cp-text-not-important': pending}
+        )}>
+          {priceContent}
+        </span>
+        {infoContent ? (
+          <Popover
+            placement="bottom"
+            content={infoContent}
+            trigger="hover">
+            <Icon
+              className={styles.hint}
+              type="info-circle"
+            />
+          </Popover>
+        ) : null}
+      </span>
+    );
   };
   selectBucketPath = (path) => {
     const key = this.state.bucketPathParameterKey;
