@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -105,4 +106,6 @@ public interface CloudFacade {
     InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceImage getInstanceImageDescription(Long regionId, String imageId);
+
+    void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
 }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -239,6 +240,10 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     @Override
     public InstanceImage getInstanceImageDescription(final GCPRegion region, final String imageName) {
         return InstanceImage.EMPTY;
+    }
+
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
     }
 
     @Override

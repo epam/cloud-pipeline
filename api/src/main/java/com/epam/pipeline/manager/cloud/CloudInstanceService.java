@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -205,4 +206,6 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     InstanceDNSRecord deleteInstanceDNSRecord(T region, InstanceDNSRecord record);
 
     InstanceImage getInstanceImageDescription(T region, String imageName);
+
+    void adjustOfferRequest(InstanceOfferRequestVO requestVO);
 }
