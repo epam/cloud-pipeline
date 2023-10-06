@@ -210,7 +210,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       }
       if (
         language &&
-        language.loaded
+        (language.loaded || (language.error && !language.pending))
       ) {
         const currentTab = this.tabs.find(o => o.key === this.activeTabPath);
         const [first] = this.tabs;
