@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -306,6 +307,12 @@ public class CloudFacadeImpl implements CloudFacade {
     public InstanceImage getInstanceImageDescription(final Long regionId, final String imageName) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).getInstanceImageDescription(region, imageName);
+    }
+
+    @Override
+    public void adjustOfferRequest(final Long regionId, final InstanceOfferRequestVO requestVO) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).adjustOfferRequest(requestVO);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

@@ -20,6 +20,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
@@ -350,6 +351,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public InstanceImage getInstanceImageDescription(final AwsRegion region, final String imageName) {
         return ec2Helper.getInstanceImageDescription(region, imageName);
+    }
+
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+        final String volumeApiName = preferenceManager.getPreference(SystemPreferences.CLUSTER_AWS_EBS_TYPE);
+        requestVO.setVolumeApiName(volumeApiName);
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

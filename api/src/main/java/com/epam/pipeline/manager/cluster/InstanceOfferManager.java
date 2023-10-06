@@ -486,9 +486,7 @@ public class InstanceOfferManager {
         requestVO.setProductFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY);
         requestVO.setVolumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE);
         requestVO.setRegionId(regionId);
-        final String volumeApiName = preferenceManager.getPreference(SystemPreferences
-                .CLUSTER_AWS_EBS_TYPE);
-        requestVO.setVolumeApiName(volumeApiName);
+        cloudFacade.adjustOfferRequest(regionId, requestVO);
         List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
         return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType, spot);
     }

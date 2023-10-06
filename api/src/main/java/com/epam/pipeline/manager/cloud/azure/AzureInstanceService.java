@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.azure;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -278,6 +279,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     @Override
     public InstanceImage getInstanceImageDescription(final AzureRegion region, final String imageName) {
         return InstanceImage.EMPTY;
+    }
+
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {
