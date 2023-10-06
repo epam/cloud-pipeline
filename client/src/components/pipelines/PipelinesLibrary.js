@@ -179,7 +179,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             name: dragItem.name,
             description: dragItem.description,
             parentFolderId: dropItem.id === 'root' ? undefined : dropItem.id,
-            repositoryToken: dragItem.repositoryToken
+            repositoryToken: dragItem.repositoryToken,
+            visibility: dragItem.visibility,
+            codePath: dragItem.codePath,
+            docsPath: dragItem.docsPath
           };
           break;
         case ItemTypes.folder:
