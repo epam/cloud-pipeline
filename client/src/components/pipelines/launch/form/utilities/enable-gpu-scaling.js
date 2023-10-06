@@ -259,11 +259,22 @@ const InstanceFamilySelector = (
       }
     }
   };
+  const filterSelect = (input, option) => {
+    const value = option.props.value === emptyValueKey
+      ? option.props.title
+      : option.props.value;
+    return value
+      .toLowerCase()
+      .indexOf((input || '').toLowerCase()) >= 0;
+  };
   return (
     <Select
       value={value || (allowEmpty ? emptyValueKey : undefined)}
       style={style}
       onChange={onChangeCallback}
+      filterOption={filterSelect}
+      showSearch
+      optionFilterProp="children"
     >
       {
         allowEmpty && (
