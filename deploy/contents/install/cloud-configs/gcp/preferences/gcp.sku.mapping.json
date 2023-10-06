@@ -47,6 +47,22 @@
     "prefix": "A2 Instance Ram",
     "group": "RAM"
   },
+  "cpu_ondemand_megagpu": {
+    "prefix": "A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_megagpu": {
+    "prefix": "A2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_ondemand_ultragpu": {
+    "prefix": "A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_ondemand_ultragpu": {
+    "prefix": "A2 Instance Ram",
+    "group": "RAM"
+  },
   "cpu_ondemand_micro": {
     "prefix": "Micro Instance",
     "group": "F1Micro"
@@ -103,6 +119,10 @@
     "prefix": "Nvidia Tesla A100 GPU running",
     "group": "GPU"
   },
+  "gpu_ondemand_a100-80gb": {
+    "prefix": "Nvidia Tesla A100 80GB GPU",
+    "group": "GPU"
+  },
   "cpu_preemptible_standard": {
     "prefix": "Spot Preemptible N1 Predefined Instance Core",
     "group": "N1Standard"
@@ -151,6 +171,22 @@
     "prefix": "Spot Preemptible A2 Instance Ram",
     "group": "RAM"
   },
+  "cpu_preemptible_megagpu": {
+    "prefix": "Spot Preemptible A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_megagpu": {
+    "prefix": "Spot Preemptible A2 Instance Ram",
+    "group": "RAM"
+  },
+  "cpu_preemptible_ultragpu": {
+    "prefix": "Spot Preemptible A2 Instance Core",
+    "group": "CPU"
+  },
+  "ram_preemptible_ultragpu": {
+    "prefix": "Spot Preemptible A2 Instance Ram",
+    "group": "RAM"
+  },
   "cpu_preemptible_micro": {
     "prefix": "Spot Preemptible Micro Instance",
     "group": "F1Micro"
@@ -193,6 +229,10 @@
   },
   "gpu_preemptible_a100": {
     "prefix": "Nvidia Tesla A100 GPU attached to Spot Preemptible",
+    "group": "GPU"
+  },
+  "gpu_preemptible_a100-80gb": {
+    "prefix": "Nvidia Tesla A100 80GB GPU attached to Spot Preemptible",
     "group": "GPU"
   },
   "ram_preemptible_n2-custom": {
