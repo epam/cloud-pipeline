@@ -512,7 +512,7 @@ public class SystemPreferences {
                                    Pair.of("NVIDIA K80", 4992),
                                    Pair.of("NVIDIA K520", 3072),
                                    Pair.of("NVIDIA L4", 7424),
-                                   Pair.of("NVIDIA 80GB", 6912)),
+                                   Pair.of("NVIDIA A100-80GB", 6912)),
                                    new TypeReference<Map<String, Integer>>() {}, CLUSTER_GROUP,
                                    isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}), true);
 

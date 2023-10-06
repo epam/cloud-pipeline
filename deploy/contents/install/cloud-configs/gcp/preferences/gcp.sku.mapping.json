@@ -119,7 +119,7 @@
     "prefix": "Nvidia Tesla A100 GPU running",
     "group": "GPU"
   },
-  "gpu_ondemand_80gb": {
+  "gpu_ondemand_a100-80gb": {
     "prefix": "Nvidia Tesla A100 80GB GPU",
     "group": "GPU"
   },
@@ -231,7 +231,7 @@
     "prefix": "Nvidia Tesla A100 GPU attached to Spot Preemptible",
     "group": "GPU"
   },
-  "gpu_preemptible_80gb": {
+  "gpu_preemptible_a100-80gb": {
     "prefix": "Nvidia Tesla A100 80GB GPU attached to Spot Preemptible",
     "group": "GPU"
   },

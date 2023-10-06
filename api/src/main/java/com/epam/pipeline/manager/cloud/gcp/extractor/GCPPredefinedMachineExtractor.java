@@ -95,7 +95,7 @@ public class GCPPredefinedMachineExtractor implements GCPObjectExtractor {
         final Optional<GpuDevice> gpuDevice = accelerator.map(MachineType.Accelerators::getGuestAcceleratorType)
                 .map(it -> StringUtils.split(it, "-"))
                 .filter(items -> items.length > 1)
-                .map(items -> GpuDevice.from(items[items.length - 1], items[0]));
+                .map(GpuDevice::from);
 
         return Optional.of(new GCPMachine(name, family, cpu, ram, extendedRam, gpu, gpuDevice.orElse(null),
                 null));
