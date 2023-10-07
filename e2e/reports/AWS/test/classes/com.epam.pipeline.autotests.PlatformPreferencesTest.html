@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=edge"/>
+<title>Test results - Class com.epam.pipeline.autotests.PlatformPreferencesTest</title>
+<link href="../css/base-style.css" rel="stylesheet" type="text/css"/>
+<link href="../css/style.css" rel="stylesheet" type="text/css"/>
+<script src="../js/report.js" type="text/javascript"></script>
+</head>
+<body>
+<div id="content">
+<h1>Class com.epam.pipeline.autotests.PlatformPreferencesTest</h1>
+<div class="breadcrumbs">
+<a href="../index.html">all</a> &gt; 
+<a href="../packages/com.epam.pipeline.autotests.html">com.epam.pipeline.autotests</a> &gt; PlatformPreferencesTest</div>
+<div id="summary">
+<table>
+<tr>
+<td>
+<div class="summaryGroup">
+<table>
+<tr>
+<td>
+<div class="infoBox" id="tests">
+<div class="counter">8</div>
+<p>tests</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="failures">
+<div class="counter">3</div>
+<p>failures</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="ignored">
+<div class="counter">0</div>
+<p>ignored</p>
+</div>
+</td>
+<td>
+<div class="infoBox" id="duration">
+<div class="counter">16m51.03s</div>
+<p>duration</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</td>
+<td>
+<div class="infoBox failures" id="successRate">
+<div class="percent">62%</div>
+<p>successful</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div id="tabs">
+<ul class="tabLinks">
+<li>
+<a href="#tab0">Failed tests</a>
+</li>
+<li>
+<a href="#tab1">Tests</a>
+</li>
+</ul>
+<div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="checkHelpContent - 897"></a>
+<h3 class="failures">checkHelpContent - 897</h3>
+<span class="code">
+<pre>Element should value '{&quot;ROLE_ADMIN&quot;: {&quot;iconHCS&quot;: { &quot;icon&quot;: &quot;rocket&quot;, &quot;action&quot;: &quot;hcs&quot;}, &quot;iconTicket&quot;: { &quot;icon&quot;: &quot;frown&quot;, &quot;action&quot;: &quot;create-ticket&quot;, &quot;hint&quot;: &quot;Create ticket&quot;}, &quot;iconTickets&quot;: {&quot;icon&quot;: &quot;aliwangwang&quot;, &quot;action&quot;: &quot;open-tickets&quot;, &quot;hint&quot;: &quot;Browse tickets&quot;}},  &quot;_default&quot;: {&quot;icon2&quot;: {&quot;icon&quot; : &quot;customer-service&quot;, &quot;content&quot; : &quot;### How to submit a question/request?\n\n**[ServiceNow request](https://sanofiservices.service-now.com/its?id=request_order&amp;sys_id=94a922cd1b857090e4aebb739b4bcbd0&amp;table=sc_cat_item)**\n&lt;br/&gt;&lt;br/&gt;\n### How to be updated on Magellan news?\n\n**[Yammer group](https://www.yammer.com/sanofi.com/#/threads/inGroup?type=in_group&amp;feedId=17707513&amp;view=all)**&quot;}}}' {[unknown locator]}
+Element: '&lt;input class=&quot;ant-input ant-input-sm&quot; type=&quot;text&quot; value=&quot;{  &quot;ROLE_ADMIN&quot;: {    &quot;icon1&quot;: {      &quot;icon&quot;: &quot;rocket&quot;,      &quot;content&quot;: &quot;CONTENT1 for &lt;br&gt; Admin users&quot;    },    &quot;pic2&quot;: {      &quot;icon&quot;: &quot;https://t.alipayobjects.com/images/rmsweb/T1B9hfXcdvXXXXXXXX.svg&quot;,      &quot;content&quot;: &quot;CONTENT2 for &lt;br&gt; Admin users&quot;    }  },  &quot;_default&quot;: {    &quot;icon3&quot;: {      &quot;icon&quot; : &quot;key&quot;,      &quot;content&quot; : &quot;CONTENT3 for &lt;br&gt; Non_admin users&quot;    }  }}&quot;&gt;&lt;/input&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1696704279139.135.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1696704279139.135.html
+Timeout: 210 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO$UserInterfaceAO.checkSupportTemplate(SettingsPageAO.java:1672)
+	at com.epam.pipeline.autotests.PlatformPreferencesTest.checkHelpContent(PlatformPreferencesTest.java:62)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="checkLaunchContainerCpuResource - 783"></a>
+<h3 class="failures">checkLaunchContainerCpuResource - 783</h3>
+<span class="code">
+<pre>Element should value '0' {[unknown locator]}
+Element: '&lt;input class=&quot;ant-input ant-input-sm&quot; type=&quot;text&quot; value=&quot;1&quot;&gt;&lt;/input&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1696704498442.136.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1696704498442.136.html
+Timeout: 210 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO$LaunchAO.checkLaunchContainerCpuResource(SettingsPageAO.java:1720)
+	at com.epam.pipeline.autotests.PlatformPreferencesTest.checkLaunchContainerCpuResource(PlatformPreferencesTest.java:93)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="checkLaunchSystemParameters - 223"></a>
+<h3 class="failures">checkLaunchSystemParameters - 223</h3>
+<span class="code">
+<pre>java.lang.AssertionError: Value [
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_WORKER_ENDPOINTS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disable Endpoint URLs for worker nodes, if a cluster run is scheduled. Only master node will expose Endpoint URL&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_RUN_ENDPOINTS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disable Endpoint URL for a current run. If a cluster run is scheduled - worker nodes will still expose expose Endpoint URL&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Grid Engine for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_QUEUE_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine queue&quot;,
+  &quot;defaultValue&quot;: &quot;main.q&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_HOSTLIST_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine hostlist&quot;,
+  &quot;defaultValue&quot;: &quot;@allhosts&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_DISABLE_DEFAULT_QUEUE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Disables default Grid Engine queue and hostlist creation&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_PE_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine PE&quot;,
+  &quot;defaultValue&quot;: &quot;local&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_MODULES&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Environment Modules for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_MODULES_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares specific environment module system to use (tcl/lmod)&quot;,
+  &quot;defaultValue&quot;: &quot;tcl&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SPARK&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Spark for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SPARK_VERSION&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to override a Spark version (2.3.3 or 2.4.3)&quot;,
+  &quot;defaultValue&quot;: &quot;2.4.3&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_KUBE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Kubernetes for a current run (1.15.4), supported for Centos only&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse&quot;,
+  &quot;defaultValue&quot;: &quot;goofys&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_STAT_CACHE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency&quot;,
+  &quot;defaultValue&quot;: &quot;1m0s&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_ENSURE_DISKFREE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Applied to s3fs FUSE. Sets MB to ensure disk free space. This option means the threshold of free space size on disk which is used for the cache file by s3fs. s3fs makes file for downloading, uploading and caching files. If the disk free space is smaller than this value, s3fs do not use disk space as possible in exchange for the performance.&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_TYPE_CACHE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Applied to goofys FUSE. How long to cache name -&gt; file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency&quot;,
+  &quot;defaultValue&quot;: &quot;1m0s&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_GCS_FUSE_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to select which FUSE implementation to use for GCS buckets mounting. Allowed values are: gcsfuse and pipefuse&quot;,
+  &quot;defaultValue&quot;: &quot;gcsfuse&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_PERSIST_LOGS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables pipefuse logging persistence for a current run&quot;,
+  &quot;defaultValue&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_DEBUG_LIBFUSE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables pipefuse low level logging for a current run&quot;,
+  &quot;defaultValue&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_LOGGING_LEVEL&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares pipefuse logging level (CRITICAL, ERROR, WARN, INFO or DEBUG)&quot;,
+  &quot;defaultValue&quot;: &quot;ERROR&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_MOUNT_OPTIONS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares pipefuse additional mount options&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_MASTER_CORES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allow to limit Grid Engine master cores usage (0 - do not use)&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_WORKER_FREE_CORES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allow to keep the specified number of CPUs unused by the GE worker&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables shared filesystem (NFS) for a current run. If a cluster run is scheduled - worker nodes will mount NFS share&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS_THREADS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Number of NFS threads to use. If empty - cores * 4, but not more that 32&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS_SYNC_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;NFS server will use sync/async mode. Allows to manage performance&quot;,
+  &quot;defaultValue&quot;: &quot;sync&quot;
+ },
+ {
+  &quot;name&quot;: &quot;RUN_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;COMMON_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;ANALYSIS_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;INPUT_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CONFIG_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing configuration files&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;SHARED_FOLDER&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_BUCKET&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a bucket name that will be used to transfer file from on-premise DTS to the Cloud and vice-versa&quot;,
+  &quot;defaultValue&quot;: &quot;project.DataStorage&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster autoscaling&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_WORKERS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Maximum number of additional cluster autoscaled workers&quot;,
+  &quot;defaultValue&quot;: &quot;3&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_VERBOSE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster autoscaling verbose logging&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_PRICE_TYPE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Instance price type that will be used for cluster additional workers&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables hybrid cluster autoscaling&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID_FAMILY&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Instance type family that will be used for hybrid autoscaling cluster workers&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Maximum number of cores that hybrid autoscaling cluster worker instances can have&quot;,
+  &quot;defaultValue&quot;: &quot;2&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DIND_CONTAINER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable docker engine for a current run using a containerized approach&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DIND_VERSION&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Allows to select docker version, used for DIND setup. Default: 18.09.6&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SYSTEMD_CONTAINER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable systemd for a current run (supported for Centos only)&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_KEEP_FAILED_RUN&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Any job, that is failed due to the &lt;command&gt; or output upload errors, will be kept for this amount of time before terminated. &lt;sleep&gt; format is accepted&quot;,
+  &quot;defaultValue&quot;: &quot;36000s&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SINGULARITY&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable singularity for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_TZ&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overwrites standard UTC timezone on pipeline run node&quot;,
+  &quot;defaultValue&quot;: &quot;/usr/share/zoneinfo/UTC&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines which file system shall be used as shared for cluster runs&quot;,
+  &quot;defaultValue&quot;: &quot;lfs&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_SIZE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify shared file system size (supported for luster FS only)&quot;,
+  &quot;defaultValue&quot;: &quot;1200&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_HW_ADDR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_HW_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0&quot;,
+  &quot;defaultValue&quot;: &quot;eth0&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_EXEC_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;If defined - will terminate job when specified duration in minutes is elapsed&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_LIMIT_MOUNTS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If defined - will limit mounts for the run&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_FORCE_MOUNTS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If defined - will force specified mounts for the run, even if the limits are set&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the pipe fuse timeout&quot;,
+  &quot;defaultValue&quot;: &quot;500&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_FS_MOUNT_ATTEMPT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the number of times the NFS client attempts to retries an NFS mount operation after the first attempt fails&quot;,
+  &quot;defaultValue&quot;: &quot;0&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_FS_MOUNT_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the time in deciseconds the NFS client waits for a response before it retries an NFS request&quot;,
+  &quot;defaultValue&quot;: &quot;7&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_POD_PULL_POLICY&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'&quot;,
+  &quot;defaultValue&quot;: &quot;Always&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_HYPER_THREADING&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disables hyper-threading for a run and its workers&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_FSBROWSER_ENABLED&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Disables BROWSE button for the job&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_USERS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster users sharing.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SYNC_USERS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables users synchronization.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SSH_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.&quot;,
+  &quot;defaultValue&quot;: &quot;root&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DCV&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables NICE DCV Desktop environment.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Lists job parameter names, which are used to extend the InputData task&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_EXT&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If CP_LOCALIZE_FROM_FILES defines a directory, allows to filter files by mask&quot;,
+  &quot;defaultValue&quot;: &quot;*&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;How to name an isolated data localization process to CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;defaultValue&quot;: &quot;_PARAM_TYPE_FROM_FILE&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_RE_PATTERN&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;How to match the remote URLs in the files, defined by CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;defaultValue&quot;: &quot;((s3|gs|az)://.*(,|;|$))&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PARALLEL_TRANSFER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables multi-threaded InputData/OutputData task execution&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PARALLEL_TRANSFER_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Can run CP_PARALLEL_TRANSFER in 'threaded' or a 'multiprocessing' (default) mode&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_THREADS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;A number of CPUs to use for the InputData/OutputData task&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PROC_RATIO&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;A divider for the CPUs count to determine a number of threads for the InputData/OutputData task&quot;,
+  &quot;defaultValue&quot;: &quot;4&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PIPE_INPUT_ARGS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Specifies additional args to the pipe for the InputData task (effective for 'local' and 'threaded' modes)&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PIPE_OUTPUT_ARGS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Specifies additional args to the pipe for the OutputData task (effective for 'local' and 'threaded' modes)&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE&quot;,
+  &quot;type&quot;: &quot;boolen&quot;,
+  &quot;description&quot;: &quot;Whether fail or keep a job running if a config file based localization fails&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ }
+] isn't found in 'launch.system.parameters
+[
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_WORKER_ENDPOINTS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disable Endpoint URLs for worker nodes, if a cluster run is scheduled. Only master node will expose Endpoint URL&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_RUN_ENDPOINTS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disable Endpoint URL for a current run. If a cluster run is scheduled - worker nodes will still expose expose Endpoint URL&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Grid Engine for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_QUEUE_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine queue&quot;,
+  &quot;defaultValue&quot;: &quot;main.q&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_HOSTLIST_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine hostlist&quot;,
+  &quot;defaultValue&quot;: &quot;@allhosts&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_DISABLE_DEFAULT_QUEUE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Disables default Grid Engine queue and hostlist creation&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_PE_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overrides the default name of the Grid Engine PE&quot;,
+  &quot;defaultValue&quot;: &quot;local&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_MODULES&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Environment Modules for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_MODULES_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares specific environment module system to use (tcl/lmod)&quot;,
+  &quot;defaultValue&quot;: &quot;tcl&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SPARK&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Spark for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SPARK_VERSION&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to override a Spark version (2.3.3 or 2.4.3)&quot;,
+  &quot;defaultValue&quot;: &quot;2.4.3&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_KUBE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables Kubernetes for a current run (1.15.4), supported for Centos only&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse&quot;,
+  &quot;defaultValue&quot;: &quot;goofys&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_STAT_CACHE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Applied to goofys FUSE. How long to cache StatObject results and inode attributes. Set this to 0 if you are experiencing issues with files consistency&quot;,
+  &quot;defaultValue&quot;: &quot;1m0s&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_ENSURE_DISKFREE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Applied to s3fs FUSE. Sets MB to ensure disk free space. This option means the threshold of free space size on disk which is used for the cache file by s3fs. s3fs makes file for downloading, uploading and caching files. If the disk free space is smaller than this value, s3fs do not use disk space as possible in exchange for the performance.&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_S3_FUSE_TYPE_CACHE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Applied to goofys FUSE. How long to cache name -&gt; file/dir mappings in directory. Set this to 0 if you are experiencing issues with files consistency&quot;,
+  &quot;defaultValue&quot;: &quot;1m0s&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_GCS_FUSE_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to select which FUSE implementation to use for GCS buckets mounting. Allowed values are: gcsfuse and pipefuse&quot;,
+  &quot;defaultValue&quot;: &quot;gcsfuse&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_PERSIST_LOGS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables pipefuse logging persistence for a current run&quot;,
+  &quot;defaultValue&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_DEBUG_LIBFUSE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables pipefuse low level logging for a current run&quot;,
+  &quot;defaultValue&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_LOGGING_LEVEL&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares pipefuse logging level (CRITICAL, ERROR, WARN, INFO or DEBUG)&quot;,
+  &quot;defaultValue&quot;: &quot;ERROR&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_MOUNT_OPTIONS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Declares pipefuse additional mount options&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_MASTER_CORES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allow to limit Grid Engine master cores usage (0 - do not use)&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_WORKER_FREE_CORES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allow to keep the specified number of CPUs unused by the GE worker&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables shared filesystem (NFS) for a current run. If a cluster run is scheduled - worker nodes will mount NFS share&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS_THREADS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Number of NFS threads to use. If empty - cores * 4, but not more that 32&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_NFS_SYNC_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;NFS server will use sync/async mode. Allows to manage performance&quot;,
+  &quot;defaultValue&quot;: &quot;sync&quot;
+ },
+ {
+  &quot;name&quot;: &quot;RUN_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, that holds all run-specific folders (ANALYSIS_DIR, INPUT_DIR, CONFIG_DIR, SCRIPTS_DIR)&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;COMMON_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, that is typically used within custer runs and is mounted as a NFS across cluster nodes&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;ANALYSIS_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used as a Current Working Directory. When a batch run is finished - files from this directory are uploaded to the Output locations&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;INPUT_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing data, that is downloaded from the datastorage automatically&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CONFIG_DIR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing configuration files&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;SHARED_FOLDER&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a folder within a compute node, which is typically used for storing any data that can be shared across nodes within a cluster, that shall be separated from the COMMON_DIR&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_BUCKET&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines a bucket name that will be used to transfer file from on-premise DTS to the Cloud and vice-versa&quot;,
+  &quot;defaultValue&quot;: &quot;project.DataStorage&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster autoscaling&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_WORKERS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Maximum number of additional cluster autoscaled workers&quot;,
+  &quot;defaultValue&quot;: &quot;3&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_VERBOSE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster autoscaling verbose logging&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_PRICE_TYPE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Instance price type that will be used for cluster additional workers&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables hybrid cluster autoscaling&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID_FAMILY&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Instance type family that will be used for hybrid autoscaling cluster workers&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Maximum number of cores that hybrid autoscaling cluster worker instances can have&quot;,
+  &quot;defaultValue&quot;: &quot;2&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DIND_CONTAINER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable docker engine for a current run using a containerized approach&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DIND_VERSION&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Allows to select docker version, used for DIND setup. Default: 18.09.6&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SYSTEMD_CONTAINER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable systemd for a current run (supported for Centos only)&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_KEEP_FAILED_RUN&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Any job, that is failed due to the &lt;command&gt; or output upload errors, will be kept for this amount of time before terminated. &lt;sleep&gt; format is accepted&quot;,
+  &quot;defaultValue&quot;: &quot;36000s&quot;
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SINGULARITY&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enable singularity for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_TZ&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Overwrites standard UTC timezone on pipeline run node&quot;,
+  &quot;defaultValue&quot;: &quot;/usr/share/zoneinfo/UTC&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Defines which file system shall be used as shared for cluster runs&quot;,
+  &quot;defaultValue&quot;: &quot;lfs&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_SIZE&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify shared file system size (supported for Lustre FS only)&quot;,
+  &quot;defaultValue&quot;: &quot;1200&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_DEPLOYMENT_TYPE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to specify shared file deployment type: [SCRATCH_1, SCRATCH_2, PERSISTENT_1, PERSISTENT_2] (supported for Lustre FS only)&quot;,
+  &quot;defaultValue&quot;: &quot;SCRATCH_2&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_FS_THROUGHPUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify shared file system throughput (supported for persistent Lustre FS only)&quot;,
+  &quot;defaultValue&quot;: &quot;500&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_HW_ADDR&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_HW_NAME&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Controls the network interface name, to apply the CP_CAP_HW_ADDR. Default: eth0&quot;,
+  &quot;defaultValue&quot;: &quot;eth0&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_EXEC_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;If defined - will terminate job when specified duration in minutes is elapsed&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_LIMIT_MOUNTS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If defined - will limit mounts for the run&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_FORCE_MOUNTS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If defined - will force specified mounts for the run, even if the limits are set&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_PIPE_FUSE_MOUNT_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the pipe fuse timeout&quot;,
+  &quot;defaultValue&quot;: &quot;10000&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_FS_MOUNT_ATTEMPT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the number of times the NFS client attempts to retries an NFS mount operation after the first attempt fails&quot;,
+  &quot;defaultValue&quot;: &quot;0&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_FS_MOUNT_TIMEOUT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Allows to specify the time in deciseconds the NFS client waits for a response before it retries an NFS request&quot;,
+  &quot;defaultValue&quot;: &quot;7&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_POD_PULL_POLICY&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Allows to specify pod image pull policy. Valid values are 'Always', 'Never', 'IfNotPresent'&quot;,
+  &quot;defaultValue&quot;: &quot;Always&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_DISABLE_HYPER_THREADING&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Disables hyper-threading for a run and its workers&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_FSBROWSER_ENABLED&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Disables BROWSE button for the job&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SHARE_USERS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables cluster users sharing.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SYNC_USERS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables users synchronization.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SSH_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;SSH connection mode. Allowed values are: user, owner, owner-sshpass and root.&quot;,
+  &quot;defaultValue&quot;: &quot;root&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DCV&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables NICE DCV Desktop environment.&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Lists job parameter names, which are used to extend the InputData task&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_EXT&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;If CP_LOCALIZE_FROM_FILES defines a directory, allows to filter files by mask&quot;,
+  &quot;defaultValue&quot;: &quot;*&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;How to name an isolated data localization process to CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;defaultValue&quot;: &quot;_PARAM_TYPE_FROM_FILE&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_RE_PATTERN&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;How to match the remote URLs in the files, defined by CP_LOCALIZE_FROM_FILES&quot;,
+  &quot;defaultValue&quot;: &quot;((s3|gs|az)://.*(,|;|$))&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PARALLEL_TRANSFER&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables multi-threaded InputData/OutputData task execution&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_PARALLEL_TRANSFER_MODE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Can run CP_PARALLEL_TRANSFER in 'threaded' or a 'multiprocessing' (default) mode&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_THREADS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;A number of CPUs to use for the InputData/OutputData task&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PROC_RATIO&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;A divider for the CPUs count to determine a number of threads for the InputData/OutputData task&quot;,
+  &quot;defaultValue&quot;: &quot;4&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PIPE_INPUT_ARGS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Specifies additional args to the pipe for the InputData task (effective for 'local' and 'threaded' modes)&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_TRANSFER_PIPE_OUTPUT_ARGS&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Specifies additional args to the pipe for the OutputData task (effective for 'local' and 'threaded' modes)&quot;,
+  &quot;defaultValue&quot;: &quot;1&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Whether fail or keep a job running if a config file based localization fails&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_TARGET_AVAILABILITY_ZONE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Specifies the target availability zone for a run&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_TARGET_NETWORK_INTERFACE&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Specifies the target ENI to be attached to the node for run&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_DEDICATED_INSTANCE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Specifies if the instance should be dedicated (has a dedicated hardware)&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_TARGET_SECURITY_GROUPS&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Specifies which security groups shall be attached to the instance&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_TARGET_SUBNET_ID&quot;,
+  &quot;type&quot;: &quot;string&quot;,
+  &quot;description&quot;: &quot;Specifies which subnet shall be used for an instance&quot;,
+  &quot;defaultValue&quot;: &quot;&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_NODE_SSH_PORT&quot;,
+  &quot;type&quot;: &quot;int&quot;,
+  &quot;description&quot;: &quot;Sets SSH port, which is used by a host node of the job&quot;,
+  &quot;defaultValue&quot;: &quot;22&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_EFA_ENABLED&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Specifies if EFA should be enabled for this instance&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_USE_HOST_NETWORK&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Specifies if run pod should be run with host network capability&quot;,
+  &quot;defaultValue&quot;: &quot;false&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_RECOVERY&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables recovery support for a current run&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_GPU_EXCLUSIVE_MODE&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables GPU exclusive mode&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_SGE_GPU_RSMAP_DEVICES&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables RSMAP-like GPU devices assignment&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_RESCHEDULE_RUN&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;description&quot;: &quot;Enables rescheduling run to other regions&quot;,
+  &quot;passToWorkers&quot;: false
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_GRID_ENGINE_NOTIFICATIONS&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;description&quot;: &quot;Enables notifications for Slurm and SGE engines.&quot;,
+  &quot;passToWorkers&quot;: true
+ },
+ {
+  &quot;name&quot;: &quot;CP_CAP_MAIL&quot;,
+  &quot;type&quot;: &quot;boolean&quot;,
+  &quot;defaultValue&quot;: &quot;true&quot;,
+  &quot;description&quot;: &quot;Changes default mail client if favor to pipe_mail script.&quot;,
+  &quot;passToWorkers&quot;: true
+ }
+]' preference expected [true] but found [false]
+	at org.testng.Assert.fail(Assert.java:93)
+	at org.testng.Assert.failNotEquals(Assert.java:512)
+	at org.testng.Assert.assertTrue(Assert.java:41)
+	at com.epam.pipeline.autotests.ao.SettingsPageAO$PreferencesAO$LaunchAO.checkLaunchSystemParameters(SettingsPageAO.java:1714)
+	at com.epam.pipeline.autotests.PlatformPreferencesTest.checkLaunchSystemParameters(PlatformPreferencesTest.java:83)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
+<h2>Tests</h2>
+<table>
+<thead>
+<tr>
+<th>Test</th>
+<th>Duration</th>
+<th>Result</th>
+</tr>
+</thead>
+<tr>
+<td class="success">checkClusterAllowedInstanceTypes - TC-PARAMETERS-1</td>
+<td>10.082s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkClusterAllowedInstanceTypesDocker - TC-PARAMETERS-2</td>
+<td>8.902s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkConfigureClusterAwsEBSvolumeType - TC-PARAMETERS-3</td>
+<td>7m24.75s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="failures">checkHelpContent - 897</td>
+<td>3m39.81s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">checkLaunchContainerCpuResource - 783</td>
+<td>3m39.22s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="failures">checkLaunchSystemParameters - 223</td>
+<td>17.329s</td>
+<td class="failures">failed</td>
+</tr>
+<tr>
+<td class="success">checkLustreMountOption - 1489</td>
+<td>2.307s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">checkSeveralSupportIconsConfiguration - 2356</td>
+<td>1m28.64s</td>
+<td class="success">passed</td>
+</tr>
+</table>
+</div>
+</div>
+<div id="footer">
+<p>
+<div>
+<label class="hidden" id="label-for-line-wrapping-toggle" for="line-wrapping-toggle">Wrap lines
+<input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
+</label>
+</div>Generated by 
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Oct 7, 2023 11:09:12 PM</p>
+</div>
+</div>
+</body>
+</html>
