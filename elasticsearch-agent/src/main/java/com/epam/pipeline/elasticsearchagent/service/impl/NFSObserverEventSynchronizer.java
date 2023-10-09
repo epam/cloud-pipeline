@@ -57,7 +57,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -85,6 +84,7 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 @ConditionalOnProperty(value = "sync.nfs-file.observer.sync.disable", matchIfMissing = true, havingValue = "false")
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private static final String BACKSLASH = "/";
@@ -520,9 +520,11 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                                               file.getPath(),
                                                                               readingCredentialsSupplier)) {
             return IOUtils.readLines(inputStream, StandardCharsets.UTF_8).stream()
+                .filter(StringUtils::isNotBlank)
                 .map(this::mapStringToEvent)
                 .collect(Collectors.toList());
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
             return new ArrayList<>();
         }
     }
