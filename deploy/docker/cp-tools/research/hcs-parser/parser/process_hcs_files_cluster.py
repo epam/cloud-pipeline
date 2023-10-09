@@ -28,6 +28,7 @@ from src.utils import HcsFileLogger, log_run_info, log_run_success
 from src.utils import get_int_run_param, get_bool_run_param
 
 SUCCESS_EXIT_CODE = '0'
+ASYNC_EXIT_CODE = '777'
 ERROR_EXIT_CODE = '1'
 EMAIL_TEMPLATE = '''
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -87,6 +88,12 @@ TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 EVAL_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_EVAL_ONLY')
 FORCE_PROCESSING = get_bool_run_param('HCS_FORCE_PROCESSING')
 
+ASYNC_MODE = get_bool_run_param('HCS_ASYNC_PROCESSING')
+PIPE_INSTANCE_TYPE = os.getenv('HCS_WORKER_INSTANCE_TYPE', 'r5.4xlarge')
+PIPE_INSTANCE_MEMORY = os.getenv('HCS_WORKER_MEMORY_GB', '120')
+PIPE_INSTANCE_DISK = get_int_run_param('HCS_WORKER_DISK', 500)
+PIPE_WORKER_IMAGE = os.getenv('docker_image')
+
 COMMON_JAVA_OPTS = os.getenv('JAVA_OPTS')
 MASTER_RUN_ID = os.getenv('RUN_ID')
 
@@ -132,6 +139,32 @@ class HcsFileSgeParser:
 
     def log_info(self, message):
         self.processing_logger.log_info(message)
+
+    def process_file_using_pipe(self):
+        self.log_info('Starting processing of folder {} with image preview {} using pipe command'
+                      .format(self.hcs_root_path, self.hcs_img_path))
+
+        env = self._get_propagated_env_vars(PIPE_INSTANCE_MEMORY)
+        env_vars = ['{} \'{}\''.format(key, value) for key, value in env.items()]
+
+        command = 'bash "$HCS_TOOLS_HOME/scripts/start.sh"; ' \
+                  'result=$?; ' \
+                  'pipe storage cp -f $ANALYSIS_DIR/hcs-parser-$RUN_ID.log $HCS_PARSING_LOGS_OUTPUT/{}/hcs-parser-worker-$RUN_ID.log;' \
+                  'exit $result'.format(MASTER_RUN_ID)
+        params = ' '.join(env_vars)
+
+        pipe_cmd = 'pipe run -y -id {instance_disk} -it {instance_type} -di {docker_image} ' \
+                   '-cmd \'{command}\' -pt on-demand -r 1 -- {params}'.format(
+            instance_disk=PIPE_INSTANCE_DISK,
+            instance_type=PIPE_INSTANCE_TYPE,
+            docker_image=PIPE_WORKER_IMAGE,
+            command=command,
+            params=params)
+
+        self.log_info('Submitting {} processing with command "{}"'.format(self.hcs_root_path, pipe_cmd))
+        result = self._execute_and_get_stdout(pipe_cmd)
+        self.log_info(result)
+        return HcsResult(self.hcs_root_path, self.hcs_img_path, ASYNC_EXIT_CODE)
 
     def process_file_in_sge(self):
         self.log_info('Starting SGE processing of folder {} with image preview {}'
@@ -197,6 +230,22 @@ class HcsFileSgeParser:
                 else:
                     env_vars_string += '\nexport {}="{}"'.format(key, value)
         return env_vars_string
+
+    def _get_propagated_env_vars(self, memory_limit):
+        result = {
+            'HCS_TARGET_DIRECTORIES': self.hcs_root_path,
+            'HCS_TARGET_IMG_NAMES': self.hcs_img_path,
+            'JAVA_OPTS': COMMON_JAVA_OPTS + ' -Xmx{}G'.format(memory_limit),
+            'HCS_PARSER_PROCESSING_THREADS': '1',
+            'CP_CAP_LIMIT_MOUNTS': os.getenv('CP_CAP_LIMIT_MOUNTS')
+        }
+        for key, value in os.environ.items():
+            if key.startswith('HCS_PARSING_'):
+                if key == 'HCS_PARSING_PLATE_DETAILS_DICT':
+                    result[key] = value.decode('string_escape').replace('"', '\\"')
+                else:
+                    result[key] = value
+        return result
 
     @staticmethod
     def _write_to_file(file_path, content):
@@ -292,7 +341,7 @@ class HcsFileSgeParser:
 def try_process_hcs_in_cluster(hcs_root_dir):
     parser = HcsFileSgeParser(hcs_root_dir.root_path, hcs_root_dir.hcs_img_path)
     try:
-        return parser.process_file_in_sge()
+        return parser.process_file_using_pipe() if ASYNC_MODE else parser.process_file_in_sge()
     except Exception as e:
         parser.log_info('An error occurred during parsing: ' + str(e))
         print(traceback.format_exc())
@@ -338,7 +387,12 @@ def build_notification_text(images, deploy_name, template, finish=False):
             image_str = image_name
         path = '/'.join(image.path.split('/')[3:])
         if finish:
-            status = 'Success' if image.status == SUCCESS_EXIT_CODE else 'Failure'
+            if image.status == SUCCESS_EXIT_CODE:
+                status = 'Failure'
+            elif image.status == ASYNC_EXIT_CODE:
+                status = 'In Progress'
+            else:
+                status = 'Failure'
         else:
             status = image.status
         message_str += EVENT_PATTERN.format(**{'image': image_str,

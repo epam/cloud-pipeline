@@ -24,12 +24,14 @@ from .utils import HcsParsingUtils, log_run_info, get_list_run_param
 HCS_PARSING_TAGS_MAPPING_LIST = get_list_run_param('HCS_PARSING_TAG_MAPPING')
 HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS = get_list_run_param('HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('HCS_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
+IMAGE_NAME_CAT_ATTR_NAME = os.getenv('HCS_PARSING_IMAGE_NAME_CAT_ATTR_NAME', 'Image Name')
 
 HCS_KEYWORD_FILE_SUFFIX = '.kw.txt'
 EXTENDED_TAGS_OWNER_TAG_KEY = 'OWNER'
 EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY = 'CHANNELTYPE'
 EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY = 'PLANES'
 EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY = 'TIMEPOINTS'
+KEYWORD_PLATENAME_KEY = "PLATENAME"
 KEYWORD_FILE_DATE_KEY = "DATE"
 EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY = 'Experiment date'
 HYPHEN = '-'
@@ -119,7 +121,7 @@ class HcsFileTagProcessor:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
             return 0
         metadata_dict = self.map_to_metadata_dict(ome_schema, metadata)
-        self.add_metadata_from_keyword_file(metadata_dict)
+        keyword_file_content = self.add_metadata_from_keyword_file(metadata_dict)
         experiment_date = self._prepare_experiment_date(metadata_dict)
         if wells_tags:
             for well_tags in wells_tags.values():
@@ -131,7 +133,7 @@ class HcsFileTagProcessor:
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
             return 0
-        pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
+        pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push, keyword_file_content)
         tags_to_push_str = ' '.join(pipe_tags)
         if experiment_date:
             tags_to_push_str += ' %s' % experiment_date
@@ -145,12 +147,13 @@ class HcsFileTagProcessor:
         keyword_file_path = os.path.join(self.hcs_root_dir, keyword_file_name)
         keyword_file_content = self.try_extract_keyword_file_content(keyword_file_path)
         if keyword_file_content is None:
-            return
+            return keyword_file_content
         self.add_owner_info_if_present(keyword_file_content, metadata_dict)
         self.add_channel_type_info_if_present(keyword_file_content, metadata_dict)
         self.add_timepoints_info_if_present(keyword_file_content, metadata_dict)
         self.add_plane_info_if_present(keyword_file_content, metadata_dict)
         self.add_experiment_date_info_if_present(keyword_file_content, metadata_dict)
+        return keyword_file_content
 
     @staticmethod
     def try_extract_keyword_file_content(keyword_file_path):
@@ -175,6 +178,11 @@ class HcsFileTagProcessor:
                 return
             experiment_date = experiment_date[:10]
             metadata_dict[EXTENDED_TAGS_EXPERIMENT_DATE_TAG_KEY] = experiment_date
+
+    @staticmethod
+    def add_plate_name(keyword_file_content, metadata_dict):
+        if KEYWORD_PLATENAME_KEY in keyword_file_content:
+            metadata_dict[IMAGE_NAME_CAT_ATTR_NAME] = keyword_file_content[KEYWORD_PLATENAME_KEY]
 
     @staticmethod
     def add_timepoints_info_if_present(keyword_file_content, metadata_dict):
@@ -216,7 +224,7 @@ class HcsFileTagProcessor:
                     return self.build_magnification_from_numeric_string(magnification_value)
         return None
 
-    def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
+    def prepare_tags(self, existing_attributes_dictionary, tags_to_push, keyword_file_content):
         attribute_updates = list()
         pipe_tags = list()
         for attribute_name, values_to_push in tags_to_push.items():
@@ -238,6 +246,9 @@ class HcsFileTagProcessor:
                     attribute_updates.append({'id': int(existing_attribute_id),
                                               'key': attribute_name, 'values': existing_values})
             pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, value))
+        if keyword_file_content and KEYWORD_PLATENAME_KEY in keyword_file_content:
+            pipe_tags.append('\'{}\'=\'{}\''.format(IMAGE_NAME_CAT_ATTR_NAME,
+                                                    keyword_file_content[KEYWORD_PLATENAME_KEY]))
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))

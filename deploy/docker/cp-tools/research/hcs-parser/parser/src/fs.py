@@ -78,8 +78,12 @@ class HcsProcessingDirsGenerator:
         roots_with_preview = self.build_roots_with_preview(hcs_roots)
         filtered = []
         for root, preview in roots_with_preview.items():
-            if self.is_processing_required(root, preview):
-                filtered.append(HcsRoot(root, preview))
+            full_img_name = preview[0]
+            short_img_name = preview[1]
+            matching_image = self.get_matching_file(full_img_name, short_img_name)
+            log_run_info('Expected preview image path: {}'.format(matching_image))
+            if self.is_processing_required(root, matching_image):
+                filtered.append(HcsRoot(root, matching_image))
         return filtered
 
     def find_all_hcs_roots(self):
@@ -108,6 +112,22 @@ class HcsProcessingDirsGenerator:
             return True
         stat_file_modification_date = HcsParsingUtils.get_file_last_modification_time(stat_file)
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
+
+    def get_matching_file(self, full_img_path, short_img_path):
+        if os.path.exists(full_img_path):
+            return full_img_path
+        if os.path.exists(short_img_path):
+            with open(short_img_path, 'r') as hcs_file:
+                content = "".join(hcs_file.readlines())
+            if content:
+                hcs_dict = json.loads(content)
+                hcs_id = os.path.basename(hcs_dict['sourceDir'].rstrip('/'))
+                expected_id = os.path.basename(full_img_path).replace('.hcs', '').rsplit('.', 2)[1]
+                if hcs_id == expected_id:
+                    return short_img_path
+            return full_img_path
+        else:
+            return full_img_path
 
     def is_skip_marker_present(self, folder):
         if not self.skip_markers:
@@ -193,31 +213,17 @@ class HcsProcessingDirsGenerator:
 
     def build_roots_with_preview(self, hcs_roots):
         result = {}
-        names = {}
         ids_to_clean = []
-        lookup_path = ''
-        for root in hcs_roots:
-            if not lookup_path:
-                lookup_path = os.path.dirname(root)
-            hcs_img_name = HcsParsingUtils.build_preview_file_name(root)
-            if hcs_img_name not in names:
-                names[hcs_img_name] = [root]
-            else:
-                names[hcs_img_name].append(root)
+        lookup_path = os.path.dirname(list(hcs_roots)[0])
         metadata = self.get_obj_metadata(lookup_path, self.objmeta_file)
-        for name, roots in names.items():
-            with_id = len(roots) > 1
-            if with_id:
-                log_run_info('Found duplicate name {} for roots {}'.format(name, str(roots)))
-            for root in roots:
-                if os.path.basename(root) in self.skip:
-                    log_run_info('Skipping file {}'.format(root))
-                    continue
-                invalid_id = self.validate_upload_status(root, metadata)
-                if invalid_id:
-                    ids_to_clean.append(invalid_id)
-                else:
-                    result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
+        for root in hcs_roots:
+            invalid_id = self.validate_upload_status(root, metadata)
+            if invalid_id:
+                ids_to_clean.append(invalid_id)
+            else:
+                hcs_img_name = HcsParsingUtils.build_preview_file_path(root)
+                hcs_img_full_name = HcsParsingUtils.build_preview_file_path(root, with_id=True)
+                result[root] = (hcs_img_full_name, hcs_img_name)
         if ids_to_clean and not self.is_harmony_sync_in_progress(lookup_path):
             self.reset_upload(lookup_path, ids_to_clean)
         return result
