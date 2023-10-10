@@ -563,6 +563,10 @@ public class SystemPreferences {
                 .map(CloudInstancePriceService.TermType::getName)
                 .collect(Collectors.joining(",")),
         CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_FILTER_CPU_MIN = new IntPreference(
+        "instance.offer.filter.cpu.min", 2, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_FILTER_MEM_MIN = new IntPreference(
+        "instance.offer.filter.mem.min", 3, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_INSTANCE_OFFER_INSERT_BATCH_SIZE = new IntPreference(
         "instance.offer.insert.batch.size", 10_000, CLUSTER_GROUP, isGreaterThan(0));
 
