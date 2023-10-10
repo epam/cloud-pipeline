@@ -49,7 +49,7 @@ if [ -z "$MOUNT_TASK_NAME" ]
 	exit 1
 fi
 
-MOUNT_RESULT=$(eval "$CP_PYTHON2_PATH ${COMMON_REPO_DIR}/scripts/mount_storage.py --mount-root ${MOUNT_ROOT} --tmp-dir ${TMP_DIR} --task ${MOUNT_TASK_NAME}")
+"$CP_PYTHON2_PATH" "${COMMON_REPO_DIR}/scripts/mount_storage.py" --mount-root "${MOUNT_ROOT}" --tmp-dir "${TMP_DIR}" --task "${MOUNT_TASK_NAME}"
 
 if [ $? -ne 0 ]
 then
