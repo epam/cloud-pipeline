@@ -33,6 +33,7 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.offer.InstanceOfferFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferMinimumRequirementsFilter;
 import com.epam.pipeline.manager.cloud.offer.InstanceOfferTermTypeFilter;
 import com.epam.pipeline.manager.cloud.offer.InstanceOfferUniqueFilter;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
@@ -76,11 +77,13 @@ public class InstanceOfferManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferManager.class);
 
     private static final int FALLBACK_INSTANCE_OFFER_INSERT_BATCH_SIZE = 10_000;
-    private static final boolean FALLBACK_FILTER_UNIQUE = true;
     private static final Set<String> FALLBACK_FILTER_TERM_TYPES =
             Arrays.stream(CloudInstancePriceService.TermType.values())
                     .map(CloudInstancePriceService.TermType::getName)
                     .collect(Collectors.toSet());
+    private static final boolean FALLBACK_FILTER_UNIQUE = true;
+    private static final int FALLBACK_FILTER_CPU_MIN = 2;
+    private static final int FALLBACK_FILTER_MEM_MIN = 3;
 
     @Autowired
     private InstanceOfferDao instanceOfferDao;
@@ -412,17 +415,22 @@ public class InstanceOfferManager {
 
     private List<InstanceOfferFilter> getFilters() {
         final List<InstanceOfferFilter> filters = new ArrayList<>();
-        final Set<String> termTypes = getTermTypes();
+        final Set<String> termTypes = getFilterTermTypes();
         if (CollectionUtils.isNotEmpty(termTypes)) {
             filters.add(new InstanceOfferTermTypeFilter(termTypes));
         }
         if (isFilterUnique()) {
             filters.add(new InstanceOfferUniqueFilter());
         }
+        final int cpu = getFilterCpuMin();
+        final int mem = getFilterMemMin();
+        if (cpu > 0 || mem > 0) {
+            filters.add(new InstanceOfferMinimumRequirementsFilter(cpu, mem));
+        }
         return filters;
     }
 
-    private Set<String> getTermTypes() {
+    private Set<String> getFilterTermTypes() {
         return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_TERM_TYPES)
                 .map(preferenceManager::getPreference)
                 .map(it -> StringUtils.split(it, ','))
@@ -435,6 +443,18 @@ public class InstanceOfferManager {
         return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_UNIQUE)
                 .map(preferenceManager::getPreference)
                 .orElse(FALLBACK_FILTER_UNIQUE);
+    }
+
+    private Integer getFilterCpuMin() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_CPU_MIN)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_CPU_MIN);
+    }
+
+    private Integer getFilterMemMin() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_MEM_MIN)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_MEM_MIN);
     }
 
     private List<InstanceOffer> replacePriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
