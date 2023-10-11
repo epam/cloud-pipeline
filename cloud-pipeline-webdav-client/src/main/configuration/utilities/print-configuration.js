@@ -14,6 +14,7 @@ module.exports = function printConfiguration(configuration, title) {
     username,
     password,
     ignoreCertificateErrors,
+    updatePermissions,
     logsEnabled,
     ftp = [],
     name,
@@ -29,6 +30,7 @@ module.exports = function printConfiguration(configuration, title) {
   logger.log('  username:                 ', wrapValue(username));
   logger.log('  password:                 ', wrapValue(wrapSecure(password)));
   logger.log('  ignore certificate errors:', !!ignoreCertificateErrors);
+  logger.log('  update permissions:       ', !!updatePermissions);
   logger.log('  logging enabled:          ', !!logsEnabled);
   logger.log('');
   logger.log(`  ${ftp.length} ftp/sftp server${ftp.length === 1 ? '' : 's'}:`);

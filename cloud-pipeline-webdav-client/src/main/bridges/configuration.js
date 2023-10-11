@@ -21,6 +21,7 @@ module.exports = function build(bridgeOptions) {
       version: configuration.version,
       componentVersion: configuration.componentVersion,
       ignoreCertificateErrors: configuration.ignoreCertificateErrors,
+      updatePermissions: configuration.updatePermissions,
       ftp: configuration.ftpServers,
       appName: configuration.name,
       logsEnabled: configuration.logsEnabled,

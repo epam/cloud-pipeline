@@ -81,6 +81,7 @@ class FileSystemAdapters extends EventEmitter {
               apiURL: this.configuration.api,
               rootName: this.configuration.name,
               ignoreCertificateErrors: this.configuration.ignoreCertificateErrors,
+              updatePermissions: this.configuration.updatePermissions,
               name: this.configuration.name || 'WebDAV',
             },
             ...this.configuration.ftpServers.map((anFtpServer) => ({

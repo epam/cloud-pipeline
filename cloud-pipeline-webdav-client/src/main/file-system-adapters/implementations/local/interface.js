@@ -137,6 +137,7 @@ class LocalFileSystemInterface extends FileSystemInterface {
     }
     logger.log(`local - creating directory "${corrected}"`);
     fs.mkdirSync(corrected, { recursive: true });
+    this.onDirectoryCreated(corrected);
   }
 
   // eslint-disable-next-line class-methods-use-this,no-unused-vars

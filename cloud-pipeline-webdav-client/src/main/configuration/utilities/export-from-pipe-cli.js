@@ -35,6 +35,7 @@ module.exports = async function readGlobalConfiguration() {
             }
             return {
               ignoreCertificateErrors: true,
+              updatePermissions: false,
               username: userName,
               password: config.access_key,
               server: webdavAuthSSO,

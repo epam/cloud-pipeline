@@ -1,5 +1,6 @@
 const https = require('https');
 const logger = require('../common/logger');
+const ApiError = require('./api-error');
 
 const REQUEST_TIMEOUT_SECONDS = 10;
 
@@ -13,6 +14,7 @@ function getMethodURL(api = '', endpoint = '') {
  * @typedef {Object} ApiRequestOptions
  * @property {string} [method=GET]
  * @property {string} [token]
+ * @property {string} [bearerCookie]
  * @property {number} [timeout] - timeout in seconds
  * @property {*} [body]
  * @property {boolean} [rejectUnauthorized=false]
@@ -32,6 +34,7 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
     body,
     method = (body ? 'POST' : 'GET'),
     token,
+    bearerCookie,
     timeout = REQUEST_TIMEOUT_SECONDS,
     rejectUnauthorized,
   } = options;
@@ -42,6 +45,8 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
   };
   if (token) {
     headers.Authorization = `Bearer ${token}`;
+  } else if (bearerCookie) {
+    headers.Cookie = `bearer=${bearerCookie}`;
   }
   const TITLE = `[API ${api}]`;
   const log = (...message) => logger.log(TITLE, ...message);
@@ -65,7 +70,7 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
           if (json && /^ok$/i.test(json.status)) {
             resolve(json.payload);
           } else {
-            reject(new Error(json.message || `Error fetching "${endpoint}"`));
+            reject(new ApiError(json.message || `Error fetching "${endpoint}"`));
             logError(`${endpoint}: ${json.message}`);
           }
         } catch (e) {
@@ -87,3 +92,4 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
     request.end();
   });
 };
+

@@ -20,6 +20,7 @@ const DEFAULT_APP_NAME = 'Cloud Data';
  * @property {string[]} [adapters]
  * @property {{url: string, user: string?, password: string?}[]} [ftp]
  * @property {boolean} [ignoreCertificateErrors]
+ * @property {boolean} [updatePermissions]
  * @property {string} [componentVersion]
  * @property {string} [version]
  * @property {boolean} [logsEnabled]
@@ -93,6 +94,10 @@ class Configuration extends TokenExpirationChecker {
 
   get ignoreCertificateErrors() {
     return this.config?.ignoreCertificateErrors;
+  }
+
+  get updatePermissions() {
+    return this.config?.updatePermissions;
   }
 
   get ftpServers() {
@@ -232,6 +237,7 @@ class Configuration extends TokenExpirationChecker {
       password = this.password,
       name = this.name,
       ignoreCertificateErrors = this.ignoreCertificateErrors,
+      updatePermissions = this.updatePermissions,
       ftp = this.ftpServers,
       adapters = this.adapters,
       logsEnabled = this.logsEnabled,
@@ -273,6 +279,7 @@ class Configuration extends TokenExpirationChecker {
       username,
       password,
       ignoreCertificateErrors,
+      updatePermissions,
       name,
       ftp: (ftp || []).map((anFtpServer) => {
         const {

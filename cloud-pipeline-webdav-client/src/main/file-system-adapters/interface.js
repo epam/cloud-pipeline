@@ -110,6 +110,10 @@ class FileSystemInterface extends EventEmitter {
     throw new Error(`Create directory operation is not implemented for "${this.type}" file system`);
   }
 
+  onDirectoryCreated(directory = '') {
+    // noop
+  }
+
   /**
    * @param {string} element
    * @returns {Promise<void>}

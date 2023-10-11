@@ -101,7 +101,9 @@ class WebBasedInterface extends FileSystemInterface {
       throw new FileSystemAdapterInitializeError(`"${this.type}" interface not initialized`);
     }
     const corrected = correctDirectoryPath(directory);
-    return this.client.createDirectory(corrected, { recursive: true });
+    const result = await this.client.createDirectory(corrected, { recursive: true });
+    this.onDirectoryCreated(corrected);
+    return result;
   }
 
   async createReadStream(element, options = {}) {

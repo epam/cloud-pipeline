@@ -51,6 +51,7 @@ function Configuration(
   const onChangeUser = createOnChangeCallback('user');
   const onChangePassword = createOnChangeCallback('password');
   const onChangeIgnoreCertificateErrors = createOnChangeCallback('ignoreCertificateErrors');
+  const onChangeUpdatePermissions = createOnChangeCallback('updatePermissions');
   const onChangeLogsEnabled = createOnChangeCallback('logsEnabled');
   const onSaveCallback = useCallback(() => onSave(configuration), [configuration]);
 
@@ -167,6 +168,11 @@ function Configuration(
             value={configuration?.ignoreCertificateErrors}
             onChange={onChangeIgnoreCertificateErrors}
             property="Ignore certificate errors"
+          />
+          <BooleanProperty
+            value={configuration?.updatePermissions}
+            onChange={onChangeUpdatePermissions}
+            property="Update destination file permissions after copy / create operation"
           />
           <BooleanProperty
             value={configuration?.logsEnabled}
