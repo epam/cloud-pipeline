@@ -19,15 +19,17 @@ package com.epam.pipeline.app;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.manager.contextual.handler.ArrayContextualPreferenceReducer;
+import com.epam.pipeline.manager.contextual.handler.BooleanContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.DefaultContextualPreferenceReducer;
-import com.epam.pipeline.manager.contextual.handler.BooleanContextualPreferenceReducer;
+import com.epam.pipeline.manager.contextual.handler.RegionContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.RoleContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.StorageContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.SystemPreferenceHandler;
@@ -75,8 +77,17 @@ public class ContextualPreferenceConfiguration {
     public StorageContextualPreferenceHandler storageContextualPreferenceHandler(
             final DataStorageDao storageDao,
             final ContextualPreferenceDao contextualPreferenceDao,
+            final RegionContextualPreferenceHandler regionContextualPreferenceHandler) {
+        return new StorageContextualPreferenceHandler(storageDao, contextualPreferenceDao,
+                regionContextualPreferenceHandler);
+    }
+
+    @Bean
+    public RegionContextualPreferenceHandler regionContextualPreferenceHandler(
+            final CloudRegionDao cloudRegionDao,
+            final ContextualPreferenceDao contextualPreferenceDao,
             final SystemPreferenceHandler systemPreferenceHandler) {
-        return new StorageContextualPreferenceHandler(storageDao, contextualPreferenceDao, systemPreferenceHandler);
+        return new RegionContextualPreferenceHandler(cloudRegionDao, contextualPreferenceDao, systemPreferenceHandler);
     }
 
     @Bean

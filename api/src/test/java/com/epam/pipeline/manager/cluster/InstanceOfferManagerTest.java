@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
-import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -45,7 +44,6 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
     private static final String M5_LARGE_INSTANCE_TYPE = "m5.xlarge";
     private static final String M5_PATTERN = "m5.*";
     private static final String M5_X5_PATTERN = "m5.*,x5.*";
-    private static final ContextualPreferenceExternalResource NO_TOOL = null;
     private static final int BATCH_SIZE = 10_000;
 
     @Autowired
@@ -111,14 +109,14 @@ public class InstanceOfferManagerTest extends AbstractManagerTest {
         allowedToolTypesPreference.setValue(M5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedToolTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, region.getId(), false));
         Assert.assertFalse(instanceOfferManager
-                .isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
+                .isToolInstanceAllowed(X5_INSTANCE_TYPE, region.getId(), false));
 
         allowedToolTypesPreference.setValue(M5_X5_PATTERN);
         preferenceManager.update(Collections.singletonList(allowedToolTypesPreference));
 
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
-        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(X5_INSTANCE_TYPE, NO_TOOL, region.getId(), false));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(M5_INSTANCE_TYPE, region.getId(), false));
+        Assert.assertTrue(instanceOfferManager.isToolInstanceAllowed(X5_INSTANCE_TYPE, region.getId(), false));
     }
 }
