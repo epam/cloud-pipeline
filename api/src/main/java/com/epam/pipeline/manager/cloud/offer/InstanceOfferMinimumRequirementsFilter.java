@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.cloud.offer;
 
 import com.epam.pipeline.entity.cluster.InstanceOffer;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,9 +34,22 @@ public class InstanceOfferMinimumRequirementsFilter implements InstanceOfferFilt
     public List<InstanceOffer> filter(final List<InstanceOffer> offers) {
         log.debug("Filtering instance offers with at least {} cpu and {} mem...", cpu, mem);
         final List<InstanceOffer> filteredOffers = offers.stream()
-                .filter(offer -> offer.getVCPU() >= cpu && (int) offer.getMemory() >= mem)
+                .filter(offer -> isInstanceType(offer) && isMeetingMinimumRequirements(offer)
+                        || isNotInstanceType(offer))
                 .collect(Collectors.toList());
         log.debug("Filtered out {} instance offers.", offers.size() - filteredOffers.size());
         return filteredOffers;
+    }
+
+    private boolean isNotInstanceType(final InstanceOffer offer) {
+        return !isInstanceType(offer);
+    }
+
+    private boolean isInstanceType(final InstanceOffer offer) {
+        return CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY.equals(offer.getProductFamily());
+    }
+
+    private boolean isMeetingMinimumRequirements(final InstanceOffer offer) {
+        return offer.getVCPU() >= cpu && (int) offer.getMemory() >= mem;
     }
 }
