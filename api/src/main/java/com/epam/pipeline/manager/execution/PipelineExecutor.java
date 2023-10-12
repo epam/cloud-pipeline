@@ -378,7 +378,7 @@ public class PipelineExecutor {
         final List<DockerMount> commonMounts = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_COMMON_MOUNTS);
         if (CollectionUtils.isNotEmpty(commonMounts)) {
-            dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
+            commonMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
         if (isSystemdEnabled) {
             volumes.add(createVolume(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getHostPath()));
@@ -401,6 +401,11 @@ public class PipelineExecutor {
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+        }
+        final List<DockerMount> commonMounts = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_COMMON_MOUNTS);
+        if (CollectionUtils.isNotEmpty(commonMounts)) {
+            commonMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
         }
         if (isSystemdEnabled) {
             mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getMountPath()));
