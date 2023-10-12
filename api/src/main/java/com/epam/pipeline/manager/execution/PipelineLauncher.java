@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
@@ -161,16 +162,19 @@ public class PipelineLauncher {
         final String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
         final String rootPodCommand;
+        final OSSpecificLaunchCommandTemplate commandTemplate;
         if (!useLaunch) {
             rootPodCommand = pipelineCommand;
+            commandTemplate = null;
         } else {
             final ToolOSVersion toolOSVersion = toolScanInfoManager
                     .loadToolVersionScanInfoByImageName(configuration.getDockerImage())
                     .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
-            final String effectiveLaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+            commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                     preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
                     toolOSVersion
             );
+            final String effectiveLaunchCommand = commandTemplate.getCommand();
             Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
             rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
                     effectiveLaunchCommand,
@@ -187,7 +191,7 @@ public class PipelineLauncher {
         executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
                 configuration.getPodAssignPolicy(), configuration.getSecretName(),
                 clusterId, imagePullPolicy, configuration.getKubeLabels(),
-                configuration.getKubeServiceAccount());
+                configuration.getKubeServiceAccount(), commandTemplate);
         return pipelineCommand;
     }
 
