@@ -2355,10 +2355,20 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
-      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_RHEL_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_RHEL_URL"
+            fi
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]); then
+            if [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_DEB_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_DEB_URL"
+            fi
       fi
 
       if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
@@ -2369,6 +2379,38 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
             echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
             eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+
+      if [ "$CP_CAP_EXTRA_PKG_URL" ]; then
+            echo "Installing extra packages from external sources"
+            _old_pwd=$(pwd)
+            cd "$CP_USR_BIN"
+            for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_filename=$(basename "$_pkg")
+                  _pkg_filename_ext="${_pkg_filename##*.}"
+                  if [ -f "$_pkg_filename" ]; then
+                        rm -f "$_pkg_filename"
+                  fi
+                  if ! download_file "$_pkg"; then
+                        echo "[WARN] Failed downloading $_pkg extra package"
+                  else
+                        if [ "$_pkg_filename_ext" == "tgz" ]; then
+                              tar -zxf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "tar" ]; then
+                              tar -xf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "zip" ]; then
+                              unzip -o "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "gz" ]; then
+                              chmod +x "$_pkg_filename"
+                              gzip -d -f "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        fi
+                  fi
+            done
+            cd "$_old_pwd"
       fi
 else
       echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
