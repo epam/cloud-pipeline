@@ -670,6 +670,10 @@ public class SystemPreferences {
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
 
+    public static final ObjectPreference<List<DockerMount>> LAUNCH_COMMON_MOUNTS = new ObjectPreference<>(
+            "launch.common.mounts", null, new TypeReference<List<DockerMount>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
 
@@ -713,6 +717,8 @@ public class SystemPreferences {
             "pods", LAUNCH_GROUP, pass);
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+    public static final LongPreference KUBE_POD_GRACE_PERIOD_SECONDS = new LongPreference(
+            "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
             LAUNCH_GROUP, pass, true);
 

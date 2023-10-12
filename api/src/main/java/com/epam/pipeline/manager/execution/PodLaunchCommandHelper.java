@@ -25,16 +25,17 @@ public final class PodLaunchCommandHelper {
 
     private PodLaunchCommandHelper() {}
 
-    static String pickLaunchCommandTemplate(final List<OSSpecificLaunchCommandTemplate> commandsByImage,
-                                            final ToolOSVersion osVersion) {
+    static OSSpecificLaunchCommandTemplate pickLaunchCommandTemplate(
+            final List<OSSpecificLaunchCommandTemplate> commandsByImage,
+            final ToolOSVersion osVersion) {
         final Pair<OSSpecificLaunchCommandTemplate, List<OSSpecificLaunchCommandTemplate>>
                 commandsByImageWithDefault =
                 filtered(
                     ListUtils.emptyIfNull(commandsByImage),
                     (e) -> !e.getOs().equals(STAR_SIGN) && !e.getOs().equals(ALL_KEY_WORK)
                 );
-        String effectiveLaunchCommand = Optional.ofNullable(commandsByImageWithDefault.getKey())
-                .map(OSSpecificLaunchCommandTemplate::getCommand).orElse(null);
+        OSSpecificLaunchCommandTemplate effectiveLaunchCommand =
+                Optional.ofNullable(commandsByImageWithDefault.getKey()).orElse(null);
         if (osVersion != null) {
             final Optional<OSSpecificLaunchCommandTemplate> matchedCommandOp =
                     commandsByImageWithDefault.getValue().stream()
@@ -43,7 +44,7 @@ public final class PodLaunchCommandHelper {
             if (matchedCommandOp.isPresent()) {
                 LOGGER.debug("Matched launch command by image: {} will be used.",
                         matchedCommandOp.get().getOs());
-                effectiveLaunchCommand = matchedCommandOp.get().getCommand();
+                effectiveLaunchCommand = matchedCommandOp.get();
             } else {
                 LOGGER.debug(
                         "No matching launch command was found for image {}. " +
