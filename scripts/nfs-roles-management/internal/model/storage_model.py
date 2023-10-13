@@ -59,6 +59,10 @@ class StorageModel(object):
             sid_principal = sid_json.get('principal')
             if not sid_name or not sid_principal or not sid_mask:
                 continue
+            if
+            # Owner shall be already added and we shall not override permissions
+            if sid_name.strip().lower() == entity_owner.strip().lower():
+                continue
             user = UserModel()
             user.username = sid_name
             instance.users[user] = Mask.from_full(sid_mask)
