@@ -38,8 +38,8 @@ public final class PodLaunchCommandHelper {
                 commandsByImageWithDefault =
                 filtered(
                     ListUtils.emptyIfNull(commandsByImage),
-                    (e) -> !e.getOs().equals(STAR_SIGN) && !e.getOs().equals(ALL_KEY_WORK)
-                );
+                    (e) -> StringUtils.isEmpty(e.getOs()) || !e.getOs().equals(STAR_SIGN) &&
+                            !e.getOs().equals(ALL_KEY_WORK));
 
         final OSSpecificLaunchCommandTemplate dockerMatch =
                 matchByDocker(commandsByImageWithDefault.getValue(), dockerImage);
