@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.dao.tool.ToolDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
@@ -25,6 +26,7 @@ import com.epam.pipeline.manager.contextual.handler.ArrayContextualPreferenceRed
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceReducer;
 import com.epam.pipeline.manager.contextual.handler.DefaultContextualPreferenceReducer;
+import com.epam.pipeline.manager.contextual.handler.RegionContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.RoleContextualPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.SystemPreferenceHandler;
 import com.epam.pipeline.manager.contextual.handler.ToolContextualPreferenceHandler;
@@ -63,6 +65,14 @@ public class ContextualPreferenceConfiguration {
             final ContextualPreferenceDao contextualPreferenceDao,
             final SystemPreferenceHandler systemPreferenceHandler) {
         return new ToolContextualPreferenceHandler(toolDao, contextualPreferenceDao, systemPreferenceHandler);
+    }
+
+    @Bean
+    public RegionContextualPreferenceHandler regionContextualPreferenceHandler(
+            final CloudRegionDao cloudRegionDao,
+            final ContextualPreferenceDao contextualPreferenceDao,
+            final SystemPreferenceHandler systemPreferenceHandler) {
+        return new RegionContextualPreferenceHandler(cloudRegionDao, contextualPreferenceDao, systemPreferenceHandler);
     }
 
     @Bean

@@ -178,7 +178,7 @@ public class InstanceOfferManager {
         final boolean isSpot = isSpotRequest(spot);
         final Long actualRegionId = defaultRegionIfNull(regionId);
         Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, isSpot) ||
-                        isToolInstanceAllowed(instanceType, null, actualRegionId, isSpot),
+                        isToolInstanceAllowed(instanceType, actualRegionId, isSpot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double computePricePerHour = getPricePerHourForInstance(instanceType, isSpot, actualRegionId);
@@ -275,20 +275,52 @@ public class InstanceOfferManager {
     }
 
     /**
+     * Checks if the given instance type is allowed for the authorized user in the specified or default region.
+     * Also checks if the instance type is one of the offered instance types.
+     *
+     * @param instanceType To be checked.
+     * @param resources List of preference resources: tool, region, etc.
+     * @param regionId If specified then instance types for the specified region will be used.
+     */
+    public boolean isInstanceAllowed(final String instanceType,
+                                     final List<ContextualPreferenceExternalResource> resources,
+                                     final Long regionId,
+                                     final boolean spot) {
+        return isInstanceTypeAllowed(instanceType, resources, defaultRegionIfNull(regionId),
+                INSTANCE_TYPES_PREFERENCES, spot);
+    }
+
+    /**
      * Checks if the given tool instance type is allowed for the authorized user and the requested tool
      * in the specified or default region.
      *
      * Also checks if the instance type is one of the offered instance types.
      *
      * @param instanceType To be checked.
-     * @param toolResource Optional tool resource.
+     * @param resources List of preference resources: tool, region, etc.
      * @param regionId If specified then instance types for the specified region will be used.
      */
     public boolean isToolInstanceAllowed(final String instanceType,
-                                         final ContextualPreferenceExternalResource toolResource,
+                                         final List<ContextualPreferenceExternalResource> resources,
                                          final Long regionId,
                                          final boolean spot) {
-        return isInstanceTypeAllowed(instanceType, toolResource, defaultRegionIfNull(regionId),
+        return isInstanceTypeAllowed(instanceType, resources, defaultRegionIfNull(regionId),
+                TOOL_INSTANCE_TYPES_PREFERENCES, spot);
+    }
+
+    /**
+     * Checks if the given tool instance type is allowed for the authorized user and the requested tool
+     * in the specified or default region.
+     *
+     * Also checks if the instance type is one of the offered instance types.
+     *
+     * @param instanceType To be checked.
+     * @param regionId If specified then instance types for the specified region will be used.
+     */
+    public boolean isToolInstanceAllowed(final String instanceType,
+                                         final Long regionId,
+                                         final boolean spot) {
+        return isInstanceTypeAllowed(instanceType, null, defaultRegionIfNull(regionId),
                 TOOL_INSTANCE_TYPES_PREFERENCES, spot);
     }
 
@@ -303,24 +335,25 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
-                || isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
+        final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(toolResource);
+        return isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
+                || isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType,
-                                          final ContextualPreferenceExternalResource resource,
+                                          final List<ContextualPreferenceExternalResource> resources,
                                           final Long regionId,
                                           final List<String> instanceTypesPreferences,
                                           final boolean spot) {
         return !StringUtils.isEmpty(instanceType)
-                && isInstanceTypeMatchesAllowedPatterns(instanceType, resource, instanceTypesPreferences)
+                && isInstanceTypeMatchesAllowedPatterns(instanceType, resources, instanceTypesPreferences)
                 && isInstanceTypeOffered(instanceType, regionId, spot);
     }
 
     private boolean isInstanceTypeMatchesAllowedPatterns(final String instanceType,
-                                                         final ContextualPreferenceExternalResource resource,
+                                                         final List<ContextualPreferenceExternalResource> resources,
                                                          final List<String> instanceTypesPreferences) {
-        return getContextualPreferenceValueAsList(resource, instanceTypesPreferences).stream()
+        return getContextualPreferenceValueAsList(resources, instanceTypesPreferences).stream()
                 .anyMatch(pattern -> matcher.match(pattern, instanceType));
     }
 
@@ -328,22 +361,21 @@ public class InstanceOfferManager {
      * Checks if the given price type is allowed for the authorized user and tool.
      *
      * @param priceType To be checked.
-     * @param toolResource Optional tool resource.
+     * @param resources List of resources.
      * @param isMaster is checking node a master in cluster run
      */
     public boolean isPriceTypeAllowed(final String priceType,
-                                      final ContextualPreferenceExternalResource toolResource,
+                                      final List<ContextualPreferenceExternalResource> resources,
                                       final boolean isMaster) {
         final List<String> priceTypesPreferences = isMaster
                                      ? MASTER_PRICE_TYPES_PREFERENCES
                                      : PRICE_TYPES_PREFERENCES;
-        return getContextualPreferenceValueAsList(toolResource, priceTypesPreferences).stream()
-            .anyMatch(priceType::equals);
+        return getContextualPreferenceValueAsList(resources, priceTypesPreferences).stream()
+                .anyMatch(priceType::equals);
     }
 
-    public boolean isPriceTypeAllowed(final String priceType,
-                                      final ContextualPreferenceExternalResource toolResource) {
-        return isPriceTypeAllowed(priceType, toolResource, false);
+    public boolean isPriceTypeAllowed(final String priceType) {
+        return isPriceTypeAllowed(priceType, null, false);
     }
 
     public void refreshPriceList() {
@@ -565,12 +597,15 @@ public class InstanceOfferManager {
         final List<String> preferenceNames = Arrays.stream(preferences)
                 .map(AbstractSystemPreference::getKey)
                 .collect(toList());
-        return getContextualPreferenceValueAsList(resource, preferenceNames);
+        return getContextualPreferenceValueAsList(Optional.ofNullable(resource)
+                .map(Collections::singletonList)
+                .orElse(null), preferenceNames);
     }
 
-    private List<String> getContextualPreferenceValueAsList(final ContextualPreferenceExternalResource resource,
+    private List<String> getContextualPreferenceValueAsList(final List<ContextualPreferenceExternalResource> resources,
                                                             final List<String> preferences) {
-        return Arrays.asList(contextualPreferenceManager.search(preferences, resource).getValue().split(DELIMITER));
+        return Arrays.asList(contextualPreferenceManager
+                .searchList(preferences, resources).getValue().split(DELIMITER));
     }
 
     private boolean isInstanceTypeOffered(final String instanceType, final Long regionId, final boolean spot) {
