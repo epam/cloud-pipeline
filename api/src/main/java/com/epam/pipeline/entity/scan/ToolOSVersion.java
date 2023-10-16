@@ -19,6 +19,7 @@ package com.epam.pipeline.entity.scan;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Arrays;
 
@@ -30,6 +31,9 @@ public class ToolOSVersion {
     private final String version;
 
     public boolean isMatched(final String patternsToMatch) {
+        if (StringUtils.isBlank(patternsToMatch)) {
+            return false;
+        }
         return Arrays.stream(patternsToMatch.split(",")).anyMatch(os -> {
             String[] distroVersion = os.split(":");
             // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)

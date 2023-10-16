@@ -14,6 +14,7 @@ public class PodLaunchCommandHelperTest {
     public static final String COMMAND_FOR_ALL_IMAGES = "command_for_all_images";
     public static final String COMMAND_FOR_CENTOS_7_IMAGE = "command_for_centos_7_image";
     public static final String COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES = "command_for_all_other_centos_images";
+    public static final String COMMAND_FOR_DOCKER = "docker";
 
     public static final String VALUE = "value";
     public static final String EVALUATED = "evaluated";
@@ -28,6 +29,7 @@ public class PodLaunchCommandHelperTest {
     public static final String UBUNTU_OS = "ubuntu";
 
     static final String CENTOS_SHORT_IMAGE_WITHOUT_TAG = "library/centos";
+    static final String ROCKY_SHORT_IMAGE_WITHOUT_TAG = "library/rocky";
     static final String CENTOS_SHORT_IMAGE_WITH_TAG = "library/centos:latest";
     static final String CENTOS_FULL_IMAGE_WITHOUT_TAG = "registry:443/library/centos";
     static final String CENTOS_FULL_IMAGE_WITH_TAG = "registry:443/library/centos:latest";
@@ -37,7 +39,9 @@ public class PodLaunchCommandHelperTest {
         OSSpecificLaunchCommandTemplate.builder().os("*").command(COMMAND_FOR_ALL_IMAGES).build(),
         OSSpecificLaunchCommandTemplate.builder().os("centos:7").command(COMMAND_FOR_CENTOS_7_IMAGE).build(),
         OSSpecificLaunchCommandTemplate.builder().os(CENTOS_OS)
-                .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build()
+                .command(COMMAND_FOR_ALL_OTHER_CENTOS_IMAGES).build(),
+        OSSpecificLaunchCommandTemplate.builder().command(COMMAND_FOR_DOCKER)
+                .docker(ROCKY_SHORT_IMAGE_WITHOUT_TAG).build()
     );
 
     private static final List<OSSpecificLaunchCommandTemplate> COMMAND_TEMPLATES_WRONG_ORDER = Arrays.asList(
@@ -63,6 +67,15 @@ public class PodLaunchCommandHelperTest {
                 ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
                 CENTOS_FULL_IMAGE_WITH_TAG).getCommand();
         Assert.assertEquals(COMMAND_FOR_CENTOS_7_IMAGE, centos7LaunchCommand);
+    }
+
+    @Test
+    public void shouldMatchTemplateWithDocker() {
+        final String centos7LaunchCommand = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                COMMAND_TEMPLATES,
+                ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build(),
+                ROCKY_SHORT_IMAGE_WITHOUT_TAG).getCommand();
+        Assert.assertEquals(COMMAND_FOR_DOCKER, centos7LaunchCommand);
     }
 
     @Test
