@@ -181,8 +181,7 @@ public class PipelineLauncher {
                         .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
                 commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                         preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
-                        toolOSVersion
-                );
+                        toolOSVersion, configuration.getDockerImage());
                 final String effectiveLaunchCommand = commandTemplate.getCommand();
                 Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
                 rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
