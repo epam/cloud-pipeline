@@ -56,13 +56,13 @@ public class NodePoolValidator {
 
         Assert.notNull(vo.getPriceType(),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_PRICE_TYPE));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(vo.getPriceType().getLiteral(), null),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(vo.getPriceType().getLiteral()),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_PRICE_TYPE_NOT_ALLOWED,
                         vo.getPriceType()));
 
         Assert.isTrue(StringUtils.isNotBlank(vo.getInstanceType()),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_MISSING_INSTANCE_TYPE));
-        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), null, vo.getRegionId(),
+        Assert.isTrue(instanceOfferManager.isToolInstanceAllowed(vo.getInstanceType(), vo.getRegionId(),
                 PriceType.SPOT.equals(vo.getPriceType())),
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_POOL_INSTANCE_TYPE_NOT_ALLOWED,
                         vo.getInstanceType()));

@@ -508,10 +508,13 @@ public class PipelineRunManager {
                                                        final PriceType priceType,
                                                        final Long regionId,
                                                        final boolean isMasterNode) {
-        Assert.isTrue(StringUtils.isBlank(instanceType)
-                        || instanceOfferManager.isInstanceAllowed(instanceType, regionId, priceType == PriceType.SPOT),
+        final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(
+                getRegionContextualPreference(regionId));
+
+        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
+                        .isInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), null, isMasterNode),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
@@ -521,13 +524,16 @@ public class PipelineRunManager {
                                                    final String dockerImage,
                                                    final boolean isMasterNode) {
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
+
         final ContextualPreferenceExternalResource toolResource =
                 new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, tool.getId().toString());
-        Assert.isTrue(StringUtils.isBlank(instanceType)
-                        || instanceOfferManager.isToolInstanceAllowed(instanceType, toolResource,
-                                                    regionId, priceType == PriceType.SPOT),
+        final ContextualPreferenceExternalResource regionResource = getRegionContextualPreference(regionId);
+        final List<ContextualPreferenceExternalResource> resources = Arrays.asList(toolResource, regionResource);
+
+        Assert.isTrue(StringUtils.isBlank(instanceType) || instanceOfferManager
+                        .isToolInstanceAllowed(instanceType, resources, regionId, priceType == PriceType.SPOT),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED, instanceType));
-        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), toolResource, isMasterNode),
+        Assert.isTrue(instanceOfferManager.isPriceTypeAllowed(priceType.getLiteral(), resources, isMasterNode),
                 messageHelper.getMessage(MessageConstants.ERROR_PRICE_TYPE_IS_NOT_ALLOWED, priceType));
     }
 
@@ -1687,5 +1693,12 @@ public class PipelineRunManager {
                 .map(RunInstance::getCloudRegionId)
                 .orElse(null);
 
+    }
+
+    private ContextualPreferenceExternalResource getRegionContextualPreference(final Long regionId) {
+        final String regionIdStr = Objects.isNull(regionId)
+                ? cloudRegionManager.loadDefaultRegion().getId().toString()
+                : regionId.toString();
+        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, regionIdStr);
     }
 }
