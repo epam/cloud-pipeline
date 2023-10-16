@@ -172,8 +172,7 @@ public class PipelineLauncher {
                     .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
             commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
                     preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
-                    toolOSVersion
-            );
+                    toolOSVersion, configuration.getDockerImage());
             final String effectiveLaunchCommand = commandTemplate.getCommand();
             Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
             rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
@@ -185,7 +184,6 @@ public class PipelineLauncher {
                         put(LinuxLaunchScriptParams.GIT_REVISION_NAME_PARAM.getValue(), run.getRevisionName());
                         put(LinuxLaunchScriptParams.PIPELINE_COMMAND_PARAM.getValue(), pipelineCommand);
                     }});
-
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
