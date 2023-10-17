@@ -7,6 +7,7 @@
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
 - [User management enhancements](#user-management-enhancements)
+    - [Allowed instance count](#allowed-instance-count)
     - [Export custom user's attributes](#export-custom-users-attributes)
     - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
     - [Batch users import](#batch-users-import)
@@ -15,8 +16,10 @@
     - [GUI impersonation](#gui-impersonation)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
 - [Sensitive storages](#sensitive-storages)
+- [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
+- [FS quotas](#fs-quotas)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
@@ -38,6 +41,8 @@
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
 - [Cluster run usage](#cluster-run-usage)
+- [Cluster run estimation price](#cluster-run-estimation-price)
+- [Terminal view](#terminal-view)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -435,6 +440,34 @@ For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Clust
 
 ## User management enhancements
 
+### Allowed instance count
+
+Sometimes users' scripts may spawn hundreds of machines without a real need.  
+This could lead to different bugs on the Platform.
+
+To prevent such situation, a new setting - **Allowed instance max count** - was added to the user's options. It allows to restrict the number of instances a user can run at the same time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_1.png)
+
+Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch only 5 jobs at a maximum. This includes worker nodes of the clusters.  
+
+If the user tries to launch a job, but it exceeds a current limit (e.g. limit is 5 and user starts a new instance which is going to be a 6th job), GUI will warn the user before submitting a job:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_2.png)  
+And if the user confirms a run operation - it will be rejected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_3.png)  
+
+Even if the user will try to start a new job via `pipe` CLI - it will be rejected as well, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_4.png)
+
+Such restrictions could be set not only for a user, but on another levels too (in descending order of priority):  
+
+- **User-level** - i.e. specified for a user. This overrides any other limit for a particular user. See details [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#allowed-instance-count).
+- **User group level** - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. This level is configured via the **Allowed instance max count** setting for a group/role. See details [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#allowed-instance-count).
+- globally via the system preference **`launch.max.runs.user.global`** - it can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum.
+
+Additionally, a new command was added to `pipe` CLI that allows to show the count of instances running by the user at the moment, and also all possible restrictions to the allowed count of instances to launch - `pipe users instances`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_5.png)  
+See details [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#instances-usage).
+
 ### Export custom user's attributes
 
 Previously, user's metadata attributes couldn't be exported in an automatic way.
@@ -638,6 +671,87 @@ Files from the sensitive storages can't be viewed **_outside_** the sensitive ru
 
 For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
 
+## Versioned storages
+
+In some cases, users want to have a full-fledged system of the revision control of their stored data - to view revisions, history of changes, diffs between revisions.  
+So far, for separate storages types (e.g. `AWS` s3 buckets), there is the ability to enable the versioning option. But it is not enough. Such versioning allows to manage the versions of the certain file, not the revisions of the full storage, which revision can contain changes of several files or folders.  
+For the needs of full version control of the storing data, there was implemented a special storage type - **Versioned storage**.
+
+These storages are GitLab repositories under the hood, all changes performed in their data are versioned. Users can view the history of changes, diffs, etc.  
+
+Versioned storages are created via the special menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_01.png)
+
+The view of the versioned storage is similar to regular data storage with some differences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_02.png)
+
+For each file/folder in the storage, additional info is displayed:
+
+- _Revision_ - latest revision (SHA-1 hash of the latest commit) touched that file/folder
+- _Date changed_ - date and time of the latest commit touched that file/folder
+- _Author_ - user name who performed the latest commit touched that file/folder
+- _Message_ - message of the latest commit touched that file/folder
+
+Moreover, there are extra controls for this storage type:
+
+- **RUN** button - allows to run the tool with cloning of the opened versioned storage into the instance
+- **Generate report** button - allows to configure and then download the report of the storage usage (commit history, diffs, etc.) as the Microsoft Word document (`docx` format)
+- **Show history** button - allows to open the panel with commit history info of the current versioned storage or selected folder
+
+Each change in a such storage - is a commit by the fact, therefore each change has its related comment message - explicit or automatic created:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_04.png)
+
+One of the important advantages of versioned storages in condition with regular object storages - ability to view commit history and all changes that were performed with the data in details.  
+Users can view the commit history of the file in the versioned storage - i.e. history of all commits that touched this file, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_06.png)
+
+Using the commit history of the file, users can:
+
+- revert the content of the file to the selected commit
+- view/download revert version of the file corresponding to the specific commit
+- view diffs between the content of the specific file in the selected commit and in the previous commit, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_07.png)
+
+Besides that, users can view the commit history of the folder or the whole versioned storage - i.e. history of all changes touched files inside that folder or its subfolders, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_08.png)  
+Using the commit history of the folder, users can view diffs between the content of the specific folder in the selected commit and in the previous commit.
+
+Versioned storages can be also mounted during the runs, data can be used for the computations and results can be comitted back to such storages - with all the benefits of a version control system.
+
+For that, new management controls were added to the menu of the active runs:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_09.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_10.png)
+
+Via this controls, users can:
+
+- clone the versioned storage(s) to the existing running instance
+- check differences between cloned and current changed versions of the versioned storage
+- save (commit) changes performed in the cloned version of the storage during the run
+- checkout revision of the cloned storage in the run
+- resolve conflicts appeared during the save or checkout operation
+
+The main scenario of using versioned storage during the run looks like:
+
+- user clones selected versioned storage to the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_12.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_13.png)
+- cloned versioned storages are available inside the run by the path `/versioned-data/<storage_name>/`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_14.png)
+- user works with the data, performed changes can be viewed at any moment, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_16.png)
+- user saves performed changes (i.e. creates a new commit):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_18.png)
+- saved changes become available in the origin versioned storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_19.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_20.png)
+
+For more details about versioned storages and operations with them see [here](../../manual/08_Manage_Data_Storage/8.13._Versioned_storages.md#813-versioned-storages).
+
 ## Updates of "Limit mounts" for object storages
 
 ### Displaying of the `CP_CAP_LIMIT_MOUNTS` in a user-friendly manner
@@ -713,6 +827,67 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 **_Note_**: pools management is available only for admins. Usage of pool nodes is available for any user.
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
+
+## FS quotas
+
+In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
+Such amount of extra files may lead to unnecessary storage costs.  
+To prevent extra spending in this case, in the current version a new ability was implemented - FS quotas.
+
+There is a feature that allows admins to configure quota(s) to the FS storage volume that user can occupy.
+On exceeding such quota(s), different actions can be applied - e.g., just user notifying or fully read-only mode for the storage.
+
+This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.
+
+To configure notifications/quota settings for the storage, admin shall:
+
+- click the **Configure notifications** hyperlink in the Attributes panel of the storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_01.png)
+- in the appeared pop-up, specify the username(s) or a groupname(s) in the **Recipients** input to choose who will get the FS quota notifications via emails and push notifications, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_02.png)
+- then click the **Add notification** to configure rules/thresholds:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_03.png)
+- Put a threshold in `Gb` or `%` of the total volume and choose which action shall be performed when that threshold is reached. The following actions can be taken by the platform:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_04.png)  
+    - _Send email_ - just notify the recipients that a quota has been reached (notification will be resent each hour)
+    - _Disable mount_ - used to let the users cleanup the data:  
+        - GUI will still allow to perform the modification of this storage (`read-write` mode )
+        - In existing nodes (launched runs), FS storage mount will be switched to a `read-only` mode (if it was mounted previously)
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+    - _Make read-only_ - used to stop any data activities from the users, only admins can cleanup the data per a request:  
+        - GUI will show this FS storage in a `read-only` mode
+        - Existing nodes (launched runs) will turn this mounted FS storage in a `read-only` mode as well
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+- The notification/quota rules can be combined in any form. E.g., the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_05.png)
+
+For example, if admin will configure notifications/quotas for the storage as described above:
+
+- when user(s) will create/upload some files in the storage and summary FS size will exceed 5 Gb threshold - only notifications will be sent to recipients
+- when user(s) will create/upload some more files in the storage and summary FS size will exceed 10 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount becomes `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_06.png)
+    - in GUI:  
+        - permissions will not be changed. Write operations can be performed, according to the permissions
+        - "**Warning**" icon will be displayed in the storage page. It will show `MOUNT DISABLED` state:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_07.png)
+        - Storage size will be more than 10 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_08.png)
+- when user(s) will create/upload some more files in the storage (e.g. via GUI) and summary FS size will exceed 20 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount will remain `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`
+    - in GUI:  
+        - storage will become `read-only`. User will not be able to perform any modification to the filesystem
+        - "Warning" icon will be still displayed. It will show `READ ONLY` state  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_09.png)
+        - Storage size will be more than 20 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_10.png)
+    
+Please note, these restrictions will be applied to "general" users only.  
+Admins will not be affected by the restrictions. Even if the storage is in `read-only` state - they can perform _READ_ and _WRITE_ operations.
+
+For more details about FS quotas, their settings and options see [here](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md#fs-quotas).
 
 ## Export cluster utilization in Excel format
 
@@ -1330,6 +1505,47 @@ The chart pop-up will be opened, e.g.:
 The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
 
 For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
+
+## Cluster run estimation price
+
+Previously, **Cloud Pipeline** allowed to view a price estimation for the single instance jobs.  
+But the clusters did not provide such information (summary). Users could see a price only for a master node.
+
+Now, **Cloud Pipeline** offers a cost estimation, when any compute instances are running:
+
+- **Standalone instance** - reports it's own cost:
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_1.png)
+    - Run's list:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_2.png)
+- **Static cluster** - reports the full cluster cost (summary for a master node and all workers), since it is started:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_3.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_4.png)
+- **Autoscaled cluster** - reports the costs, based on the workers lifetime (summary for a master node and all workers). As the workers may be created and terminated all the time - there costs are computed only for the _RUNNING_ state:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_5.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_6.png)
+
+## Terminal view
+
+From the current version, users have the ability to configure the view of the SSH terminal session:
+
+- _Dark_ (default)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_1.png)
+- _Light_  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_2.png)
+
+Required color schema can be configured in two ways:
+
+- **Persistent** - schema is being stored in the user profile and used any time SSH session is opened:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_3.png)
+- **Temporary** - schema is being used during a current SSH session only - toggling _Dark_ <-> _Light_ can be performed via the special control in the terminal frame:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_4.png)
+
+For details see [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#terminal-view).
 
 ## AWS: seamless authentication
 
