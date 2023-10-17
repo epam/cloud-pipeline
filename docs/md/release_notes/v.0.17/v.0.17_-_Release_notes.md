@@ -42,6 +42,7 @@
 - [System Jobs](#system-jobs)
 - [Cluster run usage](#cluster-run-usage)
 - [Cluster run estimation price](#cluster-run-estimation-price)
+- [Terminal view](#terminal-view)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -1527,6 +1528,24 @@ Now, **Cloud Pipeline** offers a cost estimation, when any compute instances are
         ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_5.png)
     - Run's list - master node's cost is reported in the brackets as well:  
         ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_6.png)
+
+## Terminal view
+
+From the current version, users have the ability to configure the view of the SSH terminal session:
+
+- _Dark_ (default)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_1.png)
+- _Light_  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_2.png)
+
+Required color schema can be configured in two ways:
+
+- **Persistent** - schema is being stored in the user profile and used any time SSH session is opened:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_3.png)
+- **Temporary** - schema is being used during a current SSH session only - toggling _Dark_ <-> _Light_ can be performed via the special control in the terminal frame:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_4.png)
+
+For details see [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#terminal-view).
 
 ## AWS: seamless authentication
 
