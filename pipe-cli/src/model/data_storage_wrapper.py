@@ -104,6 +104,8 @@ class DataStorageWrapper(object):
         (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
         (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
+        (WrapperType.STREAM, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
