@@ -29,6 +29,7 @@ public class InstanceOfferRequestVO {
     private String operatingSystem;
     private String productFamily;
     private String volumeType;
+    private String volumeApiName;
     private Long regionId;
     private String cloudProvider;
 

@@ -42,6 +42,7 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 RUNNING = 16
 PENDING = 0
 
+EBS_TYPE_PARAM = "cluster.aws.ebs.type"
 NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
@@ -285,10 +286,14 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
         if "Ebs" not in block_device_obj:
             raise RuntimeError("No Ebs definition found for device {} in image {}".format(block_device_name, ins_img))
 
+        ebs_type_param = get_preference(EBS_TYPE_PARAM)
         device_spec = {
             "DeviceName": block_device_name,
-            "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
+            "Ebs": {
+                "VolumeSize": block_device_obj["Ebs"]["VolumeSize"],
+                "VolumeType": ebs_type_param}
         }
+        pipe_log('- The requested EBS volume type for {} device is {}'.format(block_device_name, ebs_type_param))
         if kms_encyr_key_id:
             device_spec["Ebs"]["Encrypted"] = True
             device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
@@ -300,15 +305,17 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
         return ROOT_DEVICE_DEFAULT
 
 def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
+    ebs_type_param = get_preference(EBS_TYPE_PARAM)
     block_device_spec = {
         "DeviceName": name,
         "Ebs": {
             "VolumeSize": ins_hdd,
-            "VolumeType": "gp2",
+            "VolumeType": ebs_type_param,
             "DeleteOnTermination": True,
             "Encrypted": True
         }
     }
+    pipe_log('- The requested EBS volume type for {} device is {}'.format(name, ebs_type_param))
     if kms_encyr_key_id:
         block_device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
     return block_device_spec
