@@ -40,6 +40,11 @@ import shutil
 from bs4 import BeautifulSoup, SoupStrainer
 import posixpath
 
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
+
 FILE = 'File'
 FOLDER = 'Folder'
 
@@ -66,6 +71,14 @@ class LocationWrapper(object):
         pass
 
     @abstractmethod
+    def get_input_stream(self, path):
+        pass
+
+    @abstractmethod
+    def get_output_stream(self, path):
+        pass
+
+    @abstractmethod
     def exists(self):
         pass
 
@@ -88,10 +101,10 @@ class DataStorageWrapper(object):
         (WrapperType.S3, WrapperType.S3): S3BucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.S3, WrapperType.LOCAL): S3BucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.S3): S3BucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
+        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
         (WrapperType.STREAM, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
 
         (WrapperType.AZURE, WrapperType.AZURE): AzureBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.AZURE, WrapperType.LOCAL): AzureBucketOperations.get_download_manager,
@@ -102,10 +115,10 @@ class DataStorageWrapper(object):
         (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
         (WrapperType.STREAM, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -212,6 +225,12 @@ class DataStorageWrapper(object):
 
     def is_file(self):
         return False
+
+    def get_input_stream(self, path):
+        return urlopen(path)
+
+    def get_output_stream(self, path):
+        raise RuntimeError('Output stream is not supported for {}'.format(self.get_type()))
 
     def exists(self):
         return False
@@ -428,6 +447,22 @@ class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
 
     def is_file(self):
         return True
+
+    def get_input_stream(self, path):
+        try:
+            # python 3
+            return sys.stdin.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdin
+
+    def get_output_stream(self, path):
+        try:
+            # python 3
+            return sys.stdout.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdout
 
     def exists(self):
         return True

@@ -22,14 +22,8 @@ from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
-try:
-    from urllib.request import urlopen  # Python 3
-except ImportError:
-    from urllib2 import urlopen  # Python 2
-
 import collections
 import os
-import sys
 
 from boto3 import Session
 from botocore.config import Config as AwsConfig
@@ -47,20 +41,6 @@ from src.utilities.progress_bar import ProgressPercentage
 from src.utilities.storage.common import StorageOperations, AbstractListingManager, AbstractDeleteManager, \
     AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
-
-try:
-    # python 3
-    STDIN = sys.stdin.buffer
-except AttributeError:
-    # python 2
-    STDIN = sys.stdin
-
-try:
-    # python 3
-    STDOUT = sys.stdout.buffer
-except AttributeError:
-    # python 2
-    STDOUT = sys.stdout
 
 
 class UploadedObjectsContainer:
@@ -236,6 +216,7 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
+        destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
@@ -243,7 +224,7 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         else:
             progress_callback = None
         self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
-        self.bucket.download_fileobj(source_key, STDOUT,
+        self.bucket.download_fileobj(source_key, destination_wrapper.get_output_stream(destination_key),
                                      Callback=progress_callback,
                                      Config=transfer_config)
         if clean:
@@ -308,7 +289,7 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
-        return source_wrapper.path
+        return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
                  clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
@@ -327,54 +308,10 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
         else:
             progress_callback = None
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        self.bucket.upload_fileobj(STDIN, destination_key,
+        self.bucket.upload_fileobj(source_wrapper.get_input_stream(source_key), destination_key,
                                    Callback=progress_callback,
                                    Config=transfer_config,
                                    ExtraArgs=extra_args)
-        version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
-        return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
-                            tags=tags)
-
-
-class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManager):
-
-    def __init__(self, session, bucket, events, region_name=None):
-        super(TransferFromHttpOrFtpToS3Manager, self).__init__(session, events=events, bucket=bucket,
-                                                               region_name=region_name)
-
-    def get_destination_key(self, destination_wrapper, relative_path):
-        if destination_wrapper.path.endswith(os.path.sep):
-            return os.path.join(destination_wrapper.path, relative_path)
-        else:
-            return destination_wrapper.path
-
-    def get_destination_size(self, destination_wrapper, destination_key):
-        return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
-
-    def get_source_key(self, source_wrapper, source_path):
-        return source_path or source_wrapper.path
-
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
-        if clean:
-            raise AttributeError("Cannot perform 'mv' operation due to deletion remote files "
-                                 "is not supported for ftp/http sources.")
-        source_key = self.get_source_key(source_wrapper, path)
-        destination_key = self.get_destination_key(destination_wrapper, relative_path)
-
-        tags = StorageOperations.generate_tags(tags, source_key)
-        extra_args = {
-            'Tagging': self._convert_tags_to_url_string(tags),
-            'ACL': 'bucket-owner-full-control'
-        }
-        TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
-        file_stream = urlopen(source_key)
-        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
-        if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.upload_fileobj(file_stream, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                       ExtraArgs=extra_args)
-        else:
-            self.bucket.upload_fileobj(file_stream, destination_key, ExtraArgs=extra_args)
         version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
                             tags=tags)
@@ -1197,13 +1134,6 @@ class S3BucketOperations(object):
         session = cls.assumed_session(None, destination_id, command)
         destination_bucket = destination_wrapper.bucket.path
         return UploadStreamManager(session, destination_bucket, events, destination_wrapper.bucket.region)
-
-    @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, events, command):
-        destination_id = destination_wrapper.bucket.identifier
-        session = cls.assumed_session(None, destination_id, command)
-        destination_bucket = destination_wrapper.bucket.path
-        return TransferFromHttpOrFtpToS3Manager(session, destination_bucket, events, destination_wrapper.bucket.region)
 
     @classmethod
     def get_full_path(cls, path, param):
