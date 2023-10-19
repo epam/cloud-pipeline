@@ -218,7 +218,8 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize("hasRole('ADMIN') OR "
-            + "(#dataStorageVO.parentFolderId != null AND hasRole('STORAGE_MANAGER') AND "
+            + "(#dataStorageVO.parentFolderId != null AND " +
+            "(hasRole('STORAGE_MANAGER') OR hasRole('STORAGE_ADMIN')) AND "
             + "hasPermission(#dataStorageVO.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
     public SecuredEntityWithAction<AbstractDataStorage> create(final DataStorageVO dataStorageVO,
                                                                final boolean proceedOnCloud,

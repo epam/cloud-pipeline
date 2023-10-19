@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -65,6 +66,12 @@ public class MetadataPermissionManager {
         if (entityClass.equals(AclClass.PIPELINE_USER) && isSameUser(entityId)) {
             return true;
         }
+
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
+
         final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
         return permissionHelper.isAllowed(permission, securedEntity);
     }
@@ -117,6 +124,10 @@ public class MetadataPermissionManager {
         }
         final EntityVO entity = metadataVO.getEntity();
         final AclClass entityClass = entity.getEntityClass();
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {
             return isMetadataEditAllowedForUser(metadataVO);
         }

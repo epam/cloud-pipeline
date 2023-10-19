@@ -86,7 +86,7 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + "@storagePermissionManager.storageMgmtPermission(#storage.id, 'OWNER')";
 
     public static final String STORAGE_ID_MGMT_DELETE =
-            ADMIN_ONLY + OR + "(" + "hasRole('STORAGE_MANAGER')"
+            ADMIN_ONLY + OR + "hasRole('STORAGE_ADMIN')" + OR + "(" + "hasRole('STORAGE_MANAGER')"
                 + AND + "@storagePermissionManager.storageMgmtPermission(#id, 'OWNER')" + ")";
 
     public static final String STORAGE_ID_TAGS_WRITE =
