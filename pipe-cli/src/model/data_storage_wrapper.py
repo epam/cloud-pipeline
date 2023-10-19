@@ -90,6 +90,8 @@ class DataStorageWrapper(object):
         (WrapperType.LOCAL, WrapperType.S3): S3BucketOperations.get_upload_manager,
         (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
+        (WrapperType.STREAM, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
 
         (WrapperType.AZURE, WrapperType.AZURE): AzureBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.AZURE, WrapperType.LOCAL): AzureBucketOperations.get_download_manager,
