@@ -1185,6 +1185,29 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                       on_failures, verify_destination):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
+
+    Examples:
+
+    I. Examples of moving local data to a remote storage.
+
+    Upload a local file (file.txt) to a storage (s3://storage/file.txt):
+
+        pipe storage mv file.txt s3://storage/file.txt
+
+    Upload a local directory (dir) to a storage (s3://storage/dir):
+
+        pipe storage mv -r dir s3://storage/dir
+
+    II. Examples of moving remote storage data locally.
+
+    Download a storage file (s3://storage/file.txt) as a local file (file.txt):
+
+        pipe storage mv s3://storage/file.txt file.txt
+
+    Download a storage directory (/common/workdir/dir) as a local directory (dir):
+
+        pipe storage mv -r s3://storage/dir dir
+
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, threads, io_threads,
@@ -1260,6 +1283,37 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
                       on_failures, skip_existing, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
+
+    Examples:
+
+    I. Examples of copying local data to a remote storage.
+
+    Upload a local file (file.txt) to a storage (s3://storage/file.txt):
+
+        pipe storage cp file.txt s3://storage/file.txt
+
+    Upload a local directory (dir) to a storage (s3://storage/dir):
+
+        pipe storage cp -r dir s3://storage/dir
+
+    [Linux] Upload a stream from standard input (-) to a storage (s3://storage/file.txt):
+
+        cat file.txt | pipe storage cp - s3://storage/file.txt
+
+    II. Examples of copying remote storage data locally.
+
+    Download a storage file (s3://storage/file.txt) as a local file (file.txt):
+
+        pipe storage cp s3://storage/file.txt file.txt
+
+    Download a storage directory (/common/workdir/dir) as a local directory (dir):
+
+        pipe storage cp -r s3://storage/dir dir
+
+    [Linux] Download a storage file (s3://storage/file.txt) as a stream to standard output (-):
+
+        pipe storage cp s3://storage/file.txt - > file.txt
+
     """
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
@@ -2265,6 +2319,7 @@ def clean(force):
     CleanOperationsManager().clean(force=force)
 
 
-# Used to run a PyInstaller "freezed" version
-if getattr(sys, 'frozen', False):
+if __name__ == '__main__':
+    cli(sys.argv[1:])
+elif getattr(sys, 'frozen', False):
     cli(sys.argv[1:])
