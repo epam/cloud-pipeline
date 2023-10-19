@@ -20,6 +20,7 @@ class WrapperType(object):
     GS = 'GS'
     FTP = 'FTP'
     HTTP = 'HTTP'
+    STREAM = 'STREAM'
 
     __cloud_types = [S3, AZURE, GS]
     __dynamic_cloud_scheme = 'cp'
