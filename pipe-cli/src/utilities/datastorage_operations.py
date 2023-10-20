@@ -83,6 +83,9 @@ class DataStorageOperations(object):
         destination_type = destination_wrapper.get_type()
         logging.debug('Transferring files {} -> {}...'.format(source_type, destination_type))
 
+        if source_type in [WrapperType.STREAM] or destination_type in [WrapperType.STREAM]:
+            quiet = True
+
         if not source_wrapper.exists():
             click.echo("Source {} doesn't exist".format(source), err=True)
             sys.exit(1)
