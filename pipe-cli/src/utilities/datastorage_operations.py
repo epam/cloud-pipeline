@@ -90,23 +90,23 @@ class DataStorageOperations(object):
             click.echo("Source {} doesn't exist".format(source), err=True)
             sys.exit(1)
         if not recursive and not source_wrapper.is_file():
-            click.echo('--recursive (-r) is required to copy folders.', err=True)
+            click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
             sys.exit(1)
         if recursive and source_type in [WrapperType.STREAM]:
-            click.echo('--recursive (-r) is not supported for {} sources.'.format(source_type), err=True)
+            click.echo('Flag --recursive (-r) is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if recursive and destination_type in [WrapperType.STREAM]:
-            click.echo('--recursive (-r) is not supported for {} destinations.'.format(destination_type), err=True)
+            click.echo('Flag --recursive (-r) is not supported for {} destinations.'.format(destination_type), err=True)
             sys.exit(1)
         if clean and source_type in [WrapperType.STREAM, WrapperType.HTTP, WrapperType.FTP]:
             click.echo('Cannot perform \'mv\' operation due to deletion remote files '
                        'is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if file_list and source_type in [WrapperType.STREAM]:
-            click.echo('--file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
+            click.echo('Option --file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if file_list and source_wrapper.is_file():
-            click.echo('--file-list (-l) is allowed for folders copy only.', err=True)
+            click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
             sys.exit(1)
         if file_list and not os.path.exists(file_list):
             click.echo('Specified --file-list file does not exist.', err=True)
