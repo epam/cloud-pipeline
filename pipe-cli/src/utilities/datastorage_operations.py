@@ -90,16 +90,17 @@ class DataStorageOperations(object):
             click.echo('--recursive (-r) is required to copy folders.', err=True)
             sys.exit(1)
         if recursive and source_type in [WrapperType.STREAM]:
-            click.echo('--recursive (-r) is not allowed for {} sources.'.format(source_type), err=True)
+            click.echo('--recursive (-r) is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if recursive and destination_type in [WrapperType.STREAM]:
-            click.echo('--recursive (-r) is not allowed for {} destinations.'.format(destination_type), err=True)
+            click.echo('--recursive (-r) is not supported for {} destinations.'.format(destination_type), err=True)
             sys.exit(1)
         if clean and source_type in [WrapperType.STREAM, WrapperType.HTTP, WrapperType.FTP]:
-            click.echo('Moving is not allowed for {} sources.' .format(source_type), err=True)
+            click.echo('Cannot perform \'mv\' operation due to deletion remote files '
+                       'is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if file_list and source_type in [WrapperType.STREAM]:
-            click.echo('--file-list (-l) is not allowed for {} sources.'.format(source_type), err=True)
+            click.echo('--file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if file_list and source_wrapper.is_file():
             click.echo('--file-list (-l) is allowed for folders copy only.', err=True)
