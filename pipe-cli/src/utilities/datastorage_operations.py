@@ -74,22 +74,43 @@ class DataStorageOperations(object):
         if source_wrapper is None:
             click.echo('Could not resolve path {}'.format(source), err=True)
             sys.exit(1)
-        if not source_wrapper.exists():
-            click.echo("Source {} doesn't exist".format(source), err=True)
-            sys.exit(1)
         if destination_wrapper is None:
             click.echo('Could not resolve path {}'.format(destination), err=True)
+            sys.exit(1)
+
+        source_type = source_wrapper.get_type()
+        destination_type = destination_wrapper.get_type()
+        logging.debug('Transferring files {} -> {}...'.format(source_type, destination_type))
+
+        if source_type in [WrapperType.STREAM] or destination_type in [WrapperType.STREAM]:
+            quiet = True
+
+        if not source_wrapper.exists():
+            click.echo("Source {} doesn't exist".format(source), err=True)
             sys.exit(1)
         if not recursive and not source_wrapper.is_file():
             click.echo('Flag --recursive (-r) is required to copy folders.', err=True)
             sys.exit(1)
+        if recursive and source_type in [WrapperType.STREAM]:
+            click.echo('Flag --recursive (-r) is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if recursive and destination_type in [WrapperType.STREAM]:
+            click.echo('Flag --recursive (-r) is not supported for {} destinations.'.format(destination_type), err=True)
+            sys.exit(1)
+        if clean and source_type in [WrapperType.STREAM, WrapperType.HTTP, WrapperType.FTP]:
+            click.echo('Cannot perform \'mv\' operation due to deletion remote files '
+                       'is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if file_list and source_type in [WrapperType.STREAM]:
+            click.echo('Option --file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if file_list and source_wrapper.is_file():
+            click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
+            sys.exit(1)
+        if file_list and not os.path.exists(file_list):
+            click.echo('Specified --file-list file does not exist.', err=True)
+            sys.exit(1)
         if file_list:
-            if source_wrapper.is_file():
-                click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
-                sys.exit(1)
-            if not os.path.exists(file_list):
-                click.echo('Specified --file-list file does not exist.', err=True)
-                sys.exit(1)
             files_to_copy = cls.__get_file_to_copy(file_list, source_wrapper.path)
         if threads and not recursive:
             click.echo('-n (--threads) is allowed for folders only.', err=True)
@@ -124,9 +145,10 @@ class DataStorageOperations(object):
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
                                                            events=audit_ctx.container, command=command)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
-        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                  include, exclude, force, quiet, skip_existing, verify_destination,
-                                  on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+        if source_type not in [WrapperType.STREAM]:
+            items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing, verify_destination,
+                                      on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
                                              audit_ctx, clean, quiet, tags, io_threads, on_failures)
