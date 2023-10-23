@@ -124,6 +124,7 @@ public class StoragePermissionManager {
                                           final String permission) {
         return grantPermissionManager.storagePermission(storage, permission)
                 && (grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+                || grantPermissionManager.isStorageAdmin()
                 || !isRestrictedTagsAccessEnabled()
                 || !hasRestrictedTags(tags)
                 || permissionHelper.hasAnyRole(
@@ -155,7 +156,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin()) {
+        if (permissionHelper.isAdmin() || grantPermissionManager.isStorageAdmin()) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
@@ -178,7 +179,7 @@ public class StoragePermissionManager {
     }
 
     public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner()) || grantPermissionManager.isStorageAdmin()
                 || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
     }
 
