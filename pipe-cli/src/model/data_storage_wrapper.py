@@ -40,6 +40,11 @@ import shutil
 from bs4 import BeautifulSoup, SoupStrainer
 import posixpath
 
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
+
 FILE = 'File'
 FOLDER = 'Folder'
 
@@ -50,14 +55,56 @@ class AllowedSymlinkValues(object):
     FILTER = 'filter'
 
 
+class LocationWrapper(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
+    @abstractmethod
+    def get_path(self):
+        pass
+
+    @abstractmethod
+    def is_file(self):
+        pass
+
+    @abstractmethod
+    def get_input_stream(self, path):
+        pass
+
+    @abstractmethod
+    def get_output_stream(self, path):
+        pass
+
+    @abstractmethod
+    def exists(self):
+        pass
+
+    @abstractmethod
+    def is_empty(self, relative=None):
+        pass
+
+    @abstractmethod
+    def get_items(self, quiet=False):
+        pass
+
+    @abstractmethod
+    def delete_item(self, relative_path):
+        pass
+
+
 class DataStorageWrapper(object):
 
     _transfer_manager_suppliers = {
         (WrapperType.S3, WrapperType.S3): S3BucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.S3, WrapperType.LOCAL): S3BucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.S3): S3BucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
 
         (WrapperType.AZURE, WrapperType.AZURE): AzureBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.AZURE, WrapperType.LOCAL): AzureBucketOperations.get_download_manager,
@@ -68,8 +115,10 @@ class DataStorageWrapper(object):
         (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -82,16 +131,18 @@ class DataStorageWrapper(object):
 
     @classmethod
     def get_wrapper(cls, uri, symlinks=None):
+        if uri == '-':
+            return StandardStreamWrapper()
         parsed = urlparse(uri)
         if not parsed.scheme or not parsed.netloc:
             return LocalFileSystemWrapper(uri, symlinks)
-        if parsed.scheme.lower() == 'ftp' or parsed.scheme.lower() == 'ftps':
-            return HttpSourceWrapper(uri) if os.getenv("ftp_proxy") \
-                else FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
-        if parsed.scheme.lower() == 'http' or parsed.scheme.lower() == 'https':
+        if parsed.scheme.lower() in ['ftp', 'ftps'] and os.getenv('ftp_proxy'):
             return HttpSourceWrapper(uri)
-        else:
-            return cls.get_cloud_wrapper(uri)
+        if parsed.scheme.lower() in ['ftp', 'ftps']:
+            return FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
+        if parsed.scheme.lower() in ['http', 'https']:
+            return HttpSourceWrapper(uri)
+        return cls.get_cloud_wrapper(uri)
 
     @classmethod
     def get_cloud_wrapper(cls, uri, versioning=False):
@@ -169,8 +220,17 @@ class DataStorageWrapper(object):
     def get_type(self):
         return None
 
+    def get_path(self):
+        return self.path
+
     def is_file(self):
         return False
+
+    def get_input_stream(self, path):
+        return urlopen(path)
+
+    def get_output_stream(self, path):
+        raise RuntimeError('Output stream is not supported for {}'.format(self.get_type()))
 
     def exists(self):
         return False
@@ -179,7 +239,7 @@ class DataStorageWrapper(object):
         return False
 
     def is_local(self):
-        return self.get_type() == WrapperType.LOCAL
+        return self.get_type() in [WrapperType.LOCAL, WrapperType.STREAM]
 
     def fetch_items(self):
         self.items = self.get_items()
@@ -372,6 +432,49 @@ class GsBucketWrapper(CloudDataStorageWrapper):
 
     def _storage_client(self, read=True, write=False, versioning=False):
         return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
+
+
+class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
+
+    def __init__(self):
+        super(StandardStreamWrapper, self).__init__('-')
+
+    def get_type(self):
+        return WrapperType.STREAM
+
+    def get_path(self):
+        return self.path
+
+    def is_file(self):
+        return True
+
+    def get_input_stream(self, path):
+        try:
+            # python 3
+            return sys.stdin.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdin
+
+    def get_output_stream(self, path):
+        try:
+            # python 3
+            return sys.stdout.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdout
+
+    def exists(self):
+        return True
+
+    def is_empty(self, relative=None):
+        return True
+
+    def get_items(self, quiet=False):
+        return [(FILE, self.path, self.path, 0)]
+
+    def delete_item(self, relative_path):
+        pass
 
 
 class LocalFileSystemWrapper(DataStorageWrapper):
