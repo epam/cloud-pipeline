@@ -137,43 +137,6 @@ public class StoragePermissionManager {
         return storageMgmtPermission(storage, permission);
     }
 
-    private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
-        return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin()
-                || !isRestrictedMgmtAccessEnabled(storage));
-    }
-
-    private boolean isRestrictedMgmtAccessEnabled(final AbstractSecuredEntity storage) {
-        final ContextualPreferenceExternalResource resource = storageResource(storage);
-        return getPreferenceValueAsBoolean(resource);
-    }
-
-    private Boolean getPreferenceValueAsBoolean(final ContextualPreferenceExternalResource resource) {
-        final ContextualPreference preference = getPreference(resource,
-                SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED);
-        return Optional.ofNullable(preference)
-                .map(ContextualPreference::getValue)
-                .map(BooleanUtils::toBoolean)
-                .orElse(false);
-    }
-
-    private ContextualPreferenceExternalResource storageResource(final AbstractSecuredEntity storage) {
-        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.STORAGE, storage.getId().toString());
-    }
-
-    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
-                                               final AbstractSystemPreference.BooleanPreference... preferences) {
-        final List<String> preferenceNames = Arrays.stream(preferences)
-                .map(AbstractSystemPreference::getKey)
-                .collect(Collectors.toList());
-        return getPreference(resource, preferenceNames);
-    }
-
-    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
-                                               final List<String> preferences) {
-        return contextualPreferenceManager.search(preferences, resource);
-    }
-
     public boolean storageTagsPermission(final Long id, final DataStorageTagInsertBatchRequest request,
                                          final String permission) {
         return storageTagsPermission(id, toTags(request), permission);
@@ -215,33 +178,6 @@ public class StoragePermissionManager {
         return storageTagsPermission(storage, tags, permission);
     }
 
-    private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
-                                          final String permission) {
-        return grantPermissionManager.storagePermission(storage, permission)
-                && (grantPermissionManager.isAdmin()
-                || !isRestrictedTagsAccessEnabled()
-                || !hasRestrictedTags(tags)
-                || permissionHelper.hasAnyRole(
-                        DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
-    }
-
-    private boolean isRestrictedTagsAccessEnabled() {
-        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED)
-                .map(preferenceManager::getPreference)
-                .orElse(false);
-    }
-
-    private boolean hasRestrictedTags(final List<String> tags) {
-        return CollectionUtils.isNotEmpty(CommonUtils.subtract(ListUtils.emptyIfNull(tags),
-                getRestrictedTagsExcludeKeys()));
-    }
-
-    private List<String> getRestrictedTagsExcludeKeys() {
-        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS)
-                .map(preferenceManager::getPreference)
-                .orElseGet(Collections::emptyList);
-    }
-
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames) {
         filterStorage(storages, permissionNames, false);
@@ -250,7 +186,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin()) {
+        if (permissionHelper.isAdmin() || grantPermissionManager.isStorageAdmin()) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
@@ -273,7 +209,7 @@ public class StoragePermissionManager {
     }
 
     public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner())
+        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner()) || grantPermissionManager.isStorageAdmin()
                 || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
     }
 
@@ -297,5 +233,69 @@ public class StoragePermissionManager {
         return permissions.stream()
                 .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
                         permission.getSimpleMask()));
+    }
+
+    private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                || !isRestrictedMgmtAccessEnabled(storage));
+    }
+
+    private boolean isRestrictedMgmtAccessEnabled(final AbstractSecuredEntity storage) {
+        final ContextualPreferenceExternalResource resource = storageResource(storage);
+        return getPreferenceValueAsBoolean(resource);
+    }
+
+    private Boolean getPreferenceValueAsBoolean(final ContextualPreferenceExternalResource resource) {
+        final ContextualPreference preference = getPreference(resource,
+                SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED);
+        return Optional.ofNullable(preference)
+                .map(ContextualPreference::getValue)
+                .map(BooleanUtils::toBoolean)
+                .orElse(false);
+    }
+
+    private ContextualPreferenceExternalResource storageResource(final AbstractSecuredEntity storage) {
+        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.STORAGE, storage.getId().toString());
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final AbstractSystemPreference.BooleanPreference... preferences) {
+        final List<String> preferenceNames = Arrays.stream(preferences)
+                .map(AbstractSystemPreference::getKey)
+                .collect(Collectors.toList());
+        return getPreference(resource, preferenceNames);
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final List<String> preferences) {
+        return contextualPreferenceManager.search(preferences, resource);
+    }
+
+    private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
+                                          final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                || !isRestrictedTagsAccessEnabled()
+                || !hasRestrictedTags(tags)
+                || permissionHelper.hasAnyRole(
+                DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
+    }
+
+    private boolean isRestrictedTagsAccessEnabled() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED)
+                .map(preferenceManager::getPreference)
+                .orElse(false);
+    }
+
+    private boolean hasRestrictedTags(final List<String> tags) {
+        return CollectionUtils.isNotEmpty(CommonUtils.subtract(ListUtils.emptyIfNull(tags),
+                getRestrictedTagsExcludeKeys()));
+    }
+
+    private List<String> getRestrictedTagsExcludeKeys() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptyList);
     }
 }
