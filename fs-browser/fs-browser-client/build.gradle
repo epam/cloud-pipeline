@@ -6,8 +6,7 @@ plugins {
 node {
   version = '10.15.3'
   npmVersion = '6.4.1'
-  download = true
-
+//  download = true
 }
 
 task npmPrune(type: NpmTask) {
@@ -26,7 +25,7 @@ task build(type: NpmTask, dependsOn: npmInstall) {
   group = 'build'
   environment = ['CI': 'false']
   doFirst {
-    delete fileTree("$rootDir/fs-browser/fs-browser/static")
+    delete fileTree("$rootDir/fs-browser/fsbrowser/static")
   }
   args = ['run', 'build']
   doLast {
