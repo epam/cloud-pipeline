@@ -1298,6 +1298,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 
     [Linux] Upload a stream from standard input (-) to a storage (s3://storage/file.txt):
 
+        pipe storage cp - s3://storage/file.txt < file.txt
+
         cat file.txt | pipe storage cp - s3://storage/file.txt
 
     II. Examples of copying remote storage data locally.
@@ -1313,6 +1315,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
     [Linux] Download a storage file (s3://storage/file.txt) as a stream to standard output (-):
 
         pipe storage cp s3://storage/file.txt - > file.txt
+
+        pipe storage cp s3://storage/file.txt - | tee file.txt >/dev/null 2>&1
 
     """
     DataStorageOperations.cp(source, destination, recursive, force,
