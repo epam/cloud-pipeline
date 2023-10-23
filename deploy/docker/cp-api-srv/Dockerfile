@@ -79,7 +79,9 @@ RUN pip install -I  awscli==1.16.314 \
                     botocore==1.13.50
 
 # Azure - specific packages
-RUN pip install -I  azure-common==1.1.18 \
+# We install here portalocker==1.7.1 to solve the problem with not fixed dependency some where in azure dependencies tree
+RUN pip install -I  portalocker==1.7.1 \
+                    azure-common==1.1.18 \
                     azure==4.0.0 \
                     azure-mgmt-resource==2.0.0 \
                     azure-mgmt-compute==4.5.1 \
