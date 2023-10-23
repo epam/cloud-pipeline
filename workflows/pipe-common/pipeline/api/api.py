@@ -211,6 +211,7 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
+    SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
@@ -724,6 +725,20 @@ class PipelineAPI:
             return result[0]["data"]
         except Exception as e:
             raise RuntimeError("Failed to load metadata for the given entity. "
+                               "Error message: {}".format(str(e.message)))
+
+    def search_metadata(self, entity_key, entity_value, entity_class):
+        try:
+            suffix = self.SEARCH_METADATA.format(entity_key=entity_key,
+                                              entity_value=entity_value,
+                                              entity_class=entity_class)
+            result = self.execute_request(str(self.api_url) + suffix,
+                                          method="get")
+            if not result or len(result) == 0:
+                return []
+            return result
+        except Exception as e:
+            raise RuntimeError("Failed to search metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
 
     def load_metadata_efficiently(self, entity_id, entity_class):
