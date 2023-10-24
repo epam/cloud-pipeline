@@ -285,6 +285,7 @@ export default class DataStorage extends React.Component {
       const isAdmin = authenticatedUserInfo.value.admin;
       const isOwner = roleModel.isOwner(this.storage.info);
       return isAdmin ||
+        roleModel.isManager.storageAdmin(this) ||
         (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
@@ -309,15 +310,15 @@ export default class DataStorage extends React.Component {
     const readAllowed = roleModel.readAllowed(this.storage.info);
     const writeAllowed = roleModel.writeAllowed(this.storage.info);
     return {
-      read: (
+      read: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this) ||
         roleModel.isManager.archiveReader(this)
-      ) && readAllowed && isS3,
-      write: (
+      ) && readAllowed && isS3),
+      write: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this)
-      ) && writeAllowed && isS3
+      ) && writeAllowed && isS3)
     };
   }
 
@@ -403,10 +404,11 @@ export default class DataStorage extends React.Component {
       ? authenticatedUserInfo.value.admin
       : false;
     // Whilst in the restricted tag access mode, only admins and users (including owners) with roles
-    // STORAGE_MANAGER or STORAGE_TAG_MANAGER are allowed to edit file's tags.
+    // STORAGE_MANAGER STORAGE_ADMIN or STORAGE_TAG_MANAGER are allowed to edit file's tags.
     const restrictedAccessCheck = isAdmin ||
       roleModel.isManager.storage(this) ||
-      roleModel.isManager.storageTag(this);
+      roleModel.isManager.storageTag(this) ||
+      roleModel.isManager.storageAdmin(this);
     const storageFileTagsEditable = this.storageTagRestrictedAccess
       ? restrictedAccessCheck
       // If restricted tag access mode is off, all users with WRITE permissions are

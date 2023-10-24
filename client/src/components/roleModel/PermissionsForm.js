@@ -27,9 +27,10 @@ import {
   Modal,
   Popover,
   Row,
-  Table
+  Table,
+  Select
 } from 'antd';
-import {isObservableArray, observable} from 'mobx';
+import {isObservableArray, observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import GrantGet from '../../models/grant/GrantGet';
@@ -108,8 +109,6 @@ export default class PermissionsForm extends React.Component {
   };
 
   @observable
-  userFind;
-  @observable
   groupFind;
 
   static propTypes = {
@@ -148,6 +147,14 @@ export default class PermissionsForm extends React.Component {
     enabledMask: ALL_ALLOWED_MASK,
     subObjectsPermissionsMaskToCheck: 0,
     showOwner: true
+  }
+
+  @computed
+  get allUsers () {
+    if (this.props.usersInfo.loaded) {
+      return this.props.usersInfo.value || [];
+    }
+    return [];
   }
 
   lastFetchId = 0;
@@ -218,13 +225,7 @@ export default class PermissionsForm extends React.Component {
   };
 
   onUserFindInputChanged = (value) => {
-    this.selectedUser = value;
-    if (value && value.length) {
-      this.userFind = new UserFind(value);
-      this.userFind.fetch();
-    } else {
-      this.userFind = null;
-    }
+    this.setState({selectedUser: value});
   };
 
   onGroupFindInputChanged = (value) => {
@@ -249,23 +250,6 @@ export default class PermissionsForm extends React.Component {
         </Button>
       </span>
     );
-  };
-
-  findUserDataSource = () => {
-    if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      const {permissions = []} = this.props.grant && this.props.grant.loaded
-        ? (this.props.grant.value || {})
-        : {};
-      const existingUsers = new Set(
-        permissions
-          .filter(p => p.sid && p.sid.principal)
-          .map(p => p.sid.name)
-      );
-      return (this.userFind.value || [])
-        .filter(user => !existingUsers.has(user.userName))
-        .map(user => user);
-    }
-    return [];
   };
 
   splitRoleName = (name) => {
@@ -296,16 +280,19 @@ export default class PermissionsForm extends React.Component {
     return [...roles];
   };
 
-  selectedUser = null;
   selectedGroup = null;
 
   openFindUserDialog = () => {
-    this.selectedUser = null;
-    this.setState({findUserVisible: true});
+    this.setState({
+      findUserVisible: true
+    });
   };
 
   closeFindUserDialog = () => {
-    this.setState({findUserVisible: false});
+    this.setState({
+      selectedUser: null,
+      findUserVisible: false
+    });
   };
 
   getDefaultMaskForSubject = (subject, isPrincipal) => {
@@ -324,9 +311,9 @@ export default class PermissionsForm extends React.Component {
 
   onSelectUser = async () => {
     await this.grantPermission(
-      this.selectedUser,
+      this.state.selectedUser,
       true,
-      this.getDefaultMaskForSubject(this.selectedUser, true)
+      this.getDefaultMaskForSubject(this.state.selectedUser, true)
     );
     this.closeFindUserDialog();
   };
@@ -434,9 +421,6 @@ export default class PermissionsForm extends React.Component {
 
   renderSubObjectsWarnings = () => {
     const {subObjectsPermissionsErrorTitle} = this.props;
-    const users = this.props.usersInfo.loaded
-      ? (this.props.usersInfo.value || []).slice()
-      : [];
     const granted = this.props.grant.value && this.props.grant.value.permissions
       ? this.props.grant.value.permissions
       : [];
@@ -454,7 +438,7 @@ export default class PermissionsForm extends React.Component {
       const {name, principal} = sid;
       const rolesToCheck = [];
       if (principal) {
-        const userInfo = users.find(u => u.name === name);
+        const userInfo = this.allUsers.find(u => u.name === name);
         if (userInfo && userInfo.roles) {
           rolesToCheck.push(
             ...(userInfo.roles || []).map(({name}) => ({name, principal: false}))
@@ -909,22 +893,37 @@ export default class PermissionsForm extends React.Component {
             </Row>
           )}
           visible={this.state.findUserVisible}>
-          <AutoComplete
-            value={this.selectedUser}
-            optionLabelProp="text"
+          <Select
+            disabled={!this.props.usersInfo.loaded}
+            placeholder="Enter the account info"
             style={{width: '100%'}}
-            onChange={this.onUserFindInputChanged}
-            placeholder="Enter the account name">
-            {
-              (this.findUserDataSource() || []).map(user => {
-                return (
-                  <AutoComplete.Option key={user.userName} text={user.userName}>
-                    {this.renderUserName(user)}
-                  </AutoComplete.Option>
-                );
-              })
+            showSearch
+            value={this.state.selectedUser}
+            onSelect={this.onUserFindInputChanged}
+            filterOption={(input, option) => option.props.attributes
+              .map(o => o.toLowerCase())
+              .find(o => o.includes((input || '').toLowerCase()))
             }
-          </AutoComplete>
+          >
+            {
+              this.allUsers
+                .map(user => (
+                  <Select.Option
+                    key={user.name}
+                    value={user.name}
+                    attributes={
+                      [
+                        user.name,
+                        ...Object.values(user.attributes || {})
+                      ]
+                    }
+                    user={user}
+                  >
+                    <UserName userName={user.name} />
+                  </Select.Option>
+                ))
+            }
+          </Select>
         </Modal>
         <Modal
           title="Select group"
