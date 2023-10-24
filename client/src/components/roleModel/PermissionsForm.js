@@ -87,7 +87,7 @@ export default class PermissionsForm extends React.Component {
     findGroupVisible: false,
     selectedPermission: null,
     groupSearchString: null,
-    selectedUser: null,
+    selectedUser: undefined,
     owner: null,
     ownerInput: null,
     fetching: false,
@@ -167,7 +167,7 @@ export default class PermissionsForm extends React.Component {
       ownerInput: value,
       owner: null,
       fetching: true,
-      selectedUser: null
+      selectedUser: undefined
     }, async () => {
       const request = new UserFind(value);
       await request.fetch();
@@ -202,7 +202,7 @@ export default class PermissionsForm extends React.Component {
     if (request.error) {
       message.error(request.error);
       this.setState({
-        selectedUser: null,
+        selectedUser: undefined,
         fetchedUsers: [],
         owner: null,
         ownerInput: null
@@ -210,7 +210,7 @@ export default class PermissionsForm extends React.Component {
     } else {
       await this.props.grant.fetch();
       this.setState({
-        selectedUser: null,
+        selectedUser: undefined,
         fetchedUsers: [],
         owner: null,
         ownerInput: null
@@ -291,7 +291,7 @@ export default class PermissionsForm extends React.Component {
 
   closeFindUserDialog = () => {
     this.setState({
-      selectedUser: null,
+      selectedUser: undefined,
       findUserVisible: false
     });
   };
