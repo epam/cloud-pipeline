@@ -450,7 +450,17 @@ public class GrantPermissionManager {
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
         AbstractSecuredEntity entity = entityManager.load(aclClass, id);
+        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+            return true;
+        }
         return permissionsHelper.isOwner(entity);
+    }
+
+    public boolean isOwnerOrAdmin(AbstractSecuredEntity entity) {
+        if (entity instanceof AbstractDataStorage && isStorageAdmin()) {
+            return true;
+        }
+        return isOwnerOrAdmin(entity.getOwner());
     }
 
     public boolean isOwnerOrAdmin(String owner) {
@@ -486,7 +496,7 @@ public class GrantPermissionManager {
     public boolean listedStoragePermissions(List<DataStorageAction> actions) {
         for (DataStorageAction action : actions) {
             AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, action.getId());
-            if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
+            if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage)) {
                 return false;
             }
             if (action.isRead() && (!permissionsHelper.isAllowed(READ, storage)
