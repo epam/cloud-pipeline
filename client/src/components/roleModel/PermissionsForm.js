@@ -94,7 +94,8 @@ export default class PermissionsForm extends React.Component {
     fetchedUsers: [],
     roleName: null,
     operationInProgress: false,
-    subObjectsPermissions: []
+    subObjectsPermissions: [],
+    searchUserTouched: false
   };
 
   operationWrapper = (operation) => (...props) => {
@@ -904,24 +905,32 @@ export default class PermissionsForm extends React.Component {
               .map(o => o.toLowerCase())
               .find(o => o.includes((input || '').toLowerCase()))
             }
+            onSearch={(value) => this.setState({
+              searchUserTouched: value.length > 2}
+            )}
+            notFoundContent={this.state.searchUserTouched
+              ? 'Not found'
+              : 'Specify user info'
+            }
           >
             {
-              this.allUsers
-                .map(user => (
-                  <Select.Option
-                    key={user.name}
-                    value={user.name}
-                    attributes={
-                      [
-                        user.name,
-                        ...Object.values(user.attributes || {})
-                      ]
-                    }
-                    user={user}
-                  >
-                    <UserName userName={user.name} />
-                  </Select.Option>
-                ))
+              this.state.searchUserTouched ? (
+                this.allUsers
+                  .map(user => (
+                    <Select.Option
+                      key={user.name}
+                      value={user.name}
+                      attributes={
+                        [
+                          user.name,
+                          ...Object.values(user.attributes || {})
+                        ]
+                      }
+                    >
+                      <UserName userName={user.name} />
+                    </Select.Option>
+                  ))
+              ) : null
             }
           </Select>
         </Modal>
