@@ -910,7 +910,7 @@ export default class PermissionsForm extends React.Component {
             )}
             notFoundContent={this.state.searchUserTouched
               ? 'Not found'
-              : 'Specify user info'
+              : null
             }
           >
             {
