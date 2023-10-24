@@ -875,7 +875,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final Set<String> storageClasses = storagePermissionManager.storageArchiveReadPermissions(dataStorage)
                 ? dataStorage.getType().getStorageClasses()
                 : Collections.singleton(DataStorageType.Constants.STANDARD_STORAGE_CLASS);
-        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage.getOwner());
+        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage);
         return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks, storageClasses, allowVersions);
     }
 

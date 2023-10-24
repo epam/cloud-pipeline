@@ -209,7 +209,7 @@ public class StoragePermissionManager {
     }
 
     public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
-        return grantPermissionManager.isOwnerOrAdmin(storage.getOwner()) || grantPermissionManager.isStorageAdmin()
+        return grantPermissionManager.isOwnerOrAdmin(storage) || grantPermissionManager.isStorageAdmin()
                 || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
     }
 
