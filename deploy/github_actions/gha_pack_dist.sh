@@ -70,6 +70,8 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-win64.zip ${API_STATIC_PATH}/cloud-data-win64.zip
 
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/fsbrowser.tar.gz ${API_STATIC_PATH}/fsbrowser.tar.gz
+
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
                         -x test \
@@ -80,6 +82,7 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
                         -x :client:buildUI \
                         -x :cloud-pipeline-webdav-client:buildLinux \
                         -x :cloud-pipeline-webdav-client:buildWin \
+                        -x :fs-browser:build \
                         -Pfast \
                         --no-daemon
 
