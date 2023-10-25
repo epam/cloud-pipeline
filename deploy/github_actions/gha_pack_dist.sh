@@ -72,6 +72,9 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/fsbrowser.tar.gz ${API_STATIC_PATH}/fsbrowser.tar.gz
 
+mkdir -p data-sharing-service/api/build/libs
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
+
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
                         -x test \
@@ -83,6 +86,7 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
                         -x :cloud-pipeline-webdav-client:buildLinux \
                         -x :cloud-pipeline-webdav-client:buildWin \
                         -x :fs-browser:build \
+                        -x :data-sharing-service:buildFast \
                         -Pfast \
                         --no-daemon
 
