@@ -66,6 +66,10 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 tar -xzf ${API_STATIC_PATH}/client.tar.gz -C ${API_STATIC_PATH}
 rm -f ${API_STATIC_PATH}/client.tar.gz
 
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-linux.tar.gz ${API_STATIC_PATH}/cloud-data-linux.tar.gz
+
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-win64.zip ${API_STATIC_PATH}/cloud-data-win64.zip
+
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
                         -x test \
@@ -74,6 +78,8 @@ rm -f ${API_STATIC_PATH}/client.tar.gz
                         -x :pipe-cli:buildMacPy3 \
                         -x :pipe-cli:buildWin \
                         -x :client:buildUI \
+                        -x :cloud-pipeline-webdav-client:buildLinux \
+                        -x :cloud-pipeline-webdav-client:buildWin \
                         -Pfast \
                         --no-daemon
 
