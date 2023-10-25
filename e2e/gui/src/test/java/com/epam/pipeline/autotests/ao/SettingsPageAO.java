@@ -1758,7 +1758,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
                 entry(USER_NAME, $(byClassName("rofile__header"))),
                 entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input"))),
-                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
+                entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+                entry(MUTE_EMAIL_NOTIFICATIONS, $(byXpath(".//span[.='Mute email notifications']/preceding-sibling::span")))
         );
 
         public MyProfileAO validateUserName(String user) {
@@ -1774,6 +1775,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                     (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
                 click(DO_NOT_MOUNT_STORAGES);
+                sleep(1, SECONDS);
+            }
+            return this;
+        }
+
+        public MyProfileAO muteEmailNotificationsSelect(boolean isSelected) {
+            sleep(1, SECONDS);
+            if ((!get(MUTE_EMAIL_NOTIFICATIONS).has(cssClass("ant-checkbox-checked")) && isSelected) ||
+                    (get(MUTE_EMAIL_NOTIFICATIONS).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
+                click(MUTE_EMAIL_NOTIFICATIONS);
                 sleep(1, SECONDS);
             }
             return this;

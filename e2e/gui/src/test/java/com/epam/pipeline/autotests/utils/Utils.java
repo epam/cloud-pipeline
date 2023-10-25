@@ -340,6 +340,16 @@ public class Utils {
         return file;
     }
 
+    public static File writeTempJsonFile(String name, String content) {
+        Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
+        try {
+            Files.write(path, content.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return path.toFile();
+    }
+
     private static String repeatString(String str, int times) {
         return new String(new char[times]).replace("\0", str);
     }

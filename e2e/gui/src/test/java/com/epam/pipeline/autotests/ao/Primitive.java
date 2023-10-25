@@ -322,5 +322,6 @@ public enum Primitive {
     PROTOCOL,
     REINDEX,
     CONDITION,
-    SHOW_TIMINGS
+    SHOW_TIMINGS,
+    MUTE_EMAIL_NOTIFICATIONS
 }

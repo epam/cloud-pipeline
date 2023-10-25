@@ -1,0 +1,37 @@
+[
+  {
+    "key": "active",
+    "title": "Active Runs",
+    "filters": {
+      "statuses": [
+        "RUNNING",
+        "PAUSED",
+        "PAUSING"
+      ],
+      "onlyMasterJobs": false
+    },
+    "autoUpdate": true,
+    "showCount": true,
+    "showPersonalRuns": true
+  },
+  {
+    "key": "paused",
+    "filters": {
+      "statuses": [
+        "PAUSED"
+      ]
+    },
+    "autoUpdate": true,
+    "showCount": true,
+    "showPersonalRuns": true
+  },
+  {
+    "key": "resuming",
+    "filters": {
+      "statuses": [
+        "RESUMING"
+      ]
+    },
+    "autoUpdate": true
+  }
+]
