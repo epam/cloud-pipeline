@@ -908,9 +908,10 @@ export default class PermissionsForm extends React.Component {
             onSearch={(value) => this.setState({
               searchUserTouched: value.length > 2}
             )}
+            onFocus={() => this.setState({searchUserTouched: false})}
             notFoundContent={this.state.searchUserTouched
               ? 'Not found'
-              : null
+              : 'Start typing to filter users...'
             }
           >
             {
