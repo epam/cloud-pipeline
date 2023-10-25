@@ -87,6 +87,8 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
                         -x :cloud-pipeline-webdav-client:buildWin \
                         -x :fs-browser:build \
                         -x :data-sharing-service:buildFast \
+                        -x :data-sharing-service:api:clean \
+                        -x :data-sharing-service:client:clean \
                         -Pfast \
                         --no-daemon
 
