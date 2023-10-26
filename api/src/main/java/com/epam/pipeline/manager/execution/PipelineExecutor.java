@@ -45,12 +45,14 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodDNSConfig;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
+import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -70,6 +72,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class PipelineExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
@@ -82,7 +85,6 @@ public class PipelineExecutor {
     private static final String TRUE = "true";
     private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
     private static final String DEFAULT_CPU_REQUEST = "1";
-    private static final String CPU_REQUEST_NAME = "cpu";
     private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
@@ -324,10 +326,14 @@ public class PipelineExecutor {
     }
 
     private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
+        log.debug("Building container requests/limits for run #{}...", run.getId());
         final ContainerResources cpuResources = buildCpuRequests(envVars);
-        final ContainerResources memoryResources = buildMemoryRequests(run, envVars);
-        container.setResources(ContainerResources.merge(cpuResources, memoryResources)
-                .toContainerRequirements());
+        final ContainerResources memResources = buildMemoryRequests(run, envVars);
+        final ResourceRequirements requirements = ContainerResources.merge(cpuResources, memResources)
+                .toContainerRequirements();
+        log.debug("Built container requests/limits for run #{}: cpu {}, mem {}", run.getId(),
+                cpuResources, memResources);
+        container.setResources(requirements);
     }
 
     private ContainerResources buildMemoryRequests(final PipelineRun run, final List<EnvVar> envVars) {
@@ -337,7 +343,7 @@ public class PipelineExecutor {
                 .map(EnvVar::getValue)
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
-                policyName, ContainerMemoryResourcePolicy.NO_LIMIT);
+                policyName, ContainerMemoryResourcePolicy.AUTO);
         return memoryRequestServices.get(policy).buildResourcesForRun(run);
     }
 
@@ -354,7 +360,8 @@ public class PipelineExecutor {
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
                 .map(cpuRequest ->
                     ContainerResources.builder()
-                            .requests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)))
+                            .requests(Collections.singletonMap(KubernetesConstants.CPU_RESOURCE_NAME,
+                                    new Quantity(cpuRequest)))
                             .build())
                 .orElse(ContainerResources.empty());
     }
