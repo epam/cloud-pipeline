@@ -19,6 +19,10 @@ FROM ${BASE_IMAGE}
 
 ENV ROOT TRUE
 
+RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
+           -e 's|security.debian.org|archive.debian.org/|g' \
+           -e '/stretch-updates/d' /etc/apt/sources.list
+
 # Install prerequisites
 RUN apt-get update
 
