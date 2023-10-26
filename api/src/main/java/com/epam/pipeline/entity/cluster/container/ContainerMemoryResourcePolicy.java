@@ -38,7 +38,7 @@ public enum ContainerMemoryResourcePolicy {
 
     /**
      * container_mem_request = $launch.container.memory.resource.request
-     * container_mem_limit = node_mem - $cluster.node.kubelet.mem - $cluster.node.system.mem
+     * container_mem_limit = node_mem - $cluster.node.kubelet.mem - $cluster.node.system.mem - $cluster.node.extra.mem
      */
     AUTO
 }

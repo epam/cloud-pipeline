@@ -67,7 +67,9 @@ public class AutoContainerMemoryResourceService implements ContainerMemoryResour
                 SystemPreferences.CLUSTER_NODE_KUBELET_MEM_MIN, SystemPreferences.CLUSTER_NODE_KUBELET_MEM_MAX);
         final int systemMemMiB = normalize(totalMemMiB, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO,
                 SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX);
-        return Math.max(0, totalMemMiB - kubeletMemMiB - systemMemMiB);
+        final int extraMemMiB = normalize(totalMemMiB, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO,
+                SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX);
+        return Math.max(0, totalMemMiB - kubeletMemMiB - systemMemMiB - extraMemMiB);
     }
 
     private int getNodeMemMiB(final PipelineRun run) {
