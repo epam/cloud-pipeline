@@ -451,12 +451,12 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
         "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
 
-    public static final IntPreference CLUSTER_NODE_KUBELET_MEM_RATIO = new IntPreference(
-        "cluster.node.kubelet.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
-    public static final IntPreference CLUSTER_NODE_KUBELET_MEM_MIN = new IntPreference(
-        "cluster.node.kubelet.mem.min", 512, CLUSTER_GROUP, isGreaterThan(0));
-    public static final IntPreference CLUSTER_NODE_KUBELET_MEM_MAX = new IntPreference(
-        "cluster.node.kubelet.mem.max", 2048, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_RATIO = new IntPreference(
+        "cluster.node.kube.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MIN = new IntPreference(
+        "cluster.node.kube.mem.min", 512, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MAX = new IntPreference(
+        "cluster.node.kube.mem.max", 2048, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_RATIO = new IntPreference(
         "cluster.node.system.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
     public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MIN = new IntPreference(
