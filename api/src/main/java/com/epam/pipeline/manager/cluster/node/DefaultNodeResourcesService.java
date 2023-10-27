@@ -47,20 +47,22 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
     private NodeResources build(final InstanceType type) {
         final int totalMemMiB = getNodeMemMiB(type);
         final int kubeMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO,
-                SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN, SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX);
+                SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB);
         final int systemMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO,
-                SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX);
+                SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB);
         final int extraMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO,
-                SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX);
+                SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
         final int containerLimitMemMiB = Math.max(0, totalMemMiB - (kubeMemMiB + systemMemMiB + extraMemMiB));
         final int containerRequestMemMiB = getContainerRequestMemMiB();
         return NodeResources.builder()
-                .kubeMem(kubeMemMiB)
-                .systemMem(systemMemMiB)
-                .extraMem(extraMemMiB)
+                .kubeMem(kubeMemMiB + KubernetesConstants.MIB_UNIT)
+                .systemMem(systemMemMiB + KubernetesConstants.MIB_UNIT)
+                .extraMem(extraMemMiB + KubernetesConstants.MIB_UNIT)
                 .containerResources(ContainerResources.builder()
-                        .requests(toResourcesMap(containerRequestMemMiB))
-                        .limits(toResourcesMap(containerLimitMemMiB))
+                        .requests(toResourceMap(KubernetesConstants.MEM_RESOURCE_NAME,
+                                containerRequestMemMiB, KubernetesConstants.MIB_UNIT))
+                        .limits(toResourceMap(KubernetesConstants.MEM_RESOURCE_NAME,
+                                containerLimitMemMiB, KubernetesConstants.MIB_UNIT))
                         .build())
                 .build();
     }
@@ -105,11 +107,10 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
         return preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST);
     }
 
-    private Map<String, Quantity> toResourcesMap(final int memMiB) {
-        if (memMiB <= 0) {
+    private Map<String, Quantity> toResourceMap(final String key, final int value, final String unit) {
+        if (value <= 0) {
             return Collections.emptyMap();
         }
-        return Collections.singletonMap(KubernetesConstants.MEM_RESOURCE_NAME,
-                new Quantity(memMiB + KubernetesConstants.MIB_UNIT));
+        return Collections.singletonMap(key, new Quantity(value + unit));
     }
 }

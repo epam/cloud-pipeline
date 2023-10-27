@@ -22,8 +22,8 @@ import lombok.Value;
 @Value
 @Builder
 public class NodeResources {
-    int kubeMem;
-    int systemMem;
-    int extraMem;
+    String kubeMem;
+    String systemMem;
+    String extraMem;
     ContainerResources containerResources;
 }
