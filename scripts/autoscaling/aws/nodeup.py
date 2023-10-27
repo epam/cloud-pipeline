@@ -787,7 +787,9 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                                            .replace('@API_USER@', api_user) \
                                            .replace('@FS_TYPE@', fs_type) \
                                            .replace('@NODE_SSH_PORT@', node_ssh_port) \
-                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url)
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
+                                           .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
+                                           .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():

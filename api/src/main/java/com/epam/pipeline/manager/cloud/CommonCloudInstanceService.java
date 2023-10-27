@@ -22,6 +22,8 @@ import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
+import com.epam.pipeline.manager.cluster.node.NodeResourcesService;
+import com.epam.pipeline.manager.cluster.node.NodeResources;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -29,6 +31,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -42,6 +45,7 @@ import java.util.Optional;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CommonCloudInstanceService {
 
     private final PreferenceManager preferenceManager;
@@ -49,18 +53,7 @@ public class CommonCloudInstanceService {
     private final AuthManager authManager;
     private final PipelineRunCRUDService runCRUDService;
     private final KubernetesManager kubernetesManager;
-
-    public CommonCloudInstanceService(final PreferenceManager preferenceManager,
-                                      final UserManager userManager,
-                                      final AuthManager authManager,
-                                      final PipelineRunCRUDService runCRUDService,
-                                      final KubernetesManager kubernetesManager) {
-        this.preferenceManager = preferenceManager;
-        this.userManager = userManager;
-        this.authManager = authManager;
-        this.runCRUDService = runCRUDService;
-        this.kubernetesManager = kubernetesManager;
-    }
+    private final NodeResourcesService nodeResourcesService;
 
     public RunInstance runNodeUpScript(final CmdExecutor cmdExecutor,
                                        final Long runId,
@@ -68,8 +61,7 @@ public class CommonCloudInstanceService {
                                        final String command,
                                        final Map<String, String> envVars) {
         log.debug("Scaling cluster up. Command: {}.", command);
-        final Map<String, String> authEnvVars = buildPipeAuthEnvVars(runId);
-        final Map<String, String> mergedEnvVars = CommonUtils.mergeMaps(envVars, authEnvVars);
+        final Map<String, String> mergedEnvVars = buildEnvVars(runId, instance, envVars);
         log.debug("EnvVars: {}", mergedEnvVars);
         final String output = cmdExecutor.executeCommandWithEnvVars(command, mergedEnvVars);
         log.debug("Scale up output: {}.", output);
@@ -136,6 +128,19 @@ public class CommonCloudInstanceService {
             instance.setNodeIP(node[1]);
             instance.setNodeName(node[2]);
         }
+    }
+
+    private Map<String, String> buildEnvVars(final Long runId, final RunInstance instance,
+                                             final Map<String, String> envVars) {
+        return CommonUtils.mergeMaps(envVars, buildCommonEnvVars(instance), buildPipeAuthEnvVars(runId));
+    }
+
+    private Map<String, String> buildCommonEnvVars(final RunInstance instance) {
+        final NodeResources resources = nodeResourcesService.build(instance);
+        final Map<String, String> envVars = new HashMap<>();
+        envVars.put("KUBE_RESERVED_MEM", resources.getKubeMem());
+        envVars.put("SYSTEM_RESERVED_MEM", resources.getSystemMem());
+        return envVars;
     }
 
     private Map<String, String> buildPipeAuthEnvVars(final Long id) {
