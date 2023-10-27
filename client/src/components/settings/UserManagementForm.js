@@ -51,7 +51,7 @@ function UserManagementForm (
     return null;
   }
   const users = usersWithActivity.loaded ? usersWithActivity.value : [];
-  const userHasReadPermissions = users.some((user) => roleModel.readAllowed(user));
+  const userHasReadPermissions = (users || []).some((user) => roleModel.readAllowed(user));
   if (!isReader && !isAdmin && !userHasReadPermissions) {
     return (
       <Alert type="error" message="Access is denied" />
