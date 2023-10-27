@@ -451,20 +451,20 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
         "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
 
-    public static final IntPreference CLUSTER_NODE_KUBE_MEM_RATIO = new IntPreference(
-        "cluster.node.kube.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
+    public static final DoublePreference CLUSTER_NODE_KUBE_MEM_RATIO = new DoublePreference(
+        "cluster.node.kube.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
     public static final IntPreference CLUSTER_NODE_KUBE_MEM_MIN = new IntPreference(
-        "cluster.node.kube.mem.min", 512, CLUSTER_GROUP, isGreaterThan(0));
+        "cluster.node.kube.mem.min", 256, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_KUBE_MEM_MAX = new IntPreference(
-        "cluster.node.kube.mem.max", 2048, CLUSTER_GROUP, isGreaterThan(0));
-    public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_RATIO = new IntPreference(
-        "cluster.node.system.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
+        "cluster.node.kube.mem.max", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_SYSTEM_MEM_RATIO = new DoublePreference(
+        "cluster.node.system.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
     public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MIN = new IntPreference(
-        "cluster.node.system.mem.min", 512, CLUSTER_GROUP, isGreaterThan(0));
+        "cluster.node.system.mem.min", 256, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MAX = new IntPreference(
-        "cluster.node.system.mem.max", 2048, CLUSTER_GROUP, isGreaterThan(0));
-    public static final IntPreference CLUSTER_NODE_EXTRA_MEM_RATIO = new IntPreference(
-        "cluster.node.extra.mem.ratio", 5, CLUSTER_GROUP, isGreaterThan(0).and(isLessThan(100)));
+        "cluster.node.system.mem.max", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_EXTRA_MEM_RATIO = new DoublePreference(
+        "cluster.node.extra.mem.ratio", 0.05, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MIN = new IntPreference(
         "cluster.node.extra.mem.min", 512, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX = new IntPreference(

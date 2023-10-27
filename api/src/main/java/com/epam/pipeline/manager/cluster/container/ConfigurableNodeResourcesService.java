@@ -85,14 +85,14 @@ public class ConfigurableNodeResourcesService implements NodeResourcesService {
         return Optional.of(type).map(InstanceType::getMemory).orElse(0.0f);
     }
 
-    private int resolve(final int total, final AbstractSystemPreference<Integer> ratio,
+    private int resolve(final int total, final AbstractSystemPreference<Double> ratio,
                         final AbstractSystemPreference<Integer> min, final AbstractSystemPreference<Integer> max) {
         return resolve(total, preferenceManager.getPreference(ratio),
                 preferenceManager.getPreference(min), preferenceManager.getPreference(max));
     }
 
-    private int resolve(final int total, final int ratio, final int min, final int max) {
-        return (int) Math.min(Math.max(min, Math.round(total * (ratio / 100.0))), max);
+    private int resolve(final int total, final double ratio, final int min, final int max) {
+        return (int) Math.min(Math.max(min, Math.round(total * ratio)), max);
     }
 
     private int getContainerRequestMemMiB() {
