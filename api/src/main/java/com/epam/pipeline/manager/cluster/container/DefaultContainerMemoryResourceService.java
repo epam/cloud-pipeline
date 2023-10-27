@@ -17,6 +17,8 @@ package com.epam.pipeline.manager.cluster.container;
 
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.manager.cluster.node.NodeResources;
+import com.epam.pipeline.manager.cluster.node.NodeResourcesService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

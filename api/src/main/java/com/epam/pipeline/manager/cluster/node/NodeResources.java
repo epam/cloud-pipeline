@@ -13,11 +13,17 @@
  *  limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster.container;
+package com.epam.pipeline.manager.cluster.node;
 
-import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import lombok.Builder;
+import lombok.Value;
 
-public interface NodeResourcesService {
-
-    NodeResources build(RunInstance instance);
+@Value
+@Builder
+public class NodeResources {
+    int kubeMem;
+    int systemMem;
+    int extraMem;
+    ContainerResources containerResources;
 }

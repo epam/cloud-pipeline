@@ -13,12 +13,13 @@
  *  limitations under the License.
  */
 
-package com.epam.pipeline.manager.cluster.container;
+package com.epam.pipeline.manager.cluster.node;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.container.ContainerResources;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -33,7 +34,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-public class ConfigurableNodeResourcesService implements NodeResourcesService {
+public class DefaultNodeResourcesService implements NodeResourcesService {
 
     private final PreferenceManager preferenceManager;
     private final InstanceOfferManager instanceOfferManager;
