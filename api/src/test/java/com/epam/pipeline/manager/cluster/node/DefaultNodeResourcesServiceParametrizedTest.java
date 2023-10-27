@@ -40,6 +40,7 @@ import static org.mockito.Mockito.mock;
 
 @RunWith(Parameterized.class)
 @RequiredArgsConstructor
+@SuppressWarnings("checkstyle:MagicNumber")
 public class DefaultNodeResourcesServiceParametrizedTest {
 
     private static final int MIB_IN_GIB = 1024;
@@ -60,121 +61,121 @@ public class DefaultNodeResourcesServiceParametrizedTest {
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {
-                        "t3.nano",
-                        DefaultNodeResourcesServiceTest.getInstanceType(2, 0.5f),
-                        NodeResources.builder()
-                                .kubeMem(256 + MIB)
-                                .systemMem(256 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(null)
-                                        .build())
-                                .build()
+                "t3.nano",
+                DefaultNodeResourcesServiceTest.getInstanceType(2, 0.5f),
+                NodeResources.builder()
+                        .kubeMem(256 + MIB)
+                        .systemMem(256 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(null)
+                                .build())
+                        .build()
                 },
                 {
-                        "t3.micro",
-                        DefaultNodeResourcesServiceTest.getInstanceType(2, 1),
-                        NodeResources.builder()
-                                .kubeMem(256 + MIB)
-                                .systemMem(256 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(null)
-                                        .build())
-                                .build()
+                "t3.micro",
+                DefaultNodeResourcesServiceTest.getInstanceType(2, 1),
+                NodeResources.builder()
+                        .kubeMem(256 + MIB)
+                        .systemMem(256 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(null)
+                                .build())
+                        .build()
                 },
                 {
-                        "t3.small",
-                        DefaultNodeResourcesServiceTest.getInstanceType(2, (float) 2),
-                        NodeResources.builder()
-                                .kubeMem(256 + MIB)
-                                .systemMem(256 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(MIB_IN_GIB + MIB)))
-                                        .build())
-                                .build()
+                "t3.small",
+                DefaultNodeResourcesServiceTest.getInstanceType(2, (float) 2),
+                NodeResources.builder()
+                        .kubeMem(256 + MIB)
+                        .systemMem(256 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(MIB_IN_GIB + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "t3.medium",
-                        DefaultNodeResourcesServiceTest.getInstanceType(2, 4),
-                        NodeResources.builder()
-                                .kubeMem(256 + MIB)
-                                .systemMem(256 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(3 * MIB_IN_GIB + MIB)))
-                                        .build())
-                                .build()
+                "t3.medium",
+                DefaultNodeResourcesServiceTest.getInstanceType(2, 4),
+                NodeResources.builder()
+                        .kubeMem(256 + MIB)
+                        .systemMem(256 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(3 * MIB_IN_GIB + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "m5.large",
-                        DefaultNodeResourcesServiceTest.getInstanceType(2, 8),
-                        NodeResources.builder()
-                                .kubeMem(256 + MIB)
-                                .systemMem(256 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(7 * MIB_IN_GIB + MIB)))
-                                        .build())
-                                .build()
+                "m5.large",
+                DefaultNodeResourcesServiceTest.getInstanceType(2, 8),
+                NodeResources.builder()
+                        .kubeMem(256 + MIB)
+                        .systemMem(256 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(7 * MIB_IN_GIB + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "m5.xlarge",
-                        DefaultNodeResourcesServiceTest.getInstanceType(4, 16),
-                        NodeResources.builder()
-                                .kubeMem(410 + MIB)
-                                .systemMem(410 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(15052 + MIB)))
-                                        .build())
-                                .build()
+                "m5.xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(4, 16),
+                NodeResources.builder()
+                        .kubeMem(410 + MIB)
+                        .systemMem(410 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(15052 + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "m5.2xlarge",
-                        DefaultNodeResourcesServiceTest.getInstanceType(8, 32),
-                        NodeResources.builder()
-                                .kubeMem(820 + MIB)
-                                .systemMem(820 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(30616 + MIB)))
-                                        .build())
-                                .build()
+                "m5.2xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(8, 32),
+                NodeResources.builder()
+                        .kubeMem(820 + MIB)
+                        .systemMem(820 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(30616 + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "m5.4xlarge",
-                        DefaultNodeResourcesServiceTest.getInstanceType(16, 64),
-                        NodeResources.builder()
-                                .kubeMem(1024 + MIB)
-                                .systemMem(1024 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(62976 + MIB)))
-                                        .build())
-                                .build()
+                "m5.4xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(16, 64),
+                NodeResources.builder()
+                        .kubeMem(1024 + MIB)
+                        .systemMem(1024 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(62976 + MIB)))
+                                .build())
+                        .build()
                 },
                 {
-                        "m5.8xlarge",
-                        DefaultNodeResourcesServiceTest.getInstanceType(32, 128),
-                        NodeResources.builder()
-                                .kubeMem(1024 + MIB)
-                                .systemMem(1024 + MIB)
-                                .extraMem(512 + MIB)
-                                .containerResources(ContainerResources.builder()
-                                        .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                        .limits(Collections.singletonMap(MEMORY, new Quantity(128512 + MIB)))
-                                        .build())
-                                .build()
+                "m5.8xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(32, 128),
+                NodeResources.builder()
+                        .kubeMem(1024 + MIB)
+                        .systemMem(1024 + MIB)
+                        .extraMem(512 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(128512 + MIB)))
+                                .build())
+                        .build()
                 },
         });
     }

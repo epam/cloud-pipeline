@@ -35,6 +35,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("checkstyle:MagicNumber")
 public class DefaultNodeResourcesServiceTest {
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
