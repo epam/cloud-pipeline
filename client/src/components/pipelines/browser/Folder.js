@@ -68,7 +68,7 @@ import ConfigurationDelete from '../../../models/configuration/ConfigurationDele
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
 import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
 import ItemsTable, {isJson} from '../../special/metadata/items-table';
@@ -512,7 +512,10 @@ export default class Folder extends localization.LocalizedReactComponent {
         }
         break;
       case ItemTypes.storage:
-        if (roleModel.writeAllowed(item)) {
+        if (
+          roleModel.isManager.storageAdmin(this) ||
+          roleModel.writeAllowed(item)
+        ) {
           actions.push(
             <Button
               key="edit"
@@ -1380,7 +1383,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           (this.showMetadata && this.props.folderId !== undefined) &&
           <Metadata
             key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.folder.value)}
+            readOnly={!(
+              roleModel.isOwner(this.props.folder.value) ||
+              roleModel.isManager.storageAdmin(this)
+            )}
             entityName={this.props.folder.value.name}
             entityId={this.props.folderId} entityClass="FOLDER" />
         }
@@ -1540,7 +1546,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
       }
-      if (roleModel.isManager.storage(this)) {
+      if (roleModel.isManager.storage(this) ||
+      (roleModel.isManager.storageAdmin(this) && roleModel.writeAllowed(this.props.folder.value))
+      ) {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
@@ -1841,12 +1849,15 @@ export default class Folder extends localization.LocalizedReactComponent {
         );
       }
       if (
-        !this.props.readOnly &&
-        roleModel.writeAllowed(this.props.folder.value) &&
-        roleModel.isManager.folder(this)
+        !this.props.readOnly && (
+          roleModel.isManager.storageAdmin(this) || (
+            roleModel.writeAllowed(this.props.folder.value) &&
+            roleModel.isManager.folder(this)
+          )
+        )
       ) {
         if (editActions.length > 0) {
-          editActions.push(<Divider key="divider"/>);
+          editActions.push(<Divider key="divider" />);
         }
         editActions.push(
           <MenuItem
@@ -1907,7 +1918,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 size="small"
                 className={styles.dropDownTrigger}
               >
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               </Button>
             </Dropdown>
           </DropDownWrapper>

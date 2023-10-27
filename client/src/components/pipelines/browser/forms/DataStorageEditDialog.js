@@ -99,7 +99,8 @@ export class DataStorageEditDialog extends React.Component {
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
     if (loaded) {
-      const isAdmin = authenticatedUserInfo.value.admin;
+      const isAdmin = authenticatedUserInfo.value.admin ||
+        roleModel.isManager.storageAdmin(this);
       const isOwner = roleModel.isOwner(dataStorage);
       return isAdmin ||
         (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
@@ -167,15 +168,15 @@ export class DataStorageEditDialog extends React.Component {
     const readAllowed = roleModel.readAllowed(dataStorage);
     const writeAllowed = roleModel.writeAllowed(dataStorage);
     return {
-      read: (
+      read: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(dataStorage) ||
         roleModel.isManager.archiveManager(this) ||
         roleModel.isManager.archiveReader(this)
-      ) && readAllowed,
-      write: (
+      ) && readAllowed),
+      write: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(dataStorage) ||
         roleModel.isManager.archiveManager(this)
-      ) && writeAllowed
+      ) && writeAllowed)
     };
   }
 
@@ -247,18 +248,26 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.isOwner(this.props.dataStorage)) {
+    if (
+      roleModel.isManager.storageAdmin(this) ||
+      roleModel.isOwner(this.props.dataStorage)
+    ) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
             <Row type="flex" justify="start">
               {
-                roleModel.manager.storage(
-                  <Button
-                    id="edit-storage-dialog-delete-button"
-                    type="danger"
-                    onClick={this.openDeleteDialog}>DELETE</Button>
-                )
+                roleModel.isManager.storage(this) ||
+                roleModel.isManager.storageAdmin(this)
+                  ? (
+                    <Button
+                      id="edit-storage-dialog-delete-button"
+                      type="danger"
+                      onClick={this.openDeleteDialog}
+                    >
+                      DELETE
+                    </Button>
+                  ) : null
               }
             </Row>
           </Col>
@@ -350,7 +359,12 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.isOwner(this.props.dataStorage)
+      ? (
+        this.props.dataStorage.locked ||
+        (
+          !roleModel.isOwner(this.props.dataStorage) &&
+          !roleModel.isManager.storageAdmin(this)
+        ))
       : false;
     const modalFooter = this.props.pending ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
