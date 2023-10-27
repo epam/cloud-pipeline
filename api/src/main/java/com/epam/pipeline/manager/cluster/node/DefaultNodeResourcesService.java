@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -41,51 +42,53 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
 
     @Override
     public NodeResources build(final RunInstance instance) {
-        return build(getInstanceType(instance.getCloudRegionId(), instance.getSpot(), instance.getNodeType()));
+        return Optional.ofNullable(instance)
+                .flatMap(this::findInstanceType)
+                .map(this::build)
+                .orElseGet(NodeResources::empty);
     }
 
     private NodeResources build(final InstanceType type) {
-        final int totalMemMiB = getNodeMemMiB(type);
+        final int totalMemGiB = getTotalMemGiB(type);
+        final int totalMemMiB = totalMemGiB * KubernetesConstants.MIB_IN_GIB;
+
         final int kubeMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO,
                 SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB);
         final int systemMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO,
                 SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB);
         final int extraMemMiB = resolve(totalMemMiB, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO,
                 SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB, SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
-        final int containerLimitMemMiB = Math.max(0, totalMemMiB - (kubeMemMiB + systemMemMiB + extraMemMiB));
-        final int containerRequestMemMiB = getContainerRequestMemMiB();
+
+        final int containerLimitMemMiB = Math.max(0, totalMemMiB - kubeMemMiB - systemMemMiB - extraMemMiB);
+        final int containerRequestMemGiB = getContainerRequestMemGiB();
+
         return NodeResources.builder()
                 .kubeMem(kubeMemMiB + KubernetesConstants.MIB_UNIT)
                 .systemMem(systemMemMiB + KubernetesConstants.MIB_UNIT)
                 .extraMem(extraMemMiB + KubernetesConstants.MIB_UNIT)
                 .containerResources(ContainerResources.builder()
                         .requests(toResourceMap(KubernetesConstants.MEM_RESOURCE_NAME,
-                                containerRequestMemMiB, KubernetesConstants.MIB_UNIT))
+                                containerRequestMemGiB, KubernetesConstants.GIB_UNIT))
                         .limits(toResourceMap(KubernetesConstants.MEM_RESOURCE_NAME,
                                 containerLimitMemMiB, KubernetesConstants.MIB_UNIT))
                         .build())
                 .build();
     }
 
-    public InstanceType getInstanceType(final Long regionId, final boolean spot, final String instanceType) {
-        return findInstanceType(regionId, spot, instanceType)
-                .orElseThrow(() -> new RuntimeException("Instance type has not been found"));
+    private Optional<InstanceType> findInstanceType(final RunInstance instance) {
+        return findInstanceType(instance.getCloudRegionId(), instance.getSpot(), instance.getNodeType());
     }
 
-    public Optional<InstanceType> findInstanceType(final Long regionId, final boolean spot, final String instanceType) {
+    private Optional<InstanceType> findInstanceType(final Long regionId, final Boolean spot,
+                                                    final String instanceType) {
         return ListUtils.emptyIfNull(instanceOfferManager.getAllInstanceTypes(regionId, spot))
                 .stream()
-                .filter(type -> instanceType.equals(type.getName()))
+                .filter(type -> Objects.equals(instanceType, type.getName()))
                 .findFirst();
     }
 
-    private int getNodeMemMiB(final InstanceType type) {
-        final float nodeMemGiB = getNodeMemGiB(type);
-        return Math.round(nodeMemGiB * KubernetesConstants.MIB_IN_GIB);
-    }
-
-    private float getNodeMemGiB(final InstanceType type) {
-        return Optional.of(type).map(InstanceType::getMemory).orElse(0.0f);
+    private int getTotalMemGiB(final InstanceType type) {
+        return Optional.of(type).map(InstanceType::getMemory).map(Math::ceil).map(Double::intValue).orElse(1);
     }
 
     private int resolve(final int total, final AbstractSystemPreference<Double> ratio,
@@ -95,12 +98,7 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
     }
 
     private int resolve(final int total, final double ratio, final int min, final int max) {
-        return (int) Math.min(Math.max(min, Math.round(total * ratio)), max);
-    }
-
-    private int getContainerRequestMemMiB() {
-        final int requestMemGiB = getContainerRequestMemGiB();
-        return requestMemGiB * KubernetesConstants.MIB_IN_GIB;
+        return (int) Math.min(Math.max(min, Math.ceil(total * ratio)), max);
     }
 
     private int getContainerRequestMemGiB() {
@@ -108,9 +106,6 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
     }
 
     private Map<String, Quantity> toResourceMap(final String key, final int value, final String unit) {
-        if (value <= 0) {
-            return Collections.emptyMap();
-        }
-        return Collections.singletonMap(key, new Quantity(value + unit));
+        return value <= 0 ? null : Collections.singletonMap(key, new Quantity(value + unit));
     }
 }

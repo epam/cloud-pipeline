@@ -39,7 +39,7 @@ public class DefaultContainerMemoryResourceService implements ContainerMemoryRes
 
     @Override
     public ContainerResources buildResourcesForRun(final PipelineRun run) {
-        return Optional.of(run)
+        return Optional.ofNullable(run)
                 .map(PipelineRun::getInstance)
                 .map(nodeResourcesService::build)
                 .map(NodeResources::getContainerResources)

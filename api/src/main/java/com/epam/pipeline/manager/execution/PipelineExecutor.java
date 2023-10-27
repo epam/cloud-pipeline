@@ -45,7 +45,6 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodDNSConfig;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
-import io.fabric8.kubernetes.api.model.ResourceRequirements;
 import io.fabric8.kubernetes.api.model.SecurityContext;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
@@ -327,16 +326,18 @@ public class PipelineExecutor {
 
     private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
         log.debug("Building container requests/limits for run #{}...", run.getId());
-        final ContainerResources cpuResources = buildCpuRequests(envVars);
-        final ContainerResources memResources = buildMemoryRequests(run, envVars);
-        final ResourceRequirements requirements = ContainerResources.merge(cpuResources, memResources)
-                .toContainerRequirements();
-        log.debug("Built container requests/limits for run #{}: cpu {}, mem {}", run.getId(),
-                cpuResources, memResources);
-        container.setResources(requirements);
+        final ContainerResources resources = buildResources(run, envVars);
+        log.debug("Built container requests/limits for run #{}: {}", run.getId(), resources);
+        container.setResources(resources.toContainerRequirements());
     }
 
-    private ContainerResources buildMemoryRequests(final PipelineRun run, final List<EnvVar> envVars) {
+    private ContainerResources buildResources(final PipelineRun run, final List<EnvVar> envVars) {
+        return ContainerResources.merge(
+                buildCpuResources(run, envVars),
+                buildMemoryResources(run, envVars));
+    }
+
+    private ContainerResources buildMemoryResources(final PipelineRun run, final List<EnvVar> envVars) {
         final String policyName = ListUtils.emptyIfNull(envVars).stream()
                 .filter(var -> SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName().equals(var.getName()))
                 .findFirst()
@@ -344,11 +345,18 @@ public class PipelineExecutor {
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
                 policyName, ContainerMemoryResourcePolicy.DEFAULT);
-        return memoryRequestServices.get(policy).buildResourcesForRun(run);
+        final ContainerResources resources = memoryRequestServices.get(policy).buildResourcesForRun(run);
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container memory requests for run #{} are missing", run.getId());
+        }
+        if (MapUtils.isEmpty(resources.getLimits())) {
+            log.warn("Container memory limits for run #{} are missing", run.getId());
+        }
+        return resources;
     }
 
-    private ContainerResources buildCpuRequests(List<EnvVar> envVars) {
-        return ListUtils.emptyIfNull(envVars).stream()
+    private ContainerResources buildCpuResources(final PipelineRun run, final List<EnvVar> envVars) {
+        final ContainerResources resources = ListUtils.emptyIfNull(envVars).stream()
                 .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
                 .findFirst()
                 .map(var -> {
@@ -364,6 +372,10 @@ public class PipelineExecutor {
                                     new Quantity(cpuRequest)))
                             .build())
                 .orElse(ContainerResources.empty());
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container cpu requests for run #{} are missing", run.getId());
+        }
+        return resources;
     }
 
     private List<Volume> getWindowsVolumes() {

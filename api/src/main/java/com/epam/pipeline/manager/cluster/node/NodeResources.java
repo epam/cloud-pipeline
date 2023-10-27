@@ -26,4 +26,10 @@ public class NodeResources {
     String systemMem;
     String extraMem;
     ContainerResources containerResources;
+
+    public static NodeResources empty() {
+        return NodeResources.builder()
+                .containerResources(ContainerResources.empty())
+                .build();
+    }
 }

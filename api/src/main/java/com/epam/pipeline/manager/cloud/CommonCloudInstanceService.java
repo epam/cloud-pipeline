@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -132,15 +133,36 @@ public class CommonCloudInstanceService {
 
     private Map<String, String> buildEnvVars(final Long runId, final RunInstance instance,
                                              final Map<String, String> envVars) {
-        return CommonUtils.mergeMaps(envVars, buildCommonEnvVars(instance), buildPipeAuthEnvVars(runId));
+        return CommonUtils.mergeMaps(envVars,
+                buildCommonEnvVars(runId, instance),
+                buildPipeAuthEnvVars(runId));
     }
 
-    private Map<String, String> buildCommonEnvVars(final RunInstance instance) {
+    private Map<String, String> buildCommonEnvVars(final Long runId, final RunInstance instance) {
         final NodeResources resources = nodeResourcesService.build(instance);
-        final Map<String, String> envVars = new HashMap<>();
-        envVars.put("KUBE_RESERVED_MEM", resources.getKubeMem());
-        envVars.put("SYSTEM_RESERVED_MEM", resources.getSystemMem());
-        return envVars;
+        return CommonUtils.mergeMaps(
+                buildKubeReservationsEnvVars(runId, resources),
+                buildSystemReservationsEnvVars(runId, resources));
+    }
+
+    private Map<String, String> buildKubeReservationsEnvVars(final Long runId, final NodeResources resources) {
+        if (StringUtils.isBlank(resources.getKubeMem())) {
+            log.warn("Kube memory reservation for run #{} is missing", runId);
+            return Collections.emptyMap();
+        }
+        log.debug("Configuring kube resource reservations for run #{}: memory={}",
+                runId, resources.getKubeMem());
+        return Collections.singletonMap("KUBE_RESERVED_MEM", resources.getKubeMem());
+    }
+
+    private Map<String, String> buildSystemReservationsEnvVars(final Long runId,
+                                                               final NodeResources resources) {
+        if (StringUtils.isBlank(resources.getSystemMem())) {
+            log.warn("System memory reservation for run #{} is missing", runId);
+            return Collections.emptyMap();
+        }
+        log.debug("Configuring system resource reservations for run #{}: memory={}", runId, resources.getSystemMem());
+        return Collections.singletonMap("SYSTEM_RESERVED_MEM", resources.getSystemMem());
     }
 
     private Map<String, String> buildPipeAuthEnvVars(final Long id) {
