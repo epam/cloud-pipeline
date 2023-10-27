@@ -343,7 +343,7 @@ public class PipelineExecutor {
                 .map(EnvVar::getValue)
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
-                policyName, ContainerMemoryResourcePolicy.AUTO);
+                policyName, ContainerMemoryResourcePolicy.DEFAULT);
         return memoryRequestServices.get(policy).buildResourcesForRun(run);
     }
 
