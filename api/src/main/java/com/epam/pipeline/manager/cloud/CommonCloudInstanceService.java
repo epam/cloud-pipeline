@@ -150,8 +150,7 @@ public class CommonCloudInstanceService {
             log.warn("Kube memory reservation for run #{} is missing", runId);
             return Collections.emptyMap();
         }
-        log.debug("Configuring kube resource reservations for run #{}: memory={}",
-                runId, resources.getKubeMem());
+        log.debug("Configuring kube reservations for run #{}: memory={}", runId, resources.getKubeMem());
         return Collections.singletonMap("KUBE_RESERVED_MEM", resources.getKubeMem());
     }
 
@@ -161,7 +160,7 @@ public class CommonCloudInstanceService {
             log.warn("System memory reservation for run #{} is missing", runId);
             return Collections.emptyMap();
         }
-        log.debug("Configuring system resource reservations for run #{}: memory={}", runId, resources.getSystemMem());
+        log.debug("Configuring system reservations for run #{}: memory={}", runId, resources.getSystemMem());
         return Collections.singletonMap("SYSTEM_RESERVED_MEM", resources.getSystemMem());
     }
 

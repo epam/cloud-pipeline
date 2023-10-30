@@ -70,6 +70,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -327,7 +328,8 @@ public class PipelineExecutor {
     private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
         log.debug("Building container requests/limits for run #{}...", run.getId());
         final ContainerResources resources = buildResources(run, envVars);
-        log.debug("Built container requests/limits for run #{}: {}", run.getId(), resources);
+        log.debug("Built container requests/limits for run #{}: requests {}, limits {}", run.getId(),
+                toResourceString(resources.getRequests()), toResourceString(resources.getLimits()));
         container.setResources(resources.toContainerRequirements());
     }
 
@@ -376,6 +378,12 @@ public class PipelineExecutor {
             log.warn("Container cpu requests for run #{} are missing", run.getId());
         }
         return resources;
+    }
+
+    private String toResourceString(final Map<String, Quantity> resources) {
+        return MapUtils.emptyIfNull(resources).entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue().getAmount())
+                .collect(Collectors.joining(","));
     }
 
     private List<Volume> getWindowsVolumes() {
