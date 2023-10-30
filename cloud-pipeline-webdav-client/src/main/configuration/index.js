@@ -24,6 +24,8 @@ const DEFAULT_APP_NAME = 'Cloud Data';
  * @property {string} [componentVersion]
  * @property {string} [version]
  * @property {boolean} [logsEnabled]
+ * @property {boolean} [displaySettings]
+ * @property {boolean} [displayBucketSelection]
  */
 
 class Configuration extends TokenExpirationChecker {
@@ -106,6 +108,14 @@ class Configuration extends TokenExpirationChecker {
 
   get logsEnabled() {
     return this.config?.logsEnabled;
+  }
+
+  get displayBucketSelection() {
+    return this.config?.displayBucketSelection;
+  }
+
+  get displaySettings() {
+    return this.config?.displaySettings;
   }
 
   /**
@@ -241,6 +251,8 @@ class Configuration extends TokenExpirationChecker {
       ftp = this.ftpServers,
       adapters = this.adapters,
       logsEnabled = this.logsEnabled,
+      displayBucketSelection = this.displayBucketSelection,
+      displaySettings = this.displaySettings,
     } = options;
     if (ftp.some((o) => !o.url)) {
       throw new Error('FTP/SFTP server url is required');
@@ -309,6 +321,8 @@ class Configuration extends TokenExpirationChecker {
       }),
       adapters,
       logsEnabled,
+      displayBucketSelection,
+      displaySettings,
     };
     printConfiguration(this.config, 'Configuration saved:');
     if (this.userConfigPath) {

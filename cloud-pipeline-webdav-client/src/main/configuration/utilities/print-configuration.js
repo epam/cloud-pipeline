@@ -16,6 +16,8 @@ module.exports = function printConfiguration(configuration, title) {
     ignoreCertificateErrors,
     updatePermissions,
     logsEnabled,
+    displayBucketSelection,
+    displaySettings,
     ftp = [],
     name,
     ...rest
@@ -31,6 +33,9 @@ module.exports = function printConfiguration(configuration, title) {
   logger.log('  password:                 ', wrapValue(wrapSecure(password)));
   logger.log('  ignore certificate errors:', !!ignoreCertificateErrors);
   logger.log('  update permissions:       ', !!updatePermissions);
+  logger.log('  logging enabled:          ', !!logsEnabled);
+  logger.log('  display bucket selection: ', displayBucketSelection === undefined ? '<default>' : displayBucketSelection);
+  logger.log('  display settings:         ', displaySettings === undefined ? '<default>' : displaySettings);
   logger.log('  logging enabled:          ', !!logsEnabled);
   logger.log('');
   logger.log(`  ${ftp.length} ftp/sftp server${ftp.length === 1 ? '' : 's'}:`);

@@ -25,6 +25,8 @@ module.exports = function build(bridgeOptions) {
       ftp: configuration.ftpServers,
       appName: configuration.name,
       logsEnabled: configuration.logsEnabled,
+      displaySettings: configuration.displaySettings,
+      displayBucketSelection: configuration.displayBucketSelection,
     });
   }
 

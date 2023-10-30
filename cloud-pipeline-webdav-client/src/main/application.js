@@ -1,4 +1,5 @@
 const { BrowserWindow, ipcMain, dialog } = require('electron');
+const logger = require('./common/logger');
 
 class Application {
   /**
@@ -89,8 +90,13 @@ class Application {
     this.mainWindow.on('close', () => {
       this.mainWindow = undefined;
     });
-    // eslint-disable-next-line no-undef
-    await this.mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    try {
+      // eslint-disable-next-line no-undef
+      await this.mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    } catch (error) {
+      logger.error('Error loading main window:');
+      logger.error(error);
+    }
     return this.mainWindow;
   }
 
@@ -102,6 +108,9 @@ class Application {
   }
 
   async openConfigurationsWindow() {
+    if (this.configuration.displaySettings === false) {
+      return;
+    }
     const mainWindow = await this.openMainWindow();
     if (this.configurationWindow) {
       this.configurationWindow.show();
@@ -124,8 +133,13 @@ class Application {
     this.configurationWindow.on('close', () => {
       this.configurationWindow = undefined;
     });
-    // eslint-disable-next-line no-undef
-    await this.configurationWindow.loadURL(CONFIGURATION_WINDOW_WEBPACK_ENTRY);
+    try {
+      // eslint-disable-next-line no-undef
+      await this.configurationWindow.loadURL(CONFIGURATION_WINDOW_WEBPACK_ENTRY);
+    } catch (error) {
+      logger.error('Error loading configuration window:');
+      logger.error(error);
+    }
     return this.configurationWindow;
   }
 
@@ -137,6 +151,9 @@ class Application {
   }
 
   async openStorageAccessWindow() {
+    if (this.configuration.displayBucketSelection === false) {
+      return;
+    }
     const mainWindow = await this.openMainWindow();
     if (this.storageAccessWindow) {
       this.storageAccessWindow.show();
@@ -159,8 +176,13 @@ class Application {
     this.storageAccessWindow.on('close', () => {
       this.storageAccessWindow = undefined;
     });
-    // eslint-disable-next-line no-undef
-    await this.storageAccessWindow.loadURL(STORAGE_ACCESS_WINDOW_WEBPACK_ENTRY);
+    try {
+      // eslint-disable-next-line no-undef
+      await this.storageAccessWindow.loadURL(STORAGE_ACCESS_WINDOW_WEBPACK_ENTRY);
+    } catch (error) {
+      logger.error('Error loading storage window:');
+      logger.error(error);
+    }
     return this.storageAccessWindow;
   }
 
@@ -196,8 +218,13 @@ class Application {
     win.webContents.on('did-finish-load', () => {
       win.webContents.send('dialog-properties', { title, ...dialogConfig });
     });
-    // eslint-disable-next-line no-undef
-    await win.loadURL(INPUT_WINDOW_WEBPACK_ENTRY);
+    try {
+      // eslint-disable-next-line no-undef
+      await win.loadURL(INPUT_WINDOW_WEBPACK_ENTRY);
+    } catch (error) {
+      logger.error('Error loading modal window:');
+      logger.error(error);
+    }
     return this.registerDialogResolver({
       id: win.webContents.id,
       resolver,

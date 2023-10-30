@@ -6,6 +6,7 @@ import Operations from './operations';
 import ipcAction from '../common/ipc-action';
 import AutoUpdate from './auto-update';
 import './application.css';
+import useConfiguration from "../common/use-configuration";
 
 function openConfigurationWindow() {
   ipcAction('openConfigurationWindow');
@@ -16,23 +17,37 @@ function openStorageAccessWindow() {
 }
 
 function Application() {
+  const {configuration} = useConfiguration();
+  console.log(configuration);
   return (
     <div className="container">
       <Layout className="layout">
-        <Layout.Header className="header">
-          <Button
-            size="small"
-            onClick={openStorageAccessWindow}
-          >
-            <InboxOutlined />
-          </Button>
-          <Button
-            size="small"
-            onClick={openConfigurationWindow}
-          >
-            <SettingOutlined />
-          </Button>
-        </Layout.Header>
+        {
+          (configuration?.displayBucketSelection !== false || configuration?. displaySettings !== false) && (
+            <Layout.Header className="header">
+              {
+                configuration?.displayBucketSelection !== false && (
+                  <Button
+                    size="small"
+                    onClick={openStorageAccessWindow}
+                  >
+                    <InboxOutlined />
+                  </Button>
+                )
+              }
+              {
+                configuration?.displaySettings !== false && (
+                  <Button
+                    size="small"
+                    onClick={openConfigurationWindow}
+                  >
+                    <SettingOutlined />
+                  </Button>
+                )
+              }
+            </Layout.Header>
+          )
+        }
         <Layout.Content className="content">
           <FileSystems
             className="content-split-panel"
