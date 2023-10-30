@@ -15,9 +15,23 @@
 FROM library/centos:7.7.1908
 RUN yum install -y epel-release && \
     yum install -y wget \
-                   curl \
+                   bzip2 \
+                   gcc \
+                   zlib-devel \
+                   bzip2-devel \
+                   xz-devel \
+                   make \
+                   ncurses-devel \
+                   unzip \
+                   git \
                    python \
-                   git
+                   fuse \
+                   tzdata \
+                   acl \
+                   coreutils \
+                   openssh-server \
+                   yum-utils
+
 
 RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
