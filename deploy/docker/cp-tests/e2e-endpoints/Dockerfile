@@ -14,8 +14,8 @@
 
 FROM library/centos:7.7.1908
 RUN yum install -y epel-release && \
-    yum install -y curl
-                   nginx
+    yum install -y curl \
+                   nginx \
                    wget \
                    bzip2 \
                    gcc \
