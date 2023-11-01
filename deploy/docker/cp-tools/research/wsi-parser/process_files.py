@@ -19,6 +19,7 @@ import os
 import multiprocessing
 import datetime
 import re
+import requests
 import shutil
 import struct
 import tempfile
@@ -61,6 +62,9 @@ TISSUE_CAT_ATTR_NAME = os.getenv('WSI_PARSING_TISSUE_CAT_ATTR_NAME', 'Tissue')
 MULTIPLE_TYPE_TISSUE_DELIMITER = os.getenv('WSI_PARSING_MULTI_TISSUE_DELIMITER', ':')
 TAG_DELIMITER = os.getenv('WSI_PARSING_TAG_DELIMITER', ';')
 EXCEPTIONS_MAPPINGS_FILE = os.getenv('WSI_PARSING_EXCEPTIONS_MAPPINGS_FILE')
+FORCE_CATALOG_UPDATE = os.getenv('WSI_PARSING_FORCE_CATALOG_UPDATE', 'false') == 'true'
+CLOUD_STORAGE_ID = os.getenv('WSI_PARSING_STORAGE_ID', None)
+CATALOG_UPDATE_URL = os.getenv('WSI_PARSING_CATALOG_UPDATE_URL', None)
 
 STAIN_METHOD_MAPPINGS = {
     'GENERAL': 'General',
@@ -641,11 +645,54 @@ class WsiFileTagProcessor:
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
             return 0
-        pipe_tags = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
+        pipe_tags, tags_dict = self.prepare_tags(existing_attributes_dictionary, tags_to_push)
         tags_to_push_str = ' '.join(pipe_tags)
         self.log_processing_info('Following tags will be assigned to the file: {}'.format(tags_to_push_str))
         url_encoded_cloud_file_path = WsiParsingUtils.extract_cloud_path(urllib.quote(self.file_path))
-        return os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
+        result = os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
+        if FORCE_CATALOG_UPDATE:
+            self.update_search_catalog(tags_dict)
+        return result
+
+    def update_search_catalog(self, tags):
+        if not CATALOG_UPDATE_URL or not CLOUD_STORAGE_ID:
+            self.log_processing_info('Catalog update parameters are not configured')
+            return
+        path = self.file_path.replace('/cloud-data/', '')
+        relative_path = path.split('/', 1)[1]
+        changed_date = datetime.datetime.fromtimestamp(os.path.getmtime(self.file_path))
+        data = [{
+            "name": os.path.basename(self.file_path),
+            "path": relative_path,
+            "labels": {"StorageClass": "STANDARD"},
+            "tags": tags,
+            "type": "File",
+            "size": os.path.getsize(self.file_path),
+            "changed": changed_date.strftime("%Y-%m-%d %H:%M:%S.%f")
+        }]
+        self.log_processing_info('Updating search catalog with value %s' % str(data))
+        self.execute_request(CATALOG_UPDATE_URL % str(CLOUD_STORAGE_ID), data, 5)
+
+    def execute_request(self, url, data, attempts):
+        count = 0
+        while count < attempts:
+            count += 1
+            try:
+                response = requests.post(url, data=json.dumps(data), headers={'content-type': 'application/json'},
+                                         verify=False, timeout=10)
+                if self.check_response(response):
+                    return
+            except Exception as e:
+                self.log_processing_info(
+                    'An error has occurred during request to catalog update: {}'.format(str(e.message)))
+            time.sleep(5)
+        self.log_processing_info('Exceeded maximum retry count {} for catalog update request'.format(attempts))
+
+    def check_response(self, response):
+        if response.status_code != 200:
+            self.log_processing_info("Catalog update responded with status {}\n".format(str(response.status_code)))
+            return False
+        return True
 
     def map_to_metadata_dict(self, metadata):
         metadata_entries = metadata.findall(SCHEMA_PREFIX + 'XMLAnnotation')
@@ -914,6 +961,7 @@ class WsiFileTagProcessor:
     def prepare_tags(self, existing_attributes_dictionary, tags_to_push):
         attribute_updates = list()
         pipe_tags = list()
+        tags_dict = {}
         for attribute_name, values_to_push in tags_to_push.items():
             if not attribute_name in existing_attributes_dictionary:
                 self.log_processing_info(
@@ -938,11 +986,12 @@ class WsiFileTagProcessor:
                 attribute_updates.append({'id': int(existing_attribute_id),
                                           'key': attribute_name, 'values': existing_values})
             pipe_tags.append('\'{}\'=\'{}\''.format(attribute_name, tag_value))
+            tags_dict[attribute_name] = tag_value
         if attribute_updates:
             self.log_processing_info('Updating following categorical attributes before tagging: {}'
                                      .format(attribute_updates))
             self.update_categorical_attributes(attribute_updates)
-        return pipe_tags
+        return pipe_tags, tags_dict
 
     def update_categorical_attributes(self, attribute_updates):
         for attribute in attribute_updates:
