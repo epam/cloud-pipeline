@@ -223,7 +223,7 @@ public class DataStorageApiService {
         return dataStorageManager.updatePolicy(dataStorageVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('STORAGE_ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
             + "@storagePermissionManager.storagePermissionById(#id, 'OWNER'))")
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         return dataStorageManager.delete(id, proceedOnCloud);
