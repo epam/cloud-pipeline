@@ -464,11 +464,11 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MAX_MIB = new IntPreference(
         "cluster.node.system.mem.max.mib", 1024, CLUSTER_GROUP, isGreaterThan(0));
     public static final DoublePreference CLUSTER_NODE_EXTRA_MEM_RATIO = new DoublePreference(
-        "cluster.node.extra.mem.ratio", 0.05, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+        "cluster.node.extra.mem.ratio", 0.04, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MIN_MIB = new IntPreference(
         "cluster.node.extra.mem.min.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
     public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
-        "cluster.node.extra.mem.max.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
+        "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
 
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
