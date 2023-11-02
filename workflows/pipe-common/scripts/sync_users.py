@@ -51,6 +51,7 @@ class UserSource(UserModule):
 
     @abstractmethod
     def get(self):
+        """Returns users"""
         pass
 
 
@@ -59,12 +60,16 @@ class UserHandler(UserModule):
 
     @abstractmethod
     def create(self, users):
+        """Creates users"""
         pass
 
 
 class LinuxUserHandler(UserHandler):
 
     def __init__(self, root_home_dir, sudo_enabled, uid_seed, case):
+        """
+        User handler that creates a local Linux account for each user.
+        """
         self._executor = None
         self._logger = None
         self._root_home_dir = root_home_dir
@@ -193,6 +198,12 @@ class LinuxUserHandler(UserHandler):
 class RunSidsLocalUserSource(UserSource):
 
     def __init__(self, run_id):
+        """
+        User source that returns users which the original run was shared with.
+
+        The implementation returns only usernames. Returned users may not have corresponding
+        Cloud Pipeline platform users.
+        """
         self._api = None
         self._logger = None
         self._run_id = run_id
@@ -233,6 +244,15 @@ class RunSidsLocalUserSource(UserSource):
 class RunSidsPlatformUserSource(UserSource):
 
     def __init__(self, run_id, owner_user_name, sudo_user_names, sudo_group_names, user_name_metadata_key):
+        """
+        User source that returns users which the original run was shared with.
+
+        Returned users always have corresponding Cloud Pipeline platform users.
+
+        Run's owner is required to have either:
+            * ROLE_USER_READER and ROLE_USER_METADATA_READER
+            * or ROLE_ADMIN
+        """
         self._api = None
         self._logger = None
         self._run_id = run_id
