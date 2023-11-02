@@ -71,16 +71,16 @@ public class DefaultNodeResourcesServiceTest {
 
     @Test
     public void buildShouldReturnResourcesIfInstanceTypeHasBeenFound() {
-        set(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST, 1);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO, 0.025);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB, 256);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB, 1024);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO, 0.025);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB, 256);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB, 1024);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO, 0.05);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB, 512);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB, 512);
+        set(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
         doReturn(Collections.singletonList(getInstanceType(CommonCreatorConstants.TEST_NAME, 2, 8)))
                 .when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
@@ -89,6 +89,10 @@ public class DefaultNodeResourcesServiceTest {
 
         assertNotNull(actual);
         assertThat(actual, is(not(NodeResources.empty())));
+    }
+
+    private <T> void set(final AbstractSystemPreference<T> preference) {
+        set(preference, preference.getDefaultValue());
     }
 
     private <T> void set(final AbstractSystemPreference<T> preference, final T value) {

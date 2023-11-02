@@ -131,10 +131,10 @@ public class DefaultNodeResourcesServiceParametrizedTest {
                 NodeResources.builder()
                         .kubeMem(410 + MIB)
                         .systemMem(410 + MIB)
-                        .extraMem(512 + MIB)
+                        .extraMem(656 + MIB)
                         .containerResources(ContainerResources.builder()
                                 .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                .limits(Collections.singletonMap(MEMORY, new Quantity(15052 + MIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(14908 + MIB)))
                                 .build())
                         .build()
                 },
@@ -144,10 +144,10 @@ public class DefaultNodeResourcesServiceParametrizedTest {
                 NodeResources.builder()
                         .kubeMem(820 + MIB)
                         .systemMem(820 + MIB)
-                        .extraMem(512 + MIB)
+                        .extraMem(1311 + MIB)
                         .containerResources(ContainerResources.builder()
                                 .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                .limits(Collections.singletonMap(MEMORY, new Quantity(30616 + MIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(29817 + MIB)))
                                 .build())
                         .build()
                 },
@@ -157,10 +157,10 @@ public class DefaultNodeResourcesServiceParametrizedTest {
                 NodeResources.builder()
                         .kubeMem(1024 + MIB)
                         .systemMem(1024 + MIB)
-                        .extraMem(512 + MIB)
+                        .extraMem(2622 + MIB)
                         .containerResources(ContainerResources.builder()
                                 .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                .limits(Collections.singletonMap(MEMORY, new Quantity(62976 + MIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(60866 + MIB)))
                                 .build())
                         .build()
                 },
@@ -170,10 +170,49 @@ public class DefaultNodeResourcesServiceParametrizedTest {
                 NodeResources.builder()
                         .kubeMem(1024 + MIB)
                         .systemMem(1024 + MIB)
-                        .extraMem(512 + MIB)
+                        .extraMem(5243 + MIB)
                         .containerResources(ContainerResources.builder()
                                 .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
-                                .limits(Collections.singletonMap(MEMORY, new Quantity(128512 + MIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(123781 + MIB)))
+                                .build())
+                        .build()
+                },
+                {
+                "p3.8xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(32, 244),
+                NodeResources.builder()
+                        .kubeMem(1024 + MIB)
+                        .systemMem(1024 + MIB)
+                        .extraMem(9995 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(237813 + MIB)))
+                                .build())
+                        .build()
+                },
+                {
+                "r6i.8xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(32, 256),
+                NodeResources.builder()
+                        .kubeMem(1024 + MIB)
+                        .systemMem(1024 + MIB)
+                        .extraMem(10486 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(249610 + MIB)))
+                                .build())
+                        .build()
+                },
+                {
+                "r5.12xlarge",
+                DefaultNodeResourcesServiceTest.getInstanceType(48, 384),
+                NodeResources.builder()
+                        .kubeMem(1024 + MIB)
+                        .systemMem(1024 + MIB)
+                        .extraMem(15729 + MIB)
+                        .containerResources(ContainerResources.builder()
+                                .requests(Collections.singletonMap(MEMORY, new Quantity(1 + GIB)))
+                                .limits(Collections.singletonMap(MEMORY, new Quantity(375439 + MIB)))
                                 .build())
                         .build()
                 },
@@ -182,22 +221,26 @@ public class DefaultNodeResourcesServiceParametrizedTest {
 
     @Test
     public void buildShouldReturnCorrectResources() {
-        set(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST, 1);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO, 0.025);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB, 256);
-        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB, 1024);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO, 0.025);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB, 256);
-        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB, 1024);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO, 0.05);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB, 512);
-        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB, 512);
+        set(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_KUBE_MEM_MAX_MIB);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_SYSTEM_MEM_MAX_MIB);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_RATIO);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB);
+        set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
         doReturn(Collections.singletonList(type)).when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
 
         final NodeResources actual = service.build(DefaultNodeResourcesServiceTest.getInstance());
 
         assertThat(actual, is(expected));
+    }
+
+    private <T> void set(final AbstractSystemPreference<T> preference) {
+        set(preference, preference.getDefaultValue());
     }
 
     private <T> void set(final AbstractSystemPreference<T> preference, final T value) {
