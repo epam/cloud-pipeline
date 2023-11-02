@@ -57,6 +57,7 @@ public class DefaultNodeResourcesServiceParametrizedTest {
     private final InstanceType type;
     private final NodeResources expected;
 
+    @SuppressWarnings("checkstyle:MethodLength")
     @Parameterized.Parameters(name = "{0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
