@@ -495,7 +495,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         self.symlinks = symlinks
         self.path_separator = os.sep
         self.listing_retry_attempts = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_ATTEMPTS', '3'))
-        self.listing_retry_delay = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_DELAY', '5'))
+        self.listing_retry_delay = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_DELAY', '10'))
 
     def exists(self):
         return os.path.exists(self.path)
