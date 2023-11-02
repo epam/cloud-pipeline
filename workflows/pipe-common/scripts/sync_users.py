@@ -17,8 +17,10 @@ import os
 import shutil
 import stat
 from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 from functools import reduce
 
+import itertools
 import sys
 import time
 
@@ -33,62 +35,88 @@ _ROOT_SSH_DIR = os.path.join(_ROOT_HOME_DIR, '.ssh')
 _SSH_FILE_PATHS = ['id_rsa', 'id_rsa.pub', 'authorized_keys']
 
 
-class UserHandler:
+UserEntity = namedtuple('UserEntity', 'id, roles, login_name, local_name, first_name, last_name, email')
+
+
+class UserModule:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def register(self, executor, logger):
+    def register(self, api, executor, logger):
         pass
+
+
+class UserSource(UserModule):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get(self):
+        """Returns users"""
+        pass
+
+
+class UserHandler(UserModule):
+    __metaclass__ = ABCMeta
 
     @abstractmethod
     def create(self, users):
+        """Creates users"""
         pass
 
 
 class LinuxUserHandler(UserHandler):
 
-    def __init__(self, root_home_dir, sudo_enabled, uid_seed):
+    def __init__(self, root_home_dir, sudo_enabled, uid_seed, case):
+        """
+        User handler that creates a local Linux account for each user.
+        """
         self._executor = None
         self._logger = None
         self._root_home_dir = root_home_dir
         self._sudo_enabled = sudo_enabled
         self._uid_seed = uid_seed
+        self._case = case
 
-    def register(self, executor, logger):
+    def register(self, api, executor, logger):
         self._executor = executor
         self._logger = logger
 
     def create(self, users):
         self._logger.debug('Loading local users...')
-        local_user_names = set(self._get_local_user_names())
-        self._logger.debug('Loaded {} local users.'.format(len(local_user_names)))
-        self._logger.debug('Loaded local users: {}'.format(local_user_names))
+        local_user_names = list(self._get_local_user_names())
+        if not local_user_names:
+            self._logger.debug('Loaded 0 local users.')
+        else:
+            self._logger.debug('Loaded {} local users: {}.'
+                               .format(len(local_user_names), ', '.join(local_user_names)))
 
         for user in users:
-            user_id = user['id']
-            user_roles = user['_roles']
-            user_login_name = user['userName']
-            user_local_name = user['_userLocalName']
-
-            linux_name = user_local_name
-
-            if not linux_name:
-                self._logger.debug('Skipping {} ({}) user creation '
-                                   'because user name is missing...'.format(linux_name, user_login_name))
+            if not user.id:
+                self._logger.debug('Skipping user creation '
+                                   'because user id is missing...')
                 continue
 
-            if linux_name in local_user_names:
+            if not user.login_name:
+                self._logger.debug('Skipping user creation '
+                                   'because user login name is missing...')
+                continue
+
+            linux_user_name = user.local_name or self._with_case(self._resolve_user_name(user.login_name))
+
+            if not linux_user_name:
+                self._logger.debug('Skipping {} ({}) user creation '
+                                   'because user name is missing...'.format(linux_user_name, user.login_name))
+                continue
+
+            if linux_user_name.upper() in local_user_names:
                 continue
 
             try:
-                self._logger.debug('Creating {} ({}) user...'.format(linux_name, user_login_name))
-                user_uid, user_gid, user_home_dir = self._create_account(linux_name, user_id)
-                self._configure_ssh_keys(linux_name, user_uid, user_gid, user_home_dir)
-                if self._sudo_enabled and 'ROLE_OWNER' in user_roles:
-                    self._configure_sudoers(linux_name)
-                self._logger.info('User {} ({}) has been created.'.format(linux_name, user_login_name))
+                self._logger.debug('Creating {} ({}) user...'.format(linux_user_name, user.login_name))
+                self._create_user(linux_user_name, user.id, user.roles)
+                self._logger.info('User {} ({}) has been created.'.format(linux_user_name, user.login_name))
             except Exception:
-                self._logger.warning('User {} ({}) creation has failed.'.format(linux_name, user_login_name),
+                self._logger.warning('User {} ({}) creation has failed.'.format(linux_user_name, user.login_name),
                                      trace=True)
 
     def _get_local_user_names(self):
@@ -97,16 +125,35 @@ class LinuxUserHandler(UserHandler):
         for line in lines:
             stripped_line = line.strip()
             if stripped_line:
-                yield stripped_line.split(':')[0]
+                yield stripped_line.split(':')[0].upper()
 
-    def _create_account(self, user, user_id):
-        self._logger.debug('Creating {} user account...'.format(user))
+    def _resolve_user_name(self, value):
+        return value.split('@', 1)[0]
+
+    def _with_case(self, value):
+        if not value:
+            return value
+        elif self._case == 'lower':
+            return value.lower()
+        elif self._case == 'upper':
+            return value.upper()
+        else:
+            return value
+
+    def _create_user(self, linux_user_name, user_id, user_roles):
+        user_uid, user_gid, user_home_dir = self._create_account(linux_user_name, user_id)
+        self._configure_ssh_keys(linux_user_name, user_uid, user_gid, user_home_dir)
+        if self._sudo_enabled and 'ROLE_OWNER' in user_roles:
+            self._configure_sudoers(linux_user_name)
+
+    def _create_account(self, user_name, user_id):
+        self._logger.debug('Creating {} user account...'.format(user_name))
         user_uid, user_gid = self._resolve_uid_gid(user_id)
-        user_home_dir = os.path.join(self._root_home_dir, user)
+        user_home_dir = os.path.join(self._root_home_dir, user_name)
         mkdir(os.path.dirname(user_home_dir))
-        create_user(user, user, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
+        create_user(user_name, user_name, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
                     skip_existing=True, executor=self._executor)
-        self._logger.debug('User {} account has been created.'.format(user))
+        self._logger.debug('User {} account has been created.'.format(user_name))
         return user_uid, user_gid, user_home_dir
 
     def _resolve_uid_gid(self, user_id):
@@ -148,104 +195,117 @@ class LinuxUserHandler(UserHandler):
         self._logger.debug('User {} sudo access has been configured.'.format(user_name))
 
 
-class UserSyncDaemon:
+class RunSidsLocalUserSource(UserSource):
 
-    def __init__(self, api, executor, logger, run_id, owner_user_name, sudo_user_names, sudo_group_names,
-                 user_name_case, user_name_metadata_key, sync_timeout):
+    def __init__(self, run_id):
+        """
+        User source that returns users which the original run was shared with.
+
+        The implementation returns only usernames. Returned users may not have corresponding
+        Cloud Pipeline platform users.
+        """
+        self._api = None
+        self._logger = None
+        self._run_id = run_id
+
+    def register(self, api, executor, logger):
         self._api = api
-        self._executor = executor
         self._logger = logger
+
+    def get(self):
+        self._logger.debug('Loading shared users ignoring groups...')
+        user_names = self._load_shared_user_names()
+        if not user_names:
+            self._logger.debug('Loaded 0 shared users.')
+            return
+        self._logger.debug('Loaded {} shared users: {}.'.format(len(user_names), ', '.join(user_names)))
+
+        if not user_names:
+            return
+
+        self._logger.debug('Generating users...')
+        for user_name in user_names:
+            yield UserEntity(id=0, roles=[], login_name=user_name, local_name='',
+                             first_name='', last_name='', email='')
+
+    def _load_shared_user_names(self):
+        user_names, _ = self._get_run_shared_users_and_groups_names()
+        return list(sorted(set(user_name.upper() for user_name in user_names)))
+
+    def _get_run_shared_users_and_groups_names(self):
+        run_sids = self._api.load_run_efficiently(self._run_id).get('runSids', [])
+
+        def _split_by_principality(acc, sid):
+            return (acc[0] + [sid['name']], acc[1]) if sid['isPrincipal'] else (acc[0], acc[1] + [sid['name']])
+
+        return reduce(_split_by_principality, run_sids, ([], []))
+
+
+class RunSidsPlatformUserSource(UserSource):
+
+    def __init__(self, run_id, owner_user_name, sudo_user_names, sudo_group_names, user_name_metadata_key):
+        """
+        User source that returns users which the original run was shared with.
+
+        Returned users always have corresponding Cloud Pipeline platform users.
+
+        Run's owner is required to have either:
+            * ROLE_USER_READER and ROLE_USER_METADATA_READER
+            * or ROLE_ADMIN
+        """
+        self._api = None
+        self._logger = None
         self._run_id = run_id
         self._owner_user_name = owner_user_name
         self._sudo_user_names = sudo_user_names
         self._sudo_group_names = sudo_group_names
-        self._user_name_case = user_name_case
         self._user_name_metadata_key = user_name_metadata_key
-        self._sync_timeout = sync_timeout
-        self._handlers = []
 
-    def register(self, handler):
-        self._handlers.append(handler)
-        handler.register(executor=self._executor, logger=self._logger)
+    def register(self, api, executor, logger):
+        self._api = api
+        self._logger = logger
 
-    def sync(self):
-        self._logger.debug('Initiating users synchronisation...')
-        while True:
-            try:
-                time.sleep(self._sync_timeout)
-                self._logger.debug('Starting users synchronization...')
+    def get(self):
+        self._logger.debug('Loading shared users...')
+        user_names = self._load_shared_user_names()
+        if not user_names:
+            self._logger.debug('Loaded 0 shared users.')
+            return
+        self._logger.debug('Loaded {} shared users: {}.'.format(len(user_names), ', '.join(user_names)))
 
-                self._logger.debug('Loading shared users and groups...')
-                run_user_names, run_group_names = self._get_run_shared_users_and_groups_names()
-                shared_user_names = set()
-                shared_user_names.update(run_user_names)
-                shared_user_names.update(self._get_group_user_names(run_group_names))
-                if self._owner_user_name in shared_user_names:
-                    shared_user_names.remove(self._owner_user_name)
-                self._logger.debug('Loaded {} shared users.'.format(len(shared_user_names)))
-                self._logger.debug('Loaded shared users: {}'.format(shared_user_names))
+        self._logger.debug('Loading owner users...')
+        owner_user_names = self._load_owner_user_names()
+        self._logger.debug('Loaded {} owner users.'.format(len(owner_user_names)))
 
-                self._logger.debug('Loading owner users and groups...')
-                owner_user_names = set()
-                owner_user_names.update(self._sudo_user_names)
-                owner_user_names.update(self._get_group_user_names(self._sudo_group_names))
-                self._logger.debug('Loaded {} owner users.'.format(len(owner_user_names)))
+        self._logger.debug('Loading platform users...')
+        platform_users_dict = self._load_platform_users()
+        self._logger.debug('Loaded {} platform users.'.format(len(platform_users_dict)))
+        if len(platform_users_dict) < 2:
+            self._logger.warning('Very few platform users have been received. '
+                                 'Please ensure that the run owner has ROLE_USER_READER.')
 
-                self._logger.debug('Loading user details...')
-                all_users = self._api.load_users()
-                self._logger.debug('Loaded {} user details.'.format(len(all_users)))
+        self._logger.debug('Filtering out users...')
+        users_dict = self._filter_out_non_platform_users(user_names, platform_users_dict)
+        self._logger.debug('Filtered out {} users.'.format(len(user_names) - len(users_dict)))
 
-                self._logger.debug('Resolving shared user details...')
-                shared_users_dict = {}
-                for user in all_users:
-                    user_id = user.get('id')
-                    user_name = user.get('userName')
-                    if not user_id or not user_name:
-                        continue
-                    if user_name not in shared_user_names:
-                        continue
-                    user['_metadata'] = {}
-                    user['_roles'] = []
-                    user['_userLocalName'] = ''
-                    shared_users_dict[user_id] = user
-                self._logger.debug('Resolved {} shared user details.'.format(len(shared_users_dict)))
+        self._logger.debug('Loading user metadata entries...')
+        user_metadata_entries_dict = self._load_user_metadata_entries(users_dict.keys())
+        self._logger.debug('Loaded {} user metadata entries.'.format(len(user_metadata_entries_dict)))
+        if len(user_metadata_entries_dict) < len(users_dict.keys()):
+            self._logger.warning('Only a part of user metadata entries have been received. '
+                                 'Please ensure that the run owner has ROLE_USER_METADATA_READER.')
 
-                self._logger.debug('Loading shared users metadata...')
-                try:
-                    shared_users_metadata = self._api.load_all_metadata_efficiently(shared_users_dict.keys(), 'PIPELINE_USER')
-                except APIError:
-                    self._logger.warning('Shared users metadata loading has failed.', trace=True)
-                    shared_users_metadata = []
-                self._logger.debug('Loaded {} shared users metadata.'.format(len(shared_users_metadata)))
+        self._logger.debug('Generating users...')
+        for user in users_dict.values():
+            yield self._build(user, owner_user_names, user_metadata_entries_dict)
 
-                self._logger.debug('Merging shared users details and metadata...')
-                for metadata_entry in shared_users_metadata:
-                    user_id = metadata_entry.get('entity', {}).get('entityId', 0)
-                    user_metadata = metadata_entry.get('data', {})
-                    user = shared_users_dict.get(user_id, {})
-                    user['_metadata'] = user_metadata
-                for user in shared_users_dict.values():
-                    user_metadata = user['_metadata']
-                    user_login_name = user['userName']
-                    user_local_name = user_metadata.get(self._user_name_metadata_key, {}).get('value') \
-                        or self._resolve_user_name(user_login_name)
-                    user['_userLocalName'] = user_local_name
-                    if user_login_name in owner_user_names:
-                        user['_roles'].append('ROLE_OWNER')
-                self._logger.debug('Merged {} shared users details and metadata.'.format(len(shared_users_metadata)))
-
-                self._logger.debug('Checking {} shared users existence...'.format(len(shared_users_dict)))
-                for handler in self._handlers:
-                    handler.create(shared_users_dict.values())
-                self._logger.debug('Finishing users synchronization...')
-            except KeyboardInterrupt:
-                self._logger.warning('Interrupted.')
-                break
-            except Exception:
-                self._logger.warning('Users synchronization has failed.', trace=True)
-            except BaseException:
-                self._logger.error('Users synchronization has failed completely.', trace=True)
-                raise
+    def _load_shared_user_names(self):
+        user_names, group_names = self._get_run_shared_users_and_groups_names()
+        user_names = set(user_names)
+        user_names.update(self._get_group_user_names(group_names))
+        if self._owner_user_name in user_names:
+            user_names.remove(self._owner_user_name)
+        return list(sorted(set(user_name.upper() for user_name in user_names)))
 
     def _get_run_shared_users_and_groups_names(self):
         run_sids = self._api.load_run_efficiently(self._run_id).get('runSids', [])
@@ -266,27 +326,107 @@ class UserSyncDaemon:
             for group_user in group_users:
                 yield group_user['userName']
 
-    def _resolve_user_name(self, user_name):
-        user_name = user_name.split('@')[0]
-        if self._user_name_case == 'lower':
-            return user_name.lower()
-        elif self._user_name_case == 'upper':
-            return user_name.upper()
-        else:
-            return user_name
+    def _load_owner_user_names(self):
+        owner_user_names = set()
+        owner_user_names.update(self._sudo_user_names)
+        owner_user_names.update(self._get_group_user_names(self._sudo_group_names))
+        return set(user_name.upper() for user_name in owner_user_names)
+
+    def _load_platform_users(self):
+        all_users = self._api.load_users()
+        return {user['userName'].upper(): user
+                for user in all_users
+                if user.get('id') and user.get('userName')}
+
+    def _filter_out_non_platform_users(self, user_names, platform_users_dict):
+        users_dict = {}
+        for user_name in user_names:
+            user = platform_users_dict.get(user_name)
+            if not user:
+                self._logger.warning('Filtering out user {} because there is no corresponding platform user...'
+                                     .format(user_name))
+                continue
+            users_dict[user['id']] = user
+        return users_dict
+
+    def _load_user_metadata_entries(self, user_ids):
+        try:
+            metadata_entries = self._api.load_all_metadata_efficiently(user_ids, 'PIPELINE_USER')
+            return {metadata_entry.get('entity', {}).get('entityId', 0): metadata_entry.get('data', {})
+                    for metadata_entry in metadata_entries}
+        except APIError:
+            self._logger.warning('User metadata entries loading has failed.', trace=True)
+            return {}
+
+    def _build(self, user, owner_user_names, user_metadata_entries_dict):
+        user_metadata = user_metadata_entries_dict.get(user['id']) or {}
+        user_login_name = user['userName']
+        user_local_name = user_metadata.get(self._user_name_metadata_key, {}).get('value', '')
+        user_roles = []
+        if user_login_name.upper() in owner_user_names:
+            user_roles.append('ROLE_OWNER')
+        user_attributes = user.get('attributes', {})
+        return UserEntity(id=user['id'], roles=user_roles,
+                          login_name=user_login_name, local_name=user_local_name,
+                          first_name=user_attributes.get('FirstName', ''),
+                          last_name=user_attributes.get('LastName', ''),
+                          email=user_attributes.get('Email', ''))
+
+
+class UserSyncDaemon:
+
+    def __init__(self, api, executor, logger, sync_timeout):
+        self._api = api
+        self._executor = executor
+        self._logger = logger
+        self._sync_timeout = sync_timeout
+        self._sources = []
+        self._handlers = []
+
+    def register(self, source=None, handler=None):
+        if source:
+            self._sources.append(source)
+            source.register(api=self._api, executor=self._executor, logger=self._logger)
+        if handler:
+            self._handlers.append(handler)
+            handler.register(api=self._api, executor=self._executor, logger=self._logger)
+
+    def sync(self):
+        self._logger.debug('Initiating users synchronisation...')
+        while True:
+            try:
+                time.sleep(self._sync_timeout)
+                self._logger.debug('Starting users synchronization...')
+                users = list(sorted(itertools.chain.from_iterable(source.get() for source in self._sources),
+                                    key=lambda user: user.login_name))
+                if not users:
+                    self._logger.debug('Skipping users synchronization...')
+                    continue
+                self._logger.debug('Processing {} users: {}.'
+                                   .format(len(users), ', '.join(user.login_name for user in users)))
+                for handler in self._handlers:
+                    handler.create(users)
+                self._logger.debug('Finishing users synchronization...')
+            except KeyboardInterrupt:
+                self._logger.warning('Interrupted.')
+                break
+            except Exception:
+                self._logger.warning('Users synchronization has failed.', trace=True)
+            except BaseException:
+                self._logger.error('Users synchronization has failed completely.', trace=True)
+                raise
 
 
 def sync_users():
     daemon = get_daemon()
-    daemon.register(_get_linux_user_handler())
+    daemon.register(source=get_run_sids_platform_user_source(),
+                    handler=get_linux_user_handler())
     daemon.sync()
 
 
 def get_daemon():
     api_url = os.environ['API']
     run_id = os.environ['RUN_ID']
-    user_name_case = os.getenv('CP_CAP_USER_NAME_CASE', 'default').strip().lower()
-    user_name_metadata_key = os.getenv('CP_CAP_USER_NAME_METADATA_KEY', 'local_user_name')
     sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
     logging_dir = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
     logging_level_run = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_RUN', 'INFO')
@@ -295,9 +435,6 @@ def get_daemon():
     logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     logging_task = os.getenv('CP_CAP_SYNC_USERS_LOGGING_TASK', 'UsersSynchronization')
     logging_file = os.path.join(logging_dir, 'sync_users.log')
-    owner_user_name = os.getenv('OWNER', 'root')
-    sudo_user_names = os.getenv('CP_CAP_SUDO_USERS', 'PIPE_ADMIN').split(',')
-    sudo_group_names = os.getenv('CP_CAP_SUDO_GROUPS', 'ROLE_ADMIN').split(',')
 
     mkdir(os.path.dirname(logging_file))
 
@@ -330,22 +467,33 @@ def get_daemon():
     executor = LoggingExecutor(logger=logger, inner=executor)
 
     return UserSyncDaemon(api=api, executor=executor, logger=logger,
-                          run_id=run_id, owner_user_name=owner_user_name,
-                          sudo_user_names=sudo_user_names, sudo_group_names=sudo_group_names,
-                          user_name_case=user_name_case, user_name_metadata_key=user_name_metadata_key,
                           sync_timeout=sync_timeout)
 
 
-def _get_linux_user_handler():
+def get_run_sids_platform_user_source():
+    run_id = os.environ['RUN_ID']
+    user_name_metadata_key = os.getenv('CP_CAP_USER_NAME_METADATA_KEY', 'local_user_name')
+    owner_user_name = os.getenv('OWNER', 'root')
+    sudo_user_names = os.getenv('CP_CAP_SUDO_USERS', 'PIPE_ADMIN').split(',')
+    sudo_group_names = os.getenv('CP_CAP_SUDO_GROUPS', 'ROLE_ADMIN').split(',')
+
+    return RunSidsPlatformUserSource(run_id=run_id, owner_user_name=owner_user_name,
+                                     sudo_user_names=sudo_user_names, sudo_group_names=sudo_group_names,
+                                     user_name_metadata_key=user_name_metadata_key)
+
+
+def get_linux_user_handler():
     shared_dir = os.getenv('SHARED_ROOT', '/common')
     uid_seed_default = int(os.getenv('CP_CAP_UID_SEED', '70000'))
     root_home_dir = os.getenv('CP_CAP_SYNC_USERS_HOME_DIR', os.path.join(shared_dir, 'home'))
     sudo_enabled = os.getenv('CP_CAP_SUDO_ENABLE', 'true').lower().strip() in ['true', 'yes']
+    user_name_case = os.getenv('CP_CAP_USER_NAME_CASE', 'upper').strip().lower()
 
     api = _get_api()
     uid_seed = _get_uid_seed(api, uid_seed_default)
 
-    return LinuxUserHandler(root_home_dir=root_home_dir, sudo_enabled=sudo_enabled, uid_seed=uid_seed)
+    return LinuxUserHandler(root_home_dir=root_home_dir, sudo_enabled=sudo_enabled, uid_seed=uid_seed,
+                            case=user_name_case)
 
 
 def _get_api():
