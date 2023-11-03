@@ -59,6 +59,14 @@ public final class KubernetesConstants {
     public static final String KUBE_DNS_APP = "kube-dns";
     public static final String HYPHEN = "-";
 
+    public static final String CPU_RESOURCE_NAME = "cpu";
+    public static final String MEM_RESOURCE_NAME = "memory";
+
+    public static final int MIB_IN_GIB = 1024;
+
+    public static final String MIB_UNIT = "Mi";
+    public static final String GIB_UNIT = "Gi";
+
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
 

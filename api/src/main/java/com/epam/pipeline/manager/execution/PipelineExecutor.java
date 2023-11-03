@@ -44,6 +44,7 @@ import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.dsl.internal.PodOperationsImpl;
 import io.fabric8.kubernetes.client.utils.HttpClientUtils;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -61,7 +62,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class PipelineExecutor {
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineExecutor.class);
@@ -74,7 +77,6 @@ public class PipelineExecutor {
     private static final String TRUE = "true";
     private static final String USE_HOST_NETWORK = "CP_USE_HOST_NETWORK";
     private static final String DEFAULT_CPU_REQUEST = "1";
-    private static final String CPU_REQUEST_NAME = "cpu";
     private static final DockerMount HOST_CGROUP_MOUNT = DockerMount.builder()
             .name("host-cgroups")
             .hostPath("/sys/fs/cgroup")
@@ -239,25 +241,39 @@ public class PipelineExecutor {
     }
 
     private void buildContainerResources(PipelineRun run, List<EnvVar> envVars, Container container) {
-        final ContainerResources cpuResources = buildCpuRequests(envVars);
-        final ContainerResources memoryResources = buildMemoryRequests(run, envVars);
-        container.setResources(ContainerResources.merge(cpuResources, memoryResources)
-                .toContainerRequirements());
+        log.debug("Building container requests/limits for run #{}...", run.getId());
+        final ContainerResources resources = buildResources(run, envVars);
+        log.debug("Built container requests/limits for run #{}: requests {}, limits {}", run.getId(),
+                toResourceString(resources.getRequests()), toResourceString(resources.getLimits()));
+        container.setResources(resources.toContainerRequirements());
     }
 
-    private ContainerResources buildMemoryRequests(final PipelineRun run, final List<EnvVar> envVars) {
+    private ContainerResources buildResources(final PipelineRun run, final List<EnvVar> envVars) {
+        return ContainerResources.merge(
+                buildCpuResources(run, envVars),
+                buildMemoryResources(run, envVars));
+    }
+
+    private ContainerResources buildMemoryResources(final PipelineRun run, final List<EnvVar> envVars) {
         final String policyName = ListUtils.emptyIfNull(envVars).stream()
                 .filter(var -> SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName().equals(var.getName()))
                 .findFirst()
                 .map(EnvVar::getValue)
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
-                policyName, ContainerMemoryResourcePolicy.NO_LIMIT);
-        return memoryRequestServices.get(policy).buildResourcesForRun(run);
+                policyName, ContainerMemoryResourcePolicy.DEFAULT);
+        final ContainerResources resources = memoryRequestServices.get(policy).buildResourcesForRun(run);
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container memory requests for run #{} are missing", run.getId());
+        }
+        if (MapUtils.isEmpty(resources.getLimits())) {
+            log.warn("Container memory limits for run #{} are missing", run.getId());
+        }
+        return resources;
     }
 
-    private ContainerResources buildCpuRequests(List<EnvVar> envVars) {
-        return ListUtils.emptyIfNull(envVars).stream()
+    private ContainerResources buildCpuResources(final PipelineRun run, final List<EnvVar> envVars) {
+        final ContainerResources resources = ListUtils.emptyIfNull(envVars).stream()
                 .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
                 .findFirst()
                 .map(var -> {
@@ -269,9 +285,20 @@ public class PipelineExecutor {
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
                 .map(cpuRequest ->
                     ContainerResources.builder()
-                            .requests(Collections.singletonMap(CPU_REQUEST_NAME, new Quantity(cpuRequest)))
+                            .requests(Collections.singletonMap(KubernetesConstants.CPU_RESOURCE_NAME,
+                                    new Quantity(cpuRequest)))
                             .build())
                 .orElse(ContainerResources.empty());
+        if (MapUtils.isEmpty(resources.getRequests())) {
+            log.warn("Container cpu requests for run #{} are missing", run.getId());
+        }
+        return resources;
+    }
+
+    private String toResourceString(final Map<String, Quantity> resources) {
+        return MapUtils.emptyIfNull(resources).entrySet().stream()
+                .map(entry -> entry.getKey() + "=" + entry.getValue().getAmount())
+                .collect(Collectors.joining(","));
     }
 
     private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
