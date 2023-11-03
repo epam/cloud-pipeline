@@ -450,6 +450,26 @@ public class SystemPreferences {
         "cluster.enable.autoscaling", true, CLUSTER_GROUP, pass);
     public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
         "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+
+    public static final DoublePreference CLUSTER_NODE_KUBE_MEM_RATIO = new DoublePreference(
+        "cluster.node.kube.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.kube.mem.min.mib", 256, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.kube.mem.max.mib", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_SYSTEM_MEM_RATIO = new DoublePreference(
+        "cluster.node.system.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.system.mem.min.mib", 256, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.system.mem.max.mib", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_EXTRA_MEM_RATIO = new DoublePreference(
+        "cluster.node.extra.mem.ratio", 0.05, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.extra.mem.min.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
+
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
     public static final IntPreference CLUSTER_MAX_SIZE = new IntPreference("cluster.max.size", 50,
@@ -689,7 +709,7 @@ public class SystemPreferences {
     public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
             "launch.container.cpu.resource", 1, LAUNCH_GROUP, isGreaterThan(-1));
     public static final StringPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY = new StringPreference(
-            "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.NODE.name(),
+            "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.DEFAULT.name(),
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
