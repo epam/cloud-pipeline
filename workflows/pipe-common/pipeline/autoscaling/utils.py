@@ -287,7 +287,9 @@ def get_user_data_script(cloud_region, ins_type, ins_img, kube_ip, kubeadm_token
                                            .replace('@API_URL@', api_url) \
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@FS_TYPE@', fs_type) \
-                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url)
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
+                                           .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
+                                           .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
