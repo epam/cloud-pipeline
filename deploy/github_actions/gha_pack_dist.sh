@@ -19,7 +19,21 @@ CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
 function download_gradle_dependencies() {
-    ./gradlew clean buildDependents -Pfast -x test --no-daemon
+    ./gradlew clean buildDependents \
+                    -x test \
+                    -x :pipe-cli:buildLinux \
+                    -x :pipe-cli:buildMac \
+                    -x :pipe-cli:buildMacPy3 \
+                    -x :pipe-cli:buildWin \
+                    -x :client:buildUI \
+                    -x :cloud-pipeline-webdav-client:buildLinux \
+                    -x :cloud-pipeline-webdav-client:buildWin \
+                    -x :fs-browser:build \
+                    -x :data-sharing-service:buildFast \
+                    -x :data-sharing-service:api:clean \
+                    -x :data-sharing-service:client:clean \
+                    -Pfast \
+                    --no-daemon
 
     if [ "$?" != 0 ]; then
         echo "Problem with resolving gradle dependencies..."
