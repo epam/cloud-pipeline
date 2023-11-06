@@ -31,16 +31,19 @@ import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
+import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.pipeline.run.ScheduleType;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -156,6 +159,21 @@ public final class PipelineCreatorUtils {
     public static PipelineRun getPipelineRunWithStatus(final Long id, final TaskStatus status) {
         final PipelineRun pipelineRun = getPipelineRun(id);
         pipelineRun.setStatus(status);
+        return pipelineRun;
+    }
+
+    public static PipelineRun getPipelineRunWithInstance(final Long id, final String owner, final Long runInstanceId) {
+        final PipelineRun pipelineRun = getPipelineRun(id, owner);
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setCloudRegionId(runInstanceId);
+        runInstance.setCloudProvider(CloudProvider.AWS);
+        pipelineRun.setInstance(runInstance);
+        pipelineRun.setStatus(TaskStatus.RUNNING);
+        pipelineRun.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        pipelineRun.setStartDate(DateUtils.now());
+        pipelineRun.setPodId(TEST_STRING);
+        pipelineRun.setOwner(owner);
+        pipelineRun.setLastChangeCommitTime(DateUtils.now());
         return pipelineRun;
     }
 
