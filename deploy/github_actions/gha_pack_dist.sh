@@ -32,6 +32,7 @@ function download_gradle_dependencies() {
                     -x :data-sharing-service:buildFast \
                     -x :data-sharing-service:api:clean \
                     -x :data-sharing-service:client:clean \
+                    -x :workflows:buildGpuStat \
                     -Pfast \
                     --no-daemon
 
@@ -89,6 +90,8 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 mkdir -p data-sharing-service/api/build/libs
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
 
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz ${API_STATIC_PATH}/gpustat.tar.gz
+
 ./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
                         -Pprofile=release \
                         -x test \
@@ -103,6 +106,7 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
                         -x :data-sharing-service:buildFast \
                         -x :data-sharing-service:api:clean \
                         -x :data-sharing-service:client:clean \
+                        -x :workflows:buildGpuStat \
                         -Pfast \
                         --no-daemon
 
