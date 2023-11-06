@@ -17,21 +17,20 @@ package com.epam.pipeline.manager.cluster.node;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.InstanceTypeCRUDService;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import org.junit.Test;
 
-import java.util.Collections;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -39,9 +38,9 @@ import static org.mockito.Mockito.mock;
 public class DefaultNodeResourcesServiceTest {
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-    private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
+    private final InstanceTypeCRUDService instanceTypeCRUDService = mock(InstanceTypeCRUDService.class);
     private final NodeResourcesService service = new DefaultNodeResourcesService(preferenceManager,
-            instanceOfferManager);
+            instanceTypeCRUDService);
 
     @Test
     public void buildShouldReturnEmptyResourcesIfInstanceIsMissing() {
@@ -52,7 +51,7 @@ public class DefaultNodeResourcesServiceTest {
 
     @Test
     public void buildShouldReturnEmptyResourcesIfThereAreNoInstanceTypes() {
-        doReturn(null).when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
+        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 
@@ -61,8 +60,7 @@ public class DefaultNodeResourcesServiceTest {
 
     @Test
     public void buildShouldReturnEmptyResourcesIfInstanceTypeHasNotBeenFound() {
-        doReturn(Collections.singletonList(getInstanceType(CommonCreatorConstants.TEST_NAME_2, 2, 8)))
-                .when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
+        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 
@@ -82,8 +80,8 @@ public class DefaultNodeResourcesServiceTest {
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB);
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
-        doReturn(Collections.singletonList(getInstanceType(CommonCreatorConstants.TEST_NAME, 2, 8)))
-                .when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
+        doReturn(Optional.of(getInstanceType(CommonCreatorConstants.TEST_NAME, 2, 8)))
+                .when(instanceTypeCRUDService).find(any(), any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 

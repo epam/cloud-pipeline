@@ -17,20 +17,18 @@ package com.epam.pipeline.manager.cluster.node;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import com.epam.pipeline.manager.cluster.InstanceTypeCRUDService;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import io.fabric8.kubernetes.api.model.Quantity;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -38,7 +36,7 @@ import java.util.Optional;
 public class DefaultNodeResourcesService implements NodeResourcesService {
 
     private final PreferenceManager preferenceManager;
-    private final InstanceOfferManager instanceOfferManager;
+    private final InstanceTypeCRUDService instanceTypeCRUDService;
 
     @Override
     public NodeResources build(final RunInstance instance) {
@@ -76,15 +74,8 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
     }
 
     private Optional<InstanceType> findInstanceType(final RunInstance instance) {
-        return findInstanceType(instance.getCloudRegionId(), instance.getSpot(), instance.getNodeType());
-    }
-
-    private Optional<InstanceType> findInstanceType(final Long regionId, final Boolean spot,
-                                                    final String instanceType) {
-        return ListUtils.emptyIfNull(instanceOfferManager.getAllInstanceTypes(regionId, spot))
-                .stream()
-                .filter(type -> Objects.equals(instanceType, type.getName()))
-                .findFirst();
+        return instanceTypeCRUDService.find(instance.getCloudProvider(), instance.getCloudRegionId(),
+                instance.getNodeType());
     }
 
     private int getTotalMemGiB(final InstanceType type) {
