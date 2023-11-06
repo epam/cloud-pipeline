@@ -33,6 +33,9 @@ function download_gradle_dependencies() {
               -x :data-sharing-service:api:build \
               -x :data-sharing-service:buildAll \
               -x :data-sharing-service:buildFast \
+              -x :data-transfer-service:build \
+              -x :data-transfer-service:bundleWindows \
+              -x :data-transfer-service:bundleLinux \
               -x :workflows:buildGpuStat \
               -Pfast \
               --no-daemon
@@ -91,6 +94,12 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 mkdir -p data-sharing-service/api/build/libs
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
 
+mkdir -p data-transfer-service/build/libs \
+         data-transfer-service/build/distributions
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service.jar data-transfer-service/build/libs/data-transfer-service.jar
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-windows.zip data-transfer-service/build/distributions/data-transfer-service-windows.zip
+aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-linux.zip data-transfer-service/build/distributions/data-transfer-service-linux.zip
+
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz ${API_STATIC_PATH}/gpustat.tar.gz
 
 ./gradlew distTar \
@@ -109,6 +118,9 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
           -x :data-sharing-service:api:build \
           -x :data-sharing-service:buildAll \
           -x :data-sharing-service:buildFast \
+          -x :data-transfer-service:build \
+          -x :data-transfer-service:bundleWindows \
+          -x :data-transfer-service:bundleLinux \
           -x :workflows:buildGpuStat \
           -Pfast \
           --no-daemon

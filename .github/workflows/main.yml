@@ -166,6 +166,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: bash deploy/github_actions/gha_build_data_sharing_service.sh
+  Build_DataTransferService:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '8'
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+      - run: bash deploy/github_actions/gha_build_data_transfer_service.sh
   Build_FSBrowser:
     runs-on: ubuntu-20.04
     steps:
@@ -210,7 +224,7 @@ jobs:
     needs: [CLI_Linux, CLI_Linux_el6, CLI_MacOS, CLI_Windows,
             Build_Client,
             Build_CloudData_Linux, Build_CloudData_Windows,
-            Build_DataSharingService,
+            Build_DataSharingService, Build_DataTransferService,
             Build_FSBrowser, Build_GpuStat]
     steps:
       - uses: actions/checkout@v2
