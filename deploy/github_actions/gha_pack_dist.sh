@@ -19,22 +19,23 @@ CLOUD_PIPELINE_BUILD_RETRY_TIMES=${CLOUD_PIPELINE_BUILD_RETRY_TIMES:-5}
 
 # pre-fetch gradle dependency to get rid of gradle timeouts in the distTar step
 function download_gradle_dependencies() {
-    ./gradlew clean buildDependents \
-                    -x test \
-                    -x :pipe-cli:buildLinux \
-                    -x :pipe-cli:buildMac \
-                    -x :pipe-cli:buildMacPy3 \
-                    -x :pipe-cli:buildWin \
-                    -x :client:buildUI \
-                    -x :cloud-pipeline-webdav-client:buildLinux \
-                    -x :cloud-pipeline-webdav-client:buildWin \
-                    -x :fs-browser:build \
-                    -x :data-sharing-service:buildFast \
-                    -x :data-sharing-service:api:clean \
-                    -x :data-sharing-service:client:clean \
-                    -x :workflows:buildGpuStat \
-                    -Pfast \
-                    --no-daemon
+    ./gradlew buildDependents \
+              -x test \
+              -x :pipe-cli:buildLinux \
+              -x :pipe-cli:buildMac \
+              -x :pipe-cli:buildMacPy3 \
+              -x :pipe-cli:buildWin \
+              -x :client:buildUI \
+              -x :cloud-pipeline-webdav-client:buildLinux \
+              -x :cloud-pipeline-webdav-client:buildWin \
+              -x :fs-browser:build \
+              -x :data-sharing-service:client:buildUI \
+              -x :data-sharing-service:api:build \
+              -x :data-sharing-service:buildAll \
+              -x :data-sharing-service:buildFast \
+              -x :workflows:buildGpuStat \
+              -Pfast \
+              --no-daemon
 
     if [ "$?" != 0 ]; then
         echo "Problem with resolving gradle dependencies..."
@@ -92,23 +93,25 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
 
 aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz ${API_STATIC_PATH}/gpustat.tar.gz
 
-./gradlew clean distTar -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
-                        -Pprofile=release \
-                        -x test \
-                        -x :pipe-cli:buildLinux \
-                        -x :pipe-cli:buildMac \
-                        -x :pipe-cli:buildMacPy3 \
-                        -x :pipe-cli:buildWin \
-                        -x :client:buildUI \
-                        -x :cloud-pipeline-webdav-client:buildLinux \
-                        -x :cloud-pipeline-webdav-client:buildWin \
-                        -x :fs-browser:build \
-                        -x :data-sharing-service:buildFast \
-                        -x :data-sharing-service:api:clean \
-                        -x :data-sharing-service:client:clean \
-                        -x :workflows:buildGpuStat \
-                        -Pfast \
-                        --no-daemon
+./gradlew distTar \
+          -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
+          -Pprofile=release \
+          -x test \
+          -x :pipe-cli:buildLinux \
+          -x :pipe-cli:buildMac \
+          -x :pipe-cli:buildMacPy3 \
+          -x :pipe-cli:buildWin \
+          -x :client:buildUI \
+          -x :cloud-pipeline-webdav-client:buildLinux \
+          -x :cloud-pipeline-webdav-client:buildWin \
+          -x :fs-browser:build \
+          -x :data-sharing-service:client:buildUI \
+          -x :data-sharing-service:api:build \
+          -x :data-sharing-service:buildAll \
+          -x :data-sharing-service:buildFast \
+          -x :workflows:buildGpuStat \
+          -Pfast \
+          --no-daemon
 
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
