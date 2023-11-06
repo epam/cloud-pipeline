@@ -16,8 +16,8 @@
 package com.epam.pipeline.manager.cluster.node;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import com.epam.pipeline.manager.cluster.InstanceTypeCRUDService;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -30,11 +30,11 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -49,9 +49,9 @@ public class DefaultNodeResourcesServiceParametrizedTest {
     private static final String GIB = "Gi";
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-    private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
+    private final InstanceTypeCRUDService instanceTypeCRUDService = mock(InstanceTypeCRUDService.class);
     private final NodeResourcesService service = new DefaultNodeResourcesService(preferenceManager,
-            instanceOfferManager);
+            instanceTypeCRUDService);
 
     private final String name;
     private final InstanceType type;
@@ -259,7 +259,7 @@ public class DefaultNodeResourcesServiceParametrizedTest {
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB);
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
-        doReturn(Collections.singletonList(type)).when(instanceOfferManager).getAllInstanceTypes(any(), anyBoolean());
+        doReturn(Optional.of(type)).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
 
         final NodeResources actual = service.build(DefaultNodeResourcesServiceTest.getInstance());
 
