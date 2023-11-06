@@ -15,6 +15,7 @@ import {
 import OperationName from '../../operations/components/operation-name';
 import { OperationTypes } from '../../operations';
 import { usePlatformSpecificHotKeyCode } from '../../operations/hooks/use-platform-specific-hotkeys';
+import { useFileSystemRestricted } from "./hooks/use-file-system";
 
 function ActionButton(
   {
@@ -138,19 +139,26 @@ function FileSystemActions(
     style,
   },
 ) {
+  const restricted = useFileSystemRestricted();
   return (
     <div
       className={className}
       style={style}
     >
       <ConfigProvider componentSize="small">
-        <CreateDirectory />
-        <Divider type="vertical" />
-        <Copy />
-        <Move />
-        <Divider type="vertical" />
-        <Remove />
-        <Divider type="vertical" />
+        {
+          !restricted && (
+            <>
+              <CreateDirectory />
+              <Divider type="vertical" />
+              <Copy />
+              <Move />
+              <Divider type="vertical" />
+              <Remove />
+              <Divider type="vertical" />
+            </>
+          )
+        }
         <Refresh />
       </ConfigProvider>
     </div>

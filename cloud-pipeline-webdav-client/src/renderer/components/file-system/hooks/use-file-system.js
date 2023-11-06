@@ -41,12 +41,15 @@ function reduce(state, action) {
         newState.directory = action.directory;
       }
       newState.available = action.available;
+      console.log('initialized', action);
+      newState.restricted = !!action.restricted;
       return newState;
     }
     case Actions.loaded: {
       if (state.identifier !== action.identifier) {
         return {
           ...state,
+          restricted: !!action.restricted,
           pending: false,
           error: undefined,
           identifier: action.identifier,
@@ -74,6 +77,7 @@ async function initialize(dispatch, getAborted, options = {}) {
       return;
     }
     const available = await ipcResponse('getAvailableAdapters');
+    console.log('~~~available', available);
     if (getAborted()) {
       return;
     }
@@ -112,6 +116,7 @@ const FileSystemContext = React.createContext({
   identifier: '',
   onChangeAdapter: NOOP,
   initialized: false,
+  restricted: false,
   active: true,
   key: '',
   setActive: NOOP,
@@ -136,6 +141,13 @@ function useFileSystemInitialized() {
     initialized,
   } = useContext(FileSystemContext);
   return !!initialized;
+}
+
+function useFileSystemRestricted() {
+  const {
+    restricted,
+  } = useContext(FileSystemContext);
+  return !!restricted;
 }
 
 /**
@@ -191,6 +203,7 @@ export {
   useFileSystemIdentifier,
   useFileSystemSetActive,
   useFileSystemInitialized,
+  useFileSystemRestricted,
   useFileSystemKey,
   useFileSystemActive,
   useFileSystemPathChangeCallback,
@@ -233,12 +246,14 @@ export default function useCreateFileSystem(index = 0) {
     available,
     identifier,
     directory,
+    restricted,
   } = state;
   return useMemo(() => ({
     directory,
     pending,
     error,
     available,
+    restricted,
     identifier,
     onChangeAdapter,
     initialized: !error && !pending && !!identifier,
@@ -250,6 +265,7 @@ export default function useCreateFileSystem(index = 0) {
     pending,
     error,
     available,
+    restricted,
     identifier,
     directory,
     onChangeAdapter,

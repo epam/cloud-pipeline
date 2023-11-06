@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { useFileSystemIdentifier, useFileSystemKey } from '../../hooks/use-file-system';
+import { useFileSystemIdentifier, useFileSystemKey, useFileSystemRestricted } from '../../hooks/use-file-system';
 import { useFileSystemElementIsSelected, useFileSystemSelection } from '../../hooks/use-file-system-selection';
 import FSItemPropType from '../file-system-item-prop-type';
 import './drag-n-drop.css';
@@ -8,17 +8,18 @@ import './drag-n-drop.css';
 function useDragData(element) {
   const key = useFileSystemKey();
   const identifier = useFileSystemIdentifier();
+  const restricted = useFileSystemRestricted();
   const isSelected = useFileSystemElementIsSelected(element);
   const selection = useFileSystemSelection();
   const dragItems = useMemo(
     () => (isSelected ? selection : [element.path]),
     [isSelected, selection, element],
   );
-  return useMemo(() => ({
+  return useMemo(() => (restricted ? undefined : {
     key,
     identifier,
     elements: dragItems,
-  }), [key, identifier, dragItems]);
+  }), [key, identifier, dragItems, restricted]);
 }
 
 const image = document.createElement('div');
@@ -33,6 +34,7 @@ function DragElement(
   },
 ) {
   const dragData = useDragData(element);
+  const restricted = useFileSystemRestricted();
   const onDragStart = useCallback((event) => {
     if (dragData) {
       const { key } = dragData;
@@ -63,8 +65,8 @@ function DragElement(
     {
       ...rest,
       ...(children.props || {}),
-      draggable: true,
-      onDragStart,
+      draggable: !restricted,
+      onDragStart: restricted ? undefined : onDragStart,
     },
   );
 }

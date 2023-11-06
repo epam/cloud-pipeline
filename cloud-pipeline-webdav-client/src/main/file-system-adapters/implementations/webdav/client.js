@@ -27,8 +27,9 @@ class WebDAVClientImpl extends WebBasedClient {
     this.name = name || 'Cloud Data';
   }
 
-  async initialize(url, user, password, ignoreCertificateErrors) {
+  async initialize(url, user, password, ignoreCertificateErrors, disclaimer) {
     await super.initialize(url);
+    this.disclaimer = disclaimer;
     this.httpsAgent = new https.Agent({
       rejectUnauthorized: !ignoreCertificateErrors,
       timeout: TIMEOUT_MS,
@@ -82,7 +83,7 @@ class WebDAVClientImpl extends WebBasedClient {
       throw new WebDAVError(
         error,
         isRoot ? this.name : directory,
-        isRoot && error.status === 404 ? DISCLAIMER : undefined,
+        isRoot && error.status === 404 ? (this.disclaimer || DISCLAIMER) : undefined,
       );
     }
   }

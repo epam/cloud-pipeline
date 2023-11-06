@@ -3,7 +3,7 @@ const WebDAVInterface = require('./interface');
 
 class WebDAVAdapter extends WebBasedAdapter {
   /**
-   * @param {FileSystemAdapterOptions & {rootName: string?, apiURL: string?, updatePermissions: boolean?}} options
+   * @param {FileSystemAdapterOptions & {rootName: string?, apiURL: string?, updatePermissions: boolean?, disclaimer?: string, restricted?: boolean}} options
    */
   constructor(options) {
     super(options);
@@ -13,6 +13,8 @@ class WebDAVAdapter extends WebBasedAdapter {
     this.storages = [];
     this.ignoreCertificateErrors = options?.ignoreCertificateErrors;
     this.updatePermissions = options?.updatePermissions;
+    this.disclaimer = options?.disclaimer;
+    this.restricted = options?.restricted;
   }
 
   toString() {
@@ -39,6 +41,7 @@ class WebDAVAdapter extends WebBasedAdapter {
       apiURL: this.apiURL,
       ignoreCertificateErrors: this.ignoreCertificateErrors,
       updatePermissions: this.updatePermissions,
+      disclaimer: this.disclaimer,
     });
     return webDAVInterface;
   }

@@ -18,6 +18,8 @@ module.exports = function printConfiguration(configuration, title) {
     logsEnabled,
     displayBucketSelection,
     displaySettings,
+    webDavRestricted,
+    webDavErrorDisclaimer,
     ftp = [],
     name,
     ...rest
@@ -31,6 +33,7 @@ module.exports = function printConfiguration(configuration, title) {
   logger.log('  server:                   ', wrapValue(server));
   logger.log('  username:                 ', wrapValue(username));
   logger.log('  password:                 ', wrapValue(wrapSecure(password)));
+  logger.log('  webdav restricted mode:   ', !!webDavRestricted);
   logger.log('  ignore certificate errors:', !!ignoreCertificateErrors);
   logger.log('  update permissions:       ', !!updatePermissions);
   logger.log('  logging enabled:          ', !!logsEnabled);

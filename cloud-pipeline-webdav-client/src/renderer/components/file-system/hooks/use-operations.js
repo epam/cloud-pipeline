@@ -5,7 +5,12 @@ import {
   useState,
 } from 'react';
 import { message } from 'antd';
-import { useFileSystemIdentifier, useFileSystemInitialized, useOtherFileSystemPath } from './use-file-system';
+import {
+  useFileSystemIdentifier,
+  useFileSystemInitialized,
+  useFileSystemRestricted,
+  useOtherFileSystemPath
+} from './use-file-system';
 import { useCurrentPath } from './use-file-system-path';
 import { useFileSystemClearSelection, useFileSystemSelection } from './use-file-system-selection';
 import useFileSystemHotKeys from './use-file-system-hot-keys';
@@ -103,6 +108,7 @@ export function useCreateDirectoryOperation(hotKey = undefined) {
   const initialized = useFileSystemInitialized();
   const identifier = useFileSystemIdentifier();
   const path = useCurrentPath();
+  const restricted = useFileSystemRestricted();
   const operation = useCallback(
     () => invokeOperation(
       () => createDirectory(identifier, path),
@@ -111,7 +117,7 @@ export function useCreateDirectoryOperation(hotKey = undefined) {
   );
   return useOperation(
     operation,
-    !!path && identifier && initialized,
+    !!path && identifier && initialized && !restricted,
     hotKey,
   );
 }
@@ -124,6 +130,7 @@ export function useCopyOperation(hotKey = undefined) {
   const copyMoveSource = useCopyMoveSource();
   const clearSelection = useFileSystemClearSelection();
   const initialized = useFileSystemInitialized();
+  const restricted = useFileSystemRestricted();
   const {
     sourceFileSystem,
     sources,
@@ -143,6 +150,7 @@ export function useCopyOperation(hotKey = undefined) {
   return useOperation(
     operation,
     initialized
+    && !restricted
     && !!sourceFileSystem
     && !!destinationFileSystem
     && (sources || []).length > 0
@@ -173,6 +181,7 @@ export function useMoveOperation(hotKey = undefined) {
   const copyMoveSource = useCopyMoveSource();
   const clearSelection = useFileSystemClearSelection();
   const initialized = useFileSystemInitialized();
+  const restricted = useFileSystemRestricted();
   const {
     sourceFileSystem,
     sources,
@@ -193,6 +202,7 @@ export function useMoveOperation(hotKey = undefined) {
   return useOperation(
     operation,
     initialized
+    && !restricted
     && !!sourceFileSystem
     && !!destinationFileSystem
     && (movableItems || []).length > 0
@@ -208,6 +218,7 @@ export function useMoveOperation(hotKey = undefined) {
 export function useRemoveOperation(hotKey = undefined) {
   const identifier = useFileSystemIdentifier();
   const selection = useFileSystemSelection();
+  const restricted = useFileSystemRestricted();
   const removableItems = useRemovableItems(selection);
   const operation = useCallback(
     () => invokeOperation(() => remove(identifier, removableItems)),
@@ -215,7 +226,7 @@ export function useRemoveOperation(hotKey = undefined) {
   );
   return useOperation(
     operation,
-    removableItems.length > 0,
+    removableItems.length > 0 && !restricted,
     hotKey,
   );
 }

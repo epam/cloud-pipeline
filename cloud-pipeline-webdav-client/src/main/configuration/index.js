@@ -26,6 +26,8 @@ const DEFAULT_APP_NAME = 'Cloud Data';
  * @property {boolean} [logsEnabled]
  * @property {boolean} [displaySettings]
  * @property {boolean} [displayBucketSelection]
+ * @property {boolean} [webDavRestricted]
+ * @property {string} [webDavErrorDisclaimer]
  */
 
 class Configuration extends TokenExpirationChecker {
@@ -108,6 +110,14 @@ class Configuration extends TokenExpirationChecker {
 
   get logsEnabled() {
     return this.config?.logsEnabled;
+  }
+
+  get webDavRestricted() {
+    return this.config?.webDavRestricted;
+  }
+
+  get webDavErrorDisclaimer() {
+    return this.config?.webDavErrorDisclaimer;
   }
 
   get displayBucketSelection() {
@@ -252,6 +262,8 @@ class Configuration extends TokenExpirationChecker {
       adapters = this.adapters,
       logsEnabled = this.logsEnabled,
       displayBucketSelection = this.displayBucketSelection,
+      webDavRestricted = this.webDavRestricted,
+      webDavErrorDisclaimer = this.webDavErrorDisclaimer,
       displaySettings = this.displaySettings,
     } = options;
     if (ftp.some((o) => !o.url)) {
@@ -321,6 +333,8 @@ class Configuration extends TokenExpirationChecker {
       }),
       adapters,
       logsEnabled,
+      webDavRestricted,
+      webDavErrorDisclaimer,
       displayBucketSelection,
       displaySettings,
     };

@@ -36,6 +36,7 @@ class WebDAVInterface extends WebBasedInterface {
    * @property {string} [apiURL]
    * @property {boolean} [ignoreCertificateErrors]
    * @property {boolean} [updatePermissions]
+   * @property {string} [disclaimer]
    */
 
   /**
@@ -45,6 +46,7 @@ class WebDAVInterface extends WebBasedInterface {
   async initialize(options) {
     await super.initialize(options);
     this.ignoreCertificateErrors = options?.ignoreCertificateErrors;
+    this.disclaimer = options?.disclaimer;
     this.updatePermissions = options?.updatePermissions;
     this.storages = options?.storages || [];
     this.name = options.name || options.rootName || 'Cloud Data';
@@ -62,7 +64,13 @@ class WebDAVInterface extends WebBasedInterface {
       ignoreCertificateErrors: options.ignoreCertificateErrors,
     });
     this.client = new WebDAVClient(this.name);
-    await this.client.initialize(this.url, this.user, this.password, this.ignoreCertificateErrors);
+    await this.client.initialize(
+      this.url,
+      this.user,
+      this.password,
+      this.ignoreCertificateErrors,
+      this.disclaimer
+    );
     if (!this.updatePermissions) {
       this.clearPermissionsRequestsTimeout();
       this.permissionsRequests = [];

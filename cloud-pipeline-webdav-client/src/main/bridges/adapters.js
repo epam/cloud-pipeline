@@ -37,6 +37,7 @@ module.exports = function build(bridgeOptions) {
       adapters.adapters.map((anAdapter) => ({
         identifier: anAdapter.identifier,
         name: anAdapter.name,
+        restricted: !!anAdapter.restricted,
       })),
     );
   }
@@ -83,6 +84,7 @@ module.exports = function build(bridgeOptions) {
       identifier: adapter.identifier,
       directory,
       delimiter,
+      restricted: adapter.restricted,
     });
   }
 
