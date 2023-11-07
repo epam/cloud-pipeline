@@ -212,12 +212,12 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
     public void introduceExtendedAttributesSupportInPipeFuse() {
         String[] commands = {
                 "yum install attr -y",
-                format("setfattr -n user.key1 -v value1 cloud-data/%s/%s", testStorage, testFile),
-                format("setfattr -n user.key2 -v value2 cloud-data/%s/%s", testStorage, testFile),
+                format("setfattr -n user.key1 -v value1 /cloud-data/%s/%s", testStorage, testFile),
+                format("setfattr -n user.key2 -v value2 /cloud-data/%s/%s", testStorage, testFile),
                 format("getfattr cloud-data/%s/%s", testStorage, testFile),
-                format("getfattr -n user.key1 cloud-data/%s/%s", testStorage, testFile),
-                format("setfattr -n another.key1 -v value1 cloud-data/%s/%s", testStorage, testFile),
-                format("getfattr -n another.key1 cloud-data/%s/%s", testStorage, testFile)
+                format("getfattr -n user.key1 /cloud-data/%s/%s", testStorage, testFile),
+                format("setfattr -n another.key1 -v value1 /cloud-data/%s/%s", testStorage, testFile),
+                format("getfattr -n another.key1 /cloud-data/%s/%s", testStorage, testFile)
         };
         library()
                 .createStorage(testStorage)
@@ -233,7 +233,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                     shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(commands[0])
-                            .waitUntilTextAppears(getLastRunId())
+                            .waitUntilTextAppears("Complete!")
                             .assertNextStringIsVisible(commands[0], rootHost)
                             .execute(commands[1])
                             .assertNextStringIsVisible(commands[1], rootHost)
