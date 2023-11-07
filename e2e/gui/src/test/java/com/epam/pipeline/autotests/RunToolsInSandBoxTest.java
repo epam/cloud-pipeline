@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolDescription;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -38,7 +39,6 @@ import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
-import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -108,8 +108,10 @@ public class RunToolsInSandBoxTest
     public void validateEndpointLink() {
         ToolPageAO endpointPage = null;
         try {
-            endpointPage = runsMenu()
-                    .show(getLastRunId())
+            final RunsMenuAO runsMenuAO = runsMenu();
+            runsMenuAO
+                    .showLog(getLastRunId());
+            endpointPage = runsMenuAO
                     .clickEndpoint()
                     .sleep(10, SECONDS)
                     .validateEndpointPage(C.LOGIN);
@@ -125,8 +127,10 @@ public class RunToolsInSandBoxTest
     @TestCase(value = {"EPMCMBIBPC-496"})
     public void validateUsernameOnPipelinePage() {
         open(C.ROOT_ADDRESS);
-        runsMenu()
-                .show(getLastRunId())
+        final RunsMenuAO runsMenuAO = runsMenu();
+        runsMenuAO
+                .showLog(getLastRunId());
+        runsMenuAO
                 .ensureHasOwner(getUserNameByAccountLogin(admin.login));
     }
 
@@ -134,11 +138,10 @@ public class RunToolsInSandBoxTest
     @TestCase(value = {"EPMCMBIBPC-500"})
     public void checkToolAccessibilityForAnotherUser() {
         open(C.ROOT_ADDRESS);
-        String pipelineUrl =
-                runsMenu()
-                        .show(getLastRunId())
-                        .waitEndpoint()
-                        .attr("href");
+        final RunsMenuAO runsMenuAO = runsMenu();
+        runsMenuAO
+                .showLog(getLastRunId());
+        final String pipelineUrl = runsMenuAO.waitEndpoint().attr("href");
         logout();
 
         // in order to avoid caching issue
@@ -166,11 +169,13 @@ public class RunToolsInSandBoxTest
         nodeName = clusterMenu()
                 .waitForTheNode(nameWithoutGroup(tool), getLastRunId())
                 .getNodeName(getLastRunId());
-        runsMenu()
+        final RunsMenuAO runsMenuAO = runsMenu();
+        runsMenuAO
                 .stopRun(getLastRunId())
                 .completedRuns()
                 .validateStatus(getLastRunId(), STOPPED)
-                .show(getLastRunId())
+                .showLog(getLastRunId());
+        runsMenuAO
                 .clickEndpoint()
                 .screenshot("test501screenshot")
                 .assertPageTitleIs("404 Not Found");

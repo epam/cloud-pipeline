@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -266,11 +267,13 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 100)
     @TestCase({"EPMCMBIBPC-2626"})
     public void pauseAndResumeEndpointValidation() {
-        endpoint = tools()
+        final RunsMenuAO runsMenuAO = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setPriceType(priceType)
-                .launchTool(this, nameWithoutGroup(tool))
-                .show(getLastRunId())
+                .launchTool(this, nameWithoutGroup(tool));
+        runsMenuAO
+                .showLog(getLastRunId());
+        endpoint = runsMenuAO
                 .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();

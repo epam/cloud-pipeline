@@ -116,7 +116,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    public RunsMenuAO show(String runId) {
+    private RunsMenuAO show(String runId) {
         $("#run-" + runId + "-logs-button").should(appear).click();
         return this;
     }

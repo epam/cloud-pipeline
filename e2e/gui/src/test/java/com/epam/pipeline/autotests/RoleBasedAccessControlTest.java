@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -292,10 +293,12 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         }
         logoutIfNeeded();
         loginAs(admin);
-        String endpoint = tools()
+        final RunsMenuAO runsMenuAO = tools()
                 .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
-                .launchTool(this, toolEndpoint)
-                .show(getLastRunId())
+                .launchTool(this, toolEndpoint);
+        runsMenuAO
+                .showLog(getLastRunId());
+        final String endpoint = runsMenuAO
                 .waitEndpoint()
                 .attr("href");
         logout();
