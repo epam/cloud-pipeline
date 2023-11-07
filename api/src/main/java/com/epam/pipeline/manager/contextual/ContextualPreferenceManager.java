@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -122,6 +123,33 @@ public class ContextualPreferenceManager {
 
     /**
      * Searches for a contextual preference with the given parameters
+     * Returns a first found preference from the list of preferences.
+     * Method takes into account the context preference was searched in. It includes
+     * user, its role, requested resource, etc.
+     *
+     * @param preferences List of preference names.
+     * @param resources List of external resource preferences.
+     * @throws IllegalArgumentException if preference with such parameters wasn't found.
+     */
+    public ContextualPreference searchList(final List<String> preferences,
+                                           final List<ContextualPreferenceExternalResource> resources) {
+        if (CollectionUtils.isEmpty(resources)) {
+            return search(preferences);
+        }
+        validateNames(preferences);
+        resources.forEach(this::validateResource);
+        final List<ContextualPreferenceExternalResource> allResources = userAndRolesResources();
+        allResources.addAll(resources);
+        return contextualPreferenceHandler.search(preferences, allResources)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, resources.stream()
+                                .map(resource -> String.format("%s=%s",
+                                        resource.getLevel().toString(), resource.getResourceId()))
+                                .collect(Collectors.toList()))));
+    }
+
+    /**
+     * Searches for a contextual preference with the given parameters
      *
      * Returns a first found preference from the list of preferences.
      *
@@ -150,22 +178,27 @@ public class ContextualPreferenceManager {
     }
 
     private List<ContextualPreferenceExternalResource> resources(final ContextualPreferenceExternalResource resource) {
-        final Optional<PipelineUser> currentUser = retrieveCurrentUser();
-        final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
-        currentUser.map(this::userResource).ifPresent(allResources::add);
-        currentUser.map(PipelineUser::getRoles).map(this::rolesResources).ifPresent(allResources::addAll);
+        final List<ContextualPreferenceExternalResource> allResources = userAndRolesResources();
         if (resource != null) {
             allResources.add(resource);
         }
         return allResources;
     }
 
+    private List<ContextualPreferenceExternalResource> userAndRolesResources() {
+        final Optional<PipelineUser> currentUser = retrieveCurrentUser();
+        final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
+        currentUser.map(this::userResource).ifPresent(allResources::add);
+        currentUser.map(PipelineUser::getRoles).map(this::rolesResources).ifPresent(allResources::addAll);
+        return allResources;
+    }
+
     private Optional<PipelineUser> retrieveCurrentUser() {
         final Optional<PipelineUser> authorizedUser = Optional.ofNullable(authManager.getCurrentUser());
         final Optional<PipelineUser> pipelineUserById = authorizedUser.map(PipelineUser::getId)
-                .map(userManager::loadUserById);
+                .map(userManager::load);
         final Optional<PipelineUser> pipelineUserByUserName = authorizedUser.map(PipelineUser::getUserName)
-                .map(userManager::loadUserByName);
+                .map(userManager::loadByNameOrId);
         return pipelineUserById.isPresent()
                 ? pipelineUserById
                 : pipelineUserByUserName;

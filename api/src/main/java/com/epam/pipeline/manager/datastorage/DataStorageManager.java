@@ -97,7 +97,6 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.security.storage.StoragePermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.utils.DataStorageUtils;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -631,7 +630,7 @@ public class DataStorageManager implements SecuredEntityManager {
                 for (AbstractDataStorage dataStorage : dataStorages) {
                     String value = StringUtils.isNotBlank(pipelineRunParameter.getResolvedValue()) ?
                             pipelineRunParameter.getResolvedValue() : pipelineRunParameter.getValue();
-                    List<DataStorageLink> dataStorageLinks = getLinks(dataStorage, value);
+                    List<DataStorageLink> dataStorageLinks = PathAnalyzer.getLinks(dataStorage, value);
                     if (!dataStorageLinks.isEmpty()) {
                         links.addAll(dataStorageLinks);
                     }
@@ -643,24 +642,7 @@ public class DataStorageManager implements SecuredEntityManager {
         });
     }
 
-    public void analyzePaths(List<PipeConfValue> values) {
-        if (CollectionUtils.isEmpty(values)) {
-            return;
-        }
-        List<AbstractDataStorage> dataStorages = getDataStorages();
-        values.forEach(value -> {
-            List<DataStorageLink> links = new ArrayList<>();
-            for (AbstractDataStorage dataStorage : dataStorages) {
-                List<DataStorageLink> dataStorageLinks = getLinks(dataStorage, value.getValue());
-                if (!dataStorageLinks.isEmpty()) {
-                    links.addAll(dataStorageLinks);
-                }
-            }
-            if (!links.isEmpty()) {
-                value.setDataStorageLinks(links);
-            }
-        });
-    }
+
 
     @Transactional
     public DataStorageFile createDataStorageFile(final Long dataStorageId,
@@ -893,7 +875,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final Set<String> storageClasses = storagePermissionManager.storageArchiveReadPermissions(dataStorage)
                 ? dataStorage.getType().getStorageClasses()
                 : Collections.singleton(DataStorageType.Constants.STANDARD_STORAGE_CLASS);
-        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage.getOwner());
+        final boolean allowVersions = permissionManager.isOwnerOrAdmin(dataStorage);
         return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks, storageClasses, allowVersions);
     }
 
@@ -1327,21 +1309,6 @@ public class DataStorageManager implements SecuredEntityManager {
                 }
             }
         }
-    }
-
-    private List<DataStorageLink> getLinks(AbstractDataStorage dataStorage, String paramValue) {
-        if (StringUtils.isBlank(paramValue)) {
-            return Collections.emptyList();
-        }
-        final String mask = dataStorage.getPathMask() + ProviderUtils.DELIMITER;
-        List<DataStorageLink> links = new ArrayList<>();
-        String paramDelimiter = paramValue.contains(",") ? "," : ";";
-        for (String path : paramValue.split(paramDelimiter)) {
-            if (path.toLowerCase().trim().startsWith(mask.toLowerCase())) {
-                links.add(DataStorageUtils.constructDataStorageLink(dataStorage, path, mask));
-            }
-        }
-        return links;
     }
 
     private void validateStorageIsNotUsedAsDefault(final Long storageId,

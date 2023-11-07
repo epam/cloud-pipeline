@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,3 +15,36 @@
 
 source /usr/local/bin/checkout_url "$API_DIST_URL"
 bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/build-pipectl/build-pipectl.sh
+
+
+if [ $? -ne 0 ]; then
+	echo "Build has failed, skipping deployment"
+	exit 1
+fi
+
+if [ "$dist_branch" != "develop" ]; then
+	echo "Skipping ${dist_branch} deployment"
+    exit 0
+fi
+
+export PIPECTL_DIST_URL_PATH=/tmp/${JOB_NAME}-${BUILD_NUMBER}.env
+
+if [ "$SKIP_DEPLOYMENT" == "true" ]; then
+    echo "SKIP_DEPLOYMENT is set - skipping deployment"
+    exit 0
+fi
+
+if [ ! -f "$PIPECTL_DIST_URL_PATH" ]; then
+    echo "PIPECTL_DIST_URL_PATH is not defined or file does not exist"
+    exit 1
+fi
+
+cd $WORKSPACE
+rm -rf $WORKSPACE/cloud-pipeline
+
+set -o allexport
+source "$PIPECTL_DIST_URL_PATH"
+set +o allexport
+
+source /usr/local/bin/checkout_url "$PIPECTL_DIST_URL"
+bash $WORKSPACE/cloud-pipeline/deploy/jenkins/jenkins-jobs/deploy-dev-aws/prepare-assets.sh

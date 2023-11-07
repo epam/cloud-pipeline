@@ -18,6 +18,7 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   Modal,
   Row,
@@ -57,6 +58,7 @@ import UserName from '../../../special/UserName';
 import ShareWithForm from '../../../runs/logs/forms/ShareWithForm';
 import {CP_CAP_RUN_CAPABILITIES} from '../../../pipelines/launch/form/utilities/parameters';
 import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
+import PermissionsForm from '../../../roleModel/PermissionsForm';
 import styles from './EditUserRolesDialog.css';
 
 const RESTRICTED_METADATA_KEYS = [
@@ -64,7 +66,7 @@ const RESTRICTED_METADATA_KEYS = [
 ].filter(Boolean);
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation')
+@inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation', 'preferences')
 @inject((common, params) => ({
   userInfo: params.user ? new User(params.user.id) : null,
   userId: params.user ? params.user.id : null,
@@ -86,8 +88,7 @@ export default class EditUserRolesDialog extends React.Component {
       userName: PropTypes.string
     }),
     onClose: PropTypes.func,
-    onUserDelete: PropTypes.func,
-    readOnly: PropTypes.bool
+    onUserDelete: PropTypes.func
   };
 
   state = {
@@ -261,7 +262,6 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   renderUserRolesList = () => {
-    const {readOnly} = this.props;
     const {roles, rolesInitialized} = this.state;
     if (!rolesInitialized) {
       return null;
@@ -276,7 +276,7 @@ export default class EditUserRolesDialog extends React.Component {
               size="small"
               type="danger"
               onClick={() => this.removeRole(role.id)}
-              disabled={this.state.operationInProgress || readOnly}
+              disabled={this.state.operationInProgress || !this.isAdmin}
             >
               <Icon type="delete" />
             </Button>
@@ -387,12 +387,12 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   get defaultStorageId () {
-    const {readOnly, dataStorages} = this.props;
+    const {dataStorages} = this.props;
     const {defaultStorageId} = this.state;
     if (defaultStorageId && dataStorages.loaded) {
       const dataStorage = (dataStorages.value || []).find(d => d.id === +defaultStorageId);
       if (!dataStorage) {
-        return readOnly ? `Access is denied` : undefined;
+        return this.isAdmin ? undefined : `Access is denied`;
       }
       return `${defaultStorageId}`;
     }
@@ -400,13 +400,13 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   get defaultProfileId () {
-    const {readOnly, cloudCredentialProfiles} = this.props;
+    const {cloudCredentialProfiles} = this.props;
     const {defaultProfileId} = this.state;
     if (cloudCredentialProfiles.loaded) {
       const profile = (cloudCredentialProfiles.value || [])
         .find(d => d.id === +defaultProfileId);
       if (!profile) {
-        return readOnly ? `Access is denied` : undefined;
+        return this.isAdmin ? undefined : `Access is denied`;
       }
       return `${defaultProfileId}`;
     }
@@ -430,6 +430,18 @@ export default class EditUserRolesDialog extends React.Component {
       this.profilesModified ||
       this.runnersModified ||
       instanceTypesChanged;
+  }
+
+  @computed
+  get restrictedMetadataKeys () {
+    if (this.isAdmin) {
+      return [];
+    }
+    const {preferences} = this.props;
+    return [
+      ...RESTRICTED_METADATA_KEYS,
+      ...(preferences.metadataSystemKeys || [])
+    ];
   }
 
   addRoleInputChanged = (id) => {
@@ -650,7 +662,7 @@ export default class EditUserRolesDialog extends React.Component {
           });
         Object.keys(data || {})
           .forEach(key => {
-            if (!RESTRICTED_METADATA_KEYS.includes(key) && !metadata.hasOwnProperty(key)) {
+            if (!this.restrictedMetadataKeys.includes(key) && !metadata.hasOwnProperty(key)) {
               removed[key] = {
                 value: data[key].value,
                 type: data[key].type
@@ -762,7 +774,8 @@ export default class EditUserRolesDialog extends React.Component {
       defaultProfileIdInitialized: false,
       runners: [],
       runnersInitial: [],
-      runnersInitialized: false
+      runnersInitialized: false,
+      activeTab: 'user'
     }, () => this.revertChanges(this.updateValues));
   };
 
@@ -805,6 +818,9 @@ export default class EditUserRolesDialog extends React.Component {
             </span>
           );
         });
+    }
+    if (!this.isAdmin) {
+      return 'not specified';
     }
     return 'configure';
   };
@@ -858,7 +874,11 @@ export default class EditUserRolesDialog extends React.Component {
   }
 
   renderUserRolesTab = () => {
-    const {readOnly} = this.props;
+    const {
+      user
+    } = this.props;
+    const readOnly = !this.isAdmin;
+    const metadataReadOnly = readOnly && !roleModel.writeAllowed(user);
     const {metadata} = this.state;
     const credentialProfilesPending = this.props.credentialProfiles
       ? this.props.credentialProfiles.pending
@@ -1011,7 +1031,7 @@ export default class EditUserRolesDialog extends React.Component {
             }
           ]}>
           <Metadata
-            readOnly={this.state.operationInProgress || readOnly}
+            readOnly={this.state.operationInProgress || metadataReadOnly}
             key={METADATA_PANEL_KEY}
             entityId={this.props.userId}
             entityClass="PIPELINE_USER"
@@ -1019,7 +1039,7 @@ export default class EditUserRolesDialog extends React.Component {
             onChange={this.onChangeMetadata}
             value={metadata}
             extraKeys={[CP_CAP_RUN_CAPABILITIES]}
-            restrictedKeys={RESTRICTED_METADATA_KEYS}
+            restrictedKeys={this.restrictedMetadataKeys}
           />
           <div
             key="INSTANCE_MANAGEMENT"
@@ -1031,13 +1051,24 @@ export default class EditUserRolesDialog extends React.Component {
                 Can run as this user:
               </span>
               <a
-                onClick={this.openShareDialog}
-                style={{marginLeft: 5, wordBreak: 'break-word'}}
+                onClick={readOnly ? undefined : this.openShareDialog}
+                style={Object.assign({
+                  marginLeft: 5,
+                  wordBreak: 'break-word',
+                  cursor: readOnly ? 'default' : 'pointer',
+                  pointerEvents: readOnly ? 'none' : undefined
+                })}
+                className={
+                  classNames({
+                    'cp-text': readOnly
+                  })
+                }
               >
                 {this.renderRunners()}
               </a>
               <ShareWithForm
                 endpointsAvailable
+                disabled={readOnly}
                 visible={this.state.shareDialogOpened}
                 roles={
                   this.props.roles.loaded
@@ -1160,7 +1191,7 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   renderFooter = () => {
-    const {readOnly} = this.props;
+    const readOnly = !this.isAdmin;
     const {activeTab} = this.state;
     let blocked = false;
     if (this.props.userInfo.loaded) {
@@ -1263,17 +1294,38 @@ export default class EditUserRolesDialog extends React.Component {
             />
           )
         }
+        {
+          this.isAdmin && (
+            <Tabs.TabPane
+              tab="PERMISSIONS"
+              key="permissions"
+            />
+          )
+        }
       </Tabs>
     );
   };
 
   renderContent = () => {
+    const {
+      user,
+      userId
+    } = this.props;
     const {activeTab} = this.state;
     if (activeTab === 'user-statistics') {
       return (
         <UserInfoSummary
-          user={this.props.user}
+          user={user}
           style={{flex: 1, overflow: 'auto'}}
+        />
+      );
+    }
+    if (activeTab === 'permissions') {
+      return (
+        <PermissionsForm
+          objectType={'PIPELINE_USER'}
+          objectIdentifier={userId}
+          showOwner={false}
         />
       );
     }
@@ -1282,7 +1334,12 @@ export default class EditUserRolesDialog extends React.Component {
 
   renderImpersonateButton = () => {
     const {activeTab} = this.state;
-    if (activeTab === 'user') {
+    const {user} = this.props;
+    if (
+      activeTab === 'user' &&
+      user &&
+      roleModel.executeAllowed(user)
+    ) {
       return (
         <Button
           type="primary"

@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 public final class KubernetesConstants {
 
     public static final String RUN_ID_LABEL = "runid";
+    public static final String CLOUD_INSTANCE_ID = "cloud_ins_id";
     public static final String TYPE_LABEL = "type";
     public static final String PIPELINE_TYPE = "pipeline";
     public static final String NODE_POOL_ID_LABEL = "pool_id";
@@ -64,6 +65,14 @@ public final class KubernetesConstants {
     public static final String HYPHEN = "-";
     public static final String KUBE_UNREACHABLE_NODE_LABEL = "node.kubernetes.io/unreachable";
     public static final String KUBE_NOT_READY_NODE_LABEL = "node.kubernetes.io/not-ready";
+
+    public static final String CPU_RESOURCE_NAME = "cpu";
+    public static final String MEM_RESOURCE_NAME = "memory";
+
+    public static final int MIB_IN_GIB = 1024;
+
+    public static final String MIB_UNIT = "Mi";
+    public static final String GIB_UNIT = "Gi";
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";

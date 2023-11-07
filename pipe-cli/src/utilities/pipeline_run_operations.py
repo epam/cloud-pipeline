@@ -32,7 +32,8 @@ from src.api.pipeline import Pipeline
 
 ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
-GPU_WITHOUT_CUDA_WARN_MSG = 'WARN: Requested GPU instance type but cuda is not available for specified configuration!'
+GPU_WITHOUT_CUDA_WARN_MSG = 'WARN: A tool without a CUDA toolkit using a GPU-enabled node.'
+CPU_WITH_CUDA_WARN_MSG = 'WARN: A tool with a CUDA toolkit using a CPU-only node.'
 
 
 class PipelineRunOperations(object):
@@ -155,9 +156,9 @@ class PipelineRunOperations(object):
                         click.echo(price_table)
                         click.echo()
 
-                    if not quiet and ClusterManager.is_gpu_instance(instance_type) \
-                            and not cls._is_cuda_available_for_pipeline(pipeline_run_parameters):
-                        click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+                    if not quiet:
+                        cls._check_gpu_and_cuda_compatibility(instance_type,
+                                                              pipeline_run_parameters=pipeline_run_parameters)
 
                     # Checking if user provided required parameters:
                     wrong_parameters = False
@@ -246,9 +247,8 @@ class PipelineRunOperations(object):
                     click.echo(', '.join(required_parameters))
                     sys.exit(1)
             else:
-                if not quiet and ClusterManager.is_gpu_instance(instance_type) \
-                        and not cls._is_cuda_available_for_tool(docker_image):
-                    click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+                if not quiet:
+                    cls._check_gpu_and_cuda_compatibility(instance_type, docker_image=docker_image)
 
                 if not yes:
                     click.confirm('Are you sure you want to schedule a run?', abort=True)
@@ -477,3 +477,15 @@ class PipelineRunOperations(object):
         if not pipeline_run_parameters:
             return False
         return cls._is_cuda_available_for_tool(pipeline_run_parameters.docker_image)
+
+    @classmethod
+    def _check_gpu_and_cuda_compatibility(cls, instance_type, pipeline_run_parameters=None, docker_image=None):
+        gpu_enabled = ClusterManager.is_gpu_instance(instance_type)
+        if docker_image:
+            cuda_available = cls._is_cuda_available_for_tool(docker_image)
+        else:
+            cuda_available = cls._is_cuda_available_for_pipeline(pipeline_run_parameters)
+        if gpu_enabled and not cuda_available:
+            click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+        if not gpu_enabled and cuda_available:
+            click.echo(CPU_WITH_CUDA_WARN_MSG)

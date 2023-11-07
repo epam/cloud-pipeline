@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud.gcp;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -242,6 +243,10 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+    }
+
+    @Override
     public List<InstanceDisk> loadDisks(final GCPRegion region, final Long runId) {
         return vmService.getAliveInstance(region, String.valueOf(runId)).getDisks().stream()
                 .map(disk -> disk.get("diskSizeGb"))
@@ -272,7 +277,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                 return CloudInstanceState.STOPPING;
             }
             return CloudInstanceState.TERMINATED;
-        } catch (IOException e) {
+        } catch (IOException | GCPException e) {
             log.error(e.getMessage(), e);
             return CloudInstanceState.TERMINATED;
         }

@@ -1615,6 +1615,16 @@ export default `
 @THEME .cp-dark-background {
   background-color: @application-dark-background-color;
 }
+@THEME .cp-panel.cp-dark-background {
+  color: @application-tooltip-color;
+  background-color: @application-tooltip-background-color;
+  border-color: @application-tooltip-border-color;
+}
+@THEME .cp-panel.cp-dark-background.semi-transparent {
+  color: @application-tooltip-color;
+  background-color: fade(@application-tooltip-background-color, 85%);
+  border-color: @application-tooltip-border-color;
+}
 @THEME .cp-hcs-zoom-button {
   cursor: pointer;
   color: @application-color;
@@ -2041,13 +2051,17 @@ export default `
   color: @primary-text-color;
   outline: none;
 }
-@THEME .cp-runs-advanced-filter-input {
+@THEME .cp-runs-advanced-filter-input .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @input-border;
 }
-@THEME .cp-runs-advanced-filter-input-error {
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @color-red;
+}
+@THEME .cp-runs-advanced-filter-input-error .CodeMirror-line span,
+@THEME .cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: @application-color !important;
 }
 @THEME .cp-run-instance-tag {
   background-color: @card-header-background;
@@ -3316,6 +3330,87 @@ export default `
 @THEME .cell-profiler-job.selected {
   background-color: @table-element-selected-background-color;
   color: @table-element-selected-color;
+}
+
+@THEME .cp-wdl-visualizer .visual-element .visual-element-body {
+  fill: fade(@primary-color, 0.1);
+  stroke: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 10 10;
+}
+@THEME .cp-wdl-visualizer .visual-element.selected .visual-element-body {
+  fill: fade(@primary-color, 0.2);
+  stroke: @primary-active-color;
+  stroke-width: 2;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter {
+  stroke: @panel-background-color;
+  fill: @primary-color;
+  stroke-width: 1;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid {
+  stroke: @panel-background-color;
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
+  fill: @color-error;
+  stroke: @panel-background-color;
+}
+@THEME .cp-wdl-visualizer .visual-element.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.selected.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-scatter.invalid .visual-element-body,
+@THEME .cp-wdl-visualizer .visual-element.visual-conditional.invalid .visual-element-body {
+  stroke: @color-error;
+}
+@THEME .cp-wdl-visualizer #workflow-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer #default-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+@THEME .cp-wdl-visualizer .visual-connection .visual-connection-line {
+  stroke: fade(@primary-color, 0.5);
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-name=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-alias=true] {
+  fill: @application-color;
+}
+@THEME .cp-wdl-visualizer .visual-parameter-label tspan[parameter-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-type=true],
+@THEME .cp-wdl-visualizer .visual-element-label tspan[element-as=true] {
+  fill: @application-color-faded;
+}
+@THEME .cp-wdl-visualizer .joint-tools-layer .joint-tools .joint-link-tool-remove circle {
+  fill: @color-error;
+}
+@THEME .cp-wdl-visualizer .joint-highlight-stroke {
+  stroke: @primary-color;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content {
+  padding: 0;
+}
+@THEME .ant-collapse.wdl-properties-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding: 2px;
 }
 
 `;

@@ -34,7 +34,7 @@ import {
   Table
 } from 'antd';
 import Dropdown from 'rc-dropdown';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, {MenuItem, Divider} from 'rc-menu';
 import moment from 'moment-timezone';
 import LoadingView from '../../../special/LoadingView';
 import Breadcrumbs from '../../../special/Breadcrumbs';
@@ -99,6 +99,7 @@ import LabelsRenderer from './components/labels-renderer';
 import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
+import handleDownloadItems from '../../../special/download-storage-items';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
@@ -284,6 +285,7 @@ export default class DataStorage extends React.Component {
       const isAdmin = authenticatedUserInfo.value.admin;
       const isOwner = roleModel.isOwner(this.storage.info);
       return isAdmin ||
+        roleModel.isManager.storageAdmin(this) ||
         (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
@@ -308,15 +310,15 @@ export default class DataStorage extends React.Component {
     const readAllowed = roleModel.readAllowed(this.storage.info);
     const writeAllowed = roleModel.writeAllowed(this.storage.info);
     return {
-      read: (
+      read: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this) ||
         roleModel.isManager.archiveReader(this)
-      ) && readAllowed && isS3,
-      write: (
+      ) && readAllowed && isS3),
+      write: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(this.storage.info) ||
         roleModel.isManager.archiveManager(this)
-      ) && writeAllowed && isS3
+      ) && writeAllowed && isS3)
     };
   }
 
@@ -402,10 +404,11 @@ export default class DataStorage extends React.Component {
       ? authenticatedUserInfo.value.admin
       : false;
     // Whilst in the restricted tag access mode, only admins and users (including owners) with roles
-    // STORAGE_MANAGER or STORAGE_TAG_MANAGER are allowed to edit file's tags.
+    // STORAGE_MANAGER STORAGE_ADMIN or STORAGE_TAG_MANAGER are allowed to edit file's tags.
     const restrictedAccessCheck = isAdmin ||
       roleModel.isManager.storage(this) ||
-      roleModel.isManager.storageTag(this);
+      roleModel.isManager.storageTag(this) ||
+      roleModel.isManager.storageAdmin(this);
     const storageFileTagsEditable = this.storageTagRestrictedAccess
       ? restrictedAccessCheck
       // If restricted tag access mode is off, all users with WRITE permissions are
@@ -1085,7 +1088,9 @@ export default class DataStorage extends React.Component {
         type: item.type
       };
     });
-    event.stopPropagation();
+    if (event) {
+      event.stopPropagation();
+    }
     if (this.showVersions) {
       this.openDeleteModal(items);
     } else {
@@ -1241,22 +1246,28 @@ export default class DataStorage extends React.Component {
     this.setState({selectedItems});
   };
 
+  openShareCurrentFolderDialog = (event) => {
+    const {storageId, path} = this.props;
+    event && event.stopPropagation();
+    if (path) {
+      this.setState({
+        itemsToShare: [{
+          type: 'folder',
+          path,
+          storageId
+        }],
+        shareDialogVisible: true
+      });
+    }
+  };
+
   openShareItemDialog = (event) => {
     const {selectedItems = []} = this.state;
     const items = selectedItems
       .filter(o => o.shareAvailable);
     const {storageId} = this.props;
     event && event.stopPropagation();
-    if (!items || items.length === 0) {
-      this.setState({
-        itemsToShare: [{
-          type: 'folder',
-          path: this.props.path,
-          storageId
-        }],
-        shareDialogVisible: true
-      });
-    } else {
+    if (items && items.length > 0) {
       this.setState({
         itemsToShare: items ? items.slice().map((o) => ({...o, storageId})) : [],
         shareDialogVisible: true
@@ -1358,9 +1369,9 @@ export default class DataStorage extends React.Component {
     try {
       await this.storage.refreshStorageInfo(false);
       const {
-        path
+        name
       } = this.storage.info || {};
-      const url = getStaticResourceUrl(path, item.path);
+      const url = getStaticResourceUrl(name, item.path);
       window.open(url, '_blank');
     } catch (_) {}
   };
@@ -1708,17 +1719,23 @@ export default class DataStorage extends React.Component {
     this.setState({selectedItems: []});
   };
 
-  showFilesVersionsChanged = (e) => {
-    this.navigate(this.props.storageId, this.props.path, {showVersions: e.target.checked});
+  showFilesVersionsChanged = (showVersions) => {
+    this.navigate(
+      this.props.storageId,
+      this.props.path,
+      {
+        showVersions
+      }
+    );
   };
 
-  showArchivedFilesChanged = (e) => {
+  showArchivedFilesChanged = (showArchives) => {
     this.navigate(
       this.props.storageId,
       this.props.path,
       {
         showVersions: this.props.showVersions,
-        showArchives: e.target.checked
+        showArchives
       }
     );
   };
@@ -1891,43 +1908,219 @@ export default class DataStorage extends React.Component {
     );
   };
 
-  renderShareButton = () => {
+  renderSelectionActionsButton = () => {
+    const {
+      preferences,
+      storageId
+    } = this.props;
     const {selectedItems = []} = this.state;
     const itemsAvailableForShare = selectedItems
       .filter(o => o.shareAvailable);
-    if (!this.sharingEnabled || (itemsAvailableForShare.length === 0 && !this.props.path)) {
-      return undefined;
-    }
-    let buttonText = (
-      <span>
-        Share <b>current</b> folder
-      </span>
-    );
-    if (itemsAvailableForShare.length === 1) {
-      buttonText = (
-        <span
-          className="cp-ellipsis-text"
-          style={{maxWidth: 300, display: 'block'}}
-        >
-          Share <b>{itemsAvailableForShare[0].name}</b> {itemsAvailableForShare[0].type}
-        </span>
-      );
-    }
-    if (itemsAvailableForShare.length > 1) {
-      buttonText = (
+    const itemsAvailableForDownload = selectedItems
+      .filter(o => o.downloadable && /^file$/i.test(o.type))
+      .map(o => ({
+        storageId,
+        path: o.path,
+        name: o.name
+      }));
+    const Keys = {
+      clear: 'clear',
+      restore: 'restore',
+      share: 'share',
+      generateUrl: 'generate-url',
+      removeAll: 'remove-all',
+      download: 'download'
+    };
+    const clearAction = {
+      key: Keys.clear,
+      title: 'Clear selection',
+      available: this.clearSelectionVisible
+    };
+    const downloadAction = {
+      key: Keys.download,
+      title: 'Download',
+      icon: 'download',
+      available: itemsAvailableForDownload.length > 0
+    };
+    const restoreAction = {
+      key: Keys.restore,
+      title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
+      available: this.userLifeCyclePermissions.write &&
+        this.restorableItems.length > 0,
+      icon: 'reload'
+    };
+    const getShareActionTitle = () => {
+      if (itemsAvailableForShare.length === 1) {
+        return (
+          <span
+            className="cp-ellipsis-text"
+            style={{maxWidth: 300}}
+          >
+            Share <b>{itemsAvailableForShare[0].name}</b> {itemsAvailableForShare[0].type}
+          </span>
+        );
+      }
+      return (
         <span>
           Share <b>{itemsAvailableForShare.length}</b> items
         </span>
       );
+    };
+    const shareAction = {
+      key: Keys.share,
+      title: getShareActionTitle(),
+      available: this.sharingEnabled && itemsAvailableForShare.length > 0,
+      icon: 'export'
+    };
+    const generateURLAction = {
+      key: Keys.generateUrl,
+      title: 'Generate URL',
+      available: this.bulkDownloadEnabled &&
+        this.storageAllowSignedUrls,
+      icon: 'link'
+    };
+    const removeAllAction = {
+      key: Keys.removeAll,
+      title: 'Remove',
+      available: this.removeAllSelectedItemsEnabled,
+      className: 'cp-danger',
+      icon: 'delete'
+    };
+    const divider = {};
+    const actions = [];
+    const appendAction = (action) => {
+      if (action && action.available) {
+        actions.push(action);
+      }
+    };
+    const lastAction = () => actions.length > 0
+      ? actions[actions.length - 1]
+      : undefined;
+    const appendDivider = () => {
+      if (lastAction() !== divider) {
+        actions.push(divider);
+      }
+    };
+    appendAction(shareAction);
+    appendAction(restoreAction);
+    appendAction(generateURLAction);
+    appendAction(downloadAction);
+    appendDivider();
+    appendAction(clearAction);
+    appendDivider();
+    appendAction(removeAllAction);
+    if (lastAction() === divider) {
+      actions.pop();
+    }
+    if (actions.filter((action) => action !== divider).length === 0) {
+      return null;
+    }
+    const doAction = (action, event) => {
+      if (!action) {
+        return;
+      }
+      switch (action.key) {
+        case Keys.clear:
+          this.clearSelection();
+          break;
+        case Keys.share:
+          this.openShareItemDialog(event);
+          break;
+        case Keys.restore:
+          this.openRestoreFilesDialog('file');
+          break;
+        case Keys.generateUrl:
+          this.toggleGenerateDownloadUrlsModalFn(event);
+          break;
+        case Keys.removeAll:
+          this.removeSelectedItemsConfirm(event);
+          break;
+        case Keys.download:
+          handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        default:
+          break;
+      }
+    };
+    if (actions.length === 1) {
+      const action = actions[0];
+      return (
+        <Button
+          size="small"
+          id={`selection-action-${action.key}`}
+          onClick={(event) => doAction(action, event)}
+          style={{lineHeight: 1}}
+        >
+          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.title}
+        </Button>
+      );
+    }
+    const title = selectedItems && selectedItems.length > 0
+      ? `${selectedItems.length} item${selectedItems.length === 1 ? '' : 's'} selected`
+      : 'Selection';
+    const renderAction = (action, idx) => {
+      if (action === divider) {
+        return (
+          <Divider key={`divider-${idx}`} />
+        );
+      }
+      return (
+        <MenuItem
+          id={`selection-action-${action.key}`}
+          key={action.key}
+          className={classNames(action.className, `selection-action-${action.key}`)}
+        >
+          <div style={{display: 'flex', alignItems: 'center'}}>
+            {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+            {action.title}
+          </div>
+        </MenuItem>
+      );
+    };
+    return (
+      <Dropdown
+        placement="bottomRight"
+        trigger={['click']}
+        overlayClassName="selection-actions-dropdown"
+        overlay={
+          <Menu
+            selectedKeys={[]}
+            onClick={doAction}
+            style={{width: 200, cursor: 'pointer'}}
+            className="selection-actions-menu"
+          >
+            {
+              actions.map(renderAction)
+            }
+          </Menu>
+        }
+        key="create actions">
+        <Button
+          id="selection-actions"
+          size="small"
+        >
+          {title}
+          <Icon type="down" />
+        </Button>
+      </Dropdown>
+    );
+  };
+
+  renderShareCurrentFolderButton = () => {
+    const {
+      path
+    } = this.props;
+    if (!path) {
+      return undefined;
     }
     return (
       <Button
-        id="share-selected-button"
+        id="share-selected-folder"
         size="small"
-        onClick={(e) => this.openShareItemDialog(e)
-        }
+        onClick={this.openShareCurrentFolderDialog}
       >
-        {buttonText}
+        Share <b>current</b> folder
       </Button>
     );
   };
@@ -1970,86 +2163,19 @@ export default class DataStorage extends React.Component {
           type="flex"
           justify="space-between">
           <div>
+            <Button
+              id="select-all-button"
+              size="small" onClick={() => this.selectAll(undefined)}
+              disabled={!this.selectAllAvailable}
+            >
+              Select page
+            </Button>
             {
-              this.selectAllAvailable &&
-              (
-                <Button
-                  id="select-all-button"
-                  size="small" onClick={() => this.selectAll(undefined)}>
-                  Select page
-                </Button>
-              )
-            }
-            {
-              this.clearSelectionVisible &&
-              <Button
-                style={{marginLeft: 5}}
-                id="clear-selection-button"
-                size="small" onClick={() => this.clearSelection()}>
-                Clear selection
-              </Button>
-            }
-            {(this.userLifeCyclePermissions.read ||
-              this.userLifeCyclePermissions.write) ? (
-                <Checkbox
-                  id="show-archived-files"
-                  checked={this.showArchives}
-                  onClick={this.showArchivedFilesChanged}
-                  style={{marginLeft: 10}}
-                >
-                  Show archived files
-                </Checkbox>
-              ) : null}
-            {
-              this.versionControlsEnabled
-                ? (
-                  <Checkbox
-                    checked={this.showVersions}
-                    onChange={this.showFilesVersionsChanged}
-                    style={{marginLeft: 10}}
-                  >
-                    Show files versions
-                  </Checkbox>
-                ) : undefined
+              this.renderSelectionActionsButton()
             }
           </div>
           <div style={{paddingRight: 8}}>
-            {this.userLifeCyclePermissions.write && this.restorableItems.length > 0 ? (
-              <Button
-                id="restore-button"
-                size="small"
-                onClick={() => this.openRestoreFilesDialog('file')}
-              >
-                {`Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`}
-              </Button>
-            ) : null}
-            {this.renderShareButton()}
-            {
-              this.bulkDownloadEnabled &&
-              this.storageAllowSignedUrls &&
-              <Button
-                id="bulk-url-button"
-                size="small"
-                onClick={this.toggleGenerateDownloadUrlsModalFn}>
-                Generate URL
-              </Button>
-            }
-            {
-              this.removeAllSelectedItemsEnabled &&
-              this.storage.writeAllowed && (
-                <Button
-                  id="remove-all-selected-button"
-                  size="small"
-                  onClick={(e) => this.removeSelectedItemsConfirm(e)}
-                  type="danger">
-                  Remove all selected
-                </Button>
-              )
-            }
-            {
-              this.removeAllSelectedItemsEnabled && this.bulkDownloadEnabled &&
-              <div style={{display: 'inline-block', marginLeft: 10, width: 2, height: 2}} />
-            }
+            {this.renderShareCurrentFolderButton()}
             {
               this.storage.writeAllowed && (
                 <Dropdown
@@ -2151,6 +2277,97 @@ export default class DataStorage extends React.Component {
         this.setState({metadata: false});
         break;
     }
+  };
+
+  renderPresentationConfiguration = () => {
+    const metadataAction = {
+      key: 'attributes',
+      title: 'Show attributes',
+      checked: this.showMetadata,
+      available: true
+    };
+    const archivedFilesAction = {
+      key: 'archive',
+      title: 'Show archived files',
+      checked: this.showArchives,
+      available: (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write)
+    };
+    const versionsAction = {
+      key: 'version',
+      title: 'Show file versions',
+      checked: this.showVersions,
+      available: this.versionControlsEnabled
+    };
+    const doAction = (action) => {
+      if (!action) {
+        return;
+      }
+      switch (action.key) {
+        case 'attributes': this.onToggleMetadata(); break;
+        case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
+        case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
+        default:
+          break;
+      }
+    };
+    const actions = [];
+    const appendAction = (action) => {
+      if (action.available) {
+        actions.push(action);
+      }
+    };
+    appendAction(metadataAction);
+    appendAction(archivedFilesAction);
+    appendAction(versionsAction);
+    if (actions.length === 0) {
+      return null;
+    }
+    const renderAction = (action) => (
+      <MenuItem
+        id={`presentation-action-${action.key}`}
+        key={action.key}
+        className={classNames(action.className, `presentation-action-${action.key}`)}
+      >
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          {action.icon && (<Icon type={action.icon} style={{marginRight: 5}} />)}
+          {action.title}
+          {
+            action.checked && (
+              <Icon
+                type="check"
+                style={{marginLeft: 'auto'}}
+              />
+            )
+          }
+        </div>
+      </MenuItem>
+    );
+    return (
+      <Dropdown
+        placement="bottomRight"
+        trigger={['click']}
+        overlayClassName="presentation-actions-dropdown"
+        overlay={
+          <Menu
+            selectedKeys={[]}
+            onClick={doAction}
+            style={{width: 150, cursor: 'pointer'}}
+            className="presentation-actions-menu"
+          >
+            {
+              actions.map(renderAction)
+            }
+          </Menu>
+        }
+        key="create actions">
+        <Button
+          id="presentation-actions"
+          size="small"
+        >
+          <Icon type="appstore" />
+        </Button>
+      </Dropdown>
+    );
   };
 
   render () {
@@ -2278,14 +2495,9 @@ export default class DataStorage extends React.Component {
                   </Button>
                 )
               }
-              <Button
-                id={this.showMetadata ? 'hide-metadata-button' : 'show-metadata-button'}
-                size="small"
-                onClick={this.onToggleMetadata}>
-                {
-                  this.showMetadata ? 'Hide attributes' : 'Show attributes'
-                }
-              </Button>
+              {
+                this.renderPresentationConfiguration()
+              }
               <StorageSharedLinkButton
                 storageId={this.props.storageId}
               />

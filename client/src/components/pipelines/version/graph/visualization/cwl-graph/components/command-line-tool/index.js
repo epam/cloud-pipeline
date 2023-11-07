@@ -167,6 +167,7 @@ class CWLCommandLineTool extends React.Component {
         className={styles.propertiesBlock}
       >
         <DockerImageSelector
+          disabled={this.props.disabled}
           className={styles.propertyInput}
           dockerImage={docker ? docker.dockerPull : undefined}
           onChange={onChange}
@@ -222,12 +223,14 @@ class CWLCommandLineTool extends React.Component {
                   style={{flex: 1, overflow: 'auto'}}
                 >
                   <CodeEditor
+                    readOnly={this.props.disabled}
                     code={command}
                     onChange={onChangeCode(index)}
                   />
                 </div>
                 <Button
                   size="small"
+                  disabled={this.props.disabled}
                   onClick={onRemoveCode(index)}
                   type="danger"
                   style={{marginLeft: 5}}
@@ -238,11 +241,15 @@ class CWLCommandLineTool extends React.Component {
             </div>
           ))
         }
-        <div>
-          <a onClick={onAddBaseCommand}>
-            Add base command
-          </a>
-        </div>
+        {
+          !this.props.disabled && (
+            <div>
+              <a onClick={onAddBaseCommand}>
+                Add base command
+              </a>
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -263,6 +270,7 @@ class CWLCommandLineTool extends React.Component {
           <b>Input ports</b>
         </div>
         <CWLInputPorts
+          disabled={this.props.disabled}
           step={this.currentStep}
           onChange={this.updateTool}
         />
@@ -282,6 +290,7 @@ class CWLCommandLineTool extends React.Component {
           <b>Output ports</b>
         </div>
         <CWLOutputPorts
+          disabled={this.props.disabled}
           step={this.currentStep}
           onChange={this.updateTool}
         />
@@ -312,6 +321,7 @@ class CWLCommandLineTool extends React.Component {
 CWLCommandLineTool.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
+  disabled: PropTypes.bool,
   tool: PropTypes.object,
   step: PropTypes.object,
   onRedraw: PropTypes.func,

@@ -18,7 +18,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {
   Checkbox,
-  Input,
   InputNumber,
   Icon,
   Modal,
@@ -45,7 +44,9 @@ import {
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
   CP_CAP_LIMIT_MOUNTS,
-  CP_CAP_RESCHEDULE_RUN
+  CP_CAP_RESCHEDULE_RUN,
+  CP_CAP_AUTOSCALE_HYBRID_FAMILY,
+  CP_CAP_AUTOSCALE_INSTANCE_TYPE
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -53,8 +54,11 @@ import {
   getGPUScalingDefaultConfiguration,
   getScalingConfigurationForProvider,
   gpuScalingAvailable,
-  InstanceTypeSelector
+  InstanceTypeSelector,
+  InstanceFamilySelector
 } from './enable-gpu-scaling';
+import {getInstanceFamilyByName} from '../../../../../utils/instance-family';
+import {instanceInfoString} from '../../../../special/instance-type-info';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -63,11 +67,6 @@ const PARAMETER_TITLE_STYLE = {
   width: PARAMETER_TITLE_WIDTH,
   marginRight: PARAMETER_TITLE_RIGHT_MARGIN
 };
-
-export function autoScaledClusterEnabled (parameters) {
-  return booleanParameterIsSetToValue(parameters, CP_CAP_SGE) &&
-    booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE);
-}
 
 export function hybridAutoScaledClusterEnabled (parameters) {
   return autoScaledClusterEnabled(parameters) &&
@@ -84,6 +83,13 @@ export function sparkEnabled (parameters) {
 
 export function slurmEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_SLURM);
+}
+
+export function autoScaledClusterEnabled (parameters) {
+  return booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE) && (
+    gridEngineEnabled(parameters) ||
+    slurmEnabled(parameters)
+  );
 }
 
 export function kubeEnabled (parameters) {
@@ -221,62 +227,6 @@ export function setClusterParameterValue (form, sectionName, configuration) {
   }
 }
 
-export function setSingleNodeMode (controller, callback) {
-  controller.setState({
-    launchCluster: false,
-    autoScaledCluster: false,
-    setDefaultNodesCount: false,
-    gridEngineEnabled: false,
-    sparkEnabled: false,
-    slurmEnabled: false,
-    kubeEnabled: false,
-    autoScaledPriceType: undefined,
-    hybridAutoScaledClusterEnabled: false,
-    gpuScalingConfiguration: undefined
-  }, callback);
-}
-
-export function setFixedClusterMode (controller, callback) {
-  controller.setState({
-    launchCluster: true,
-    autoScaledCluster: false,
-    setDefaultNodesCount: false,
-    gridEngineEnabled: false,
-    sparkEnabled: false,
-    slurmEnabled: false,
-    kubeEnabled: false,
-    autoScaledPriceType: undefined,
-    hybridAutoScaledClusterEnabled: false,
-    gpuScalingConfiguration: undefined,
-    nodesCount: Math.max(1,
-      !isNaN(controller.state.maxNodesCount)
-        ? controller.state.maxNodesCount
-        : 1
-    )
-  }, callback);
-}
-
-export function setAutoScaledMode (controller, callback) {
-  controller.setState({
-    launchCluster: true,
-    autoScaledCluster: true,
-    setDefaultNodesCount: false,
-    nodesCount: undefined,
-    gridEngineEnabled: false,
-    sparkEnabled: false,
-    slurmEnabled: false,
-    kubeEnabled: false,
-    autoScaledPriceType: undefined,
-    hybridAutoScaledClusterEnabled: false,
-    gpuScalingConfiguration: undefined,
-    maxNodesCount: Math.max(1,
-      !isNaN(controller.state.nodesCount)
-        ? controller.state.nodesCount
-        : 1
-    )
-  }, callback);
-}
-
 const range = ({nodesCount, maxNodesCount}) => {
   return `${nodesCount} - ${maxNodesCount}`;
 };
@@ -295,12 +245,65 @@ const lowerCasedString = (string, lowercased) => {
   return string;
 };
 
+export function parseChildNodeInstanceConfiguration (options) {
+  const {
+    autoScaled = false,
+    gpuScaling = false,
+    hybrid = false,
+    parameters = {}
+  } = options || {};
+  if (autoScaled && !gpuScaling) {
+    const readParameterValue = parameter => parameters && parameters[parameter]
+      ? parameters[parameter].value
+      : undefined;
+    if (hybrid) {
+      return readParameterValue(CP_CAP_AUTOSCALE_HYBRID_FAMILY);
+    }
+    return readParameterValue(CP_CAP_AUTOSCALE_INSTANCE_TYPE);
+  }
+  return undefined;
+}
+
+export function applyChildNodeInstanceParameters (parameters, value, hybrid) {
+  if (value && parameters) {
+    const applyParameter = (parameterName) => {
+      parameters[parameterName] = {
+        value
+      };
+    };
+    if (hybrid) {
+      applyParameter(CP_CAP_AUTOSCALE_HYBRID_FAMILY);
+    } else {
+      applyParameter(CP_CAP_AUTOSCALE_INSTANCE_TYPE);
+    }
+  }
+}
+
+export function applyChildNodeInstanceParametersAsArray (parameters, value, hybrid) {
+  if (value && parameters) {
+    const applyParameter = (parameterName) => {
+      parameters.push({
+        name: parameterName,
+        type: 'string',
+        value
+      });
+    };
+    if (hybrid) {
+      applyParameter(CP_CAP_AUTOSCALE_HYBRID_FAMILY);
+    } else {
+      applyParameter(CP_CAP_AUTOSCALE_INSTANCE_TYPE);
+    }
+  }
+}
+
 @inject('preferences')
 @observer
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
       const details = [
+        ctrl.state.gridEngineEnabled ? 'GridEngine' : false,
+        ctrl.state.slurmEnabled ? 'Slurm' : false,
         ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid' : false,
         ctrl.state.gpuScalingConfiguration ? 'GPU' : false
       ].filter(Boolean).join(' ');
@@ -357,6 +360,7 @@ class ConfigureClusterDialog extends React.Component {
     autoScaledPriceType: PropTypes.string,
     hybridAutoScaledClusterEnabled: PropTypes.bool,
     gpuScalingConfiguration: PropTypes.object,
+    childNodeInstanceConfiguration: PropTypes.string,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
@@ -375,6 +379,7 @@ class ConfigureClusterDialog extends React.Component {
     kubeEnabled: false,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
@@ -384,12 +389,10 @@ class ConfigureClusterDialog extends React.Component {
     }
   };
 
-  @computed
   get selectedClusterType () {
     if (this.state.launchCluster) {
       return this.state.autoScaledCluster &&
       !this.state.sparkEnabled &&
-      !this.state.slurmEnabled &&
       !this.state.kubeEnabled
         ? CLUSTER_TYPE.autoScaledCluster
         : CLUSTER_TYPE.fixedCluster;
@@ -404,14 +407,61 @@ class ConfigureClusterDialog extends React.Component {
     }
     switch (e.target.value) {
       case CLUSTER_TYPE.fixedCluster:
-        setFixedClusterMode(this, this.validate);
+        this.setState({
+          launchCluster: true,
+          autoScaledCluster: false,
+          setDefaultNodesCount: false,
+          gridEngineEnabled: false,
+          sparkEnabled: false,
+          slurmEnabled: false,
+          kubeEnabled: false,
+          autoScaledPriceType: undefined,
+          hybridAutoScaledClusterEnabled: false,
+          gpuScalingConfiguration: undefined,
+          childNodeInstanceConfiguration: undefined,
+          nodesCount: Math.max(1,
+            !isNaN(this.state.maxNodesCount)
+              ? this.state.maxNodesCount
+              : 1
+          )
+        }, this.validate);
         break;
       case CLUSTER_TYPE.autoScaledCluster:
-        setAutoScaledMode(this, this.validate);
+        this.setState({
+          launchCluster: true,
+          autoScaledCluster: true,
+          setDefaultNodesCount: false,
+          nodesCount: undefined,
+          gridEngineEnabled: true,
+          sparkEnabled: false,
+          slurmEnabled: false,
+          kubeEnabled: false,
+          autoScaledPriceType: undefined,
+          hybridAutoScaledClusterEnabled: false,
+          gpuScalingConfiguration: undefined,
+          childNodeInstanceConfiguration: undefined,
+          maxNodesCount: Math.max(1,
+            !isNaN(this.state.nodesCount)
+              ? this.state.nodesCount
+              : 1
+          )
+        }, this.validate);
         break;
       case CLUSTER_TYPE.singleNode:
       default:
-        setSingleNodeMode(this, this.validate);
+        this.setState({
+          launchCluster: false,
+          autoScaledCluster: false,
+          setDefaultNodesCount: false,
+          gridEngineEnabled: false,
+          sparkEnabled: false,
+          slurmEnabled: false,
+          kubeEnabled: false,
+          autoScaledPriceType: undefined,
+          hybridAutoScaledClusterEnabled: false,
+          gpuScalingConfiguration: undefined,
+          childNodeInstanceConfiguration: undefined
+        }, this.validate);
         break;
     }
   };
@@ -452,14 +502,24 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   onChangeEnableGridEngine = (e) => {
-    this.setState({
-      gridEngineEnabled: e.target.checked,
-      sparkEnabled: false,
-      slurmEnabled: false,
-      kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: false,
-      gpuScalingConfiguration: undefined
-    });
+    if (this.state.launchCluster && this.state.autoScaledCluster) {
+      this.setState({
+        gridEngineEnabled: e.target.checked,
+        sparkEnabled: false,
+        slurmEnabled: !e.target.checked,
+        kubeEnabled: false
+      });
+    } else {
+      this.setState({
+        gridEngineEnabled: e.target.checked,
+        sparkEnabled: false,
+        slurmEnabled: false,
+        kubeEnabled: false,
+        hybridAutoScaledClusterEnabled: false,
+        gpuScalingConfiguration: undefined,
+        childNodeInstanceConfiguration: undefined
+      });
+    }
   };
 
   onChangeEnableSpark = (e) => {
@@ -469,19 +529,32 @@ class ConfigureClusterDialog extends React.Component {
       slurmEnabled: false,
       kubeEnabled: false,
       hybridAutoScaledClusterEnabled: false,
-      gpuScalingConfiguration: undefined
+      gpuScalingConfiguration: undefined,
+      childNodeInstanceConfiguration: undefined
     });
   };
 
   onChangeEnableSlurm = (e) => {
-    this.setState({
-      gridEngineEnabled: false,
-      sparkEnabled: false,
-      slurmEnabled: e.target.checked,
-      kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: false,
-      gpuScalingConfiguration: undefined
-    });
+    if (this.state.launchCluster && this.state.autoScaledCluster) {
+      this.setState({
+        gridEngineEnabled: !e.target.checked,
+        sparkEnabled: false,
+        slurmEnabled: e.target.checked,
+        kubeEnabled: false,
+        gpuScalingConfiguration: undefined,
+        childNodeInstanceConfiguration: undefined
+      });
+    } else {
+      this.setState({
+        gridEngineEnabled: false,
+        sparkEnabled: false,
+        slurmEnabled: e.target.checked,
+        kubeEnabled: false,
+        hybridAutoScaledClusterEnabled: false,
+        gpuScalingConfiguration: undefined,
+        childNodeInstanceConfiguration: undefined
+      });
+    }
   };
 
   onChangeEnableKube = (e) => {
@@ -491,7 +564,8 @@ class ConfigureClusterDialog extends React.Component {
       slurmEnabled: false,
       kubeEnabled: e.target.checked,
       hybridAutoScaledClusterEnabled: false,
-      gpuScalingConfiguration: undefined
+      gpuScalingConfiguration: undefined,
+      childNodeInstanceConfiguration: undefined
     });
   };
 
@@ -500,17 +574,18 @@ class ConfigureClusterDialog extends React.Component {
       cloudRegionProvider: provider,
       preferences
     } = this.props;
-    const {gpuScalingConfiguration} = this.state;
+    const {
+      gpuScalingConfiguration
+    } = this.state;
     const gpuScalingConfigurationEnabled = !!gpuScalingConfiguration;
     this.setState({
-      gridEngineEnabled: false,
       sparkEnabled: false,
-      slurmEnabled: false,
       kubeEnabled: false,
       hybridAutoScaledClusterEnabled: e.target.checked,
       gpuScalingConfiguration: gpuScalingConfigurationEnabled
         ? getGPUScalingDefaultConfiguration({provider, hybrid: e.target.checked}, preferences)
-        : undefined
+        : undefined,
+      childNodeInstanceConfiguration: undefined
     });
   };
 
@@ -525,7 +600,8 @@ class ConfigureClusterDialog extends React.Component {
     this.setState({
       gpuScalingConfiguration: e.target.checked
         ? getGPUScalingDefaultConfiguration({provider: cloudRegionProvider, hybrid}, preferences)
-        : undefined
+        : undefined,
+      childNodeInstanceConfiguration: undefined
     });
   };
 
@@ -568,15 +644,6 @@ class ConfigureClusterDialog extends React.Component {
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableGridEngine)}
       </Row>,
-      <Row key="enable spark" type="flex" align="middle" style={{marginTop: 5}}>
-        <Checkbox
-          style={{marginLeft: LEFT_MARGIN}}
-          checked={this.state.sparkEnabled}
-          onChange={this.onChangeEnableSpark}>
-          Enable Apache Spark
-        </Checkbox>
-        {renderTooltip(LaunchClusterTooltip.cluster.enableSpark)}
-      </Row>,
       <Row key="enable slurm" type="flex" align="middle" style={{marginTop: 5}}>
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
@@ -585,6 +652,15 @@ class ConfigureClusterDialog extends React.Component {
           Enable Slurm
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.cluster.enableSlurm)}
+      </Row>,
+      <Row key="enable spark" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.sparkEnabled}
+          onChange={this.onChangeEnableSpark}>
+          Enable Apache Spark
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.cluster.enableSpark)}
       </Row>,
       <Row key="enable kube" type="flex" align="middle" style={{marginTop: 5}}>
         <Checkbox
@@ -601,24 +677,35 @@ class ConfigureClusterDialog extends React.Component {
   renderGPUScalingParameter = (value, onChange, gpu = false) => {
     const {hybridAutoScaledClusterEnabled: hybrid} = this.state;
     const label = (
-      <span style={{marginLeft: LEFT_MARGIN, marginRight: 5}}>
+      <span>
         {gpu ? 'GPU' : 'CPU'} {hybrid ? 'family' : 'instance'}:
       </span>
     );
+    const {
+      cloudRegionProvider
+    } = this.props;
     return (
       <Row
         key={`gpu-scaling-${gpu ? 'gpu' : 'cpu'}-family`}
+        style={{
+          marginTop: 5,
+          paddingRight: 15
+        }}
         type="flex"
         align="middle"
-        style={{marginTop: 5, paddingRight: 15}}
       >
-        {label}
+        <div style={PARAMETER_TITLE_STYLE}>
+          {label}
+        </div>
         {
           hybrid && (
-            <Input
-              style={{flex: 1}}
-              onChange={e => onChange(e.target.value)}
+            <InstanceFamilySelector
               value={value}
+              onChange={onChange}
+              instanceTypes={this.props.instanceTypes}
+              provider={cloudRegionProvider}
+              gpu={gpu}
+              style={{flex: 1}}
             />
           )
         }
@@ -633,6 +720,113 @@ class ConfigureClusterDialog extends React.Component {
             />
           )
         }
+      </Row>
+    );
+  };
+
+  renderChildNodeInstanceParameter = () => {
+    const {
+      hybridAutoScaledClusterEnabled: hybrid,
+      gpuScalingConfiguration,
+      childNodeInstanceConfiguration: value
+    } = this.state;
+    if (gpuScalingConfiguration) {
+      return null;
+    }
+    const {
+      instanceName,
+      cloudRegionProvider
+    } = this.props;
+    const label = (
+      <span style={PARAMETER_TITLE_STYLE}>
+        Workers {hybrid ? 'family' : 'instance'}:
+      </span>
+    );
+    const onChange = (newValue) => {
+      this.setState({
+        childNodeInstanceConfiguration: newValue
+      });
+    };
+    const getEmptyConfigFromString = (str) => ({
+      name: str,
+      tooltip: str
+    });
+    const {
+      name: emptyName,
+      tooltip: emptyTooltip
+    } = (() => {
+      if (hybrid) {
+        const family = getInstanceFamilyByName(instanceName, cloudRegionProvider);
+        if (family) {
+          return getEmptyConfigFromString(`Master's config - ${family}`)
+        }
+        return getEmptyConfigFromString('Master\'s config');
+      }
+      if (instanceName) {
+        const instance = (this.props.instanceTypes || []).find((o) => o.name === instanceName);
+        if (instance) {
+          return {
+            name: (
+              <div style={{display: 'flex', flexDirection: 'row'}}>
+                <span>
+                  Master's config
+                </span>
+                <span style={{marginLeft: 5, marginRight: 5}}>
+                  -
+                </span>
+                {instanceInfoString(instance, {plainText: false})}
+              </div>
+            ),
+            tooltip: `Master's config - ${instanceInfoString(instance, {plainText: true})}`
+          };
+        }
+        return getEmptyConfigFromString(`Master's config - ${instanceName}`);
+      }
+      return getEmptyConfigFromString('Master\'s config');
+    })();
+    return (
+      <Row
+        key={`child-node-${hybrid ? 'family' : 'instance'}`}
+        style={{
+          marginTop: 5
+        }}
+        type="flex"
+        align="middle"
+      >
+        {label}
+        {
+          hybrid && (
+            <InstanceFamilySelector
+              value={value}
+              onChange={onChange}
+              instanceTypes={this.props.instanceTypes}
+              provider={cloudRegionProvider}
+              style={{flex: 1}}
+              allowEmpty
+              emptyName={emptyName}
+              emptyTooltip={emptyTooltip}
+            />
+          )
+        }
+        {
+          !hybrid && (
+            <InstanceTypeSelector
+              value={value}
+              onChange={onChange}
+              instanceTypes={this.props.instanceTypes}
+              style={{flex: 1}}
+              allowEmpty
+              emptyName={emptyName}
+              emptyTooltip={emptyTooltip}
+            />
+          )
+        }
+        {renderTooltip(
+          hybrid
+            ? LaunchClusterTooltip.autoScaledCluster.childNodeInstanceFamily
+            : LaunchClusterTooltip.autoScaledCluster.childNodeInstance,
+          {marginLeft: 5}
+        )}
       </Row>
     );
   };
@@ -735,33 +929,42 @@ class ConfigureClusterDialog extends React.Component {
         )}
       </Row>
     );
-    const renderGPUScalingConfiguration = () => {
+    const renderGPUScalingConfigurationToggle = () => {
       const {preferences, cloudRegionProvider} = this.props;
       const configuration = getScalingConfigurationForProvider(cloudRegionProvider, preferences);
-      if (!configuration) {
+      if (!configuration || this.state.slurmEnabled) {
         return [];
       }
       const {
         gpuScalingConfiguration
       } = this.state;
-      const renderers = [
-        (
-          <Row
-            key="gpu-scaling-checkbox"
-            type="flex"
-            align="middle"
-            style={{marginTop: 5}}
-          >
-            <Checkbox
-              style={{marginLeft: LEFT_MARGIN}}
-              checked={!!gpuScalingConfiguration}
-              onChange={this.onChangeEnableGPUScaling}>
-              Enable GPU scaling
-            </Checkbox>
-            {renderTooltip(LaunchClusterTooltip.autoScaledCluster.gpuScaling, {marginLeft: 5})}
-          </Row>
-        )
-      ];
+      return (
+        <Row
+          key="gpu-scaling-checkbox"
+          type="flex"
+          align="middle"
+          style={{marginTop: 5}}
+        >
+          <Checkbox
+            style={{marginLeft: LEFT_MARGIN}}
+            checked={!!gpuScalingConfiguration}
+            onChange={this.onChangeEnableGPUScaling}>
+            Enable GPU scaling
+          </Checkbox>
+          {renderTooltip(LaunchClusterTooltip.autoScaledCluster.gpuScaling, {marginLeft: 5})}
+        </Row>
+      );
+    };
+    const renderGPUScalingConfiguration = () => {
+      const {preferences, cloudRegionProvider} = this.props;
+      const configuration = getScalingConfigurationForProvider(cloudRegionProvider, preferences);
+      if (!configuration || this.state.slurmEnabled) {
+        return [];
+      }
+      const {
+        gpuScalingConfiguration
+      } = this.state;
+      const renderers = [];
       if (gpuScalingConfiguration) {
         const {cpu, gpu} = gpuScalingConfiguration;
         const onChangeCPU = value => this.setState({
@@ -810,7 +1013,26 @@ class ConfigureClusterDialog extends React.Component {
         />
       </Row>,
       this.getValidationRow('maxNodesCount'),
-      <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 5}}>
+      ...renderSetDefaultNodesCount(),
+      <Row key="enable grid engine" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.gridEngineEnabled}
+          onChange={this.onChangeEnableGridEngine}>
+          Enable GridEngine
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableGridEngine)}
+      </Row>,
+      <Row key="enable slurm" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.slurmEnabled}
+          onChange={this.onChangeEnableSlurm}>
+          Enable Slurm
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableSlurm)}
+      </Row>,
+      <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 15}}>
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
           checked={this.state.hybridAutoScaledClusterEnabled}
@@ -819,8 +1041,9 @@ class ConfigureClusterDialog extends React.Component {
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster)}
       </Row>,
+      renderGPUScalingConfigurationToggle(),
+      this.renderChildNodeInstanceParameter(),
       ...renderGPUScalingConfiguration(),
-      ...renderSetDefaultNodesCount(),
       this.getValidationRow('nodesCount'),
       renderAutoScaledPriceTypeSelect()
     ].filter(r => !!r);
@@ -844,6 +1067,7 @@ class ConfigureClusterDialog extends React.Component {
         gridEngineEnabled: this.state.gridEngineEnabled,
         hybridAutoScaledClusterEnabled: this.state.hybridAutoScaledClusterEnabled,
         gpuScalingConfiguration: this.state.gpuScalingConfiguration,
+        childNodeInstanceConfiguration: this.state.childNodeInstanceConfiguration,
         sparkEnabled: this.state.sparkEnabled,
         slurmEnabled: this.state.slurmEnabled,
         kubeEnabled: this.state.kubeEnabled,
@@ -853,7 +1077,7 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   render () {
-    const {sparkEnabled, slurmEnabled, kubeEnabled} = this.state;
+    const {sparkEnabled, kubeEnabled} = this.state;
     return (
       <Modal
         title={
@@ -874,7 +1098,7 @@ class ConfigureClusterDialog extends React.Component {
                 <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
                 <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
                 <Radio.Button
-                  disabled={sparkEnabled || slurmEnabled || kubeEnabled}
+                  disabled={sparkEnabled || kubeEnabled}
                   value={CLUSTER_TYPE.autoScaledCluster}
                 >
                   Auto-scaled cluster
@@ -984,31 +1208,39 @@ class ConfigureClusterDialog extends React.Component {
     return !nodesCount && !maxNodesCount;
   };
 
-  componentWillReceiveProps (nextProps, nextContext) {
-    if (nextProps.visible !== this.props.visible && nextProps.visible) {
-      this.setState({
-        launchCluster: nextProps.launchCluster,
-        autoScaledCluster: nextProps.autoScaledCluster,
-        gridEngineEnabled: nextProps.gridEngineEnabled,
-        sparkEnabled: nextProps.sparkEnabled,
-        slurmEnabled: nextProps.slurmEnabled,
-        kubeEnabled: nextProps.kubeEnabled,
-        autoScaledPriceType: nextProps.autoScaledPriceType,
-        hybridAutoScaledClusterEnabled: nextProps.hybridAutoScaledClusterEnabled,
-        gpuScalingConfiguration: gpuScalingAvailable(
-          nextProps.cloudRegionProvider,
-          nextProps.preferences
-        )
-          ? nextProps.gpuScalingConfiguration
-          : undefined,
-        setDefaultNodesCount: nextProps.nodesCount > 0,
-        nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
-        maxNodesCount: nextProps.maxNodesCount,
-        validation: {
-          nodesCount: null,
-          maxNodesCount: null
-        }
-      }, this.validate);
+  updateFromProps () {
+    const isGPUScalingAvailable = gpuScalingAvailable(
+      this.props.cloudRegionProvider,
+      this.props.preferences
+    );
+    this.setState({
+      launchCluster: this.props.launchCluster,
+      autoScaledCluster: this.props.autoScaledCluster,
+      gridEngineEnabled: this.props.gridEngineEnabled,
+      sparkEnabled: this.props.sparkEnabled,
+      slurmEnabled: this.props.slurmEnabled,
+      kubeEnabled: this.props.kubeEnabled,
+      autoScaledPriceType: this.props.autoScaledPriceType,
+      hybridAutoScaledClusterEnabled: this.props.hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration: isGPUScalingAvailable
+        ? this.props.gpuScalingConfiguration
+        : undefined,
+      childNodeInstanceConfiguration: this.props.childNodeInstanceConfiguration,
+      setDefaultNodesCount: this.props.nodesCount > 0,
+      nodesCount: this.props.nodesCount && !isNaN(this.props.nodesCount)
+        ? this.props.nodesCount
+        : 0,
+      maxNodesCount: this.props.maxNodesCount,
+      validation: {
+        nodesCount: null,
+        maxNodesCount: null
+      }
+    }, this.validate);
+  }
+
+  componentDidUpdate (prevProps, nextContext) {
+    if (prevProps.visible !== this.props.visible && this.props.visible) {
+      this.updateFromProps();
     }
   }
 }

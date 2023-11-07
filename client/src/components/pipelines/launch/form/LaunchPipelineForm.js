@@ -79,7 +79,9 @@ import {
   slurmEnabled,
   kubeEnabled,
   setClusterParameterValue,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
+  applyChildNodeInstanceParameters,
+  parseChildNodeInstanceConfiguration
 } from './utilities/launch-cluster';
 import checkModifiedState from './utilities/launch-form-modified-state';
 import {
@@ -141,6 +143,7 @@ import EnumerationParameter from './enumeration-parameter';
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
+import {getSelectOptions} from '../../../special/instance-type-info';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -279,6 +282,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     autoScaledCluster: false,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -300,6 +304,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     estimatedPrice: {
       evaluated: false,
       pending: false,
+      isValid: false,
       pricePerHour: 0,
       maximumPrice: 0,
       averagePrice: 0,
@@ -409,6 +414,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   @observable cmdTemplateValue;
   @observable launchCommandPayload;
   @observable _toolSettings;
+  @observable toolSettingsPending = false;
   @observable toolDefaultCmd;
   @observable regionDisabledByToolSettings = false;
   @observable toolCloudRegion = null;
@@ -440,7 +446,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       (parameters || {}).parameters
     );
     const currentDockerImage = form.getFieldValue(`${EXEC_ENVIRONMENT}.dockerImage`);
-    if (this.dockerImage !== currentDockerImage) {
+    if (!this.toolSettingsPending && this.dockerImage !== currentDockerImage) {
       if (currentDockerImage) {
         await this.loadToolSettings(currentDockerImage);
         const currentValue = this.props.form.getFieldValue(`${EXEC_ENVIRONMENT}.cloudRegionId`);
@@ -911,6 +917,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       },
       this.props.preferences
     );
+    const childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+      autoScaled: autoScaledCluster,
+      gpuScaling: !!gpuScalingConfiguration,
+      hybrid: hybridAutoScaledCluster,
+      parameters: (this.props.parameters || {}).parameters
+    });
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
@@ -940,6 +952,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gpuScalingConfiguration,
+        childNodeInstanceConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -958,6 +971,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterSection: null,
         estimatedPrice: {
           evaluated: false,
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -998,6 +1012,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
         gpuScalingConfiguration,
+        childNodeInstanceConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -1016,6 +1031,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         bucketPathParameterSection: null,
         estimatedPrice: {
           evaluated: false,
+          isValid: false,
           pending: false,
           pricePerHour: 0,
           maximumPrice: 0,
@@ -1161,10 +1177,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
       if (this.state.launchCluster && this.state.autoScaledCluster) {
-        payload[PARAMETERS][CP_CAP_SGE] = {
-          type: 'boolean',
-          value: true
-        };
         payload[PARAMETERS][CP_CAP_AUTOSCALE] = {
           type: 'boolean',
           value: true
@@ -1191,6 +1203,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           payload[PARAMETERS] = applyGPUScalingParameters(
             this.state.gpuScalingConfiguration,
             payload[PARAMETERS]
+          );
+        } else if (this.state.childNodeInstanceConfiguration) {
+          applyChildNodeInstanceParameters(
+            payload[PARAMETERS],
+            this.state.childNodeInstanceConfiguration,
+            this.state.hybridAutoScaledClusterEnabled
           );
         }
       }
@@ -1379,10 +1397,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     if (this.state.launchCluster && this.state.autoScaledCluster) {
-      payload.params[CP_CAP_SGE] = {
-        type: 'boolean',
-        value: true
-      };
       payload.params[CP_CAP_AUTOSCALE] = {
         type: 'boolean',
         value: true
@@ -1409,6 +1423,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         payload.params = applyGPUScalingParameters(
           this.state.gpuScalingConfiguration,
           payload.params
+        );
+      } else if (this.state.childNodeInstanceConfiguration) {
+        applyChildNodeInstanceParameters(
+          payload.params,
+          this.state.childNodeInstanceConfiguration,
+          this.state.hybridAutoScaledClusterEnabled
         );
       }
     }
@@ -1549,6 +1569,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get instanceTypesMergedForRegions () {
+    return this.props.allowedInstanceTypes
+      && this.props.allowedInstanceTypes.regionsMerged;
+  }
+
+  @computed
   get priceTypes () {
     let availableMasterNodeTypes = [true, false];
     if (this.state.launchCluster && this.props.preferences.loaded) {
@@ -1613,6 +1639,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       },
       this.props.preferences
     );
+    const childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+      autoScaled: autoScaledCluster,
+      gpuScaling: !!gpuScalingConfiguration,
+      hybrid: hybridAutoScaledCluster,
+      parameters: this.props.parameters.parameters
+    });
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
@@ -1624,6 +1656,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       autoScaledCluster: autoScaledCluster,
       hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
@@ -1710,6 +1743,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             return cents / 100;
           };
           estimatedPriceState.evaluated = true;
+          estimatedPriceState.isValid = request.value.diskPricePerHour > 0 &&
+            request.value.computePricePerHour > 0;
           estimatedPriceState.averagePrice = adjustPrice(request.value.averageTimePrice);
           estimatedPriceState.maximumPrice = adjustPrice(request.value.maximumTimePrice);
           estimatedPriceState.minimumPrice = adjustPrice(request.value.minimumTimePrice);
@@ -1723,6 +1758,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   instanceTypeChanged = (newType) => {
     const [instanceType] = this.instanceTypes.filter(t => t.name === newType);
     if (instanceType) {
+      try {
+        const formField = `${EXEC_ENVIRONMENT}.cloudRegionId`;
+        const currentRegion = this.props.form.getFieldValue(formField);
+        const regionId = this.correctCloudRegion(
+          currentRegion ||
+          this.defaultCloudRegionId
+        );
+        const {
+          regionId: iRegionId,
+          regionIds: iRegionIds = [iRegionId]
+        } = instanceType;
+        const changed = iRegionIds.length > 0 &&
+          !iRegionIds.some((id) => Number(id) === Number(regionId));
+        if (changed) {
+          const switchTo = iRegionIds[0];
+          this.props.form.setFieldsValue({
+            [formField]: `${switchTo}`
+          });
+        }
+      } catch (e) {
+        console.warn(e);
+      }
       this.evaluateEstimatedPrice({type: instanceType.name});
     }
   };
@@ -1772,49 +1829,56 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       </Spin>);
   };
   renderEstimatedPriceInfo = () => {
-    if (this.state.estimatedPrice.pending) {
+    const {
+      pricePerHour,
+      isValid,
+      averagePrice,
+      pending
+    } = this.state.estimatedPrice;
+    if (pending) {
       return undefined;
     }
-    const className = classNames(
-      styles.price,
-      {'cp-text-not-important': this.state.estimatedPrice.pending}
-    );
-    if (this.state.estimatedPrice.averagePrice > 0) {
-      const info = (
-        <Popover
-          placement="bottom"
-          content={this.renderEstimatedPriceTable(this.multiplyValueBy)}
-          trigger="hover">
-          <Icon
-            className={styles.hint}
-            type="info-circle"
-          />
-        </Popover>
-      );
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+    let priceContent;
+    let infoContent;
+    if (!isValid) {
+      priceContent = <span> &mdash; </span>;
+      infoContent = 'Price cannot be estimated for the selected node type / disk configuration';
+    } else if (averagePrice > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
       );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr} {info}</span>
-        </span>
-      );
-    } else if (this.state.estimatedPrice.pricePerHour > 0) {
-      const {pricePerHour} = this.state.estimatedPrice;
-      const priceStr = (
+      infoContent = this.renderEstimatedPriceTable(this.multiplyValueBy);
+    } else if (pricePerHour > 0) {
+      priceContent = (
         <JobEstimatedPriceInfo>
           {(pricePerHour * this.multiplyValueBy).toFixed(2)} $
         </JobEstimatedPriceInfo>
-      );
-      return (
-        <span style={{marginLeft: 5}}>Estimated price per hour: <span className={className}>
-          {priceStr}</span>
-        </span>
       );
     }
+    return (
+      <span style={{marginLeft: 5}}>
+        Estimated price per hour:
+        <span className={classNames(
+          styles.price,
+          {'cp-text-not-important': pending}
+        )}>
+          {priceContent}
+        </span>
+        {infoContent ? (
+          <Popover
+            placement="bottom"
+            content={infoContent}
+            trigger="hover">
+            <Icon
+              className={styles.hint}
+              type="info-circle"
+            />
+          </Popover>
+        ) : null}
+      </span>
+    );
   };
   selectBucketPath = (path) => {
     const key = this.state.bucketPathParameterKey;
@@ -3655,10 +3719,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    const instanceTypeStr = (t) => ([
-      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, `,
-      `RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`
-    ]).join('');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3694,30 +3754,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               (input, option) =>
                 option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
             {
-              this.instanceTypes
-                .map(t => t.instanceFamily)
-                .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                .map(instanceFamily => {
-                  return (
-                    <Select.OptGroup
-                      key={instanceFamily || 'Other'}
-                      label={instanceFamily || 'Other'} >
-                      {
-                        this.instanceTypes
-                          .filter(t => t.instanceFamily === instanceFamily)
-                          .map(t =>
-                            <Select.Option
-                              key={t.sku}
-                              value={t.name}
-                              title={instanceTypeStr(t)}
-                            >
-                              {instanceTypeStr(t)}
-                            </Select.Option>
-                          )
-                      }
-                    </Select.OptGroup>
-                  );
-                })
+              getSelectOptions(
+                this.instanceTypes,
+                {
+                  hyperThreadingDisabled: this.hyperThreadingDisabled,
+                  displayRegion: this.instanceTypesMergedForRegions
+                }
+              )
             }
           </Select>
         )}
@@ -3743,7 +3786,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   loadToolSettings = async (dockerImage) => {
     await this.props.dockerRegistries.fetchIfNeededOrWait();
-    if (this.props.dockerRegistries.loaded) {
+    if (this.props.dockerRegistries.loaded && !this.toolSettingsPending) {
       const [registry, group, toolAndVersion] = dockerImage.toLowerCase().split('/');
       const [imageRegistry] = (this.props.dockerRegistries.value.registries || [])
         .filter(r => r.path.toLowerCase() === registry);
@@ -3757,6 +3800,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (im && im.id) {
             this.toolAllowSensitive = im.allowSensitive;
             this.toolPlatform = im.platform;
+            this.toolSettingsPending = true;
             this._toolSettings = new LoadToolVersionSettings(im.id, version);
             await this._toolSettings.fetchIfNeededOrWait();
 
@@ -3807,6 +3851,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             } else {
               this.toolDefaultCmd = undefined;
             }
+            this.toolSettingsPending = false;
           } else {
             this.toolAllowSensitive = true;
           }
@@ -3978,6 +4023,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -3999,6 +4045,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
@@ -5639,6 +5686,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       autoScaledCluster={this.state.autoScaledCluster}
                       hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                       gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                      childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}
@@ -5967,8 +6015,8 @@ export default class extends React.Component {
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields[cloudRegionKey]);
     } else if (fields &&
-      fields.exec &&
-      fields.exec.cloudRegionId &&
+      fields[EXEC_ENVIRONMENT] &&
+      fields[EXEC_ENVIRONMENT].cloudRegionId &&
       props.allowedInstanceTypes) {
       props.allowedInstanceTypes.setRegionId(+fields.exec.cloudRegionId);
     }

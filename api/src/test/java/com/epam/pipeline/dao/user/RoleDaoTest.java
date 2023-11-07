@@ -45,7 +45,7 @@ import static org.junit.Assert.assertTrue;
 @Transactional
 public class RoleDaoTest extends AbstractJdbcTest {
 
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 20;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 21;
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_ROLE = "ROLE_TEST";
     private static final String TEST_ROLE_UPDATED = "NEW_ROLE";

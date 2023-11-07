@@ -1,0 +1,117 @@
+/*
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-wdl-visualizer .visual-element .visual-element-body {
+  fill: fade(@primary-color, 0.1);
+  stroke: @primary-color;
+  stroke-width: 1;
+}
+
+.cp-wdl-visualizer .visual-element.visual-scatter .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.cp-wdl-visualizer .visual-element.visual-conditional .visual-element-body {
+  stroke: @primary-color;
+  stroke-width: 1;
+  stroke-dasharray: 10 10;
+}
+
+.cp-wdl-visualizer .visual-element.selected .visual-element-body {
+  fill: fade(@primary-color, 0.2);
+  stroke: @primary-active-color;
+  stroke-width: 2;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter {
+  stroke: @panel-background-color;
+  fill: @primary-color;
+  stroke-width: 1;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @primary-color;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter.invalid {
+  stroke: @panel-background-color;
+  fill: @color-error;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=false] {
+  fill: @panel-background-color;
+  stroke: @color-error;
+}
+
+.cp-wdl-visualizer .visual-element .visual-parameter.invalid[has-value=true] {
+  fill: @color-error;
+  stroke: @panel-background-color;
+}
+
+.cp-wdl-visualizer .visual-element.invalid .visual-element-body,
+.cp-wdl-visualizer .visual-element.selected.invalid .visual-element-body,
+.cp-wdl-visualizer .visual-element.visual-scatter.invalid .visual-element-body,
+.cp-wdl-visualizer .visual-element.visual-conditional.invalid .visual-element-body {
+  stroke: @color-error;
+}
+
+.cp-wdl-visualizer #workflow-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+
+.cp-wdl-visualizer #default-connection-marker {
+  fill: @primary-color;
+  stroke: @primary-color;
+}
+
+.cp-wdl-visualizer .visual-connection .visual-connection-line {
+  stroke: fade(@primary-color, 0.5);
+}
+
+
+.cp-wdl-visualizer .visual-parameter-label tspan[parameter-name=true],
+.cp-wdl-visualizer .visual-element-label tspan[element-name=true],
+.cp-wdl-visualizer .visual-element-label tspan[element-alias=true] {
+  fill: @application-color;
+}
+
+.cp-wdl-visualizer .visual-parameter-label tspan[parameter-type=true],
+.cp-wdl-visualizer .visual-element-label tspan[element-type=true],
+.cp-wdl-visualizer .visual-element-label tspan[element-as=true] {
+  fill: @application-color-faded;
+}
+
+.cp-wdl-visualizer .joint-tools-layer .joint-tools .joint-link-tool-remove circle {
+  fill: @color-error;
+}
+
+.cp-wdl-visualizer .joint-highlight-stroke {
+  stroke: @primary-color;
+}
+
+.ant-collapse.wdl-properties-collapse .ant-collapse-content {
+  padding: 0;
+}
+
+.ant-collapse.wdl-properties-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding: 2px;
+}

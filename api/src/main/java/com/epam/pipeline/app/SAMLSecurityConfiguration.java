@@ -17,9 +17,9 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.manager.user.ImpersonateFailureHandler;
-import com.epam.pipeline.manager.user.ImpersonateSuccessHandler;
-import com.epam.pipeline.manager.user.ImpersonationManager;
+import com.epam.pipeline.security.saml.impersonation.ImpersonateFailureHandler;
+import com.epam.pipeline.security.saml.impersonation.ImpersonateSuccessHandler;
+import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
@@ -178,8 +178,6 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getImpersonationStartUrl())
-                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
                 .antMatchers(getSecuredResourcesRoot())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");

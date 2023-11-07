@@ -50,6 +50,7 @@ function injection (stores, props) {
   const {location} = props;
   const {
     user: userQ,
+    'billing-group': billingGroupQ,
     group: groupQ,
     period = Period.month,
     range,
@@ -58,13 +59,15 @@ function injection (stores, props) {
   const {users, preferences} = stores;
   users.fetchIfNeededOrWait();
   preferences.fetchIfNeededOrWait();
-  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const billingGroup = billingGroupQ ? billingGroupQ.split(RUNNER_SEPARATOR) : undefined;
+  const adGroup = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
   const filters = {
-    group,
+    billingGroup,
     user,
+    adGroup,
     cloudRegionId,
     ...periodInfo
   };
@@ -78,7 +81,7 @@ function injection (stores, props) {
   billingCentersComputeRequest.fetch();
   let billingCentersComputeTableRequest;
   let billingCentersStorageTableRequest;
-  if (group) {
+  if (billingGroup || adGroup) {
     billingCentersComputeTableRequest = new GetGroupedBillingCenters(
       {filters: {...filters, resourceType: 'COMPUTE'}}
     );
@@ -106,7 +109,8 @@ function injection (stores, props) {
   summaryStorages.fetch();
   return {
     user,
-    group,
+    billingGroup,
+    adGroup,
     summaryCompute,
     summaryStorages,
     billingCentersComputeRequest,
@@ -425,7 +429,8 @@ const UsersChart = inject('users', 'preferences')(observer(UsersChartComponent))
 
 function GroupReport ({
   authenticatedUserInfo,
-  group,
+  billingGroup,
+  adGroup,
   billingCentersComputeRequest,
   billingCentersStorageRequest,
   billingCentersComputeTableRequest,
@@ -436,7 +441,7 @@ function GroupReport ({
   filters
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
-  const billingCenterName = (group || []).join(' ');
+  const billingCenterName = (billingGroup || adGroup || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
@@ -469,7 +474,7 @@ function GroupReport ({
     className: styles.tableCell
   }, {
     key: 'billingCenter',
-    title: 'Billing center',
+    title: adGroup ? 'Group' : 'Billing center',
     render: () => billingCenterName,
     className: styles.tableCell
   }];
@@ -487,7 +492,8 @@ function GroupReport ({
         (computeDiscounts, storageDiscounts) => (
           <Export.Consumer
             exportConfiguration={{
-              group,
+              billingGroup,
+              adGroup,
               period,
               range,
               filters: {
@@ -599,7 +605,8 @@ function GeneralReport ({
   summaryStorages,
   filters,
   user,
-  group
+  billingGroup,
+  adGroup
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
   const onResourcesSelect = BillingNavigation.generateNavigationFn(
@@ -618,7 +625,8 @@ function GeneralReport ({
           <Export.Consumer
             exportConfiguration={{
               user,
-              group,
+              billingGroup,
+              adGroup,
               period,
               range,
               filters: {
@@ -723,11 +731,14 @@ function GeneralReport ({
 }
 
 function DefaultReport (props) {
-  const {user, group} = props;
+  const {user, billingGroup, adGroup} = props;
   if (user) {
     return UserReport(props);
   }
-  if (group && group.length === 1) {
+  if (
+    (billingGroup && billingGroup.length === 1) ||
+    (adGroup && adGroup.length === 1)
+  ) {
     return GroupReport(props);
   }
   return GeneralReport(props);

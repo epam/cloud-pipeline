@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -56,10 +57,11 @@ public interface EntityLoader<T> {
                         .stream()
                         .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
 
-        final Map<Long, Map<String, String>> metadata = apiClient.loadMetadataEntry(users.values()
-                .stream()
-                .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
-                .collect(Collectors.toList()))
+        final Map<Long, Map<String, String>> metadata = ListUtils.emptyIfNull(
+                        apiClient.loadMetadataEntry(users.values()
+                                .stream()
+                                .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
+                                .collect(Collectors.toList())))
                 .stream()
                 .collect(Collectors.toMap(data -> data.getEntity().getEntityId(), this::prepareMetadataEntry));
 
@@ -98,7 +100,7 @@ public interface EntityLoader<T> {
     }
 
     default Map<Long, Pipeline> preparePipelines(final CloudPipelineAPIClient apiClient) {
-        return apiClient.loadAllPipelines()
+        return ListUtils.emptyIfNull(apiClient.loadAllPipelines())
                 .stream()
                 .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
     }

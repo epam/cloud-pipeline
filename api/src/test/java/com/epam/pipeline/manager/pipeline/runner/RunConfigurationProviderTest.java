@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.configuration.RunConfigurationEntry;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
@@ -37,6 +38,10 @@ import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+
 @SuppressWarnings("PMD.TooManyStaticImports")
 public class RunConfigurationProviderTest {
 
@@ -48,6 +53,10 @@ public class RunConfigurationProviderTest {
     private static final Long NO_REGION = null;
     private static final ContextualPreferenceExternalResource TOOL_RESOURCE =
             new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, TOOL_ID);
+    private static final ContextualPreferenceExternalResource REGION_RESOURCE =
+            new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, REGION_ID.toString());
+    private static final List<ContextualPreferenceExternalResource> RESOURCES =
+            Arrays.asList(TOOL_RESOURCE, REGION_RESOURCE);
 
     private final PipelineManager pipelineManager = mock(PipelineManager.class);
     private final ToolManager toolManager = mock(ToolManager.class);
@@ -56,8 +65,10 @@ public class RunConfigurationProviderTest {
     private final InstanceOfferManager instanceOfferManager = mock(InstanceOfferManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
     private final CloudPlatformRunner runner = mock(CloudPlatformRunner.class);
+    private final CloudRegionDao cloudRegionDao = mock(CloudRegionDao.class);
     private final RunConfigurationProvider runConfigurationProvider = new RunConfigurationProvider(pipelineManager,
-            toolManager, permissionsHelper, pipelineConfigurationManager, instanceOfferManager, messageHelper, runner);
+            toolManager, permissionsHelper, pipelineConfigurationManager, instanceOfferManager, messageHelper, runner,
+            cloudRegionDao);
 
     @Before
     public void setUp() {
@@ -65,6 +76,7 @@ public class RunConfigurationProviderTest {
                 .thenReturn(true);
         when(instanceOfferManager.isToolInstanceAllowed(eq(NOT_ALLOWED_INSTANCE_TYPE), any(), any(), eq(false)))
                 .thenReturn(false);
+        when(cloudRegionDao.loadDefaultRegion()).thenReturn(Optional.empty());
 
         final Tool tool = new Tool();
         tool.setName(TOOL_IMAGE);
@@ -109,7 +121,7 @@ public class RunConfigurationProviderTest {
 
         runConfigurationProvider.validateEntry(runConfigurationEntry);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(any(), eq(TOOL_RESOURCE), eq(REGION_ID), eq(false));
+        verify(instanceOfferManager).isToolInstanceAllowed(any(), eq(RESOURCES), eq(REGION_ID), eq(false));
     }
 
     @Test

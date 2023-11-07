@@ -61,7 +61,14 @@ public enum ContextualPreferenceLevel {
      *
      * It is associated with a single storage.
      */
-    STORAGE(4);
+    STORAGE(4),
+
+    /**
+     * Cloud Region preference level.
+     *
+     * It is associated with a single region.
+     */
+    REGION(5);
 
     private final long id;
 

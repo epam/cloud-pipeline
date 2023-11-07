@@ -36,7 +36,6 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
@@ -84,9 +83,6 @@ public class MetadataManager {
 
     @Autowired
     private FolderManager folderManager;
-
-    @Autowired
-    private UserManager userManager;
 
     @Autowired
     private RoleManager roleManager;
@@ -220,8 +216,6 @@ public class MetadataManager {
     private Long loadEntityId(String identifier, AclClass entityClass) {
         if (entityClass.equals(AclClass.ROLE)) {
             return roleManager.loadRoleByNameOrId(identifier).getId();
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            return userManager.loadUserByNameOrId(identifier).getId();
         } else {
             return entityManager.loadByNameOrId(entityClass, identifier).getId();
         }
@@ -390,8 +384,6 @@ public class MetadataManager {
         Object entity;
         if (entityClass.equals(AclClass.ROLE)) {
             entity = roleManager.loadRole(entityId);
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            entity = userManager.loadUserById(entityId);
         } else {
             entity = entityManager.load(entityClass, entityId);
         }

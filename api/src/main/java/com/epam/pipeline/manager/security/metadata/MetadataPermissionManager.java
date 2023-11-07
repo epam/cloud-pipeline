@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -59,17 +60,20 @@ public class MetadataPermissionManager {
         if (permissionHelper.isAdmin()) {
             return true;
         }
-        if (entityClass.isSupportsEntityManager()) {
-            final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
-            return permissionHelper.isAllowed(permission, securedEntity);
-        }
         if (entityClass.equals(AclClass.ROLE)) {
             return false;
         }
-        if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            return isSameUser(entityId);
+        if (entityClass.equals(AclClass.PIPELINE_USER) && isSameUser(entityId)) {
+            return true;
         }
-        return false;
+
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
+
+        final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
+        return permissionHelper.isAllowed(permission, securedEntity);
     }
 
     public boolean metadataPermission(final MetadataEntry metadataEntry, final String permissionName) {
@@ -120,17 +124,18 @@ public class MetadataPermissionManager {
         }
         final EntityVO entity = metadataVO.getEntity();
         final AclClass entityClass = entity.getEntityClass();
-        if (entityClass.isSupportsEntityManager()) {
-            return permissionHelper.isOwner(
-                    entityManager.load(entityClass, entity.getEntityId()));
-        }
-        if (entityClass.equals(AclClass.ROLE)) {
-            return false;
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
         }
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {
             return isMetadataEditAllowedForUser(metadataVO);
         }
-        return false;
+        if (entityClass.equals(AclClass.ROLE)) {
+            return false;
+        }
+        return permissionHelper.isOwner(
+                entityManager.load(entityClass, entity.getEntityId()));
     }
 
     private boolean isMetadataEditAllowedForUser(final MetadataVO metadataVO) {
@@ -140,11 +145,13 @@ public class MetadataPermissionManager {
                 .anyMatch(key -> metadataVO.getData().containsKey(key))) {
             return false;
         }
-        return isSameUser(metadataVO.getEntity().getEntityId());
+        final Long entityId = metadataVO.getEntity().getEntityId();
+        return isSameUser(entityId) || permissionHelper.isAllowed("WRITE",
+                entityManager.load(AclClass.PIPELINE_USER, entityId));
     }
 
     private boolean isSameUser(final Long entityId) {
-        final PipelineUser user = userManager.loadUserById(entityId);
+        final PipelineUser user = userManager.load(entityId);
         return permissionHelper.isOwner(user.getUserName());
     }
 }

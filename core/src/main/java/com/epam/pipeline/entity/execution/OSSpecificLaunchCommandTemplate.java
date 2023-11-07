@@ -3,6 +3,8 @@ package com.epam.pipeline.entity.execution;
 import lombok.Builder;
 import lombok.Value;
 
+import java.util.List;
+
 @Builder
 @Value
 public class OSSpecificLaunchCommandTemplate {
@@ -15,7 +17,23 @@ public class OSSpecificLaunchCommandTemplate {
     String os;
 
     /**
+     * Comma separated list of docker images to apply settings, has higher priority than os,
+     * supported formats: tool, tool:latest
+     */
+    String docker;
+
+    /**
      * Launch command that would be executed as a pid 1 for a pod if the image matched.
      * */
     String command;
+
+    /**
+     * Overrides default docker entry point '/bin/bash'
+     */
+    String entrypoint;
+
+    /**
+     * Sets arguments for docker entrypoint
+     */
+    List<String> args;
 }

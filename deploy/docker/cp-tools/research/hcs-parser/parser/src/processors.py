@@ -51,7 +51,7 @@ TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 DEFAULT_CHANNEL_WIDTH = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_WIDTH', 1080)
 DEFAULT_CHANNEL_HEIGHT = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_HEIGHT', 1080)
 
-WELL_DETAILS_MAPPING = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}'))
+WELL_DETAILS_MAPPING = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}').decode('string_escape'))
 DEFAULT_PLATE_SIZE = float(os.getenv('HCS_PARSING_PLATE_DEFAULT_SIZE', 0.006))
 OME_TIFF_SEQUENCE_CREATION_SCRIPT = os.path.join(os.getenv('HCS_PARSER_HOME', '/opt/local/hcs-tools'),
                                                  'scripts/convert_to_ome_tiff.sh')

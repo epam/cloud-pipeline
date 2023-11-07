@@ -53,6 +53,7 @@ EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
+EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
@@ -573,7 +574,12 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 if endpoints_data:
                         endpoints_count = len(endpoints_data)
                         for i in range(endpoints_count):
-                                endpoint = json.loads(endpoints_data[i])
+                                endpoint = None
+                                try:
+                                        endpoint = json.loads(endpoints_data[i])
+                                except Exception as endpoint_parse_exception:
+                                        do_log('Parsing endpoint #{} failed:\n{}'.format(str(i), str(endpoint_parse_exception)))
+                                        continue
                                 if endpoint["nginx"]:
                                         port = endpoint["nginx"]["port"]
                                         path = endpoint["nginx"].get("path", "")
@@ -590,7 +596,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 edge_location = edge_location_id
                                         else:
                                                 pretty_url_path = pretty_url["path"]
-                                                if endpoints_count == 1:
+                                                if endpoints_count == 1 or (str(is_default_endpoint).lower() == "true" and EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT):
                                                         edge_location = pretty_url_path
                                                 else:
                                                         pretty_url_suffix = endpoint["name"] if "name" in endpoint.keys() else str(custom_endpoint_num)
@@ -726,6 +732,16 @@ def create_dns_record(service_spec, edge_region_id, edge_region_name):
 
 
 def create_service_dns_record(service_spec, route, edge_region_id, edge_region_name):
+        if skip_custom_dns:
+                do_log('Skipping custom DNS record creation for domain {}'.format(dns_domain))
+                dns_custom_record = EDGE_DNS_RECORD_FORMAT.format(job_name=service_spec["edge_location"],
+                                                                  region_name=edge_region_name)
+                dns_record_domain = dns_custom_record + '.' + dns_domain
+                do_log('Setting expected DNS as {}'.format(dns_record_domain))
+
+                service_spec["custom_domain"] = dns_record_domain
+                service_spec["edge_location"] = None
+                return route
         try:
                 do_log('Creating DNS record for {}'.format(route))
                 create_dns_record(service_spec, edge_region_id, edge_region_name)
@@ -901,6 +917,12 @@ def get_affected_routes(involved_routes, all_routes):
         return set(route for route in all_routes if get_pod(route) in involved_pods)
 
 
+def is_true(value):
+        if not value:
+                return False
+        return value.lower() == 'true'
+
+
 do_log('============ Started iteration ============')
 
 if api_domain_name:
@@ -913,6 +935,9 @@ kube_api.session.verify = False
 
 edge_region_name = os.getenv('CP_EDGE_REGION') or find_preference(API_GET_PREF, 'default.edge.region')
 edge_region_id = os.getenv('CP_EDGE_REGION_ID') or find_preference(API_GET_PREF, 'default.edge.region.id')
+
+skip_custom_dns = is_true(os.getenv('CP_EDGE_SKIP_CUSTOM_DNS') or find_preference(API_GET_PREF, 'edge.skip.custom.dns'))
+dns_domain = os.getenv('CP_EDGE_CUSTOM_DOMAIN') or find_preference(API_GET_PREF, 'edge.custom.domain')
 
 # Try to get edge_service_external_ip and edge_service_port for service labels several times before get it from
 # service spec IP and nodePort because it is possible that we will do it while redeploy and label just doesn't

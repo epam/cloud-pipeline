@@ -27,7 +27,8 @@ RUN yum install -y curl \
                    acl \
                    coreutils \
                    openssh-server \
-                   yum-utils && \
+                   yum-utils \
+                   nfs-utils && \
     yum clean all
 
 # Install pip

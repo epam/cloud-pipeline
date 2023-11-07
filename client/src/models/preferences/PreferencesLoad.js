@@ -747,6 +747,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiRunsOwnersFilter () {
+    const value = this.getPreferenceValue('ui.runs.owners.filter');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.owners.filter" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
+  @computed
   get uiRunsClusterDetailsShowActiveOnly () {
     const value = this.getPreferenceValue('ui.runs.cluster.details.show.active.only');
     return (value || '').toLowerCase() !== 'false';
@@ -920,6 +933,12 @@ class PreferencesLoad extends Remote {
       return Number(value);
     }
     return undefined;
+  }
+
+  @computed
+  get storageManagementRestrictedAccess () {
+    const value = this.getPreferenceValue('storage.management.restricted.access');
+    return value && `${value}`.toLowerCase() === 'true';
   }
 
   toolScanningEnabledForRegistry (registry) {

@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.Test;
@@ -57,7 +58,7 @@ public class UserDaoTest extends AbstractJdbcTest {
     private static final String ATTRIBUTES_KEY = "email";
     private static final String ATTRIBUTES_VALUE = "test_email";
     private static final String ATTRIBUTES_VALUE2 = "Mail@epam.com";
-    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 20;
+    private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 21;
     private static final String TEST_ROLE = "ROLE_TEST";
 
     @Autowired
@@ -74,8 +75,8 @@ public class UserDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testSearchUserByPrefix() {
-        PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
+
         user.getAttributes().put(ATTRIBUTES_KEY, ATTRIBUTES_VALUE2);
         PipelineUser savedUser = userDao.createUser(user, Collections.emptyList());
 
@@ -90,8 +91,7 @@ public class UserDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testUserCRUD() {
-        PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         PipelineUser savedUser = userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
         assertNotNull(savedUser);
@@ -129,8 +129,7 @@ public class UserDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testUserCRUDWithBlockingStatus() {
-        final PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        final PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         final PipelineUser savedUser = userDao.createUser(user,
                                                     Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(),
                                                                   DefaultRoles.ROLE_USER.getId()));
@@ -155,8 +154,7 @@ public class UserDaoTest extends AbstractJdbcTest {
 
     @Test
     public void testUpdateUserExternalBlockDate() {
-        final PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        final PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         final PipelineUser savedUser = userDao.createUser(user, Collections.singletonList(
                 DefaultRoles.ROLE_USER.getId()));
 
@@ -235,8 +233,7 @@ public class UserDaoTest extends AbstractJdbcTest {
     public void testUserCRUDWithAttributes() {
         Map<String, String> attributes = new HashMap<>();
         attributes.put(ATTRIBUTES_KEY, ATTRIBUTES_VALUE);
-        PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         user.setAttributes(attributes);
         PipelineUser savedUser = userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
@@ -276,8 +273,7 @@ public class UserDaoTest extends AbstractJdbcTest {
         S3bucketDataStorage s3bucketDataStorage = ObjectCreatorUtils
                 .createS3Bucket(null, "test", "test", TEST_USER1);
         dataStorageDao.createDataStorage(s3bucketDataStorage);
-        PipelineUser user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        PipelineUser user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         user.setDefaultStorageId(s3bucketDataStorage.getId());
         userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
@@ -312,6 +308,7 @@ public class UserDaoTest extends AbstractJdbcTest {
                 .userName(name)
                 .groups(new ArrayList<>(groups))
                 .build();
+        user.setOwner("ADMIN");
         return userDao.createUser(user, new ArrayList<>(roleIds));
     }
 

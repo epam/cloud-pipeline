@@ -335,11 +335,10 @@ class EditHotNodePool extends React.Component {
         prevSpot: spot,
         allowedInstanceTypesPending: true
       }, () => {
-        const request = new AllowedInstanceTypes(
-          undefined,
-          region,
-          spot ? /^spot$/i.test(spot) : undefined
-        );
+        const request = new AllowedInstanceTypes({
+          regionId: region,
+          spot: spot ? /^spot$/i.test(spot) : undefined
+        });
         request.fetchIfNeededOrWait()
           .then(() => {
             if (this.state.region === region && this.state.spot === spot) {

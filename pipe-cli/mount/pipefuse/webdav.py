@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import functools
+import json
 import logging
 import platform
 import xml.etree.cElementTree as xml
@@ -22,6 +23,8 @@ import datetime
 import easywebdav
 import pytz
 import time
+
+import requests
 from dateutil.tz import tzlocal
 from requests import cookies
 
@@ -36,6 +39,83 @@ if py_version == '2':
     from urllib import quote, unquote
 else:
     from urllib.parse import urlparse, quote, unquote
+
+
+class PermissionService(object):
+
+    PERMISSION_SERVICE_PREFIX = '/extra/chown'
+
+    def __init__(self, webdav_url, bearer):
+        self._url = self._build_url(webdav_url)
+        self._bearer = bearer
+        self._headers = {'Content-Type': 'application/json'}
+        self._cookies = {'bearer': bearer}
+        self._attempts = 3
+        self._timeout = 5
+
+    def _build_url(self, webdav_url):
+        return webdav_url.rstrip('/').rsplit('/', 1)[0] + self.PERMISSION_SERVICE_PREFIX
+
+    def set_permissions(self, path):
+        count = 0
+        while count < self._attempts:
+            count += 1
+            try:
+                response = requests.request(method='POST', url=self._url, data=json.dumps({'path': [path]}),
+                                            headers=self._headers, verify=False,
+                                            cookies=self._cookies)
+                if response.status_code != 200:
+                    logging.error('Permission service responded with http status %s.' % str(response.status_code))
+                    continue
+                response_data = response.json()
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
+                if status != 'OK':
+                    logging.error('%s: %s' % (status, message))
+                else:
+                    logging.error(response_data.get('payload'))
+                    return
+            except Exception as e:
+                logging.error(str(e.message))
+        logging.error('Failed to set permissions for %s in %d attempts' % (path, self._attempts))
+
+
+class PermissionAwareWebDavFileSystemClient(ChainingService):
+
+    def __init__(self, inner, webdav, bearer):
+        """
+        Permission aware WebDav File System Client.
+        After uploading write operation on a file,
+        Fixes file permission using helper service
+        """
+        self._inner = inner
+        self._permission_service = PermissionService(webdav, bearer)
+
+    def __getattr__(self, name):
+        if not hasattr(self._inner, name):
+            return None
+        attr = getattr(self._inner, name)
+        if not callable(attr):
+            return attr
+        return self._wrap(attr)
+
+    def _wrap(self, attr):
+        @functools.wraps(attr)
+        def _wrapped_attr(*args, **kwargs):
+            return attr(*args, **kwargs)
+        return _wrapped_attr
+
+    def mkdir(self, path):
+        self._inner.mkdir(path)
+        self.change_permissions(path)
+
+    def flush(self, fh, path):
+        self._inner.flush(fh, path)
+        self.change_permissions(path)
+
+    def change_permissions(self, path):
+        logging.debug('Changing permissions for path %s' % path)
+        self._permission_service.set_permissions(path.lstrip('/'))
 
 
 class ResilientWebDavFileSystemClient(ChainingService):

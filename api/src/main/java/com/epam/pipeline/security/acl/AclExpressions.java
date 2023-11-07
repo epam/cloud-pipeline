@@ -25,6 +25,10 @@ public final class AclExpressions {
 
     public static final String OR_USER_READER = OR + "hasRole('USER_READER')";
 
+    public static final String USER_READ_FILTER =
+            ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(filterObject, 'READ')";
+    public static final String USER_READ_PERMISSION =
+            "hasPermission(#id, 'com.epam.pipeline.entity.user.PipelineUser', 'READ')";
     public static final String PIPELINE_CREATE = "hasRole('ADMIN') OR " +
             "@pipelinePermissionManager.hasCreatePermission(#pipeline.pipelineType, #pipeline.parentFolderId)";
 
@@ -82,7 +86,7 @@ public final class AclExpressions {
             ADMIN_ONLY + OR + "@storagePermissionManager.storageMgmtPermission(#storage.id, 'OWNER')";
 
     public static final String STORAGE_ID_MGMT_DELETE =
-            ADMIN_ONLY + OR + "(" + "hasRole('STORAGE_MANAGER')"
+            ADMIN_ONLY + OR + "hasRole('STORAGE_ADMIN')" + OR + "(" + "hasRole('STORAGE_MANAGER')"
                 + AND + "@storagePermissionManager.storageMgmtPermission(#id, 'OWNER')" + ")";
 
     public static final String STORAGE_ID_TAGS_WRITE =
@@ -158,6 +162,9 @@ public final class AclExpressions {
 
     public static final String NODE_READ = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(#name, 'READ')";
+
+    public static final String NODE_USAGE_READ = ADMIN_ONLY + OR +
+            "@grantPermissionManager.nodeUsagePermission(#name, 'READ')";
 
     public static final String NODE_READ_FILTER = ADMIN_ONLY + OR +
             "@grantPermissionManager.nodePermission(filterObject, 'READ')";

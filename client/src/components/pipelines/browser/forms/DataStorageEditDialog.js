@@ -41,6 +41,7 @@ import {
   parseFSMountPath
 } from './DataStoragePathInput';
 import LifeCycleRules from './life-cycle-rules';
+import dataStorageRestrictedAccessCheck from '../../../../utils/data-storage-restricted-access';
 import styles from './DataStorageEditDialog.css';
 
 export const ServiceTypes = {
@@ -71,7 +72,9 @@ export class DataStorageEditDialog extends React.Component {
     mountDisabled: false,
     versioningEnabled: false,
     sharingEnabled: false,
-    sensitive: false
+    sensitive: false,
+    restrictedAccess: true,
+    restrictedAccessCheckInProgress: false
   };
 
   formItemLayout = {
@@ -100,7 +103,8 @@ export class DataStorageEditDialog extends React.Component {
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
     if (loaded) {
-      const isAdmin = authenticatedUserInfo.value.admin;
+      const isAdmin = authenticatedUserInfo.value.admin ||
+        roleModel.isManager.storageAdmin(this);
       const isOwner = roleModel.isOwner(dataStorage);
       return isAdmin ||
         (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
@@ -169,15 +173,15 @@ export class DataStorageEditDialog extends React.Component {
     const readAllowed = roleModel.readAllowed(dataStorage);
     const writeAllowed = roleModel.writeAllowed(dataStorage);
     return {
-      read: (
+      read: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(dataStorage) ||
         roleModel.isManager.archiveManager(this) ||
         roleModel.isManager.archiveReader(this)
-      ) && readAllowed,
-      write: (
+      ) && readAllowed),
+      write: roleModel.isManager.storageAdmin(this) || ((
         roleModel.isOwner(dataStorage) ||
         roleModel.isManager.archiveManager(this)
-      ) && writeAllowed
+      ) && writeAllowed)
     };
   }
 
@@ -249,18 +253,26 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.isOwner(this.props.dataStorage)) {
+    if (
+      (roleModel.isManager.storageAdmin(this) || roleModel.isOwner(this.props.dataStorage)) &&
+      !this.state.restrictedAccess
+    ) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
             <Row type="flex" justify="start">
               {
-                roleModel.manager.storage(
-                  <Button
-                    id="edit-storage-dialog-delete-button"
-                    type="danger"
-                    onClick={this.openDeleteDialog}>DELETE</Button>
-                )
+                roleModel.isManager.storage(this) ||
+                roleModel.isManager.storageAdmin(this)
+                  ? (
+                    <Button
+                      id="edit-storage-dialog-delete-button"
+                      type="danger"
+                      onClick={this.openDeleteDialog}
+                    >
+                      DELETE
+                    </Button>
+                  ) : null
               }
             </Row>
           </Col>
@@ -347,11 +359,14 @@ export class DataStorageEditDialog extends React.Component {
     if (value && this.isNfsMount) {
       const parseResult = parseFSMountPath(value, this.fileShareMountsList);
       if (!parseResult || !parseResult.storagePath) {
+        // eslint-disable-next-line standard/no-callback-literal
         callback('Storage path is required');
       } else if (!parseResult.storagePath.startsWith('/')) {
+        // eslint-disable-next-line standard/no-callback-literal
         callback('Storage path must begin with \'/\'');
       }
     } else if (!value || !value.path) {
+      // eslint-disable-next-line standard/no-callback-literal
       callback('Storage path is required');
     }
     callback();
@@ -360,9 +375,14 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.isOwner(this.props.dataStorage)
+      ? (
+        this.props.dataStorage.locked ||
+        this.state.restrictedAccess || (
+          !roleModel.isOwner(this.props.dataStorage) &&
+          !roleModel.isManager.storageAdmin(this)
+        ))
       : false;
-    const modalFooter = this.props.pending ? false : (
+    const modalFooter = this.props.pending || this.state.restrictedAccessCheckInProgress ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
     );
     const onClose = () => {
@@ -371,9 +391,9 @@ export class DataStorageEditDialog extends React.Component {
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
         afterClose={() => onClose()}
-        closable={!this.props.pending}
+        closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
         visible={this.props.visible}
         title={
           this.props.dataStorage
@@ -388,7 +408,7 @@ export class DataStorageEditDialog extends React.Component {
         style={{transition: 'width 0.2s ease'}}
         width={(this.state.activeTab === 'transitionRules' || this.isNfsMount) ? '50%' : '33%'}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
-        <Spin spinning={this.props.pending}>
+        <Spin spinning={this.props.pending || this.state.restrictedAccessCheckInProgress}>
           <Tabs
             size="small"
             activeKey={this.state.activeTab}
@@ -401,7 +421,10 @@ export class DataStorageEditDialog extends React.Component {
                   label="Storage path">
                   {getFieldDecorator('path', {
                     rules: [{
-                      validator: (rule, value, callback) => this.validateStoragePath(value, callback)
+                      validator: (rule, value, callback) => this.validateStoragePath(
+                        value,
+                        callback
+                      )
                     }],
                     initialValue: this.props.dataStorage
                   })(
@@ -424,7 +447,7 @@ export class DataStorageEditDialog extends React.Component {
                     initialValue: this.props.dataStorage ? this.props.dataStorage.name : undefined
                   })(
                     <Input
-                      ref={!!this.props.dataStorage ? this.initializeNameInput : null}
+                      ref={this.props.dataStorage ? this.initializeNameInput : null}
                       onPressEnter={this.handleSubmit}
                       disabled={this.props.pending || isReadOnly} />
                   )}
@@ -650,6 +673,7 @@ export class DataStorageEditDialog extends React.Component {
 
   componentDidMount () {
     this.checkStorageChanged();
+    this.checkRestrictedAccess();
   }
 
   initializeNameInput = (input) => {
@@ -677,5 +701,56 @@ export class DataStorageEditDialog extends React.Component {
     if (prevProps.visible !== this.props.visible) {
       this.focusNameInput();
     }
+    const dataStorageChanged = (a, b) => {
+      const {
+        id: aID
+      } = a || {};
+      const {
+        id: bID
+      } = b || {};
+      return aID !== bID;
+    };
+    if (dataStorageChanged(this.props.dataStorage, prevProps.dataStorage)) {
+      this.checkRestrictedAccess();
+    }
   }
+
+  componentWillUnmount () {
+    this.increaseCheckRestrictedAccessToken();
+  }
+
+  increaseCheckRestrictedAccessToken = () => {
+    this.checkRestrictedAccessToken = (this.checkRestrictedAccessToken || 0) + 1;
+    return this.checkRestrictedAccessToken;
+  };
+
+  checkRestrictedAccess = () => {
+    const {
+      dataStorage
+    } = this.props;
+    const {
+      id
+    } = dataStorage || {};
+    const token = this.increaseCheckRestrictedAccessToken();
+    this.setState({
+      restrictedAccessCheckInProgress: true,
+      restrictedAccess: true
+    }, async () => {
+      const state = {
+        restrictedAccessCheckInProgress: false
+      };
+      try {
+        state.restrictedAccess = await dataStorageRestrictedAccessCheck(id);
+      } catch (_) {
+        state.restrictedAccess = true;
+      } finally {
+        if (token === this.checkRestrictedAccessToken) {
+          if (state.restrictedAccess) {
+            console.log(`Storage #${id} is in the restricted access mode for current user`);
+          }
+          this.setState(state);
+        }
+      }
+    });
+  };
 }

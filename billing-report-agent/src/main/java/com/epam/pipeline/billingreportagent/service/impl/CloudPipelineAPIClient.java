@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.LustreFS;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -38,6 +39,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CloudPipelineAPIClient {
@@ -103,5 +105,9 @@ public class CloudPipelineAPIClient {
 
     public LustreFS getLustre(final String mountName, final Long regionId) {
         return retryingApiExecutor.execute(cloudPipelineAPI.getLustre(mountName, regionId));
+    }
+
+    public Map<String, Long> getSystemLogsGrouped(final LogRequest request) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getSystemLogsGrouped(request));
     }
 }

@@ -14,24 +14,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_WORKER_SETUP_TASK="SLURMWorkerSetup"
 CURRENT_PID=$$
 
 add_worker() {
+    _SLURM_CONFIG_LOCATION=$( slurm_config_location )
 
-    cp /common/munge.key /etc/munge/
+    cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
     chown munge: /etc/munge/munge.key
     chmod 0700 /etc/munge/munge.key
     su -c /usr/sbin/munged -s /bin/bash munge
 
-    cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-    cp /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf "$_SLURM_CONFIG_LOCATION"
     mkdir /var/spool/slurmd
     chown slurm: /var/spool/slurmd
     chmod 755 /var/spool/slurmd
     touch /var/log/slurmd.log
     chown slurm: /var/log/slurmd.log
 
+    _WORKER_CORES=$(nproc)
+    _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
     _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
     if (( _NODE_GPUS_COUNT > 0 ))
     then
@@ -40,22 +44,15 @@ add_worker() {
         done
     fi
 
-    slurmd
-}
-
-get_linux_dist() {
-    result=
-    command -v apt-get > /dev/null
-    if [ $? -eq 0 ]; then
-        result="debian"
+    if [ "${cluster_role_type}" == "additional" ]; then
+        if (( _NODE_GPUS_COUNT > 0 )); then
+            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE"
+        else
+            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=FUTURE"
+        fi
+    else
+        slurmd
     fi
-
-    command -v yum > /dev/null
-    if [ $? -eq 0 ]; then
-        result="redhat"
-    fi
-
-    echo "$result"
 }
 
 check_last_exit_code() {
@@ -76,15 +73,78 @@ slurm_config_location() {
    if [ "$_SLURM_CONFIG_DIR" != "" ]; then
       echo "/etc/$_SLURM_CONFIG_DIR"
    else
-      pipe_log_fail "Failed to find SLURM config dir" "${SLURM_MASTER_SETUP_TASK}"
+      pipe_log_fail "Failed to find SLURM config dir" "${SLURM_WORKER_SETUP_TASK}"
       kill -s "$CURRENT_PID"
       exit 1
    fi
 }
 
-LINUX_DISTRIBUTION=$( get_linux_dist )
+install_slurm() {
+    create_slurm_user
+
+    if [ "$CP_OS_FAMILY" == "debian" ]; then
+        if [ "$CP_OS" == "ubuntu" ] && [ "$CP_VER" == "16.04" ]; then
+            pipe_log_fail "SLURM support for Ubuntu 16.04 has been dropped. Please use Ubuntu 18.04 instead." "$SLURM_WORKER_SETUP_TASK"
+            return 1
+        fi
+        install_slurm_debian
+    elif [ "$CP_OS_FAMILY" == "rhel" ]; then
+        install_slurm_rhel
+    else
+        return 1
+    fi
+}
+
+create_slurm_user() {
+    export SLURMUSER=992
+    groupadd -g $SLURMUSER slurm
+    useradd -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
+}
+
+install_slurm_debian() {
+    apt-get update -y
+    apt-get install -y munge
+#    todo: Check if there is need to install libmunge2 / libmunge-dev is needed
+
+    mkdir -p /var/run/munge \
+             /run/munge
+    chown munge: /var/run/munge \
+                 /run/munge
+    chmod +t /run/munge
+
+    wget -q "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
+    if ! apt-get install -y -f /tmp/slurm.deb; then
+        return 1
+    fi
+    rm -f /tmp/slurm.deb
+
+    mkdir -p /etc/slurm \
+             /etc/slurm/prolog.d \
+             /etc/slurm/epilog.d
+    chown slurm: /etc/slurm \
+                 /etc/slurm/prolog.d \
+                 /etc/slurm/epilog.d
+
+    ln -s /usr/local/slurm/bin/* /usr/bin/
+    ln -s /usr/local/slurm/sbin/* /usr/sbin/
+
+    return 0
+}
+
+install_slurm_rhel() {
+    yum install epel-release -y
+    yum install munge munge-libs munge-devel openssl openssl-devel \
+                pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel  \
+                rrdtool-devel ncurses-devel man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
+
+    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+}
 
 pipe_log_info "Installing SLURM worker" "$SLURM_WORKER_SETUP_TASK"
+
+export CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+export CP_SLURM_PACKAGE_DEB_URL="${CP_SLURM_PACKAGE_DEB_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/deb/slurm_22.05.5_amd64.deb"}"
+export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"}"
 
 MASTER_INFO_RESULT=$(eval "${CP_PYTHON2_PATH} ${COMMON_REPO_DIR}/scripts/cluster_wait_for_master.py --master-id ${parent_id} --task-name SLURMMasterSetup")
 _MASTER_AWAIT_RESULT=$?
@@ -93,30 +153,16 @@ MASTER_IP=${MASTER_INFO[-1]}
 MASTER_NAME=${MASTER_INFO[-2]}
 check_last_exit_code $_MASTER_AWAIT_RESULT "Master info received: $MASTER_NAME : $MASTER_IP" "Fail to install SLURM worker. Unable to get master information"
 
-if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-    apt install -y munge slurm-wlm
-    mkdir -p /var/run/munge
-    chown munge: /var/run/munge
-    mkdir -p /run/munge
-    chown munge: /run/munge
-    chmod +t /run/munge
-elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-    export SLURMUSER=992
-    groupadd -g $SLURMUSER slurm
-    useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
-
-    yum install epel-release -y
-    yum install munge munge-libs munge-devel openssl openssl-devel \
-                pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel  \
-                rrdtool-devel ncurses-devel man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
-
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
-    check_last_exit_code $? "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
+if check_cp_cap CP_CAP_SLURM_PREINSTALLED; then
+    pipe_log_info "Skipping SLURM packages installation because packages are preinstalled" "$SLURM_WORKER_SETUP_TASK"
+else
+    pipe_log_info "Installing SLURM packages" "$SLURM_WORKER_SETUP_TASK"
+    install_slurm
+    check_last_exit_code $? "SLURM packages have been installed" "Can't install SLURM packages"
 fi
 
 pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
-_SLURM_CONFIG_LOCATION=$( slurm_config_location )
 add_worker
-check_last_exit_code $? "Host was added as a worker to the SLURM cluster" "Fail to add SLURM worker host"
+check_last_exit_code $? "SLURM daemons have started" "Fail to start SLURM daemons."
 
-pipe_log_success "SLURM worker node was successfully configured" "$SLURM_WORKER_SETUP_TASK"
+pipe_log_success "SLURM worker node has been successfully configured" "$SLURM_WORKER_SETUP_TASK"

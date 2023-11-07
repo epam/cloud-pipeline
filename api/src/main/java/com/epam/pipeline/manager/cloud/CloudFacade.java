@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -97,9 +99,13 @@ public interface CloudFacade {
 
     CloudInstanceState getInstanceState(Long runId);
 
+    CloudInstanceState getInstanceState(NodeRegionLabels nodeRegion, String instanceLabel);
+
     InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceImage getInstanceImageDescription(Long regionId, String imageId);
+
+    void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
 }

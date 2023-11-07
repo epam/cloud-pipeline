@@ -56,7 +56,9 @@ import {
   sparkEnabled,
   slurmEnabled,
   kubeEnabled,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
+  applyChildNodeInstanceParametersAsArray,
+  parseChildNodeInstanceConfiguration
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -99,6 +101,8 @@ import {
 import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
+import {getValidationError} from '../elements/EndpointInput';
+import {getSelectOptions} from '../../special/instance-type-info';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -179,6 +183,7 @@ export default class EditToolForm extends React.Component {
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -294,6 +299,12 @@ export default class EditToolForm extends React.Component {
             }
             if (this.state.gpuScalingConfiguration) {
               applyParametersArray(this.state.gpuScalingConfiguration, params);
+            } else if (this.state.childNodeInstanceConfiguration) {
+              applyChildNodeInstanceParametersAsArray(
+                params,
+                this.state.childNodeInstanceConfiguration,
+                this.state.hybridAutoScaledClusterEnabled
+              );
             }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
@@ -531,6 +542,13 @@ export default class EditToolForm extends React.Component {
             parameters: props.configuration.parameters
           }, this.props.preferences)
           : undefined;
+        state.childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+          gpuScaling: !!state.gpuScalingConfiguration,
+          autoScaled: state.autoScaledCluster,
+          hybrid: state.hybridAutoScaledClusterEnabled,
+          provider,
+          parameters: props.configuration.parameters
+        });
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
@@ -858,9 +876,16 @@ export default class EditToolForm extends React.Component {
         autoScaled: autoScaledCluster,
         hybrid: hybridAutoScaledCluster,
         provider: this.getCloudProvider(),
-        parameters: this.props.configuration.parameters
+        parameters: this.props.configuration ? this.props.configuration.parameters : {}
       }, this.props.preferences)
       : undefined;
+    const childNodeInstanceConfiguration = this.props.configuration
+      ? parseChildNodeInstanceConfiguration({
+        gpuScaling: !!gpuScalingConfiguration,
+        autoScaled: autoScaledCluster,
+        hybrid: hybridAutoScaledCluster,
+        parameters: this.props.configuration.parameters
+      }) : undefined;
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -897,6 +922,7 @@ export default class EditToolForm extends React.Component {
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
+      childNodeInstanceConfiguration !== this.state.childNodeInstanceConfiguration ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
@@ -951,6 +977,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -973,6 +1000,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -1220,29 +1248,7 @@ export default class EditToolForm extends React.Component {
                     filterOption={
                       (input, option) =>
                       option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                    {
-                      this.allowedInstanceTypes
-                        .map(t => t.instanceFamily)
-                        .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                        .map(instanceFamily => {
-                          return (
-                            <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
-                              {
-                                this.allowedInstanceTypes
-                                  .filter(t => t.instanceFamily === instanceFamily)
-                                  .map(t =>
-                                    <Select.Option
-                                      title={`${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
-                                      key={t.sku}
-                                      value={t.name}>
-                                      {t.name} (CPU: {this.cpuMapper(t.vcpu)}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
-                                    </Select.Option>
-                                  )
-                              }
-                            </Select.OptGroup>
-                          );
-                        })
-                    }
+                    {getSelectOptions(this.allowedInstanceTypes)}
                   </Select>
                 )}
               </Form.Item>
@@ -1567,6 +1573,7 @@ export default class EditToolForm extends React.Component {
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
@@ -1643,9 +1650,20 @@ export default class EditToolForm extends React.Component {
     }
   };
 
+  endpointsAreValid () {
+    try {
+      const endpoints = this.props.form.getFieldValue('endpoints') || [];
+      return !endpoints.some((endpoint) => getValidationError(endpoint));
+    } catch (error) {
+      console.warn(error);
+      return false;
+    }
+  }
+
   render () {
     const {getFieldDecorator} = this.props.form;
     const isTool = this.props.mode === 'tool';
+    const endpointsAreValid = this.endpointsAreValid();
     return (
       <Form>
         {
@@ -1656,16 +1674,16 @@ export default class EditToolForm extends React.Component {
           <Row type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
-            <Form.Item>
-              {getFieldDecorator('endpoints',
-                {
-                  initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
-                })(
-                <ToolEndpointsFormItem
-                  disabled={this.state.pending || this.props.readOnly}
-                  ref={this.initializeEndpointsControl} />
-              )}
-            </Form.Item>
+              <Form.Item>
+                {getFieldDecorator('endpoints',
+                  {
+                    initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
+                  })(
+                  <ToolEndpointsFormItem
+                    disabled={this.state.pending || this.props.readOnly}
+                    ref={this.initializeEndpointsControl} />
+                )}
+              </Form.Item>
             </Col>
           </Row>
         }
@@ -1728,7 +1746,8 @@ export default class EditToolForm extends React.Component {
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
                   (this.toolFormParameters && !this.toolFormParameters.isValid) ||
-                  this.state.kubeLabelsHasErrors
+                  this.state.kubeLabelsHasErrors ||
+                  !endpointsAreValid
                 }>
                 SAVE
               </Button>

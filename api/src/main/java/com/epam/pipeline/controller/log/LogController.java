@@ -31,7 +31,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -45,7 +44,6 @@ public class LogController extends AbstractRestController {
 
 
     @PostMapping(value = "/log/filter")
-    @ResponseBody
     @ApiOperation(
             value = "Filter logs.",
             notes = "Filter logs.",
@@ -58,7 +56,6 @@ public class LogController extends AbstractRestController {
     }
 
     @GetMapping(value = "/log/filter")
-    @ResponseBody
     @ApiOperation(
             value = "Get possible values for filters.",
             notes = "Get possible values for filters.",
@@ -71,7 +68,6 @@ public class LogController extends AbstractRestController {
     }
 
     @PostMapping(value = "/log/group")
-    @ResponseBody
     @ApiOperation(
             value = "Filter and group logs by a field.",
             notes = "Filter and group logs by a field.",
@@ -84,7 +80,6 @@ public class LogController extends AbstractRestController {
     }
 
     @PostMapping(value = "/log")
-    @ResponseBody
     @ApiOperation(
             value = "Save logs.",
             notes = "Save logs.",

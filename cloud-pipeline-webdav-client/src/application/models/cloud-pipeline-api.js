@@ -4,19 +4,36 @@ import {error, log} from './log';
 
 const REQUEST_TIMEOUT_SECONDS = 30;
 
-function wrapRequest (url, method, body, authToken, ignoreCertificateErrors = false) {
+const getAPIHeaders = (token) => ({
+  "Authorization": `Bearer ${token}`,
+  "Content-type": "application/json",
+  "Accept": "application/json",
+  "Accept-Charset": "utf-8"
+});
+
+const getWebdavAPIHeaders = (token) => ({
+  "Cookie": `bearer=${token}`,
+  "Content-type": "application/json",
+  "Accept": "application/json",
+  "Accept-Charset": "utf-8"
+});
+
+class NetworkError extends Error {
+
+}
+
+class APIError extends Error {
+
+}
+
+function wrapRequest (url, method, body, headers = {}, ignoreCertificateErrors = false) {
   return new Promise((resolve, reject) => {
     log(`${method} ${url}...`);
     const request = https.request(url, {
       method,
       timeout: REQUEST_TIMEOUT_SECONDS * 1000,
       rejectUnauthorized: !ignoreCertificateErrors,
-      headers: {
-        "Authorization": `Bearer ${authToken}`,
-        "Content-type": "application/json",
-        "Accept": "application/json",
-        "Accept-Charset": "utf-8"
-      }
+      headers
     }, (response) => {
       let data = '';
       response.on('data', (chunk) => {
@@ -31,7 +48,7 @@ function wrapRequest (url, method, body, authToken, ignoreCertificateErrors = fa
               resolve(json.payload);
             } else {
               error(`${method} ${url}: ${json.message}`);
-              reject(new Error(json.message || 'Request error'));
+              reject(new APIError(json.message || 'Request error'));
             }
           } else {
             resolve(undefined);
@@ -44,11 +61,11 @@ function wrapRequest (url, method, body, authToken, ignoreCertificateErrors = fa
     });
     request.on('error', (e) => {
       error(`${method} ${url}: ${e.toString()}`);
-      reject(new Error(`Request error: ${e.toString()}`));
+      reject(new NetworkError(`Request error: ${e.toString()}`));
     });
     request.on('timeout', () => {
       error(`${method} ${url}: timeout`);
-      reject(new Error('Request timeout'));
+      reject(new NetworkError('Request timeout'));
     });
     if (body) {
       log(`${method} ${url}: sending ${body.length} bytes`);
@@ -68,6 +85,18 @@ class CloudPipelineApi {
     }
     const {config: webdavClientConfig = {}} = cfg || {};
     this.api = webdavClientConfig.api;
+    let webdavServer = (webdavClientConfig.server || '');
+    if (webdavServer && webdavServer.endsWith('/')) {
+      webdavServer = webdavServer.slice(0, -1);
+    }
+    if (webdavServer) {
+      this.webdavAPI = webdavServer
+        .split('/')
+        .slice(0, -1)
+        .join('/');
+    } else {
+      this.webdavAPI = undefined;
+    }
     this.password = webdavClientConfig.password;
     this.ignoreCertificateErrors = webdavClientConfig.ignoreCertificateErrors;
     return this;
@@ -89,7 +118,31 @@ class CloudPipelineApi {
       `${api}/${endpoint}`,
       method,
       body ? JSON.stringify(body) : undefined,
-      this.password,
+      getAPIHeaders(this.password),
+      this.ignoreCertificateErrors
+    )
+  }
+
+  webdavAPIRequest (endpoint, options = {}) {
+    if (!this.webdavAPI) {
+      return Promise.reject('Webdav API not initialized');
+    }
+    const {
+      body,
+      method = body ? 'POST' : 'GET'
+    } = options;
+    let api = this.webdavAPI || '';
+    if (api.endsWith('/')) {
+      api = api.slice(0, -1);
+    }
+    if (endpoint.startsWith('/')) {
+      endpoint = endpoint.slice(1);
+    }
+    return wrapRequest(
+      `${api}/${endpoint}`,
+      method,
+      body ? JSON.stringify(body) : undefined,
+      getWebdavAPIHeaders(this.password),
       this.ignoreCertificateErrors
     )
   }
@@ -217,6 +270,21 @@ class CloudPipelineApi {
         .catch(reject);
     });
   }
+
+  sendWebdavPermissionsRequest(path = []) {
+    if (path.length > 0) {
+      return this.webdavAPIRequest('/extra/chown', {
+        body: {
+          path: path.map((o) => o.startsWith('/') ? o.slice(1) : o)
+        }
+      });
+    }
+    return Promise.resolve();
+  }
 }
 
+export {
+  APIError,
+  NetworkError,
+};
 export default new CloudPipelineApi();

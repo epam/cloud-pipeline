@@ -221,6 +221,19 @@ function cp_cap_publish {
             
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+
+            # Due to strange behavior of sge_execd with updating global config values,
+            # we need to change default mail client if favor to our custom
+            if check_cp_cap "CP_CAP_GRID_ENGINE_NOTIFICATIONS"
+            then
+                _PIPE_MAIL_ENABLER_SCRIPT="pipe_mail_enabler"
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_MASTER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_MASTER_CAP_INIT_PATH
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_WORKER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_WORKER_CAP_INIT_PATH
+            fi
       fi
 
       if check_cp_cap "CP_CAP_SLURM"
@@ -421,6 +434,7 @@ function run_pre_common_commands {
 function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
+      CP_OS_FAMILY=
       CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
@@ -445,8 +459,25 @@ function define_distro_name_and_version {
             CP_OS=$(uname -s)
             CP_VER=$(uname -r)
       fi
+
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
+
       export CP_OS
+      export CP_OS_FAMILY
       export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+
+
 }
 
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
@@ -467,7 +498,7 @@ function configure_package_manager {
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
@@ -535,8 +566,8 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
       if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         [ "$CP_OS" == "centos" ] && \
-         [ "$CP_VER" == "8" ]; then
+         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; } && \
+         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
@@ -555,10 +586,10 @@ function get_install_command_by_current_distr {
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
             check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  # Centos 8 throws "No available modular metadata for modular package" if all the other repos are disabled
+                  # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
                   if [ "$CP_REPO_ENABLED" == "true" ] && \
                      [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
-                     [ "$CP_VER" != "8" ]; then
+                     [ "$CP_VER" == "7" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
@@ -684,7 +715,7 @@ function update_user_limits() {
     local _MAX_NOPEN_LIMIT=$1
     local _MAX_PROCS_LIMIT=$2
     local _MAX_CORE_LIMIT=$3
-    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT" -c "$_MAX_CORE_LIMIT"
 cat <<EOT >> /etc/security/limits.conf
 * soft nofile $_MAX_NOPEN_LIMIT
 * hard nofile $_MAX_NOPEN_LIMIT
@@ -696,8 +727,8 @@ root soft nofile $_MAX_NOPEN_LIMIT
 root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
-root soft nproc $_MAX_CORE_LIMIT
-root hard nproc $_MAX_CORE_LIMIT
+root soft core $_MAX_CORE_LIMIT
+root hard core $_MAX_CORE_LIMIT
 EOT
     if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
         # On centos this configuration file contains some default nproc limits
@@ -729,6 +760,7 @@ function configure_owner_account() {
     if [ "$OWNER" ]; then
         # Crop OWNER account by @ if present
         IFS='@' read -r -a owner_info <<< "$OWNER"
+        export OWNER_CP_ACCOUNT="$OWNER"
         export OWNER="${owner_info[0]}"
         export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
         export OWNER_GROUPS="${OWNER_GROUPS:-root}"
@@ -980,6 +1012,49 @@ function tag_run() {
     }'
 }
 
+function is_jq_null() {
+  [ -z "$1" ] || [ "$1" == "null" ]
+}
+
+function jwt_b64_padding() {
+  local len=$(( ${#1} % 4 ))
+  local padded_b64=''
+  if [ ${len} = 2 ]; then
+    padded_b64="${1}=="
+  elif [ ${len} = 3 ]; then
+    padded_b64="${1}="
+  else
+    padded_b64="${1}"
+  fi
+  echo -n "$padded_b64"
+}
+
+function jwt_get_attribute() {
+  if [ -z "$API_TOKEN" ]; then
+    return 1
+  fi
+
+  local _jwt_attribute="$1"
+
+  IFS='.' read -r _jwt_header _jwt_payload _jwt_signature <<< "$API_TOKEN"
+  
+  _jwt_payload=$(jwt_b64_padding "${_jwt_payload}" | tr -- '-_' '+/')
+  _jwt_payload=$(echo "${_jwt_payload}" | base64 -d)
+  _jwt_payload=$(echo "$_jwt_payload" | jq -r ".${_jwt_attribute}")
+  if is_jq_null "$_jwt_payload"; then
+    return 1
+  else
+    echo "$_jwt_payload"
+  fi
+}
+
+function jwt_get_user_groups() {
+  local _jwt_groups=$(jwt_get_attribute "groups" | jq '. | join(" ")' -r)
+  local _jwt_roles=$(jwt_get_attribute "roles" | jq '. | join(" ")' -r)
+
+  echo ${_jwt_groups} ${_jwt_roles}
+}
+
 ######################################################
 
 
@@ -1220,6 +1295,14 @@ fi
 echo "Creating default common code directory at ${COMMON_REPO_DIR}"
 create_sys_dir $COMMON_REPO_DIR
 
+export COMMON_REPO_DIR_MUTUAL_LOC="${COMMON_REPO_DIR_MUTUAL_LOC:-/usr/local/CommonRepo}"
+echo "Linking CommonRepo dir '$COMMON_REPO_DIR' to mutual location '$COMMON_REPO_DIR_MUTUAL_LOC'"
+
+if [ -L $COMMON_REPO_DIR_MUTUAL_LOC ]; then
+    unlink $COMMON_REPO_DIR_MUTUAL_LOC
+fi
+[ -d $COMMON_REPO_DIR ] && ln -s -f $COMMON_REPO_DIR $COMMON_REPO_DIR_MUTUAL_LOC || echo "$COMMON_REPO_DIR not found, and will not be linked to $COMMON_REPO_DIR_MUTUAL_LOC"
+
 # Setup log directory
 if [ -z "$LOG_DIR" ] ;
     then 
@@ -1339,8 +1422,15 @@ fi
 
 if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
     then
-        export CP_CAP_SUDO_ENABLE="true"
-        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+        _user_groups=$(jwt_get_user_groups)
+        if [[ " ${_user_groups} " =~ " ROLE_ADMIN " ]]; then
+            export CP_CAP_SUDO_ENABLE="true"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\" as the user is a member of ROLE_ADMIN"
+        else
+            _default_root_user_enabled=$(get_pipe_preference_low_level "system.ssh.default.root.user.enabled" "true")
+            export CP_CAP_SUDO_ENABLE="$_default_root_user_enabled"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\""
+        fi
 fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
@@ -1798,6 +1888,16 @@ echo
 ######################################################
 
 
+######################################################
+echo "Configure custom mail client if requested"
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_MAIL; then
+    pipe_mail_enabler
+fi
+######################################################
+
 
 ######################################################
 # Setup cluster users sharing if required
@@ -2119,7 +2219,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ]; then
+    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
         _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
         if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
             echo "Systemd already active, skipping installation"
@@ -2255,10 +2355,20 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
-      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_RHEL_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_RHEL_URL"
+            fi
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]); then
+            if [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_DEB_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_DEB_URL"
+            fi
       fi
 
       if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
@@ -2269,6 +2379,38 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
             echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
             eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+
+      if [ "$CP_CAP_EXTRA_PKG_URL" ]; then
+            echo "Installing extra packages from external sources"
+            _old_pwd=$(pwd)
+            cd "$CP_USR_BIN"
+            for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_filename=$(basename "$_pkg")
+                  _pkg_filename_ext="${_pkg_filename##*.}"
+                  if [ -f "$_pkg_filename" ]; then
+                        rm -f "$_pkg_filename"
+                  fi
+                  if ! download_file "$_pkg"; then
+                        echo "[WARN] Failed downloading $_pkg extra package"
+                  else
+                        if [ "$_pkg_filename_ext" == "tgz" ]; then
+                              tar -zxf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "tar" ]; then
+                              tar -xf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "zip" ]; then
+                              unzip -o "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "gz" ]; then
+                              chmod +x "$_pkg_filename"
+                              gzip -d -f "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        fi
+                  fi
+            done
+            cd "$_old_pwd"
       fi
 else
       echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"

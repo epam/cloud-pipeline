@@ -70,9 +70,7 @@ const DTS_ENVIRONMENT = 'DTS';
     runId: params.runId,
     configurationName: params.configuration,
     image: params.image,
-    tool: params.image ? new LoadTool(params.image) : undefined,
     toolVersion: params.image ? components.version : undefined,
-    toolSettings: params.image ? new LoadToolVersionSettings(params.image) : undefined,
     configurations: params.id && params.version && !isVersionedStorage
       ? new PipelineConfigurations(params.id, params.version)
       : undefined,
@@ -93,6 +91,10 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   @observable allowedInstanceTypes;
   @observable versionedStoragesLaunchPayload;
+  @observable toolRequest;
+  @observable toolPending = false;
+  @observable settingsRequest;
+  @observable settingsPending = false;
 
   get pipelinePending () {
     return !!this.props.pipeline && this.props.pipeline.pending;
@@ -104,14 +106,6 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
 
   get runPending () {
     return !!this.props.run && this.props.run.pending;
-  }
-
-  get toolPending () {
-    return !!this.props.tool && this.props.tool.pending;
-  }
-
-  get toolSettingsPending () {
-    return !!this.props.toolSettings && this.props.toolSettings.pending;
   }
 
   get versionedStoragesLaunchPayloadPending () {
@@ -207,14 +201,18 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   getParameters = () => {
-    if (this.props.tool &&
+    if (
+      this.toolRequest &&
       !this.toolPending &&
-      !this.toolSettingsPending &&
-      !this.props.tool.error) {
+      !this.toolRequest.error &&
+      this.settingsRequest &&
+      !this.settingsPending &&
+      !this.settingsRequest.error
+    ) {
       const toolVersion = (this.props.toolVersion || 'latest').toLowerCase();
-      const [versionSettings] = (this.props.toolSettings.value || [])
+      const [versionSettings] = (this.settingsRequest.value || [])
         .filter(v => (v.version || '').toLowerCase() === toolVersion);
-      const [defaultVersionSettings] = (this.props.toolSettings.value || [])
+      const [defaultVersionSettings] = (this.settingsRequest.value || [])
         .filter(v => (v.version || '').toLowerCase() === 'latest');
       const versionSettingValue = (settingName) => {
         if (versionSettings &&
@@ -236,14 +234,14 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         parameter !== undefined &&
         `${parameter}`.trim().length > 0 &&
         (!additionalCriteria || additionalCriteria(parameter));
-      const image = `${this.props.tool.value.registry}/${this.props.tool.value.image}`;
+      const image = `${this.toolRequest.value.registry}/${this.toolRequest.value.image}`;
       return {
-        cmd_template: versionSettingValue('cmd_template') || this.props.tool.value.defaultCommand,
+        cmd_template: versionSettingValue('cmd_template') || this.toolRequest.value.defaultCommand,
         docker_image: this.props.toolVersion
           ? `${image}:${this.props.toolVersion}`
           : image,
-        instance_disk: +versionSettingValue('instance_disk') || this.props.tool.value.disk,
-        instance_size: versionSettingValue('instance_size') || this.props.tool.value.instanceType,
+        instance_disk: +versionSettingValue('instance_disk') || this.toolRequest.value.disk,
+        instance_size: versionSettingValue('instance_size') || this.toolRequest.value.instanceType,
         is_spot: versionSettingValue('is_spot'),
         parameters: versionSettingValue('parameters'),
         node_count: parameterIsNotEmpty(versionSettingValue('node_count'))
@@ -254,7 +252,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           : undefined,
         notifications: versionSettingValue('notifications') || []
       };
-    } else if (this.props.run && !this.runPending && !this.props.run.error) {
+    }
+    if (this.props.run && !this.runPending && !this.props.run.error) {
       const parameters = {
         cmd_template: this.props.run.value.cmdTemplate,
         docker_image: this.props.run.value.dockerImage,
@@ -288,9 +287,11 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         }
       }
       return parameters;
-    } else if (this.getConfigurationParameters()) {
+    }
+    if (this.getConfigurationParameters()) {
       return this.getConfigurationParameters();
-    } else if (
+    }
+    if (
       this.props.isVersionedStorage &&
       this.versionedStoragesLaunchPayload &&
       this.versionedStoragesLaunchPayload.loaded &&
@@ -356,7 +357,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       true,
       undefined,
       undefined,
-      undefined,
+      this.allowedInstanceTypes,
       hostedApplicationConfiguration,
       platform,
       skipCheck
@@ -505,11 +506,43 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     this.setState({configName: name});
   };
 
+  loadTool = async (image) => {
+    if (!image) {
+      return;
+    }
+    this.toolRequest = new LoadTool(image);
+    this.toolPending = true;
+    await this.toolRequest.fetch();
+    if (this.toolRequest.error) {
+      message.error(this.toolRequest.error, 5);
+    }
+    this.toolPending = false;
+  };
+
+  loadSettings = async (image) => {
+    if (!image) {
+      return;
+    }
+    this.settingsRequest = new LoadToolVersionSettings(image);
+    this.settingsPending = true;
+    await this.settingsRequest.fetch();
+    if (this.settingsRequest.error) {
+      message.error(this.settingsRequest.error, 5);
+    }
+    this.settingsPending = false;
+  };
+
   componentDidMount () {
     this.loadVersionedStorageLaunchPayload();
+    this.loadTool(this.props.image);
+    this.loadSettings(this.props.image);
   }
 
   componentDidUpdate (prevProps) {
+    if (this.props.image !== prevProps.image) {
+      this.loadTool(this.props.image);
+      this.loadSettings(this.props.image);
+    }
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = this.props.image
@@ -520,7 +553,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.allowedInstanceTypes.setParameters({
         isSpot: parameters.is_spot,
         regionId: parameters.cloudRegionId,
-        toolId: this.props.image
+        toolId: this.props.image,
+        requestAllRegionsForProviders: ['GCP']
       });
     }
     if (
@@ -585,7 +619,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
       this.configurationsPending ||
       this.runPending ||
       this.toolPending ||
-      this.toolSettingsPending ||
+      this.settingsPending ||
       this.versionedStoragesLaunchPayloadPending ||
       (!this.props.preferences.loaded && this.props.preferences.pending) ||
       !this.allowedInstanceTypes) {
@@ -609,15 +643,15 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         type: 'warning'
       });
     }
-    if (this.props.tool && this.props.tool.error) {
+    if (this.toolRequest && this.toolRequest.error) {
       alerts.push({
-        message: this.props.tool.error,
+        message: this.toolRequest.error,
         type: 'warning'
       });
     }
-    if (this.props.toolSettings && this.props.toolSettings.error) {
+    if (this.settingsPending && this.settingsRequest.error) {
       alerts.push({
-        message: this.props.toolSettings.error,
+        message: this.settingsRequest.error,
         type: 'warning'
       });
     }

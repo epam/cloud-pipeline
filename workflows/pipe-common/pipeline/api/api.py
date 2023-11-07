@@ -211,6 +211,7 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_STORAGE_ITEM_CONTENT_URL = '/datastorage/{id}/content?path={path}'
     LOAD_METADATA = "/metadata/load"
+    SEARCH_METADATA = "/metadata/search?entityClass={entity_class}&key={entity_key}&value={entity_value}"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
     FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
@@ -257,6 +258,7 @@ class PipelineAPI:
     RUN_TAG = '/run/{id}/tag'
     REPORT_USERS = "report/users"
     LOG_GROUP = "log/group"
+    STORAGE_REQUESTS = "log/storage/requests"
     BILLING_EXPORT = "billing/export"
 
     # Pipeline API default header
@@ -357,6 +359,30 @@ class PipelineAPI:
                 return response_data.get('payload')
             except APIError as e:
                 raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self.timeout)
+        raise exceptions[-1]
+
+    def _download(self, http_method, endpoint, output_path, data=None):
+        # Make sure the output_path's directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        url = '{}/{}'.format(self.api_url, endpoint)
+        count = 0
+        exceptions = []
+        while count < self.attempts:
+            count += 1
+            try:
+                with requests.request(method=http_method, url=url, data=json.dumps(data),
+                                      headers=self.header, verify=False,
+                                      timeout=self.connection_timeout, stream=True) as r:
+                    with open(output_path, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=1024):
+                            f.write(chunk)
+                        return
             except Exception as e:
                 exceptions.append(e)
             time.sleep(self.timeout)
@@ -701,6 +727,20 @@ class PipelineAPI:
             raise RuntimeError("Failed to load metadata for the given entity. "
                                "Error message: {}".format(str(e.message)))
 
+    def search_metadata(self, entity_key, entity_value, entity_class):
+        try:
+            suffix = self.SEARCH_METADATA.format(entity_key=entity_key,
+                                              entity_value=entity_value,
+                                              entity_class=entity_class)
+            result = self.execute_request(str(self.api_url) + suffix,
+                                          method="get")
+            if not result or len(result) == 0:
+                return []
+            return result
+        except Exception as e:
+            raise RuntimeError("Failed to search metadata for the given entity. "
+                               "Error message: {}".format(str(e.message)))
+
     def load_metadata_efficiently(self, entity_id, entity_class):
         all_metadata = self.load_all_metadata_efficiently([entity_id], entity_class)
         return (all_metadata[0] if all_metadata else {}).get('data', {})
@@ -736,6 +776,14 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to find metadata entities. "
                                "Error message: {}".format(str(e.message)))
+
+    def download_metadata_entities(self, output_path, folder_id, entity_class, entity_ids=None, file_format=None):
+        endpoint = 'metadataEntity/download?folderId={}&entityClass={}'.format(folder_id, entity_class)
+        if entity_ids:
+            endpoint += '&entityIds={}'.format(','.join(map(str, entity_ids)))
+        if file_format:
+            endpoint += '&fileFormat={}'.format(file_format)
+        self._download('GET', endpoint, output_path=output_path)
 
     def load_dts_registry(self):
         try:
@@ -1413,6 +1461,12 @@ class PipelineAPI:
             return self._request(endpoint=self.LOG_GROUP, http_method="post", data=data)
         except Exception as e:
             raise RuntimeError("Failed to load logs \n {}".format(e))
+
+    def load_storage_requests(self, body):
+        try:
+            return self._request(endpoint=self.STORAGE_REQUESTS, http_method="post", data=body)
+        except Exception as e:
+            raise RuntimeError("Failed to fetch storage requests data \n {}".format(e))
 
     def filter_runs(self, start, end, user, filter, page, page_size):
         try:

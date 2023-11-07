@@ -33,31 +33,36 @@ STATISTICS_TEMPLATE = "statistics-template.html"
 TABLE_TEMPLATE = "group-3-table.html"
 TABLE_CENTER_TEMPLATE = "group-3-table-center.html"
 
+ICON_URL_TEMPLATE = os.getenv("CP_ICON_URL", "https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/")
+USER_FIRST_NAME_ATTR = os.getenv("CP_USER_FIRST_NAME", "FirstName")
+USER_LAST_NAME_ATTR = os.getenv("CP_USER_LAST_NAME", "LastName")
+
 TYPE = 'Type'
 TYPE_GPU = 'GPU'
 TYPE_CPU = 'CPU'
 COST = 'Cost ($)'
 DURATION_HOURS = 'Duration (hours)'
+RUN_ID = "Run"
 ROUND = 4
 
 EMAIL_TEMPLATE = '{text}'
 
 
-EMAIL_SUBJECT = '[%s]: Platform usage statistics'
+EMAIL_SUBJECT = '[%s] Platform usage statistics'
 
 
 class Top3(Enum):
-    INSTANCES = ("Top-3 instances", "instance")
-    PIPELINES = ("Top-3 pipelines", "pipeline")
-    TOOLS = ("Top-3 tools", "tool")
-    BUCKETS = ("Top-3 used buckets", "bucket")
-    CAPABILITIES = ("Top-3 run capabilities", "capability")
+    INSTANCES = ("Top-3 instances", "share", "instance")
+    PIPELINES = ("Top-3 pipelines", "fork", "pipeline")
+    TOOLS = ("Top-3 tools", "tool", "tool")
+    BUCKETS = ("Top-3 used buckets", "hdd", "bucket")
+    CAPABILITIES = ("Top-3 run capabilities", "play", "capability")
 
 
 class Stat(object):
 
     def __init__(self, compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
-                 gpu_hours, clusters_compute_secs, worker_nodes_count,
+                 gpu_hours, clusters_compute_hours, worker_nodes_count,
                  top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities):
         self.compute_hours = compute_hours
         self.runs_count = runs_count
@@ -67,13 +72,19 @@ class Stat(object):
         self.login_time = login_time
         self.cpu_hours = cpu_hours
         self.gpu_hours = gpu_hours
-        self.clusters_compute_secs = clusters_compute_secs
+        self.clusters_compute_hours = clusters_compute_hours
         self.worker_nodes_count = worker_nodes_count
         self.top3_instance_types = top3_instance_types
         self.top3_pipelines = top3_pipelines
         self.top3_tools = top3_tools
         self.top3_used_buckets = top3_used_buckets
         self.top3_run_capabilities = top3_run_capabilities
+
+    def not_empty(self):
+        return self.compute_hours or self.runs_count or self.storage_read or self.storage_write or self.usage_weight \
+               or self.login_time or self.cpu_hours or self.gpu_hours or self.clusters_compute_hours \
+               or self.worker_nodes_count or self.top3_instance_types or self.top3_pipelines \
+               or self.top3_tools or self.top3_used_buckets or self.top3_run_capabilities
 
     @staticmethod
     def format_count(count):
@@ -104,6 +115,13 @@ class Stat(object):
         return items
 
     @staticmethod
+    def format_items_hours(top):
+        items = ''
+        for key, value in top:
+            items += '<tr><td class="group3-left">{}</td><td class="group3-right">{}</td></tr>'.format(key, Stat.format_hours(value))
+        return items
+
+    @staticmethod
     def format_tables(tables, table_center_templ, table_templ):
         table_html = ''
         row_templ = '<tr>{}</tr>'
@@ -121,8 +139,20 @@ class Stat(object):
     def format_column(table_center_templ, tables):
         column = tables.popitem()
         return table_center_templ.format(**{"TABLE_TITLE": column[0][0],
-                                            "TABLE_ICON": column[0][1],
-                                            "ITEMS": column[1]})
+                                            "ITEMS": column[1],
+                                            "TABLE_ICON": column[0][2],
+                                            "TABLE_ICON_URL": Stat.get_icon_url(column[0][1])})
+    @staticmethod
+    def get_icon_url(icon):
+        return ICON_URL_TEMPLATE + icon + ".svg"
+
+    @staticmethod
+    def format_user(user):
+        attributes = user.get('attributes', {})
+        if USER_LAST_NAME_ATTR and USER_FIRST_NAME_ATTR in attributes:
+            return attributes[USER_FIRST_NAME_ATTR] + ' ' + attributes[USER_LAST_NAME_ATTR]
+        else:
+            return user.get('userName')
 
     def get_tables(self):
         tables = dict()
@@ -135,12 +165,13 @@ class Stat(object):
         if len(self.top3_used_buckets) > 0:
             tables[Top3.BUCKETS.value] = Stat.format_items(self.top3_used_buckets)
         if len(self.top3_run_capabilities) > 0:
-            tables[Top3.CAPABILITIES.value] = Stat.format_items(self.top3_run_capabilities)
+            tables[Top3.CAPABILITIES.value] = Stat.format_items_hours(self.top3_run_capabilities)
         return tables
 
-    def get_object_str(self, start, end, deploy_name, template, table_templ, table_center_templ):
+    def get_object_str(self, start, end, deploy_name, template, table_templ, table_center_templ, user):
         return template.format(**{'PLATFORM_NAME': deploy_name,
                                   'PERIOD': "{} - {}".format(start, end),
+                                  'USER_NAME': Stat.format_user(user),
                                   'COMPUTE_HOURS': Stat.format_hours(self.compute_hours),
                                   'RUNS_COUNT': Stat.format_count(self.runs_count),
                                   'LOGIN_TIME': Stat.format_hours(self.login_time),
@@ -149,31 +180,37 @@ class Stat(object):
                                   'WRITE_REQUESTS': self.storage_write,
                                   'CPU': Stat.format_hours(self.cpu_hours),
                                   'GPU': Stat.format_hours(self.gpu_hours),
-                                  'COMPUTE': Stat.format_seconds(self.clusters_compute_secs),
-                                  'WORKER_NODES': self.worker_nodes_count,
+                                  'COMPUTE': Stat.format_hours(self.clusters_compute_hours),
+                                  'WORKER_NODES':  Stat.format_count(self.worker_nodes_count),
                                   'TABLE': Stat.format_tables(self.get_tables(), table_center_templ, table_templ)})
 
 
 class Notifier(object):
-    def __init__(self, api, start, end, stat, deploy_name, notify_users):
+    def __init__(self, api, start, end, stat, deploy_name, to_user, logger, cc_users=None):
         self.api = api
         self.start = start
         self.end = end
         self.stat = stat
         self.deploy_name = deploy_name
-        self.notify_users = notify_users
+        self.to_user = to_user
+        self.logger = logger
+        self.cc_users = cc_users
 
-    def send_notifications(self, template, table_templ, table_center_templ):
-        if not self.notify_users:
+    def send_notifications(self, template, table_templ, table_center_templ, user):
+        if not self.to_user:
             return
+        text = self.build_text(template, table_templ, table_center_templ, user)
+        self.logger.debug("Email Text:")
+        self.logger.debug(text)
+        self.logger.info('Sending notification to user: %s' % self.to_user)
         self.api.create_notification(EMAIL_SUBJECT % self.deploy_name,
-                                     self.build_text(template, table_templ, table_center_templ),
-                                     self.notify_users[0],
-                                     copy_users=self.notify_users[1:] if len(self.notify_users) > 0 else None)
+                                     text,
+                                     self.to_user,
+                                     copy_users=self.cc_users)
 
-    def build_text(self, template, table_templ, table_center_templ):
+    def build_text(self, template, table_templ, table_center_templ, user):
         stat_str = self.stat.get_object_str(self.start, self.end, self.deploy_name,
-                                            template, table_templ, table_center_templ)
+                                            template, table_templ, table_center_templ, user)
         return EMAIL_TEMPLATE.format(**{'text': stat_str,
                                         'from': self.start,
                                         'to': self.end,
@@ -192,7 +229,7 @@ def send_statistics():
     logging.basicConfig(level=logging_level_local, format=logging_format,
                         filename=os.path.join(logging_directory, 'send_statistics.log'))
 
-    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
+    api = PipelineAPI(api_url=api_url, log_dir=logging_directory, connection_timeout=120)
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task='SendStat', inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
@@ -218,33 +255,37 @@ def send_statistics():
     except ValueError:
         raise RuntimeError("Invalid to_date format. Date format should be {}.".format(DATE_FORMAT))
 
-    if not args.users and not args.roles:
-        parser.error('Either --users or --roles should be specified.')
-
     users = [] if args.users is None else args.users
     roles = [] if args.roles is None else args.roles
-
+    users = expand_commas(users)
+    roles = expand_commas(roles)
     try:
         all_users = list()
         logger.debug('Collecting users...')
-        for user in users:
-            user_details = api.load_user_by_name(user)
-            if user_details is not None:
-                all_users.append(user_details)
+        if users:
+            for user in users:
+                user_details = api.load_user_by_name(user)
+                if user_details is not None:
+                    all_users.append(user_details)
+        if roles:
+            logger.debug('Collecting roles...')
+            for role in roles:
+                details = api.load_role_by_name(role)
+                if 'users' in details:
+                    users = details['users']
+                    all_users.extend(users)
+        if not users and not roles:
+            logger.debug('Loading all platfrom users')
+            all_users = api.load_users()
 
-        logger.debug('Collecting roles...')
-        for role in roles:
-            details = api.load_role_by_name(role)
-            if 'users' in details:
-                users = details['users']
-                all_users.extend(users)
-
-        users = [u.get('userName') for u in all_users if not u.get('blocked')]
-        users = list(set(users))
+        users = [u for u in all_users if not u.get('blocked')]
+        send_to = os.getenv('SEND_TO_USER', None)
+        cc_users = os.getenv('CC_USERS', '').split(',') if os.getenv('CC_USERS', '') else None
         if len(users) > 0:
-            logger.info('{} User(s) collected({}).'.format(len(users), ','.join(users)))
+            logger.info('{} User(s) collected.'.format(len(users)))
             logger.info('Collecting and sending statistics...')
-            _send_users_stat(api, logger, from_date, to_date, users, template_path)
+            _send_users_stat(api, logger, from_date, to_date, users, template_path,
+                             send_to=send_to, cc_users=cc_users)
         else:
             logger.info('No users found to collect and send statistics.')
     except KeyboardInterrupt:
@@ -257,9 +298,8 @@ def send_statistics():
         raise
 
 
-def _send_users_stat(api, logger, from_date, to_date, users, template_path):
+def _send_users_stat(api, logger, from_date, to_date, users, template_path, send_to=None, cc_users=None):
     capabilities = _get_capabilities(api)
-    storages = api.data_storage_load_all()
 
     platform_usage_costs = _get_platform_usage_cost(api, from_date, to_date)
     logger.info('Platform Usage costs: {}.'.format(platform_usage_costs))
@@ -267,20 +307,40 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path):
     template, table_templ, table_center_templ = _get_templates(template_path)
 
     for user in users:
-        logger.info('User: {}'.format(user))
+        _user_name = user.get('userName')
+        logger.info('User: {}'.format(_user_name))
         stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
-                               storages, user)
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'), [user])
-        notifier.send_notifications(template, table_templ, table_center_templ)
+                               _user_name, user.get('id'))
+        if not stat.not_empty():
+            logger.info('No data found for user %s, skipping notification' % _user_name)
+            continue
+        receiver = send_to if send_to else _user_name
+        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
+                            receiver, logger, cc_users=cc_users)
+        notifier.send_notifications(template, table_templ, table_center_templ, user)
 
 
-def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, storages, user):
+def expand_commas(data):
+    if not data:
+        return data
+    result = []
+    for item in data:
+        if ',' in item:
+            for val in item.split(','):
+                result.append(val.strip())
+        else:
+            result.append(item.strip())
+    return result
+
+
+def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date, user, user_id):
     from_date_time = "{} 00:00:00.000".format(from_date)
-    to_date_time = "{} 00:00:00.000".format(to_date)
+    to_date_time = "{} 23:59:59.999".format(to_date)
     runs = _get_runs(api, from_date, to_date, user)
-    storage_write = _get_storage_usage(api, from_date_time, to_date_time, user, 'WRITE')
+    storage_requests = _get_storage_requests(api, from_date_time, to_date_time, user_id)
+    storage_write = storage_requests.get('writeRequests', 0)
     logger.info('Storage write requests count: {}.'.format(storage_write))
-    storage_read = _get_storage_usage(api, from_date_time, to_date_time, user, 'READ')
+    storage_read = storage_requests.get('readRequests', 0)
     logger.info('Storage read requests count: {}.'.format(storage_read))
     compute_hours = _get_compute_hours(runs)
     logger.info('Compute hours: {}.'.format(compute_hours))
@@ -294,8 +354,8 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Usage costs: {}.'.format(usage_costs))
     usage_weight = usage_costs / platform_usage_costs
     logger.info('Usage weight: {}.'.format(usage_weight))
-    clusters_compute_secs = _get_cluster_compute_secs(api, from_date_time, to_date_time, user)
-    logger.info('Clusters compute seconds: {}.'.format(clusters_compute_secs))
+    clusters_compute_hours = _get_cluster_compute_hours(api, from_date_time, to_date_time, user, runs)
+    logger.info('Clusters compute hours: {}.'.format(clusters_compute_hours))
     worker_nodes_count = _get_worker_nodes_count(api, from_date_time, to_date_time, user)
     logger.info('Clusters worker nodes count: {}.'.format(worker_nodes_count))
     login_time = _get_login_time(api, from_date_time, to_date_time, user)
@@ -305,14 +365,23 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     top3_pipelines = _get_top3(runs, "Pipeline")
     logger.info('Top 3 Pipelines: {}.'.format(top3_pipelines))
     top3_tools = _get_top3(runs, "Tool")
+    top3_tools = _prepare_tools(top3_tools)
     logger.info('Top 3 Tools: {}.'.format(top3_tools))
-    top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user, storages)
+    storages = dict((int(s.get('id')), s) for s in api.data_storage_load_all())
+    top3_used_buckets = _get_used_buckets(api, from_date_time, to_date_time, user_id, storages)
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
-    top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities)
+    top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities, runs)
     logger.info('Top 3 Capabilities: {}.'.format(top3_run_capabilities))
     return Stat(compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
-                gpu_hours, clusters_compute_secs, worker_nodes_count,
+                gpu_hours, clusters_compute_hours, worker_nodes_count,
                 top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities)
+
+
+def _prepare_tools(top3_tools):
+    result = []
+    for key, value in top3_tools:
+        result.append((key.split('/', 1)[1], value))
+    return result
 
 
 def _get_login_time(api, from_date_time, to_date_time, user):
@@ -332,6 +401,24 @@ def _get_runs(api, from_date, to_date, user):
     return _read_content(run_data, False)
 
 
+def _get_storage_requests(api, from_date_time, to_date_time, user_id):
+    body = {
+        "fromDate": from_date_time,
+        "toDate": to_date_time,
+        "groupBy": "user_id",
+        "sorting": {
+            "field": "total_requests",
+            "order": "DESC"
+        },
+        "userId": int(user_id)
+    }
+    result = api.load_storage_requests(body)
+    if not result or not result.get('statistics', []):
+        return {}
+    else:
+        return result.get('statistics')[0]
+
+
 def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
     filter = {'messageTimestampFrom': from_date_time,
               'messageTimestampTo': to_date_time,
@@ -344,28 +431,29 @@ def _get_storage_usage(api, from_date_time, to_date_time, user, usage):
     return storage_usage.get(user)
 
 
-def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities):
+def _calculate_runs_duration_hours(filter_runs, billing_runs_stat):
+    total_time = 0.0
+    if not filter_runs:
+        return total_time
+    filter_run_ids = [int(run.get('id')) for run in filter_runs]
+    for run in billing_runs_stat:
+        run_id = int(run.get(RUN_ID))
+        if run_id in filter_run_ids:
+            total_time += float(run.get(DURATION_HOURS))
+    return total_time
+
+
+def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities, billing_runs_stat):
     capabilities_dict = {}
     for c in capabilities:
         runs = api.filter_runs_all(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
-        if len(runs) > 0:
-            total_time = 0
-            for r in runs:
-                start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
-                end_date = datetime.strptime(r.get('endDate'), DATE_TIME_FORMAT)
-                total_time += (end_date - start_date).total_seconds()
-            capabilities_dict[c] = total_time
+        capabilities_dict[c] = _calculate_runs_duration_hours(runs, billing_runs_stat)
     return sorted(capabilities_dict.items(), key=lambda item: float(item[1]), reverse=True)[:3]
 
 
-def _get_cluster_compute_secs(api, from_date, to_date, user):
+def _get_cluster_compute_hours(api, from_date, to_date, user, billing_runs_stat):
     runs = api.filter_runs_all(from_date, to_date, user, {'masterRun': True})
-    total_time = 0
-    for r in runs:
-        start_date = datetime.strptime(r.get('startDate'), DATE_TIME_FORMAT)
-        end_date = datetime.strptime(r.get('endDate'), DATE_TIME_FORMAT)
-        total_time += (end_date - start_date).total_seconds()
-    return total_time
+    return _calculate_runs_duration_hours(runs, billing_runs_stat)
 
 
 def _get_worker_nodes_count(api, from_date, to_date, user):
@@ -415,19 +503,28 @@ def _get_top3(runs, entity):
     return sorted(runs_grouped.items(), key=lambda item: item[1], reverse=True)[:3]
 
 
-def _get_used_buckets(api, from_date_time, to_date_time, user, storages):
-    filter = {'messageTimestampFrom': from_date_time,
-              'messageTimestampTo': to_date_time,
-              'types': ['audit'],
-              'users': [user]}
-    logs_by_storage = api.log_group(filter, "storageId")
+def _get_used_buckets(api, from_date_time, to_date_time, user_id, storages):
+    body = {
+        "fromDate": from_date_time,
+        "toDate": to_date_time,
+        "maxEntries": 3,
+        "groupBy": "storage_id",
+        "sorting": {
+            "field": "total_requests",
+            "order": "DESC"
+        },
+        "userId": int(user_id)
+    }
+
+    requests_by_storage = api.load_storage_requests(body)
     top3_storages = list()
-    if logs_by_storage is not None:
-        user_log_group_sorted = sorted(logs_by_storage.items(), key=lambda x: x[1], reverse=True)[:3]
-        for key, value in user_log_group_sorted:
-            storage_name = [pc.get('name') for pc in storages if pc.get('id') == int(key)]
-            if len(storage_name) > 0:
-                top3_storages.append((storage_name, value))
+    if 'statistics' not in requests_by_storage:
+        return top3_storages
+    for storage in requests_by_storage.get('statistics'):
+        storage_id = int(storage.get('id'))
+        storage_entity = storages.get(storage_id, None)
+        storage_name = storage_entity.get('name') if storage_entity else 'Deleted (%d)' % storage_id
+        top3_storages.append((storage_name, storage.get('totalRequests')))
     return top3_storages
 
 

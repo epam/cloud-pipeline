@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.*;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -65,9 +66,10 @@ public class GSFileSyncConfiguration {
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
-            final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
+            final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager,
+            final LockService lockService) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                gsFileManager, indexPrefix + indexName,
+                gsFileManager, lockService, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.GS,
                 SearchDocumentType.GS_FILE,

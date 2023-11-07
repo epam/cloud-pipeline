@@ -25,6 +25,8 @@ import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceTypesRequest;
+import com.amazonaws.services.ec2.model.DescribeInstanceTypesResult;
 import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
 import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesRequest;
 import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesResult;
@@ -38,6 +40,7 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
 import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.amazonaws.services.ec2.model.InstanceTypeInfo;
 import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
 import com.amazonaws.services.ec2.model.NetworkInterface;
 import com.amazonaws.services.ec2.model.Placement;
@@ -54,19 +57,23 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.cluster.GpuDevice;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -77,13 +84,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-public class EC2Helper {
+public class EC2Helper implements EC2GpuHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EC2Helper.class);
     private static final int SPOT_REQUEST_INTERVAL = 3;
@@ -116,6 +125,51 @@ public class EC2Helper {
                 .stream()
                 .filter(networkInterface -> interfaceId.equals(networkInterface.getNetworkInterfaceId()))
                 .findFirst();
+    }
+
+    public Map<String, GpuDevice> findGpus(final List<String> instanceTypes, final AwsRegion region) {
+        final AmazonEC2 client = getEC2Client(region);
+        return findGpus(client, instanceTypes);
+    }
+
+    private Map<String, GpuDevice> findGpus(final AmazonEC2 client, final List<String> instanceTypes) {
+        try {
+            return getGpus(client, instanceTypes);
+        } catch (AmazonEC2Exception e) {
+            LOGGER.warn("Batch retrieval of instance type gpus has failed ({}). Switch to non batch mode...",
+                    instanceTypes, e);
+            return instanceTypes.stream()
+                    .map(instanceType -> findGpu(client, instanceType))
+                    .reduce(CommonUtils::mergeMaps)
+                    .orElseGet(Collections::emptyMap);
+        }
+    }
+
+    private Map<String, GpuDevice> findGpu(final AmazonEC2 client, final String instanceType) {
+        try {
+            return getGpus(client, Collections.singletonList(instanceType));
+        } catch (AmazonEC2Exception e) {
+            LOGGER.warn("Retrieval of instance type gpus has failed ({}).", instanceType, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<String, GpuDevice> getGpus(final AmazonEC2 client, final List<String> instanceTypes) {
+        final DescribeInstanceTypesResult result = client.describeInstanceTypes(new DescribeInstanceTypesRequest()
+                .withInstanceTypes(instanceTypes));
+        return Optional.ofNullable(result)
+                .map(DescribeInstanceTypesResult::getInstanceTypes)
+                .map(Collection::stream)
+                .orElseGet(Stream::empty)
+                .map(this::toInstanceGpu)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+    }
+
+    private Optional<Pair<String, GpuDevice>> toInstanceGpu(final InstanceTypeInfo info) {
+        return info.getGpuInfo().getGpus().stream().findFirst()
+                .map(gpu -> Pair.of(info.getInstanceType(), GpuDevice.from(gpu.getName(), gpu.getManufacturer())));
     }
 
     public double getSpotPrice(final String instanceType, final AwsRegion region) {

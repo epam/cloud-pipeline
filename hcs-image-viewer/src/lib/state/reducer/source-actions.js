@@ -105,6 +105,10 @@ export function setImage(state, action) {
     const regExp = new RegExp(`^\\s*well\\s+${well}\\s*,\\s*field\\s+${field}\\s*$`, 'i');
     metadataItem = metadata.find((o) => regExp.test(o.Name || o.name));
   }
+  if (!metadataItem && metadata.length === 1) {
+    // eslint-disable-next-line prefer-destructuring
+    metadataItem = metadata[0];
+  }
   if (metadataItem) {
     const imageIndex = metadata.indexOf(metadataItem);
     return {
@@ -139,7 +143,7 @@ export function setAnnotations(state, action) {
   return {
     ...state,
     annotations,
-    selectedAnnotation: selected ?  selected.identifier : undefined,
+    selectedAnnotation: selected ? selected.identifier : undefined,
   };
 }
 

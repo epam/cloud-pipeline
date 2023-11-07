@@ -26,7 +26,6 @@ import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Aspect
@@ -38,23 +37,17 @@ public class InstancePriceListAspect {
 
     private final InstanceOfferScheduler instanceOfferScheduler;
 
-    @Async("pauseRunExecutor")
     @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.create(..))",
             returning = "region")
     public void updatePriceListForNewRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
-        log.debug("Scheduling price update for new region {}", region.getRegionCode());
         instanceOfferScheduler.updatePriceList(region);
-        log.debug("Finished price update for new region {}", region.getRegionCode());
     }
 
-    @Async("pauseRunExecutor")
     @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.update(..))",
             returning = "region")
     public void updatePriceListForUpdatedRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
         if (region.getProvider().equals(CloudProvider.GCP)) {
-            log.debug("Scheduling price update for updated region {}", region.getRegionCode());
             instanceOfferScheduler.updatePriceList(region);
-            log.debug("Finished price update for updated region {}", region.getRegionCode());
         }
     }
 }

@@ -22,7 +22,7 @@ from datetime import timedelta
 import itertools
 import time
 
-from pipeline.hpc.gridengine import GridEngineJobState
+from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineType
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand
 from pipeline.hpc.utils import Clock
@@ -293,7 +293,7 @@ class GridEngineScaleUpHandler:
             if run['initialized']:
                 Logger.info('Additional worker #%s has been marked as initialized.' % run_id)
                 Logger.info('Checking additional worker #%s grid engine initialization status...' % run_id)
-                run_sge_tasks = self.api.load_task(run_id, 'SGEWorkerSetup')
+                run_sge_tasks = self.api.load_task(run_id, self.get_grid_engine_worker_task_name())
                 if any(run_sge_task.get('status') == 'SUCCESS' for run_sge_task in run_sge_tasks):
                     Logger.info('Additional worker #%s has been initialized.' % run_id)
                     return
@@ -304,6 +304,12 @@ class GridEngineScaleUpHandler:
         error_msg = 'Additional worker #%s hasn\'t been initialized after %s seconds.' % (run_id, self.polling_timeout)
         Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
+
+    def get_grid_engine_worker_task_name(self):
+        if self.grid_engine.get_engine_type() == GridEngineType.SLURM:
+            return 'SLURMWorkerSetup'
+        else:
+            return 'SGEWorkerSetup'
 
     def _enable_worker_in_grid_engine(self, pod):
         Logger.info('Enabling additional worker %s in grid engine...' % pod.name)
@@ -362,7 +368,8 @@ class GridEngineScaleDownHandler:
         Logger.info('Disabling additional worker %s...' % child_host)
         self.grid_engine.disable_host(child_host)
         jobs = self.grid_engine.get_jobs()
-        disabled_host_jobs = [job for job in jobs if child_host in job.hosts]
+        running_jobs = [job for job in jobs if job.state == GridEngineJobState.RUNNING]
+        disabled_host_jobs = [job for job in running_jobs if child_host in job.hosts]
         if disabled_host_jobs:
             Logger.warn('Disabled additional worker %s has %s associated jobs. Scaling down is interrupted.'
                         % (child_host, len(disabled_host_jobs)))

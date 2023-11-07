@@ -57,11 +57,12 @@ class TestCaseStorageCloudState:
 
 class TestCaseFile:
 
-    def __init__(self, path, storage_date_shift, storage_class, tags):
+    def __init__(self, path, storage_date_shift, storage_class, tags, size=128*1024):
         self.path = path
         self.storage_date_shift = storage_date_shift
         self.storage_class = storage_class
         self.tags = tags
+        self.size = size
 
 
 class TestCasePlatformStorageState:

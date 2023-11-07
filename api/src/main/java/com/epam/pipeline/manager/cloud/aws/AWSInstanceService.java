@@ -20,6 +20,7 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
@@ -267,22 +268,26 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
-        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
-        if (Objects.isNull(aliveInstance)) {
-            return CloudInstanceState.TERMINATED;
+        try {
+            final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
+            if (Objects.isNull(aliveInstance)) {
+                return CloudInstanceState.TERMINATED;
+            }
+            final String instanceStateName = aliveInstance.getState().getName();
+            if (InstanceStateName.Pending.toString().equals(instanceStateName)
+                    || InstanceStateName.Running.toString().equals(instanceStateName)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPING;
+            }
+            if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPED;
+            }
+        } catch (AwsEc2Exception e) {
+            log.error("Fail to get instance state by instance label {} for regionId {}", nodeLabel, region.getId());
         }
-        final String instanceStateName = aliveInstance.getState().getName();
-        if (InstanceStateName.Pending.toString().equals(instanceStateName)
-                || InstanceStateName.Running.toString().equals(instanceStateName)) {
-            return CloudInstanceState.RUNNING;
-        }
-        if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPING;
-        }
-        if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPED;
-        }
-        return null;
+        return CloudInstanceState.TERMINATED;
     }
 
     @Override
@@ -346,6 +351,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public InstanceImage getInstanceImageDescription(final AwsRegion region, final String imageName) {
         return ec2Helper.getInstanceImageDescription(region, imageName);
+    }
+
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+        final String volumeApiName = preferenceManager.getPreference(SystemPreferences.CLUSTER_AWS_EBS_TYPE);
+        requestVO.setVolumeApiName(volumeApiName);
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

@@ -39,6 +39,7 @@ import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
+import escapeRegExp from '../../../../utils/escape-reg-exp';
 import Panel from '../../../special/panel';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
 
@@ -67,7 +68,7 @@ function getFolderContents (storageId, folder) {
       .fetchPage()
       .then(() => {
         if (request.loaded) {
-          const pathRegExp = new RegExp(`^${folder}\\/`, 'i');
+          const pathRegExp = new RegExp(`^${escapeRegExp(folder)}\\/`, 'i');
           const items = ((request.value || {}).results || [])
             .filter(item => pathRegExp.test(item.path));
           resolve(items);
@@ -118,8 +119,8 @@ function getTilesFromFolder (storageId, folder, name) {
   return new Promise((resolve) => {
     getFolderContents(storageId, folder)
       .then(tiles => {
-        const nameRegExp = new RegExp(`^${name}\\.ome\\.tiff$`, 'i');
-        const offsetsRegExp = new RegExp(`^${name}\\.offsets\\.json$`, 'i');
+        const nameRegExp = new RegExp(`^${escapeRegExp(name)}\\.ome\\.tiff$`, 'i');
+        const offsetsRegExp = new RegExp(`^${escapeRegExp(name)}\\.offsets\\.json$`, 'i');
         const omeTiff = (tiles || [])
           .find((aFile) => /^file$/i.test(aFile.type) && nameRegExp.test(aFile.name));
         const omeTiffOffsets = (tiles || [])
@@ -540,8 +541,16 @@ class VSIPreview extends React.Component {
               this.fetchOmeTiffData(configuration.info);
             } else if (configuration) {
               this.fetchDeepZoomData(configuration);
+            } else if (/\.vsi$/i.test(file)) {
+              this.fetchSlideShowData(file.split('.').slice(0, -1).join('.'));
             } else {
-              this.fetchSlideShowData(configuration.folder);
+              this.setState({
+                pending: false,
+                preview: {
+                  pending: false,
+                  error: 'Nothing to preview'
+                }
+              });
             }
           });
       });

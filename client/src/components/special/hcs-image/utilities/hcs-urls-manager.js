@@ -52,6 +52,22 @@ class HCSURLsManager {
     this.error = undefined;
   }
 
+  changeObjectStorage (objectStorage) {
+    const {
+      id: currentId
+    } = this.objectStorage || {};
+    const {
+      id
+    } = objectStorage || {};
+    if (currentId !== id && objectStorage) {
+      this.objectStorage = objectStorage;
+      this.clearTimeouts();
+      this.omeTiff = undefined;
+      this.omeTiffURL = undefined;
+      this.currentPromise = undefined;
+    }
+  }
+
   setActiveURL = (url, offsets) => {
     if (this.omeTiff === url && this.offsetsJson === offsets && this.currentPromise) {
       return this.currentPromise;
@@ -86,6 +102,10 @@ class HCSURLsManager {
   };
 
   generateOMETiffURL () {
+    if (!this.objectStorage) {
+      this.omeTiffURL = undefined;
+      return Promise.resolve();
+    }
     const promise = this.objectStorage.generateFileUrl(this.omeTiff);
     promise
       .then((url) => {
@@ -99,6 +119,10 @@ class HCSURLsManager {
   }
 
   generateOffsetsJsonURL () {
+    if (!this.objectStorage) {
+      this.offsetsJsonURL = undefined;
+      return Promise.resolve();
+    }
     const promise = this.objectStorage.generateFileUrl(this.offsetsJson);
     promise
       .then((url) => {
@@ -109,7 +133,7 @@ class HCSURLsManager {
   }
 
   reportReadAccess = () => {
-    if (!this._reported) {
+    if (!this._reported && this.objectStorage) {
       this._reported = true;
       auditStorageAccessManager.reportReadAccess({
         storageId: this.objectStorage.id,

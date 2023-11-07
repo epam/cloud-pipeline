@@ -93,8 +93,10 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
         subject_files = {
             "GLACIER":
             [
-                CloudObject(os.path.join(self.folder, "file1.txt"), self.now - datetime.timedelta(days=4), "STANDARD"),
-                CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=4), "STANDARD")
+                CloudObject(os.path.join(self.folder, "file1.txt"),
+                            self.now - datetime.timedelta(days=4), "STANDARD", 12),
+                CloudObject(os.path.join(self.folder, "file2.txt"),
+                            self.now - datetime.timedelta(days=4), "STANDARD", 16)
             ]
         }
         transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=0)
@@ -104,6 +106,24 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
         )
         updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
         self.assertEqual(archiving_synchronizer_impl.EXECUTION_FAILED_STATUS, updated_execution.status)
+
+    def test_execution_should_succeed_because_files_are_small_for_glacier_ir_to_be_transferred(self):
+        subject_files = {
+            "GLACIER_IR":
+                [
+                    CloudObject(os.path.join(self.folder, "file1.txt"), self.now - datetime.timedelta(days=4),
+                                "STANDARD", 15),
+                    CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=4),
+                                "STANDARD", 13)
+                ]
+        }
+        transition = StorageLifecycleRuleTransition("GLACIER_IR", transition_after_days=0)
+        execution = StorageLifecycleRuleExecution(
+            1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
+            "GLACIER_IR", self.now - datetime.timedelta(days=3)
+        )
+        updated_execution = self.synchronizer._check_rule_execution_progress(1, transition, subject_files, execution)
+        self.assertEqual(archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, updated_execution.status)
 
     def test_check_rule_execution_progress_running_should_succeed(self):
         subject_files = {"GLACIER": []}

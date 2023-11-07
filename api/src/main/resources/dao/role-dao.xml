@@ -184,6 +184,7 @@
                       u.external_block_date,
                       u.blocked as user_blocked,
                       u.block_date as user_block_date,
+                      u.owner as user_owner,
                       g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id
@@ -214,6 +215,7 @@
                       u.first_login_date,
                       u.last_login_date,
                       u.external_block_date,
+                      u.owner as user_owner,
                       g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id

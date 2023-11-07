@@ -132,7 +132,6 @@ public class NatGatewayManager {
         this.defaultCustomDnsIP = defaultCustomDnsIP;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     @SchedulerLock(name = "NatGatewayManager_updateStatus", lockAtMostForString = "PT5M")
     @Scheduled(fixedDelayString = "${nat.gateway.auto.config.poll:60000}")
     public void updateStatus() {

@@ -27,7 +27,7 @@ import {getStaticResourceUrl} from '../../../../../models/static-resources';
 class OpenStaticPreview extends React.Component {
   state = {
     pending: false,
-    storagePath: undefined
+    storageName: undefined
   };
 
   get fileName () {
@@ -37,21 +37,21 @@ class OpenStaticPreview extends React.Component {
 
   get staticResourceUrl () {
     const {
-      storagePath
+      storageName
     } = this.state;
     const {
       path,
       preferences
     } = this.props;
     if (
-      !storagePath ||
+      !storageName ||
       !path ||
       !preferences.loaded ||
       !preferences.dataStorageItemPreviewMasks.some(o => o.test(path))
     ) {
       return null;
     }
-    return getStaticResourceUrl(storagePath, path);
+    return getStaticResourceUrl(storageName, path);
   }
 
   componentDidMount () {
@@ -74,7 +74,7 @@ class OpenStaticPreview extends React.Component {
       }, async () => {
         const state = {
           pending: false,
-          storagePath: undefined
+          storageName: undefined
         };
         try {
           const request = dataStorages.load(storageId);
@@ -83,9 +83,9 @@ class OpenStaticPreview extends React.Component {
             throw new Error(request.error || 'Error loading storage info');
           }
           const {
-            path
+            name
           } = request.value;
-          state.storagePath = path;
+          state.storageName = name;
         } catch (_) {
         } finally {
           this.setState(state);
@@ -94,7 +94,7 @@ class OpenStaticPreview extends React.Component {
     } else {
       this.setState({
         pending: false,
-        storagePath: undefined
+        storageName: undefined
       });
     }
   };

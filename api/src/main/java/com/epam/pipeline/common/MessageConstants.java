@@ -662,6 +662,11 @@ public final class MessageConstants {
 
     public static final String ERROR_GCP_INSTANCE_NOT_RUNNING = "error.gcp.instance.not.running";
     public static final String ERROR_GCP_INSTANCE_NOT_FOUND = "error.gcp.instance.not.found";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_CPU_LOWER_LIMIT = "error.gcp.custom.instance.cpu.lower.limit";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_SUPPORTED =
+            "error.gcp.custom.instance.family.not.supported";
+    public static final String ERROR_GCP_CUSTOM_INSTANCE_FAMILY_NOT_ALLOWED_WITH_GPU =
+            "error.gcp.custom.instance.family.not.allowed.with.gpu";
 
     //AWS
     public static final String ERROR_AWS_PROFILE_UNIQUENESS = "error.aws.profile.uniqueness";

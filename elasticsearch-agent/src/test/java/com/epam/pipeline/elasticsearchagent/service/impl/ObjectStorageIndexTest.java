@@ -17,6 +17,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.vo.EntityPermissionVO;
@@ -64,6 +65,8 @@ public class ObjectStorageIndexTest {
     private ElasticsearchServiceClient elasticsearchServiceClient;
     @Mock
     private ElasticIndexService elasticIndexService;
+    @Mock
+    private LockService lockService;
     
     private ObjectStorageIndexImpl objectStorageIndex;
 
@@ -75,6 +78,7 @@ public class ObjectStorageIndexTest {
                 elasticsearchServiceClient,
                 elasticIndexService,
                 fileManager,
+                lockService,
                 TEST_NAME,
                 TEST_NAME,
                 BULK_SIZE,

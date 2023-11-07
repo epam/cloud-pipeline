@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>User statistics</title>
+    <style type="text/css">
+      body {{
+        margin: 0;
+        padding: 0;
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }}
+      .no-padding-no-margin {{
+        padding-top: 0;
+        padding-right: 0;
+        padding-bottom: 0;
+        padding-left: 0;
+        margin-top: 0;
+        margin-right: 0;
+        margin-bottom: 0;
+        margin-left: 0;
+      }}
+      .content-table {{
+        background-color: white;
+        color: #013557;
+        font-family: Georgia, 'Times New Roman', Times, serif;
+        border-collapse: collapse;
+      }}
+      .header {{
+        padding-top: 40px;
+        padding-right: 0;
+        padding-bottom: 30px;
+        padding-left: 0;
+        font-size: x-large;
+        background-color: #2796dd;
+        color: white;
+      }}
+      .group1-number-left {{
+        width: 50%;
+        color: #2796dd;
+        padding: 20px 10px 0 50px;
+      }}
+      .group1-number-right {{
+        width: 50%;
+        color: #2796dd;
+        padding: 20px 50px 0 10px;
+      }}
+      .group1-number-right b,
+      .group1-number-left b {{
+        font-size: x-large;
+      }}
+      .group1-name-left {{
+        width: 50%;
+        font-size: small;
+        vertical-align: top;
+        padding: 0 10px 20px 50px;
+      }}
+      .group1-name-right {{
+        width: 50%;
+        font-size: small;
+        vertical-align: top;
+        padding: 0 50px 20px 10px;
+      }}
+      .group2 {{
+        vertical-align: top;
+        padding: 20px;
+        width: 50%;
+      }}
+      .group2-left {{
+        padding: 5px 10px;
+        text-align: left;
+      }}
+      .group2-right {{
+        padding: 0 10px;
+        text-align: right;
+      }}
+      .group3 {{
+        vertical-align: top;
+        padding: 20px;
+        width: 50%;
+      }}
+      .group3-left {{
+        padding: 5px 10px;
+        text-align: left;
+      }}
+      .group3-right {{
+        padding: 0 10px;
+        text-align: right;
+      }}
+      .divider {{
+        border-bottom: 1px solid #2796dd;
+      }}
+      .group-header {{
+        line-height: 100%;
+        vertical-align: middle;
+        margin: 0;
+      }}
+      .picture {{
+        display: inline-block;
+        vertical-align: middle;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position-x: right;
+        background-position-y: center;
+        border:none;
+        outline:none;
+        text-decoration:none
+      }}
+      #instance,
+      #pipeline,
+      #tool,
+      #bucket,
+      #capability {{
+        display: none;
+        mso-hide: all;
+      }}
+      #instance-container #instance {{
+        display: inline-block !important;
+        mso-hide: none !important;
+      }}
+      #pipeline-container #pipeline {{
+        display: inline-block !important;
+        mso-hide: none !important;
+      }}
+      #tool-container #tool {{
+        display: inline-block !important;
+        mso-hide: none !important;
+      }}
+      #bucket-container #bucket {{
+        display: inline-block !important;
+        mso-hide: none !important;
+      }}
+      #capability-container #capability {{
+        display: inline-block !important;
+        mso-hide: none !important;
+      }}
+    </style>
+  </head>
+  <body bgcolor="#fafafa">
+    <table border="0" width="100%" cellpadding="0" cellspacing="0">
+      <tbody>
+        <tr>
+          <td valign="top" class="no-padding-no-margin">
+            <table border="0" align="center" width="600px" cellpadding="0" cellspacing="0" class="content-table">
+              <tbody>
+                <tr>
+                  <td colspan="6" align="center" class="header">
+                    <b>{PLATFORM_NAME}</b>
+                    <br />
+                    <span style="font-size:smaller">Usage statistics for</span>
+                    <span style="font-size:smaller">{PERIOD}</span>
+                    <br />
+                    <span style="font-size:smaller">{USER_NAME}</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="3" align="center" class="group1-number-left">
+                    {COMPUTE_HOURS}
+                  </td>
+                  <td colspan="3" align="center" class="group1-number-right">
+                    {RUNS_COUNT}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="3" align="center" class="group1-name-left">
+                    Compute hours
+                  </td>
+                  <td colspan="3" align="center" class="group1-name-right">
+                    Runs count
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="3" align="center" class="group1-number-left">
+                    {LOGIN_TIME}
+                  </td>
+                  <td colspan="3" align="center" class="group1-number-right">
+                    {USAGE_WEIGHT}
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="3" align="center" class="group1-name-left">
+                    Login time
+                  </td>
+                  <td colspan="3" align="center" class="group1-name-right">
+                    Usage weight
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="6" align="center">
+                    <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                      <tbody>
+                        <tr>
+                          <td align="center" class="group2">
+                            <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="3" valign="middle" align="center" height="50">
+                                    <p class="group-header">
+                                      <img width="50" height="50" class="picture" border="0" src="https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/usb.svg">
+                                      <span style="font-weight: bold;">
+                                        Compute type
+                                      </span>
+                                    </p>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="3" align="center" class="divider"></td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    CPU
+                                  </td>
+                                  <td class="group2-right">
+                                    {CPU}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    GPU
+                                  </td>
+                                  <td class="group2-right">
+                                    {GPU}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                          <td align="center" class="group2">
+                            <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="3" align="center">
+                                    <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                                      <tbody>
+                                        <tr>
+                                          <td colspan="3" valign="middle" align="center" height="50">
+                                            <p class="group-header">
+                                              <img width="50" height="50" class="picture" border="0" src="https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/bars.svg">
+                                              <span style="font-weight: bold;">
+                                                Clusters
+                                              </span>
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="3" align="center" class="divider"></td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    Compute
+                                  </td>
+                                  <td class="group2-right">
+                                    {COMPUTE}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    Worker nodes
+                                  </td>
+                                  <td class="group2-right">
+                                    {WORKER_NODES}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="3" align="center" class="group2">
+                            <table align="center" width="300px" cellpadding="0" cellspacing="0">
+                              <tbody>
+                                <tr>
+                                  <td colspan="3" align="center">
+                                    <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                                      <tbody>
+                                        <tr>
+                                          <td colspan="3" valign="middle" align="center" height="50">
+                                            <p class="group-header">
+                                              <img width="50" height="50" class="picture" border="0" src="https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/install/email-templates/user-statistics/inbox.svg">
+                                              <span style="font-weight: bold;">
+                                                Storage usage
+                                              </span>
+                                            </p>
+                                          </td>
+                                        </tr>
+                                      </tbody>
+                                    </table>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td colspan="3" align="center" class="divider"></td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    Read requests
+                                  </td>
+                                  <td class="group2-right">
+                                    {READ_REQUESTS}
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td class="group2-left">
+                                    Write requests
+                                  </td>
+                                  <td class="group2-right">
+                                    {WRITE_REQUESTS}
+                                  </td>
+                                </tr>
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+                <tr height="30px"></tr>
+                <tr>
+                  <td colspan="6" align="center">
+                    <table border="0" align="center" width="100%" cellpadding="0" cellspacing="0">
+                      <tbody>
+					  {TABLE}
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>

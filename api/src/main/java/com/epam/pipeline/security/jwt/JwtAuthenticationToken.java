@@ -79,4 +79,8 @@ public class JwtAuthenticationToken extends AbstractAuthenticationToken {
         super.eraseCredentials();
         this.jwtRawToken = null;
     }
+
+    public void prolong(final int seconds) {
+        this.tokenExpiration = DateTime.now().plusSeconds(seconds).toDate();
+    }
 }

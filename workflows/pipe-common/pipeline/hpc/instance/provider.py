@@ -13,25 +13,47 @@
 #  limitations under the License.
 
 
+class InstanceGpu:
+
+    def __init__(self, name, manufacturer, cores):
+        self.name = name
+        self.manufacturer = manufacturer
+        self.cores = cores
+
+    @staticmethod
+    def from_cp_response(instance_gpu):
+        return InstanceGpu(name=instance_gpu.get('name'),
+                           manufacturer=instance_gpu.get('manufacturer'),
+                           cores=int(instance_gpu.get('cores', 0)) or None)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
 class Instance:
 
-    def __init__(self, name, price_type, cpu, gpu, mem):
+    def __init__(self, name, price_type, cpu, mem, gpu, gpu_device=None):
         """
         Execution instance.
         """
         self.name = name
         self.price_type = price_type
         self.cpu = cpu
-        self.gpu = gpu
         self.mem = mem
+        self.gpu = gpu
+        self.gpu_device = gpu_device
 
     @staticmethod
     def from_cp_response(instance):
         return Instance(name=instance['name'],
                         price_type=instance['termType'],
                         cpu=int(instance['vcpu']),
+                        mem=int(instance['memory']),
                         gpu=int(instance['gpu']),
-                        mem=int(instance['memory']))
+                        gpu_device=InstanceGpu.from_cp_response(instance.get('gpuDevice', {})))
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

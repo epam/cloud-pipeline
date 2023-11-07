@@ -28,7 +28,9 @@ const KNOWN_TAGS = [
   'idle',
   'pressure',
   'sge_in_use',
-  'recovered'
+  'slurm_in_use',
+  'recovered',
+  'node_unavailable'
 ];
 
 const isInstanceLink = (tag) => {
@@ -93,7 +95,7 @@ function Tag (
             warning: /^idle$/i.test(tag),
             critical: /^(pressure|recovered)$/i.test(tag),
             hovered: /^recovered$/i.test(tag),
-            primary: /^sge_in_use$/i.test(tag),
+            primary: /^(sge_in_use|slurm_in_use)$/i.test(tag),
             filled: /^black$/i.test(theme),
             link: isLink
           }

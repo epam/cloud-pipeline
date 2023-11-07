@@ -16,7 +16,8 @@ import logging
 
 from mock import MagicMock, Mock
 
-from pipeline.hpc.gridengine import GridEngineJob, GridEngineJobValidator, AllocationRule
+from pipeline.hpc.engine.gridengine import GridEngineJob, AllocationRule
+from pipeline.hpc.engine.sge import SunGridEngineJobValidator
 from pipeline.hpc.resource import ResourceSupply
 
 
@@ -36,9 +37,9 @@ cluster_max_supply = ResourceSupply(cpu=20, gpu=30, mem=40)
 
 
 grid_engine = Mock()
-job_validator = GridEngineJobValidator(grid_engine=grid_engine,
-                                       instance_max_supply=instance_max_supply,
-                                       cluster_max_supply=cluster_max_supply)
+job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
+                                          instance_max_supply=instance_max_supply,
+                                          cluster_max_supply=cluster_max_supply)
 
 
 def setup_function():

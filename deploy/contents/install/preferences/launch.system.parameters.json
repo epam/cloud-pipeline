@@ -583,5 +583,19 @@
         "type": "boolean",
         "description": "Enables rescheduling run to other regions",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_GRID_ENGINE_NOTIFICATIONS",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Enables notifications for Slurm and SGE engines.",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MAIL",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Changes default mail client if favor to pipe_mail script.",
+        "passToWorkers": true
     }
 ]

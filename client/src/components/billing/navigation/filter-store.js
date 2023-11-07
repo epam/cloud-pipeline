@@ -37,12 +37,18 @@ class Filter {
       period = Period.month,
       user,
       group,
+      'billing-group': billingGroup,
       range,
       region,
       metrics,
       layer: storageAggregate
     } = (location || {}).query || {};
-    if (user) {
+    if (billingGroup) {
+      this.runner = {
+        type: RunnerType.billingGroup,
+        id: (billingGroup || '').split(Filter.RUNNER_SEPARATOR)
+      };
+    } else if (user) {
       this.runner = {
         type: RunnerType.user,
         id: (user || '').split(Filter.RUNNER_SEPARATOR)
@@ -137,6 +143,8 @@ class Filter {
     };
     const params = [
       runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
+      runner && runner.type === RunnerType.billingGroup &&
+        `billing-group=${mapRunnerId(runner.id)}`,
       runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
       period && `period=${period}`,
       range && `range=${range}`,

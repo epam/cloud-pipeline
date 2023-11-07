@@ -86,6 +86,9 @@ class FileSystem {
   pathExists(path) {
     return Promise.resolve(true);
   }
+  updateRemotePermissions(...path) {
+    // empty
+  }
   ensurePathExists(destinationPath) {
     if (this.pingAfterCopy) {
       const max = Number(this.maxWaitSeconds);

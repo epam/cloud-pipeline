@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Provider} from 'mobx-react';
+import {observer, Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import Roles from '../../models/user/Roles';
 import Users from '../../models/user/Users';
@@ -47,11 +47,47 @@ function UserManagementForm (
     authenticatedUserInfo.loaded ? authenticatedUserInfo.value : undefined,
     'ROLE_USER_READER'
   );
-  if (!isReader && !isAdmin) {
+  if (!isAdmin && !isReader && usersWithActivity.pending && !usersWithActivity.loaded) {
+    return null;
+  }
+  const users = usersWithActivity.loaded ? usersWithActivity.value : [];
+  const userHasReadPermissions = (users || []).some((user) => roleModel.readAllowed(user));
+  if (!isReader && !isAdmin && !userHasReadPermissions) {
     return (
       <Alert type="error" message="Access is denied" />
     );
   }
+  const sections = [
+    (isReader || isAdmin || userHasReadPermissions) ? {
+      key: 'users',
+      title: 'Users',
+      default: true,
+      render: () => (
+        <UsersManagement />
+      )
+    } : false,
+    (isReader || isAdmin) ? {
+      key: 'groups',
+      title: 'Groups',
+      render: () => (
+        <GroupsManagement />
+      )
+    } : false,
+    (isReader || isAdmin) ? {
+      key: 'roles',
+      title: 'Roles',
+      render: () => (
+        <GroupsManagement predefined />
+      )
+    } : false,
+    (isReader || isAdmin) ? {
+      key: 'report',
+      title: 'Usage report',
+      render: () => (
+        <UsageReport router={router} location={location} />
+      )
+    } : false
+  ].filter(Boolean);
   return (
     <Provider
       roles={roles}
@@ -59,42 +95,13 @@ function UserManagementForm (
       quotas={quotas}
     >
       <SubSettings
-        sections={[
-          {
-            key: 'users',
-            title: 'Users',
-            default: true,
-            render: () => (
-              <UsersManagement />
-            )
-          },
-          {
-            key: 'groups',
-            title: 'Groups',
-            render: () => (
-              <GroupsManagement />
-            )
-          },
-          {
-            key: 'roles',
-            title: 'Roles',
-            render: () => (
-              <GroupsManagement predefined />
-            )
-          },
-          {
-            key: 'report',
-            title: 'Usage report',
-            render: () => (
-              <UsageReport router={router} location={location} />
-            )
-          }
-        ]}
+        sections={sections}
         router={router}
         root="user"
+        hideListForSingleSection
       />
     </Provider>
   );
 }
 
-export default roleModel.authenticationInfo(UserManagementForm);
+export default roleModel.authenticationInfo(observer(UserManagementForm));

@@ -14,6 +14,7 @@
 
 import logging
 import os
+import time
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
 
@@ -40,8 +41,19 @@ import shutil
 from bs4 import BeautifulSoup, SoupStrainer
 import posixpath
 
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
+
 FILE = 'File'
 FOLDER = 'Folder'
+
+
+class DefectiveFileSystemError(RuntimeError):
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
 
 class AllowedSymlinkValues(object):
@@ -50,14 +62,56 @@ class AllowedSymlinkValues(object):
     FILTER = 'filter'
 
 
+class LocationWrapper(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
+    @abstractmethod
+    def get_path(self):
+        pass
+
+    @abstractmethod
+    def is_file(self):
+        pass
+
+    @abstractmethod
+    def get_input_stream(self, path):
+        pass
+
+    @abstractmethod
+    def get_output_stream(self, path):
+        pass
+
+    @abstractmethod
+    def exists(self):
+        pass
+
+    @abstractmethod
+    def is_empty(self, relative=None):
+        pass
+
+    @abstractmethod
+    def get_items(self, quiet=False):
+        pass
+
+    @abstractmethod
+    def delete_item(self, relative_path):
+        pass
+
+
 class DataStorageWrapper(object):
 
     _transfer_manager_suppliers = {
         (WrapperType.S3, WrapperType.S3): S3BucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.S3, WrapperType.LOCAL): S3BucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.S3): S3BucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
 
         (WrapperType.AZURE, WrapperType.AZURE): AzureBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.AZURE, WrapperType.LOCAL): AzureBucketOperations.get_download_manager,
@@ -68,8 +122,10 @@ class DataStorageWrapper(object):
         (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -82,16 +138,18 @@ class DataStorageWrapper(object):
 
     @classmethod
     def get_wrapper(cls, uri, symlinks=None):
+        if uri == '-':
+            return StandardStreamWrapper()
         parsed = urlparse(uri)
         if not parsed.scheme or not parsed.netloc:
             return LocalFileSystemWrapper(uri, symlinks)
-        if parsed.scheme.lower() == 'ftp' or parsed.scheme.lower() == 'ftps':
-            return HttpSourceWrapper(uri) if os.getenv("ftp_proxy") \
-                else FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
-        if parsed.scheme.lower() == 'http' or parsed.scheme.lower() == 'https':
+        if parsed.scheme.lower() in ['ftp', 'ftps'] and os.getenv('ftp_proxy'):
             return HttpSourceWrapper(uri)
-        else:
-            return cls.get_cloud_wrapper(uri)
+        if parsed.scheme.lower() in ['ftp', 'ftps']:
+            return FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
+        if parsed.scheme.lower() in ['http', 'https']:
+            return HttpSourceWrapper(uri)
+        return cls.get_cloud_wrapper(uri)
 
     @classmethod
     def get_cloud_wrapper(cls, uri, versioning=False):
@@ -169,8 +227,17 @@ class DataStorageWrapper(object):
     def get_type(self):
         return None
 
+    def get_path(self):
+        return self.path
+
     def is_file(self):
         return False
+
+    def get_input_stream(self, path):
+        return urlopen(path)
+
+    def get_output_stream(self, path):
+        raise RuntimeError('Output stream is not supported for {}'.format(self.get_type()))
 
     def exists(self):
         return False
@@ -179,7 +246,7 @@ class DataStorageWrapper(object):
         return False
 
     def is_local(self):
-        return self.get_type() == WrapperType.LOCAL
+        return self.get_type() in [WrapperType.LOCAL, WrapperType.STREAM]
 
     def fetch_items(self):
         self.items = self.get_items()
@@ -374,6 +441,49 @@ class GsBucketWrapper(CloudDataStorageWrapper):
         return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
 
 
+class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
+
+    def __init__(self):
+        super(StandardStreamWrapper, self).__init__('-')
+
+    def get_type(self):
+        return WrapperType.STREAM
+
+    def get_path(self):
+        return self.path
+
+    def is_file(self):
+        return True
+
+    def get_input_stream(self, path):
+        try:
+            # python 3
+            return sys.stdin.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdin
+
+    def get_output_stream(self, path):
+        try:
+            # python 3
+            return sys.stdout.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdout
+
+    def exists(self):
+        return True
+
+    def is_empty(self, relative=None):
+        return True
+
+    def get_items(self, quiet=False):
+        return [(FILE, self.path, self.path, 0)]
+
+    def delete_item(self, relative_path):
+        pass
+
+
 class LocalFileSystemWrapper(DataStorageWrapper):
 
     def __init__(self, path, symlinks=None):
@@ -384,6 +494,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
         self.symlinks = symlinks
         self.path_separator = os.sep
+        self.listing_retry_attempts = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_ATTEMPTS', '3'))
+        self.listing_retry_delay = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_DELAY', '10'))
 
     def exists(self):
         return os.path.exists(self.path)
@@ -404,61 +516,98 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         return not os.listdir(self.path)
 
     def get_items(self, quiet=False):
-        logging.debug(u'Collecting paths...')
-
-        def leaf_path(source_path):
-            head, tail = os.path.split(source_path)
-            return tail or os.path.basename(head)
+        logging.debug(u'Listing paths...')
 
         self.path = os.path.abspath(self.path)
 
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
                 return []
-            return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
-        else:
-            result = list()
-            visited_symlinks = set()
+            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path))]
 
-            def list_items(path, parent, symlinks, visited_symlinks, root=False):
-                logging.debug(u'Collecting paths under {}...'.format(path))
-                path = to_unicode(path)
-                parent = to_unicode(parent)
-                for item in os.listdir(to_string(path)):
-                    safe_item = to_unicode(item, replacing=True)
-                    safe_absolute_path = os.path.join(path, safe_item)
-                    logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
-                    try:
-                        item = to_unicode(item)
-                        absolute_path = os.path.join(path, item)
-                    except UnicodeDecodeError:
-                        err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
-                        logging.warn(err_msg)
-                        if not quiet:
-                            click.echo(err_msg)
-                        continue
-                    symlink_target = None
-                    if os.path.islink(to_string(absolute_path)) and symlinks != AllowedSymlinkValues.FOLLOW:
-                        if symlinks == AllowedSymlinkValues.SKIP:
-                            continue
-                        if symlinks == AllowedSymlinkValues.FILTER:
-                            symlink_target = os.readlink(to_string(absolute_path))
-                            if symlink_target in visited_symlinks:
-                                continue
-                            else:
-                                visited_symlinks.add(symlink_target)
-                    relative_path = item
-                    if not root and parent is not None:
-                        relative_path = os.path.join(parent, item)
-                    if os.path.isfile(to_string(absolute_path)):
-                        logging.debug(u'Collected path {}.'.format(absolute_path))
-                        result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
-                    elif os.path.isdir(to_string(absolute_path)):
-                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
-                    if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
-                        visited_symlinks.remove(symlink_target)
-            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
-            return result
+        return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
+                                root=True, quiet=quiet)
+
+    def _leaf_path(self, source_path):
+        head, tail = os.path.split(source_path)
+        return tail or os.path.basename(head)
+
+    def _list_items(self, path, parent, result, visited_symlinks, root, quiet):
+        logging.debug(u'Listing directory {}...'.format(path))
+        path = to_unicode(path)
+        parent = to_unicode(parent)
+
+        for item in self._os_listdir(path):
+            attempts = self.listing_retry_attempts
+            while attempts > 0:
+                attempts -= 1
+                try:
+                    self._collect_item(path, parent, item, result, visited_symlinks, root, quiet)
+                    break
+                except DefectiveFileSystemError:
+                    if attempts > 0:
+                        logging.warning(u'Retrying due to defective file system in {} seconds...'
+                                        .format(self.listing_retry_delay))
+                        time.sleep(self.listing_retry_delay)
+                    else:
+                        raise
+
+        return result
+
+    def _os_listdir(self, path):
+        try:
+            return os.listdir(to_string(path))
+        except OSError as e:
+            if hasattr(e, 'winerror') and getattr(e, 'winerror') == 59:
+                err_msg = u'Defective file system has been detected for path {}'.format(path)
+                logging.warning(err_msg, exc_info=True)
+                raise DefectiveFileSystemError(err_msg)
+            raise
+
+    def _collect_item(self, path, parent, item, result, visited_symlinks, root, quiet):
+        safe_item = to_unicode(item, replacing=True)
+        safe_absolute_path = os.path.join(path, safe_item)
+
+        logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
+
+        try:
+            item = to_unicode(item)
+            absolute_path = os.path.join(path, item)
+        except UnicodeDecodeError:
+            err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
+            logging.warning(err_msg)
+            if not quiet:
+                click.echo(err_msg)
+            return
+
+        relative_path = item
+        if not root and parent is not None:
+            relative_path = os.path.join(parent, item)
+
+        symlink_target = None
+        if os.path.islink(to_string(absolute_path)):
+            logging.debug(u'Collected symlink {}...'.format(safe_absolute_path))
+            if self.symlinks == AllowedSymlinkValues.FOLLOW:
+                logging.debug(u'Following symlink {}...'.format(safe_absolute_path))
+            elif self.symlinks == AllowedSymlinkValues.SKIP:
+                logging.debug(u'Skipping symlink {}...'.format(safe_absolute_path))
+                return
+            elif self.symlinks == AllowedSymlinkValues.FILTER:
+                symlink_target = os.readlink(to_string(absolute_path))
+                if symlink_target in visited_symlinks:
+                    logging.debug(u'Skipping visited symlink {}...'.format(safe_absolute_path))
+                    return
+                logging.debug(u'Following unvisited symlink {}...'.format(safe_absolute_path))
+                visited_symlinks.add(symlink_target)
+
+        if os.path.isfile(to_string(absolute_path)):
+            logging.debug(u'Collected file {}.'.format(safe_absolute_path))
+            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
+        elif os.path.isdir(to_string(absolute_path)):
+            self._list_items(absolute_path, relative_path, result, visited_symlinks, root=False, quiet=quiet)
+
+        if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
+            visited_symlinks.remove(symlink_target)
 
     def create_folder(self, relative_path):
         absolute_path = os.path.join(self.path, relative_path)

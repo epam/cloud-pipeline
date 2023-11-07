@@ -57,7 +57,6 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath /tmp/mount/dist \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
@@ -124,7 +123,6 @@ function build_pipe {
                                     --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
                                     -y \
                                     --clean \
-                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                     --distpath $distpath \
                                     --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \

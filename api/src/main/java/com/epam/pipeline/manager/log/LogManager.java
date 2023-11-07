@@ -26,10 +26,13 @@ import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.search.SearchRequestBuilder;
 import com.epam.pipeline.manager.search.SearchResultConverter;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.utils.ElasticsearchUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -41,7 +44,6 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -49,7 +51,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -58,7 +59,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -70,7 +70,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -116,6 +116,7 @@ public class LogManager {
     private final MessageHelper messageHelper;
     private final SearchRequestBuilder searchRequestBuilder;
     private final SearchResultConverter searchResultConverter;
+    private final PreferenceManager preferenceManager;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
@@ -160,7 +161,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         final SearchHits hits = response.getHits();
 
         final List<LogEntry> entries = Arrays.stream(hits.getHits())
@@ -181,7 +182,8 @@ public class LogManager {
 
         final SearchSourceBuilder source = new SearchSourceBuilder()
                 .query(constructQueryFilter(logRequest.getFilter()));
-        searchRequestBuilder.addTermAggregationToSource(source, groupBy);
+        searchRequestBuilder.addTermAggregationToSource(source, groupBy,
+                preferenceManager.getPreference(SystemPreferences.SEARCH_LOGS_AGGS_MAX_COUNT));
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
@@ -189,9 +191,9 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
 
-        final Map<String, Long> result = new HashMap<>();
+        final Map<String, Long> result = new LinkedHashMap<>();
         if (Objects.isNull(response.getAggregations())) {
             return result;
         }
@@ -217,7 +219,7 @@ public class LogManager {
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         response.getAggregations()
                 .asList()
                 .stream()
@@ -348,52 +350,9 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
-                logFilter.getMessageTimestampTo());
+        ElasticsearchUtils.addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
+                logFilter.getMessageTimestampTo(), MESSAGE_TIMESTAMP);
         return boolQuery;
-    }
-
-    private void addRangeFilter(final BoolQueryBuilder boolQuery,
-                                final LocalDateTime from, final LocalDateTime to) {
-        if (from == null && to == null) {
-            return;
-        }
-
-        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
-
-        if (from != null) {
-            rangeQueryBuilder.from(from.toInstant(ZoneOffset.UTC));
-        }
-        if (to != null) {
-            rangeQueryBuilder.to(to.toInstant(ZoneOffset.UTC));
-        }
-
-        boolQuery.filter(rangeQueryBuilder);
-    }
-
-    private SearchResponse verifyResponse(final SearchResponse logsResponse) {
-        if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
-            throw new IllegalStateException(String.format("Search request has failed with HTTP status %s (%s).",
-                    logsResponse.status().name(), logsResponse.status().getStatus()));
-        }
-
-        log.debug("Search request has finished with {} successful, {} skipped and {} failed shards of {} total.",
-                logsResponse.getSuccessfulShards(), logsResponse.getSkippedShards(),
-                logsResponse.getFailedShards(), logsResponse.getTotalShards());
-        final ShardSearchFailure[] failures = logsResponse.getShardFailures();
-        if (failures.length > 0) {
-            final List<Throwable> errors = Arrays.stream(failures)
-                    .map(ShardSearchFailure::getCause)
-                    .collect(Collectors.toList());
-            final String errorMessages = errors.stream()
-                    .map(Throwable::getMessage)
-                    .collect(Collectors.joining("\n"));
-            log.error("Search request has finished with the following shard failures: {}", errorMessages);
-            throw new IllegalStateException("Search request has failed because some shards failed. ",
-                    failures[0].getCause());
-        }
-
-        return logsResponse;
     }
 
     private LogEntry mapHitToLogEntry(SearchHit searchHit) {

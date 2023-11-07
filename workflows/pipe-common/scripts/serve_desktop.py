@@ -48,6 +48,7 @@ class Config:
     template_path = None
     connection_name = None
     personal = None
+    api_token = ''
 
 
 app = Flask(__name__)
@@ -66,7 +67,9 @@ def get_desktop_file():
                                              CP_HOST=Config.local_ip,
                                              CP_HOST_PORT=Config.local_port,
                                              CP_USERNAME=user_name,
-                                             CP_PASSWORD=Config.user_pass)
+                                             CP_PASSWORD=Config.user_pass,
+                                             CP_PROXY_USER=user_name,
+                                             CP_PROXY_TOKEN=Config.api_token)
     elif template_type == NXS:
         template_data = template_data.format(CP_PROXY=proxy_host,
                                              CP_PROXY_PORT=proxy_port,
@@ -156,6 +159,7 @@ def start(serving_port, desktop_port, template_path):
     user_pass = _extract_parameter('OWNER_PASSWORD', default=user_name)
     if not user_pass:
         raise RuntimeError('Cannot get OWNER_PASSWORD from environment')
+    api_token = _extract_parameter('API_TOKEN')
     personal = _extract_boolean_parameter('CP_CAP_DESKTOP_NM_USER_CONNECTION_FILES', default='true')
 
     logging.basicConfig(level=logging_level, format=logging_format)
@@ -187,6 +191,7 @@ def start(serving_port, desktop_port, template_path):
     Config.template_path = template_path
     Config.connection_name = connection_name
     Config.personal = personal
+    Config.api_token = api_token
 
     logger.info('Starting web server on {} port...'.format(serving_port))
     app.run(port=serving_port, host='0.0.0.0')
