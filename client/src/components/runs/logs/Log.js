@@ -73,7 +73,7 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm from './forms/ShareWithForm';
+import ShareWithForm, {ROLE_ALL} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags from '../run-tags';
@@ -1670,8 +1670,13 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        if ((runSids || []).length > 0) {
-          shareList = (runSids || [])
+        const roleAllSelected = ROLE_ALL.includedRoles
+          .every(r => (runSids || []).find((sid) => sid.name === r));
+        const filteredRunSids = roleAllSelected
+          ? [ROLE_ALL, ...runSids].filter(sid => !ROLE_ALL.includedRoles.includes(sid.name))
+          : runSids;
+        if (filteredRunSids.length > 0) {
+          shareList = filteredRunSids
             .map((s, index, array) => {
               return (
                 <span
