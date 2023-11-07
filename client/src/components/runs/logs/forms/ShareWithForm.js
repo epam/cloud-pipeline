@@ -42,7 +42,7 @@ function sortByOverlap (str1, str2, query) {
 }
 
 export const ROLE_ALL = {
-  name: 'ALL_ROLES',
+  name: 'ALL ROLES',
   includedRoles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_ANONYMOUS_USER']
 };
 
