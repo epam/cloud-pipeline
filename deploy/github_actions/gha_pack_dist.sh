@@ -131,5 +131,5 @@ DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 ls -lh $DIST_TGZ_NAME
 
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
+    aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/gha/${GITHUB_REF_NAME}/
 fi
