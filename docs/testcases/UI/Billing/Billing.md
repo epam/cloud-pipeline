@@ -4,6 +4,7 @@ This folder contains testcases to check Billing.
 
 | Case ID                   | Description/name |
 |---------------------------|---|
+| [**2580**](2580.md) | [Manual] Check that Data Storage can be excluded from the billing reports |
 | [**762_1**](762/762_1.md) | Check the Global quota creation |
 | [**762_2**](762/762_2.md) | Check creation and deletion of Global quota with the same and different quota period |
 | [**762_3**](762/762_3.md) | Check Overall Compute instances quota |
