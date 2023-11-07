@@ -24,6 +24,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE_GROUP;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT_REGISTRY;
 import static com.epam.pipeline.autotests.ao.Primitive.GROUP;
@@ -59,6 +61,7 @@ public class Registry implements AccessObject<Registry> {
         sleep(1, SECONDS);
         if (!get(GROUP).getText().equals(groupName)) {
             click(GROUP);
+            $(byText("All groups")).shouldBe(visible).click();
             get(GROUPS_LIST).find(button(groupName)).shouldBe(visible).click();
             ensure(GROUP, text(groupName));
         }
