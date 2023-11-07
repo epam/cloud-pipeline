@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.Configuration;
+import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -565,12 +566,13 @@ public class DetachedConfigurationsTest
         library()
             .refresh()
             .createConfiguration(configuration1611)
-            .configurationWithin(configuration1611, configuration ->
+            .configurationWithin(configuration1611, configuration -> {
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
                         .ensure(ESTIMATED_PRICE, visible)
-                        .click(SAVE)
-                    .sleep(2, SECONDS)
-            )
+                        .click(SAVE);
+                new Profile(configuration)
+                        .waitUntilSaveEnding(configuration1611);
+            })
             .refresh()
             .configurationWithin(configuration1611, configuration ->
                 configuration
@@ -594,7 +596,10 @@ public class DetachedConfigurationsTest
                                 .selectPipeline(pipeline1)
                                 .ensure(ESTIMATED_PRICE, visible)
                                 .click(SAVE)
-                                .ensure(ESTIMATED_PRICE, visible)
+                                .ensure(ESTIMATED_PRICE, visible);
+                        new Profile(configuration)
+                                .waitUntilSaveEnding(runWithParametersConfiguration);
+                        configuration
                                 .addProfile(secondConfigurationProfile)
                                 .ensure(ESTIMATED_PRICE, visible)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
