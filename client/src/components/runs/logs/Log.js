@@ -2285,7 +2285,9 @@ class Logs extends localization.LocalizedReactComponent {
           sids={(runSids || []).map(s => s)}
           pending={this.state.operationInProgress}
           onSave={this.operationWrapper(this.saveShareSids)}
-          onClose={this.closeShareDialog} />
+          onClose={this.closeShareDialog}
+          runSharing
+        />
         <CommitRunDialog
           runId={this.props.runId}
           defaultDockerImage={dockerImage}
