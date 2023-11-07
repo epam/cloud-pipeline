@@ -34,6 +34,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
 
@@ -105,6 +106,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch();
         runsMenu()
                 .activeRuns()

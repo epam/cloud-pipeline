@@ -318,6 +318,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
     @TestCase("EPMCMBIBPC-803")
     public void launchAndCheckLaunchParametersInPipelineLogsPage() {
         onLaunchPage()
+                .setPriceType(onDemandPriceName)
                 .launch(this)
                 .showLog(getLastRunId())
                 .instanceParameters(instance ->

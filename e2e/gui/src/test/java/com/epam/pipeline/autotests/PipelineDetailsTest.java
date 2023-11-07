@@ -55,6 +55,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.HISTORY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGE_RULES_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -183,6 +184,7 @@ public class PipelineDetailsTest extends AbstractSeveralPipelineRunningTest impl
     public void shouldHaveHistoryEntry() {
         historyTab()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this);
 
         navigateToPipelineHistory()

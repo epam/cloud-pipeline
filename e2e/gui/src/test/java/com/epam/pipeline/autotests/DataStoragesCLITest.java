@@ -233,6 +233,7 @@ public class DataStoragesCLITest extends AbstractSeveralPipelineRunningTest
                     shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute(commands[0])
+                            .waitUntilTextAppears(getLastRunId())
                             .assertNextStringIsVisible(commands[0], rootHost)
                             .execute(commands[1])
                             .assertNextStringIsVisible(commands[1], rootHost)

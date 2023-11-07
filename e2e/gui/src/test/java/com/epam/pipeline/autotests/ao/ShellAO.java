@@ -98,6 +98,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
+        screenshot(format("atrr_%s", Utils.randomSuffix()));
         Arrays.stream(messages)
                 .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
         return this;

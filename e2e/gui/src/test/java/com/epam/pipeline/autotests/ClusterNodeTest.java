@@ -20,6 +20,8 @@ import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static org.testng.Assert.assertEquals;
 
 public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
@@ -37,6 +39,7 @@ public class ClusterNodeTest extends AbstractAutoRemovingPipelineRunningTest {
             .createPipeline(Template.SHELL, getPipelineName())
             .firstVersion()
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .launch(this);
 
         clusterMenu()

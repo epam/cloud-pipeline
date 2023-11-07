@@ -32,6 +32,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.SSH_LINK;
 import static com.epam.pipeline.autotests.utils.Privilege.*;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -93,6 +94,7 @@ public class SshPermissionTest extends AbstractSeveralPipelineRunningTest implem
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .setCommand(sleepingCommand)
                 .launch(this);
         runsMenu()

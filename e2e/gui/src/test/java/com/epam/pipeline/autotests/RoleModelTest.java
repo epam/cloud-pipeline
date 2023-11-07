@@ -37,6 +37,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.utils.Privilege.*;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.*;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -315,6 +316,7 @@ public class RoleModelTest
                 .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .waitUntilLaunchButtonAppear()
                 .launch(this);
 

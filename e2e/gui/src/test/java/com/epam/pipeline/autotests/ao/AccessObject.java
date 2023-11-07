@@ -175,6 +175,7 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default ELEMENT_TYPE hover(Primitive primitive) {
         sleep(1, SECONDS);
+        get(primitive).shouldBe(enabled);
         get(primitive).shouldBe(visible).hover();
         sleep(1, SECONDS);
         return (ELEMENT_TYPE) this;

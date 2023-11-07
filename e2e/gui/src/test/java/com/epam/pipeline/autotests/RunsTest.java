@@ -37,6 +37,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -87,6 +88,8 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
+                .setDefaultLaunchOptions()
                 .launch(this)
                 .showLog(pipelineRunID = getLastRunId())
                 .waitForCompletion();

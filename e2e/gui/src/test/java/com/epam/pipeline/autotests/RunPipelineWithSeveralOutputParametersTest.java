@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RunPipelineWithSeveralOutputParametersTest extends AbstractAutoRemovingPipelineRunningTest
@@ -63,6 +64,7 @@ public class RunPipelineWithSeveralOutputParametersTest extends AbstractAutoRemo
                 )
                 .sleep(2, SECONDS)
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .clickAddOutputParameter()
                 .setName("parameter")
                 .openPathAdditionDialog()

@@ -28,8 +28,10 @@ import org.testng.annotations.Test;
 
 import java.io.File;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_KEY;
+import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
 import static com.epam.pipeline.autotests.ao.Primitive.ENLARGE;
@@ -180,6 +182,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     public void removeOneKeyValidation() {
         fileMetadata()
                 .deleteKey(key3)
+                .ensure(CANCEL, visible, enabled)
                 .cancel()
                 .assertKeyIsPresent(key3)
                 .deleteKey(key3)

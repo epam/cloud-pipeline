@@ -36,6 +36,7 @@ import java.util.regex.Pattern;
 import static com.codeborne.selenide.Condition.exist;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
@@ -96,7 +97,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .getCLIConfigureCommand();
         final String cliConfigureCommandConfigStore = format("%s --config-store install-dir", cliConfigureCommand);
         tools()
-                .perform(registry, group, tool, tool -> tool.run(this))
+                .perform(registry, group, tool, tool -> tool.settings().setPriceType(ON_DEMAND).run(this))
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
@@ -154,6 +155,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
+                .setPriceType(ON_DEMAND)
                 .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForSshLink()

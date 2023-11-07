@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_TASK;
 import static com.epam.pipeline.autotests.ao.Primitive.ALIAS;
 import static com.epam.pipeline.autotests.ao.Primitive.ANOTHER_DOCKER_IMAGE;
@@ -120,6 +121,7 @@ public class WDLEditorTest extends AbstractBfxPipelineTest implements Navigation
                 .graphTab()
                 .sleep(3, SECONDS)
                 .searchScatter("scattername");
+        refresh();
     }
 
     @Test(priority = 1)

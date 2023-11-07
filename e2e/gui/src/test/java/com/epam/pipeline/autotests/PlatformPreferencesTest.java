@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
@@ -50,6 +51,7 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
+    private static final String CLUSTER_AWS_EBS_TYPE = "cluster.aws.ebs.type";
 
 
     @Test
@@ -167,15 +169,20 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
     @Test
     @TestCase(value = {"TC-PARAMETERS-3"})
     public void checkConfigureClusterAwsEBSvolumeType() {
-        navigationMenu()
+        final SettingsPageAO.PreferencesAO.ClusterTabAO clusterTabAO = navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .switchToCluster()
+                .switchToCluster();
+        clusterTabAO
+                .searchPreference(CLUSTER_AWS_EBS_TYPE);
+        clusterTabAO
                 .checkClusterAwsEbsType(C.DEFAULT_CLUSTER_AWS_EBS_TYPE);
         final Set<String> logMess = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
                 .doNotMountStoragesSelect(true)
+                .setDisk("60")
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()

@@ -49,6 +49,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.Conditions.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.*;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -129,6 +130,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .setLaunchOptions("20", C.DEFAULT_INSTANCE, "")
+            .setPriceType(ON_DEMAND)
             .launch(this)
             .ensure(tabWithName("Active Runs"), visible, selectedTab)
             .ensure(runWithId(getLastRunId()), visible);
@@ -239,6 +241,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .clickOnPipeline(pipeline312)
             .firstVersion()
             .runPipeline()
+            .setPriceType(ON_DEMAND)
             .launch(this)
             .showLog(getLastRunId())
             .waitForCompletion();

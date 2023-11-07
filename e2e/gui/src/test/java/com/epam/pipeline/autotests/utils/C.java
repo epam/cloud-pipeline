@@ -126,6 +126,7 @@ public class C {
         BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
         DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
         TEST_RUN_TAG = conf.getProperty("e2e.ui.test.run.tag");
+        DEFAULT_INSTANCE_PRICE_TYPE_TOOL = conf.getProperty("e2e.ui.default.instance.price.type.tool");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -179,6 +180,7 @@ public class C {
 
     public static final String DEFAULT_INSTANCE;
     public static final String DEFAULT_INSTANCE_PRICE_TYPE;
+    public static final String DEFAULT_INSTANCE_PRICE_TYPE_TOOL;
     public static final String CLOUD_PROVIDER;
     public static final String ANOTHER_INSTANCE;
     public static final String DEFAULT_INSTANCE_FAMILY_NAME;

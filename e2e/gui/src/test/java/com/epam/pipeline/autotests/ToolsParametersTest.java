@@ -124,7 +124,6 @@ public class ToolsParametersTest
                 )
                 .showLog(getLastRunId());
         new RunsMenuAO()
-                .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .screenshot("test501screenshot")
                 .assertPageTitleIs("502 Bad Gateway");

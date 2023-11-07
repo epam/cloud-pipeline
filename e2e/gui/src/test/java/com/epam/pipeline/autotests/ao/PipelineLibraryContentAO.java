@@ -64,7 +64,11 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public DocumentTabAO firstVersion() {
+        ensure(FIRST_VERSION, enabled);
         click(FIRST_VERSION);
+        if(get(FIRST_VERSION).isDisplayed()) {
+            click(FIRST_VERSION);
+        }
         return new DocumentTabAO(pipelineName);
     }
 
@@ -74,6 +78,7 @@ public class PipelineLibraryContentAO implements AccessObject<PipelineLibraryCon
     }
 
     public DocumentTabAO draft() {
+        $$(".ant-table-row").findBy(text("draft-")).waitUntil(enabled, 3000);
         $$(".ant-table-row").findBy(text("draft-")).shouldBe(visible).click();
         return new DocumentTabAO(pipelineName);
     }

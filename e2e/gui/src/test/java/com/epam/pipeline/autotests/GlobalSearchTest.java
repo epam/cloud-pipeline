@@ -51,6 +51,7 @@ import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.C.LOGIN;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -241,6 +242,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .waitForCompletion();
@@ -249,6 +251,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .stopRun(getLastRunId());
         library()
@@ -256,6 +259,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this);
         search()
                 .click(PIPELINES)
@@ -387,6 +391,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .runPipeline()
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getLastRunId())
                 .waitForCompletion();
@@ -475,6 +480,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         try {
             endpointPage = tools()
                     .perform(defaultRegistry, defaultGroup, testingTool, ToolTab::runWithCustomSettings)
+                    .setPriceType(ON_DEMAND)
                     .launchTool(this, toolEndpoint)
                     .showLog(testRunID_2668 = getLastRunId())
                     .waitForEndpointLink()

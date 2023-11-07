@@ -107,9 +107,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
-        return setDisk(disk)
-                .sleep(1, SECONDS)
+        return sleep(7, SECONDS)
                 .setTypeValue(type)
+                .sleep(2, SECONDS)
+                .setDisk(disk)
                 .setTimeOut(timeOut);
     }
 
@@ -329,7 +330,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO launch() {
-        ensure(byText("Estimated price per hour:"), visible);
+        ensure(ESTIMATED_PRICE, visible);
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
