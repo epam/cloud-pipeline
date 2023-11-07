@@ -33,6 +33,7 @@ function download_gradle_dependencies() {
               -x :data-sharing-service:api:build \
               -x :data-sharing-service:buildAll \
               -x :data-sharing-service:buildFast \
+              -x :data-transfer-service:bootJar \
               -x :data-transfer-service:build \
               -x :data-transfer-service:bundleWindows \
               -x :data-transfer-service:bundleLinux \
@@ -118,6 +119,7 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
           -x :data-sharing-service:api:build \
           -x :data-sharing-service:buildAll \
           -x :data-sharing-service:buildFast \
+          -x :data-transfer-service:bootJar \
           -x :data-transfer-service:build \
           -x :data-transfer-service:bundleWindows \
           -x :data-transfer-service:bundleLinux \
