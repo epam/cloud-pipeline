@@ -88,7 +88,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     private void openRegionSelector() {
-            get(SSH_LINK).parent().find(className("ultizone-url__expander")).click();
+        get(SSH_LINK).parent().find(className("ultizone-url__expander")).click();
     }
 
     public String getBestRegion() {

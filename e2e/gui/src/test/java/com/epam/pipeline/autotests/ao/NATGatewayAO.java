@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests.ao;
 
-import com.codeborne.selenide.Condition;
 import static com.codeborne.selenide.Condition.not;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;

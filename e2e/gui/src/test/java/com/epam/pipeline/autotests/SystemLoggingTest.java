@@ -90,12 +90,12 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
             }
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", "NotAuthorized"),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", admin.login.toUpperCase()),
                     stopAction, admin);
             userInfo = getInfo(systemLogsAO, format("Successfully authenticate user: %s", user.login.toUpperCase()), startAction,
                     user);
         } catch (NoSuchElementException e) {
-            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", "NotAuthorized"),
+            adminInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", admin.login.toUpperCase()),
                     stopAction, admin);
             userInfo = getInfo(systemLogsAO, format("Successfully authenticate user .*: %s", user.login.toUpperCase()), startAction,
                     user);
