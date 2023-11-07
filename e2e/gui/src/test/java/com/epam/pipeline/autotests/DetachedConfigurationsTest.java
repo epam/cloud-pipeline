@@ -24,7 +24,6 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.function.Consumer;
 
-import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -128,7 +127,6 @@ public class DetachedConfigurationsTest
     private final String runWithParametersConfiguration = "run-with-parameters-configuration-" + Utils.randomSuffix();
     private final String configuration1611 = "configuration-1611-" + Utils.randomSuffix();
     private final String configuration1601 = "configuration-1601-" + Utils.randomSuffix();
-    private final By estimatedPrice = byText("Estimated price per hour:");
 
     @BeforeClass
     public void createPipelines() {
@@ -141,19 +139,21 @@ public class DetachedConfigurationsTest
             .createConfiguration(pipelineCustomProfile)
             .createConfiguration(pipelineProfile1611)
             .sleep(1, SECONDS)
-            .editConfiguration(pipelineCustomProfile, profile ->
-                profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                    .setValue(DISK, customDisk)
-                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .setCommand(command)
-                    .clickAddStringParameter()
-                    .setName(stringParameterName)
-                    .close()
-                    .clickAddPathParameter()
-                    .setName(pathParameterName)
-                    .close()
-                    .click(SAVE)
-                    .waitUntilSaveEnding(pipelineProfile1611)
+            .editConfiguration(pipelineCustomProfile, profile -> {
+                    profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
+                            .setValue(DISK, customDisk)
+                            .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                            .setCommand(command)
+                            .clickAddStringParameter()
+                            .setName(stringParameterName)
+                            .close()
+                            .clickAddPathParameter()
+                            .setName(pathParameterName)
+                            .close()
+                            .click(SAVE);
+                    profile
+                            .waitUntilSaveEnding(pipelineProfile1611);
+                }
             )
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
@@ -567,7 +567,7 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1611)
             .configurationWithin(configuration1611, configuration ->
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
-                        .ensure(estimatedPrice, visible)
+                        .ensure(ESTIMATED_PRICE, visible)
                         .click(SAVE)
                     .sleep(2, SECONDS)
             )
@@ -592,11 +592,11 @@ public class DetachedConfigurationsTest
             .configurationWithin(runWithParametersConfiguration, configuration -> {
                         configuration
                                 .selectPipeline(pipeline1)
-                                .ensure(estimatedPrice, visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .click(SAVE)
-                                .ensure(estimatedPrice, visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .addProfile(secondConfigurationProfile)
-                                .ensure(estimatedPrice, visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
                                 .sleep(5, SECONDS)
                                 .click(SAVE)

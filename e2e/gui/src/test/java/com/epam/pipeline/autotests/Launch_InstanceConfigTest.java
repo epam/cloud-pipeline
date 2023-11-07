@@ -25,6 +25,7 @@ import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.utils.Conditions.expandedTab;
@@ -60,7 +61,7 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
                 .runPipeline()
                 .ensure(INSTANCE_TYPE, text(instanceType))
                 .ensure(byText(getPipelineName()), visible)
-                .ensure(byText("Estimated price per hour:"), visible)
+                .ensure(ESTIMATED_PRICE, visible)
                 .ensure(button("Launch"), visible, enabled)
                 .ensure(collapsiblePanel("Exec environment"), visible, expandedTab)
                 .ensure(collapsiblePanel("Advanced"), visible, expandedTab)

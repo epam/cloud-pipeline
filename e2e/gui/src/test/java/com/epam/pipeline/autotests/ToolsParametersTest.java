@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -37,7 +38,6 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selectors.byTitle;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -228,7 +228,7 @@ public class ToolsParametersTest
                                 .selectRunCapability(CUSTOM_CAPABILITY_1)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                                 .selectRunCapability(CUSTOM_CAPABILITY_3));
-        final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO()
+        new PipelineRunFormAO()
                 .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
                 .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3);
         toolSettings
@@ -260,35 +260,35 @@ public class ToolsParametersTest
                 .firstVersion()
                 .configurationTab()
                 .click(execEnvironmentTab)
-                .editConfiguration(DEFAULT_CONFIGURATION, profile ->
-                        profile.selectDockerImage(dockerImage ->
-                                dockerImage
-                                        .selectRegistry(registry)
-                                        .selectGroup(group)
-                                        .selectTool(tool)
-                                        .click(OK)
-                ));
-        final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO();
-        pipelineRunFormAO
-                .openRunCapabilityDropDown()
-                .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
-                .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
-                .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
-                .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
-                .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(CUSTOM_CAPABILITY_1)
-                .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(CUSTOM_CAPABILITY_3)
-                .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
-                .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
-                .sleep(1, SECONDS)
-                .click(SAVE)
-                .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
+                .editConfiguration(DEFAULT_CONFIGURATION, profile -> {
+                    profile.selectDockerImage(dockerImage ->
+                            dockerImage
+                                    .selectRegistry(registry)
+                                    .selectGroup(group)
+                                    .selectTool(tool)
+                                    .click(OK));
+                    new PipelineRunFormAO()
+                            .openRunCapabilityDropDown()
+                            .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
+                            .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
+                            .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
+                            .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
+                            .click(byTitle(RUN_CAPABILITIES_TITLE))
+                            .selectRunCapability(CUSTOM_CAPABILITY_1)
+                            .click(byTitle(RUN_CAPABILITIES_TITLE))
+                            .selectRunCapability(CUSTOM_CAPABILITY_3)
+                            .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                            .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
+                            .sleep(1, SECONDS)
+                            .click(SAVE);
+                    profile
+                            .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
+                });
         library()
                 .configurationWithin(configuration2323, configuration -> {
                     configuration
                                     .selectPipeline(pipeline2323);
-                    pipelineRunFormAO
+                    new PipelineRunFormAO()
                             .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
                             .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
                             .openRunCapabilityDropDown()
@@ -296,7 +296,8 @@ public class ToolsParametersTest
                             .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                             .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
                             .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
-                            .click(SAVE)
+                            .click(SAVE);
+                    new Profile(configuration)
                             .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
                 });
     }

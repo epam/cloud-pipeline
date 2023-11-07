@@ -501,18 +501,6 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
-    public PipelineRunFormAO waitUntilSaveEnding(final String name) {
-        int attempt = 0;
-        int maxAttempts = 3;
-        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
-                && attempt < maxAttempts) {
-            sleep(3, SECONDS);
-            attempt++;
-        }
-        sleep(1, SECONDS);
-        return this;
-    }
-
     public PipelineRunFormAO configureInternalDNSName(final String dnsName, final String port) {
         click(CONFIGURE_DNS);
         return new ConfigureInternalDNSPopupAO(this)

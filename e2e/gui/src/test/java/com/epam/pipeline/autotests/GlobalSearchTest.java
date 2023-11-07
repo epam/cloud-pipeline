@@ -45,7 +45,6 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
@@ -110,7 +109,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                                 .selectTool(testingTool)
                                                 .click(OK)
                                 )
-                                .ensure(byText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .click(SAVE)
                                 .ensureDisable(SAVE)
                 );

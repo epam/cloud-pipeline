@@ -43,6 +43,7 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
@@ -162,7 +163,8 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:")))
         );
     }
 

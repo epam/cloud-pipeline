@@ -39,12 +39,12 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
-import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationChange;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
@@ -192,7 +192,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 )
                                 .click(SAVE)
                                 .ensureDisable(SAVE)
-                                .ensure(byText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .ensure(INSTANCE_TYPE, text(defaultInstanceType)));
     }
 
@@ -358,7 +358,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .sleep(2, SECONDS)
                                     .click(SAVE)
                                     .ensureDisable(SAVE)
-                                    .ensure(byText("Estimated price per hour:"), visible))
+                                    .ensure(ESTIMATED_PRICE, visible))
                     .sleep(2, SECONDS);
             setClusterAllowedStringPreference(clusterAllowedInstanceTypes, format("%s.*", instanceFamilyName));
             logout();

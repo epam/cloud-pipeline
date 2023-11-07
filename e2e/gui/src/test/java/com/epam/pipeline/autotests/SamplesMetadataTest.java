@@ -16,7 +16,6 @@
 package com.epam.pipeline.autotests;
 
 import static com.codeborne.selenide.Condition.disabled;
-import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -413,7 +412,7 @@ public class SamplesMetadataTest
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
-                                .ensure(withText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .click(save())
                                 .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
