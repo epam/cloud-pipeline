@@ -23,6 +23,8 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           data-sharing-service:buildFast \
           --no-daemon
 
+ls -lh data-sharing-service/api/build/libs/data-sharing-service.jar
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp data-sharing-service/api/build/libs/data-sharing-service.jar s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar
+    aws s3 cp --no-progress data-sharing-service/api/build/libs/data-sharing-service.jar s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar
 fi

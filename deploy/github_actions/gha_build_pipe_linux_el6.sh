@@ -25,7 +25,10 @@ _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-c
           --no-daemon \
           -x :pipe-cli:test
 
+ls -lh pipe-cli/dist/dist-file/pipe \
+       pipe-cli/dist/dist-folder/pipe.tar.gz
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp pipe-cli/dist/dist-file/pipe s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6
-    aws s3 cp pipe-cli/dist/dist-folder/pipe.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6.tar.gz
+    aws s3 cp --no-progress pipe-cli/dist/dist-file/pipe s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6
+    aws s3 cp --no-progress pipe-cli/dist/dist-folder/pipe.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6.tar.gz
 fi

@@ -23,6 +23,8 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           fs-browser:build \
           --no-daemon
 
+ls -lh fs-browser/dist/dist-folder/fsbrowser.tar.gz
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp fs-browser/dist/dist-folder/fsbrowser.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/fsbrowser.tar.gz
+    aws s3 cp --no-progress fs-browser/dist/dist-folder/fsbrowser.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/fsbrowser.tar.gz
 fi

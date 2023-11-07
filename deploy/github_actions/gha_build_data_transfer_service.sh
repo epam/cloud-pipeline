@@ -25,8 +25,12 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           data-transfer-service:bundleLinux \
           --no-daemon
 
+ls -lh data-transfer-service/build/libs/data-transfer-service.jar \
+       data-transfer-service/build/distributions/data-transfer-service-windows.zip \
+       data-transfer-service/build/distributions/data-transfer-service-linux.zip
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp data-transfer-service/build/libs/data-transfer-service.jar s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service.jar
-    aws s3 cp data-transfer-service/build/distributions/data-transfer-service-windows.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-windows.zip
-    aws s3 cp data-transfer-service/build/distributions/data-transfer-service-linux.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-linux.zip
+    aws s3 cp --no-progress data-transfer-service/build/libs/data-transfer-service.jar s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service.jar
+    aws s3 cp --no-progress data-transfer-service/build/distributions/data-transfer-service-windows.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-windows.zip
+    aws s3 cp --no-progress data-transfer-service/build/distributions/data-transfer-service-linux.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-linux.zip
 fi

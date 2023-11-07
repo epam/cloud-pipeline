@@ -23,6 +23,8 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           cloud-pipeline-webdav-client:buildWin \
           --no-daemon
 
+ls -lh cloud-pipeline-webdav-client/out/cloud-data-win64.zip
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp cloud-pipeline-webdav-client/out/cloud-data-win64.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-win64.zip
+    aws s3 cp --no-progress cloud-pipeline-webdav-client/out/cloud-data-win64.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-win64.zip
 fi

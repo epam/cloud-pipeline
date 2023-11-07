@@ -71,37 +71,36 @@ rm -rf ${API_STATIC_PATH}/*
 rm -rf build/install/dist/*
 mkdir -p ${API_STATIC_PATH}
 
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe ${API_STATIC_PATH}/pipe
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.tar.gz ${API_STATIC_PATH}/pipe.tar.gz
+aws s3 cp --no-progress --recursive s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/ ${API_STATIC_PATH}/
 
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6 ${API_STATIC_PATH}/pipe-el6
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-el6.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
+ls -lh ${API_STATIC_PATH}/pipe \
+       ${API_STATIC_PATH}/pipe.tar.gz \
+       ${API_STATIC_PATH}/pipe-el6 \
+       ${API_STATIC_PATH}/pipe-el6.tar.gz \
+       ${API_STATIC_PATH}/pipe-osx \
+       ${API_STATIC_PATH}/pipe-osx.tar.gz \
+       ${API_STATIC_PATH}/pipe.zip \
+       ${API_STATIC_PATH}/client.tar.gz \
+       ${API_STATIC_PATH}/cloud-data-linux.tar.gz \
+       ${API_STATIC_PATH}/cloud-data-win64.zip \
+       ${API_STATIC_PATH}/fsbrowser.tar.gz \
+       ${API_STATIC_PATH}/gpustat.tar.gz \
+       ${API_STATIC_PATH}/data-sharing-service.jar \
+       ${API_STATIC_PATH}/data-transfer-service.jar \
+       ${API_STATIC_PATH}/data-transfer-service-windows.zip \
+       ${API_STATIC_PATH}/data-transfer-service-linux.zip
 
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx ${API_STATIC_PATH}/pipe-osx
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
-
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.zip ${API_STATIC_PATH}/pipe.zip
-
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/client.tar.gz ${API_STATIC_PATH}/client.tar.gz
 tar -xzf ${API_STATIC_PATH}/client.tar.gz -C ${API_STATIC_PATH}
 rm -f ${API_STATIC_PATH}/client.tar.gz
 
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-linux.tar.gz ${API_STATIC_PATH}/cloud-data-linux.tar.gz
-
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/cloud-data-win64.zip ${API_STATIC_PATH}/cloud-data-win64.zip
-
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/fsbrowser.tar.gz ${API_STATIC_PATH}/fsbrowser.tar.gz
-
 mkdir -p data-sharing-service/api/build/libs
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
+mv ${API_STATIC_PATH}/data-sharing-service.jar data-sharing-service/api/build/libs/data-sharing-service.jar
 
 mkdir -p data-transfer-service/build/libs \
          data-transfer-service/build/distributions
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service.jar data-transfer-service/build/libs/data-transfer-service.jar
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-windows.zip data-transfer-service/build/distributions/data-transfer-service-windows.zip
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/data-transfer-service-linux.zip data-transfer-service/build/distributions/data-transfer-service-linux.zip
-
-aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz ${API_STATIC_PATH}/gpustat.tar.gz
+mv ${API_STATIC_PATH}/data-transfer-service.jar data-transfer-service/build/libs/data-transfer-service.jar
+mv ${API_STATIC_PATH}/data-transfer-service-windows.zip data-transfer-service/build/distributions/data-transfer-service-windows.zip
+mv ${API_STATIC_PATH}/data-transfer-service-linux.zip data-transfer-service/build/distributions/data-transfer-service-linux.zip
 
 ./gradlew distTar \
           -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
@@ -127,9 +126,10 @@ aws s3 cp --quiet s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMB
           -Pfast \
           --no-daemon
 
-if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
+DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
 
-    # Publish repackaged distribution tgz to S3 into builds/ prefix
-    aws s3 cp --quiet $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
+ls -lh $DIST_TGZ_NAME
+
+if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
+    aws s3 cp --no-progress $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/${GITHUB_REF_NAME}/
 fi

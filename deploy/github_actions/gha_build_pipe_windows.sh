@@ -24,6 +24,8 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           --no-daemon \
           -x :pipe-cli:test
 
+ls -lh pipe-cli/dist/win/pipe.zip
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp pipe-cli/dist/win/pipe.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.zip
+    aws s3 cp --no-progress pipe-cli/dist/win/pipe.zip s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.zip
 fi

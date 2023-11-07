@@ -23,6 +23,8 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
           workflows:buildGpuStat \
           --no-daemon
 
+ls -lh api/src/main/resources/static/gpustat.tar.gz
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    aws s3 cp api/src/main/resources/static/gpustat.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz
+    aws s3 cp --no-progress api/src/main/resources/static/gpustat.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/gpustat.tar.gz
 fi
