@@ -28,9 +28,8 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Robot;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -155,6 +154,15 @@ public class Utils {
             actions().sendKeys(s).perform();
         }
         //////////////////////////////////////////////////////////////////////////
+    }
+
+    public static void pasteText(final SelenideElement field, final String text) {
+        final StringSelection stringSelection = new StringSelection(text);
+        Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(stringSelection, null);
+        actions().moveToElement(field).click()
+                .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                .perform();
     }
 
     public static void sendKeysByChars(final SelenideElement field, final String text) {

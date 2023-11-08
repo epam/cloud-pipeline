@@ -147,7 +147,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").find("tr").waitUntil(enabled, DEFAULT_TIMEOUT);
+        $(byText("config.json")).waitUntil(visible, DEFAULT_TIMEOUT);
         $(".ant-table-tbody")
                 .findAll("tr")
                 .shouldHaveSize(3)
@@ -232,7 +232,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         private FileEditingPopupAO fillWith(String newText) {
-            Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
+            Utils.pasteText($(byClassName("CodeMirror-line")), newText);
             return this;
         }
 
@@ -273,8 +273,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
                 return this;
             }
             clear()
-                    .fillWith(edited)
-                    .deleteExtraBrackets(100);
+                    .fillWith(edited);
             return this;
         }
 

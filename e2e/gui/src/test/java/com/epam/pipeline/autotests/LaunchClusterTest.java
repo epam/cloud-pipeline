@@ -58,7 +58,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
     private final String testingTool = C.ANOTHER_TESTING_TOOL_NAME;
     private final String testingNode = C.ANOTHER_INSTANCE;
     private final String instanceFamilyName = C.DEFAULT_INSTANCE_FAMILY_NAME;
-    private final String gridEngineAutoscalingTask = "GridEngineAutoscaling";
+    private final String gridEngineAutoscalingTask = "SGEAutoscaling";
     private final String spotPrice = C.SPOT_PRICE_NAME;
     private final String onDemandPrice = ON_DEMAND;
     private final String mastersConfigPrice = "Master's config";

@@ -107,9 +107,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
-        return setDisk(disk)
-                .sleep(1, SECONDS)
+        return sleep(7, SECONDS)
                 .setTypeValue(type)
+                .sleep(1, SECONDS)
+                .setDisk(disk)
                 .setTimeOut(timeOut);
     }
 
@@ -151,8 +152,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setCommand(String command) {
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
-        Utils.clearTextField(defaultCommand);
-        Utils.clickAndSendKeysWithSlashes(defaultCommand, command);
+        Utils.selectAllAndClearTextField(defaultCommand);
+        Utils.pasteText(defaultCommand, command);
         return this;
     }
 

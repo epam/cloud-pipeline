@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.not;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
@@ -84,7 +85,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
-                        .findAll(byClassName("ant-table-row")).stream()
+                        .findAll(byClassName("ant-table-row"))
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
+                        .stream()
                         .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
@@ -99,7 +102,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
-                        .findAll(byClassName("ant-table-row")).stream()
+                        .findAll(byClassName("ant-table-row"))
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
+                        .stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
@@ -115,6 +120,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
+                        .filter(not(cssClass("at-gateway-configuration__divider-row")))
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
                         .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&
@@ -184,7 +190,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 format("%s-%s", C.NAT_PROXY_SERVICE_PREFIX, serverName.replaceAll("\\.", "-"))));
         internalConfigElements.get(1).shouldHave(matchText(IPV4_PATTERN));
         internalConfigElements.get(2).shouldHave(matchText(PORT_PATTERN));
-        routeRecord.find(".at-getaway-configuration__comment-column").shouldHave(text(comment));
+        routeRecord.find(".at-gateway-configuration__comment-column").shouldHave(text(comment));
         return this;
     }
 
@@ -230,7 +236,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     public NATGatewayAO deleteRoute(final String externalIPAddressOrServerName, final String port) {
         final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, port);
-        route.find(".at-getaway-configuration__actions-column")
+        route.find(".at-gateway-configuration__actions-column")
                 .find(byClassName("ant-btn-danger"))
                 .shouldBe(visible)
                 .click();
@@ -283,7 +289,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public List<String> getGroupExternalPortsList(final String serverName, final String port) {
         final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
         return routeRecord.shouldBe(exist).findAll(".external-column")
-                .get(3).findAll(".at-getaway-configuration__port").texts();
+                .get(3).findAll(".at-gateway-configuration__port").texts();
     }
 
     public NATGatewayAO checkGroupPortsList(final String serverName, final String port, List<String> ports) {
@@ -295,7 +301,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     @Override
     public SelenideElement context() {
-        return $(byClassName("at-getaway-configuration__container"));
+        return $(byClassName("at-gateway-configuration__container"));
     }
 
     @Override

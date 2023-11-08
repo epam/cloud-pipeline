@@ -317,8 +317,10 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .cd(folder)
             .selectPage()
             .validateAllFilesAreSelected()
+            .ensureVisible(SELECTION_ACTIONS)
+            .click(SELECTION_ACTIONS)
             .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
-            .ensure(SELECT_ALL, not(visible));
+            .ensure(SELECT_ALL, disabled);
     }
 
     @Test(dependsOnMethods = "validateSelectPageButton")
@@ -331,7 +333,7 @@ public class DataStoragesTest extends AbstractBfxPipelineTest implements Navigat
             .clearSelection()
             .validateNoElementsAreSelected()
             .ensure(SELECT_ALL, visible)
-            .ensureNotVisible(REMOVE_ALL, CLEAR_SELECTION);
+            .ensureNotVisible(SELECTION_ACTIONS);
     }
 
     @Test(dependsOnMethods = {"createDataStorageAndValidate"})

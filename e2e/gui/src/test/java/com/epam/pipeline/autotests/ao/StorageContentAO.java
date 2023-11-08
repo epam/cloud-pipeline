@@ -71,17 +71,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(CREATE_FOLDER, context().find(byClassName("create-folder-button"))),
             entry(CREATE_FILE, context().find(byClassName("create-file-button"))),
             entry(ADDRESS_BAR, context().find(byClassName("ant-breadcrumb"))),
-            entry(CLEAR_SELECTION, context().find(byId("clear-selection-button"))),
-            entry(REMOVE_ALL, context().find(byId("remove-all-selected-button"))),
+            entry(CLEAR_SELECTION, context().find(byClassName("selection-action-clear"))),
+            entry(REMOVE_ALL, context().find(byClassName("selection-action-remove-all"))),
             entry(DESCRIPTION, context().find(byCssSelector(".browser__data-storage-info-container div:first-child"))),
             entry(NAVIGATION, context().find(byClassName("data-storage-navigation__path-components-container"))),
             entry(STORAGEPATH, context().find(byClassName("data-storage-navigation__breadcrumb-item"))),
             entry(HEADER, context().find(byClassName("browser__item-header"))),
-            entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
+            entry(SHOW_METADATA, context().find(byClassName("presentation-action-attributes"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
-            entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
-            entry(HIDE_METADATA, context().find(byId("hide-metadata-button")))
+            entry(GENERATE_URL, context().find(byClassName("selection-action-generate-url"))),
+            entry(ACTIONS, context().find(byId("presentation-actions"))),
+            entry(SELECTION_ACTIONS, context().find(byId("selection-actions")))
     );
 
     public static By browserItem(final String name) {
@@ -358,7 +359,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public StorageContentAO clearSelection() {
-        return click(CLEAR_SELECTION);
+        return click(SELECTION_ACTIONS).click(CLEAR_SELECTION);
     }
 
     public StorageContentAO validateNoElementsAreSelected() {
@@ -433,14 +434,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
-        int attempt = 0;
-        int maxAttempts = 3;
-        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
-            if (get(HIDE_METADATA).isDisplayed()) {
-                return new MetadataSectionAO(this);
-            }
-            sleep(1, SECONDS);
-            attempt++;
+        click(ACTIONS);
+        if(get(SHOW_METADATA).$(className("anticon-check")).exists()) {
+            return new MetadataSectionAO(this);
         }
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
@@ -460,17 +456,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO showFilesVersions(final boolean requiredState) {
         sleep(1, SECONDS);
-        final SelenideElement inputLabel =
-                $(byText("Show files versions")).closest(".ant-checkbox-wrapper");
+        click(ACTIONS);
+        final SelenideElement inputLabel = $(className("presentation-action-version"));
 
-        if (inputLabel.find("input").isSelected() != requiredState) {
+        if (inputLabel.find(className("anticon-check")).exists() != requiredState) {
             inputLabel.shouldBe(visible).click();
         }
         return this;
     }
 
     public StorageContentAO assertShowFilesVersionsIsChecked() {
-        $(byClassName("ant-checkbox-checked")).shouldBe(visible);
+        click(ACTIONS);
+        $(byClassName("anticon-check")).shouldBe(visible);
         return this;
     }
 
@@ -688,8 +685,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
-            StorageContentAO.this.ensureVisible(CLEAR_SELECTION);
-            StorageContentAO.this.click(REMOVE_ALL);
+            clickOnRemoveAllSelectedButton();
 
             $$(byClassName("ant-modal-content"))
                     .findBy(text("Remove all selected items?"))
@@ -702,6 +698,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public SelectedElementsAO clickOnRemoveAllSelectedButton() {
+            StorageContentAO.this.click(SELECTION_ACTIONS);
             StorageContentAO.this.click(REMOVE_ALL);
             return this;
         }

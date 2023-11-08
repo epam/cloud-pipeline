@@ -109,6 +109,14 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             );
         });
         initialLaunchSystemParameters = editLaunchSystemParameters();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(userWithoutCompletedRuns.login)
+                .edit()
+                .deleteRoleOrGroupIfExist(USER_ROLE)
+                .ok();
     }
 
     @AfterClass(alwaysRun = true)
