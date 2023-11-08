@@ -1686,16 +1686,19 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        const filteredRunSids = [ROLE_ALL, ...runSids]
-          .filter(({name, accessType}) => {
-            if (
-              (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
-              (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
-            ) {
-              return !ROLE_ALL.includedRoles.includes(name);
-            }
-            return true;
-          });
+        const filteredRunSids = this.combineRolesIntoAllRoles.ssh ||
+          this.combineRolesIntoAllRoles.endpoint
+          ? [ROLE_ALL, ...runSids]
+            .filter(({name, accessType}) => {
+              if (
+                (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
+                (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
+              ) {
+                return !ROLE_ALL.includedRoles.includes(name);
+              }
+              return true;
+            })
+          : runSids;
         if (filteredRunSids.length > 0) {
           shareList = filteredRunSids
             .map((s, index, array) => {
