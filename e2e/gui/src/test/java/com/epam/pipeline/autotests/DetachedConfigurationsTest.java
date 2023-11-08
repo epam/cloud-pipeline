@@ -566,6 +566,7 @@ public class DetachedConfigurationsTest
         library()
             .refresh()
             .createConfiguration(configuration1611)
+            .sleep(30, SECONDS)
             .configurationWithin(configuration1611, configuration -> {
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
                         .ensure(ESTIMATED_PRICE, visible)
