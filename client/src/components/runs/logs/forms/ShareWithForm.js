@@ -46,6 +46,19 @@ export const ROLE_ALL = {
   includedRoles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_ANONYMOUS_USER']
 };
 
+export function shouldCombineRoles (sids, combinableRoles, accessType) {
+  if (!sids || !combinableRoles || !accessType) {
+    return false;
+  }
+  return combinableRoles
+    .every(roleName => !!sids
+      .find((role) => !role.isPrincipal &&
+        role.accessType === accessType &&
+        role.name === roleName
+      )
+    );
+};
+
 @observer
 export default class ShareWithForm extends React.Component {
   static propTypes = {
@@ -75,15 +88,9 @@ export default class ShareWithForm extends React.Component {
   get combineRolesIntoAllRoles () {
     const {sids} = this.state;
     const {runSharing} = this.props;
-    const affectedRolesSelection = sids
-      .filter(({name, isPrincipal}) => !isPrincipal && ROLE_ALL.includedRoles.includes(name));
-    const sshRoles = affectedRolesSelection
-      .filter(({accessType}) => accessType === AccessTypes.ssh);
-    const endpointRoles = affectedRolesSelection
-      .filter(({accessType}) => accessType === AccessTypes.endpoint);
     return {
-      ssh: runSharing && sshRoles.length === ROLE_ALL.includedRoles.length,
-      endpoint: runSharing && endpointRoles.length === ROLE_ALL.includedRoles.length
+      ssh: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh)
     };
   }
 
@@ -354,7 +361,11 @@ export default class ShareWithForm extends React.Component {
     let data = this.state.sids.map((p, index) => {
       return {...p, id: index};
     });
-    if (this.combineRolesIntoAllRoles.ssh || this.combineRolesIntoAllRoles.endpoint) {
+    const {
+      ssh: combineSshRoles,
+      endpoint: combineEndpointRoles
+    } = this.combineRolesIntoAllRoles;
+    if (combineSshRoles || combineEndpointRoles) {
       data = [
         ...data,
         {
@@ -364,8 +375,8 @@ export default class ShareWithForm extends React.Component {
         }
       ].filter(({name, accessType}) => {
         if (
-          (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
-          (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
+          (combineSshRoles && accessType === AccessTypes.ssh) ||
+          (combineEndpointRoles && accessType === AccessTypes.endpoint)
         ) {
           return !ROLE_ALL.includedRoles.includes(name);
         }

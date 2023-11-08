@@ -73,7 +73,7 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm, {ROLE_ALL} from './forms/ShareWithForm';
+import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags from '../run-tags';
@@ -311,15 +311,9 @@ class Logs extends localization.LocalizedReactComponent {
   get combineRolesIntoAllRoles () {
     const {run} = this.state;
     const {runSids = []} = run || {};
-    const affectedRolesSelection = runSids
-      .filter(({name, isPrincipal}) => !isPrincipal && ROLE_ALL.includedRoles.includes(name));
-    const sshRoles = affectedRolesSelection
-      .filter(({accessType}) => accessType === AccessTypes.ssh);
-    const endpointRoles = affectedRolesSelection
-      .filter(({accessType}) => accessType === AccessTypes.endpoint);
     return {
-      ssh: sshRoles.length === ROLE_ALL.includedRoles.length,
-      endpoint: endpointRoles.length === ROLE_ALL.includedRoles.length
+      ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh)
     };
   }
 
@@ -1685,13 +1679,16 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        const filteredRunSids = this.combineRolesIntoAllRoles.ssh ||
-          this.combineRolesIntoAllRoles.endpoint
+        const {
+          ssh: combineSshRoles,
+          endpoint: combineEndpointRoles
+        } = this.combineRolesIntoAllRoles;
+        const filteredRunSids = combineSshRoles || combineEndpointRoles
           ? [ROLE_ALL, ...runSids]
             .filter(({name, accessType}) => {
               if (
-                (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
-                (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
+                (combineSshRoles && accessType === AccessTypes.ssh) ||
+                (combineEndpointRoles && accessType === AccessTypes.endpoint)
               ) {
                 return !ROLE_ALL.includedRoles.includes(name);
               }
