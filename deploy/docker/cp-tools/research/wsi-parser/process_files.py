@@ -668,7 +668,7 @@ class WsiFileTagProcessor:
             "tags": tags,
             "type": "File",
             "size": os.path.getsize(self.file_path),
-            "changed": changed_date.strftime("%Y-%m-%d %H:%M:%S.%f")
+            "changed": changed_date.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         }]
         self.log_processing_info('Updating search catalog with value %s' % str(data))
         self.execute_request(CATALOG_UPDATE_URL % str(CLOUD_STORAGE_ID), data, 5)
