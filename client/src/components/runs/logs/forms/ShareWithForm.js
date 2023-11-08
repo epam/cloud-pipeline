@@ -90,7 +90,7 @@ export default class ShareWithForm extends React.Component {
     const {runSharing} = this.props;
     return {
       ssh: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh),
-      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh)
+      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
     };
   }
 

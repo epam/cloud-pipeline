@@ -313,7 +313,7 @@ class Logs extends localization.LocalizedReactComponent {
     const {runSids = []} = run || {};
     return {
       ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
-      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh)
+      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
     };
   }
 
