@@ -43,7 +43,7 @@ import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBr
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
+import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -73,7 +73,7 @@ import LoadingView from '../../special/LoadingView';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import DataStorageList from '../controls/data-storage-list';
 import CommitRunDialog from './forms/CommitRunDialog';
-import ShareWithForm from './forms/ShareWithForm';
+import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
 import RunTags from '../run-tags';
@@ -306,6 +306,15 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get combineRolesIntoAllRoles () {
+    const {run} = this.state;
+    const {runSids = []} = run || {};
+    return {
+      ssh: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: shouldCombineRoles(runSids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
+    };
   }
 
   exportLog = async () => {
@@ -1666,8 +1675,24 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        if ((runSids || []).length > 0) {
-          shareList = (runSids || [])
+        const {
+          ssh: combineSshRoles,
+          endpoint: combineEndpointRoles
+        } = this.combineRolesIntoAllRoles;
+        const filteredRunSids = combineSshRoles || combineEndpointRoles
+          ? [ROLE_ALL, ...runSids]
+            .filter(({name, accessType}) => {
+              if (
+                (combineSshRoles && accessType === AccessTypes.ssh) ||
+                (combineEndpointRoles && accessType === AccessTypes.endpoint)
+              ) {
+                return !ROLE_ALL.includedRoles.includes(name);
+              }
+              return true;
+            })
+          : runSids;
+        if (filteredRunSids.length > 0) {
+          shareList = filteredRunSids
             .map((s, index, array) => {
               return (
                 <span
@@ -2281,7 +2306,9 @@ class Logs extends localization.LocalizedReactComponent {
           sids={(runSids || []).map(s => s)}
           pending={this.state.operationInProgress}
           onSave={this.operationWrapper(this.saveShareSids)}
-          onClose={this.closeShareDialog} />
+          onClose={this.closeShareDialog}
+          runSharing
+        />
         <CommitRunDialog
           runId={this.props.runId}
           defaultDockerImage={dockerImage}

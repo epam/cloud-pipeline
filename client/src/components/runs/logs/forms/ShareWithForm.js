@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox} from 'antd';
+import {Table, Row, Col, Button, Icon, AutoComplete, Modal, Checkbox, message} from 'antd';
 import {AccessTypes} from '../../../../models/pipelines/PipelineRunUpdateSids';
 import UserFind from '../../../../models/user/UserFind';
 import GroupFind from '../../../../models/user/GroupFind';
@@ -24,6 +24,40 @@ import {observer} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './ShareWithForm.css';
 import UserName from '../../../special/UserName';
+
+function sortByOverlap (str1, str2, query) {
+  if (str1.toLowerCase().indexOf(query) > str2.toLowerCase().indexOf(query)) {
+    return 1;
+  }
+  if (str2.toLowerCase().indexOf(query) > str1.toLowerCase().indexOf(query)) {
+    return -1;
+  }
+  if (
+    str2.toLowerCase().indexOf(query) === str1.toLowerCase().indexOf(query) &&
+    str1.toLowerCase().indexOf(query) >= 0
+  ) {
+    return str1.toLowerCase() > str2.toLowerCase() ? 1 : -1;
+  }
+  return 0;
+}
+
+export const ROLE_ALL = {
+  name: 'ALL ROLES',
+  includedRoles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_ANONYMOUS_USER']
+};
+
+export function shouldCombineRoles (sids, combinableRoles, accessType) {
+  if (!sids || !combinableRoles || !accessType) {
+    return false;
+  }
+  return combinableRoles
+    .every(roleName => !!sids
+      .find((role) => !role.isPrincipal &&
+        role.accessType === accessType &&
+        role.name === roleName
+      )
+    );
+}
 
 @observer
 export default class ShareWithForm extends React.Component {
@@ -34,7 +68,8 @@ export default class ShareWithForm extends React.Component {
     onClose: PropTypes.func,
     visible: PropTypes.bool,
     roles: PropTypes.array,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    runSharing: PropTypes.bool
   };
 
   state = {
@@ -43,14 +78,21 @@ export default class ShareWithForm extends React.Component {
     findGroupVisible: false,
     selectedPermission: null,
     groupSearchString: null,
-    selectedUser: null,
-    owner: null,
-    ownerInput: null,
+    userSearchString: null,
     fetching: false,
     fetchedUsers: [],
     roleName: null,
     operationInProgress: false
   };
+
+  get combineRolesIntoAllRoles () {
+    const {sids} = this.state;
+    const {runSharing} = this.props;
+    return {
+      ssh: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
+    };
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -63,60 +105,21 @@ export default class ShareWithForm extends React.Component {
     });
   };
 
-  @observable
-  userFind;
-  @observable
-  groupFind;
-
-  lastFetchId = 0;
-
-  findUser = (value) => {
-    this.lastFetchId += 1;
-    const fetchId = this.lastFetchId;
-    this.setState({
-      ownerInput: value,
-      owner: null,
-      fetching: true,
-      selectedUser: null
-    }, async () => {
-      const request = new UserFind(value);
-      await request.fetch();
-      if (fetchId === this.lastFetchId) {
-        let fetchedUsers = [];
-        if (!request.error) {
-          fetchedUsers = (request.value || []).map(u => u);
-        }
-        this.setState({
-          fetching: false,
-          fetchedUsers
-        });
-      }
-    });
-  };
-
-  onUserSelect = (key) => {
-    const [user] = this.state.fetchedUsers.filter(u => `${u.id}` === `${key}`);
-    if (user) {
-      this.setState({
-        ownerInput: user.userName,
-        owner: user.userName
-      });
-    }
-  };
+  @observable userFind;
+  @observable groupFind;
 
   onUserFindInputChanged = (value) => {
-    this.selectedUser = value;
-    if (value && value.length) {
+    if (value) {
       this.userFind = new UserFind(value);
       this.userFind.fetch();
     } else {
       this.userFind = null;
     }
+    this.setState({userSearchString: value});
   };
 
   onGroupFindInputChanged = (value) => {
-    this.selectedGroup = value;
-    if (value && value.length) {
+    if (value) {
       this.groupFind = new GroupFind(value);
       this.groupFind.fetch();
     } else {
@@ -140,7 +143,11 @@ export default class ShareWithForm extends React.Component {
 
   findUserDataSource = () => {
     if (this.userFind && !this.userFind.pending && !this.userFind.error) {
-      return (this.userFind.value || []).map(user => user);
+      return (this.userFind.value || []).map(user => user)
+        .sort((u1, u2) => {
+          const query = this.state.userSearchString?.toLowerCase().trim();
+          return sortByOverlap(u1.userName, u2.userName, query);
+        });
     }
     return [];
   };
@@ -153,46 +160,45 @@ export default class ShareWithForm extends React.Component {
   };
 
   findGroupDataSource = () => {
+    const query = this.state.groupSearchString?.toLowerCase().trim();
     const roles = this.state.groupSearchString
       ? (
         this.props.roles
-          .filter(r => r.name.toLowerCase()
+          .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
+          .filter(name => name.toLowerCase()
             .indexOf(this.state.groupSearchString.toLowerCase()) >= 0
           )
-          .map(r => r.predefined ? r.name : this.splitRoleName(r.name))
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [
-        ...new Set(
-          [
-            ...roles,
-            ...(this.groupFind.value || []).map(g => g)]
-        )
-      ];
+      const set = [...new Set([
+        ...(this.props.runSharing ? [ROLE_ALL.name] : []),
+        ...roles,
+        ...(this.groupFind.value || []).map(g => g)
+      ])];
+      return set
+        .sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
-    return [...roles];
+    return [...roles]
+      .sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
-  selectedUser = null;
-  selectedGroup = null;
-
   openFindUserDialog = () => {
-    this.selectedUser = null;
-    this.setState({findUserVisible: true});
+    this.setState({findUserVisible: true, userSearchString: null});
   };
 
   closeFindUserDialog = () => {
-    this.setState({findUserVisible: false});
+    this.setState({findUserVisible: false, userSearchString: null});
   };
 
   onSelectUser = async () => {
-    await this.grantPermission(this.selectedUser, true);
+    const {userSearchString} = this.state;
+    const selectedUser = userSearchString ? userSearchString.trim() : null;
+    this.grantPermission(selectedUser, true);
     this.closeFindUserDialog();
   };
 
   openFindGroupDialog = () => {
-    this.selectedGroup = null;
     this.setState({findGroupVisible: true, groupSearchString: null});
   };
 
@@ -201,41 +207,49 @@ export default class ShareWithForm extends React.Component {
   };
 
   onSelectGroup = async () => {
+    const {groupSearchString} = this.state;
+    const selectedGroup = groupSearchString ? groupSearchString.trim() : null;
     const [role] = this.props.roles
-      .filter(r => !r.predefined && this.splitRoleName(r.name) === this.selectedGroup);
-    const roleName = role ? role.name : this.selectedGroup;
-    await this.grantPermission(roleName, false);
+      .filter(r => !r.predefined && this.splitRoleName(r.name) === selectedGroup);
+    const roleName = role ? role.name : selectedGroup;
+    if (roleName === ROLE_ALL.name) {
+      ROLE_ALL.includedRoles.forEach(role => this.grantPermission(role, false));
+    } else {
+      this.grantPermission(roleName, false);
+    }
     this.closeFindGroupDialog();
   };
 
-  grantPermission = async (name, isPrincipal) => {
-    const sids = this.state.sids;
-    const [sidItem] = sids.filter(s => {
-      return s.isPrincipal === isPrincipal && s.name.toLowerCase() === name.toLowerCase();
-    });
-    if (!sidItem) {
-      sids.push({
-        accessType: this.props.endpointsAvailable ? AccessTypes.endpoint : AccessTypes.ssh,
-        name,
-        isPrincipal
+  grantPermission = (name, isPrincipal) => {
+    if (name) {
+      const sids = this.state.sids;
+      const [sidItem] = sids.filter(s => {
+        return s.isPrincipal === isPrincipal && s.name.toLowerCase() === name.toLowerCase();
       });
-      this.setState({sids});
+      if (!sidItem) {
+        sids.push({
+          accessType: this.props.endpointsAvailable ? AccessTypes.endpoint : AccessTypes.ssh,
+          name,
+          isPrincipal
+        });
+        this.setState({sids});
+      }
+    } else {
+      message.warning('Please provide non empty string!');
     }
   };
 
   removeUserOrGroupClicked = (item) => async (event) => {
     event.stopPropagation();
-    const sids = this.state.sids;
-    const [sidItem] = sids.filter(s => {
-      return s.isPrincipal === item.isPrincipal && s.name.toLowerCase() === item.name.toLowerCase();
-    });
-    if (sidItem) {
-      const index = sids.indexOf(sidItem);
-      if (index >= 0) {
-        sids.splice(index, 1);
-        this.setState({sids});
+    const {sids} = this.state;
+    const filterSids = ({name, isPrincipal}) => {
+      if (item.name === ROLE_ALL.name) {
+        return !ROLE_ALL.includedRoles.includes(name);
       }
-    }
+      return !(name.toLowerCase() === item.name.toLowerCase() &&
+        isPrincipal === item.isPrincipal);
+    };
+    this.setState({sids: sids.filter(filterSids)});
   };
 
   renderUserName = (user) => {
@@ -344,9 +358,31 @@ export default class ShareWithForm extends React.Component {
         </Col>
       </Row>
     );
-    const data = this.state.sids.map((p, index) => {
+    let data = this.state.sids.map((p, index) => {
       return {...p, id: index};
     });
+    const {
+      ssh: combineSshRoles,
+      endpoint: combineEndpointRoles
+    } = this.combineRolesIntoAllRoles;
+    if (combineSshRoles || combineEndpointRoles) {
+      data = [
+        ...data,
+        {
+          ...ROLE_ALL,
+          key: ROLE_ALL.name,
+          id: data.length
+        }
+      ].filter(({name, accessType}) => {
+        if (
+          (combineSshRoles && accessType === AccessTypes.ssh) ||
+          (combineEndpointRoles && accessType === AccessTypes.endpoint)
+        ) {
+          return !ROLE_ALL.includedRoles.includes(name);
+        }
+        return true;
+      });
+    }
     return (
       <Table
         className={styles.table}
@@ -387,7 +423,7 @@ export default class ShareWithForm extends React.Component {
             onOk={this.onSelectUser}
             visible={this.state.findUserVisible}>
             <AutoComplete
-              value={this.selectedUser}
+              value={this.state.userSearchString}
               optionLabelProp="text"
               style={{width: '100%'}}
               onChange={this.onUserFindInputChanged}
@@ -409,7 +445,7 @@ export default class ShareWithForm extends React.Component {
             onOk={this.onSelectGroup}
             visible={this.state.findGroupVisible}>
             <AutoComplete
-              value={this.selectedGroup}
+              value={this.state.groupSearchString}
               style={{width: '100%'}}
               dataSource={this.findGroupDataSource()}
               onChange={this.onGroupFindInputChanged}
