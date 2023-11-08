@@ -81,6 +81,7 @@ import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
+import {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
@@ -306,6 +307,21 @@ class Logs extends localization.LocalizedReactComponent {
       return preferences.systemMaintenanceMode;
     }
     return false;
+  }
+
+  get combineRolesIntoAllRoles () {
+    const {run} = this.state;
+    const {runSids = []} = run || {};
+    const affectedRolesSelection = runSids
+      .filter(({name, isPrincipal}) => !isPrincipal && ROLE_ALL.includedRoles.includes(name));
+    const sshRoles = affectedRolesSelection
+      .filter(({accessType}) => accessType === AccessTypes.ssh);
+    const endpointRoles = affectedRolesSelection
+      .filter(({accessType}) => accessType === AccessTypes.endpoint);
+    return {
+      ssh: sshRoles.length === ROLE_ALL.includedRoles.length,
+      endpoint: endpointRoles.length === ROLE_ALL.includedRoles.length
+    };
   }
 
   exportLog = async () => {
@@ -1670,11 +1686,16 @@ class Logs extends localization.LocalizedReactComponent {
         roleModel.isOwner(run)
       ) {
         let shareList = 'Not shared (click to configure)';
-        const roleAllSelected = ROLE_ALL.includedRoles
-          .every(r => (runSids || []).find((sid) => sid.name === r));
-        const filteredRunSids = roleAllSelected
-          ? [ROLE_ALL, ...runSids].filter(sid => !ROLE_ALL.includedRoles.includes(sid.name))
-          : runSids;
+        const filteredRunSids = [ROLE_ALL, ...runSids]
+          .filter(({name, accessType}) => {
+            if (
+              (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
+              (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
+            ) {
+              return !ROLE_ALL.includedRoles.includes(name);
+            }
+            return true;
+          });
         if (filteredRunSids.length > 0) {
           shareList = filteredRunSids
             .map((s, index, array) => {

@@ -76,13 +76,15 @@ export default class ShareWithForm extends React.Component {
     const {sids} = this.state;
     const {runSharing} = this.props;
     const affectedRolesSelection = sids
-      .filter(({name}) => ROLE_ALL.includedRoles.includes(name));
-    const sameIsPrincipals = [
-      ...new Set(affectedRolesSelection.map(({isPrincipal}) => isPrincipal))
-    ].length === 1;
-    return runSharing &&
-      affectedRolesSelection.length === ROLE_ALL.includedRoles.length &&
-      sameIsPrincipals;
+      .filter(({name, isPrincipal}) => !isPrincipal && ROLE_ALL.includedRoles.includes(name));
+    const sshRoles = affectedRolesSelection
+      .filter(({accessType}) => accessType === AccessTypes.ssh);
+    const endpointRoles = affectedRolesSelection
+      .filter(({accessType}) => accessType === AccessTypes.endpoint);
+    return {
+      ssh: runSharing && sshRoles.length === ROLE_ALL.includedRoles.length,
+      endpoint: runSharing && endpointRoles.length === ROLE_ALL.includedRoles.length
+    };
   }
 
   operationWrapper = (operation) => (...props) => {
@@ -168,18 +170,10 @@ export default class ShareWithForm extends React.Component {
         ...(this.groupFind.value || []).map(g => g)
       ])];
       return set
-        .sort((u1, u2) => sortByOverlap(u1, u2, query))
-        .filter(name => this.combineRolesIntoAllRoles
-          ? !ROLE_ALL.includedRoles.includes(name)
-          : true
-        );
+        .sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
     return [...roles]
-      .sort((u1, u2) => sortByOverlap(u1, u2, query))
-      .filter(name => this.combineRolesIntoAllRoles
-        ? !ROLE_ALL.includedRoles.includes(name)
-        : true
-      );
+      .sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
@@ -360,7 +354,7 @@ export default class ShareWithForm extends React.Component {
     let data = this.state.sids.map((p, index) => {
       return {...p, id: index};
     });
-    if (this.combineRolesIntoAllRoles) {
+    if (this.combineRolesIntoAllRoles.ssh || this.combineRolesIntoAllRoles.endpoint) {
       data = [
         ...data,
         {
@@ -368,7 +362,15 @@ export default class ShareWithForm extends React.Component {
           key: ROLE_ALL.name,
           id: data.length
         }
-      ].filter(({name}) => !ROLE_ALL.includedRoles.includes(name));
+      ].filter(({name, accessType}) => {
+        if (
+          (this.combineRolesIntoAllRoles.ssh && accessType === AccessTypes.ssh) ||
+          (this.combineRolesIntoAllRoles.endpoint && accessType === AccessTypes.endpoint)
+        ) {
+          return !ROLE_ALL.includedRoles.includes(name);
+        }
+        return true;
+      });
     }
     return (
       <Table
