@@ -43,7 +43,7 @@ import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBr
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import pipelines from '../../../models/pipelines/Pipelines';
 import Roles from '../../../models/user/Roles';
-import PipelineRunUpdateSids from '../../../models/pipelines/PipelineRunUpdateSids';
+import PipelineRunUpdateSids, {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import {
   stopRun,
   canCommitRun,
@@ -81,7 +81,6 @@ import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
 import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
-import {AccessTypes} from '../../../models/pipelines/PipelineRunUpdateSids';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
