@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,15 +20,14 @@ CLOUD_PIPELINE_BUILD_NUMBER=$(($CLOUD_PIPELINE_BUILD_NUMBER_SEED+$GITHUB_RUN_NUM
 
 ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} \
           -Pprofile=release \
-          pipe-cli:buildMac \
+          pipe-cli:buildLinux \
           --no-daemon \
           -x :pipe-cli:test
 
-cd pipe-cli
-DIST_TGZ_NAME=pipe-osx-full.$CLOUD_PIPELINE_BUILD_NUMBER.tar.gz
-tar -zcf $DIST_TGZ_NAME dist
+ls -lh pipe-cli/dist/dist-file/pipe \
+       pipe-cli/dist/dist-folder/pipe.tar.gz
+
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
-    if [ "$GITHUB_REF_NAME" == "develop" ] || [ "$GITHUB_REF_NAME" == "master" ] || [[ "$GITHUB_REF_NAME" == "release/"* ]] || [[ "$GITHUB_REF_NAME" == "stage/"* ]]; then
-        aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
-    fi
+    aws s3 cp --no-progress pipe-cli/dist/dist-file/pipe s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe
+    aws s3 cp --no-progress pipe-cli/dist/dist-folder/pipe.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe.tar.gz
 fi
