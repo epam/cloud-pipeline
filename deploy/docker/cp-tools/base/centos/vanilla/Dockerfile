@@ -25,6 +25,7 @@ RUN yum install -y wget \
                    unzip \
                    git \
                    curl \
-                   epel-release && \
+                   epel-release \
+                   openssh-server && \
     yum clean all && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
