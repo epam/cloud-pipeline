@@ -59,6 +59,11 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
         navigationMenu()
                 .library()
                 .createPipeline(pipeline);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .deleteUserIfExist(USER_NAME);
     }
 
     @AfterClass(alwaysRun = true)
