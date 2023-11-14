@@ -659,8 +659,11 @@ public class GitManager {
             }
         }
         if (!authManager.isAdmin()) {
-            final String authorizedUser = authManager.getCurrentUser().getUserName();
-            labels.add(String.format(ON_BEHALF_OF, authorizedUser));
+            switch (preferenceManager.getPreference(SystemPreferences.GITLAB_ISSUE_VISIBILITY)) {
+                case OWNER: labels.add(String.format(ON_BEHALF_OF, authManager.getCurrentUser().getUserName()));
+                case ALL:
+                default:
+            }
         }
         return getDefaultGitlabClient().getIssues(getProjectForIssues(), labels, notLabels, page, pageSize,
                 filter.getSearch(), preferenceManager.getPreference(SystemPreferences.GITLAB_SERVER_FILTERING));

@@ -22,12 +22,17 @@ import com.epam.pipeline.entity.preference.PreferenceType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.EnumUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 
 /**
  * Represents system pre-defined preference. To be used with PreferenceManager get preference methods.
@@ -113,6 +118,33 @@ public abstract class AbstractSystemPreference<T> {
         @Override
         public String parse(String value) {
             return value;
+        }
+    }
+
+    public static class EnumPreference<T extends Enum<T>> extends AbstractSystemPreference<T> {
+
+        public EnumPreference(String key, T defaultValue, String group) {
+            this(key, defaultValue, group, null, true, null);
+        }
+
+        public EnumPreference(String key, T defaultValue, String group,
+                BiPredicate<String, Map<String, Preference>> validator,
+                AbstractSystemPreference... dependencies) {
+            this(key, defaultValue, group, validator, true, dependencies);
+        }
+
+        public EnumPreference(String key, T defaultValue, String group,
+                BiPredicate<String, Map<String, Preference>> validator, boolean visible,
+                AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group,
+                    Optional.ofNullable(validator).orElse(pass)
+                            .and(isValidEnum(defaultValue.getDeclaringClass())),
+                    PreferenceType.STRING, visible, dependencies);
+        }
+
+        @Override
+        public T parse(String value) {
+            return EnumUtils.getEnum(getDefaultValue().getDeclaringClass(), value);
         }
     }
 

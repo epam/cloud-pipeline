@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
+import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -66,6 +67,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.EnumPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -351,6 +353,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
             "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final EnumPreference<GitlabIssueVisibility> GITLAB_ISSUE_VISIBILITY = new EnumPreference<>(
+            "git.gitlab.issue.visibility", GitlabIssueVisibility.OWNER, GIT_GROUP);
     public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
             "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
