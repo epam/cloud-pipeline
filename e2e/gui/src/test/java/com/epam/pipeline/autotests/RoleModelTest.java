@@ -476,7 +476,9 @@ public class RoleModelTest
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
                 .ensureNotVisible(CREATE_FOLDER, UPLOAD)
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -504,7 +506,9 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 19)

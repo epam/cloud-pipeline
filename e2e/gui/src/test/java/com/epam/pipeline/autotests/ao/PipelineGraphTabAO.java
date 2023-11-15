@@ -36,6 +36,7 @@ import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.cssSelector;
 import static org.openqa.selenium.By.id;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 import static org.testng.Assert.assertTrue;
 
 public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO> {
@@ -93,7 +94,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     }
 
     public PipelineGraphTabAO searchLabel(String labelText) {
-        $$(byClassName("label")).findBy(matchText(labelText)).shouldBe(visible);
+        $$(className("joint-element")).findBy(matchText(labelText)).shouldBe(visible);
         return this;
     }
 
@@ -104,7 +105,10 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
 
     public PipelineGraphTabAO clickLabel(String name) {
         fit().minimize().minimize().minimize();
-        $$(byClassName("label")).findBy(text(name)).shouldBe(visible).click();
+        SelenideElement task = $$(byClassName("joint-element")).findBy(text(name))
+                .$(className("visual-element-body")).shouldBe(visible);
+        int width = Math.round(task.getSize().width/2);
+        task.shouldBe(visible).click(width, 0);
         return this;
     }
 
@@ -168,10 +172,14 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(NAME, context().find(byId("name"))),
                 entry(ALIAS, context().find(byId("alias"))),
-                entry(INPUT_PANEL, context().findAll(byId("expand-panel-button")).find(text("Inputs"))),
-                entry(INPUT_ADD, context().find(".edit-wdl-form-inputs-container").find(byId("add-variable-button"))),
-                entry(OUTPUT_PANEL, context().findAll(byId("expand-panel-button")).find(text("Outputs"))),
-                entry(OUTPUT_ADD, context().find(".edit-wdl-form-outputs-container").find(byId("add-variable-button"))),
+                entry(INPUT_PANEL, context()
+                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Inputs')]"))),
+                entry(INPUT_ADD, context()
+                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Inputs')]/button"))),
+                entry(OUTPUT_PANEL, context()
+                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Outputs')]"))),
+                entry(OUTPUT_ADD, context()
+                        .$(xpath(".//div[contains(@class, 'dl-properties-form__header-row') and contains(.,'Outputs')]/button"))),
                 entry(ANOTHER_DOCKER_IMAGE, Utils.getFormRowByLabel(context(), "Use another docker image").find(byClassName("ant-checkbox-wrapper"))),
                 entry(ANOTHER_COMPUTE_NODE, Utils.getFormRowByLabel(context(), "Use another compute node").find(byClassName("ant-checkbox-wrapper"))),
                 entry(DOCKER_IMAGE_COMBOBOX, context().find(byId("docker-image-input"))),
@@ -200,7 +208,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
         }
 
         public SectionRowAO<TaskAdditionPopupAO> clickInputSectionAddButton() {
-            click(INPUT_PANEL);
             click(INPUT_ADD);
             return new SectionRowAO<>(this);
         }
