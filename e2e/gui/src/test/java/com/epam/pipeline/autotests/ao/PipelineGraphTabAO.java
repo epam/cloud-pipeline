@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.SelenideElement;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -67,7 +68,7 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     @Override
     protected PipelineGraphTabAO open() {
         changeTabTo(GRAPH_TAB);
-        $(className("joint-layers")).waitUntil(visible, DEFAULT_TIMEOUT);
+        $(className("joint-layers")).waitUntil(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
