@@ -18,7 +18,7 @@ RUN sed -i -e 's/deb.debian.org/archive.debian.org/g' \
            -e 's|security.debian.org|archive.debian.org/|g' \
            -e '/stretch-updates/d' /etc/apt/sources.list
 RUN apt-get -yq update \
-  && apt-get -yq install software-properties-common=0.96.20.2-1+deb9u1 apt-transport-https=1.4.10 zip=3.0-11+b1 \
+  && apt-get -yq --allow-downgrades install software-properties-common=0.96.20.2-1+deb9u1 apt-transport-https=1.4.10 zip=3.0-11+b1 \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 RUN wget -nc https://dl.winehq.org/wine-builds/winehq.key \
