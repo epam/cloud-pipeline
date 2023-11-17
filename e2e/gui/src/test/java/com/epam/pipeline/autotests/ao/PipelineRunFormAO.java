@@ -146,6 +146,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO checkEstimatedPriceTooltip(String message) {
+        get(INFORMATION_ICON).hover();
+        $(byText(message)).shouldBe(exist);
+        return this;
+    }
+
     public PipelineRunFormAO setDisk(String disk) {
         return setValue(DISK, disk);
     }
@@ -519,6 +525,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .setServiceName(dnsName)
                 .setPort(port)
                 .save();
+    }
+
+    public PipelineRunFormAO checkEstimatedPriceValue(String expected_value) {
+        ensure(className("launch-pipeline-form__price"), text(expected_value));
+        return this;
     }
 
     @Override
