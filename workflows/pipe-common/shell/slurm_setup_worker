@@ -18,7 +18,31 @@ SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_WORKER_SETUP_TASK="SLURMWorkerSetup"
 CURRENT_PID=$$
 
-add_worker() {
+resolve_node_resources() {
+    _TASK="$1"
+
+    export _NODE_CPU_COUNT=$(nproc)
+    pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_TASK"
+
+    export _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
+    pipe_log_info "${_NODE_RAM_COUNT}M RAM found" "$_TASK"
+
+    export _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
+    export _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
+    pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_TASK"
+}
+
+configure_consumable_gpu_resource() {
+    _RESOURCE_VALUE="$1"
+
+    if (( _RESOURCE_VALUE > 0 )); then
+        for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
+            echo "Name=gpu File=/dev/$device" >> "$_SLURM_CONFIG_LOCATION/gres.conf"
+        done
+    fi
+}
+
+configure_slurm() {
     _SLURM_CONFIG_LOCATION=$( slurm_config_location )
 
     cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
@@ -34,25 +58,8 @@ add_worker() {
     touch /var/log/slurmd.log
     chown slurm: /var/log/slurmd.log
 
-    _WORKER_CORES=$(nproc)
-    _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
-    _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
-    if (( _NODE_GPUS_COUNT > 0 ))
-    then
-        for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
-            echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
-        done
-    fi
-
-    if [ "${cluster_role_type}" == "additional" ]; then
-        if (( _NODE_GPUS_COUNT > 0 )); then
-            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE"
-        else
-            slurmd -Z --conf "CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=FUTURE"
-        fi
-    else
-        slurmd
-    fi
+    resolve_node_resources "$SLURM_WORKER_SETUP_TASK"
+    configure_consumable_gpu_resource "$_NODE_GPUS_COUNT"
 }
 
 check_last_exit_code() {
@@ -161,8 +168,16 @@ else
     check_last_exit_code $? "SLURM packages have been installed" "Can't install SLURM packages"
 fi
 
+pipe_log_info "Configuring SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
+configure_slurm
+pipe_log_info "SLURM cluster has been configured" "$SLURM_WORKER_SETUP_TASK"
+
 pipe_log_info "Adding worker node to SLURM cluster" "$SLURM_WORKER_SETUP_TASK"
-add_worker
-check_last_exit_code $? "SLURM daemons have started" "Fail to start SLURM daemons."
+if [ "${cluster_role_type}" == "additional" ]; then
+    slurmd -Z --conf "CPUs=$_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=FUTURE"
+else
+    slurmd
+fi
+check_last_exit_code $? "SLURM worker daemon has started" "Fail to start SLURM worker daemon"
 
 pipe_log_success "SLURM worker node has been successfully configured" "$SLURM_WORKER_SETUP_TASK"
