@@ -86,21 +86,24 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText(fileName)).click();
 
         //Click Edit
-        $$(".pipeline-code-form__button").findBy(text("Edit")).shouldBe(exist).click();
 
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Edit")).waitUntil(exist, DEFAULT_TIMEOUT).click();
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Save")).waitUntil(exist, DEFAULT_TIMEOUT);
+
+        SelenideElement editor = $(byClassName("CodeMirror-code"));
         sleep(500, MILLISECONDS);
-        Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
-        for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
-        }
-        action.perform();
+        editor.shouldBe();
+        Utils.selectAllAndClearTextField(editor);
+        Utils.clickAndSendKeysWithSlashes(editor, newText);
 
-        Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
-
-        $$(".pipeline-code-form__button").findBy(text("Save")).click();
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Save")).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $(className("ant-modal-content")).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        sleep(1000, MILLISECONDS);
 
         return this;
     }

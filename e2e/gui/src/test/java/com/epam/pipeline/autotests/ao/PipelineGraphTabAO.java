@@ -68,7 +68,6 @@ public class PipelineGraphTabAO extends AbstractPipelineTabAO<PipelineGraphTabAO
     @Override
     protected PipelineGraphTabAO open() {
         changeTabTo(GRAPH_TAB);
-        $(className("joint-layers")).waitUntil(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
