@@ -154,7 +154,7 @@ public class DetachedConfigurationsTest
                         .close()
                         .click(SAVE);
                 profile
-                        .waitUntilSaveEnding(pipelineProfile1611);
+                        .waitUntilSaveEnding(pipelineCustomProfile);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineDefaultProfile, profile -> {
@@ -164,7 +164,7 @@ public class DetachedConfigurationsTest
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
                     .sleep(3, SECONDS)
                     .click(SAVE)
-                    .waitUntilSaveEnding(pipelineProfile1611);
+                    .waitUntilSaveEnding(pipelineCustomProfile);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {
