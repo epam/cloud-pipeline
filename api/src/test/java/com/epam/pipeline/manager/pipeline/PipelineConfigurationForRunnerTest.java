@@ -36,12 +36,14 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -84,6 +86,8 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @MockBean
     @SuppressWarnings("PMD.UnusedPrivateField")
     private PipelineRunManager pipelineRunManager;
+    @MockBean
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
 
     @Mock
     @SuppressWarnings("PMD.UnusedPrivateField")
@@ -116,6 +120,7 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Collections.singletonList(configurationEntry)).build()));
+        when(launchCapabilitiesProcessor.process(any())).thenReturn(Collections.emptyMap());
     }
 
     @Test
