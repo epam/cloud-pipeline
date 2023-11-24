@@ -259,7 +259,7 @@ public class DefaultNodeResourcesServiceParametrizedTest {
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MIN_MIB);
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
-        doReturn(Optional.of(type)).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
+        doReturn(Optional.of(type)).when(instanceTypeCRUDService).find(any(Long.class), any());
 
         final NodeResources actual = service.build(DefaultNodeResourcesServiceTest.getInstance());
 
