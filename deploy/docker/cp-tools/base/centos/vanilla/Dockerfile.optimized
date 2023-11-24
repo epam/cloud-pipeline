@@ -45,6 +45,7 @@ RUN yum install -y wget \
                    tzdata \
                    acl \
                    coreutils \
+                   sudo \
                    openssh-server \
                    yum-utils && \
     yum clean all
@@ -100,4 +101,11 @@ RUN yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDi
 ENV CP_CAP_SGE_PREINSTALLED="true"
 
 # Install LFS
-RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client 
+RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client
+
+ENV CP_CAP_MODULES_TYPE=lmod
+
+ADD module_setup /
+RUN chmod +x /module_setup && /module_setup && rm -f /module_setup
+ENV CP_CAP_MODULE_PREINSTALLED true
+
