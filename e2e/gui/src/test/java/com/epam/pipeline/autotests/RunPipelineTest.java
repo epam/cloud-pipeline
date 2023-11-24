@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import static com.codeborne.selenide.Selectors.byClassName;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_TIMINGS;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -96,7 +97,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .ensure(byText(pipeline299), visible)
-            .ensure(byText("Estimated price per hour:"), visible)
+            .ensure(ESTIMATED_PRICE, visible)
             .ensure(button("Launch"), visible, enabled)
             .ensure(collapsiblePanel("Exec environment"), visible, expandedTab)
             .ensure(collapsiblePanel("Advanced"), visible, expandedTab)
