@@ -52,6 +52,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     private static final String SUPPORT_ICONS_JSON = "/supportIcons.json";
     private static final String INITIALIZE_NODE = "InitializeNode";
     private static final String INITIALIZE_SHARED_FS = "InitializeSharedFS";
+    private static final String INITIALIZE_ENVIRONMENT = "InitializeEnvironment";
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
@@ -204,6 +205,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
     public void allowToSpecifyLustreFSTypeAndThoughput() {
         logout();
         loginAs(user);
+        try {
         LogAO logAO = tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
@@ -233,7 +235,13 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                 .collect(toSet());
         logAO
                 .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
-                        "?size=1200&type=PERSISTENT_2&throughput=500");
+                        "?size=1200&type=PERSISTENT_2&throughput=500")
+                .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
+                .waitForTask(INITIALIZE_ENVIRONMENT)
+                .waitForTaskCompletion(INITIALIZE_ENVIRONMENT, SUCCESS);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
     }
 }
-//    Successfully mounted Lustre FS to master node
