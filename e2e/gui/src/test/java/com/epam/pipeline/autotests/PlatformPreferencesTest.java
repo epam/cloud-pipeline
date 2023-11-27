@@ -16,6 +16,10 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
+import com.epam.pipeline.autotests.ao.LogAO;
+import com.epam.pipeline.autotests.ao.LogAO.Status;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -43,13 +47,15 @@ import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
+public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization {
 
     private static final String SUPPORT_ICONS_JSON = "/supportIcons.json";
     private static final String INITIALIZE_NODE = "InitializeNode";
+    private static final String INITIALIZE_SHARED_FS = "InitializeSharedFS";
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
+    private final String clusterSettingForm = "Cluster";
 
 
     @Test
@@ -177,7 +183,7 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
                 .expandTab(ADVANCED_PANEL)
                 .doNotMountStoragesSelect(true)
                 .launch(this)
-                .showLog(getRunId())
+                .showLog(getLastRunId())
                 .waitForSshLink()
                 .waitForTask(INITIALIZE_NODE)
                 .clickTaskWithName(INITIALIZE_NODE)
@@ -192,4 +198,42 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
                         C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate()),
                 "The requested EBS volume type is absent in the log" );
     }
+
+    @Test
+    @TestCase(value = {"3404"})
+    public void allowToSpecifyLustreFSTypeAndThoughput() {
+        logout();
+        loginAs(user);
+        LogAO logAO = tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .enableClusterLaunch()
+                .clusterSettingsForm(clusterSettingForm)
+                .clusterEnableCheckboxSelect("Enable GridEngine")
+                .ok()
+                .expandTab(ADVANCED_PANEL)
+                .clickAddSystemParameter()
+                .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
+                        "CP_CAP_SHARE_FS_THROUGHPUT",
+                        "CP_CAP_SHARE_FS_SIZE",
+                        "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE")
+                .ok()
+                .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
+                .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
+                .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
+                .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
+                .launch(this)
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .waitForTask(INITIALIZE_SHARED_FS)
+                .waitForTaskCompletion(INITIALIZE_SHARED_FS, SUCCESS)
+                .clickTaskWithName(INITIALIZE_SHARED_FS);
+        final Set<String> logMess = logAO
+                .logMessages()
+                .collect(toSet());
+        logAO
+                .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
+                        "?size=1200&type=PERSISTENT_2&throughput=500");
+    }
 }
+//    Successfully mounted Lustre FS to master node
