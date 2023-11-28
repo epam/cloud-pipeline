@@ -36,6 +36,9 @@ fi
 
 pipe_log_info "Master info received: $_kube_master_name : $_kube_master_ip" "$_kube_worker_setup_task"
 
+unset KUBERNETES_SERVICE_HOST
+unset KUBERNETES_SERVICE_PORT
+
 # Kubeadm config
 CP_CAP_KUBE_MASTER_TOKEN=$(ssh $_kube_master_ip "set -o pipefail; http_proxy= https_proxy= kubeadm token list | tail -n 1 | cut -f1 -d' '")
 if [ $? -ne 0 ]; then

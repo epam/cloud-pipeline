@@ -17,6 +17,9 @@
 KUBE_MASTER_SETUP_TASK="KubeMasterSetup"
 KUBE_MASTER_SETUP_TASK_WORKERS="KubeMasterSetupWorkers"
 
+unset KUBERNETES_SERVICE_HOST
+unset KUBERNETES_SERVICE_PORT
+
 ############################
 # Common functions
 ############################
@@ -39,7 +42,7 @@ function wait_for_pod_ready() {
 }
 
 function get_kube_workers_count() {
-    local _all_worker_nodes=$(kubectl get node --selector='!node-role.kubernetes.io/master' --no-headers 2>/dev/null)
+    local _all_worker_nodes=$(kubectl get node --selector='!node-role.kubernetes.io/master,!node-role.kubernetes.io/control-plane' --no-headers 2>/dev/null)
     if [ -z "$_all_worker_nodes" ]; then
         echo 0
         return
@@ -170,6 +173,33 @@ fi
 pipe_log_info "Starting kubernetes master initialization" "$KUBE_MASTER_SETUP_TASK"
 
 _kubeadm_config_file=/tmp/${RANDOM}.yaml
+if util_version_compare "$CP_CAP_KUBE_VERSION" "1.25.0" "<"; then
+cat > $_kubeadm_config_file <<EOF
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+dns:
+  type: kube-dns
+
+kubernetesVersion: v$CP_CAP_KUBE_VERSION
+networking:
+  dnsDomain: $CP_CAP_KUBE_DOMAIN
+  serviceSubnet: $CP_CAP_KUBE_SVC_CIDR
+  podSubnet: $CP_CAP_KUBE_PODS_CIDR
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+port: 10250
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+  - groups:
+    ttl: 0s
+EOF
+else
 cat > $_kubeadm_config_file <<EOF
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: InitConfiguration
@@ -207,7 +237,7 @@ kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
 cgroupDriver: cgroupfs
 EOF
-
+fi
 
 systemctl start kubepods-besteffort.slice
 systemctl start kubepods-burstable.slice
