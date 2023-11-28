@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
-import com.epam.pipeline.autotests.ao.LogAO.Status;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
@@ -36,7 +35,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
@@ -228,7 +226,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .waitForTask(INITIALIZE_SHARED_FS)
-                .waitForTaskCompletion(INITIALIZE_SHARED_FS, SUCCESS)
+                .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
                 .clickTaskWithName(INITIALIZE_SHARED_FS);
         final Set<String> logMess = logAO
                 .logMessages()
@@ -238,7 +236,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                         "?size=1200&type=PERSISTENT_2&throughput=500")
                 .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
                 .waitForTask(INITIALIZE_ENVIRONMENT)
-                .waitForTaskCompletion(INITIALIZE_ENVIRONMENT, SUCCESS);
+                .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
         } finally {
             logoutIfNeeded();
             loginAs(admin);

@@ -18,7 +18,6 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
-import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
@@ -53,7 +52,7 @@ public class LogAO implements AccessObject<LogAO> {
     public static final long COMPLETION_TIMEOUT = C.COMPLETION_TIMEOUT;
     public static final long BUCKETS_MOUNTING_TIMEOUT = C.BUCKETS_MOUNTING_TIMEOUT;
 
-    private static Condition completed = Condition.or("finished", SUCCESS.reached, Status.STOPPED.reached, Status.FAILURE.reached);
+    private static Condition completed = Condition.or("finished", Status.SUCCESS.reached, Status.STOPPED.reached, Status.FAILURE.reached);
     private static Condition running = Condition.or("running", Status.LOADING.reached, Status.WORKING.reached);
 
     private final Map<Primitive,SelenideElement> elements = initialiseElements(
@@ -344,7 +343,7 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
-    public LogAO waitForTaskCompletion(final String task, Status status) {
+    public LogAO waitForTaskStatus(final String task, Status status) {
         $(taskWithName(task)).waitUntil(status.reached, COMPLETION_TIMEOUT);
         return this;
     }
