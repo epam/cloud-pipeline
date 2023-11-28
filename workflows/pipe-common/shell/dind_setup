@@ -14,6 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Docker versions download
+# mkdir docker
+# cd docker
+# wget -A tgz -m -p -E -k -K -np https://download.docker.com/linux/static/stable/x86_64/
+# cd download.docker.com
+# aws s3 sync linux/static/stable/x86_64 s3://cloud-pipeline-oss-builds/tools/docker/distr/linux/static/stable/x86_64
+
 DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
@@ -67,20 +74,27 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-18.09.6}"
 export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
 export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
+export CP_CAP_DIND_DISTR_PREFIX="${CP_CAP_DIND_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/distr"}"
 
-wget -q -O docker.tgz "https://download.docker.com/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
+pipe_log_info "Installing docker: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
+
+wget -q -O docker.tgz "${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
 
 if [ $? -ne 0 ]; then
-    pipe_log_fail "Unable to install download docker distribution ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
+    pipe_log_fail "Unable to download docker distribution ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
     exit 1
 fi
 
 tar --extract --file docker.tgz --strip-components 1 --directory /usr/local/bin/
+if [ $? -ne 0 ]; then
+    pipe_log_fail "Unable to install docker distribution" "$DIND_SETUP_TASK"
+    exit 1
+fi
 rm -f docker.tgz
 
-pipe_log_info "Docker installed: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
+pipe_log_info "Docker installed" "$DIND_SETUP_TASK"
 
-nvidia-smi
+nvidia-smi &> /dev/null
 REQUIRES_GPU_DIND=$?
 if [ $REQUIRES_GPU_DIND -eq 0 ]; then
     pipe_log_info "Active CUDA environment detected, try to install NVIDIA Docker" "$DIND_SETUP_TASK"
@@ -115,19 +129,20 @@ fi
 # Fix dockerd for DIND
 ######################################################
 
-export DIND_COMMIT=37498f009d8bf25fbb6199e8ccd34bed84f2874b
-wget -q -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
+if util_version_compare "$CP_CAP_DIND_VERSION" "19.03.0" "<"; then
+    export DIND_COMMIT=37498f009d8bf25fbb6199e8ccd34bed84f2874b
+    wget -q -O /usr/local/bin/dind "https://raw.githubusercontent.com/docker/docker/${DIND_COMMIT}/hack/dind"
 
-if [ $? -ne 0 ]; then
-    pipe_log_fail "Unable to install download dind fix $DIND_COMMIT" "$DIND_SETUP_TASK"
-    exit 1
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "Unable to install download dind fix $DIND_COMMIT" "$DIND_SETUP_TASK"
+        exit 1
+    fi
+    chmod +x /usr/local/bin/dind
+    pipe_log_info "DIND fix installed: $DIND_COMMIT" "$DIND_SETUP_TASK"
 fi
 
-chmod +x /usr/local/bin/dind
 \cp $COMMON_REPO_DIR/shell/dind_setup_modprobe /usr/local/bin/modprobe
 chmod +x /usr/local/bin/modprobe
-
-pipe_log_info "DIND fix installed: $DIND_COMMIT" "$DIND_SETUP_TASK"
 
 ######################################################
 # Setup docker daemon options
