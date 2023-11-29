@@ -23,6 +23,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
@@ -39,6 +40,7 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.NAT_GATEWAY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
@@ -85,13 +87,22 @@ public class SystemManagementAO extends SettingsPageAO {
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             int attempt = 0;
             int maxAttempts = 10;
+            filterByMessage("messageFilter");
+            List<String> userFilters = getMultiSelectFilterValues("User");
+            List<String> serviceFilters = getMultiSelectFilterValues("Service");
+            List<String> typeFilters = getMultiSelectFilterValues("Type");
+            String messageFilter = getMessageFilter();
             while (containerLogs().stream().filter(r ->
                     r.has(matchText(message)) && r.has(text(type))).count() == 0
                     && attempt < maxAttempts) {
                 sleep(3, SECONDS);
                 refresh();
                 attempt ++;
-                filterBy(user);
+                setIncludeServiceAccountEventsOption();
+                filterBySelectedValues("User", userFilters);
+                filterBySelectedValues("Service", serviceFilters);
+                filterBySelectedValues("Type", typeFilters);
+                filterByMessage(messageFilter);
             }
             return containerLogs().stream()
                 .filter(r -> r.has(matchText(message)) && r.has(text(type)))
@@ -105,18 +116,47 @@ public class SystemManagementAO extends SettingsPageAO {
                 });
         }
 
+        public List<String> getMultiSelectFilterValues(String filterName) {
+            return $$(By.className("ilters__filter")).filterBy(matchText(filterName)).first()
+                    .$$(By.className("ant-select-selection__choice")).texts();
+        }
+
+        public String getMessageFilter() {
+            return $(filterBy("Message")).$(byXpath("./input"))
+                    .getAttribute("value");
+        }
+
         public SystemLogsAO filterByUser(final String user) {
             selectValue(combobox("User"), user);
+            click(byText("User"));
+            return this;
+        }
+
+        public SystemLogsAO filterBySelectedValues(String filterName, List<String> list) {
+            if (!list.isEmpty()) {
+                for (String value : list) {
+                    selectValue(combobox(filterName), value);
+                }
+                click(byText(filterName));
+            }
             return this;
         }
 
         public SystemLogsAO filterByMessage(final String message) {
-            setValue(inputOf(filterBy("Message")), message);
-            pressEnter();
+            if(!message.equals("")) {
+                setValue(inputOf(filterBy("Message")), message);
+                pressEnter();
+            }
             return this;
         }
 
         public SystemLogsAO filterByService(final String service) {
+            selectValue(combobox("Service"), service);
+            click(byText("Service"));
+            return this;
+        }
+
+        public SystemLogsAO filterByType(final String service) {
             selectValue(combobox("Service"), service);
             click(byText("Service"));
             return this;

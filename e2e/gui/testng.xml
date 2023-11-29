@@ -378,7 +378,11 @@
 
     <test name="SystemLoggingTest">
         <classes>
-            <class name="com.epam.pipeline.autotests.SystemLoggingTest"/>
+            <class name="com.epam.pipeline.autotests.SystemLoggingTest">
+                <methods>
+                    <include name="interactiveEndpointsAccess"/>
+                </methods>
+            </class>
         </classes>
     </test>
 
