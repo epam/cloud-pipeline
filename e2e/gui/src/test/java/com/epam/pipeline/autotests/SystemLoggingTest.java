@@ -41,7 +41,6 @@ import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation, Tools {
@@ -147,7 +146,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
-                        .filterByUser(admin.login)
+                        .filterByField("User", admin.login)
                         .validateRow(format("Authentication failed! User %s is blocked!",
                                 userWithoutCompletedRuns.login), admin.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
@@ -155,7 +154,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 return;
             }
             systemLogsAO
-                    .filterByUser(userWithoutCompletedRuns.login)
+                    .filterByField("User", userWithoutCompletedRuns.login)
                     .validateRow(format("Authentication failed! User %s is blocked!", userWithoutCompletedRuns.login),
                             admin.login, TYPE);
         } finally {
@@ -190,7 +189,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByUser(admin.login)
+                .filterByField("User", admin.login)
                 .pressEnter()
                 .filterByMessage("Blocking status=false");
 
@@ -219,7 +218,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByUser(admin.login)
+                .filterByField("User", admin.login)
                 .filterByMessage(format("id=%s", userId))
                 .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE)
                 .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE);
@@ -245,7 +244,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByUser(admin.login)
+                .filterByField("User", admin.login)
                 .filterByMessage("Granting permissions")
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
                                 "\\(mask: 0\\). Sid: name=%s isPrincipal=true.*", pipeline, userWithoutCompletedRuns.login),
@@ -286,8 +285,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByUser(user.login.toUpperCase())
-                .filterByService("edge")
+                .filterByField("User", user.login.toUpperCase())
+                .filterByField("Service", "edge")
                 .validateRow(format(
                         ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
                         getLastRunId(), endpoint, user.login), user.login, TYPE)
@@ -329,13 +328,13 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 ? systemLogsAO.getInfoRow(
                         format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login.toUpperCase(),
                         TYPE)
-                : systemLogsAO.filterByUser(account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
+                : systemLogsAO.filterByField("User", account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
     }
 
     private void clearFiltersIfNeeded(final SystemLogsAO systemLogsAO) {
         if (impersonateMode()) {
             return;
         }
-        systemLogsAO.clearUserFilters();
+        systemLogsAO.clearFiltersBy("User");
     }
 }

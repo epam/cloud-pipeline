@@ -87,7 +87,6 @@ public class SystemManagementAO extends SettingsPageAO {
         public SelenideElement getInfoRow(final String message, final String user, final String type) {
             int attempt = 0;
             int maxAttempts = 10;
-            filterByMessage("messageFilter");
             List<String> userFilters = getMultiSelectFilterValues("User");
             List<String> serviceFilters = getMultiSelectFilterValues("Service");
             List<String> typeFilters = getMultiSelectFilterValues("Type");
@@ -117,7 +116,7 @@ public class SystemManagementAO extends SettingsPageAO {
         }
 
         public List<String> getMultiSelectFilterValues(String filterName) {
-            return $$(By.className("ilters__filter")).filterBy(matchText(filterName)).first()
+            return $(filterBy(filterName))
                     .$$(By.className("ant-select-selection__choice")).texts();
         }
 
@@ -126,9 +125,9 @@ public class SystemManagementAO extends SettingsPageAO {
                     .getAttribute("value");
         }
 
-        public SystemLogsAO filterByUser(final String user) {
-            selectValue(combobox("User"), user);
-            click(byText("User"));
+        public SystemLogsAO filterByField(final String fieldName, final String value) {
+            selectValue(combobox(fieldName), value);
+            click(byText(fieldName));
             return this;
         }
 
@@ -147,23 +146,6 @@ public class SystemManagementAO extends SettingsPageAO {
                 setValue(inputOf(filterBy("Message")), message);
                 pressEnter();
             }
-            return this;
-        }
-
-        public SystemLogsAO filterByService(final String service) {
-            selectValue(combobox("Service"), service);
-            click(byText("Service"));
-            return this;
-        }
-
-        public SystemLogsAO filterByType(final String service) {
-            selectValue(combobox("Service"), service);
-            click(byText("Service"));
-            return this;
-        }
-
-        public SystemLogsAO clearUserFilters() {
-            clearFiltersBy("User");
             return this;
         }
 
@@ -201,20 +183,19 @@ public class SystemManagementAO extends SettingsPageAO {
         }
 
         private By filterBy(final String name) {
-            return byXpath(format("(//*[contains(@class, '%s') and .//*[contains(text(), '%s')]])[last()]",
-                    "ilters__filter", name
-            ));
+            return byXpath(format("(//*[contains(@class, 'ilters__filter') and .//*[text()='%s']])[last()]", name));
         }
 
         private String getMessage(final SelenideElement element) {
             return element.findAll("td").get(2).getText();
         }
 
-        public void clearFiltersBy(final String name) {
+        public SystemLogsAO clearFiltersBy(final String name) {
             actions().moveToElement($(combobox(name))).build().perform();
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+            return this;
         }
 
         public SystemLogsAO setIncludeServiceAccountEventsOption() {
