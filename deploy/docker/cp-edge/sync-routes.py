@@ -53,6 +53,7 @@ EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
+EDGE_COOKIE_NO_REPLACE = 'CP_EDGE_COOKIE_NO_REPLACE'
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
 EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
@@ -616,6 +617,12 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_target = edge_target + "/"
 
+                                        if EDGE_COOKIE_NO_REPLACE in additional:
+                                                additional = additional.replace(EDGE_COOKIE_NO_REPLACE, "")
+                                                edge_cookie_location = "/"
+                                        else:
+                                                edge_cookie_location = None
+
                                         is_external_app = False
                                         if EDGE_EXTERNAL_APP in additional:
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
@@ -647,7 +654,8 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 "sensitive": sensitive,
                                                 "create_dns_record": create_dns_record,
                                                 "cloudRegionId": cloud_region_id,
-                                                "external_app": is_external_app
+                                                "external_app": is_external_app,
+                                                "cookie_location": edge_cookie_location
                                         }
                 else:
                         do_log('No endpoints required for the tool {}'.format(docker_image))
@@ -759,7 +767,8 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', service_spec["additional"])
+                .replace('{additional}', service_spec["additional"]) \
+                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location)
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
@@ -775,7 +784,8 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', service_spec["additional"])
+                                .replace('{additional}', service_spec["additional"]) \
+                                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location + sensitive_route['route'])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, service_spec.get('edge_location_path') + '.conf')
         if service_spec["sensitive"]:
