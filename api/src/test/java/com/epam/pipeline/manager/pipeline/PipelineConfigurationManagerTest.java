@@ -43,6 +43,7 @@ import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils
 import static com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils.getS3bucketDataStorage;
 import static com.epam.pipeline.test.creator.pipeline.PipelineCreatorUtils.getPipelineStart;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
@@ -81,6 +82,9 @@ public class PipelineConfigurationManagerTest {
     @SuppressWarnings("PMD.UnusedPrivateField")
     private PreferenceManager preferenceManager;
 
+    @Mock
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
+
     @InjectMocks
     private final PipelineConfigurationManager pipelineConfigurationManager = new PipelineConfigurationManager();
     private final List<AbstractDataStorage> dataStorages = new ArrayList<>();
@@ -92,6 +96,7 @@ public class PipelineConfigurationManagerTest {
         dataStorages.add(getS3bucketDataStorage(S3_ID_1, TEST_PATH_2, OWNER1));
         dataStorages.add(getNfsDataStorage(NFS_ID_2, TEST_PATH_3, TEST_OPTIONS_2, "", OWNER2));
         dataStorages.add(getS3bucketDataStorage(S3_ID_2, TEST_PATH_4, OWNER2));
+        doReturn(Collections.emptyMap()).when(launchCapabilitiesProcessor).process(any());
     }
 
     @Test
