@@ -95,6 +95,9 @@ public class PipelineConfigurationManager {
     @Autowired
     private CloudRegionManager regionManager;
 
+    @Autowired
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
+
     public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
                                                                      final PipelineStart runVO) {
         if (PipelineType.VERSIONED_STORAGE.equals(pipeline.getPipelineType())) {
@@ -148,8 +151,7 @@ public class PipelineConfigurationManager {
     }
 
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
-        Map<String, PipeConfValueVO> params = runVO.getParams() == null
-                ? Collections.emptyMap() : runVO.getParams();
+        Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
 
         configuration.setMainFile(defaultConfig.getMainFile());
@@ -164,6 +166,8 @@ public class PipelineConfigurationManager {
                 .stream()
                 .filter(entry -> entry.getValue().isRequired() || !StringUtils.isEmpty(entry.getValue().getValue()))
                 .forEach(entry -> runParameters.put(entry.getKey(), entry.getValue()));
+
+        runParameters.putAll(launchCapabilitiesProcessor.process(runParameters));
 
         //fill in default values, only if user's value wasn't provided
         if (defaultConfig.getParameters() != null) {
