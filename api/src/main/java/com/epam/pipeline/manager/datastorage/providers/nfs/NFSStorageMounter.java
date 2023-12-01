@@ -16,6 +16,7 @@ import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,8 +80,11 @@ public class NFSStorageMounter {
                 final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
                         regionManager.loadCredentials(cloudRegion) : null;
 
+                final String defaultMountOptions = StringUtils.isNotBlank(dataStorage.getMountOptions()) ?
+                        dataStorage.getMountOptions() : fileShareMount.getMountOptions();
+
                 final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions(), protocol);
+                        defaultMountOptions, protocol);
 
                 final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
 
