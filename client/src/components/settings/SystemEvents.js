@@ -1,4 +1,5 @@
 import React, {Component} from 'react';
+import {computed, observable} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
@@ -18,8 +19,7 @@ import displayDate from '../../utils/displayDate';
 import styles from './styles.css';
 
 @inject(({authenticatedUserInfo}) => ({
-  authenticatedUserInfo,
-  notifications: new Notifications()
+  authenticatedUserInfo
 }))
 @observer
 export default class SystemEvents extends Component {
@@ -30,8 +30,45 @@ export default class SystemEvents extends Component {
     }
   };
 
+  @observable
+  notificationsRequest;
+  @observable
+  notificationsRequestPending;
+
+  componentDidMount () {
+    this.loadNotifications();
+  }
+
+  componentDidUpdate () {
+    this.loadNotifications();
+  }
+
+  @computed
+  get notifications () {
+    if (this.notificationsRequest && this.notificationsRequest.loaded) {
+      return this.notificationsRequest.value;
+    }
+    return null;
+  }
+
+  loadNotifications = async (force = false) => {
+    if (
+      !force &&
+      (this.notificationsRequest || this.notificationsRequestPending)
+    ) {
+      return;
+    }
+    this.notificationsRequestPending = true;
+    this.notificationsRequest = new Notifications();
+    await this.notificationsRequest.fetch();
+    if (this.notificationsRequest.error) {
+      this.notificationsRequest = null;
+      message.error(this.notificationsRequest.error, 5);
+    }
+    this.notificationsRequestPending = false;
+  };
+
   updateNotification = async (notification) => {
-    const {notifications} = this.props;
     const hide = message.loading('Updating notification...', 0);
     const request = new UpdateNotification();
     await request.send(notification);
@@ -39,7 +76,7 @@ export default class SystemEvents extends Component {
       hide();
       message.error(request.error, 5);
     } else {
-      await notifications.fetch();
+      await this.loadNotifications(true);
       hide();
       this.closeUpdateNotificationForm();
       this.closeCreateNotificationForm();
@@ -79,7 +116,7 @@ export default class SystemEvents extends Component {
         hide();
         message.error(request.error, 5);
       } else {
-        await this.props.notifications.fetch();
+        await this.loadNotifications(true);
         hide();
       }
     };
@@ -133,23 +170,20 @@ export default class SystemEvents extends Component {
         <Alert type="error" message="Access is denied" />
       );
     }
-    const {notifications} = this.props;
-    const data = (
-      notifications.loaded
-        ? (notifications.value || []).map(n => n)
-        : []
-    ).sort(
-      (a, b) => {
-        if (a.title > b.title) {
-          return 1;
-        } else if (a.title < b.title) {
-          return -1;
+    const data = (this.notifications || [])
+      .map(n => n)
+      .sort(
+        (a, b) => {
+          if (a.title > b.title) {
+            return 1;
+          } else if (a.title < b.title) {
+            return -1;
+          }
+          return 0;
         }
-        return 0;
-      }
-    );
+      );
     const refreshTable = () => {
-      notifications.fetch();
+      this.loadNotifications(true);
     };
     const onChangeState = (notification) => {
       if (notification.state === 'ACTIVE') {
@@ -263,7 +297,7 @@ export default class SystemEvents extends Component {
           }}
           showHeader={false}
           rowKey="notificationId"
-          loading={this.props.notifications.pending}
+          loading={this.notificationsRequestPending}
           columns={columns}
           dataSource={data}
           expandedRowClassName={

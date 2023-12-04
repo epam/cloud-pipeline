@@ -26,8 +26,14 @@ RUN yum install -y wget \
                    git \
                    curl \
                    procps \
+                   findutils \
                    epel-release && \
     yum clean all && \
     yum install -y python2 && \
     ln -sf python2 /usr/bin/python && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+
+# Enable epel-release and powertools by default
+RUN yum install -y epel-release && \
+    yum config-manager --set-enabled powertools && \
+    yum update -y
