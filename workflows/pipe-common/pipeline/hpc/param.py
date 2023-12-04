@@ -249,6 +249,9 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.event_ttl = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_EVENT_TTL', type=PARAM_INT, default=3 * 60 * 60,
             help='Specifies event ttl in seconds after which an event is removed.')
+        self.custom_requirements = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS', type=PARAM_BOOL, default=True,
+            help='Enables custom requirements processing.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):

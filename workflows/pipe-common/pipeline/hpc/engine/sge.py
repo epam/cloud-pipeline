@@ -1,16 +1,36 @@
 import functools
-import math
-import operator
 import os
-import traceback
-from datetime import datetime
 from xml.etree import ElementTree
 
+import math
+import operator
+from datetime import datetime
+
 from pipeline.hpc.cmd import ExecutionError
-from pipeline.hpc.logger import Logger
-from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand
 from pipeline.hpc.engine.gridengine import GridEngine, GridEngineJobState, GridEngineJob, AllocationRule, \
     GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator
+from pipeline.hpc.logger import Logger
+from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand, CustomResourceSupply, \
+    CustomResourceDemand
+
+
+class SunGridEngineComplexAttribute:
+
+    def __init__(self, name, shortcut, type, relop, requestable, consumable, default, urgency):
+        self.name = name
+        self.shortcut = shortcut
+        self.type = type
+        self.relop = relop
+        self.requestable = requestable
+        self.consumable = consumable
+        self.default = default
+        self.urgency = urgency
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def __repr__(self):
+        return str(self.__dict__)
 
 
 class SunGridEngine(GridEngine):
@@ -26,6 +46,7 @@ class SunGridEngine(GridEngine):
     _QMOD_DISABLE = 'qmod -d %s@%s'
     _QMOD_ENABLE = 'qmod -e %s@%s'
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
+    _SHOW_COMPLEX_ATTRIBUTES = 'qconf -sc'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
     _BAD_HOST_STATES = ['u', 'E', 'd']
@@ -85,27 +106,37 @@ class SunGridEngine(GridEngine):
             job_cpu = int(requested_pe.text if requested_pe is not None else '1')
             job_gpu = 0
             job_mem = 0
+            job_requests = {}
             hard_requests = job_list.findall('hard_request')
             for hard_request in hard_requests:
-                hard_request_name = hard_request.get('name')
+                hard_request_name = hard_request.get('name', '').strip().lower()
                 if hard_request_name == self.gpu_resource_name:
-                    job_gpu_request = hard_request.text or '0'
+                    job_gpu_raw = hard_request.text or '0'
                     try:
-                        job_gpu = int(job_gpu_request)
+                        job_gpu = int(job_gpu_raw)
                     except ValueError:
-                        Logger.warn('Job #{job_id} by {job_user} has invalid gpu requirement '
-                                    'which cannot be parsed: {request}'
-                                    .format(job_id=root_job_id, job_user=job_user, request=job_gpu_request))
-                        Logger.warn(traceback.format_exc())
-                if hard_request_name == self.mem_resource_name:
-                    job_mem_request = hard_request.text or '0G'
+                        Logger.warn('Job #{job_id} by {job_user} has invalid requirement: {name}={value}'
+                                    .format(job_id=root_job_id, job_user=job_user,
+                                            name='gpu', value=job_gpu_raw))
+                elif hard_request_name == self.mem_resource_name:
+                    job_mem_raw = hard_request.text or '0G'
                     try:
-                        job_mem = self._parse_mem(job_mem_request)
+                        job_mem = self._parse_mem(job_mem_raw)
                     except Exception:
-                        Logger.warn('Job #{job_id} by {job_user} has invalid mem requirement '
-                                    'which cannot be parsed: {request}'
-                                    .format(job_id=root_job_id, job_user=job_user, request=job_mem_request))
-                        Logger.warn(traceback.format_exc())
+                        Logger.warn('Job #{job_id} by {job_user} has invalid requirement: {name}={value}'
+                                    .format(job_id=root_job_id, job_user=job_user,
+                                            name='mem', value=job_mem_raw),
+                                    trace=True)
+                elif hard_request_name:
+                    job_request_name = hard_request_name
+                    job_request_raw = hard_request.text or '0'
+                    try:
+                        job_request = int(job_request_raw)
+                        job_requests[job_request_name] = job_request
+                    except ValueError:
+                        Logger.warn('Job #{job_id} by {job_user} has unsupported requirement: {name}={value}'
+                                    .format(job_id=root_job_id, job_user=job_user,
+                                            name=job_request_name, value=job_request_raw))
             for job_id in job_ids:
                 if job_id in jobs:
                     job = jobs[job_id]
@@ -123,6 +154,7 @@ class SunGridEngine(GridEngine):
                         cpu=job_cpu,
                         gpu=job_gpu,
                         mem=job_mem,
+                        requests=job_requests,
                         pe=job_pe
                     )
         return jobs.values()
@@ -182,6 +214,53 @@ class SunGridEngine(GridEngine):
         self._remove_host_from_host_group(host, self.hostlist, skip_on_failure=skip_on_failure)
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
+
+    def get_global_supplies(self):
+        supported_complex_names = set(self._get_supported_complex_names())
+        output = self.cmd_executor.execute(SunGridEngine._SHOW_EXECUTION_HOST % 'global')
+        values = {}
+        for line in output.replace('\\\n', '').split('\n'):
+            if not line.startswith('complex_values'):
+                continue
+            line = line[len('complex_values'):]
+            for value in line.split(','):
+                value = value.strip().lower()
+                if '=' not in value:
+                    continue
+                value_items = value.strip().lower().split('=', 1)
+                if len(value_items) != 2:
+                    continue
+                complex_name, complex_value_raw = value_items
+                if complex_name not in supported_complex_names:
+                    continue
+                try:
+                    complex_value = int(complex_value_raw)
+                except ValueError:
+                    continue
+                values[complex_name] = complex_value
+        yield CustomResourceSupply(values=values)
+
+    def _get_supported_complex_names(self):
+        for attribute in self.get_complex_attributes():
+            if attribute.type == 'INT' \
+                    and attribute.relop == '<=' \
+                    and attribute.requestable == 'YES' \
+                    and attribute.consumable == 'JOB':
+                yield attribute.name.lower()
+                yield attribute.shortcut.lower()
+
+    def get_complex_attributes(self):
+        for line in self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_COMPLEX_ATTRIBUTES):
+            if line.startswith('#'):
+                continue
+            line = line.strip()
+            items = [item.strip() for item in line.split(' ') if item.strip()]
+            if len(items) != 8:
+                continue
+            yield SunGridEngineComplexAttribute(name=items[0], shortcut=items[1],
+                                                type=items[2], relop=items[3],
+                                                requestable=items[4], consumable=items[5],
+                                                default=items[6], urgency=items[7])
 
     def get_host_supplies(self):
         output = self.cmd_executor.execute(SunGridEngine._QHOST)
@@ -271,31 +350,72 @@ class SunGridEngine(GridEngine):
         self.cmd_executor.execute((SunGridEngine._FORCE_KILL_JOBS if force else SunGridEngine._KILL_JOBS) % ' '.join(job_ids))
 
 
-class SunGridEngineDemandSelector(GridEngineDemandSelector):
+class SunGridEngineDefaultDemandSelector(GridEngineDemandSelector):
 
     def __init__(self, grid_engine):
         self.grid_engine = grid_engine
 
     def select(self, jobs):
-        remaining_supply = functools.reduce(operator.add, self.grid_engine.get_host_supplies(), ResourceSupply())
+        initial_supply = functools.reduce(operator.add, self.grid_engine.get_host_supplies(), ResourceSupply())
         allocation_rules = {}
         for job in sorted(jobs, key=lambda job: job.root_id):
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.grid_engine.get_pe_allocation_rule(job.pe)
             if allocation_rule in AllocationRule.fractional_rules():
-                remaining_demand = FractionalDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
-                remaining_demand, remaining_supply = remaining_demand.subtract(remaining_supply)
+                initial_demand = FractionalDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+                remaining_demand, remaining_supply = initial_demand.subtract(initial_supply)
             else:
-                remaining_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+                initial_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+                remaining_demand, remaining_supply = initial_demand, initial_supply
             if not remaining_demand:
-                Logger.warn('Problematic job #{job_id} {job_name} by {job_user} is pending for an unknown reason. '
-                            'The job requires resources which are already satisfied by the cluster: '
-                            '{job_cpu} cpu, {job_gpu} gpu, {job_mem} mem.'
+                Logger.warn('Ignoring job #{job_id} {job_name} by {job_user} because '
+                            'it is pending even though '
+                            'it requires resources which are available at the moment: '
+                            '{job_resources}...'
                             .format(job_id=job.id, job_name=job.name, job_user=job.user,
-                                    job_cpu=job.cpu, job_gpu=job.gpu, job_mem=job.mem),
-                            crucial=True)
+                                    job_resources=self._as_resources_str(initial_demand, initial_supply)))
                 continue
+            initial_supply = remaining_supply
             yield remaining_demand
+
+    def _as_resources_str(self, demand, supply):
+        return ', '.join('{demand}/{supply} {name}'
+                         .format(name=key,
+                                 demand=getattr(demand, key),
+                                 supply=getattr(supply, key))
+                         for key in ['cpu', 'gpu', 'mem'])
+
+
+class SunGridEngineCustomDemandSelector(GridEngineDemandSelector):
+
+    def __init__(self, inner, grid_engine):
+        self._inner = inner
+        self._grid_engine = grid_engine
+
+    def select(self, jobs):
+        return self._inner.select(list(self.filter(jobs)))
+
+    def filter(self, jobs):
+        initial_supply = functools.reduce(operator.add, self._grid_engine.get_global_supplies(), CustomResourceSupply())
+        for job in sorted(jobs, key=lambda job: job.root_id):
+            initial_demand = CustomResourceDemand(values=job.requests)
+            remaining_demand, remaining_supply = initial_demand.subtract(initial_supply)
+            if remaining_demand:
+                Logger.warn('Ignoring job #{job_id} {job_name} by {job_user} because '
+                            'it requires custom resources which are not available at the moment: '
+                            '{job_resources}...'
+                            .format(job_id=job.id, job_name=job.name, job_user=job.user,
+                                    job_resources=self._as_resources_str(initial_demand, initial_supply)))
+                continue
+            initial_supply = remaining_supply
+            yield job
+
+    def _as_resources_str(self, custom_demand, custom_supply):
+        return ', '.join('{demand}/{supply} {name}'
+                         .format(name=key,
+                                 demand=custom_demand.values.get(key, 0),
+                                 supply=custom_supply.values.get(key, 0))
+                         for key in custom_demand.values.keys())
 
 
 class SunGridEngineJobValidator(GridEngineJobValidator):

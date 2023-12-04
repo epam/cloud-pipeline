@@ -18,7 +18,8 @@ from datetime import datetime
 from mock import MagicMock, Mock
 
 from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineJob
-from pipeline.hpc.engine.sge import SunGridEngine
+from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineComplexAttribute
+from pipeline.hpc.resource import CustomResourceSupply
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -232,6 +233,86 @@ def test_qstat_empty_parsing():
     jobs = grid_engine.get_jobs()
 
     assert len(jobs) == 0
+
+
+def test_qconf_sc_parsing():
+    stdout = """
+#name                          shortcut                       type      relop requestable consumable default  urgency
+#---------------------------------------------------------------------------------------------------------------------
+cpu                            cpu                            DOUBLE    >=    YES         NO         0        0
+ram                            ram                            MEMORY    <=    YES         YES        0G       0
+gpus                           gpus                           INT       <=    YES         JOB        0        0
+RESOURCE_NAME                  RESOURCE_SHORTCUT              INT       <=    YES         JOB        0        0
+"""
+
+    executor.execute_to_lines = MagicMock(return_value=stdout.split('\n'))
+    attrs = list(grid_engine.get_complex_attributes())
+
+    assert len(attrs) == 4
+
+    attr_1, attr_2, attr_3, attr_4 = attrs
+
+    assert attr_1 == SunGridEngineComplexAttribute(
+        name='cpu', shortcut='cpu', type='DOUBLE', relop='>=',
+        requestable='YES', consumable='NO', default='0', urgency='0')
+    assert attr_2 == SunGridEngineComplexAttribute(
+        name='ram', shortcut='ram', type='MEMORY', relop='<=',
+        requestable='YES', consumable='YES', default='0G', urgency='0')
+    assert attr_3 == SunGridEngineComplexAttribute(
+        name='gpus', shortcut='gpus', type='INT', relop='<=',
+        requestable='YES', consumable='JOB', default='0', urgency='0')
+    assert attr_4 == SunGridEngineComplexAttribute(
+        name='RESOURCE_NAME', shortcut='RESOURCE_SHORTCUT', type='INT', relop='<=',
+        requestable='YES', consumable='JOB', default='0', urgency='0')
+
+
+def test_get_global_supplies():
+    stdout = """
+hostname              global
+load_scaling          NONE
+complex_values        A=1,B=2,C=3, \\
+                      D=4,E=5,F=6, \\
+                      G=7
+load_values           NONE
+processors            0
+user_lists            NONE
+xuser_lists           NONE
+projects              NONE
+xprojects             NONE
+usage_scaling         NONE
+report_variables      NONE
+"""
+    executor.execute = MagicMock(return_value=stdout)
+    grid_engine.get_complex_attributes = MagicMock(return_value=[
+        SunGridEngineComplexAttribute(
+            name='A', shortcut='A', type='INT', relop='<=',
+            requestable='YES', consumable='JOB', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='B', shortcut='B', type='INT', relop='<=',
+            requestable='YES', consumable='JOB', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='C', shortcut='C', type='DOUBLE', relop='<=',
+            requestable='YES', consumable='JOB', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='D', shortcut='D', type='INT', relop='>=',
+            requestable='YES', consumable='JOB', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='E', shortcut='E', type='INT', relop='<=',
+            requestable='YES', consumable='NO', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='F', shortcut='F', type='INT', relop='<=',
+            requestable='YES', consumable='JOB', default='0', urgency='0'),
+        SunGridEngineComplexAttribute(
+            name='G', shortcut='G', type='INT', relop='<=',
+            requestable='YES', consumable='JOB', default='0', urgency='0')])
+
+    supplies = list(grid_engine.get_global_supplies())
+
+    assert len(supplies) == 1
+
+    supply = supplies[0]
+
+    assert supply == CustomResourceSupply(values={'a': 1, 'b': 2, 'f': 6, 'g': 7})
 
 
 def test_kill_jobs():

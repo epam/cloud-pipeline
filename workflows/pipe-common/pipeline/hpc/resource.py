@@ -125,3 +125,70 @@ class ResourceSupply(ComputeResource):
     @classmethod
     def of(cls, instance):
         return ResourceSupply(cpu=instance.cpu, gpu=instance.gpu, mem=instance.mem)
+
+
+class CustomComputeResource:
+
+    def __init__(self, values=None):
+        self.values = values or {}
+
+    def add(self, other):
+        lvalues, rvalues = dict(self.values), dict(other.values)
+        for key in other.values.keys():
+            lvalue, rvalue = lvalues.get(key, 0), rvalues.get(key, 0)
+            lvalues[key] = lvalue + rvalue
+        return self.__class__(values=lvalues)
+
+    def subtract(self, other):
+        lvalues, rvalues = dict(self.values), dict(other.values)
+        for key in self.values.keys():
+            lvalue, rvalue = lvalues.get(key, 0), rvalues.get(key, 0)
+            lvalues[key], rvalues[key] = max(0, lvalue - rvalue), max(0, rvalue - lvalue)
+        return (self.__class__(values=lvalues),
+                other.__class__(values=rvalues))
+
+    def sub(self, other):
+        return self.subtract(other)[0]
+
+    def mul(self, other):
+        if isinstance(other, int):
+            lvalues = dict(self.values)
+            for key in self.values.keys():
+                lvalues[key] *= other
+            return self.__class__(values=lvalues)
+        else:
+            raise ArithmeticError('Custom compute resource can be multiplied to integer values only')
+
+    def gt(self, other):
+        lvalues, rvalues = self.values, other.values
+        return any(lvalues.get(key, 0) > rvalues.get(key, 0) for key in self.values.keys())
+
+    def eq(self, other):
+        return self.__dict__ == other.__dict__
+
+    def bool(self):
+        return sum(self.values.values()) > 0
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+    __add__ = add
+    __sub__ = sub
+    __mul__ = mul
+    __cmp__ = gt
+    __eq__ = eq
+    __ne__ = _not(__eq__)
+    __lt__ = _and(_not(gt), _not(eq))
+    __gt__ = gt
+    __le__ = _or(__lt__, __eq__)
+    __ge__ = _or(__gt__, __eq__)
+    __bool__ = bool
+    __nonzero__ = bool
+
+
+class CustomResourceSupply(CustomComputeResource):
+    pass
+
+
+class CustomResourceDemand(CustomComputeResource):
+    pass
