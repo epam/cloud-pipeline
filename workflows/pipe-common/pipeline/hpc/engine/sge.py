@@ -14,25 +14,6 @@ from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDema
     CustomResourceDemand
 
 
-class SunGridEngineComplexAttribute:
-
-    def __init__(self, name, shortcut, type, relop, requestable, consumable, default, urgency):
-        self.name = name
-        self.shortcut = shortcut
-        self.type = type
-        self.relop = relop
-        self.requestable = requestable
-        self.consumable = consumable
-        self.default = default
-        self.urgency = urgency
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def __repr__(self):
-        return str(self.__dict__)
-
-
 class SunGridEngine(GridEngine):
     _DELETE_HOST = 'qconf -de %s'
     _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
@@ -42,11 +23,11 @@ class SunGridEngine(GridEngine):
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
     _QSTAT = 'qstat -u "*" -r -f -xml'
     _QHOST = 'qhost -q -xml'
+    _QHOST_GLOBAL_RESOURCES = 'qhost -h "*" -F -xml'
     _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
     _QMOD_ENABLE = 'qmod -e %s@%s'
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
-    _SHOW_COMPLEX_ATTRIBUTES = 'qconf -sc'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
     _BAD_HOST_STATES = ['u', 'E', 'd']
@@ -109,7 +90,7 @@ class SunGridEngine(GridEngine):
             job_requests = {}
             hard_requests = job_list.findall('hard_request')
             for hard_request in hard_requests:
-                hard_request_name = hard_request.get('name', '').strip().lower()
+                hard_request_name = hard_request.get('name', '').strip()
                 if hard_request_name == self.gpu_resource_name:
                     job_gpu_raw = hard_request.text or '0'
                     try:
@@ -216,51 +197,20 @@ class SunGridEngine(GridEngine):
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
     def get_global_supplies(self):
-        supported_complex_names = set(self._get_supported_complex_names())
-        output = self.cmd_executor.execute(SunGridEngine._SHOW_EXECUTION_HOST % 'global')
-        values = {}
-        for line in output.replace('\\\n', '').split('\n'):
-            if not line.startswith('complex_values'):
-                continue
-            line = line[len('complex_values'):]
-            for value in line.split(','):
-                value = value.strip().lower()
-                if '=' not in value:
-                    continue
-                value_items = value.strip().lower().split('=', 1)
-                if len(value_items) != 2:
-                    continue
-                complex_name, complex_value_raw = value_items
-                if complex_name not in supported_complex_names:
-                    continue
+        yield CustomResourceSupply(values=dict(self._get_global_resources()))
+
+    def _get_global_resources(self):
+        output = self.cmd_executor.execute(SunGridEngine._QHOST_GLOBAL_RESOURCES)
+        root = ElementTree.fromstring(output)
+        for host in root.findall('host'):
+            for resource in host.findall('resourcevalue'):
+                resource_name = resource.get('name') or ''
+                resource_value_raw = resource.text or ''
                 try:
-                    complex_value = int(complex_value_raw)
+                    resource_value = int(resource_value_raw.split('.', 1)[0])
                 except ValueError:
                     continue
-                values[complex_name] = complex_value
-        yield CustomResourceSupply(values=values)
-
-    def _get_supported_complex_names(self):
-        for attribute in self.get_complex_attributes():
-            if attribute.type == 'INT' \
-                    and attribute.relop == '<=' \
-                    and attribute.requestable == 'YES' \
-                    and attribute.consumable == 'JOB':
-                yield attribute.name.lower()
-                yield attribute.shortcut.lower()
-
-    def get_complex_attributes(self):
-        for line in self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_COMPLEX_ATTRIBUTES):
-            if line.startswith('#'):
-                continue
-            line = line.strip()
-            items = [item.strip() for item in line.split(' ') if item.strip()]
-            if len(items) != 8:
-                continue
-            yield SunGridEngineComplexAttribute(name=items[0], shortcut=items[1],
-                                                type=items[2], relop=items[3],
-                                                requestable=items[4], consumable=items[5],
-                                                default=items[6], urgency=items[7])
+                yield resource_name, resource_value
 
     def get_host_supplies(self):
         output = self.cmd_executor.execute(SunGridEngine._QHOST)
