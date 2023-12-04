@@ -194,8 +194,6 @@ function makeCurrentOrderSort (array) {
     folder: componentParameters.id ? folders.load(componentParameters.id) : pipelinesLibrary,
     folderId: componentParameters.id,
     metadataClass: componentParameters.class,
-    entityFields: new MetadataEntityFields(componentParameters.id),
-    metadataClasses: new MetadataClassLoadAll(),
     onReloadTree: params.onReloadTree,
     authenticatedUserInfo,
     preferences,
@@ -218,6 +216,10 @@ export default class Metadata extends React.Component {
   };
 
   @observable keys;
+  @observable metadataFieldsRequest;
+  @observable metadataFieldsPending = false;
+  @observable metadataClassesRequest;
+  @observable metadataClassesPending = false;
 
   metadataRequest = {};
   externalMetadataEntity = {};
@@ -265,13 +267,27 @@ export default class Metadata extends React.Component {
   uploadButton;
 
   @computed
+  get entityFields () {
+    if (this.metadataFieldsRequest && this.metadataFieldsRequest.loaded) {
+      return this.metadataFieldsRequest.value || [];
+    }
+    return null;
+  }
+
+  @computed
+  get metadataClasses () {
+    if (this.metadataClassesRequest && this.metadataClassesRequest.loaded) {
+      return this.metadataClassesRequest.value || [];
+    }
+    return null;
+  }
+
+  @computed
   get entityTypes () {
-    const {entityFields, metadataClasses} = this.props;
-    if (entityFields.loaded && metadataClasses.loaded) {
-      const mappedEntityFields = (entityFields.value || [])
-        .map(e => e);
+    if (this.entityFields && this.metadataClasses) {
+      const mappedEntityFields = this.entityFields.map(e => e);
       const ignoreClasses = new Set(mappedEntityFields.map(f => f.metadataClass.id));
-      const otherClasses = (metadataClasses.value || [])
+      const otherClasses = this.metadataClasses
         .filter(({id}) => !ignoreClasses.has(id))
         .map(metadataClass => ({
           fields: [],
@@ -470,7 +486,7 @@ export default class Metadata extends React.Component {
         message.error(request.error, 5);
       } else {
         this.clearSelection();
-        await this.props.entityFields.fetch();
+        await this.loadMetadataFields(this.props.folderId);
         await this.loadColumns({append: true});
         await this.loadData();
         await this.props.folder.fetch();
@@ -1870,7 +1886,7 @@ export default class Metadata extends React.Component {
             parentId={currentItem ? currentItem.parent.id : null}
             currentItem={this.state.selectedItem}
             onUpdateMetadata={async () => {
-              await this.props.entityFields.fetch();
+              await this.loadMetadataFields(this.props.folderId);
               await this.loadColumns({append: true});
               await this.loadData();
               const [selectedItem] =
@@ -2659,7 +2675,7 @@ export default class Metadata extends React.Component {
             multiple={false}
             synchronous
             onRefresh={async () => {
-              await this.props.entityFields.fetch();
+              await this.loadMetadataFields(this.props.folderId);
               await this.props.folder.fetch();
               if (this.props.onReloadTree) {
                 this.props.onReloadTree(true);
@@ -2751,11 +2767,17 @@ export default class Metadata extends React.Component {
     authenticatedUserInfo
       .fetchIfNeededOrWait()
       .then(() => this.fetchDefaultMetadataProperties());
+    this.loadMetadataFields(this.props.folderId);
+    this.loadMetadataClasses();
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
 
   componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.folderId !== this.props.folderId) {
+      this.loadMetadataFields(this.props.folderId);
+      this.loadMetadataClasses();
+    }
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
     const folderChanged = prevProps.folderId !== this.props.folderId;
     const filtersChanged = metadataFilterUtilities
@@ -2821,7 +2843,9 @@ export default class Metadata extends React.Component {
         folderChanged
           ? this.fetchDefaultMetadataProperties(folderChanged)
           : this.loadColumns({reset: true}),
-        folderChanged ? this.props.entityFields.fetch() : Promise.resolve()
+        folderChanged
+          ? this.loadMetadataFields(this.props.folderId)
+          : Promise.resolve()
       ];
       return Promise.all(promises).then(() => {
         const {defaultOrderBy, columns} = this.state;
@@ -2838,6 +2862,35 @@ export default class Metadata extends React.Component {
         });
       });
     });
+  };
+
+  loadMetadataFields = async (folderId) => {
+    if (
+      !folderId ||
+      (this.metadataFieldsRequest && this.metadataFieldsRequest.pending)
+    ) {
+      return;
+    }
+    this.metadataFieldsRequest = new MetadataEntityFields(folderId);
+    this.metadataFieldsPending = true;
+    await this.metadataFieldsRequest.fetch();
+    if (this.metadataFieldsRequest.error) {
+      message.error(this.metadataFieldsRequest.error, 5);
+    }
+    this.metadataFieldsPending = false;
+  };
+
+  loadMetadataClasses = async () => {
+    if (this.metadataClassesRequest && this.metadataClassesRequest.pending) {
+      return;
+    }
+    this.metadataClassesRequest = new MetadataClassLoadAll();
+    this.metadataClassesPending = true;
+    await this.metadataClassesRequest.fetch();
+    if (this.metadataClassesRequest.error) {
+      message.error(this.metadataClassesRequest.error, 5);
+    }
+    this.metadataClassesPending = false;
   };
 
   fetchDefaultMetadataProperties = (folderChanged = false) => {
