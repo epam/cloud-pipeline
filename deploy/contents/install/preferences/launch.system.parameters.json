@@ -597,5 +597,26 @@
         "defaultValue": "true",
         "description": "Changes default mail client if favor to pipe_mail script.",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_STORAGE_ATTEMPTS",
+        "type": "int",
+        "defaultValue": "1",
+        "description": "Specifies a number of single storage mount attempts",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_STORAGE_RETRY_DELAY_SECONDS",
+        "type": "int",
+        "defaultValue": "1",
+        "description": "Specifies a delay in seconds between single storage mount retries",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_STORAGE_LOGGING_LEVEL",
+        "type": "string",
+        "defaultValue": "INFO",
+        "description": "Specifies mount storages task logging level",
+        "passToWorkers": true
     }
 ]

@@ -25,7 +25,9 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 
-from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount, AclClass, APIError
+from pipeline import PipelineAPI, common, DataStorageWithShareMount, AclClass, APIError
+from pipeline.log.logger import Logger, LevelLogger, TaskLogger, RunLogger
+from pipeline.utils.retry import retry
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -112,6 +114,11 @@ class MountStorageTask:
         self.run_id = int(os.getenv('RUN_ID', 0))
         self.region_id = int(os.getenv('CLOUD_REGION_ID', 0))
         self.task_name = task
+        self.logging_level = os.getenv('CP_CAP_MOUNT_STORAGE_LOGGING_LEVEL', 'INFO')
+        logger = RunLogger(api=self.api, run_id=self.run_id)
+        logger = TaskLogger(task=self.task_name, inner=logger)
+        logger = LevelLogger(level=self.logging_level, inner=logger)
+        self.logger = logger
         if platform.system() == 'Windows':
             available_mounters = [S3Mounter, GCPMounter]
         else:
@@ -281,7 +288,8 @@ class MountStorageTask:
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_metadata,
                                                                                 storage_and_mount.file_share_mount,
-                                                                                sensitive_policy) \
+                                                                                sensitive_policy,
+                                                                                self.logger, self.logging_level) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
                 if not mounter:
                     Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
@@ -331,12 +339,14 @@ class StorageMounter:
     __metaclass__ = ABCMeta
     _cached_regions = []
 
-    def __init__(self, api, storage, metadata, share_mount, sensitive_policy):
+    def __init__(self, api, storage, metadata, share_mount, sensitive_policy, logger, logging_level):
         self.api = api
         self.storage = storage
         self.metadata = metadata
         self.share_mount = share_mount
         self.sensitive_policy = sensitive_policy
+        self.logger = logger
+        self.logging_level = logging_level
 
     @staticmethod
     @abstractmethod
@@ -388,7 +398,7 @@ class StorageMounter:
             return
         params = self.build_mount_params(mount_point)
         mount_command = self.build_mount_command(params)
-        self.execute_mount(mount_command, params, task_name)
+        self.execute_mount(mount_command, params, task_name, logger=self.logger)
 
     def build_mount_point(self, mount_root):
         mount_point = self.storage.mount_point
@@ -405,12 +415,27 @@ class StorageMounter:
         pass
 
     @staticmethod
-    def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
-        if result == 0:
-            Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
-        else:
+    def execute_mount(command, params, task_name, logger):
+        logger.debug('Executing: {command}'.format(command=command, **params))
+        try:
+            retry(lambda attempt, attempts: StorageMounter._execute_mount(command, params, logger,
+                                                                          attempt, attempts),
+                  attempts=max(int(os.getenv('CP_CAP_MOUNT_STORAGE_ATTEMPTS', '1')), 1),
+                  delay_seconds=max(int(os.getenv('CP_CAP_MOUNT_STORAGE_RETRY_DELAY_SECONDS', '1')), 0),
+                  logger=logger)
+            Logger.info('--> Mounted {path} to {mount}'.format(**params), task_name=task_name)
+        except Exception:
             Logger.warn('--> Failed mounting {path} to {mount}'.format(**params), task_name=task_name)
+
+    @staticmethod
+    def _execute_mount(command, params, logger, attempt, attempts):
+        exit_code = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
+        if not exit_code:
+            return
+        err_msg = '--> Failed mounting {path} to {mount} ({attempt}/{attempts} attempt)' \
+                  .format(attempt=attempt, attempts=attempts, **params)
+        logger.warning(err_msg)
+        raise RuntimeError(err_msg)
 
     def get_path(self):
         return self.storage.path.replace(self.scheme(), '', 1)
@@ -801,6 +826,8 @@ class NFSMounter(StorageMounter):
         mount_options = self.append_timeout_options(mount_options)
         if mount_options:
             command += ' -o {}'.format(mount_options)
+        if self.logging_level == 'DEBUG':
+            command += ' -v'
         command += ' {path} {mount}'.format(**params)
         if PermissionHelper.is_storage_writable(self.storage):
             command += ' && chmod {permission} {mount}'.format(permission=permission, **params)
