@@ -18,7 +18,7 @@ import pytest
 from mock import MagicMock, Mock
 
 from pipeline.hpc.engine.gridengine import GridEngineJob, AllocationRule
-from pipeline.hpc.engine.sge import SunGridEngineDemandSelector
+from pipeline.hpc.engine.sge import SunGridEngineDefaultDemandSelector
 from pipeline.hpc.resource import IntegralDemand, FractionalDemand, ResourceSupply
 
 PE_LOCAL = 'local'
@@ -97,14 +97,14 @@ test_cases = [
      [job_2cpu_mpi,
       job_8cpu_mpi],
      [ResourceSupply(cpu=3)],
-     [FractionalDemand(cpu=7, owner=owner)]],
+     [FractionalDemand(cpu=5, owner=owner)]],
 
     ['2cpu and 8cpu mpi jobs using 2x3cpu supply',
      [job_2cpu_mpi,
       job_8cpu_mpi],
      [ResourceSupply(cpu=3),
       ResourceSupply(cpu=3)],
-     [FractionalDemand(cpu=4, owner=owner)]],
+     [FractionalDemand(cpu=2, owner=owner)]],
 
     ['2x8cpu mpi jobs using 2x32cpu supply',
      2 * [job_8cpu_mpi],
@@ -160,6 +160,6 @@ def test_select(jobs, resource_supplies, required_resource_demands):
     grid_engine.get_pe_allocation_rule = MagicMock(
         side_effect=lambda pe: AllocationRule.pe_slots() if pe == PE_LOCAL else AllocationRule.fill_up())
     grid_engine.get_host_supplies = MagicMock(return_value=iter(resource_supplies))
-    demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
+    demand_selector = SunGridEngineDefaultDemandSelector(grid_engine=grid_engine)
     actual_resource_demands = list(demand_selector.select(jobs))
     assert required_resource_demands == actual_resource_demands

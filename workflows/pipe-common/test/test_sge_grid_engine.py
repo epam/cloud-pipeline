@@ -19,6 +19,7 @@ from mock import MagicMock, Mock
 
 from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineJob
 from pipeline.hpc.engine.sge import SunGridEngine
+from pipeline.hpc.resource import CustomResourceSupply
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -232,6 +233,37 @@ def test_qstat_empty_parsing():
     jobs = grid_engine.get_jobs()
 
     assert len(jobs) == 0
+
+
+def test_get_global_supplies():
+    stdout = """<?xml version='1.0'?>
+<qhost xmlns:xsd="http://arc.liv.ac.uk/repos/darcs/sge/source/dist/util/resources/schemas/qhost/qhost.xsd">
+ <host name='global'>
+   <hostvalue name='arch_string'>-</hostvalue>
+   <hostvalue name='num_proc'>-</hostvalue>
+   <hostvalue name='m_socket'>-</hostvalue>
+   <hostvalue name='m_core'>-</hostvalue>
+   <hostvalue name='m_thread'>-</hostvalue>
+   <hostvalue name='load_avg'>-</hostvalue>
+   <hostvalue name='mem_total'>-</hostvalue>
+   <hostvalue name='mem_used'>-</hostvalue>
+   <hostvalue name='swap_total'>-</hostvalue>
+   <hostvalue name='swap_used'>-</hostvalue>
+   <resourcevalue name='A' dominance='gc'>1.000000</resourcevalue>
+   <resourcevalue name='B' dominance='gc'>2.000000</resourcevalue>
+   <resourcevalue name='C' dominance='gc'>3.000000</resourcevalue>
+ </host>
+</qhost>
+    """
+    executor.execute = MagicMock(return_value=stdout)
+
+    supplies = list(grid_engine.get_global_supplies())
+
+    assert len(supplies) == 1
+
+    supply = supplies[0]
+
+    assert supply == CustomResourceSupply(values={'A': 1, 'B': 2, 'C': 3})
 
 
 def test_kill_jobs():
