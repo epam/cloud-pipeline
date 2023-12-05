@@ -30,7 +30,8 @@ from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
 from pipeline.hpc.event import GridEngineEventManager
 from pipeline.hpc.engine.gridengine import GridEngineType
-from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDemandSelector, SunGridEngineJobValidator
+from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDefaultDemandSelector, SunGridEngineJobValidator, \
+    SunGridEngineCustomDemandSelector
 from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
@@ -229,6 +230,8 @@ def get_daemon():
 
     event_ttl = params.autoscaling_advanced.event_ttl.get()
 
+    custom_requirements = params.autoscaling_advanced.custom_requirements.get()
+
     queue_static = params.queue.queue_static.get()
     queue_default = params.queue.queue_default.get()
     queue_hostlist_name = params.queue.hostlist_name.get()
@@ -404,7 +407,9 @@ def get_daemon():
         job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
                                                   instance_max_supply=biggest_instance_supply,
                                                   cluster_max_supply=cluster_supply)
-        demand_selector = SunGridEngineDemandSelector(grid_engine=grid_engine)
+        demand_selector = SunGridEngineDefaultDemandSelector(grid_engine=grid_engine)
+        if custom_requirements:
+            demand_selector = SunGridEngineCustomDemandSelector(inner=demand_selector, grid_engine=grid_engine)
 
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
