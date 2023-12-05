@@ -224,7 +224,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         final Set<String> logMess = logAO
                     .logMessages()
                     .collect(toSet());
-                logAO
+            logAO
                     .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
                             "?size=1200&type=PERSISTENT_2&throughput=500")
                     .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
