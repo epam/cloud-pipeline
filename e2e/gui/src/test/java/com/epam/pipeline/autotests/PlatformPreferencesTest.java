@@ -221,7 +221,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .waitForTask(INITIALIZE_SHARED_FS)
                     .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
                     .clickTaskWithName(INITIALIZE_SHARED_FS);
-            final Set<String> logMess = logAO
+        final Set<String> logMess = logAO
                     .logMessages()
                     .collect(toSet());
                 logAO
