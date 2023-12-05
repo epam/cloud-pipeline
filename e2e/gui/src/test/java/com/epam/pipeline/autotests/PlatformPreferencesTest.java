@@ -17,8 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
-import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -35,7 +33,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
@@ -197,7 +197,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         logout();
         loginAs(user);
         try {
-            LogAO logAO = tools()
+            final LogAO logAO = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
                     .enableClusterLaunch()
@@ -221,9 +221,8 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
                     .waitForTask(INITIALIZE_SHARED_FS)
                     .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
                     .clickTaskWithName(INITIALIZE_SHARED_FS);
-        final Set<String> logMess = logAO
-                    .logMessages()
-                    .collect(toSet());
+
+            final Set<String> logMess = logAO.logMessages().collect(toSet());
             logAO
                     .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
                             "?size=1200&type=PERSISTENT_2&throughput=500")
