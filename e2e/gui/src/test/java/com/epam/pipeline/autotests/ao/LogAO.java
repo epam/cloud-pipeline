@@ -343,6 +343,11 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public LogAO waitForTaskStatus(final String task, Status status) {
+        $(taskWithName(task)).waitUntil(status.reached, COMPLETION_TIMEOUT);
+        return this;
+    }
+
     public LogAO instanceParameters(final Consumer<InstanceParameters> action) {
         expandTab(INSTANCE);
         action.accept(new InstanceParameters());
