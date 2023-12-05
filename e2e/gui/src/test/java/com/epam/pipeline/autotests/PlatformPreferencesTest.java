@@ -191,55 +191,55 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         checkClusterAwsEBSvolumeTypeInLog(logMess);
     }
 
-    private void checkClusterAwsEBSvolumeTypeInLog(Set<String> logMess) {
-        assertTrue(logMess.stream()
-                .anyMatch(Pattern.compile(format("The requested EBS volume type for \\D+ device is %s",
-                        C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate()),
-                "The requested EBS volume type is absent in the log" );
-    }
-
     @Test
     @TestCase(value = {"3404"})
     public void allowToSpecifyLustreFSTypeAndThoughput() {
         logout();
         loginAs(user);
         try {
-        LogAO logAO = tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .expandTab(EXEC_ENVIRONMENT)
-                .enableClusterLaunch()
-                .clusterSettingsForm(clusterSettingForm)
-                .clusterEnableCheckboxSelect("Enable GridEngine")
-                .ok()
-                .expandTab(ADVANCED_PANEL)
-                .clickAddSystemParameter()
-                .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
-                        "CP_CAP_SHARE_FS_THROUGHPUT",
-                        "CP_CAP_SHARE_FS_SIZE",
-                        "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE")
-                .ok()
-                .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
-                .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
-                .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
-                .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
-                .launch(this)
-                .showLog(getLastRunId())
-                .waitForSshLink()
-                .waitForTask(INITIALIZE_SHARED_FS)
-                .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
-                .clickTaskWithName(INITIALIZE_SHARED_FS);
-        final Set<String> logMess = logAO
-                .logMessages()
-                .collect(toSet());
-        logAO
-                .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
-                        "?size=1200&type=PERSISTENT_2&throughput=500")
-                .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
-                .waitForTask(INITIALIZE_ENVIRONMENT)
-                .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
+            LogAO logAO = tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .enableClusterLaunch()
+                    .clusterSettingsForm(clusterSettingForm)
+                    .clusterEnableCheckboxSelect("Enable GridEngine")
+                    .ok()
+                    .expandTab(ADVANCED_PANEL)
+                    .clickAddSystemParameter()
+                    .selectSystemParameters("CP_CAP_SHARE_FS_TYPE",
+                            "CP_CAP_SHARE_FS_THROUGHPUT",
+                            "CP_CAP_SHARE_FS_SIZE",
+                            "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE")
+                    .ok()
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_TYPE", "lustre")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_THROUGHPUT", "500")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_SIZE", "1200")
+                    .inputSystemParameterValue("CP_CAP_SHARE_FS_DEPLOYMENT_TYPE", "PERSISTENT_2")
+                    .launch(this)
+                    .showLog(getLastRunId())
+                    .waitForSshLink()
+                    .waitForTask(INITIALIZE_SHARED_FS)
+                    .waitForTaskStatus(INITIALIZE_SHARED_FS, SUCCESS)
+                    .clickTaskWithName(INITIALIZE_SHARED_FS);
+            final Set<String> logMess = logAO
+                    .logMessages()
+                    .collect(toSet());
+                logAO
+                    .logContainsMessage(logMess, "Creating LustreFS with parameters: " +
+                            "?size=1200&type=PERSISTENT_2&throughput=500")
+                    .logContainsMessage(logMess, "Successfully mounted Lustre FS to master node")
+                    .waitForTask(INITIALIZE_ENVIRONMENT)
+                    .waitForTaskStatus(INITIALIZE_ENVIRONMENT, SUCCESS);
         } finally {
             logoutIfNeeded();
             loginAs(admin);
         }
+    }
+
+    private void checkClusterAwsEBSvolumeTypeInLog(Set<String> logMess) {
+        assertTrue(logMess.stream()
+                        .anyMatch(Pattern.compile(format("The requested EBS volume type for \\D+ device is %s",
+                                C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate()),
+                "The requested EBS volume type is absent in the log");
     }
 }
