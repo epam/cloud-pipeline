@@ -29,6 +29,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.BadSqlGrammarException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -75,6 +76,8 @@ public class ExceptionHandlerAdvice {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.UNAUTHORIZED);
         } else if (exception instanceof StorageForbiddenOperationException) {
             return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.FORBIDDEN);
+        } else if (exception instanceof HttpRequestMethodNotSupportedException) {
+            return new ResponseEntity<>(Result.error(exception.getMessage()), HttpStatus.METHOD_NOT_ALLOWED);
         } else {
             message = exception.getMessage();
         }
