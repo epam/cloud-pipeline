@@ -19,6 +19,9 @@ KB = 1024
 MB = KB * KB
 GB = MB * KB
 TB = GB * KB
+MINUTE = 60
+HOUR = 60 * MINUTE
+DAY = 24 * HOUR
 
 
 def join_path_with_delimiter(parent, child, delimiter=DEFAULT_DELIMITER):

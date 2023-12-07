@@ -60,11 +60,11 @@ class _WriteBuffer:
         return self._buf, self._offset
 
 
-class BufferingWriteFileSystemClient(FileSystemClientDecorator):
+class MemoryBufferingWriteFileSystemClient(FileSystemClientDecorator):
 
     def __init__(self, inner, capacity):
         """
-        Buffering write file system client decorator.
+        Memory buffering write file system client decorator.
 
         It merges multiple writes to temporary buffers in order to reduce a number of subsequent calls
         to an inner file system client.
@@ -72,7 +72,7 @@ class BufferingWriteFileSystemClient(FileSystemClientDecorator):
         :param inner: Decorating file system client.
         :param capacity: Single file buffer capacity in bytes.
         """
-        super(BufferingWriteFileSystemClient, self).__init__(inner)
+        super(MemoryBufferingWriteFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._capacity = capacity
         self._buffs = {}
