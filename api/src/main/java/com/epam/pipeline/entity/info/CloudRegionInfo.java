@@ -17,21 +17,28 @@
 package com.epam.pipeline.entity.info;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
+@Data
+@NoArgsConstructor
 public class CloudRegionInfo {
 
-    private final Long id;
-    private final String name;
-    private final CloudProvider provider;
-    private final String regionId;
+    private Long id;
+    private String name;
+    private CloudProvider provider;
+    private String regionId;
+    private String endpoint;
 
     public CloudRegionInfo(final AbstractCloudRegion region) {
         this.id = region.getId();
         this.name = region.getName();
         this.provider = region.getProvider();
         this.regionId = region.getRegionCode();
+        if (region instanceof AwsRegion) {
+            this.endpoint = ((AwsRegion)region).getS3Endpoint();
+        }
     }
 }

@@ -37,4 +37,7 @@ public class AWSRegionDTO extends AbstractCloudRegionDTO {
     private Integer backupDuration;
     private boolean versioningEnabled;
     private String iamRole;
+    private String s3Endpoint;
+    private String keyId;
+    private String accessKey;
 }

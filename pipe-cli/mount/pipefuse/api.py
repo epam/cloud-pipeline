@@ -93,6 +93,7 @@ class DataStorage:
         instance.sensitive = json['sensitive']
         instance.type = json['type']
         instance.region_name = cls._find_region_code(json.get('regionId', 0), region_info)
+        instance.endpoint = cls._find_endpoint(json.get('regionId', 0), region_info)
         return instance
 
     @staticmethod
@@ -100,6 +101,13 @@ class DataStorage:
         for region in region_data:
             if int(region.get('id', 0)) == int(region_id):
                 return region.get('regionId', None)
+        return None
+
+    @staticmethod
+    def _find_endpoint(region_id, region_data):
+        for region in region_data:
+            if int(region.get('id', 0)) == int(region_id):
+                return region.get('endpoint', None)
         return None
 
     def is_read_allowed(self):
