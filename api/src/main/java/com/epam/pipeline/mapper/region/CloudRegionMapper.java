@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.region.GCPRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -62,6 +63,8 @@ public interface CloudRegionMapper {
 
     AzureRegionCredentials toAzureRegionCredentials(AzureRegionDTO azureRegion);
 
+    AwsRegionCredentials toAwsRegionCredentials(AWSRegionDTO awsRegion);
+
     default RegionMapperHelper getMapper(AbstractCloudRegion region) {
         return getMapperByType(region.getProvider());
     }
@@ -72,7 +75,7 @@ public interface CloudRegionMapper {
 
     default RegionCredentialsMapperHelper getCredentialsMapper(AbstractCloudRegionDTO region) {
         switch (region.getProvider()) {
-            case AWS: return new RegionCredentialsMapperHelper.NullCredentialsMapper();
+            case AWS: return new RegionCredentialsMapperHelper.AwsCredentialsMapper();
             case GCP: return new RegionCredentialsMapperHelper.NullCredentialsMapper();
             case AZURE: return new RegionCredentialsMapperHelper.AzureCredentialsMapper();
             default: throw new IllegalArgumentException(UNSUPPORTED_CLOUD_PROVIDER + region.getProvider());

@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -182,6 +183,14 @@ public class CloudRegionManager implements SecuredEntityManager {
 
     public AzureRegionCredentials loadCredentials(final AzureRegion region) {
         return (AzureRegionCredentials) loadCredentials((AbstractCloudRegion) region);
+    }
+
+    public AwsRegionCredentials loadCredentials(final AwsRegion region) {
+        return cloudRegionDao.loadCredentials(region.getId())
+                .map(credentials -> {
+                    validateProvider(credentials.getProvider(), region.getProvider());
+                    return (AwsRegionCredentials) credentials;
+                }).orElse(null);
     }
 
     public AbstractCloudRegionCredentials loadCredentials(final AbstractCloudRegion region) {

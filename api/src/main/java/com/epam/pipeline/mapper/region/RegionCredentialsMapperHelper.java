@@ -16,9 +16,11 @@
 
 package com.epam.pipeline.mapper.region;
 
+import com.epam.pipeline.controller.vo.region.AWSRegionDTO;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.controller.vo.region.AzureRegionDTO;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 
 public interface RegionCredentialsMapperHelper<D extends AbstractCloudRegionDTO,
@@ -40,6 +42,14 @@ public interface RegionCredentialsMapperHelper<D extends AbstractCloudRegionDTO,
         public AzureRegionCredentials toEntity(final CloudRegionMapper mapper,
                                                final AzureRegionDTO dto) {
             return mapper.toAzureRegionCredentials(dto);
+        }
+    }
+
+    class AwsCredentialsMapper implements RegionCredentialsMapperHelper<AWSRegionDTO, AwsRegionCredentials> {
+        @Override
+        public AwsRegionCredentials toEntity(final CloudRegionMapper mapper,
+                                             final AWSRegionDTO dto) {
+            return mapper.toAwsRegionCredentials(dto);
         }
     }
 }

@@ -16,24 +16,26 @@
 
 package com.epam.pipeline.dao.region;
 
-import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Service;
 
 import java.sql.ResultSet;
+import java.util.Optional;
 
 @Service
-class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AbstractCloudRegionCredentials> {
+class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, AwsRegionCredentials> {
     @Getter
     private final CloudProvider provider = CloudProvider.AWS;
 
     @Override
     public MapSqlParameterSource getProviderParameters(final AwsRegion region,
-                                                       final AbstractCloudRegionCredentials credentials) {
+                                                       final AwsRegionCredentials credentials) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(CloudRegionParameters.CORS_RULES.name(), region.getCorsRules());
         params.addValue(CloudRegionParameters.POLICY.name(), region.getPolicy());
@@ -45,6 +47,12 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         params.addValue(CloudRegionParameters.VERSIONING_ENABLED.name(), region.isVersioningEnabled());
         params.addValue(CloudRegionParameters.SSH_KEY_NAME.name(), region.getSshKeyName());
         params.addValue(CloudRegionParameters.AWS_IAM_ROLE.name(), region.getIamRole());
+        params.addValue(CloudRegionParameters.AWS_S3_ENDPOINT.name(), region.getS3Endpoint());
+        Optional.ofNullable(credentials).ifPresent(creds -> {
+            params.addValue(CloudRegionParameters.AWS_KEY_ID.name(), creds.getKeyId());
+            params.addValue(CloudRegionParameters.AWS_ACCESS_KEY.name(), creds.getAccessKey());
+        });
+
         return params;
     }
 
@@ -66,11 +74,20 @@ class AwsRegionDaoHelper extends AbstractCloudRegionDaoHelper<AwsRegion, Abstrac
         region.setVersioningEnabled(rs.getBoolean(CloudRegionParameters.VERSIONING_ENABLED.name()));
         region.setSshKeyName(rs.getString(CloudRegionParameters.SSH_KEY_NAME.name()));
         region.setIamRole(rs.getString(CloudRegionParameters.AWS_IAM_ROLE.name()));
+        region.setS3Endpoint(rs.getString(CloudRegionParameters.AWS_S3_ENDPOINT.name()));
         return region;
     }
 
     @Override
-    public AbstractCloudRegionCredentials parseCloudRegionCredentials(final ResultSet rs) {
-        return null;
+    @SneakyThrows
+    public AwsRegionCredentials parseCloudRegionCredentials(final ResultSet rs) {
+        final String keyId = rs.getString(CloudRegionParameters.AWS_KEY_ID.name());
+        if (StringUtils.isBlank(keyId)) {
+            return null;
+        }
+        final AwsRegionCredentials credentials = new AwsRegionCredentials();
+        credentials.setKeyId(keyId);
+        credentials.setAccessKey(rs.getString(CloudRegionParameters.AWS_ACCESS_KEY.name()));
+        return credentials;
     }
 }
