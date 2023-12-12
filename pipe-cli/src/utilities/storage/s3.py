@@ -349,7 +349,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
-        source_endpoint = source_bucket.bucket.endpoint
+        source_endpoint = source_wrapper.bucket.endpoint
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
         copy_source = {
             'Bucket': source_bucket,
