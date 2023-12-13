@@ -42,6 +42,8 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
     AbstractRestoreManager, AbstractTransferManager
 from src.config import Config
 
+import requests
+requests.urllib3.disable_warnings()
 
 class StorageItemManager(object):
 
