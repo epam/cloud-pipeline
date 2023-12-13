@@ -44,6 +44,8 @@ from src.config import Config
 
 import requests
 requests.urllib3.disable_warnings()
+import botocore.vendored.requests.packages.urllib3 as boto_urllib3
+boto_urllib3.disable_warnings()
 
 class StorageItemManager(object):
 
