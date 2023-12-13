@@ -90,6 +90,9 @@ upload.PutObjectTask._main = _put_object_task_main
 tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
 copies.CopyObjectTask._main = _copy_object_task_main
 
+import requests
+requests.urllib3.disable_warnings()
+
 
 class StorageItemManager(object):
 

@@ -234,16 +234,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
+        return getS3HelperForSignedUrl(dataStorage, version, false).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
+        return getS3HelperForSignedUrl(dataStorage, null, true).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -469,6 +467,17 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     private AwsRegionCredentials getAwsCredentials(final AwsRegion region) {
         return cloudRegionManager.loadCredentials(region);
+    }
+
+    private S3Helper getS3HelperForSignedUrl(final S3bucketDataStorage dataStorage,
+                                             final String version,
+                                             final boolean write) {
+        final AwsRegion awsRegion = getAwsRegion(dataStorage);
+        if (StringUtils.isBlank(awsRegion.getS3Endpoint())) {
+            final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, write);
+            return getS3Helper(credentials, awsRegion);
+        }
+        return getS3Helper(dataStorage);
     }
 
     private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,
