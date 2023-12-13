@@ -42,6 +42,9 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
     AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
 
+import requests
+requests.urllib3.disable_warnings()
+
 
 class UploadedObjectsContainer:
 
@@ -89,9 +92,6 @@ def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, c
 upload.PutObjectTask._main = _put_object_task_main
 tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
 copies.CopyObjectTask._main = _copy_object_task_main
-
-import requests
-requests.urllib3.disable_warnings()
 
 
 class StorageItemManager(object):
