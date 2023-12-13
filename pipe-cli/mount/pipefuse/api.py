@@ -42,7 +42,7 @@ class TemporaryCredentials:
         instance.access_key_id = json['keyID'] if 'keyID' in json else None
         instance.secret_key = json['accessKey']
         instance.session_token = json['token'] if 'token' in json else None
-        instance.expiration = json['expiration']
+        instance.expiration = json['expiration'] if 'expiration' in json else None
         instance.region = json['region'] if 'region' in json else None
         return instance
 

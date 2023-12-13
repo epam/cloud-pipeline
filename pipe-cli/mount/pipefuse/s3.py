@@ -23,6 +23,8 @@ from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
 from dateutil.tz import tzlocal
+import requests
+requests.urllib3.disable_warnings()
 
 from pipefuse import fuseutils
 from pipefuse.fsclient import File
