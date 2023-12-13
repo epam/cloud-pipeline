@@ -127,6 +127,7 @@ public class S3Helper {
 
     private static final int NOT_FOUND = 404;
     private static final int INVALID_RANGE = 416;
+    private static final int NOT_IMPLEMENTED = 501;
     private static final long COPYING_FILE_SIZE_LIMIT = 5L * 1024L * 1024L * 1024L; // 5gb
     private static final String BACKUP_RULE_ID = "Backup rule";
     private static final String STS_RULE_ID = "Short term storage rule";
@@ -980,6 +981,9 @@ public class S3Helper {
             if (e.getStatusCode() == NOT_FOUND) {
                 throw new DataStorageException(messageHelper
                         .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getRoot()));
+            } else if (e.getStatusCode() == NOT_IMPLEMENTED) {
+                LOGGER.error(e.getMessage());
+                return Collections.emptyMap();
             } else {
                 throw new DataStorageException(e.getMessage(), e);
             }
