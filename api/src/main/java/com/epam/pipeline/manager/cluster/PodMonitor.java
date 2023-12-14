@@ -340,7 +340,8 @@ public class PodMonitor extends AbstractSchedulingManager {
                 LOGGER.debug(e.getMessage(), e);
 
             }
-            return ensurePipelineIsDeleted(String.valueOf(run.getId()), run.getPodId(), client);
+            return ensurePipelineIsDeleted(String.valueOf(run.getId()), run.getPodId(), client,
+                    preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS));
         }
 
         private void clearWorkerNodes(PipelineRun run, KubernetesClient client) {
@@ -524,6 +525,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private boolean killChildrenPods(String podId, PipelineRun run) {
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
             Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
+            long gracePeriod = preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS);
             try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
                 //get pipeline logs
                 String log = "";
@@ -534,7 +536,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 }
                 //delete pipeline pod
                 client.pods().inNamespace(kubeNamespace).withName(run.getPodId())
-                        .withGracePeriod(0L).delete();
+                        .withGracePeriod(gracePeriod).delete();
 
                 PodList podList =
                         client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, podId)
@@ -556,23 +558,24 @@ public class PodMonitor extends AbstractSchedulingManager {
                 saveLog(run, run.getPodId(), log, run.getStatus());
 
                 //check that we really deleted all pods
-                return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client);
+                return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client, gracePeriod);
             }
         }
 
-        private boolean ensurePipelineIsDeleted(String runId, String podId, KubernetesClient client) {
+        private boolean ensurePipelineIsDeleted(String runId, String podId,
+                                                KubernetesClient client, long gracePeriod) {
             List<Pod> leftPods = getChildPods(runId, podId, client);
             int count = 0;
             while (!CollectionUtils.isEmpty(leftPods) && count < DELETE_RETRY_ATTEMPTS) {
 
                 client.pods().inNamespace(kubeNamespace)
                         .withLabel(PIPELINE_ID_LABEL, podId)
-                        .withGracePeriod(0)
+                        .withGracePeriod(gracePeriod)
                         .delete();
 
                 client.pods().inNamespace(kubeNamespace)
                         .withLabel(KubernetesConstants.POD_WORKER_NODE_LABEL, runId)
-                        .withGracePeriod(0)
+                        .withGracePeriod(gracePeriod)
                         .delete();
 
                 leftPods = getChildPods(runId, podId, client);
