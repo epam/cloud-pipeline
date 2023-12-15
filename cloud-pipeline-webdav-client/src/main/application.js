@@ -1,5 +1,5 @@
 const { BrowserWindow, ipcMain, dialog } = require('electron');
-const logger = require('./common/logger');
+const logger = require('../shared/shared-logger');
 
 class Application {
   /**

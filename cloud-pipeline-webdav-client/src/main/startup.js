@@ -1,33 +1,16 @@
 const { app } = require('electron');
 const path = require('path');
 const AutoUpdateChecker = require('./auto-update');
-const FileSystemAdapters = require('./file-system-adapters');
+const FileSystemAdapters = require('../shared/file-system-adapters');
 const Application = require('./application');
-const Configuration = require('./configuration');
-const Operations = require('./operations');
-const logger = require('./common/logger');
-const currentPlatform = require('./platform');
+const Operations = require('../shared/operations');
+const logger = require('../shared/shared-logger');
+const currentPlatform = require('../shared/platform');
 const buildBridges = require('./bridges');
-const clientConfigDirectory = require('./common/client-config-directory');
+const initializeConfiguration = require('../shared/configuration/initialize');
 
 async function initialize() {
-  const configuration = new Configuration();
-  const localConfigurationFile = path.join(path.dirname(app.getPath('exe')), 'settings.json');
-  const webdavClientConfigFile = path.join(clientConfigDirectory, 'webdav.config');
-  if (currentPlatform.isMacOS) {
-    configuration.setConfigurationSources(
-      webdavClientConfigFile,
-      localConfigurationFile,
-    );
-    configuration.setUserConfigurationPath(webdavClientConfigFile);
-  } else {
-    configuration.setConfigurationSources(
-      localConfigurationFile,
-      webdavClientConfigFile,
-    );
-    configuration.setUserConfigurationPath(localConfigurationFile);
-  }
-  await configuration.initialize();
+  const configuration = await initializeConfiguration(path.dirname(app.getPath('exe')));
   if (configuration.ignoreCertificateErrors) {
     app.commandLine.appendSwitch('ignore-certificate-errors');
   } else {

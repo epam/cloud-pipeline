@@ -3,13 +3,13 @@ const moment = require('moment-timezone');
 const path = require('path');
 const fs = require('fs');
 const ipcMessage = require('../common/ipc-message');
-const displaySize = require('../common/display-size');
-const displayDate = require('../common/display-date');
-const initializeAdapter = require('../file-system-adapters/initialize-adapter');
-const CloudPipelineApi = require('../api/cloud-pipeline-api');
-const logger = require('../common/logger');
-const types = require('../file-system-adapters/types');
-const clientConfigDirectory = require('../common/client-config-directory');
+const displaySize = require('../../shared/utilities/display-size');
+const displayDate = require('../../shared/utilities/display-date');
+const initializeAdapter = require('../../shared/file-system-adapters/initialize-adapter');
+const CloudPipelineApi = require('../../shared/api/cloud-pipeline-api');
+const logger = require('../../shared/shared-logger');
+const types = require('../../shared/file-system-adapters/types');
+const clientConfigDirectory = require('../../shared/utilities/client-config-directory');
 
 /**
  * @typedef {Object} AdaptersBridgeOptions

@@ -3,8 +3,8 @@ const EventEmitter = require('events');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
-const CloudPipelineAPI = require('../api/cloud-pipeline-api');
-const logger = require('../common/logger');
+const CloudPipelineAPI = require('../../shared/api/cloud-pipeline-api');
+const logger = require('../../shared/shared-logger');
 
 function getCompilationAssetPath(assetName) {
   try {

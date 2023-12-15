@@ -7,6 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "start:win32": "electron-forge start",
+    "package-cli": "pkg ./src/cli/index.js --targets node14-linux-x64,node14-mac-x64,node14-win-x64 --output ./dist-cli/cloud-data-cli",
     "package": "electron-forge package",
     "package:linux": "electron-forge package --platform=linux",
     "package:macos": "electron-forge package --platform=darwin",
@@ -46,6 +47,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-webpack-plugin": "^3.2.0",
     "node-loader": "^2.0.0",
+    "pkg": "^5.8.1",
     "style-loader": "^3.3.1",
     "webpack": "^5.88.2",
     "webpack-cli": "^4.10.0",
@@ -53,6 +55,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "^4.8.0",
+    "@clack/prompts": "^0.7.0",
     "antd": "^5.0.3",
     "basic-ftp": "^5.0.2",
     "classnames": "^2.3.2",

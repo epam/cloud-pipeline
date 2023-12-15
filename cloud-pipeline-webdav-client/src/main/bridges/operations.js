@@ -1,6 +1,6 @@
 const { ipcMain } = require('electron');
 const ipcMessage = require('../common/ipc-message');
-const OperationTypes = require('../operations/types');
+const OperationTypes = require('../../shared/operations/types');
 
 /**
  * @param {{operations: Operations}} bridgeOptions

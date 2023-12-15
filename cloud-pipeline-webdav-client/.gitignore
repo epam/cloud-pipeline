@@ -92,3 +92,5 @@ webdav.dev.config
 *.dev.config
 
 certs/
+
+dist-cli

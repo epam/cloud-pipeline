@@ -1,8 +1,8 @@
 const { ipcMain } = require('electron');
 const moment = require('moment-timezone');
 const ipcMessage = require('../common/ipc-message');
-const CloudPipelineApi = require('../api/cloud-pipeline-api');
-const displayDate = require('../common/display-date');
+const CloudPipelineApi = require('../../shared/api/cloud-pipeline-api');
+const displayDate = require('../../shared/utilities/display-date');
 
 /**
  * @param {{configuration: Configuration}} bridgeOptions

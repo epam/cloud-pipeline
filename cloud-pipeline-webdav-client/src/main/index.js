@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-const logger = require('./common/logger');
+const logger = require('../shared/shared-logger');
 const startup = require('./startup');
 
 process.on('uncaughtException', (error) => {
