@@ -97,7 +97,7 @@ COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
 
 # Extras
 ENV EXTRA_HOME=/opt/dav-extra
-RUN pip install PyJWT==1.6.1 cryptography==2.6.1 flask==1.1.4
+RUN pip install PyJWT==1.6.1 cryptography==2.6.1 flask==1.1.4 xxhash==2.0.2
 COPY extra ${EXTRA_HOME}
 
 ADD liveness.sh /liveness.sh
