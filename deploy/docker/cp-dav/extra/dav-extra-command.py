@@ -150,7 +150,6 @@ def checksum():
         hash_alg = "xxhash"
         if 'hash_alg' in flask_json:
             hash_alg = flask_json['hash_alg']
-        hasher_instance = hashlib.md5() if hash_alg == "md5" else xxhash.xxh64()
 
         paths_list = []
         if isinstance(path, list):
@@ -169,7 +168,7 @@ def checksum():
                 continue
 
             try:
-                hash_value = generate_hash(full_path, hasher=hasher_instance)
+                hash_value = generate_hash(full_path, hasher=hashlib.md5() if hash_alg == "md5" else xxhash.xxh64())
                 result_list.append({full_path: hash_value})
             except Exception as file_e:
                 result_list.append({full_path: file_e.__str__()})
