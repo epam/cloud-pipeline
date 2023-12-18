@@ -1,0 +1,17 @@
+[
+  {
+    "threshold": 30,
+    "disclaimer": "Threshold disclaimer 1.",
+    "disclaimerType": "info"
+  },
+  {
+    "threshold": 50,
+    "disclaimer": "Threshold disclaimer 2. Your job size: {size}Gb, larger or equal {threshold}Gb",
+    "pause": false
+  },
+  {
+    "threshold": 70,
+    "disclaimer": "Threshold disclaimer 3. Your disk: {disk}Gb, larger then {threshold}Gb",
+    "disclaimerType": "error"
+  }
+]

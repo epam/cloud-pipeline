@@ -15,7 +15,12 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.visible;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -27,6 +32,8 @@ import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -59,6 +66,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
 
     private static final String LAUNCH_PARAMETERS_PREFERENCE = SettingsPageAO.PreferencesAO.LaunchAO.LAUNCH_PARAMETERS;
     private static final String LAUNCH_PARAMETER_RESOURCE = "launch-parameter";
+    private static final String LAUNCH_JOB_DISK_SIZE_THRESHOLDS = "launch.job.disk.size.thresholds";
     private static final String CP_FSBROWSER_ENABLED = "CP_FSBROWSER_ENABLED";
     private static final String USER_ROLE = "ROLE_PIPELINE_MANAGER";
     private static final String PARAMETER_IS_NOT_ALLOWED_FOR_USE = "This parameter is not allowed for use";
@@ -76,6 +84,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String CLEANUP_FINISH_MESSAGE = "Run #%s is still running after %smin. Terminating a node.";
     private static final String CONSOLE = "Console";
     private static final String CLEANUP_ENVIRONMENT_TASK = "CleanupEnvironment";
+    private static final String DISK_SIZE_THRESHOLDS_JSON = "/diskSizeThresholds.json";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
@@ -83,6 +92,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
     private String initialLaunchSystemParameters;
+    private String[] prefInitialValue;
+
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
@@ -397,6 +408,51 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .shouldHaveStatus(STOPPED)
                 .ensure(log(), containsMessages(format(CLEANUP_FINISH_MESSAGE,
                         getLastRunId(), valueOf(TEST_TERMINATE_RUN_TIMEOUT))));
+    }
+
+    @Test
+    @TestCase(value = {"3074"})
+    public void launchFormDiskSizeDisclaimers() {
+        logoutIfNeeded();
+        loginAs(admin);
+        prefInitialValue = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getPreference(LAUNCH_JOB_DISK_SIZE_THRESHOLDS);
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .updateCodeText(LAUNCH_JOB_DISK_SIZE_THRESHOLDS,
+                        readResourceFully(DISK_SIZE_THRESHOLDS_JSON), true)
+                .saveIfNeeded();
+        try {
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(ADVANCED_PANEL)
+                    .setPriceType(ON_DEMAND)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .setDisk("40")
+                    .checkLaunchMessage("info", "Threshold disclaimer 1.", true)
+                    .setDisk("50")
+                    .checkLaunchMessage("warning",
+                            "Threshold disclaimer 2. Your job size: 50Gb, larger or equal 50Gb", true)
+                    .setDisk("80")
+                    .checkLaunchMessage("error",
+                            "Threshold disclaimer 3. Your disk: 80Gb, larger then 70Gb", true)
+                    .launch(this);
+            runsMenu()
+                    .activeRuns()
+                    .showLog(getLastRunId())
+                    .waitForSshLink()
+                    .ensure(PAUSE, not(visible));
+        } finally {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .updateCodeText(LAUNCH_JOB_DISK_SIZE_THRESHOLDS,
+                            prefInitialValue[0], true)
+                    .saveIfNeeded();
+        }
     }
 
     private String editLaunchSystemParameters() {
