@@ -123,10 +123,14 @@ class GsCompositeUploadClient(S3TransferUploadClient):
 
     def upload_part(self, Bucket, Key, UploadId, PartNumber, Body, *args, **kwargs):
         part_path = self._part_path(PartNumber)
-        part_blob = self._bucket_object.blob(part_path)
+        part_blob = _CustomBlob(
+            size=len(Body),
+            progress_callback=self._progress_callback,
+            name=part_path,
+            bucket=self._bucket_object,
+            chunk_size=8 * MB
+        )
         part_blob.upload_from_file(Body)
-        if self._progress_callback:
-            self._progress_callback(part_blob.size)
         self._parts[PartNumber] = part_blob
         return {'ETag': part_path}
 
