@@ -164,14 +164,14 @@ def checksum():
         for path_item in paths_list:
             full_path = get_path(sub, path_item)
             if not os.path.exists(full_path):
-                result_list.append({full_path: 'Path {} does not exist'.format(full_path)})
+                result_list.append({path_item: 'Path {} does not exist'.format(full_path)})
                 continue
 
             try:
                 hash_value = generate_hash(full_path, hasher=hashlib.md5() if hash_alg == "md5" else xxhash.xxh64())
-                result_list.append({full_path: hash_value})
+                result_list.append({path_item: hash_value})
             except Exception as file_e:
-                result_list.append({full_path: file_e.__str__()})
+                result_list.append({path_item: file_e.__str__()})
 
         return success(result_list)
         
