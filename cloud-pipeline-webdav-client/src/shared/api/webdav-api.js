@@ -1,4 +1,5 @@
 const apiBaseRequest = require('./api-base-request');
+const logger = require('../shared-logger');
 
 class WebDAVApi {
   /**
@@ -59,11 +60,29 @@ class WebDAVApi {
     if (path.length > 0) {
       return this.apiRequest('/extra/chown', {
         body: {
-          path: path.map((o) => o.startsWith('/') ? o.slice(1) : o)
-        }
+          path: path.map((o) => (o.startsWith('/') ? o.slice(1) : o)),
+        },
       });
     }
     return Promise.resolve();
+  }
+
+  async getChecksum(path = []) {
+    if (path.length > 0) {
+      try {
+        const pathCorrected = path.map((o) => (o.startsWith('/') ? o.slice(1) : o));
+        const result = await this.apiRequest('/extra/checksum', {
+          body: {
+            path: pathCorrected,
+            hash_alg: 'xxhash',
+          },
+        });
+        return pathCorrected.map((aFile, idx) => ((result || [])[idx] || {})[aFile]);
+      } catch (error) {
+        logger.error(`Error getting checksums: ${error.message}`);
+      }
+    }
+    return path.map(() => undefined);
   }
 }
 

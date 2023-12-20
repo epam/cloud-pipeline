@@ -18,7 +18,7 @@ function formatStorageName(storage = {}) {
  */
 const PERMISSIONS_REQUESTS_CHUNK_SIZE = 20;
 const PERMISSIONS_REQUESTS_DEBOUNCE_MS = 1; // 1 sec
-const PERMISSIONS_REQUESTS_RETRY_TIMEOUT_MS = 10000; //10 sec
+const PERMISSIONS_REQUESTS_RETRY_TIMEOUT_MS = 10000; // 10 sec
 
 class WebDAVInterface extends WebBasedInterface {
   /**
@@ -69,7 +69,7 @@ class WebDAVInterface extends WebBasedInterface {
       this.user,
       this.password,
       this.ignoreCertificateErrors,
-      this.disclaimer
+      this.disclaimer,
     );
     if (!this.updatePermissions) {
       this.clearPermissionsRequestsTimeout();
@@ -101,7 +101,7 @@ class WebDAVInterface extends WebBasedInterface {
     }
     await this.updateStorages(false);
     const objectStorageNames = (this.storages || [])
-      .filter(storage => !/^nfs$/i.test(storage.type))
+      .filter((storage) => !/^nfs$/i.test(storage.type))
       .map(formatStorageName);
     const filtered = request.filter((path) => {
       const storageName = path.split('/').filter((o) => o.length)[0];
@@ -115,7 +115,7 @@ class WebDAVInterface extends WebBasedInterface {
     (this.sendPermissionsRequest)(
       this.permissionsRequests.length > PERMISSIONS_REQUESTS_CHUNK_SIZE
         ? 0
-        : PERMISSIONS_REQUESTS_DEBOUNCE_MS
+        : PERMISSIONS_REQUESTS_DEBOUNCE_MS,
     );
   }
 
@@ -148,13 +148,17 @@ class WebDAVInterface extends WebBasedInterface {
         }
       };
       if (debounce === 0) {
-        await send();
-      } else {
-        return new Promise((resolve) => {
-          this.permissionsRequestTimeout = setTimeout(() => send().then(resolve), debounce);
-        });
+        return send();
       }
+      return new Promise((resolve) => {
+        this.permissionsRequestTimeout = setTimeout(() => send().then(resolve), debounce);
+      });
     }
+    return undefined;
+  }
+
+  getFilesChecksums(files = []) {
+    return this.webdavApi.getChecksum(files);
   }
 
   async list(directory = '/') {

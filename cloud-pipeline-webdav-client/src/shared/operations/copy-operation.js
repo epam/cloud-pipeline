@@ -1,3 +1,4 @@
+const fs = require('fs');
 const Operation = require('./base');
 const displaySize = require('../utilities/display-size');
 
@@ -8,6 +9,8 @@ const displaySize = require('../utilities/display-size');
  * @property {string|FileSystemInterface} destination
  * @property {string} destinationPath
  * @property {function} [overwriteExistingCallback]
+ * @property {function} [operationRetryConfirmation]
+ * @property {number} [iterationsCount]
  */
 
 /**
@@ -39,6 +42,8 @@ class CopyOperation extends Operation {
       destinationPath,
       // eslint-disable-next-line no-unused-vars
       overwriteExistingCallback = ((o) => Promise.resolve(true)),
+      operationRetryConfirmation = (() => Promise.resolve(true)),
+      iterationsCount,
     } = options;
     /**
      * @type {string|FileSystemInterface}
@@ -46,14 +51,19 @@ class CopyOperation extends Operation {
     this.source = source;
     this.elements = typeof elements === 'string' ? [elements] : elements;
     this.directDestination = typeof elements === 'string';
+    this.iterationsCount = iterationsCount;
     /**
      * @type {string|FileSystemInterface}
      */
     this.destination = destination;
     this.destinationPath = destinationPath;
     this.overwriteExistingCallback = overwriteExistingCallback;
+    this.operationRetryConfirmation = operationRetryConfirmation;
     this.stageDuration[Operation.Stages.before] = (elements || []).length;
     this.stageDuration[Operation.Stages.invoke] = 100 - (elements || []).length;
+    this.completed = [];
+    this.list = [];
+    this.recovered = false;
   }
 
   get affectedFileSystems() {
@@ -70,6 +80,11 @@ class CopyOperation extends Operation {
   // eslint-disable-next-line class-methods-use-this
   get operationName() {
     return 'copy operation';
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  get operationType() {
+    return 'copy';
   }
 
   /**
@@ -161,6 +176,28 @@ class CopyOperation extends Operation {
     return result;
   }
 
+  recover(uuid) {
+    super.recover(uuid);
+    const info = this.readOperationInfo();
+    // const filePath = path
+    const {
+      source,
+      destination,
+      list,
+      direct,
+    } = info;
+    this.source = source;
+    this.destination = destination;
+    this.list = list;
+    this.directDestination = direct;
+    this.recovered = true;
+    const completedPath = this.getOperationInfoPath('completed');
+    this.completed = [];
+    if (fs.existsSync(completedPath)) {
+      this.completed = fs.readFileSync(completedPath).toString().split('\n').filter((c) => c.length > 0);
+    }
+  }
+
   async createInterfaces() {
     const {
       adapter: sourceAdapter,
@@ -177,6 +214,12 @@ class CopyOperation extends Operation {
   }
 
   async clearInterfaces() {
+    if (typeof this.source !== 'string' && this.source) {
+      this.source = this.source.adapter.identifier;
+    }
+    if (typeof this.destination !== 'string' && this.destination) {
+      this.destination = this.destination.adapter.identifier;
+    }
     await this.clearInterfaceAndAdapter(this.sourceAdapterInterface, this.sourceAdapter);
     this.sourceAdapterInterface = undefined;
     this.sourceAdapter = undefined;
@@ -192,25 +235,27 @@ class CopyOperation extends Operation {
 
   async before() {
     await this.createInterfaces();
-    const list = await this.iterate(
-      this.retry.bind(this, this.getRelativeList.bind(this)),
-      this.elements,
-      {
-        stage: Operation.Stages.before,
-      },
-    );
-    /**
-     * @type {CopyMoveElementInfo[]}
-     */
-    this.list = list.map((item) => ({
-      name: item.name,
-      from: item.path,
-      to: this.directDestination
-        ? this.destinationPath
-        : this.destinationAdapter.joinPath(this.destinationPath, item.name, item.isDirectory),
-      isDirectory: item.isDirectory,
-      isFile: item.isFile,
-    }));
+    if (!this.recovered) {
+      const list = await this.iterate(
+        this.retry.bind(this, this.getRelativeList.bind(this)),
+        this.elements,
+        {
+          stage: Operation.Stages.before,
+        },
+      );
+      /**
+       * @type {CopyMoveElementInfo[]}
+       */
+      this.list = list.map((item) => ({
+        name: item.name,
+        from: item.path,
+        to: this.directDestination
+          ? this.destinationPath
+          : this.destinationAdapter.joinPath(this.destinationPath, item.name, item.isDirectory),
+        isDirectory: item.isDirectory,
+        isFile: item.isFile,
+      }));
+    }
     this.info(`${this.list.length} item${this.list.length > 1 ? 's' : ''} read.`);
   }
 
@@ -281,8 +326,6 @@ class CopyOperation extends Operation {
         await this.destinationAdapterInterface.createDirectory(parent);
       }
       this.parentDirectories.push(parent);
-    } else {
-      this.info(`"${parent}" directory already exists`);
     }
     await this.destinationAdapterInterface.writeFile(
       to,
@@ -293,6 +336,21 @@ class CopyOperation extends Operation {
         abortSignal: this,
       },
     );
+    this.info(`Validating file "${name}" checksum...`);
+    const [sourceChecksums, destinationChecksums] = await Promise.all([
+      this.sourceAdapterInterface.getFilesChecksums([from]),
+      this.destinationAdapterInterface.getFilesChecksums([to]),
+    ]);
+    const [sourceChecksum] = sourceChecksums;
+    const [destinationChecksum] = destinationChecksums;
+    if (
+      sourceChecksum !== undefined
+      && destinationChecksum !== undefined
+      && sourceChecksum !== destinationChecksum
+    ) {
+      this.error(`Validating file "${name}" failed. Source checksum: ${sourceChecksum}, destination checksum: ${destinationChecksum}`);
+      throw new Error(`"${name}" validation failed: checksums don't match`);
+    }
   }
 
   async cancelCurrentAdapterTasks() {
@@ -307,13 +365,97 @@ class CopyOperation extends Operation {
   }
 
   async invoke() {
-    return this.iterate(
-      this.retry.bind(this, this.invokeElement.bind(this)),
-      (this.list || []).slice(),
-      {
-        stage: Operation.Stages.invoke,
-      },
-    );
+    this.saveOperationInfo();
+    const operationLogic = async (iteration = 0) => {
+      const itemsToProcess = (this.list || [])
+        .filter((item) => !this.completed.includes(item.from));
+      if (itemsToProcess.length === 0) {
+        this.info('Files copied');
+        return;
+      }
+      const isAborted = await this.isAborted();
+      if (isAborted) {
+        return;
+      }
+      if (iteration > 0) {
+        this.info(itemsToProcess.length > 1 ? `${itemsToProcess.length} items failed to copy` : `"${itemsToProcess[0].name}" item failed to copy`);
+        let retry = this.iterationsCount === undefined || this.iterationsCount > iteration;
+        if (retry && typeof this.operationRetryConfirmation === 'function') {
+          retry = await this.operationRetryConfirmation(
+            itemsToProcess.length > 1 ? `${itemsToProcess.length} items failed to copy. Retry?` : `"${itemsToProcess[0].name}" item failed to copy.Retry?`,
+          );
+        }
+        if (!retry) {
+          throw new Error(
+            itemsToProcess.length > 1 ? `${itemsToProcess.length} items failed to copy` : `"${itemsToProcess[0].name}" item failed to copy`,
+          );
+        }
+      }
+      await this.clearInterfaces();
+      await this.createInterfaces();
+      this.failed = [];
+      await this.iterate(
+        this.tryPerform.bind(
+          this,
+          this.invokeElement.bind(this),
+          this.markItemCompleted.bind(this),
+          this.onItemFailed.bind(this),
+          this.onItemIterationFailed.bind(this),
+        ),
+        itemsToProcess.slice(),
+        {
+          stage: Operation.Stages.invoke,
+        },
+      );
+      await this.clearInterfaces();
+      await operationLogic(iteration + 1);
+    };
+    await operationLogic();
+    this.clearOperationInfo();
+  }
+
+  getOperationInfo() {
+    return {
+      ...super.getOperationInfo(),
+      source: typeof this.source === 'string' ? this.source : this.source.adapter.identifier,
+      destination: typeof this.destination === 'string' ? this.destination : this.destination.adapter.identifier,
+      list: this.list,
+      direct: this.directDestination,
+    };
+  }
+
+  /**
+   * @param {CopyMoveElementInfo} item
+   */
+  markItemCompleted(item) {
+    this.completed.push(item.from);
+    if (this.trackOperationInfo) {
+      const filePath = this.getOperationInfoPath('completed');
+      this.ensureOperationDirectory();
+      fs.appendFileSync(filePath, `${item.from}\n`);
+    }
+  }
+
+  /**
+   * @param {CopyMoveElementInfo} item
+   */
+  async onItemFailed(item) {
+    this.error(`Failed to copy item: "${item.name}"`);
+    try {
+      await this.clearInterfaces();
+      await this.createInterfaces();
+    } catch {
+      // noop
+    }
+  }
+
+  async onItemIterationFailed() {
+    try {
+      await this.clearInterfaces();
+      await this.createInterfaces();
+    } catch {
+      // noop
+    }
   }
 }
 

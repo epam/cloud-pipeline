@@ -1,11 +1,17 @@
 const EventEmitter = require('events');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const logger = require('../shared-logger');
+const operationsInfoDirectory = require('../utilities/operations-directory');
 
 /**
  * @typedef {Object} OperationOptions
  * @property {FileSystemAdapters} adapters
  * @property {function(string?):Promise<boolean>} [abortConfirmation]
  * @property {function(string?):Promise<boolean>} [retryConfirmation]
+ * @property {boolean} [saveOperationInfo]
+ * @property {function} [operationInfoCallback]
  */
 
 class Operation extends EventEmitter {
@@ -47,6 +53,26 @@ class Operation extends EventEmitter {
     return Operation.counter;
   }
 
+  static async getOperationInfoIdentifiers() {
+    const contents = await fs.promises.readdir(operationsInfoDirectory, { withFileTypes: true });
+    return contents
+      .filter((c) => c.isDirectory())
+      .map((d) => d.name);
+  }
+
+  static async getOperationInfoByIdentifier(identifier) {
+    const infoPath = path.resolve(operationsInfoDirectory, identifier, 'info.json');
+    if (fs.existsSync(infoPath)) {
+      return JSON.parse(fs.readFileSync(infoPath).toString());
+    }
+    throw new Error(`Operation with identifier "${identifier}" not found`);
+  }
+
+  static async getOperationTypeByIdentifier(identifier) {
+    const { type } = await Operation.getOperationInfoByIdentifier(identifier);
+    return type;
+  }
+
   /**
    * @param {OperationOptions} options
    */
@@ -58,7 +84,11 @@ class Operation extends EventEmitter {
       // eslint-disable-next-line no-unused-vars
       retryConfirmation = ((o) => Promise.resolve(false)),
       adapters,
+      saveOperationInfo = false,
+      // eslint-disable-next-line no-unused-vars
+      operationInfoCallback = (o) => {},
     } = options || {};
+    this.trackOperationInfo = saveOperationInfo;
     this.adapters = adapters;
     if (!this.adapters) {
       throw new Error('Operation should be initialized with file system adapters');
@@ -71,6 +101,11 @@ class Operation extends EventEmitter {
      * @type {number}
      */
     this.id = Operation.createOperationId();
+    this.uuid = crypto.randomUUID();
+    if (typeof operationInfoCallback === 'function') {
+      operationInfoCallback(this.uuid);
+    }
+    this.operationDirectory = path.resolve(operationsInfoDirectory, this.uuid);
     this.operationStatus = undefined;
     this.fatalError = undefined;
     this.statusValue = Operation.Status.waiting;
@@ -78,6 +113,11 @@ class Operation extends EventEmitter {
     this.abortConfirmed = false;
     this.progressValue = 0;
     this.operationErrors = [];
+  }
+
+  recover(uuid) {
+    this.uuid = uuid;
+    this.operationDirectory = path.resolve(operationsInfoDirectory, this.uuid);
   }
 
   report() {
@@ -96,6 +136,11 @@ class Operation extends EventEmitter {
   // eslint-disable-next-line class-methods-use-this
   get operationName() {
     return 'Operation';
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  get operationType() {
+    return 'operation';
   }
 
   get progress() {
@@ -249,7 +294,12 @@ class Operation extends EventEmitter {
       this.onceOperations = new Map();
     }
     if (!this.onceOperations.has(identifier)) {
-      this.onceOperations.set(identifier, fn());
+      const fnCall = fn();
+      this.onceOperations.set(identifier, fnCall);
+      fnCall.catch(() => {
+        this.onceOperations.delete(identifier);
+      });
+      return fnCall;
     }
     return this.onceOperations.get(identifier);
   }
@@ -280,6 +330,29 @@ class Operation extends EventEmitter {
       return this.retry(fn, ...options);
     }
     return undefined;
+  }
+
+  async tryPerform(fn, onComplete, onFailed, onItemIterationFailed, ...options) {
+    const maxIterations = 5;
+    const tryIteration = async (iteration = 0) => {
+      if (iteration >= maxIterations) {
+        await onFailed(...options);
+        return undefined;
+      }
+      try {
+        const result = await fn(...options);
+        await onComplete(...options);
+        return result;
+      } catch (error) {
+        if (await this.isAborted()) {
+          throw error;
+        }
+        logger.log('Error occurred:', error.message);
+        await onItemIterationFailed(...options);
+      }
+      return tryIteration(iteration + 1);
+    };
+    return tryIteration();
   }
 
   /**
@@ -384,6 +457,45 @@ class Operation extends EventEmitter {
       this.onceOperations = undefined;
     }
     return Promise.resolve();
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getOperationInfo() {
+    return {
+      type: this.operationType,
+    };
+  }
+
+  saveOperationInfo() {
+    if (this.trackOperationInfo) {
+      this.ensureOperationDirectory();
+      const info = this.getOperationInfo();
+      fs.writeFileSync(this.getOperationInfoPath('info.json'), JSON.stringify(info));
+    }
+  }
+
+  readOperationInfo() {
+    const infoPath = this.getOperationInfoPath('info.json');
+    if (fs.existsSync(infoPath)) {
+      return JSON.parse(fs.readFileSync(infoPath).toString());
+    }
+    throw new Error(`"${infoPath}" does not exist`);
+  }
+
+  clearOperationInfo() {
+    if (fs.existsSync(this.operationDirectory)) {
+      fs.rmSync(this.operationDirectory, { recursive: true, force: true });
+    }
+  }
+
+  getOperationInfoPath(relative) {
+    return path.resolve(this.operationDirectory, relative);
+  }
+
+  ensureOperationDirectory() {
+    if (this.trackOperationInfo) {
+      fs.mkdirSync(this.operationDirectory, { recursive: true });
+    }
   }
 
   /**

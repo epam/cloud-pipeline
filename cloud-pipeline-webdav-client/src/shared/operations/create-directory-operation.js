@@ -39,6 +39,11 @@ class CreateDirectoryOperation extends Operation {
     return 'create directory operation';
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  get operationType() {
+    return 'directory';
+  }
+
   async cleanUp() {
     await this.clearInterfaceAndAdapter(this.adapterInterface, this.adapter);
     this.adapter = undefined;

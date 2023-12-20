@@ -1,10 +1,27 @@
 const path = require('path');
 const fs = require('fs');
 const moment = require('moment-timezone');
+const xxh = require('xxhashjs');
 const FileSystemInterface = require('../../interface');
 const logger = require('../../../shared-logger');
 const Types = require('../../types');
 const correctDirectoryPath = require('../../utils/correct-path');
+
+async function getFileXXHash(filePath) {
+  const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+  const xxhash = xxh.h64(0);
+  const readStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE });
+  return new Promise((resolve, reject) => {
+    readStream
+      .on('data', (chunk) => {
+        xxhash.update(chunk);
+      })
+      .on('end', () => {
+        resolve(xxhash.digest().toString(16).padStart(16, '0'));
+      })
+      .on('error', reject);
+  });
+}
 
 class LocalFileSystemInterface extends FileSystemInterface {
   /**
@@ -99,6 +116,11 @@ class LocalFileSystemInterface extends FileSystemInterface {
     } catch (error) {
       return undefined;
     }
+  }
+
+  // eslint-disable-next-line class-methods-use-this,no-unused-vars
+  async getFilesChecksums(files) {
+    return Promise.all(files.map(getFileXXHash));
   }
 
   // eslint-disable-next-line class-methods-use-this,no-unused-vars

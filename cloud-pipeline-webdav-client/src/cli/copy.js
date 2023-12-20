@@ -1,11 +1,13 @@
-const getFlag = require("./utilities/get-flag");
-const getParameters = require("./utilities/get-parameters");
-const getPathInfo = require("./utilities/get-path-info");
+const getFlag = require('./utilities/get-flag');
+const getParameters = require('./utilities/get-parameters');
+const getPathInfo = require('./utilities/get-path-info');
 const sharedLogger = require('../shared/shared-logger');
 const initializeConfiguration = require('./utilities/initialize-configuration');
-const initializeAdapters = require("./utilities/initialize-adapters");
+const initializeAdapters = require('./utilities/initialize-adapters');
 const CliDialog = require('./utilities/cli-dialog');
 const Operations = require('../shared/operations');
+const printOperationContinueCommand = require('./utilities/print-operation-continue-command');
+const Operation = require('../shared/operations/base');
 
 function printHelp() {
   console.log('cp <path from> <path to> [--skip/-s] [--force/-f/-r]');
@@ -27,6 +29,7 @@ module.exports = async function copy(args) {
     return;
   }
   const [from, to] = nonFlagArgs;
+  let operationUuid;
   try {
     const configuration = await initializeConfiguration();
     const fileSystemAdapters = await initializeAdapters(configuration);
@@ -42,6 +45,17 @@ module.exports = async function copy(args) {
       sourceElements: toInfo.path.endsWith('/') || isDirectory ? [fromInfo.path] : fromInfo.path,
       destination,
       destinationPath: toInfo.path,
+      saveOperationInfo: true,
+      operationInfoCallback: (uuid) => {
+        operationUuid = uuid;
+        printOperationContinueCommand(uuid, 'copy');
+      },
+      iterationsCount: 1,
+    }, (op) => {
+      if (op.status !== Operation.Status.done && operationUuid) {
+        console.log('');
+        printOperationContinueCommand(operationUuid, 'copy');
+      }
     });
   } catch (error) {
     console.log('');

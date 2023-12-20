@@ -33,6 +33,11 @@ class RemoveOperation extends Operation {
     return 'remove operation';
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  get operationType() {
+    return 'remove';
+  }
+
   async cleanUp() {
     await this.clearInterfaceAndAdapter(this.adapterInterface, this.adapter);
     this.adapter = undefined;

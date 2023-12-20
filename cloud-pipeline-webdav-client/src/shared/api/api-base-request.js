@@ -83,6 +83,7 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
     request.on('timeout', () => {
       logError(`${endpoint}: timeout`);
       request.destroy();
+      reject(new Error('Timeout'));
     });
     if (typeof body === 'string') {
       request.write(Buffer.from(body));
@@ -92,4 +93,3 @@ module.exports = function apiBaseRequest(api, endpoint, options = {}) {
     request.end();
   });
 };
-

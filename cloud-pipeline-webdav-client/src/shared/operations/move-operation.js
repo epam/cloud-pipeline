@@ -22,6 +22,11 @@ class MoveOperation extends CopyOperation {
     return 'move operation';
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  get operationType() {
+    return 'move';
+  }
+
   async removeItem(element) {
     if (await this.isAborted()) {
       return;

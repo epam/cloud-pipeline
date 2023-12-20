@@ -65,6 +65,7 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "ssh2-sftp-client": "^9.0.4",
-    "webdav": "^4.11.2"
+    "webdav": "^4.11.2",
+    "xxhashjs": "^0.2.2"
   }
 }

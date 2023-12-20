@@ -7,7 +7,7 @@ module.exports = async function config(args) {
   if (getFlag(args, '--help', '-h')) {
     console.log('config --print\t\tprints current config');
     console.log('config -p\t\tprints current config');
-    console.log('config \t\tprints current config');
+    console.log('config \t\t\tprints current config');
     return;
   }
   sharedLogger.verbose = getFlag(args, '--verbose');

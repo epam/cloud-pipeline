@@ -2,6 +2,7 @@ const CopyOperation = require('./copy-operation');
 const CreateDirectoryOperation = require('./create-directory-operation');
 const MoveOperation = require('./move-operation');
 const RemoveOperation = require('./remove-operation');
+const Operation = require("./base");
 
 /**
  * @typedef {Object} Dialog
@@ -47,6 +48,26 @@ function createOverrideConfirmation(dialog) {
     if (checked) {
       rememberChoice = result;
     }
+    return result;
+  };
+}
+
+/**
+ * @param {Dialog} dialog
+ * @returns {(function(string): Promise<boolean>)}
+ */
+function createGeneralRetryConfirmation(dialog) {
+  return async (message) => {
+    if (!dialog || typeof dialog.confirm !== 'function') {
+      return Promise.resolve(true);
+    }
+    const {
+      result,
+    } = await dialog.confirm({
+      message,
+      ok: 'Yes',
+      cancel: 'No',
+    });
     return result;
   };
 }
@@ -115,29 +136,79 @@ class Operations {
   };
 
   // eslint-disable-next-line class-methods-use-this
-  async submit(type, options) {
+  async submit(type, options, resolve) {
     if (!type) {
       throw new Error('Operation not supported (unknown type)');
     }
     switch (type) {
       case OperationTypes.createDirectory:
-        return this.createDirectory(options);
+        return this.createDirectory(options, resolve);
       case OperationTypes.remove:
-        return this.remove(options);
+        return this.remove(options, resolve);
       case OperationTypes.copy:
-        return this.copy(options);
+        return this.copy(options, resolve);
       case OperationTypes.move:
-        return this.move(options);
+        return this.move(options, resolve);
       default:
         throw new Error(`Unknown operation "${type}"`);
     }
   }
 
+  async recover(uuid, options = undefined) {
+    const { type, ...rest } = await Operation.getOperationInfoByIdentifier(uuid);
+    switch (type) {
+      case 'copy': {
+        const copyOperation = new CopyOperation({
+          adapters: this.adapters,
+          source: rest.source,
+          elements: [],
+          destination: rest.destination,
+          destinationPath: '',
+          abortConfirmation: createAbortConfirmation(this.dialog),
+          retryConfirmation: createRetryConfirmation(this.dialog),
+          overwriteExistingCallback: createOverrideConfirmation(this.dialog),
+          operationRetryConfirmation: createGeneralRetryConfirmation(this.dialog),
+          saveOperationInfo: true,
+          ...(options || {}),
+        });
+        copyOperation.recover(uuid);
+        return copyOperation;
+      }
+      case 'move': {
+        const moveOperation = new MoveOperation({
+          adapters: this.adapters,
+          source: rest.source,
+          elements: [],
+          destination: rest.destination,
+          destinationPath: '',
+          abortConfirmation: createAbortConfirmation(this.dialog),
+          retryConfirmation: createRetryConfirmation(this.dialog),
+          overwriteExistingCallback: createOverrideConfirmation(this.dialog),
+          operationRetryConfirmation: createGeneralRetryConfirmation(this.dialog),
+          saveOperationInfo: true,
+          ...(options || {}),
+        });
+        moveOperation.recover(uuid);
+        return moveOperation;
+      }
+      default:
+        throw new Error('Unsupported operation type');
+    }
+  }
+
+  async recoverAndSubmit(uuid, options = undefined) {
+    const operation = await this.recover(uuid, options);
+    return new Promise((resolve) => {
+      this.submitOperation(operation, resolve);
+    });
+  }
+
   /**
    * @param {Operation} operation
+   * @param {function} [resolve]
    * @returns {number}
    */
-  submitOperation(operation) {
+  submitOperation(operation, resolve) {
     if (operation) {
       this.operations.push(operation);
       operation
@@ -152,6 +223,9 @@ class Operations {
                 .map((fsIdentifier) => ({ identifier: fsIdentifier })),
             );
           }
+          if (typeof resolve === 'function') {
+            resolve(operation);
+          }
         });
       return operation.id;
     }
@@ -159,11 +233,12 @@ class Operations {
   }
 
   // eslint-disable-next-line class-methods-use-this
-  async createDirectory(options = {}) {
+  async createDirectory(options = {}, resolve = undefined) {
     const {
       source,
       sourcePath,
-      isNewDirectoryPath = false
+      isNewDirectoryPath = false,
+      ...rest
     } = options;
     if (!source) {
       throw new Error('File system not specified');
@@ -203,6 +278,7 @@ class Operations {
     }
     const sourceInterface = await sourceAdapterInterfacePromise;
     return this.submitOperation(new CreateDirectoryOperation({
+      ...rest,
       adapters: this.adapters,
       source: sourceInterface,
       sourcePath,
@@ -210,13 +286,14 @@ class Operations {
       isFullPath: isNewDirectoryPath,
       abortConfirmation: createAbortConfirmation(this.dialog),
       retryConfirmation: createRetryConfirmation(this.dialog),
-    }));
+    }), resolve);
   }
 
-  async remove(options = {}) {
+  async remove(options = {}, resolve = undefined) {
     const {
       source,
       sourceElements = [],
+      ...rest
     } = options;
     if (!source) {
       throw new Error('File system not specified');
@@ -238,22 +315,24 @@ class Operations {
     }
     if (confirmed) {
       return this.submitOperation(new RemoveOperation({
+        ...rest,
         adapters: this.adapters,
         source,
         elements: sourceElements,
         abortConfirmation: createAbortConfirmation(this.dialog),
         retryConfirmation: createRetryConfirmation(this.dialog),
-      }));
+      }), resolve);
     }
     return undefined;
   }
 
-  async copy(options = {}) {
+  async copy(options = {}, resolve = undefined) {
     const {
       source,
       sourceElements = [],
       destination,
       destinationPath,
+      ...rest
     } = options;
     if (!source) {
       throw new Error('File system not specified');
@@ -270,15 +349,18 @@ class Operations {
       abortConfirmation: createAbortConfirmation(this.dialog),
       retryConfirmation: createRetryConfirmation(this.dialog),
       overwriteExistingCallback: createOverrideConfirmation(this.dialog),
-    }));
+      operationRetryConfirmation: createGeneralRetryConfirmation(this.dialog),
+      ...rest,
+    }), resolve);
   }
 
-  async move(options = {}) {
+  async move(options = {}, resolve = undefined) {
     const {
       source,
       sourceElements = [],
       destination,
       destinationPath,
+      ...rest
     } = options;
     if (!source) {
       throw new Error('File system not specified');
@@ -295,7 +377,9 @@ class Operations {
       abortConfirmation: createAbortConfirmation(this.dialog),
       retryConfirmation: createRetryConfirmation(this.dialog),
       overwriteExistingCallback: createOverrideConfirmation(this.dialog),
-    }));
+      operationRetryConfirmation: createGeneralRetryConfirmation(this.dialog),
+      ...rest,
+    }), resolve);
   }
 
   async abort(id) {

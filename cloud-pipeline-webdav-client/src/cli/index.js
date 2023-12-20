@@ -17,26 +17,37 @@ commands.push({
 });
 commands.push({
   alias: ['cp', 'copy'],
+  // eslint-disable-next-line global-require
   fn: require('./copy'),
 });
 commands.push({
   alias: ['ls', 'list'],
+  // eslint-disable-next-line global-require
   fn: require('./list'),
 });
 commands.push({
   alias: ['mv', 'move'],
+  // eslint-disable-next-line global-require
   fn: require('./move'),
 });
 commands.push({
   alias: ['rm', 'remove'],
+  // eslint-disable-next-line global-require
   fn: require('./remove'),
 });
 commands.push({
   alias: ['mkdir'],
+  // eslint-disable-next-line global-require
   fn: require('./mkdir'),
 });
 commands.push({
+  alias: ['operations', 'op'],
+  // eslint-disable-next-line global-require
+  fn: require('./list-operations'),
+});
+commands.push({
   alias: ['config'],
+  // eslint-disable-next-line global-require
   fn: require('./config'),
 });
 

@@ -148,6 +148,10 @@ class FileSystemInterface extends EventEmitter {
     };
   }
 
+  async getFilesChecksums(files) {
+    return files.map(() => undefined);
+  }
+
   /**
    * @param {string} element
    * @param {{size: number?, overwrite: boolean?}} [options]
