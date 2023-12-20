@@ -40,6 +40,7 @@ class MoveOperation extends CopyOperation {
 
   async after() {
     await super.after();
+    await this.reInitializeInterfaces();
     return this.iterate(
       this.retry.bind(this, this.removeItem.bind(this)),
       this.elements,

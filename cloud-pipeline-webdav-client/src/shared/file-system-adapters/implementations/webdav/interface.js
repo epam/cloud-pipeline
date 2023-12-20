@@ -87,12 +87,22 @@ class WebDAVInterface extends WebBasedInterface {
     if (!force && this.storages.length) {
       return this.storages;
     }
-    try {
-      this.storages = await this.api.getStorages();
-    } catch (error) {
-      logger.warn(`Error updating storage list: ${error.message}`);
+    if (!this.updateStoragesRequest || force) {
+      const logic = async () => {
+        if (!this.api) {
+          return [];
+        }
+        try {
+          this.storages = await this.api.getStorages();
+        } catch (error) {
+          logger.warn(`Error updating storage list: ${error.message}`);
+          this.updateStoragesRequest = undefined;
+        }
+        return this.storages;
+      };
+      this.updateStoragesRequest = logic();
     }
-    return this.storages;
+    return this.updateStoragesRequest;
   }
 
   async updateRemotePermissions(...request) {

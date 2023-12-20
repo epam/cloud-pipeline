@@ -557,6 +557,18 @@ class Operation extends EventEmitter {
       await adapterInterface.destroy();
     }
   }
+
+  /**
+   * @param {FileSystemInterface} adapterInterface
+   * @param {FileSystemAdapter} adapter
+   * @returns {Promise<void>}
+   */
+  // eslint-disable-next-line class-methods-use-this
+  async clearInterfaceOnly(adapterInterface, adapter) {
+    if (adapterInterface && adapter) {
+      await adapter.destroyInterface(adapterInterface);
+    }
+  }
 }
 
 module.exports = Operation;

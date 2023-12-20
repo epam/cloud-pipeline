@@ -182,12 +182,16 @@ class CopyOperation extends Operation {
     // const filePath = path
     const {
       source,
+      elements  = [],
       destination,
+      destinationPath,
       list,
       direct,
     } = info;
     this.source = source;
     this.destination = destination;
+    this.elements = elements;
+    this.destinationPath = destinationPath;
     this.list = list;
     this.directDestination = direct;
     this.recovered = true;
@@ -226,6 +230,31 @@ class CopyOperation extends Operation {
     await this.clearInterfaceAndAdapter(this.destinationAdapterInterface, this.destinationAdapter);
     this.destinationAdapterInterface = undefined;
     this.destinationAdapter = undefined;
+  }
+
+  async reInitializeInterfaces() {
+    if (this.sourceAdapter) {
+      await this.clearInterfaceOnly(this.sourceAdapterInterface, this.sourceAdapter);
+      this.sourceAdapterInterface = await this.sourceAdapter.createInterface();
+    } else {
+      const {
+        adapter: sourceAdapter,
+        interface: sourceAdapterInterface,
+      } = await this.createInterface(this.source);
+      this.sourceAdapter = sourceAdapter;
+      this.sourceAdapterInterface = sourceAdapterInterface;
+    }
+    if (this.destinationAdapter) {
+      await this.clearInterfaceOnly(this.destinationAdapterInterface, this.destinationAdapter);
+      this.destinationAdapterInterface = await this.destinationAdapter.createInterface();
+    } else {
+      const {
+        adapter: destinationAdapter,
+        interface: destinationAdapterInterface,
+      } = await this.createInterface(this.destination);
+      this.destinationAdapter = destinationAdapter;
+      this.destinationAdapterInterface = destinationAdapterInterface;
+    }
   }
 
   async cleanUp() {
@@ -391,8 +420,7 @@ class CopyOperation extends Operation {
           );
         }
       }
-      await this.clearInterfaces();
-      await this.createInterfaces();
+      await this.reInitializeInterfaces();
       this.failed = [];
       await this.iterate(
         this.tryPerform.bind(
@@ -407,7 +435,7 @@ class CopyOperation extends Operation {
           stage: Operation.Stages.invoke,
         },
       );
-      await this.clearInterfaces();
+      await this.reInitializeInterfaces();
       await operationLogic(iteration + 1);
     };
     await operationLogic();
@@ -418,7 +446,9 @@ class CopyOperation extends Operation {
     return {
       ...super.getOperationInfo(),
       source: typeof this.source === 'string' ? this.source : this.source.adapter.identifier,
+      elements: this.elements,
       destination: typeof this.destination === 'string' ? this.destination : this.destination.adapter.identifier,
+      destinationPath: this.destinationPath,
       list: this.list,
       direct: this.directDestination,
     };
@@ -442,8 +472,7 @@ class CopyOperation extends Operation {
   async onItemFailed(item) {
     this.error(`Failed to copy item: "${item.name}"`);
     try {
-      await this.clearInterfaces();
-      await this.createInterfaces();
+      await this.reInitializeInterfaces();
     } catch {
       // noop
     }
@@ -451,8 +480,7 @@ class CopyOperation extends Operation {
 
   async onItemIterationFailed() {
     try {
-      await this.clearInterfaces();
-      await this.createInterfaces();
+      await this.reInitializeInterfaces();
     } catch {
       // noop
     }

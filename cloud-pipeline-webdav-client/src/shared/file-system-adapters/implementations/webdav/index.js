@@ -51,7 +51,7 @@ class WebDAVAdapter extends WebBasedAdapter {
    * @returns {Promise<void>}
    */
   async destroyInterface(fsInterface) {
-    if (fsInterface && fsInterface.storages) {
+    if (fsInterface && fsInterface.storages && fsInterface.storages.length) {
       this.storages = fsInterface.storages.slice();
     }
     await super.destroyInterface(fsInterface);
