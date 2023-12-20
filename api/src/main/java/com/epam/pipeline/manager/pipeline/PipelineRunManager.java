@@ -383,6 +383,7 @@ public class PipelineRunManager {
         final Optional<ToolVersion> toolVersion = toolManager.findToolVersion(tool);
         final PipelineConfiguration toolConfiguration = configurationManager
                 .getConfigurationForTool(tool, configuration);
+        final Optional<String> pipelineVersion = versionManager.resolvePipelineVersion(pipeline, version);
         final AbstractCloudRegion region = resolveCloudRegion(
                 parentRun.orElse(null), configuration, toolConfiguration);
         validateCloudRegion(toolConfiguration, region);
@@ -405,7 +406,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(
                         MessageConstants.ERROR_SENSITIVE_RUN_NOT_ALLOWED_FOR_TOOL, tool.getImage()));
 
-        final PipelineRun run = createPipelineRun(version, configuration, pipeline, tool, toolVersion.orElse(null),
+        final PipelineRun run = createPipelineRun(pipelineVersion.orElse(null), configuration, pipeline,
+                tool, toolVersion.orElse(null),
                 region, parentRun.orElse(null), entityIds, configurationId, sensitive);
 
         // If there is no podAssignPolicy, then run is scheduled to a dedicated node
