@@ -745,6 +745,8 @@ public class SystemPreferences {
             "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
             LAUNCH_GROUP, pass, true);
+    public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
+            LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},

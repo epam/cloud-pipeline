@@ -776,10 +776,11 @@ function configure_owner_account() {
             export UID_SEED
             export OWNER_UID=$(( UID_SEED + OWNER_ID ))
             export OWNER_GID="$OWNER_UID"
+            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
                 return 0
             else
-                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
                 return "$?"
             fi
         fi
@@ -812,16 +813,19 @@ function get_pipe_preference_low_level() {
     fi
 }
 
+function get_owner_info () {
+      curl -X GET \
+            --insecure \
+            -s \
+            --max-time 30 \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            "$API/whoami"
+}
+
 function resolve_owner_id() {
     # Returns current cloud pipeline user id
-    curl -X GET \
-         --insecure \
-         -s \
-         --max-time 30 \
-         --header "Accept: application/json" \
-         --header "Authorization: Bearer $API_TOKEN" \
-         "$API/whoami" \
-        | jq -r '.payload.id // 0'
+    get_owner_info | jq -r '.payload.id // 0'
 }
 
 function check_user_created() {
@@ -843,6 +847,35 @@ function check_user_created() {
     fi
 }
 
+function create_user_extra_groups() {
+      if ! check_installed "groupadd" && ! check_installed "addgroup"; then
+            return
+      fi
+
+      _gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _groups_added=""
+      _user_groups=$(get_owner_info | jq -r '.payload.roles[] | (.id | tostring) + "," + .name')
+      while IFS=, read -r group_id group_name; do
+            real_group_id=$(( _gid_seed + group_id ))
+            _group_create_result=1
+            if ! getent group $real_group_id &> /dev/null; then
+                  if check_installed "groupadd"; then
+                        groupadd "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  elif check_installed "addgroup"; then
+                        addgroup "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  fi
+            else
+                  _group_create_result=0
+            fi
+            if [ $_group_create_result -eq 0 ]; then
+                  _groups_added="$_groups_added,$group_name"
+            fi
+      done <<< "$_user_groups"
+      echo "$_groups_added" | sed 's/,//'
+}
+
 function create_user() {
     local _user_name="$1"
     local _user_pass="$2"
@@ -850,6 +883,9 @@ function create_user() {
     local _user_gid="$4"
     local _user_home="$5"
     local _user_groups="$6"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
 
     echo "Creating user $_user_name..."
     if [ "$_user_uid" ] && [ "$_user_gid" ]; then
