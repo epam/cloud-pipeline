@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import urllib3
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 CP_CAP_AUTOSCALE_SKIP_ENDPOINTS = 'CP_CAP_AUTOSCALE_SKIP_ENDPOINTS'
+CP_EDGE_ENDPOINT_TAG_NAME = 'CP_EDGE_ENDPOINT_TAG_NAME'
 
 try:
         from pykube.config import KubeConfig
@@ -526,9 +527,17 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
         run_info = run_cache['pipelineRun']
         if run_info:
                 if run_info.get("status") != 'RUNNING':
-                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
+                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not be proxied'.format(pod_run_id))
                         return {}
-
+                edge_endpoint_tag_name = [rp for rp in run_info["pipelineRunParameters"]
+                                          if 'name' in rp and rp["name"] == CP_EDGE_ENDPOINT_TAG_NAME]
+                if edge_endpoint_tag_name and len(edge_endpoint_tag_name) > 0:
+                        run_info_tags = run_info.get("tags")
+                        if not (run_info_tags and "value" in edge_endpoint_tag_name[0] and run_info_tags.get(edge_endpoint_tag_name[0]["value"])):
+                                do_log('Pipeline with id {} and run tag {} has not yet been initialized. '
+                                       'Service urls will not be proxied'
+                                       .format(pod_run_id, edge_endpoint_tag_name[0]["value"]))
+                                return {}
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
                 runs_sids = run_info.get("runSids")
