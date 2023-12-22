@@ -723,28 +723,31 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         </MenuItem>
       );
     }
-    return (
-      <Dropdown
-        placement="bottomRight"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={onClick}
-            style={{width: 100}}
-          >
-            {actions}
-          </Menu>
-        }
-        key="edit">
-        <Button
-          key="edit"
-          id="edit-pipeline-menu-button"
-          style={{lineHeight: 1}}
-          size="small">
-          <Icon type="setting" />
-        </Button>
-      </Dropdown>
-    );
+    if (actions.length > 0) {
+      return (
+        <Dropdown
+          placement="bottomRight"
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={onClick}
+              style={{width: 100}}
+            >
+              {actions}
+            </Menu>
+          }
+          key="edit">
+          <Button
+            key="edit"
+            id="edit-pipeline-menu-button"
+            style={{lineHeight: 1}}
+            size="small">
+            <Icon type="setting"/>
+          </Button>
+        </Dropdown>
+      );
+    }
+    return null;
   };
 
   render () {
