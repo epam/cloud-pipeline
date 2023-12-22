@@ -5793,6 +5793,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           pipelineId={this.state.pipeline ? this.state.pipeline.id : undefined}
           version={this.state.version}
           pipelineConfiguration={this.state.pipelineConfiguration}
+          isDetachedConfiguration={!!this.props.isDetachedConfiguration}
           fireCloudMethod={this.state.fireCloudMethodName}
           fireCloudNamespace={this.state.fireCloudMethodNamespace}
           fireCloudMethodSnapshot={this.state.fireCloudMethodSnapshot}

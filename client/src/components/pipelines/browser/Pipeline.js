@@ -54,6 +54,14 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import CloneForm from './forms/CloneForm';
 import styles from './Browser.css';
 
+const LATEST_VERSION_PLACEHOLDER = {
+  id: 'latest',
+  key: 'latest',
+  name: 'latest',
+  commitId: 'latest',
+  type: ItemTypes.version
+};
+
 @connect({
   pipelinesLibrary,
   folders,
@@ -91,7 +99,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     onReloadTree: PropTypes.func,
     selectedVersion: PropTypes.string,
     selectedConfiguration: PropTypes.string,
-    configurationSelectionMode: PropTypes.bool
+    configurationSelectionMode: PropTypes.bool,
+    latestVersionPlaceholder: PropTypes.bool
   };
 
   state = {
@@ -152,6 +161,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: `${styles.treeItemName}`,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {
@@ -218,6 +230,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: styles.treeItemName,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {item.author && 'by '}
@@ -296,7 +311,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           const configurations = this.state.configurations[item.id].list;
           return (
             <Select
-              style={{width: '100%'}}
+              style={{width: '100%', minWidth: '70px'}}
               value={this.state.configurations[item.id].selected}
               onSelect={this.onSelectConfiguration(item)}>
               {
@@ -755,6 +770,12 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           filter: this.props.hiddenObjectsTreeFilter()
         }
       );
+      if (this.props.latestVersionPlaceholder) {
+        this._versions = [
+          LATEST_VERSION_PLACEHOLDER,
+          ...this._versions
+        ];
+      }
       versionsContent = (
         <Table
           key={CONTENT_PANEL_KEY}
@@ -885,7 +906,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   }
 
   loadConfigurations = async () => {
-    const versions = this.props.versions.value.map(v => v);
+    let versions = this.props.versions.value.map(v => v);
+    if (this.props.latestVersionPlaceholder) {
+      versions = [
+        LATEST_VERSION_PLACEHOLDER,
+        ...versions
+      ];
+    }
     const configurations = {};
     for (let i = 0; i < versions.length; i++) {
       const version = versions[i];
