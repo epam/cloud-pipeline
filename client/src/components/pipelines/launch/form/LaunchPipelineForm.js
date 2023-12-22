@@ -2396,57 +2396,55 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         });
       }
-    } else {
-      if (pipeline) {
-        const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
-        if (existedPipeline) {
-          this.addedParameters = {};
-          this.rebuildParameters = {
-            [PARAMETERS]: true,
-            [SYSTEM_PARAMETERS]: true
-          };
-          this.setState({
-            pipeline: existedPipeline,
-            version: pipeline.version,
-            pipelineConfiguration: pipeline.configuration,
-            fireCloudMethodName: null,
-            fireCloudMethodNamespace: null,
-            fireCloudMethodSnapshot: null,
-            fireCloudMethodConfiguration: null,
-            fireCloudMethodConfigurationSnapshot: null,
-            fireCloudInputs: {},
-            fireCloudOutputs: {},
-            fireCloudInputsErrors: {},
-            fireCloudOutputsErrors: {},
-            fireCloudDefaultInputs: [],
-            fireCloudDefaultOutputs: []
-          }, () => {
-            if (this.props.onSelectPipeline) {
-              this.props.onSelectPipeline({
-                pipeline: existedPipeline,
-                version: pipeline.version,
-                configuration: pipeline.configuration
-              }, () => {
-                this.prevParameters = this.props.form.getFieldsValue().parameters;
-                this.reset(true);
-                this.evaluateEstimatedPrice({});
-              });
-            }
-          });
-        }
-      } else {
+    } else if (pipeline) {
+      const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
+      if (existedPipeline) {
+        this.addedParameters = {};
+        this.rebuildParameters = {
+          [PARAMETERS]: true,
+          [SYSTEM_PARAMETERS]: true
+        };
         this.setState({
-          pipeline: null,
-          version: null,
-          configuration: null
+          pipeline: existedPipeline,
+          version: pipeline.version,
+          pipelineConfiguration: pipeline.configuration,
+          fireCloudMethodName: null,
+          fireCloudMethodNamespace: null,
+          fireCloudMethodSnapshot: null,
+          fireCloudMethodConfiguration: null,
+          fireCloudMethodConfigurationSnapshot: null,
+          fireCloudInputs: {},
+          fireCloudOutputs: {},
+          fireCloudInputsErrors: {},
+          fireCloudOutputsErrors: {},
+          fireCloudDefaultInputs: [],
+          fireCloudDefaultOutputs: []
         }, () => {
           if (this.props.onSelectPipeline) {
-            this.props.onSelectPipeline(null, () => {
+            this.props.onSelectPipeline({
+              pipeline: existedPipeline,
+              version: pipeline.version,
+              configuration: pipeline.configuration
+            }, () => {
+              this.prevParameters = this.props.form.getFieldsValue().parameters;
               this.reset(true);
+              this.evaluateEstimatedPrice({});
             });
           }
         });
       }
+    } else {
+      this.setState({
+        pipeline: null,
+        version: null,
+        configuration: null
+      }, () => {
+        if (this.props.onSelectPipeline) {
+          this.props.onSelectPipeline(null, () => {
+            this.reset(true);
+          });
+        }
+      });
     }
     this.closePipelineBrowser();
     this.formFieldsChanged();
@@ -5793,7 +5791,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           pipelineId={this.state.pipeline ? this.state.pipeline.id : undefined}
           version={this.state.version}
           pipelineConfiguration={this.state.pipelineConfiguration}
-          isDetachedConfiguration={!!this.props.isDetachedConfiguration}
+          allowSelectLatestVersion={!!this.props.isDetachedConfiguration}
           fireCloudMethod={this.state.fireCloudMethodName}
           fireCloudNamespace={this.state.fireCloudMethodNamespace}
           fireCloudMethodSnapshot={this.state.fireCloudMethodSnapshot}

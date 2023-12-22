@@ -67,7 +67,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     visible: PropTypes.bool,
     onSelect: PropTypes.func,
     onCancel: PropTypes.func,
-    isDetachedConfiguration: PropTypes.bool
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   rootItems = [];
@@ -478,7 +478,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             listingMode
             configurationSelectionMode
             readOnly
-            latestVersionPlaceholder={!!this.props.isDetachedConfiguration}
+            allowSelectLatestVersion={!!this.props.allowSelectLatestVersion}
           />
         );
       } else {

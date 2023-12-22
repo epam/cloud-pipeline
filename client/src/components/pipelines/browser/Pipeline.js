@@ -100,7 +100,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     selectedVersion: PropTypes.string,
     selectedConfiguration: PropTypes.string,
     configurationSelectionMode: PropTypes.bool,
-    latestVersionPlaceholder: PropTypes.bool
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   state = {
@@ -770,7 +770,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           filter: this.props.hiddenObjectsTreeFilter()
         }
       );
-      if (this.props.latestVersionPlaceholder) {
+      if (this.props.allowSelectLatestVersion) {
         this._versions = [
           LATEST_VERSION_PLACEHOLDER,
           ...this._versions
@@ -907,7 +907,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
 
   loadConfigurations = async () => {
     let versions = this.props.versions.value.map(v => v);
-    if (this.props.latestVersionPlaceholder) {
+    if (this.props.allowSelectLatestVersion) {
       versions = [
         LATEST_VERSION_PLACEHOLDER,
         ...versions
