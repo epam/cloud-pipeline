@@ -269,6 +269,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                 .ensure(withText(updatemessage), not(visible))
                 // Because the page refreshes
                 .sleep(5, SECONDS)
+                .ensureDisable(SAVE)
                 .onTab(PipelineCodeTabAO.class)
                 .clickOnFile(configurationFileName)
                 .shouldContainInCode("\"name\" : \"conf\"")

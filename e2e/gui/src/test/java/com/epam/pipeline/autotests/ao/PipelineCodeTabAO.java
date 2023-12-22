@@ -199,6 +199,18 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return this;
     }
 
+    public PipelineCodeTabAO waitUntilSaveEnding() {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while ($(withText("Committing changes...")).exists()
+                && attempt < maxAttempts) {
+            sleep(1, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -240,7 +252,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         public PipelineCodeTabAO saveAndCommitWithMessage(String message) {
-            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS);
+            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS).waitUntilSaveEnding();
         }
 
         private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
