@@ -7,6 +7,7 @@ class WebDAVApi {
    * @property {string} url
    * @property {string} password
    * @property {boolean} [ignoreCertificateErrors]
+   * @property {boolean} [correctUrl]
    */
 
   /**
@@ -32,6 +33,7 @@ class WebDAVApi {
       url,
       password,
       ignoreCertificateErrors = false,
+      correctUrl = true,
     } = this.options || {};
     let webdavServer = url || '';
     if (webdavServer && webdavServer.endsWith('/')) {
@@ -39,10 +41,9 @@ class WebDAVApi {
     }
     let api;
     if (webdavServer) {
-      api = webdavServer
-        .split('/')
-        .slice(0, -1)
-        .join('/');
+      api = correctUrl
+        ? webdavServer.split('/').slice(0, -1).join('/')
+        : webdavServer;
     }
     const rejectUnauthorized = !ignoreCertificateErrors;
     return apiBaseRequest(

@@ -34,6 +34,7 @@ class WebDAVInterface extends WebBasedInterface {
    * @property {*[]} [storages]
    * @property {string} [rootName]
    * @property {string} [apiURL]
+   * @property {string} [extraApiURL]
    * @property {boolean} [ignoreCertificateErrors]
    * @property {boolean} [updatePermissions]
    * @property {string} [disclaimer]
@@ -59,9 +60,10 @@ class WebDAVInterface extends WebBasedInterface {
       });
     }
     this.webdavApi = new WebDAVApi({
-      url: options.url,
+      url: options.extraApiURL || options.url,
       password: options.password,
       ignoreCertificateErrors: options.ignoreCertificateErrors,
+      correctUrl: !options.extraApiURL,
     });
     this.client = new WebDAVClient(this.name);
     await this.client.initialize(

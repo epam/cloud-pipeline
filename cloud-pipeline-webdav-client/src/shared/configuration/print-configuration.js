@@ -10,6 +10,7 @@ module.exports = function printConfiguration(configuration, title, printRest = t
   }
   const {
     api,
+    extra,
     server,
     username,
     password,
@@ -30,6 +31,7 @@ module.exports = function printConfiguration(configuration, title, printRest = t
   }
   logger.log('  name:                     ', wrapValue(name));
   logger.log('  api:                      ', wrapValue(api));
+  logger.log('  extra api:                ', wrapValue(extra));
   logger.log('  server:                   ', wrapValue(server));
   logger.log('  username:                 ', wrapValue(username));
   logger.log('  password:                 ', wrapValue(wrapSecure(password)));

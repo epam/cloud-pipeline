@@ -79,6 +79,7 @@ class FileSystemAdapters extends EventEmitter {
               user: this.configuration.username,
               password: this.configuration.password,
               apiURL: this.configuration.api,
+              extraApiURL: this.configuration.extra,
               rootName: this.configuration.name,
               ignoreCertificateErrors: this.configuration.ignoreCertificateErrors,
               updatePermissions: this.configuration.updatePermissions,

@@ -3,12 +3,13 @@ const WebDAVInterface = require('./interface');
 
 class WebDAVAdapter extends WebBasedAdapter {
   /**
-   * @param {FileSystemAdapterOptions & {rootName: string?, apiURL: string?, updatePermissions: boolean?, disclaimer?: string, restricted?: boolean}} options
+   * @param {FileSystemAdapterOptions & {rootName: string?, apiURL: string?, extraApiURL: string?, updatePermissions: boolean?, disclaimer?: string, restricted?: boolean}} options
    */
   constructor(options) {
     super(options);
     this.name = this.name || 'Data Server';
     this.apiURL = options?.apiURL;
+    this.extraApiURL = options?.extraApiURL;
     this.rootName = options?.rootName;
     this.storages = [];
     this.ignoreCertificateErrors = options?.ignoreCertificateErrors;
@@ -24,6 +25,7 @@ class WebDAVAdapter extends WebBasedAdapter {
       `  user:                       ${this.user}`,
       `  password:                   ${this.password ? '***' : '<empty>'}`,
       `  api (for storage fetching): ${this.apiURL}`,
+      `  extra api (chown, checksum):${this.extraApiURL}`,
       `  ignore cert errors:         ${!!this.ignoreCertificateErrors}`,
       `  update permissions:         ${!!this.updatePermissions}`,
     ].join('\n');
@@ -39,6 +41,7 @@ class WebDAVAdapter extends WebBasedAdapter {
       rootName: this.rootName,
       storages: this.storages,
       apiURL: this.apiURL,
+      extraApiURL: this.extraApiURL,
       ignoreCertificateErrors: this.ignoreCertificateErrors,
       updatePermissions: this.updatePermissions,
       disclaimer: this.disclaimer,
