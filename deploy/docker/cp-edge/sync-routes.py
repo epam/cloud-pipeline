@@ -529,15 +529,16 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 if run_info.get("status") != 'RUNNING':
                         do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not be proxied'.format(pod_run_id))
                         return {}
-                edge_endpoint_tag_name = [rp for rp in run_info["pipelineRunParameters"]
-                                          if 'name' in rp and rp["name"] == CP_EDGE_ENDPOINT_TAG_NAME]
-                if edge_endpoint_tag_name and len(edge_endpoint_tag_name) > 0:
-                        run_info_tags = run_info.get("tags")
-                        if not (run_info_tags and "value" in edge_endpoint_tag_name[0] and run_info_tags.get(edge_endpoint_tag_name[0]["value"])):
-                                do_log('Pipeline with id {} and run tag {} has not yet been initialized. '
-                                       'Service urls will not be proxied'
-                                       .format(pod_run_id, edge_endpoint_tag_name[0]["value"]))
-                                return {}
+                if 'pipelineRunParameters' in run_info:
+                        edge_endpoint_tag_name = [rp for rp in run_info["pipelineRunParameters"]
+                                                if 'name' in rp and rp["name"] == CP_EDGE_ENDPOINT_TAG_NAME]
+                        if edge_endpoint_tag_name and len(edge_endpoint_tag_name) > 0:
+                                run_info_tags = run_info.get("tags")
+                                if not (run_info_tags and "value" in edge_endpoint_tag_name[0] and run_info_tags.get(edge_endpoint_tag_name[0]["value"])):
+                                        do_log('Pipeline with id {} and run tag {} has not yet been initialized. '
+                                        'Service urls will not be proxied'
+                                        .format(pod_run_id, edge_endpoint_tag_name[0]["value"]))
+                                        return {}
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
                 runs_sids = run_info.get("runSids")
