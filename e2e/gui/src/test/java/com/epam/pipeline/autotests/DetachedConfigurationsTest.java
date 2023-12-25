@@ -600,7 +600,8 @@ public class DetachedConfigurationsTest
                                 .click(SAVE)
                                 .ensure(ESTIMATED_PRICE, visible);
                         new Profile(configuration)
-                                .waitUntilSaveEnding(runWithParametersConfiguration);
+                                .waitUntilSaveEnding(runWithParametersConfiguration)
+                                .sleep(5, SECONDS);
                         configuration
                                 .addProfile(secondConfigurationProfile)
                                 .ensure(ESTIMATED_PRICE, visible)

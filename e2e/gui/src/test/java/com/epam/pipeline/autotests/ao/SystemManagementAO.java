@@ -137,8 +137,10 @@ public class SystemManagementAO extends SettingsPageAO {
             if (!list.isEmpty()) {
                 context().find(combobox(filterName)).shouldBe(visible).click();
                 for (String value : list) {
+                    String value1 =
+                            (value.contains(" ")) ? value.substring(0, value.indexOf(" ")) : value;
                     $(comboboxDropdown())
-                            .find(withText(value.substring(0, value.indexOf(" "))))
+                            .find(withText(value1))
                             .shouldBe(visible).click();
                 }
                 click(byText(filterName));
