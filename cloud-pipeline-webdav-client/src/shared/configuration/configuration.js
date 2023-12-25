@@ -15,6 +15,7 @@ const DEFAULT_APP_NAME = 'Cloud Data';
  * @property {string} [api]
  * @property {string} [server]
  * @property {string} [extra]
+ * @property {string} [extraPath]
  * @property {string} [username]
  * @property {string} [password]
  * @property {string} [name]
@@ -75,6 +76,10 @@ class Configuration extends TokenExpirationChecker {
 
   get extra() {
     return this.config?.extra;
+  }
+
+  get extraPath() {
+    return this.config?.extraPath;
   }
 
   get server() {
@@ -260,6 +265,7 @@ class Configuration extends TokenExpirationChecker {
     const {
       api = this.api,
       extra = this.extra,
+      extraPath = this.extraPath,
       password = this.password,
       name = this.name,
       ignoreCertificateErrors = this.ignoreCertificateErrors,
@@ -306,6 +312,7 @@ class Configuration extends TokenExpirationChecker {
       ...(this.config || {}),
       api,
       extra,
+      extraPath,
       server,
       username,
       password,

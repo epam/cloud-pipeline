@@ -35,6 +35,7 @@ class WebDAVInterface extends WebBasedInterface {
    * @property {string} [rootName]
    * @property {string} [apiURL]
    * @property {string} [extraApiURL]
+   * @property {string} [extraPath]
    * @property {boolean} [ignoreCertificateErrors]
    * @property {boolean} [updatePermissions]
    * @property {string} [disclaimer]
@@ -59,6 +60,7 @@ class WebDAVInterface extends WebBasedInterface {
         ignoreCertificateErrors: this.ignoreCertificateErrors,
       });
     }
+    this.webdavApiExtraPath = options.extraPath;
     this.webdavApi = new WebDAVApi({
       url: options.extraApiURL || options.url,
       password: options.password,
@@ -136,11 +138,27 @@ class WebDAVInterface extends WebBasedInterface {
     this.permissionsRequestTimeout = undefined;
   }
 
+  correctWebdavApiPath(relativePath) {
+    if (!this.webdavApiExtraPath) {
+      return relativePath;
+    }
+    let result = this.webdavApiExtraPath;
+    if (result.endsWith('/')) {
+      result.slice(0, -1);
+    }
+    if (relativePath.startsWith('/')) {
+      result = result.concat(relativePath);
+    } else {
+      result = result.concat('/').concat(relativePath);
+    }
+    return result;
+  }
+
   async sendPermissionsRequest(debounce = PERMISSIONS_REQUESTS_DEBOUNCE_MS) {
     this.clearPermissionsRequestsTimeout();
     if (this.permissionsRequests.length > 0 && this.updatePermissions) {
       const send = async () => {
-        const path = this.permissionsRequests.slice();
+        const path = this.permissionsRequests.slice().map(this.correctWebdavApiPath.bind(this));
         const list = '\n\n'.concat(path.join('\n')).concat('\n');
         logger.log(`Sending ${path.length} permission${path.length === 1 ? '' : 's'} requests:${list}`);
         this.permissionsRequests = [];
@@ -170,7 +188,7 @@ class WebDAVInterface extends WebBasedInterface {
   }
 
   getFilesChecksums(files = []) {
-    return this.webdavApi.getChecksum(files);
+    return this.webdavApi.getChecksum(files.map(this.correctWebdavApiPath.bind(this)));
   }
 
   async list(directory = '/') {
