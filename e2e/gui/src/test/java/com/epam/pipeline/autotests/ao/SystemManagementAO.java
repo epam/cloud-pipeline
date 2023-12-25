@@ -16,8 +16,10 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -133,8 +135,11 @@ public class SystemManagementAO extends SettingsPageAO {
 
         public SystemLogsAO filterBySelectedValues(String filterName, List<String> list) {
             if (!list.isEmpty()) {
+                context().find(combobox(filterName)).shouldBe(visible).click();
                 for (String value : list) {
-                    selectValue(combobox(filterName), value);
+                    $(comboboxDropdown())
+                            .find(withText(value.substring(0, value.indexOf(" "))))
+                            .shouldBe(visible).click();
                 }
                 click(byText(filterName));
             }
