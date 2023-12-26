@@ -597,16 +597,20 @@ public class DetachedConfigurationsTest
                         configuration
                                 .selectPipeline(pipeline1)
                                 .ensure(ESTIMATED_PRICE, visible)
-                                .click(SAVE)
-                                .ensure(ESTIMATED_PRICE, visible);
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE);
                         new Profile(configuration)
-                                .waitUntilSaveEnding(runWithParametersConfiguration)
+                                .waitUntilSaveEnding(defaultConfigurationProfile)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .sleep(5, SECONDS);
                         configuration
                                 .addProfile(secondConfigurationProfile)
                                 .ensure(ESTIMATED_PRICE, visible)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
-                                .sleep(5, SECONDS)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .getParameterByIndex(parameterByName(stringParameterName).index())
