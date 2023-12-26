@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
@@ -129,10 +130,11 @@ public class NFSStorageMounter {
         }
     }
 
-    public void chown(final File file, final PipelineUser user, final Integer seed) {
+    public void chown(final File file, final PipelineUser user, final Integer seed, final Integer groupUID) {
         final Long userUID = user.getId() + seed;
+        final Long resolvedGroupUID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(userUID);
         final String path = file.getAbsoluteFile().getPath();
-        final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, userUID, path);
+        final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, resolvedGroupUID, path);
         try {
             cmdExecutor.executeCommand(cmd);
         } catch (CmdExecutionException e) {

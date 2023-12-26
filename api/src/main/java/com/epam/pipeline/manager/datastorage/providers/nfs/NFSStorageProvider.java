@@ -99,13 +99,14 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     private final AuthManager authManager;
     private final Set<PosixFilePermission> filePermissions;
     private final Set<PosixFilePermission> folderPermissions;
-
+    private final Integer groupUID;
 
     public NFSStorageProvider(final PreferenceManager preferenceManager,
                               final FileShareMountManager shareMountManager,
                               final NFSStorageMounter nfsStorageMounter,
                               final AuthManager authManager,
                               @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
+                              @Value("${data.storage.nfs.default.group.uid:}") final Integer groupUID,
                               final MessageHelper messageHelper) {
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
@@ -120,6 +121,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         this.filePermissions = allowedPermissionsFromUMask.stream()
                 .filter(p -> !PosixPermissionUtils.EXECUTE_PERMISSIONS.contains(p))
                 .collect(Collectors.toSet());
+        this.groupUID = groupUID;
     }
 
     @Override
@@ -382,7 +384,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 Optional.ofNullable(authManager.getCurrentUser())
                         .ifPresent(user ->
                                 nfsStorageMounter.chown(file, user,
-                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED)));
+                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED),
+                                        groupUID));
             }
         }
     }
