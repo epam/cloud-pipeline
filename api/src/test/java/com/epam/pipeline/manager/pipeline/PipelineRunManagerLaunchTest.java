@@ -165,6 +165,9 @@ public class PipelineRunManagerLaunchTest {
     private RunStatusManager runStatusManager;
 
     @Mock
+    private PipelineVersionManager pipelineVersionManager;
+
+    @Mock
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
@@ -212,6 +215,7 @@ public class PipelineRunManagerLaunchTest {
                 .isInstanceAllowed(anyString(), any(), any(), anyBoolean());
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
+        doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
     }
 
     @Test
