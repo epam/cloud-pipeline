@@ -30,7 +30,6 @@ import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -57,10 +56,8 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @AclSync
@@ -186,6 +183,7 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        String previousName = dbPipeline.getName();
         final String currentProjectPath = dbPipeline.getRepository();
         final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
         final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
@@ -208,8 +206,9 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setDocsPath(pipelineVO.getDocsPath());
         dbPipeline.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         pipelineDao.updatePipeline(dbPipeline);
-
-        updatePipelineNameForRuns(pipelineVO, pipelineVOName);
+        if (!previousName.equals(pipelineVOName)) {
+            updatePipelineNameForRuns(pipelineVO.getId(), pipelineVOName);
+        }
 
         if (projectNameUpdated) {
             pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
@@ -434,32 +433,12 @@ public class PipelineManager implements SecuredEntityManager {
         });
     }
 
-    private void updatePipelineNameForRuns(final PipelineVO pipelineVO, final String pipelineVOName) {
-        final List<PipelineRun> runsToUpdate = ListUtils.emptyIfNull(
-                pipelineRunDao.loadAllRunsForPipeline(pipelineVO.getId())).stream()
-                .map(run -> updatePipelineNameForRun(pipelineVOName, run))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-        pipelineRunDao.updateRuns(runsToUpdate);
-    }
-
-    private PipelineRun updatePipelineNameForRun(final String pipelineName, final PipelineRun run) {
-        if (Objects.equals(run.getPipelineName(), pipelineName)) {
-            return null;
-        }
-        run.setPipelineName(pipelineName);
-        return run;
+    private void updatePipelineNameForRuns(final Long pipelineId, final String pipelineVOName) {
+        pipelineRunDao.updatePipelineNameForRuns(pipelineVOName, pipelineId);
     }
 
     private void resetPipelineIdForRuns(final Long id) {
-        pipelineRunDao.updateRuns(ListUtils.emptyIfNull(pipelineRunDao.loadAllRunsForPipeline(id)).stream()
-                .map(this::resetPipelineIdForRun)
-                .collect(Collectors.toSet()));
-    }
-
-    private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
-        run.setPipelineId(null);
-        return run;
+        pipelineRunDao.clearPipelineIdForRuns(id);
     }
 
     private void checkBranchExists(final PipelineVO pipelineVO) {
