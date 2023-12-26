@@ -462,6 +462,26 @@
                 ]]>
             </value>
         </property>
+        <property name="updatePipelineNameForRunsQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        pipeline_name = :PIPELINE_NAME
+                    WHERE
+                        pipeline_id = :PIPELINE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="clearPipelineIdForRunsQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.pipeline_run SET
+                        pipeline_id = NULL
+                    WHERE
+                        pipeline_id = :PIPELINE_ID
+                ]]>
+            </value>
+        </property>
         <property name="updateRunQuery">
             <value>
                 <![CDATA[

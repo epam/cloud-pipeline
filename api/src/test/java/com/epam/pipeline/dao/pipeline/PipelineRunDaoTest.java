@@ -76,6 +76,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -1105,6 +1106,40 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertThat(loadedServiceUrls.size(), equalTo(1));
         assertTrue(loadedRun.getServiceUrl().containsKey(TEST_REGION));
         assertTrue(loadedRun.getServiceUrl().containsValue(TEST_SERVICE_URL));
+    }
+
+    @Test
+    public void shouldUpdatePipelineNameForRuns() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run1 = buildPipelineRun(pipeline.getId());
+        run1.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = buildPipelineRun(pipeline.getId());
+        run2.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run2);
+
+        final String newName = "New";
+        pipelineRunDao.updatePipelineNameForRuns(newName, pipeline.getId());
+
+        final List<PipelineRun> runs = pipelineRunDao.loadAllRunsForPipeline(pipeline.getId());
+        runs.forEach(run -> assertThat(run.getPipelineName(), is(newName)));
+    }
+
+    @Test
+    public void shouldClearPipelineIdForRuns() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run1 = buildPipelineRun(pipeline.getId());
+        run1.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = buildPipelineRun(pipeline.getId());
+        run2.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run2);
+
+        pipelineRunDao.clearPipelineIdForRuns(pipeline.getId());
+        assertThat(pipelineRunDao.loadAllRunsForPipeline(pipeline.getId()).isEmpty(), is(true));
+        assertThat(pipelineRunDao.loadPipelineRun(run1.getId()).getPipelineId(), is(nullValue()));
     }
 
     private PipelineRun createTestPipelineRun() {
