@@ -238,7 +238,7 @@ def get_security_groups(aws_region, security_groups):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
-def get_allowed_instance_image(cloud_region, instance_type, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, default_image, api_token):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = None
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
@@ -249,6 +249,20 @@ def get_allowed_instance_image(cloud_region, instance_type, default_image):
         return default_object
 
     for image_config in instance_images_config:
+        permissions = set(image_config["permissions"]) if "permissions" in image_config else None
+        try:
+            if permissions:
+                pipe_log('Image config with restricted roles found ({}), checking permissions'.format(permissions))
+                api_token_data = api_token.split(".")[1]
+                api_token_data = api_token_data + "="*divmod(len(api_token_data),4)[1]
+                api_token_data = json.loads(base64.urlsafe_b64decode(api_token_data))
+                api_token_roles = set(api_token_data["roles"])
+                if not (permissions & api_token_roles):
+                    continue
+        except:
+            # If something is wrong with the permissions check - do not use a restricted image
+            continue
+
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
         init_script = image_config.get("init_script", default_object["init_script"])
@@ -756,7 +770,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
 def get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
                          kubeadm_token,
                          global_distribution_url, swap_size, pre_pull_images, node_ssh_port):
-    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
+    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img, api_token)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
@@ -1496,10 +1510,13 @@ def main():
             api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
         api.session.verify = False
 
+        api_url = os.environ["API"]
+        api_token = os.environ["API_TOKEN"]
+
         instance_additional_spec = None
         if not ins_img or ins_img == 'null':
             # Redefine default instance image if cloud metadata has specific rules for instance type
-            allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img)
+            allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_img, api_token)
             if allowed_instance and allowed_instance["instance_mask"]:
                 pipe_log('Found matching rule {instance_mask}/{ami} for requested instance type {instance_type}\nImage {ami} will be used'.format(instance_mask=allowed_instance["instance_mask"],
                                                                                                                                                   ami=allowed_instance["instance_mask_ami"],
@@ -1516,8 +1533,6 @@ def main():
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id)
 
         if not ins_id:
-            api_url = os.environ["API"]
-            api_token = os.environ["API_TOKEN"]
             ins_id, ins_ip = run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
