@@ -6,7 +6,8 @@ from pipeline.hpc.cmd import ExecutionError
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply
 from pipeline.hpc.engine.gridengine import GridEngine, GridEngineJobState, GridEngineJob, \
-    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator, AllocationRuleParsingError
+    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator, AllocationRuleParsingError, \
+    GridEngineLaunchAdapter
 
 
 class SlurmGridEngine(GridEngine):
@@ -25,6 +26,18 @@ class SlurmGridEngine(GridEngine):
 
     def __init__(self, cmd_executor):
         self.cmd_executor = cmd_executor
+        self.job_state_to_codes = {
+            GridEngineJobState.RUNNING: ['RUNNING'],
+            GridEngineJobState.PENDING: ['PENDING'],
+            GridEngineJobState.SUSPENDED: ['SUSPENDED', 'STOPPED'],
+            GridEngineJobState.ERROR: ['DEADLINE', ' FAILED'],
+            GridEngineJobState.DELETED: ['DELETED', 'CANCELLED'],
+            GridEngineJobState.COMPLETED: ['COMPLETED', 'COMPLETING'],
+            GridEngineJobState.UNKNOWN: []
+        }
+
+    def get_engine_type(self):
+        return GridEngineType.SLURM
 
     def get_jobs(self):
         try:
@@ -71,9 +84,6 @@ class SlurmGridEngine(GridEngine):
                     - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
         return ResourceSupply()
 
-    def get_engine_type(self):
-        return GridEngineType.SLURM
-
     def is_valid(self, host):
         node_state = self._get_host_state(host)
         for bad_state in SlurmGridEngine._NODE_BAD_STATES:
@@ -114,7 +124,7 @@ class SlurmGridEngine(GridEngine):
             num_tasks_str = job_dict.get('NumTasks', '1')
             num_tasks = int(num_tasks_str) if num_tasks_str.isdigit() else 1
 
-            job_state = GridEngineJobState.from_letter_code(job_dict.get('JobState'))
+            job_state = GridEngineJobState.from_letter_code(job_dict.get('JobState'), self.job_state_to_codes)
             if job_state == GridEngineJobState.PENDING:
                 # In certain cases pending job's start date can be estimated start date.
                 # It confuses autoscaler and therefore should be ignored.
@@ -271,3 +281,17 @@ class SlurmJobValidator(GridEngineJobValidator):
                 continue
             valid_jobs.append(job)
         return valid_jobs, invalid_jobs
+
+
+class SlurmLaunchAdapter(GridEngineLaunchAdapter):
+
+    def __init__(self):
+        pass
+
+    def get_worker_init_task_name(self):
+        return 'SLURMWorkerSetup'
+
+    def get_worker_launch_params(self):
+        return {
+            'CP_CAP_SLURM': 'false'
+        }

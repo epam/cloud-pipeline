@@ -91,6 +91,8 @@ def test_qstat_parsing():
 
     job_1, job_2 = jobs
 
+    assert job_1.root_id == '1'
+    assert job_1.id == '1'
     assert job_1.name == 'name1'
     assert job_1.user == 'root'
     assert job_1.state == GridEngineJobState.RUNNING
@@ -99,8 +101,10 @@ def test_qstat_parsing():
     assert job_1.mem == 0
     assert job_1.datetime == datetime(2018, 12, 21,
                                       11, 48, 00)
-    assert 'pipeline-38415' in job_1.hosts
+    assert job_1.hosts == ['pipeline-38415']
 
+    assert job_2.root_id == '2'
+    assert job_2.id == '2'
     assert job_2.name == 'name2'
     assert job_2.user == 'someUser'
     assert job_2.state == GridEngineJobState.PENDING
@@ -109,7 +113,7 @@ def test_qstat_parsing():
     assert job_2.mem == 5
     assert job_2.datetime == datetime(2018, 12, 21,
                                       12, 39, 38)
-    assert len(job_2.hosts) == 0
+    assert job_2.hosts == []
 
 
 def test_qstat_array_job_parsing():

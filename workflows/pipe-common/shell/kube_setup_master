@@ -375,3 +375,12 @@ if [ "$CP_CAP_KUBE_DNS_ADD_TO_HOST" == "true" ]; then
     echo "options rotate" >> /tmp/resolv.conf
     \cp /tmp/resolv.conf /etc/resolv.conf
 fi
+
+(
+    export CP_CAP_AUTOSCALE_TASK="KubeAutoscaling"
+    export CP_CAP_SGE_QUEUE_DEFAULT="true"
+    export CP_CAP_SGE_QUEUE_STATIC="true"
+    export CP_CAP_SGE_QUEUE_NAME="default"
+    export CP_CAP_SGE_MASTER_CORES="0"
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.kube.default.log" 2>&1 &
+)
