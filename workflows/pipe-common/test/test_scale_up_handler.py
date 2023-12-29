@@ -35,6 +35,7 @@ RUN_ID = '12345'
 cmd_executor = Mock()
 grid_engine = Mock()
 api = Mock()
+launch_adapter = Mock()
 host_storage = MemoryHostStorage()
 instance_helper = Mock()
 parent_run_id = 'parent_run_id'
@@ -53,6 +54,7 @@ queue_name = 'main.q'
 hostlist = '@allhosts'
 run_id_queue = Queue()
 scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
+                                            launch_adapter=launch_adapter,
                                             host_storage=host_storage, parent_run_id=parent_run_id,
                                             instance_disk=instance_disk, instance_image=instance_image,
                                             cmd_template=cmd_template, price_type=price_type,
