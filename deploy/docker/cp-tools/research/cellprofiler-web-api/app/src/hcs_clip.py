@@ -1,6 +1,20 @@
-from .config import Config
+# Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import copy
+from multiprocessing.pool import ThreadPool
+import traceback
 import os
-from .modules.tifffile_with_offsets import TiffFile, TiffPage
 import numpy as np
 from moviepy.editor import ImageSequenceClip
 import time
@@ -8,9 +22,19 @@ from PIL import Image, ImageOps
 import xml.etree.ElementTree as ET
 import json
 import errno
-from .hcs_modules_factory import prepare_input_path
-from .hcs_manager import HCSManager
 import uuid
+import subprocess
+
+from .config import Config
+from .modules.tifffile_with_offsets import TiffFile, TiffPage
+from .hcs_utils import get_required_field, prepare_cloud_path
+
+POOL_SIZE = int(os.getenv('CELLPROFILER_IMAGES_API_THREADS', 2))
+CELLPROFILER_API_HOME = os.getenv('CELLPROFILER_API_HOME', '/opt/cellprofiler-api-wrapper')
+HCS_TOOLS_HOME = os.path.join(CELLPROFILER_API_HOME, 'hcs-tools')
+RAW_IMAGES_ROOT = os.path.join(HCS_TOOLS_HOME, '.images')
+CONVERT_TO_OME_TIFF_SCRIPT = os.path.join(HCS_TOOLS_HOME, 'convert_to_ome_tiff.sh')
+OME_TIFF_NAME = 'data.ome.tiff'
 
 
 def create_clip(params):
@@ -31,16 +55,16 @@ def create_clip(params):
     # z-plane id if by_time = 1, time point id if by_time = 0
     point_id = params.get('pointId') if 'pointId' in params else '1'
 
-    path = HCSManager.get_required_field(params, 'path')
-    path = prepare_input_path(path)
+    path = get_required_field(params, 'path')
+    path = prepare_cloud_path(path)
     # by_field = 1 - create video for specified well field
     # by_field = 0 - create video for specified well
-    by_field = int(HCSManager.get_required_field(params, 'byField'))
+    by_field = int(get_required_field(params, 'byField'))
     # well or well field id
-    cell = int(HCSManager.get_required_field(params, 'cell'))
+    cell = int(get_required_field(params, 'cell'))
 
     preview_dir, sequences = parse_hcs(path, sequence_id)
-    preview_dir = prepare_input_path(preview_dir)
+    preview_dir = prepare_cloud_path(preview_dir)
     index_path = os.path.join(preview_dir, 'Index.xml')
     if not os.path.isfile(index_path):
         index_path = os.path.join(preview_dir, 'index.xml')
@@ -58,7 +82,8 @@ def create_clip(params):
         if not by_time:
             if point_id not in timepoints:
                 raise RuntimeError('Incorrect timepoint id [{}]'.format(point_id))
-        ome_tiff_path, offsets_path = get_path(preview_dir, seq, by_field)
+        preview_seq_dir = os.path.join(preview_dir, '{}'.format(seq))
+        ome_tiff_path, offsets_path = get_path(preview_seq_dir, by_field)
         pages = get_pages(list(selected_channels.keys()), point_id, planes, len(channels), by_time, timepoints, cell)
         set_offsets(offsets_path, pages)
         read_images(ome_tiff_path, pages)
@@ -170,7 +195,7 @@ def mkdir(path):
     return True
 
 
-def get_selected_channels(params, all_channels):
+def get_selected_channels(params, all_channels, is_ome_tiff=False):
     selected_channels = dict()
     for channel_id, channel_name in all_channels.items():
         channel_params = params.get(channel_name)
@@ -186,15 +211,16 @@ def get_selected_channels(params, all_channels):
                 'min': int(channel_params[3]),
                 'max': int(channel_params[4])
             }
+        if is_ome_tiff:
+            selected_channels[channel_id] = {'name': channel_name}
     if len(selected_channels) < 1:
         raise RuntimeError("At least one channel is required")
     return selected_channels
 
 
-def get_path(preview_dir, seq, by_field):
-    ome_tiff_file_name = 'data.ome.tiff' if by_field else 'overview_data.ome.tiff'
-    offsets_file_name = 'data.offsets.json' if by_field else 'overview_data.offsets.json'
-    preview_seq_dir = os.path.join(preview_dir, '{}'.format(seq))
+def get_path(preview_seq_dir, original):
+    ome_tiff_file_name = 'data.ome.tiff' if original else 'overview_data.ome.tiff'
+    offsets_file_name = 'data.offsets.json' if original else 'overview_data.offsets.json'
     ome_tiff_path = os.path.join(preview_seq_dir, ome_tiff_file_name)
     offsets_path = os.path.join(preview_seq_dir, offsets_file_name)
     return ome_tiff_path, offsets_path
@@ -250,3 +276,460 @@ def color_image(image, channel):
 
 def _get_items(collection, key, target):
     return list((item for item in collection if item.get(key, None) == target))
+
+
+class ImageProperties:
+
+    def __init__(self, image_uuid):
+        self.uuid = image_uuid
+        self.sequence_id = None
+        self.timepoint = None
+        self.format = 'tiff'
+        self.original = None
+        self.cells = []
+        self.result_image_path = None
+        self.well_map = None
+        self.well_column = None
+        self.well_row = None
+        self.ome_tiff_path = None
+        self.offsets_path = None
+        self.selected_z_planes = []
+        self.selected_channels = {}
+        self.all_z_planes = []
+        self.all_timepoints = []
+        self.all_channels = {}
+        self.index_path = None
+
+    def is_ome_tiff(self):
+        return str(self.format).lower().endswith('ome.tiff')
+
+
+class ImageParametersValidator:
+
+    def validate(self, params):
+        image_uuid = str(uuid.uuid4())
+        image = ImageProperties(image_uuid)
+        image.selected_z_planes = get_required_field(params, 'zPlanes').split(',')
+        image.sequence_id = str(get_required_field(params, 'sequenceId'))
+        image.timepoint = get_required_field(params, 'timepoint')
+        image.format = params.get('format', 'tiff')
+        image.original = int(params.get('original', 1))
+        path = get_required_field(params, 'path')
+        path = prepare_cloud_path(path)
+        image.cells = [int(field) for field in get_required_field(params, 'cells').split(',')]
+        # well: shall have format as in wells_map.json col_row (example: 2_2)
+        wells_map_key = params.get('well', None)
+        if not image.original and len(image.cells) > 1:
+            raise RuntimeError('Overview image creation available for single well only.')
+        if image.is_ome_tiff() and len(image.cells) > 1:
+            raise RuntimeError('OME-TIFF image creation available for single cell only.')
+        if wells_map_key:
+            image.well_column, image.well_row = wells_map_key.split('_')
+
+        preview_dir, sequences = parse_hcs(path, image.sequence_id)
+        image.all_timepoints = sequences[image.sequence_id]
+        preview_dir = prepare_cloud_path(preview_dir)
+        image.index_path = self.get_index_path(preview_dir)
+        # hcs channels and z-planes
+        image.all_channels, image.all_z_planes = get_planes_and_channels(image.index_path)
+        for selected_plane in image.selected_z_planes:
+            if str(selected_plane) not in [str(plane) for plane in image.all_z_planes]:
+                raise RuntimeError('Incorrect Z plane id [{}]'.format(selected_plane))
+
+        image.selected_channels = get_selected_channels(params, image.all_channels, image.is_ome_tiff())
+        image.result_image_path = self.build_image_path(image.format, image.is_ome_tiff(), image.uuid)
+
+        preview_seq_dir = os.path.join(preview_dir, '{}'.format(image.sequence_id))
+        ome_tiff_path, offsets_path = get_path(preview_seq_dir, image.original)
+        ome_tiff_not_found = not os.path.isfile(ome_tiff_path)
+        well_map = None
+        if image.original or (wells_map_key and ome_tiff_not_found):
+            well_map = self.get_well_map(preview_seq_dir, wells_map_key)
+        if ome_tiff_not_found:
+            if not well_map:
+                raise RuntimeError("Failed to determine source tiff path: 'well' parameter shall be provided.")
+            ome_tiff_path, offsets_path = self.get_paths_from_wells_map(well_map, preview_seq_dir)
+        if image.original:
+            if not well_map.get('coordinates') or not well_map.get('field_size'):
+                raise RuntimeError("Incorrect 'wells_map.json' format. Mandatory fields: 'coordinates', 'field_size'")
+        image.well_map = well_map
+        image.ome_tiff_path = ome_tiff_path
+        image.offsets_path = offsets_path
+        return image
+
+    @staticmethod
+    def get_index_path(preview_dir):
+        index_path = os.path.join(preview_dir, 'Index.xml')
+        if not os.path.isfile(index_path):
+            return os.path.join(preview_dir, 'index.xml')
+        return index_path
+
+    @staticmethod
+    def build_image_path(image_extension, is_ome_tiff, image_uuid):
+        images_dir = os.path.join(Config.COMMON_RESULTS_DIR, 'images')
+        mkdir(images_dir)
+        if is_ome_tiff:
+            images_dir = os.path.join(images_dir, image_uuid)
+            mkdir(images_dir)
+            return images_dir
+        if not str(image_extension).startswith('.'):
+            image_extension = '.{}'.format(image_extension)
+        image_name = image_uuid + image_extension
+        return os.path.join(images_dir, image_name)
+
+    @staticmethod
+    def get_well_map(preview_seq_dir, well):
+        if not well:
+            raise RuntimeError("Parameter 'well' shall be specified.")
+        wells_map_path = os.path.join(preview_seq_dir, 'wells_map.json')
+        with open(wells_map_path) as json_file:
+            data = json.load(json_file)
+        well_data = data.get(well, None)
+        if not well_data:
+            raise RuntimeError("Failed to find well '{}' in wells_map".format(well))
+        return well_data
+
+    @staticmethod
+    def get_paths_from_wells_map(well_map, preview_seq_dir, original=True):
+        ome_tiff_path = os.path.join(preview_seq_dir, well_map.get('path' if original else 'overview_path'))
+        offsets_path = os.path.join(preview_seq_dir,
+                                    well_map.get('offsets_path' if original else 'overview_offsets_path'))
+        return ome_tiff_path, offsets_path
+
+
+class ImageGenerator:
+
+    def __init__(self, image_properties: ImageProperties):
+        self.image_properties = image_properties
+
+    def generate(self):
+        pass
+
+    def generate_pages(self):
+        pages = self.get_pages_with_cells()
+        self.set_offsets_with_planes(pages)
+        self.read_images_with_planes(pages)
+        return pages
+
+    def get_pages_with_cells(self):
+        channel_ids = list(self.image_properties.selected_channels.keys())
+        channels_count = len(self.image_properties.all_channels)
+        z_planes_count = len(self.image_properties.all_z_planes)
+        timepoints_count = len(self.image_properties.all_timepoints)
+        step = z_planes_count * channels_count * timepoints_count
+        pages = list()
+        for cell_id in self.image_properties.cells:
+            num = 0
+            offset = step * cell_id
+            for time_point in self.image_properties.all_timepoints:
+                for channel_id in range(channels_count):
+                    plane_pages = list()
+                    for plane in self.image_properties.all_z_planes:
+                        if (channel_id in channel_ids) and plane in self.image_properties.selected_z_planes and \
+                                time_point == self.image_properties.timepoint:
+                            page_num = num + offset
+                            plane_page = {
+                                'page_num': page_num
+                            }
+                            plane_pages.append(plane_page)
+                        num = num + 1
+                    if plane_pages:
+                        pages.append({
+                            'channel_id': channel_id,
+                            'time_point': time_point,
+                            'planes': plane_pages,
+                            'cell': cell_id
+                        })
+        return pages
+
+    def set_offsets_with_planes(self, pages):
+        with open(self.image_properties.offsets_path, 'r') as offsets_file:
+            offsets_line = offsets_file.read()
+            offsets = offsets_line.replace("[", "").replace("]", "").split(", ")
+            for page in pages:
+                for page_plane in page['planes']:
+                    page_num = page_plane['page_num']
+                    page_plane['offset'] = int(offsets[page_num])
+
+    def read_images_with_planes(self, pages):
+        tiff_file = TiffFile(self.image_properties.ome_tiff_path)
+        for page in pages:
+            plane_images = list()
+            planes = page.pop('planes')
+            for page_plane in planes:
+                plane_images.append(TiffPage(tiff_file, index=page_plane['page_num'],
+                                             offset=page_plane['offset']).asarray())
+            page['image'] = np.maximum.reduce(plane_images)
+
+    def merge_channels(self, pages):
+        colored_images = []
+        for page in pages:
+            channel_id = page['channel_id']
+            colored_image = color_image(page['image'], self.image_properties.selected_channels[channel_id])
+            colored_images.append(colored_image)
+        return merge_hcs_channels(colored_images)
+
+    def parse_coordinates(self):
+        coordinates = dict()
+        if not self.image_properties.original or not self.image_properties.well_map:
+            return coordinates
+        well_map_coordinates = self.image_properties.well_map.get('coordinates')
+        for key, value in well_map_coordinates.items():
+            new_key = int(str(key).lstrip('Image:'))
+            if new_key in self.image_properties.cells:
+                coordinates.update({new_key: value})
+        return coordinates
+
+
+class OverviewImageGenerator(ImageGenerator):
+
+    def __init__(self, image_properties: ImageProperties):
+        super().__init__(image_properties)
+
+    def generate(self):
+        pages = self.generate_pages()
+        image = self.merge_channels(pages)
+        image.save(self.image_properties.result_image_path)
+
+
+class OmeTiffImageGenerator(ImageGenerator):
+
+    def __init__(self, image_properties: ImageProperties):
+        super().__init__(image_properties)
+
+    def generate(self):
+        pages = self.generate_pages()
+
+        results_path = self.image_properties.result_image_path
+        local_workdir = os.path.join(RAW_IMAGES_ROOT, self.image_properties.uuid)
+        image_path_tmp = os.path.join(local_workdir, 'tmp')
+        mkdir(image_path_tmp)
+
+        print("[DEBUG] Preparing raw TIFF data '{}'".format(local_workdir), flush=True)
+        for page in pages:
+            page['channel_id'] = int(page['channel_id']) + 1
+            image_name = 'f{}ch{}.tiff'.format(page['cell'], page['channel_id'])
+            page['path'] = os.path.join('tmp', image_name)
+            Image.fromarray(page['image']).save(os.path.join(image_path_tmp, image_name))
+            page['image'] = None
+
+        coordinates = self.parse_coordinates()
+        index_file_path = self.adjust_index_xml(local_workdir, pages, self.image_properties, coordinates)
+        self.generate_ome_tiff_file(index_file_path, local_workdir, OME_TIFF_NAME, results_path)
+
+    def adjust_index_xml(self, service_images_dir: str, pages: list, image_properties: ImageProperties,
+                         coordinates: dict):
+        original_index_file_path = image_properties.index_path
+        index_xml_tree = ET.parse(original_index_file_path)
+        index_xml_root = index_xml_tree.getroot()
+        hcs_schema_prefix = extract_xml_schema(index_xml_root)
+
+        image_ids = self.adjust_images_index(index_xml_root, hcs_schema_prefix, image_properties, pages, coordinates)
+        target_well_id = self.adjust_wells_index(index_xml_root, hcs_schema_prefix, image_ids, image_properties)
+        self.adjust_plate_index(index_xml_root, hcs_schema_prefix, target_well_id)
+
+        index_file_path = os.path.join(service_images_dir, 'Index.xml')
+        print("[DEBUG] Writing OME-TIFF index to '{}'".format(index_file_path), flush=True)
+        ET.register_namespace('', hcs_schema_prefix[1:-1])
+        index_xml_tree.write(index_file_path)
+        return index_file_path
+
+    @staticmethod
+    def adjust_images_index(hcs_xml_info_root, hcs_schema_prefix, image_properties, pages, coordinates):
+        image_ids = list()
+        images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
+        for page in pages:
+            channel_id = page['channel_id']
+            field_id = page['cell']
+            image_id = 'F{}R{}'.format(field_id, channel_id)
+            image_ids.append(image_id)
+
+            target_image = copy.deepcopy(images_list[0])
+            target_image.find(hcs_schema_prefix + 'id').text = image_id
+            target_image.find(hcs_schema_prefix + 'SequenceID').text = image_properties.sequence_id
+            target_image.find(hcs_schema_prefix + 'TimepointID').text = image_properties.timepoint
+            target_image.find(hcs_schema_prefix + 'ChannelID').text = str(channel_id)
+            target_image.find(hcs_schema_prefix + 'FieldID').text = str(field_id)
+            target_image.find(hcs_schema_prefix + 'Col').text = image_properties.well_column or '2'
+            target_image.find(hcs_schema_prefix + 'Row').text = image_properties.well_row or '2'
+            target_image.find(hcs_schema_prefix + 'URL').text = page['path']
+            if image_properties.original:
+                position_x, position_y = coordinates.get(int(field_id))
+                target_image.find(hcs_schema_prefix + 'PositionX').text = str(position_x)
+                target_image.find(hcs_schema_prefix + 'PositionY').text = str(position_y)
+            else:
+                target_image.find(hcs_schema_prefix + 'PositionX').text = '0'
+                target_image.find(hcs_schema_prefix + 'PositionY').text = '0'
+            target_image.find(hcs_schema_prefix + 'PlaneID').text = '1'
+
+            images_list.append(target_image)
+
+        for image in images_list.findall(hcs_schema_prefix + 'Image'):
+            image_id = image.find(hcs_schema_prefix + 'id').text
+            if image_id not in image_ids:
+                images_list.remove(image)
+
+        return image_ids
+
+    @staticmethod
+    def adjust_wells_index(hcs_xml_info_root, hcs_schema_prefix, image_ids, image_properties):
+        wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
+        targe_well = wells_list[0]
+        target_well_id = targe_well.find(hcs_schema_prefix + 'id').text
+        for image_id in image_ids:
+            targe_well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
+        targe_well.find(hcs_schema_prefix + 'Col').text = image_properties.well_column or '2'
+        targe_well.find(hcs_schema_prefix + 'Row').text = image_properties.well_row or '2'
+        for well_image in targe_well.findall(hcs_schema_prefix + 'Image'):
+            if well_image.get('id') not in image_ids:
+                targe_well.remove(well_image)
+
+        for well in wells_list.findall(hcs_schema_prefix + 'Well'):
+            well_id = well.find(hcs_schema_prefix + 'id').text
+            if well_id != target_well_id:
+                wells_list.remove(well)
+
+        return target_well_id
+
+    @staticmethod
+    def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
+        if not hcs_schema_prefix:
+            hcs_schema_prefix = extract_xml_schema(hcs_xml_info_root)
+        plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
+        plate = plates_list.find(hcs_schema_prefix + 'Plate')
+        return plate
+
+    def adjust_plate_index(self, hcs_xml_info_root, hcs_schema_prefix, target_well_id):
+        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        for well in plate.findall(hcs_schema_prefix + 'Well'):
+            if well.get('id') != target_well_id:
+                plate.remove(well)
+
+    @staticmethod
+    def generate_ome_tiff_file(index_file_path, local_workdir, tiff_file_name, results_dir):
+        path_to_script = os.path.join(HCS_TOOLS_HOME, CONVERT_TO_OME_TIFF_SCRIPT)
+        print("[DEBUG] Generating OME-TIFF image", flush=True)
+        command = 'bash "{}" "{}" "{}" "{}" "{}"'.format(path_to_script, index_file_path, local_workdir,
+                                                         tiff_file_name, results_dir)
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        exit_code = process.wait()
+        if exit_code != 0:
+            raise RuntimeError('Failed to generate OME-TIFF image. Error: {}'.format(process.stderr.readlines()))
+        print("[DEBUG] OME-TIFF image generated successfully! Results: '{}'".format(results_dir), flush=True)
+
+
+class OriginalImageGenerator(ImageGenerator):
+
+    def __init__(self, image_properties: ImageProperties):
+        super().__init__(image_properties)
+
+    def generate(self):
+        pages = self.generate_pages()
+        image = self.merge_channels(pages)
+        image.save(self.image_properties.result_image_path)
+
+    def generate_pages(self):
+        pages = super().generate_pages()
+        coordinates = self.parse_coordinates()
+        field_size = self.image_properties.well_map.get('field_size')
+        return self.merge_fields_pages(pages, self.image_properties.selected_channels.keys(), coordinates, field_size)
+
+    def merge_fields_pages(self, pages, chanel_ids, coordinates, field_size):
+        merged_pages = list()
+
+        # prepare common initial coordinates
+        image_array = pages[0]['image']
+        image_size_x, image_size_y = image_array.shape
+        initial_size_x, x_start, pixel_size_x = self.calculate_initials_x(coordinates, field_size, image_size_x)
+        initial_size_y, y_start, pixel_size_y = self.calculate_initials_y(coordinates, field_size, image_size_y)
+
+        # merge cells for each channel
+        for chanel_id in chanel_ids:
+            image_by_cell = dict()
+            chanel_pages = _get_items(pages, 'channel_id', chanel_id)
+            [image_by_cell.update({page['cell']: page['image']}) for page in chanel_pages]
+
+            image = self.merge_images_as_arrays(image_by_cell, field_size, coordinates, initial_size_x, x_start,
+                                                pixel_size_x, initial_size_y, y_start, pixel_size_y)
+
+            page = {
+                'image': image,
+                'channel_id': chanel_id,
+                'time_point': self.image_properties.timepoint
+            }
+            merged_pages.append(page)
+        return merged_pages
+
+    def merge_images_as_arrays(self, images, field_size, coordinates, initial_size_x, x_start, pixel_size_x,
+                               initial_size_y, y_start, pixel_size_y):
+        if len(coordinates) == 1:
+            for coord_id, coord in coordinates.items():
+                return images[coord_id]
+
+        result = np.zeros((initial_size_y, initial_size_x))
+        for coord_id, coord in coordinates.items():
+            col_start, col_end = self.get_array_range(coord[0], field_size, pixel_size_x, x_start)
+            row_start, row_end = self.get_array_range(coord[1], field_size, pixel_size_y, y_start)
+            result[row_start:row_end, col_start:col_end] = np.flipud(images[coord_id])
+        merged_image = np.flipud(result)
+
+        return merged_image
+
+    @staticmethod
+    def get_array_range(coord, field_size, pixel_size, start):
+        initial_coordinate = coord - start
+        end = int((initial_coordinate + field_size) / pixel_size)
+        start = int(initial_coordinate / pixel_size)
+        return start, end
+
+    def calculate_initials_x(self, coordinates, field_size, image_size_x):
+        return self.calculate_initial_coordinates(coordinates, field_size, image_size_x, 0)
+
+    def calculate_initials_y(self, coordinates, field_size, image_size_y):
+        return self.calculate_initial_coordinates(coordinates, field_size, image_size_y, 1)
+
+    @staticmethod
+    def calculate_initial_coordinates(coordinates, field_size, image_size, index):
+        values = [coord[index] for coord in list(coordinates.values())]
+        start = min(values)
+        pixel_size = field_size / image_size
+        length = max(values) - start + field_size
+        initial_size = int(length / pixel_size) or image_size
+        return initial_size, start, pixel_size
+
+
+class HCSImagesManager:
+
+    def __init__(self, tasks):
+        self._tasks = tasks
+        self._pool = ThreadPool(processes=POOL_SIZE)
+
+    def get_results(self, task_id):
+        return self._tasks.get(task_id)
+
+    def generate_clip(self, params):
+        pass
+
+    def generate_image(self, params):
+        image_properties = ImageParametersValidator().validate(params)
+
+        task_id = image_properties.uuid
+        self._tasks.update({task_id: {'state': 'running'}})
+        self._pool.apply_async(func=self.run_image_generation, args=(task_id, image_properties))
+        return task_id
+
+    def run_image_generation(self, task_id: str, image_properties: ImageProperties):
+        try:
+            self.get_generator(image_properties).generate()
+            self._tasks.update({task_id: {'state': 'success', 'path': image_properties.result_image_path}})
+        except Exception as e:
+            print(traceback.format_exc(), flush=True)
+            self._tasks.update({task_id: {'state': 'failure', 'message': e.__str__()}})
+
+    @staticmethod
+    def get_generator(image_properties: ImageProperties):
+        if image_properties.is_ome_tiff():
+            return OmeTiffImageGenerator(image_properties)
+        if image_properties.original:
+            return OriginalImageGenerator(image_properties)
+        return OverviewImageGenerator(image_properties)
