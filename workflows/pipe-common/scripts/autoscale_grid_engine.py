@@ -17,9 +17,9 @@ import logging
 import multiprocessing
 import os
 import traceback
-from datetime import timedelta
 
 import sys
+from datetime import timedelta
 
 from pipeline.hpc.autoscaler import \
     GridEngineAutoscalingDaemon, GridEngineAutoscaler, \
@@ -28,11 +28,14 @@ from pipeline.hpc.autoscaler import \
     DoNothingAutoscalingDaemon, DoNothingScaleUpHandler, DoNothingScaleDownHandler
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
-from pipeline.hpc.event import GridEngineEventManager
 from pipeline.hpc.engine.gridengine import GridEngineType
+from pipeline.hpc.engine.kube import KubeGridEngine, KubeJobValidator, KubeDefaultDemandSelector, KubeLaunchAdapter, \
+    KubeResourceParser, get_kube_client
 from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDefaultDemandSelector, SunGridEngineJobValidator, \
-    SunGridEngineCustomDemandSelector
-from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator
+    SunGridEngineCustomDemandSelector, SunGridEngineLaunchAdapter
+from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, \
+    SlurmLaunchAdapter
+from pipeline.hpc.event import GridEngineEventManager
 from pipeline.hpc.host import FileSystemHostStorage, ThreadSafeHostStorage
 from pipeline.hpc.instance.avail import InstanceAvailabilityManager
 from pipeline.hpc.instance.provider import DefaultInstanceProvider, \
@@ -51,7 +54,7 @@ from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger,
 from pipeline.utils.path import mkdir
 
 
-def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, hostlist):
+def fetch_instance_launch_params(api, launch_adapter, master_run_id):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue')
                             for param in parent_run.get('pipelineRunParameters', [])}
@@ -66,16 +69,7 @@ def fetch_instance_launch_params(api, master_run_id, grid_engine_type, queue, ho
         if not param_value:
             continue
         launch_params[param_name] = param_value
-    if grid_engine_type == GridEngineType.SLURM:
-        launch_params.update({
-            'CP_CAP_SLURM': 'false'
-        })
-    else:
-        launch_params.update({
-            'CP_CAP_SGE': 'false',
-            'CP_CAP_SGE_QUEUE_NAME': queue,
-            'CP_CAP_SGE_HOSTLIST_NAME': hostlist
-        })
+    launch_params.update(launch_adapter.get_worker_launch_params())
     launch_params.update({
         'CP_CAP_AUTOSCALE': 'false',
         'CP_CAP_AUTOSCALE_WORKERS': '0',
@@ -124,10 +118,14 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
 def get_daemon():
     params = GridEngineParameters()
 
-    grid_engine_type = GridEngineType.SLURM if params.queue.slurm_selected.get() else GridEngineType.SGE
+    grid_engine_type = params.autoscaling_advanced.grid_engine.get() \
+        or (GridEngineType.KUBE if params.queue.kube_grid_engine.get()
+            else GridEngineType.SLURM if params.queue.slurm_grid_engine.get()
+            else GridEngineType.SGE)
 
     api_url = os.environ['API']
 
+    cluster_owner = os.getenv('OWNER', 'root')
     cluster_hostfile = os.environ['DEFAULT_HOSTFILE']
     cluster_master_run_id = os.environ['RUN_ID']
     cluster_master_name = os.getenv('HOSTNAME', 'pipeline-' + str(cluster_master_run_id))
@@ -210,6 +208,8 @@ def get_daemon():
     hybrid_instance_family = params.autoscaling.hybrid_instance_family.get() \
                              or common_utils.extract_family_from_instance_type(instance_cloud_provider, instance_type)
 
+    polling_delay = params.autoscaling_advanced.polling_delay.get()
+
     scale_up_strategy = params.autoscaling.scale_up_strategy.get()
     scale_up_batch_size = params.autoscaling.scale_up_batch_size.get()
     scale_up_polling_delay = params.autoscaling.scale_up_polling_delay.get()
@@ -255,9 +255,6 @@ def get_daemon():
 
     if dry_run:
         Logger.info('Using dry run mode...')
-
-    instance_launch_params = fetch_instance_launch_params(api, cluster_master_run_id,
-                                                          grid_engine_type, queue_name, queue_hostlist_name)
 
     clock = Clock()
     # TODO: Git rid of CmdExecutor usage in favor of CloudPipelineExecutor implementation
@@ -401,6 +398,15 @@ def get_daemon():
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                           cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
+        launch_adapter = SlurmLaunchAdapter()
+    elif grid_engine_type == GridEngineType.KUBE:
+        kube_client = get_kube_client()
+        resource_parser = KubeResourceParser()
+        grid_engine = KubeGridEngine(kube=kube_client, resource_parser=resource_parser, owner=cluster_owner)
+        job_validator = KubeJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
+                                         cluster_max_supply=cluster_supply)
+        demand_selector = KubeDefaultDemandSelector(grid_engine=grid_engine)
+        launch_adapter = KubeLaunchAdapter()
     else:
         grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
                                     queue_default=queue_default)
@@ -410,6 +416,7 @@ def get_daemon():
         demand_selector = SunGridEngineDefaultDemandSelector(grid_engine=grid_engine)
         if custom_requirements:
             demand_selector = SunGridEngineCustomDemandSelector(inner=demand_selector, grid_engine=grid_engine)
+        launch_adapter = SunGridEngineLaunchAdapter(queue=queue_name, hostlist=queue_hostlist_name)
 
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
     host_storage = ThreadSafeHostStorage(host_storage)
@@ -438,12 +445,15 @@ def get_daemon():
                                   .format(instance.name, instance.cpu, instance.gpu, instance.mem)
                                   for instance in available_instances)))
 
+    instance_launch_params = fetch_instance_launch_params(api, launch_adapter, cluster_master_run_id)
+
     worker_tags_handler = CloudPipelineWorkerTagsHandler(api=api, active_timeout=active_timeout,
                                                          active_tag=grid_engine_type + '_IN_USE',
                                                          host_storage=host_storage,
                                                          static_host_storage=static_host_storage, clock=clock,
                                                          common_utils=common_utils, dry_run=dry_run)
     scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
+                                                launch_adapter=launch_adapter,
                                                 host_storage=host_storage,
                                                 parent_run_id=cluster_master_run_id,
                                                 instance_disk=instance_disk, instance_image=instance_image,
@@ -489,7 +499,7 @@ def get_daemon():
                                       max_additional_hosts=autoscale_instance_number,
                                       idle_timeout=scale_down_idle_timeout, clock=clock)
     daemon = GridEngineAutoscalingDaemon(autoscaler=autoscaler, worker_validator=worker_validator,
-                                         worker_tags_handler=worker_tags_handler, polling_timeout=10)
+                                         worker_tags_handler=worker_tags_handler, polling_timeout=polling_delay)
     if dry_init:
         daemon = DoNothingAutoscalingDaemon()
     return daemon

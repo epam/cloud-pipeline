@@ -252,6 +252,13 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.custom_requirements = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS', type=PARAM_BOOL, default=True,
             help='Enables custom requirements processing.')
+        self.grid_engine = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_GRID_ENGINE', type=PARAM_STR, default=None,
+            help='Specifies grid engine type.\n'
+                 'Allowed values: SGE, SLURM and KUBE.')
+        self.polling_delay = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_POLLING_DELAY', type=PARAM_INT, default=10,
+            help='Specifies a polling delay in seconds for grid engine jobs')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
@@ -277,12 +284,15 @@ class GridEngineQueueParameters(GridEngineParametersGroup):
         self.master_cores = GridEngineParameter(
             name='CP_CAP_SGE_MASTER_CORES', type=PARAM_INT, default=None,
             help='Specifies a number of available cores on a cluster manager.')
-        self.sge_selected = GridEngineParameter(
-            name='CP_CAP_SGE', type=PARAM_BOOL, default=True,
-            help='Defines if SGE selected as grid engine.')
-        self.slurm_selected = GridEngineParameter(
+        self.sge_grid_engine = GridEngineParameter(
+            name='CP_CAP_SGE', type=PARAM_BOOL, default=False,
+            help='Enables SGE grid engine.')
+        self.slurm_grid_engine = GridEngineParameter(
             name='CP_CAP_SLURM', type=PARAM_BOOL, default=False,
-            help='Defines if Slurm selected as grid engine.')
+            help='Enables Slurm grid engine.')
+        self.kube_grid_engine = GridEngineParameter(
+            name='CP_CAP_KUBE', type=PARAM_BOOL, default=False,
+            help='Enables Kubernetes grid engine.')
 
 
 class GridEngineParameters(GridEngineParametersGroup):

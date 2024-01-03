@@ -8,7 +8,7 @@ from datetime import datetime
 
 from pipeline.hpc.cmd import ExecutionError
 from pipeline.hpc.engine.gridengine import GridEngine, GridEngineJobState, GridEngineJob, AllocationRule, \
-    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator
+    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator, GridEngineLaunchAdapter
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand, CustomResourceSupply, \
     CustomResourceDemand
@@ -41,6 +41,18 @@ class SunGridEngine(GridEngine):
         # todo: Move to script init function
         self.gpu_resource_name = os.getenv('CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU', 'gpus')
         self.mem_resource_name = os.getenv('CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM', 'ram')
+        self.job_state_to_codes = {
+            GridEngineJobState.RUNNING: ['r', 't', 'Rr', 'Rt'],
+            GridEngineJobState.PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw'],
+            GridEngineJobState.SUSPENDED: ['s', 'ts', 'S', 'tS', 'T', 'tT', 'Rs', 'Rts', 'RS', 'RtS', 'RT', 'RtT'],
+            GridEngineJobState.ERROR: ['Eqw', 'Ehqw', 'EhRqw'],
+            GridEngineJobState.DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT'],
+            GridEngineJobState.COMPLETED: [],
+            GridEngineJobState.UNKNOWN: []
+        }
+
+    def get_engine_type(self):
+        return GridEngineType.SGE
 
     def get_jobs(self):
         try:
@@ -78,7 +90,7 @@ class SunGridEngine(GridEngine):
             job_ids = ['{}.{}'.format(root_job_id, job_task) for job_task in job_tasks] or [root_job_id]
             job_name = job_list.findtext('JB_name')
             job_user = job_list.findtext('JB_owner')
-            job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'))
+            job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'), self.job_state_to_codes)
             job_datetime = self._parse_date(
                 job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
             job_hosts = [job_host] if job_host else []
@@ -160,9 +172,6 @@ class SunGridEngine(GridEngine):
         return result
 
     def _parse_mem(self, mem_request):
-        """
-        See https://linux.die.net/man/1/sge_types
-        """
         if not mem_request:
             return 0
         modifiers = {
@@ -230,9 +239,6 @@ class SunGridEngine(GridEngine):
             if "processors" in line:
                 return ResourceSupply(cpu=int(line.strip().split()[1]))
         return ResourceSupply()
-
-    def get_engine_type(self):
-        return GridEngineType.SGE
 
     def _shutdown_execution_host(self, host, skip_on_failure):
         _perform_command(
@@ -413,3 +419,19 @@ class SunGridEngineJobValidator(GridEngineJobValidator):
             valid_jobs.append(job)
         return valid_jobs, invalid_jobs
 
+
+class SunGridEngineLaunchAdapter(GridEngineLaunchAdapter):
+
+    def __init__(self, queue, hostlist):
+        self._queue = queue
+        self._hostlist = hostlist
+
+    def get_worker_init_task_name(self):
+        return 'SGEWorkerSetup'
+
+    def get_worker_launch_params(self):
+        return {
+            'CP_CAP_SGE': 'false',
+            'CP_CAP_SGE_QUEUE_NAME': self._queue,
+            'CP_CAP_SGE_HOSTLIST_NAME': self._hostlist
+        }

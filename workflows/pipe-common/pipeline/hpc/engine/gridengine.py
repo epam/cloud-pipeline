@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
+from datetime import datetime
+
 from pipeline.hpc.logger import Logger
 
 
@@ -19,7 +22,7 @@ def _perform_command(action, msg, error_msg, skip_on_failure):
     Logger.info(msg)
     try:
         action()
-    except RuntimeError as e:
+    except Exception as e:
         Logger.warn(error_msg)
         if not skip_on_failure:
             raise RuntimeError(error_msg, e)
@@ -29,6 +32,7 @@ class GridEngineType:
 
     SGE = "SGE"
     SLURM = "SLURM"
+    KUBE = "KUBE"
 
     def __init__(self):
         pass
@@ -83,21 +87,11 @@ class GridEngineJobState:
     COMPLETED = 'completed'
     UNKNOWN = 'unknown'
 
-    _letter_codes_to_states = {
-        # Job statuses: [SGE] + [SLURM]
-        RUNNING: ['r', 't', 'Rr', 'Rt'] + ['RUNNING'],
-        PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw'] + ['PENDING'],
-        SUSPENDED: ['s', 'ts', 'S', 'tS', 'T', 'tT', 'Rs', 'Rts', 'RS', 'RtS', 'RT', 'RtT'] + ['SUSPENDED', 'STOPPED'],
-        ERROR: ['Eqw', 'Ehqw', 'EhRqw'] + ['DEADLINE', ' FAILED'],
-        DELETED: ['dr', 'dt', 'dRr', 'dRt', 'ds', 'dS', 'dT', 'dRs', 'dRS', 'dRT'] + ['DELETED', 'CANCELLED'],
-        COMPLETED: [] + ['COMPLETED', 'COMPLETING']
-    }
-
     @staticmethod
-    def from_letter_code(code):
-        for key in GridEngineJobState._letter_codes_to_states:
-            if code in GridEngineJobState._letter_codes_to_states[key]:
-                return key
+    def from_letter_code(code, state_to_codes):
+        for state, codes in state_to_codes.items():
+            if code in codes:
+                return state
         return GridEngineJobState.UNKNOWN
 
 
@@ -206,3 +200,44 @@ class GridEngineJobValidator:
 
     def validate(self, jobs):
         pass
+
+
+class GridEngineLaunchAdapter:
+
+    def get_worker_init_task_name(self):
+        pass
+
+    def get_worker_launch_params(self):
+        pass
+
+
+class GridEngineResourceParser:
+
+    def __init__(self, datatime_format, cpu_unit=None, cpu_modifiers=None, mem_unit=None, mem_modifiers=None):
+        self._datetime_format = datatime_format
+        self._cpu_unit = cpu_unit
+        self._cpu_modifiers = cpu_modifiers or {}
+        self._mem_unit = mem_unit
+        self._mem_modifiers = mem_modifiers or {}
+
+    def parse_date(self, timestamp):
+        return datetime.strptime(timestamp, self._datetime_format)
+
+    def parse_cpu(self, quantity):
+        return self._parse_resource(quantity, modifiers=self._cpu_modifiers, unit=self._cpu_unit)
+
+    def parse_mem(self, quantity):
+        return self._parse_resource(quantity, modifiers=self._mem_modifiers, unit=self._mem_unit)
+
+    def _parse_resource(self, quantity, modifiers, unit):
+        if not quantity:
+            return 0
+        if len(quantity) > 1 and quantity[-2:] in modifiers:
+            value, value_unit = int(quantity[:-2]), quantity[-2:]
+        elif len(quantity) > 0 and quantity[-1:] in modifiers:
+            value, value_unit = int(quantity[:-1]), quantity[-1:]
+        else:
+            value, value_unit = int(quantity), ''
+        modifier = modifiers[value_unit]
+        output = float(value * modifier)
+        return int(math.ceil(output / modifiers.get(unit, 1)))
