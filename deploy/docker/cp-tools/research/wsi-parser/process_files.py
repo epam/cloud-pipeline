@@ -27,6 +27,7 @@ import time
 import traceback
 import urllib
 import xml.etree.ElementTree as ET
+import fnmatch
 
 from collections import OrderedDict
 from abc import ABCMeta, abstractmethod
@@ -65,6 +66,7 @@ EXCEPTIONS_MAPPINGS_FILE = os.getenv('WSI_PARSING_EXCEPTIONS_MAPPINGS_FILE')
 FORCE_CATALOG_UPDATE = os.getenv('WSI_PARSING_FORCE_CATALOG_UPDATE', 'false') == 'true'
 CLOUD_STORAGE_ID = os.getenv('WSI_PARSING_STORAGE_ID', None)
 CATALOG_UPDATE_URL = os.getenv('WSI_PARSING_CATALOG_UPDATE_URL', None)
+OME_TIFF_TARGET_FORMAT_MASK = os.getenv('OME_TIFF_TARGET_FORMAT_MASK', '*.qptiff')
 
 STAIN_METHOD_MAPPINGS = {
     'GENERAL': 'General',
@@ -114,7 +116,7 @@ class ImageDetails(object):
         height = resolution_details.get('SizeY')
         objective_details = image_xml.find(SCHEMA_PREFIX + 'ObjectiveSettings')
         if objective_details is not None:
-            refractive_index = float(objective_details.get('RefractiveIndex'))
+            refractive_index = float(objective_details.get('RefractiveIndex') or -1)
             objective_id = objective_details.get('ID')
         else:
             refractive_index = -1
@@ -1248,6 +1250,14 @@ class WsiFileParser:
             self.log_processing_info('No stacks related files found')
         return True
 
+    def find_target_format(self):
+        if not OME_TIFF_TARGET_FORMAT_MASK:
+            return "DZ"
+        for mask in OME_TIFF_TARGET_FORMAT_MASK.split(','):
+            if fnmatch.fnmatch(self.file_path, mask.strip()):
+                return "OME_TIFF"
+        return "DZ"
+
     def process_file(self):
         self.log_processing_info('Start processing')
         if os.path.exists(self.tmp_stat_file_name) \
@@ -1274,7 +1284,8 @@ class WsiFileParser:
             self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
             return 1
         local_file_path = os.path.join(self.tmp_local_dir, os.path.basename(self.file_path))
-        if TARGET_FORMAT == "DZ":
+        _target_format = self.find_target_format() if TARGET_FORMAT == "AUTO" else TARGET_FORMAT
+        if _target_format == "DZ":
             self.log_processing_info('DZ is configured as conversion format for the file!')
             self._mkdir(self._get_tiles_dir())
             conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-dz-$RUN_ID.log 2>&1'
@@ -1284,7 +1295,7 @@ class WsiFileParser:
                                                   ZOOM_TILES_SIZE,
                                                   self._get_tiles_dir(),
                                                   self.tmp_local_dir))
-        elif TARGET_FORMAT == "OME_TIFF":
+        elif _target_format == "OME_TIFF":
             self.log_processing_info('OME_TIFF is configured as conversion format for the file!')
             conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-ome-tiff-$RUN_ID.log 2>&1'
                                           .format(self._OME_TIFF_CREATION_SCRIPT,
@@ -1298,7 +1309,7 @@ class WsiFileParser:
             return 1
         if conversion_result == 0:
             self.update_stat_file(target_image_details)
-            if TARGET_FORMAT == "DZ":
+            if _target_format == "DZ":
                 self.update_info_file(target_image_details.width, target_image_details.height)
             self.log_processing_info('File processing is finished')
         else:
