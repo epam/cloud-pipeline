@@ -29,6 +29,8 @@ spec:
         name: nvidia-device-plugin-ds
     spec:
       tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
       - key: nvidia.com/gpu
         operator: Exists
         effect: NoSchedule
