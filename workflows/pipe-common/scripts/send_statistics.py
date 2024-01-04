@@ -352,7 +352,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Runs count: {}.'.format(runs_count))
     usage_costs = _get_usage_costs(runs)
     logger.info('Usage costs: {}.'.format(usage_costs))
-    usage_weight = usage_costs / platform_usage_costs
+    usage_weight = usage_costs / platform_usage_costs * 100
     logger.info('Usage weight: {}.'.format(usage_weight))
     clusters_compute_hours = _get_cluster_compute_hours(api, from_date_time, to_date_time, user, runs)
     logger.info('Clusters compute hours: {}.'.format(clusters_compute_hours))
