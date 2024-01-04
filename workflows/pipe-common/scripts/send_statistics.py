@@ -391,8 +391,17 @@ def _get_login_time(api, from_date_time, to_date_time, user):
 
 
 def _get_platform_usage_cost(api, from_date, to_date):
-    all_run_dict = _get_runs(api, from_date, to_date, None)
-    return _get_usage_costs(all_run_dict)
+    body = {
+        "from": from_date,
+        "to": to_date,
+        "grouping": "RESOURCE_TYPE"
+    }
+    result = api._request(endpoint='billing/charts', http_method="post", data=body)
+    for item in result:
+        if item['groupingInfo']['RESOURCE_TYPE'] == 'COMPUTE':
+            return float(item['cost']) / 10000
+    logging.error('Failed to get total platform cost')
+    return 0
 
 
 def _get_runs(api, from_date, to_date, user):
