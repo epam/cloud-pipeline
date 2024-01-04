@@ -203,10 +203,22 @@ export CP_CAP_KUBE_DISTR_PREFIX="${CP_CAP_KUBE_DISTR_PREFIX:-"${GLOBAL_DISTRIBUT
 export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/$_pkg_type/kube-${_kube_version}.tgz}"
 export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/docker/kube-dockers-${_kube_version}.tgz}"
 
+_node_gpus_count=$(nvidia-smi -L 2>/dev/null | wc -l)
+_node_gpus_count="${_node_gpus_count:-0}"
+
 pipe_log_info "- Package manager: $_pkg_type\n \
 - Kube version: $_kube_version\n \
 - Kube packages URL: $CP_CAP_KUBE_PACKAGES_DISTR_URL\n \
-- Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_kube_common_setup_task_name"
+- Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR\n \
+- GPUs count: $_node_gpus_count" "$_kube_common_setup_task_name"
+
+if (( _node_gpus_count > 0 )); then
+    pipe_log_info "Installing nvidia-container-toolkit" "$_kube_common_setup_task_name"
+    curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo > /etc/yum.repos.d/nvidia-container-toolkit.repo
+    # Use absolute path to yum to overcome any wrappers/restrictors
+    /usr/bin/yum install -y nvidia-container-toolkit
+    rm -f /etc/yum.repos.d/nvidia-container-toolkit.repo
+fi
 
 CP_CAP_DIND_CONTAINERD_LOG="${CP_CAP_DIND_CONTAINERD_LOG:-/var/log/containerd.log}"
 CP_CAP_DIND_CONTAINERD_BIN="${CP_CAP_DIND_CONTAINERD_BIN:-/usr/local/bin/containerd}"
@@ -221,7 +233,18 @@ EOF
     mkdir -p $(dirname "$_containerd_config_file")
     "$CP_CAP_DIND_CONTAINERD_BIN" config default > "$_containerd_config_file"
     sed -i 's/SystemdCgroup = true/SystemdCgroup = false/' "$_containerd_config_file"
-    # sed -i 's/sandbox_image = "registry.k8s.io/pause:3.6"/sandbox_image = "registry.k8s.io/pause:3.9"/' "$_containerd_config_file"
+
+    if (( _node_gpus_count > 0 )); then
+        sed -i 's/default_runtime_name = "runc"/default_runtime_name = "nvidia"/' "$_containerd_config_file"
+        sed -i '/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes\]/a\
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]\
+          privileged_without_host_devices = false\
+          runtime_engine = ""\
+          runtime_root = ""\
+          runtime_type = "io.containerd.runc.v2"\
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]\
+            BinaryName = "/usr/bin/nvidia-container-runtime"' "$_containerd_config_file"
+    fi
 
     nohup "$CP_CAP_DIND_CONTAINERD_BIN" &> "$CP_CAP_DIND_CONTAINERD_LOG" &
 else

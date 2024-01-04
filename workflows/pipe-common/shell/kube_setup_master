@@ -342,6 +342,33 @@ if [ "$_dns_plugin" ]; then
     fi
 fi
 
+#######################
+# Configure GPU support
+#######################
+
+_node_gpus_count=$(nvidia-smi -L 2>/dev/null | wc -l)
+_node_gpus_count="${_node_gpus_count:-0}"
+pipe_log_info "$_node_gpus_count GPUs found" "$KUBE_MASTER_SETUP_TASK"
+
+if (( _node_gpus_count > 0 )); then
+    CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG="${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/7d7309a5764182197fc74059c1f76fbf708c8ac1/workflows/pipe-common/resources/linux/k8s-dind/nvidia-device-plugin-0.14.3_1.28.2.yml}"
+    pipe_log_info "Installing nvidia plugin from ${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG}" "$KUBE_MASTER_SETUP_TASK"
+    _nvidia_plugin_config_file=/tmp/${RANDOM}.yaml
+    wget -q "$CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG" -O $_nvidia_plugin_config_file
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "[WARN] Cannot download nvidia plugin config from ${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG}, GPUs will not be configured" "$KUBE_MASTER_SETUP_TASK"
+    else
+        kubectl apply -f "$_nvidia_plugin_config_file"
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "[WARN] Failed to install Nvidia plugin, GPUs will not be functional" "$KUBE_MASTER_SETUP_TASK"
+        else
+            pipe_log_info "nvidia plugin was installed" "$KUBE_MASTER_SETUP_TASK"
+        fi
+        rm -f "$_nvidia_plugin_config_file"
+    fi
+fi
+
+
 pipe_log_success "Kubernetes master is started" "$KUBE_MASTER_SETUP_TASK"
 
 #############################################################
