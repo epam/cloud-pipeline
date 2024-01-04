@@ -1184,7 +1184,7 @@ class WsiFileParser:
         target_image_details = None
         target_group_inx = 0
         for group_name in series_mapping.keys():
-            if group_name not in self.service_image_groups:
+            if group_name.lower() not in self.service_image_groups:
                 target_group = group_name
                 break
             target_group_inx = target_group_inx + 1
@@ -1311,6 +1311,11 @@ class WsiFileParser:
             self.update_stat_file(target_image_details)
             if _target_format == "DZ":
                 self.update_info_file(target_image_details.width, target_image_details.height)
+            if self.file_path.endswith('.qptiff'):
+                vsi_path = os.path.join(WsiParsingUtils.get_service_directory(self.file_path),
+                                        WsiParsingUtils.get_basename_without_extension(self.file_path) + '.vsi')
+                with open(vsi_path, 'w') as fp:
+                    pass
             self.log_processing_info('File processing is finished')
         else:
             self.log_processing_info('File processing was not successful')
@@ -1338,6 +1343,8 @@ def log_info(message, status=TaskStatus.RUNNING):
 
 
 def try_process_file(file_path):
+    if os.stat(file_path).st_size == 0:
+        return 0
     parser = None
     try:
         parser = WsiFileParser(file_path)

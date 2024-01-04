@@ -71,7 +71,7 @@ function generate_ome_tiff() {
     _ome_tiff_location="$2"
     raw2ometiff "$_src_img" "$_ome_tiff_location"
     if [ $? -ne 0 ]; then
-        log_warn "Errors during oem tiff generation, exiting..."
+        log_warn "Errors during ome tiff generation, exiting..."
         exit 1
     fi
 }
