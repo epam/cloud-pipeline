@@ -1,0 +1,21 @@
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  name: <POLICY_NAME_PREFIX>-runs-policy-isolate
+  namespace: default
+  labels:
+    owner: <OWNER>
+    network_policy_type: isolate
+spec:
+  selector: owner == '<OWNER>' && network_policy_type == 'isolate'
+  types:
+    - Ingress
+    - Egress
+  ingress:
+    - action: Allow
+      source:
+        selector: owner == '<OWNER>' && network_policy_type == 'isolate'
+  egress:
+    - action: Allow
+      destination:
+        selector: owner == '<OWNER>' && network_policy_type == 'isolate'
