@@ -710,6 +710,17 @@ class WsiFileTagProcessor:
                         metadata_dict[key] = value
         return metadata_dict
 
+    def add_qptiff_tags_from_filename(self, existing_tags):
+        name_tags = WsiParsingUtils.get_basename_without_extension(self.file_path).split('_')
+        if not existing_tags.get(STUDY_NAME_CAT_ATTR_NAME):
+            existing_tags[STUDY_NAME_CAT_ATTR_NAME] = {name_tags[0]}
+        if not existing_tags.get(ANIMAL_ID_CAT_ATTR_NAME):
+            existing_tags[ANIMAL_ID_CAT_ATTR_NAME] = {name_tags[1]}
+        if not existing_tags.get(TISSUE_CAT_ATTR_NAME):
+            existing_tags[TISSUE_CAT_ATTR_NAME] = {name_tags[2]}
+        if not existing_tags.get(STAIN_CAT_ATTR_NAME):
+            existing_tags[STAIN_CAT_ATTR_NAME] = {name_tags[3]}
+
     def build_tags_dictionary(self, metadata_dict, existing_attributes_dictionary, target_image_details):
         tags_dictionary = dict()
         common_tags_mapping = self.map_tags('WSI_PARSING_TAG_MAPPING', existing_attributes_dictionary)
@@ -718,6 +729,8 @@ class WsiFileTagProcessor:
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
         if self.file_path.endswith('.vsi'):
             self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
+        if self.file_path.endswith('.qptiff'):
+            self.add_qptiff_tags_from_filename(tags_dictionary)
         self._set_tags_default_values(tags_dictionary)
         self._try_build_slide_name(tags_dictionary)
         self._normalize_tags(tags_dictionary, existing_attributes_dictionary)

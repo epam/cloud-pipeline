@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+source $ANACONDA_HOME/etc/profile.d/conda.sh
+conda activate parser
 python $WSI_PARSER_HOME/process_files.py > $ANALYSIS_DIR/parser-$RUN_ID.log 2>&1
