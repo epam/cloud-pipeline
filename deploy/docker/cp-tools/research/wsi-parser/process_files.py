@@ -227,6 +227,8 @@ class WsiProcessingFileGenerator(object):
 
     @staticmethod
     def is_processing_required(file_path):
+        if os.stat(file_path).st_size == 0:
+            return False
         if os.getenv('WSI_PARSING_SKIP_DATE_CHECK') or TAGS_PROCESSING_ONLY:
             return True
         active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
@@ -620,13 +622,14 @@ class WsiFileTagProcessor:
 
     CATEGORICAL_ATTRIBUTE = '/categoricalAttribute'
 
-    def __init__(self, file_path, xml_info_tree):
+    def __init__(self, file_path, xml_info_tree, is_qptiff):
         self.file_path = file_path
         self.xml_info_tree = xml_info_tree
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.system_dictionaries_url = self.api.api_url + self.CATEGORICAL_ATTRIBUTE
         self.cloud_path = WsiParsingUtils.extract_cloud_path(file_path)
         self.study_name_matchers = self._extract_study_name_matchers()
+        self.is_qptiff = is_qptiff
 
     def _extract_study_name_matchers(self):
         regex_rules_list = json.loads(os.getenv('WSI_PARSING_STUDY_NAME_REGEX_LIST',
@@ -729,7 +732,7 @@ class WsiFileTagProcessor:
         tags_dictionary.update(self._get_advanced_mapping_dict(target_image_details, metadata_dict))
         if self.file_path.endswith('.vsi'):
             self._add_user_defined_tags_if_required(existing_attributes_dictionary, tags_dictionary)
-        if self.file_path.endswith('.qptiff'):
+        if self.is_qptiff:
             self.add_qptiff_tags_from_filename(tags_dictionary)
         self._set_tags_default_values(tags_dictionary)
         self._try_build_slide_name(tags_dictionary)
@@ -1271,6 +1274,14 @@ class WsiFileParser:
                 return "OME_TIFF"
         return "DZ"
 
+    def create_empty_vsi(self):
+        vsi_path = os.path.join(os.path.dirname(self.file_path),
+                                WsiParsingUtils.get_basename_without_extension(self.file_path) + '.vsi')
+        if not os.path.exists(vsi_path):
+            with open(vsi_path, 'w') as fp:
+                pass
+        return vsi_path
+
     def process_file(self):
         self.log_processing_info('Start processing')
         if os.path.exists(self.tmp_stat_file_name) \
@@ -1283,7 +1294,11 @@ class WsiFileParser:
             return 1
         target_series = target_image_details.id
         self.create_tmp_stat_file(target_image_details)
-        tags_processing_result = self.try_process_tags(target_image_details)
+        target_tags_file = self.file_path
+        if self.file_path.endswith('.qptiff'):
+            target_tags_file = self.create_empty_vsi()
+        tags_processing_result = self.try_process_tags(target_tags_file, target_image_details,
+                                                       self.file_path.endswith('.qptiff'))
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
         elif self._is_same_series_selected(target_series):
@@ -1324,20 +1339,16 @@ class WsiFileParser:
             self.update_stat_file(target_image_details)
             if _target_format == "DZ":
                 self.update_info_file(target_image_details.width, target_image_details.height)
-            if self.file_path.endswith('.qptiff'):
-                vsi_path = os.path.join(os.path.dirname(self.file_path),
-                                        WsiParsingUtils.get_basename_without_extension(self.file_path) + '.vsi')
-                with open(vsi_path, 'w') as fp:
-                    pass
             self.log_processing_info('File processing is finished')
         else:
             self.log_processing_info('File processing was not successful')
         return conversion_result
 
-    def try_process_tags(self, target_image_details):
+    def try_process_tags(self, target_file_path, target_image_details, is_qptiff=False):
         tags_processing_result = 0
         try:
-            if WsiFileTagProcessor(self.file_path, self.xml_info_tree).process_tags(target_image_details) != 0:
+            if WsiFileTagProcessor(target_file_path, self.xml_info_tree,
+                                   is_qptiff).process_tags(target_image_details) != 0:
                 self.log_processing_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
@@ -1356,8 +1367,6 @@ def log_info(message, status=TaskStatus.RUNNING):
 
 
 def try_process_file(file_path):
-    if os.stat(file_path).st_size == 0:
-        return 0
     parser = None
     try:
         parser = WsiFileParser(file_path)
