@@ -1325,7 +1325,7 @@ class WsiFileParser:
             if _target_format == "DZ":
                 self.update_info_file(target_image_details.width, target_image_details.height)
             if self.file_path.endswith('.qptiff'):
-                vsi_path = os.path.join(WsiParsingUtils.get_service_directory(self.file_path),
+                vsi_path = os.path.join(os.path.dirname(self.file_path),
                                         WsiParsingUtils.get_basename_without_extension(self.file_path) + '.vsi')
                 with open(vsi_path, 'w') as fp:
                     pass

@@ -69,6 +69,9 @@ RUN source $ANACONDA_HOME/etc/profile.d/conda.sh && \
     conda activate parser && \
     yum install -y epel-release && \
     yum clean all && \
+    yum install -y blosc \
+                   ImageMagick \
+                   java-1.8.0-openjdk-devel && \
     pip3 install generate-tiff-offsets==0.1.7 && \
     conda deactivate
 
