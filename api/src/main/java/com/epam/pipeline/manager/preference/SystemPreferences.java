@@ -218,6 +218,9 @@ public class SystemPreferences {
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
 
+    public static final BooleanPreference DATA_STORAGE_NFS_NETWORK_ACCESS_RESTRICTED = new BooleanPreference(
+            "storage.mounts.nfs.network.access.restricted", false, DATA_STORAGE_GROUP, pass, true);
+
     /**
      * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
      * */

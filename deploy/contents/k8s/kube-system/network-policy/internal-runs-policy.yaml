@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: internal-runs-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      network_policy_type: "internal"
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              cloud-pipeline/cp-edge: "true"
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: "kube-system"
+      ports:
+        - protocol: UDP
+          port: 53
+    - to:
+        - podSelector:
+            matchLabels:
+              cloud-pipeline/cp-api-srv: "true"
+    - to:
+        - podSelector:
+            matchLabels:
+              cloud-pipeline/cp-edge: "true"
+    - to:
+        - podSelector:
+            matchLabels:
+              cloud-pipeline/cp-sensitive-proxy: "true"

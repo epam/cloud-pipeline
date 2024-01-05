@@ -91,6 +91,10 @@ public class PipelineExecutor {
             .mountPath("/sys/fs/cgroup").build();
     private static final String DOMAIN_DELIMITER = "@";
     private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
+    private static final String CP_CAP_NETWORK_POLICY_TYPE = "CP_CAP_NETWORK_POLICY_TYPE";
+    private static final String NETWORK_POLICY_COMMON = "common";
+    private static final String NETWORK_POLICY_INTERNAL = "internal";
+    private static final String NETWORK_POLICY_SENSITIVE = "sensitive";
 
     private final PreferenceManager preferenceManager;
     private final String kubeNamespace;
@@ -129,9 +133,10 @@ public class PipelineExecutor {
             labels.put("spawned_by", "pipeline-api");
             labels.put("pipeline_id", pipelineId);
             labels.put("owner", normalizeOwner(run.getOwner()));
-            if (Boolean.TRUE.equals(run.getSensitive())) {
-                labels.put("sensitive", "true");
+            if (isSensitive(run)) {
+                labels.put("sensitive", TRUE);
             }
+            labels.put("network_policy_type", getNetworkPolicyType(run, envVars));
             if (MapUtils.isNotEmpty(kubeLabels)) {
                 labels.putAll(kubeLabels);
             }
@@ -169,6 +174,20 @@ public class PipelineExecutor {
 
     private String normalizeOwner(final String owner) {
         return splitName(owner).replaceAll(KubernetesConstants.KUBE_NAME_FULL_REGEXP, "-");
+    }
+
+    private String getNetworkPolicyType(final PipelineRun run, final List<EnvVar> envVars) {
+        if (isSensitive(run)) {
+            return NETWORK_POLICY_SENSITIVE;
+        } else if (isParameterEqual(envVars, CP_CAP_NETWORK_POLICY_TYPE, NETWORK_POLICY_INTERNAL)) {
+            return NETWORK_POLICY_INTERNAL;
+        } else {
+            return NETWORK_POLICY_COMMON;
+        }
+    }
+
+    private boolean isSensitive(final PipelineRun run) {
+        return Boolean.TRUE.equals(run.getSensitive());
     }
 
     private String fetchVerifiedKubeServiceAccount(final KubernetesClient client, final String kubeServiceAccount) {
@@ -276,12 +295,22 @@ public class PipelineExecutor {
         spec.setDnsConfig(podDNSConfig);
     }
 
-    private boolean isParameterEnabled(List<EnvVar> envVars, String parameter) {
-        return ListUtils.emptyIfNull(envVars)
-                .stream()
-                .anyMatch(env -> parameter.equals(env.getName()) && TRUE.equals(env.getValue()));
+    private boolean isParameterEnabled(final List<EnvVar> envVars, final String name) {
+        return isParameterEqual(envVars, name, TRUE);
     }
 
+    private boolean isParameterEqual(final List<EnvVar> envVars, final String name, final String value) {
+        return getParameter(envVars, name)
+                .map(value::equals)
+                .orElse(false);
+    }
+
+    private Optional<String> getParameter(final List<EnvVar> envVars, final String name) {
+        return ListUtils.emptyIfNull(envVars).stream()
+                .filter(var -> name.equals(var.getName()))
+                .map(EnvVar::getValue)
+                .findFirst();
+    }
 
     private Container getContainer(PipelineRun run,
                                    List<EnvVar> envVars,
@@ -340,10 +369,7 @@ public class PipelineExecutor {
     }
 
     private ContainerResources buildMemoryResources(final PipelineRun run, final List<EnvVar> envVars) {
-        final String policyName = ListUtils.emptyIfNull(envVars).stream()
-                .filter(var -> SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName().equals(var.getName()))
-                .findFirst()
-                .map(EnvVar::getValue)
+        final String policyName = getParameter(envVars, SystemParams.CONTAINER_MEMORY_RESOURCE_POLICY.getEnvName())
                 .orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY));
         final ContainerMemoryResourcePolicy policy = CommonUtils.getEnumValueOrDefault(
                 policyName, ContainerMemoryResourcePolicy.DEFAULT);
@@ -358,15 +384,9 @@ public class PipelineExecutor {
     }
 
     private ContainerResources buildCpuResources(final PipelineRun run, final List<EnvVar> envVars) {
-        final ContainerResources resources = ListUtils.emptyIfNull(envVars).stream()
-                .filter(var -> SystemParams.CONTAINER_CPU_RESOURCE.getEnvName().equals(var.getName()))
-                .findFirst()
-                .map(var -> {
-                    if (NumberUtils.isDigits(var.getValue())) {
-                        return var.getValue();
-                    }
-                    return DEFAULT_CPU_REQUEST;
-                })
+        final ContainerResources resources = getParameter(envVars,SystemParams.CONTAINER_CPU_RESOURCE.getEnvName())
+                .filter(NumberUtils::isDigits).map(Optional::of)
+                .orElseGet(() -> Optional.of(DEFAULT_CPU_REQUEST))
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
                 .map(cpuRequest ->
                     ContainerResources.builder()
