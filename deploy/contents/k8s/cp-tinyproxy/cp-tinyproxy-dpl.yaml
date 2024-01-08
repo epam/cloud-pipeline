@@ -21,6 +21,11 @@ spec:
           image: $CP_COMMON_DISTR_DOCKER_PREFIX:tinyproxy-$CP_VERSION
           imagePullPolicy: "IfNotPresent"
           command: ["/init"]
+          env:
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
           envFrom:
           - configMapRef:
               name: cp-config-global

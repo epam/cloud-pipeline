@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-mkdir -p /opt/tinyproxy/logs
+CP_TP_HTTP_PROXY_ENABLED="${CP_TP_HTTP_PROXY_ENABLED:-true}"
+CP_TP_STREAM_PROXY_ENABLED="${CP_TP_STREAM_PROXY_ENABLED:-true}"
+
+CP_TP_NODE_NAME="${MY_NODE_NAME:-$(hostname)}"
+CP_TP_LOGS_DIR="/opt/tinyproxy/logs/$CP_TP_NODE_NAME"
+
+mkdir -p "$CP_TP_LOGS_DIR"
 mkdir -p /var/run/tinyproxy
 
 ########################
@@ -42,9 +48,9 @@ Listen 0.0.0.0
 BindSame yes
 Timeout $CP_TP_TIMEOUT
 
-DefaultErrorFile "/opt/tinyproxy/logs/default.html"
+DefaultErrorFile "$CP_TP_LOGS_DIR/default.html"
 StatFile "/opt/tinyproxy/stats.json"
-Logfile "/opt/tinyproxy/logs/tinyproxy.log"
+Logfile "$CP_TP_LOGS_DIR/tinyproxy.log"
 LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"
 
@@ -93,7 +99,12 @@ if [ "$CP_TP_RESTRICTED_DESTINATION" ]; then
     fi
 fi
 
-tinyproxy -c "$CP_TP_CONFIG_PATH"
+if [ "$CP_TP_HTTP_PROXY_ENABLED" == "true" ]; then
+    echo "Starting tinyproxy"
+    tinyproxy -c "$CP_TP_CONFIG_PATH"
+else
+    echo "CP_TP_HTTP_PROXY_ENABLED is set to $CP_TP_HTTP_PROXY_ENABLED, tinyproxy is disabled"
+fi
 
 #################################
 # Nginx (TCP/UDP forward) config
@@ -178,7 +189,7 @@ if [ "$CP_TP_NGINX_ACCESS_LOG" == "true" ]; then
     CP_TP_NGINX_ACCESS_LOG_DISABLED=""
 fi
 
-CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-/opt/tinyproxy/logs/stream}"
+CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-$CP_TP_LOGS_DIR/stream}"
 mkdir -p "$CP_TP_NGINX_LOG_DIR"
 
 export CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE="${CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE:-/var/log/smtp-auth-srv.log}"
@@ -246,7 +257,12 @@ echo " }" >> "$CP_TP_NGINX_CONFIG"
 
 echo "Done adding nginx tcp/udp forward entries"
 
-nginx
+if [ "$CP_TP_STREAM_PROXY_ENABLED" == "true" ]; then
+    echo "Starting nginx stream proxy"
+    nginx
+else
+    echo "CP_TP_STREAM_PROXY_ENABLED is set to $CP_TP_STREAM_PROXY_ENABLED, nginx stream proxy is disabled"
+fi
 
 fi
 
