@@ -61,10 +61,11 @@ class Top3(Enum):
 
 class Stat(object):
 
-    def __init__(self, compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
+    def __init__(self, compute_hours, compute_expense, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                  gpu_hours, clusters_compute_hours, worker_nodes_count,
                  top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities):
         self.compute_hours = compute_hours
+        self.compute_expense = compute_expense
         self.runs_count = runs_count
         self.storage_read = storage_read
         self.storage_write = storage_write
@@ -176,6 +177,7 @@ class Stat(object):
                                   'RUNS_COUNT': Stat.format_count(self.runs_count),
                                   'LOGIN_TIME': Stat.format_hours(self.login_time),
                                   'USAGE_WEIGHT': Stat.format_weight(self.usage_weight),
+                                  'COMPUTE_EXPENSES': Stat.format_count(self.compute_expense),
                                   'READ_REQUESTS': self.storage_read,
                                   'WRITE_REQUESTS': self.storage_write,
                                   'CPU': Stat.format_hours(self.cpu_hours),
@@ -352,6 +354,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Runs count: {}.'.format(runs_count))
     usage_costs = _get_usage_costs(runs)
     logger.info('Usage costs: {}.'.format(usage_costs))
+    compute_expense = usage_costs
     usage_weight = usage_costs / platform_usage_costs * 100
     logger.info('Usage weight: {}.'.format(usage_weight))
     clusters_compute_hours = _get_cluster_compute_hours(api, from_date_time, to_date_time, user, runs)
@@ -372,7 +375,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
     top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities, runs)
     logger.info('Top 3 Capabilities: {}.'.format(top3_run_capabilities))
-    return Stat(compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
+    return Stat(compute_hours, compute_expense, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                 gpu_hours, clusters_compute_hours, worker_nodes_count,
                 top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities)
 
