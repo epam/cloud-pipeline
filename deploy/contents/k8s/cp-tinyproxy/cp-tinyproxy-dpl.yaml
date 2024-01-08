@@ -21,6 +21,11 @@ spec:
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:tinyproxy-$CP_VERSION
           imagePullPolicy: "IfNotPresent"
           command: ["/init"]
+          env:
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
           envFrom:
           - configMapRef:
               name: cp-config-global
