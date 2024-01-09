@@ -127,7 +127,7 @@ public class KubernetesManager {
     @Value("${kube.default.service.target.port:1000}")
     private Integer defaultKubeServiceTargetPort;
 
-    @Value("${kube.deployment.refresh.timeout.sec:3}")
+    @Value("${kube.deployment.refresh.timeout:3}")
     private Integer deploymentRefreshTimeoutSec;
 
     @Value("${kube.deployment.refresh.retries:15}")
