@@ -255,6 +255,19 @@ export default class EditToolForm extends React.Component {
         if (this.toolFormParameters && this.toolFormSystemParameters) {
           const params = [];
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
+          const toggleParameter = (parameter, value) => {
+            const p = params.find((o) => o.name === parameter);
+            if (p) {
+              params.splice(params.indexOf(p), 1);
+            }
+            if (value) {
+              params.push({
+                name: parameter,
+                value: true,
+                type: 'boolean',
+              });
+            }
+          }
           if (values.limitMounts) {
             params.push({
               name: CP_CAP_LIMIT_MOUNTS,
@@ -262,11 +275,6 @@ export default class EditToolForm extends React.Component {
             });
           }
           if (this.state.launchCluster && this.state.autoScaledCluster) {
-            params.push({
-              name: CP_CAP_SGE,
-              type: 'boolean',
-              value: true
-            });
             params.push({
               name: CP_CAP_AUTOSCALE,
               type: 'boolean',
@@ -301,33 +309,11 @@ export default class EditToolForm extends React.Component {
               );
             }
           }
-          if (this.state.launchCluster && this.state.gridEngineEnabled) {
-            params.push({
-              name: CP_CAP_SGE,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.launchCluster && this.state.sparkEnabled) {
-            params.push({
-              name: CP_CAP_SPARK,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.launchCluster && this.state.slurmEnabled) {
-            params.push({
-              name: CP_CAP_SLURM,
-              type: 'boolean',
-              value: true
-            });
-          }
+          toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
+          toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
+          toggleParameter(CP_CAP_SLURM, this.state.launchCluster && this.state.slurmEnabled);
+          toggleParameter(CP_CAP_KUBE, this.state.launchCluster && this.state.kubeEnabled);
           if (this.state.launchCluster && this.state.kubeEnabled) {
-            params.push({
-              name: CP_CAP_KUBE,
-              type: 'boolean',
-              value: true
-            });
             params.push({
               name: CP_CAP_DIND_CONTAINER,
               type: 'boolean',
