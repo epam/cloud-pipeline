@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+import csv
+import io
+import itertools
+import json
 import logging
 import os
-import io
-import csv
-import itertools
-import argparse
 from datetime import datetime
-import json
+
 from enum import Enum
+
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
-
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -280,7 +281,8 @@ def send_statistics():
             logger.debug('Loading all platfrom users')
             all_users = api.load_users()
 
-        users = [u for u in all_users if not u.get('blocked')]
+        skipped_users = os.getenv('SKIP_USERS', '').split(',') if os.getenv('SKIP_USERS', '') else []
+        users = [u for u in all_users if not u.get('blocked') and u.get('userName') not in skipped_users]
         send_to = os.getenv('SEND_TO_USER', None)
         cc_users = os.getenv('CC_USERS', '').split(',') if os.getenv('CC_USERS', '') else None
         if len(users) > 0:
@@ -309,17 +311,21 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path, send
     template, table_templ, table_center_templ = _get_templates(template_path)
 
     for user in users:
-        _user_name = user.get('userName')
-        logger.info('User: {}'.format(_user_name))
-        stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
-                               _user_name, user.get('id'))
-        if not stat.not_empty():
-            logger.info('No data found for user %s, skipping notification' % _user_name)
-            continue
-        receiver = send_to if send_to else _user_name
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
-                            receiver, logger, cc_users=cc_users)
-        notifier.send_notifications(template, table_templ, table_center_templ, user)
+        try:
+            _user_name = user.get('userName')
+            logger.info('User: {}'.format(_user_name))
+            stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
+                                   _user_name, user.get('id'))
+            if not stat.not_empty():
+                logger.info('No data found for user %s, skipping notification' % _user_name)
+                continue
+            receiver = send_to if send_to else _user_name
+            notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
+                                receiver, logger, cc_users=cc_users)
+            notifier.send_notifications(template, table_templ, table_center_templ, user)
+        except BaseException as e:
+            logger.error('Failed to generate stats for user {}: {}'.format(user.get('userName'), str(e.message)),
+                         trace=True)
 
 
 def expand_commas(data):
@@ -459,7 +465,9 @@ def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities, bill
     capabilities_dict = {}
     for c in capabilities:
         runs = api.filter_runs_all(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
-        capabilities_dict[c] = _calculate_runs_duration_hours(runs, billing_runs_stat)
+        hours = _calculate_runs_duration_hours(runs, billing_runs_stat)
+        if hours:
+            capabilities_dict[c] = hours
     return sorted(capabilities_dict.items(), key=lambda item: float(item[1]), reverse=True)[:3]
 
 
