@@ -259,6 +259,9 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.polling_delay = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_POLLING_DELAY', type=PARAM_INT, default=10,
             help='Specifies a polling delay in seconds for grid engine jobs')
+        self.instance_inheritable_params = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES', type=PARAM_STR, default=None,
+            help='Specifies parameter names which will be inherited by workers.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
