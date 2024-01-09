@@ -88,7 +88,8 @@ export function slurmEnabled (parameters) {
 export function autoScaledClusterEnabled (parameters) {
   return booleanParameterIsSetToValue(parameters, CP_CAP_AUTOSCALE) && (
     gridEngineEnabled(parameters) ||
-    slurmEnabled(parameters)
+    slurmEnabled(parameters) ||
+    kubeEnabled(parameters)
   );
 }
 
@@ -124,6 +125,7 @@ export function getSkippedSystemParametersList (controller) {
       controller.state.gridEngineEnabled ||
       controller.state.sparkEnabled ||
       controller.state.slurmEnabled ||
+      controller.state.kubeEnabled ||
       controller.state.hybridAutoScaledClusterEnabled
     )) {
     return [
@@ -288,6 +290,7 @@ class ConfigureClusterDialog extends React.Component {
       const details = [
         ctrl.state.gridEngineEnabled ? 'GridEngine' : false,
         ctrl.state.slurmEnabled ? 'Slurm' : false,
+        ctrl.state.kubeEnabled ? 'Kubernetes' : false,
         ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid' : false,
         ctrl.state.gpuScalingConfiguration ? 'GPU' : false
       ].filter(Boolean).join(' ');
@@ -376,8 +379,7 @@ class ConfigureClusterDialog extends React.Component {
   get selectedClusterType () {
     if (this.state.launchCluster) {
       return this.state.autoScaledCluster &&
-      !this.state.sparkEnabled &&
-      !this.state.kubeEnabled
+      !this.state.sparkEnabled
         ? CLUSTER_TYPE.autoScaledCluster
         : CLUSTER_TYPE.fixedCluster;
     } else {
@@ -542,15 +544,26 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   onChangeEnableKube = (e) => {
-    this.setState({
-      gridEngineEnabled: false,
-      sparkEnabled: false,
-      slurmEnabled: false,
-      kubeEnabled: e.target.checked,
-      hybridAutoScaledClusterEnabled: false,
-      gpuScalingConfiguration: undefined,
-      childNodeInstanceConfiguration: undefined
-    });
+    if (this.state.launchCluster && this.state.autoScaledCluster) {
+      this.setState({
+        gridEngineEnabled: !e.target.checked,
+        sparkEnabled: false,
+        slurmEnabled: false,
+        kubeEnabled: e.target.checked,
+        gpuScalingConfiguration: undefined,
+        childNodeInstanceConfiguration: undefined
+      });
+    } else {
+      this.setState({
+        gridEngineEnabled: false,
+        sparkEnabled: false,
+        slurmEnabled: false,
+        kubeEnabled: e.target.checked,
+        hybridAutoScaledClusterEnabled: false,
+        gpuScalingConfiguration: undefined,
+        childNodeInstanceConfiguration: undefined
+      });
+    }
   };
 
   onChangeEnableHybridAutoScaledCluster = (e) => {
@@ -564,7 +577,6 @@ class ConfigureClusterDialog extends React.Component {
     const gpuScalingConfigurationEnabled = !!gpuScalingConfiguration;
     this.setState({
       sparkEnabled: false,
-      kubeEnabled: false,
       hybridAutoScaledClusterEnabled: e.target.checked,
       gpuScalingConfiguration: gpuScalingConfigurationEnabled
         ? getGPUScalingDefaultConfiguration({provider, hybrid: e.target.checked}, preferences)
@@ -916,7 +928,7 @@ class ConfigureClusterDialog extends React.Component {
     const renderGPUScalingConfigurationToggle = () => {
       const {preferences, cloudRegionProvider} = this.props;
       const configuration = getScalingConfigurationForProvider(cloudRegionProvider, preferences);
-      if (!configuration || this.state.slurmEnabled) {
+      if (!configuration || this.state.slurmEnabled || this.state.kubeEnabled) {
         return [];
       }
       const {
@@ -942,7 +954,7 @@ class ConfigureClusterDialog extends React.Component {
     const renderGPUScalingConfiguration = () => {
       const {preferences, cloudRegionProvider} = this.props;
       const configuration = getScalingConfigurationForProvider(cloudRegionProvider, preferences);
-      if (!configuration || this.state.slurmEnabled) {
+      if (!configuration || this.state.slurmEnabled || this.state.kubeEnabled) {
         return [];
       }
       const {
@@ -1016,6 +1028,15 @@ class ConfigureClusterDialog extends React.Component {
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableSlurm)}
       </Row>,
+      <Row key="enable kube" type="flex" align="middle" style={{marginTop: 5}}>
+        <Checkbox
+          style={{marginLeft: LEFT_MARGIN}}
+          checked={this.state.kubeEnabled}
+          onChange={this.onChangeEnableKube}>
+          Enable Kubernetes
+        </Checkbox>
+        {renderTooltip(LaunchClusterTooltip.autoScaledCluster.enableKube)}
+      </Row>,
       <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 15}}>
         <Checkbox
           style={{marginLeft: LEFT_MARGIN}}
@@ -1061,7 +1082,7 @@ class ConfigureClusterDialog extends React.Component {
   };
 
   render () {
-    const {sparkEnabled, kubeEnabled} = this.state;
+    const {sparkEnabled} = this.state;
     return (
       <Modal
         title={
@@ -1082,7 +1103,7 @@ class ConfigureClusterDialog extends React.Component {
                 <Radio.Button value={CLUSTER_TYPE.singleNode}>Single node</Radio.Button>
                 <Radio.Button value={CLUSTER_TYPE.fixedCluster}>Cluster</Radio.Button>
                 <Radio.Button
-                  disabled={sparkEnabled || kubeEnabled}
+                  disabled={sparkEnabled}
                   value={CLUSTER_TYPE.autoScaledCluster}
                 >
                   Auto-scaled cluster
