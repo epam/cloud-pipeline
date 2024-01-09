@@ -165,11 +165,12 @@ def create_policy_yaml_object(owner, policy_type):
     if not new_policy_as_string:
         return None
     policy_yaml = yaml.load(new_policy_as_string, Loader=yaml.FullLoader)
-    if policy_type == POLICY_TYPE_ISOLATE:
+    if policy_type in [POLICY_TYPE_ISOLATE, POLICY_TYPE_SENSITIVE]:
+        owner_file_share_ips = get_available_file_share_ips(owner)
         policy_yaml[K8S_SPEC_KEY][K8S_EGRESS_KEY].append({
             'action': 'Allow',
             'destination': {
-                'nets': [ip + '/32' for ip in get_available_file_share_ips(owner)]
+                'nets': [ip + '/32' for ip in owner_file_share_ips]
             }
         })
     return policy_yaml
@@ -343,6 +344,8 @@ def main():
             except Exception:
                 log_message('[ERROR] Error occurred while CREATING new policies:\n{}'
                             .format(traceback.format_exc()))
+
+            # todo: Update existing policies
 
             try:
                 drop_excess_policies(common_pods, common_policies)

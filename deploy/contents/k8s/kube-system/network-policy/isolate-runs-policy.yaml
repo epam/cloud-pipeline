@@ -34,4 +34,4 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              cloud-pipeline/cp-tinyproxy: "true"
+              cloud-pipeline/cp-sensitive-proxy: "true"
