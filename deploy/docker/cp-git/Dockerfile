@@ -19,13 +19,13 @@ FROM $BASE_IMAGE
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
 
-RUN curl -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash && \
+RUN curl -k -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash && \
     apt install -y gitlab-runner=14.0.1 sshpass
 
 ADD gitlab-runner-scripts /gitlab-runner-scripts
 RUN chmod +x /gitlab-runner-scripts/*.sh
 
-RUN curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq && \
+RUN curl -k -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq && \
     chmod +x /usr/bin/jq
 
 ENTRYPOINT ["/bin/sh", "-c"]
