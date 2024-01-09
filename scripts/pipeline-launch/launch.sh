@@ -778,6 +778,8 @@ function configure_owner_account() {
             export OWNER_GID="$OWNER_UID"
             export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                # Check that a user is a member of all the groups. This is useful for the "committed" images
+                add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
                 return 0
             else
                 create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
@@ -874,6 +876,25 @@ function create_user_extra_groups() {
             fi
       done <<< "$_user_groups"
       echo "$_groups_added" | sed 's/,//'
+}
+
+function add_user_to_groups() {
+    local _user_name="$1"
+    local _user_groups="$2"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
+
+    echo "Adding user $_user_name to the groups: $_user_groups"
+    if check_installed "usermod"; then
+        IFS=',' read -r -a _user_groups_list <<< "$_user_groups"
+        for _user_group in "${_user_groups[@]}"; do
+            usermod -a -G "$_user_group" $_user_name
+        done
+    else
+        echo "Cannot add user $_user_name to any groups: usermod is not installed"
+        return 1
+    fi
 }
 
 function create_user() {
