@@ -5,6 +5,7 @@ metadata:
   namespace: default
   labels:
     owner: <OWNER>
+    network_policy_type: sensitive
     sensitive: 'true'
 spec:
   selector: owner == '<OWNER>' && sensitive == 'true'
@@ -13,4 +14,4 @@ spec:
   ingress:
     - action: Allow
       source:
-        selector: cloud-pipeline/cp-edge == 'true' || (sensitive == 'true' && owner == '<OWNER>')
+        selector: cloud-pipeline/cp-edge == 'true' || (owner == '<OWNER>' && sensitive == 'true')

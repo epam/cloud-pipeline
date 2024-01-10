@@ -5,11 +5,12 @@ metadata:
   namespace: default
   labels:
     owner: <OWNER>
+    network_policy_type: common
 spec:
-  selector: owner == '<OWNER>' && sensitive != 'true'
+  selector: owner == '<OWNER>' && sensitive != 'true' && network_policy_type != 'internal'
   types:
     - Ingress
   ingress:
     - action: Allow
       source:
-        selector: (!has(owner) || (sensitive != 'true' && owner == '<OWNER>'))
+        selector: (!has(owner) || (owner == '<OWNER>' && sensitive != 'true' && network_policy_type != 'internal'))

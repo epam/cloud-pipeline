@@ -1,0 +1,21 @@
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  name: <POLICY_NAME_PREFIX>-runs-policy-internal
+  namespace: default
+  labels:
+    owner: <OWNER>
+    network_policy_type: internal
+spec:
+  selector: owner == '<OWNER>' && network_policy_type == 'internal'
+  types:
+    - Ingress
+    - Egress
+  ingress:
+    - action: Allow
+      source:
+        selector: owner == '<OWNER>' && network_policy_type == 'internal'
+  egress:
+    - action: Allow
+      destination:
+        selector: owner == '<OWNER>' && network_policy_type == 'internal'

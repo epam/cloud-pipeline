@@ -605,5 +605,12 @@
         "defaultValue": "true",
         "description": "Changes default mail client if favor to pipe_mail script.",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_NETWORK_POLICY_TYPE",
+        "type": "string",
+        "description": "Specifies run network policy type. Allowed values are: common and internal.",
+        "defaultValue": "common",
+        "passToWorkers": true
     }
 ]
