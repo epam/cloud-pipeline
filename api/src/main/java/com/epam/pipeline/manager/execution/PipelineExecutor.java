@@ -384,7 +384,7 @@ public class PipelineExecutor {
     }
 
     private ContainerResources buildCpuResources(final PipelineRun run, final List<EnvVar> envVars) {
-        final ContainerResources resources = getParameter(envVars,SystemParams.CONTAINER_CPU_RESOURCE.getEnvName())
+        final ContainerResources resources = getParameter(envVars, SystemParams.CONTAINER_CPU_RESOURCE.getEnvName())
                 .filter(NumberUtils::isDigits).map(Optional::of)
                 .orElseGet(() -> Optional.of(DEFAULT_CPU_REQUEST))
                 .filter(cpuRequest -> Integer.parseInt(cpuRequest) > 0)
