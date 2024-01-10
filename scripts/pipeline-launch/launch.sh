@@ -531,18 +531,33 @@ function configure_package_manager {
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/apt/sources.list.d/cuda.list \
                               /etc/apt/sources.list.d/nvidia-ml.list \
-                              /etc/apt/sources.list.d/tensorRT.list 
+                              /etc/apt/sources.list.d/tensorRT.list
 
-                        apt-get update -qq -y --allow-insecure-repositories && \
-                        apt-get install curl apt-transport-https gnupg -y -qq && \
+                        # todo: Remove these dependencies because their installation requires internet access
+                        if ! check_installed curl || ! check_installed gpg; then
+                            echo "Installing additional dependencies using default apt repos..."
+                            apt-get update -qq -y --allow-insecure-repositories && \
+                            apt-get install curl apt-transport-https gnupg -y -qq
+                        fi
+
+                        if check_cp_cap CP_CAP_OFFLINE; then
+                            echo "Disabling default apt repos..."
+                            echo "" > /etc/apt/sources.list
+                            rm -f /etc/apt/sources.list.d/*
+                        fi
+
+                        echo "Enabling Cloud Pipeline apt repo..."
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                         apt-get update -qq -y --allow-insecure-repositories
-                        
+
                         if [ $? -ne 0 ]; then
-                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                            echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                            sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        else
+                            echo "Using apt repo $CP_REPO_BASE_URL..."
+                            break
                         fi
                   done
             fi
@@ -1145,6 +1160,10 @@ else
 fi
 export CP_CAP_RECOVERY_MODE_TERM="${CP_CAP_RECOVERY_MODE_TERM:-exit}"
 export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
+
+if check_cp_cap CP_SENSITIVE_RUN; then
+    export CP_CAP_OFFLINE="true"
+fi
 
 ######################################################
 # Configure Hyperthreading
