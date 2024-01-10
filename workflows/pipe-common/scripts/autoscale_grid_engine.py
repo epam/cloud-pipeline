@@ -54,21 +54,9 @@ from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger,
 from pipeline.utils.path import mkdir
 
 
-def fetch_instance_launch_params(api, launch_adapter, master_run_id):
-    parent_run = api.load_run(master_run_id)
-    master_system_params = {param.get('name'): param.get('resolvedValue')
-                            for param in parent_run.get('pipelineRunParameters', [])}
-    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
-    system_launch_params = json.loads(system_launch_params_string)
+def fetch_instance_launch_params(api, launch_adapter, run_id, inheritable_explicit_param_names):
     launch_params = {}
-    for launch_param in system_launch_params:
-        param_name = launch_param.get('name')
-        if not launch_param.get('passToWorkers', False):
-            continue
-        param_value = str(os.getenv(param_name, master_system_params.get(param_name, '')))
-        if not param_value:
-            continue
-        launch_params[param_name] = param_value
+    launch_params.update(get_inherited_worker_launch_params(api, run_id, inheritable_explicit_param_names))
     launch_params.update(launch_adapter.get_worker_launch_params())
     launch_params.update({
         'CP_CAP_AUTOSCALE': 'false',
@@ -78,6 +66,38 @@ def fetch_instance_launch_params(api, launch_adapter, master_run_id):
         'cluster_role_type': 'additional'
     })
     return launch_params
+
+
+def get_inherited_worker_launch_params(api, run_id, inheritable_explicit_param_names):
+    return dict(extract_params(list(get_inheritable_system_param_names(api)) + inheritable_explicit_param_names,
+                               get_run_params(api, run_id)))
+
+
+def get_inheritable_system_param_names(api):
+    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
+    system_launch_params = json.loads(system_launch_params_string)
+    for system_launch_param in system_launch_params:
+        param_name = system_launch_param.get('name')
+        if not param_name:
+            continue
+        if not system_launch_param.get('passToWorkers', False):
+            continue
+        yield param_name
+
+
+def get_run_params(api, run_id):
+    run = api.load_run(run_id)
+    return {param.get('name'): param.get('resolvedValue') for param in run.get('pipelineRunParameters', [])}
+
+
+def extract_params(keys, params):
+    for key in keys:
+        if not key:
+            continue
+        value = str(os.getenv(key, params.get(key, '')))
+        if not value:
+            continue
+        yield key, value
 
 
 def load_default_hosts(default_hostsfile):
@@ -197,6 +217,7 @@ def get_daemon():
     instance_price_type = params.autoscaling.price_type.get()
     instance_cmd_template = params.autoscaling.cmd_template.get()
     instance_owner_param = params.autoscaling_advanced.instance_owner_param.get()
+    instance_inheritable_params = (params.autoscaling_advanced.instance_inheritable_params.get() or '').split(',')
 
     autoscale = params.autoscaling.autoscale.get()
     autoscale_instance_number = params.autoscaling.autoscaling_hosts_number.get()
@@ -445,7 +466,8 @@ def get_daemon():
                                   .format(instance.name, instance.cpu, instance.gpu, instance.mem)
                                   for instance in available_instances)))
 
-    instance_launch_params = fetch_instance_launch_params(api, launch_adapter, cluster_master_run_id)
+    instance_launch_params = fetch_instance_launch_params(api, launch_adapter, cluster_master_run_id,
+                                                          instance_inheritable_params)
 
     worker_tags_handler = CloudPipelineWorkerTagsHandler(api=api, active_timeout=active_timeout,
                                                          active_tag=grid_engine_type + '_IN_USE',
