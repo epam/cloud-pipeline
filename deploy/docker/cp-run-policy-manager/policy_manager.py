@@ -167,12 +167,14 @@ def create_policy_yaml_object(owner, policy_type):
     policy_yaml = yaml.load(new_policy_as_string, Loader=yaml.FullLoader)
     if policy_type in [POLICY_TYPE_INTERNAL, POLICY_TYPE_SENSITIVE]:
         owner_file_share_ips = get_available_file_share_ips(owner)
-        policy_yaml[K8S_SPEC_KEY][K8S_EGRESS_KEY].append({
-            'action': 'Allow',
-            'destination': {
-                'nets': [ip + '/32' for ip in owner_file_share_ips]
-            }
-        })
+        owner_file_share_cidrs = [ip + '/32' for ip in owner_file_share_ips]
+        if owner_file_share_cidrs:
+            policy_yaml[K8S_SPEC_KEY][K8S_EGRESS_KEY].append({
+                'action': 'Allow',
+                'destination': {
+                    'nets': owner_file_share_cidrs
+                }
+            })
     return policy_yaml
 
 
@@ -188,8 +190,7 @@ def get_available_file_share_ips(user_name):
         log_message('Access token has not been found for {} '.format(user_name))
         return
     log_message('Collecting available file share ips for {}...'.format(user_name))
-    for file_share in get_available_file_shares(user_token):
-        file_share_mount_root = file_share.get('mountRoot') or ''
+    for file_share_mount_root in sorted(set(get_available_file_share_mount_roots(user_token))):
         file_share_ip = file_share_mount_root.split(':')[0]
         if not file_share_ip:
             log_message('Skipping empty file share ip...')
@@ -201,12 +202,13 @@ def get_available_file_share_ips(user_name):
         yield file_share_ip
 
 
-def get_available_file_shares(token):
+def get_available_file_share_mount_roots(token):
     storages_with_file_shares = cp_get('datastorage/availableWithMounts', access_key=token) or []
     for storage_with_file_share in storages_with_file_shares:
-        file_share = storage_with_file_share.get('shareMount', {})
-        if file_share:
-            yield file_share
+        file_share_mount_root = storage_with_file_share.get('shareMount', {}).get('mountRoot') or ''
+        if not file_share_mount_root:
+            continue
+        yield file_share_mount_root
 
 
 def is_valid_ip_address(ip):
