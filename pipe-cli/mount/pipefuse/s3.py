@@ -151,7 +151,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
     def _generate_aws_session(self, pipe, bucket_object):
         def refresh():
-            credentials = pipe.get_temporary_credentials(bucket_object)
+            credentials = pipe.find_temporary_credentials(bucket_object)
             return dict(
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,

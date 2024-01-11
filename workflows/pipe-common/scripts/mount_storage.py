@@ -118,7 +118,7 @@ class MountStorageTask:
             available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
         self.mounters = {mounter.type(): mounter for mounter in available_mounters}
 
-    def parse_storage(self, placeholder):
+    def parse_storage(self, placeholder, available_storages):
         storage_id = None
         try:
             if placeholder.lower() == MOUNT_LIMITS_USER_DEFAULT:
@@ -129,15 +129,19 @@ class MountStorageTask:
             elif placeholder.lower() == MOUNT_LIMITS_NONE:
                 Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE), task_name=self.task_name)
             else:
-                storage_id = int(placeholder.strip())
+                storage_identifier = placeholder.strip()
+                if storage_identifier.isdigit():
+                    return int(storage_identifier)
+                if available_storages and available_storages.get(storage_identifier):
+                    return int(available_storages.get(storage_identifier))
         except Exception as parse_storage_ex:
             Logger.warn('Unable to parse {} placeholder to a storage ID: {}.'.format(placeholder, str(parse_storage_ex)), task_name=self.task_name)
         return storage_id
 
-    def parse_storage_list(self, csv_storages):
+    def parse_storage_list(self, csv_storages, available_storages):
         result = []
         for item in csv_storages.split(','):
-            storage_id = self.parse_storage(item)
+            storage_id = self.parse_storage(item, available_storages)
             if storage_id:
                 result.append(storage_id)
         return result
@@ -197,6 +201,7 @@ class MountStorageTask:
             available_storages_with_mounts = [
                 x for x in available_storages_with_mounts if not x.storage.source_storage_id
             ]
+            storages_ids_by_path = {x.storage.path: x.storage.id for x in available_storages_with_mounts}
 
             # filtering out all nfs storages if region id is missing
             if not self.region_id:
@@ -207,7 +212,7 @@ class MountStorageTask:
             skip_storages = os.getenv('CP_CAP_SKIP_MOUNTS')
             if skip_storages:
                 Logger.info('Storage(s) "{}" requested to be skipped'.format(skip_storages), task_name=self.task_name)
-                skip_storages_list = self.parse_storage_list(skip_storages)
+                skip_storages_list = self.parse_storage_list(skip_storages, storages_ids_by_path)
                 available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id not in skip_storages_list ]
 
             # If the storages are limited by the user - we make sure that the "forced" storages are still available
@@ -216,7 +221,7 @@ class MountStorageTask:
             force_storages_list = []
             if force_storages:
                 Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages), task_name=self.task_name)
-                force_storages_list = self.parse_storage_list(force_storages)
+                force_storages_list = self.parse_storage_list(force_storages, storages_ids_by_path)
             
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
             if limited_storages:
@@ -227,7 +232,7 @@ class MountStorageTask:
                 try:
                     limited_storages_list = []
                     if limited_storages.lower() != MOUNT_LIMITS_NONE:
-                        limited_storages_list = self.parse_storage_list(limited_storages)
+                        limited_storages_list = self.parse_storage_list(limited_storages, storages_ids_by_path)
                     # Remove duplicates from the `limited_storages_list`, as they can be introduced by `force_storages` or a user's typo
                     limited_storages_list = list(set(limited_storages_list))
                     available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id in limited_storages_list]

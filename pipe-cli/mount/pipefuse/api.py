@@ -172,6 +172,17 @@ class CloudPipelineClient:
         logging.info('Getting regions...')
         return self._retryable_call('GET', 'cloud/region/info') or []
 
+    def find_temporary_credentials(self, bucket):
+        try:
+            return self.get_temporary_credentials(bucket)
+        except APIError as e:
+            if 'not found' in str(e):
+                storage = self.get_storage(bucket.path)
+                if storage and storage.get('id'):
+                    bucket.id = storage.get('id')
+                    return self.get_temporary_credentials(bucket)
+            raise e
+
     def get_temporary_credentials(self, bucket):
         logging.info('Getting temporary credentials for data storage #%s...' % bucket.id)
         data = [{
