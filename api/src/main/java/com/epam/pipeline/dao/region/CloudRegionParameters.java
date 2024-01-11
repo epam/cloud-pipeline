@@ -62,5 +62,7 @@ enum CloudRegionParameters {
     RUN_SHIFT_ENABLED,
     AWS_S3_ENDPOINT,
     AWS_KEY_ID,
-    AWS_ACCESS_KEY
+    AWS_ACCESS_KEY,
+    USER_NAME,
+    USER_PASSWORD
 }

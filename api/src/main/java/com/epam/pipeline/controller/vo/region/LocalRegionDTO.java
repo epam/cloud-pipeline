@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.region;
+package com.epam.pipeline.controller.vo.region;
 
-/**
- * List of supported Cloud Providers
- */
+import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.region.CustomInstanceType;
+import lombok.Data;
 
-public enum  CloudProvider {
-    AWS, AZURE, GCP, LOCAL
+import java.util.List;
+
+@Data
+public class LocalRegionDTO extends AbstractCloudRegionDTO {
+
+    private CloudProvider provider = CloudProvider.LOCAL;
+    private List<CustomInstanceType> customInstanceTypes;
+    private String user;
+    private String password;
 }

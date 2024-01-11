@@ -114,6 +114,10 @@ public class ScaleDownHandler {
             return;
         }
 
+        if (isLocalNode(node)) {
+            log.debug("Skipping node {} from local cluster", name);
+        }
+
         if (isUnavailable(node)) {
             log.debug("Processing unavailable node {} #{}...", name, label);
             processUnavailableNode(client, node, grace);
@@ -132,6 +136,11 @@ public class ScaleDownHandler {
 
         log.debug("Processing unassigned node {} #{}...", name, label);
         scaleDownNode(client, node, requiredInstances);
+    }
+
+    private boolean isLocalNode(final Node node) {
+        return MapUtils.emptyIfNull(node.getMetadata().getLabels())
+                .getOrDefault(KubernetesConstants.CLOUD_REGION_LABEL, "").startsWith("local-");
     }
 
     private String getNodeName(final Node node) {
