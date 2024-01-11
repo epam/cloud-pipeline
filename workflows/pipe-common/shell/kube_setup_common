@@ -246,6 +246,28 @@ EOF
             BinaryName = "/usr/bin/nvidia-container-runtime"' "$_containerd_config_file"
     fi
 
+    # Configure CRI to work with the private registry
+    _dind_registry_certs_dir="/etc/docker/certs.d"
+    _cri_registry_certs_dir="/etc/containerd/certs.d"
+    if [ -d "$_dind_registry_certs_dir" ]; then
+        mkdir -p "$_cri_registry_certs_dir"
+        \cp -r $_dind_registry_certs_dir/* $_cri_registry_certs_dir/
+        sed -i "s|config_path = \"\"|config_path = \"$_cri_registry_certs_dir\"|" "$_containerd_config_file"
+
+        _cri_registry_list=$(find $_cri_registry_certs_dir -type d)
+        for _cri_registry in $_cri_registry_list; do
+            [ "$_cri_registry" == "$_cri_registry_certs_dir" ] && continue
+            _cri_registry_name=$(basename $_cri_registry)
+            sed -i "/\[plugins.\"io.containerd.grpc.v1.cri\".registry.configs\]/a\
+\        [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"$_cri_registry_name\".auth]\n\
+          username = \"$OWNER\"\n\
+          password = \"$API_TOKEN\"\n" "$_containerd_config_file"
+        done
+        pipe_log_info "Containerd private registry access is configured (using docker config from $_dind_registry_certs_dir)" "$_kube_common_setup_task_name"
+    else
+        pipe_log_warn "Cannot setup private registry access for containerd as the docker config is missing at $_dind_registry_certs_dir" "$_kube_common_setup_task_name"
+    fi
+
     nohup "$CP_CAP_DIND_CONTAINERD_BIN" &> "$CP_CAP_DIND_CONTAINERD_LOG" &
 else
     pipe_log_warn "containerd binary not found at $CP_CAP_DIND_CONTAINERD_BIN" "$_kube_common_setup_task_name"
