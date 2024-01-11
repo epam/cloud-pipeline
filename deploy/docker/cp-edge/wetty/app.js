@@ -17,6 +17,8 @@ const CP_MAINTENANCE_SKIP_ROLES = (process.env.CP_MAINTENANCE_SKIP_ROLES || '')
     .map(o => o.trim().toUpperCase())
     .filter(o => o.length);
 
+const SYSTEM_AUTH_TOKEN = process.env.API_TOKEN || '';
+
 function console_log(message) {
     console.log((new Date()) + ' ' + message);
 }
@@ -60,6 +62,14 @@ function extract_run_details(payload) {
             return parameters;
         }, {})
         : {};
+    const ssh_users = payload.runSids
+        ? payload.runSids.reduce(function(ssh_users, sid) {
+            if (sid.isPrincipal && sid.accessType == 'SSH') {
+                ssh_users.push(sid.name.toUpperCase())
+            }
+            return ssh_users;
+        }, [])
+        : [];
     return {
         'id': payload.id,
         'ip': payload.podIP,
@@ -67,7 +77,8 @@ function extract_run_details(payload) {
         'owner': payload.owner,
         'pod_id': payload.podId,
         'platform': payload.platform,
-        'parameters': parameters
+        'parameters': parameters,
+        'ssh_users': ssh_users
     };
 }
 
@@ -283,10 +294,11 @@ const {addListener} = checkMaintenanceMode();
 const io = server(httpserv,{path: '/ssh/socket.io'});
 io.on('connection', function(socket) {
     const auth_key = socket.handshake.headers['token'];
+    const auth_user = socket.handshake.headers['token_sub'].toUpperCase();
     const referer = socket.request.headers.referer;
     console_log('Connection accepted for ' + referer);
 
-    const run_id = get_run_id(referer, auth_key)
+    const run_id = get_run_id(referer, SYSTEM_AUTH_TOKEN);
     if (!run_id) {
         console_log('Aborting SSH connection because run id have not been found for ' + referer + '...');
         socket.disconnect();
@@ -302,11 +314,16 @@ io.on('connection', function(socket) {
         return;
     }
 
-    const run_details = get_run_details(run_id, auth_key);
+    var run_details = get_run_details(run_id, auth_key);
     if (!run_details) {
-        console_log('Aborting SSH connection because details have not been found for run #' + run_id + '...');
-        socket.disconnect();
-        return;
+        console_log('Checking run ssh sids because details have not been found '
+                    + 'using ' + auth_user + ' token for run #' + run_id + '...');
+        run_details = get_run_details(run_id, SYSTEM_AUTH_TOKEN);
+        if (!run_details || !run_details.ssh_users.includes(auth_user)) {
+            console_log('Aborting SSH connection because details have not been found for run #' + run_id + '...');
+            socket.disconnect();
+            return;
+        }
     }
 
     if (!run_details.id || !run_details.ip || !run_details.pass || !run_details.owner) {
@@ -323,19 +340,19 @@ io.on('connection', function(socket) {
         if (run_details.platform == 'windows') {
             run_ssh_mode = 'owner-sshpass';
         } else {
-            run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'owner';
+            run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', SYSTEM_AUTH_TOKEN) ? 'root' : 'owner';
         }
     }
     const run_user_name_case = run_details.parameters['CP_CAP_USER_NAME_CASE'] || 'default';
     const run_user_name_metadata_key = run_details.parameters['CP_CAP_USER_NAME_METADATA_KEY'] || 'local_user_name';
     const current_user = get_current_user(auth_key);
-    const current_user_metadata = current_user ? get_user_metadata(current_user.id, auth_key) : {};
+    const current_user_metadata = current_user ? get_user_metadata(current_user.id, SYSTEM_AUTH_TOKEN) : {};
     const current_user_login_name = current_user ? current_user.name : undefined;
     const current_user_local_name = current_user_metadata[run_user_name_metadata_key];
     const current_user_name = current_user_local_name
         || (current_user_login_name ? resolve_user_name(current_user_login_name, run_user_name_case) : undefined);
-    const platformName = get_platform_name(auth_key);
-    const theme = current_user_metadata['ui.ssh.theme'] || get_ssh_theme(auth_key) || 'default';
+    const platformName = get_platform_name(SYSTEM_AUTH_TOKEN);
+    const theme = current_user_metadata['ui.ssh.theme'] || get_ssh_theme(SYSTEM_AUTH_TOKEN) || 'default';
     let sshuser;
     let sshpass;
     switch (run_ssh_mode) {
