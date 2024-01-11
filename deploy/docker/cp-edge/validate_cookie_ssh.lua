@@ -52,6 +52,7 @@ if token then
         ngx.log(ngx.WARN,"[SECURITY] Application: SSH-" .. ngx.var.request_uri .. "; User: " .. username .. "; Status: Successfully authenticated.")
     end
     ngx.req.set_header('token', token)
+    ngx.req.set_header('token_sub', username)
     return
 end
 
