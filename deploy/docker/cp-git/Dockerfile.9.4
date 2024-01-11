@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,18 @@ FROM $BASE_IMAGE
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
 
-RUN curl -k -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash && \
+RUN apt update && \
+    apt install -y openssl \
+                   libssl1.0.0 \
+                   ca-certificates \
+                   libcryptsetup4 \
+                   libcurl3-gnutls \
+                   libgcrypt20 \
+                   libgnutls30 \
+                   libk5crypto3
+
+ADD runner_gitlab-runner.list /etc/apt/sources.list.d/runner_gitlab-runner.list
+RUN apt update && \
     apt install -y gitlab-runner=14.0.1 sshpass
 
 ADD gitlab-runner-scripts /gitlab-runner-scripts
