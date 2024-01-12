@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import urllib
+try:
+    from urllib import quote
+except ImportError:
+    from urllib.parse import quote
 
 from src.api.base import API
 from src.model.docker_registry_model import ToolScanResultsModel
@@ -47,11 +50,11 @@ class Tool(API):
 
     def load_vulnerabilities(self, registry, group, tool):
         tool_path = group + '/' + tool
-        url = '/tool/scan?registry=%s&tool=%s' % (urllib.quote(registry), urllib.quote(tool_path))
+        url = '/tool/scan?registry=%s&tool=%s' % (quote(registry), quote(tool_path))
         return self._load_tool_scan(url)
 
     def load_tool_scan(self, tool_path):
-        url = '/tool/scan?tool=%s' % urllib.quote(tool_path)
+        url = '/tool/scan?tool=%s' % quote(tool_path)
         return self._load_tool_scan(url)
 
     def _load_tool_scan(self, url):
