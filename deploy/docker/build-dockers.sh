@@ -175,14 +175,14 @@ docker push "$CP_CLAIR_DIST_NAME"
 CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-9-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_DIST_NAME" \
-                -f Dockerfile.9.4
+                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.9.4
 docker push "$CP_GITLAB_DIST_NAME"
 
 # 15.4.3 version
 CP_GITLAB_15_DIST_NAME=${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_15_DIST_NAME" \
-                -f Dockerfile.15.5 \
+                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.15.5 \
                 --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.5.4-ce.0"
 docker push "$CP_GITLAB_15_DIST_NAME"
 
