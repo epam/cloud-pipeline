@@ -234,7 +234,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
 
     def _generate_gcp(self, pipe):
         self._is_read_only = not self.bucket_object.is_write_allowed()
-        return _RefreshingClient(lambda: pipe.find_temporary_credentials(self.bucket_object))
+        return _RefreshingClient(lambda: pipe.get_temporary_credentials(self.bucket_object))
 
     def is_available(self):
         # TODO 05.09.2019: Check GCP API for availability
