@@ -52,6 +52,28 @@ READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
 MOUNT_LIMITS_USER_DEFAULT = 'user_default'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
+MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
+MOUNT_OPTIONS_ENV_DELIMITER = ':'
+
+
+class MountOptions:
+    MOUNT_PATH_PREFIX = 'mount_path='
+    MOUNT_PARAMS_PREFIX = 'mount_params='
+
+    def __init__(self):
+        self.mount_params = None
+        self.mount_path = None
+
+    def parse(self, env_value):
+        parts = env_value.split(MOUNT_OPTIONS_ENV_DELIMITER)
+        for part in parts:
+            if part.startswith(self.MOUNT_PATH_PREFIX):
+                self.mount_path = part[len(self.MOUNT_PATH_PREFIX):]
+                continue
+            if part.startswith(self.MOUNT_PARAMS_PREFIX):
+                self.mount_params = part[len(self.MOUNT_PARAMS_PREFIX):]
+                continue
+        return self
 
 
 class PermissionHelper:
@@ -202,6 +224,7 @@ class MountStorageTask:
                 x for x in available_storages_with_mounts if not x.storage.source_storage_id
             ]
             storages_ids_by_path = {x.storage.path: x.storage.id for x in available_storages_with_mounts}
+            additional_mount_options = dict(self._load_mount_options_from_environ())
 
             # filtering out all nfs storages if region id is missing
             if not self.region_id:
@@ -286,7 +309,8 @@ class MountStorageTask:
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_metadata,
                                                                                 storage_and_mount.file_share_mount,
-                                                                                sensitive_policy) \
+                                                                                sensitive_policy,
+                                                                                additional_mount_options.get(storage_and_mount.storage.id)) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
                 if not mounter:
                     Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
@@ -305,6 +329,11 @@ class MountStorageTask:
         except Exception as e:
             Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
             traceback.print_exc()
+
+    def _load_mount_options_from_environ(self):
+        for env_name, env_value in os.environ.items():
+            if env_name.startswith(MOUNT_OPTIONS_ENV_PREFIX):
+                yield int(env_name[len(MOUNT_OPTIONS_ENV_PREFIX):]), MountOptions().parse(env_value)
 
     def _collect_storages_metadata(self, available_storages_with_mounts):
         storages_metadata_raw = self._load_storages_metadata_raw(available_storages_with_mounts)
@@ -336,12 +365,13 @@ class StorageMounter:
     __metaclass__ = ABCMeta
     _cached_regions = []
 
-    def __init__(self, api, storage, metadata, share_mount, sensitive_policy):
+    def __init__(self, api, storage, metadata, share_mount, sensitive_policy, mount_options=None):
         self.api = api
         self.storage = storage
         self.metadata = metadata
         self.share_mount = share_mount
         self.sensitive_policy = sensitive_policy
+        self.mount_options = mount_options
 
     @staticmethod
     @abstractmethod
@@ -397,6 +427,8 @@ class StorageMounter:
 
     def build_mount_point(self, mount_root):
         mount_point = self.storage.mount_point
+        if self.mount_options and self.mount_options.mount_path:
+            return self.mount_options.mount_path
         if mount_point is None:
             mount_point = os.path.join(mount_root, self.get_path())
         return mount_point
@@ -470,6 +502,11 @@ class AzureMounter(StorageMounter):
 
     def build_mount_params(self, mount_point):
         account_id, account_key, _, _ = self._get_credentials(self.storage)
+        mount_options = ''
+        if self.mount_options and self.mount_options.mount_params:
+            mount_options = self.mount_options.mount_params
+        elif self.storage.mount_options:
+            mount_options = self.storage.mount_options
         return {
             'mount': mount_point,
             'path': self.get_path(),
@@ -477,7 +514,7 @@ class AzureMounter(StorageMounter):
             'account_name': account_id,
             'account_key': account_key,
             'permissions': 'rw' if PermissionHelper.is_storage_writable(self.storage) else 'ro',
-            'mount_options': self.storage.mount_options if self.storage.mount_options else ''
+            'mount_options': mount_options
         }
 
     def build_mount_command(self, params):
@@ -595,7 +632,8 @@ class S3Mounter(StorageMounter):
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
             pipe_mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
-            mount_options = os.getenv('CP_PIPE_FUSE_OPTIONS')
+            mount_options = self.mount_options.mount_params if self.mount_options and self.mount_options.mount_params \
+                else os.getenv('CP_PIPE_FUSE_OPTIONS')
             persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
             debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
@@ -752,6 +790,8 @@ class NFSMounter(StorageMounter):
         return NFSMounter.available
 
     def build_mount_point(self, mount_root):
+        if self.mount_options and self.mount_options.mount_path:
+            return self.mount_options.mount_path
         mount_point = self.storage.mount_point
         if mount_point is None:
             # NFS path will look like srv:/some/path. Remove the first ':' from it
@@ -765,7 +805,10 @@ class NFSMounter(StorageMounter):
     def build_mount_command(self, params):
         command = '/bin/mount -t {protocol}'
 
-        mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
+        if self.mount_options and self.mount_options.mount_params:
+            mount_options = self.mount_options.mount_params
+        else:
+            mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
 
         region_id = str(self.share_mount.region_id) if self.share_mount.region_id is not None else ""
         if os.getenv("CP_CLOUD_PROVIDER_" + region_id) == "AZURE" and self.share_mount.mount_type == "SMB":
