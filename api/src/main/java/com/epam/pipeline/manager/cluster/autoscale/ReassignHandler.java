@@ -151,9 +151,7 @@ public class ReassignHandler {
                                      final String previousNodeId,
                                      final RunningInstance previousInstance) {
         log.debug("Reassigning node ID {} to run {}.", previousNodeId, newNodeId);
-        final boolean successfullyReassigned = previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX) ?
-                cloudFacade.reassignPoolNode(previousNodeId, runId) :
-                cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId);
+        final boolean successfullyReassigned = runReassign(previousNodeId, runId);
         if (!successfullyReassigned) {
             return false;
         }
@@ -169,5 +167,16 @@ public class ReassignHandler {
         autoscalerService.adjustRunPrices(runId, disks);
         reassignedNodes.add(previousNodeId);
         return true;
+    }
+
+    private boolean runReassign(final String previousNodeId,
+                                final Long runId) {
+        if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX)) {
+            return cloudFacade.reassignPoolNode(previousNodeId, runId);
+        }
+        if (previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
+            return cloudFacade.reassignKubeNode(previousNodeId, String.valueOf(runId));
+        }
+        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId);
     }
 }

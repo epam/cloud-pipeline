@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.alive.policy.NodeExpirationService;
 import com.epam.pipeline.manager.execution.SystemParams;
@@ -277,6 +278,17 @@ public class CloudFacadeImpl implements CloudFacade {
     public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord record) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return getInstanceService(region).deleteInstanceDNSRecord(region, record);
+    }
+
+    @Override
+    public boolean reassignKubeNode(final String previousNodeId, final String newNodeId) {
+        return kubernetesManager.findNodeByRunId(previousNodeId)
+                .map(node -> {
+                    kubernetesManager.addNodeLabel(
+                            node.getMetadata().getName(), KubernetesConstants.RUN_ID_LABEL, newNodeId);
+                    return true;
+                })
+                .orElse(false);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

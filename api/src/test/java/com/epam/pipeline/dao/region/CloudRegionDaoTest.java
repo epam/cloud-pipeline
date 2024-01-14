@@ -22,7 +22,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.entity.region.MountStorageRule;
 import com.epam.pipeline.manager.region.CloudRegionAspect;
@@ -173,8 +173,8 @@ public class CloudRegionDaoTest extends AbstractSpringTest {
         expectedRegion.setSshPublicKeyPath(SSH_PUBLIC_KEY_PATH);
         expectedRegion.setApplicationName("App");
         expectedRegion.setCustomInstanceTypes(Arrays.asList(
-            GCPCustomInstanceType.withCpu(CPU, RAM),
-            GCPCustomInstanceType.withGpu(CPU, RAM, GPU, GPU_TYPE)
+            CustomInstanceType.withCpu(CPU, RAM),
+            CustomInstanceType.withGpu(CPU, RAM, GPU, GPU_TYPE)
         ));
         final AbstractCloudRegion createdRegion = cloudRegionDao.create(expectedRegion);
         final GCPRegion actualRegion = loadAndCheckType(createdRegion.getId(), GCPRegion.class);
