@@ -327,6 +327,12 @@ public class CloudFacadeImpl implements CloudFacade {
                 .orElse(false);
     }
 
+    @Override
+    public boolean instanceScalingSupported(final Long regionId) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        return region.getProvider() != CloudProvider.LOCAL;
+    }
+
     private AbstractCloudRegion getRegionByRunId(final Long runId) {
         try {
             final PipelineRun run = runCRUDService.loadRunById(runId);

@@ -35,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -134,7 +135,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
 
     @Override
     public Map<String, String> buildContainerCloudEnvVars(LocalRegion region) {
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
