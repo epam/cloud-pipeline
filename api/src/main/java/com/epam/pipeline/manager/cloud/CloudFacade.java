@@ -108,4 +108,6 @@ public interface CloudFacade {
     InstanceImage getInstanceImageDescription(Long regionId, String imageId);
 
     void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
+
+    boolean reassignKubeNode(String previousNodeId, String valueOf);
 }

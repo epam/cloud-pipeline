@@ -20,6 +20,7 @@ public final class AutoscaleContants {
     public static final int NODEUP_LIMIT_EXCEEDED_EXIT_CODE = 6;
     public static final int NODEUP_INSUFFICIENT_CAPACITY_EXIT_CODE = 7;
     public static final String NODE_POOL_PREFIX = "p-";
+    public static final String NODE_LOCAL_PREFIX = "l-";
 
     private AutoscaleContants() {
         //no op
