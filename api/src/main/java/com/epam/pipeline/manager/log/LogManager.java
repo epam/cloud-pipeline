@@ -243,6 +243,9 @@ public class LogManager {
     }
 
     public void save(final List<LogEntry> logEntries) {
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_DISABLE_AUDIT)) {
+            return;
+        }
         log.debug("Saving log entries ({})...", logEntries.size());
         final String index = getWriteIndex();
         final BulkRequest bulkRequest = new BulkRequest();
