@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -34,6 +35,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import io.fabric8.kubernetes.api.model.NodeList;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -44,6 +46,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RequiredArgsConstructor
@@ -118,16 +121,44 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                 .map(NodePool::toRunningInstance)
                 .orElseGet(() -> {
                     try {
+                        if (nodeLabel.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
+                            return buildLocalInstance(nodeLabel, client);
+                        }
                         final PipelineRun run = runCRUDService.loadRunById(Long.parseLong(nodeLabel));
                         final RunningInstance runningInstance = new RunningInstance();
                         runningInstance.setInstance(run.getInstance());
                         runningInstance.setPrePulledImages(Collections.singleton(run.getActualDockerImage()));
                         return runningInstance;
-                    } catch (IllegalArgumentException e) {
+                    } catch (IllegalArgumentException | KubernetesClientException e) {
                         log.trace(e.getMessage(), e);
                         return null;
                     }
                 });
+    }
+
+    private RunningInstance buildLocalInstance(final String nodeLabel, final KubernetesClient client) {
+        log.debug("Building description for local node");
+        return ListUtils.emptyIfNull(client.nodes().withLabel(KubernetesConstants.RUN_ID_LABEL, nodeLabel)
+                .list().getItems())
+                .stream()
+                .findFirst()
+                .map(node -> {
+                    final Map<String, String> nodeLabels = MapUtils.emptyIfNull(node.getMetadata().getLabels());
+                    final RunningInstance runningInstance = new RunningInstance();
+                    final RunInstance runInstance = new RunInstance();
+                    runInstance.setCloudProvider(CloudProvider.LOCAL);
+                    runInstance.setNodePlatform("linux");
+                    runInstance.setSpot(false);
+                    runInstance.setNodeImage(nodeLabels.get("cloud_image"));
+                    runInstance.setNodeType(nodeLabels.get("cloud_ins_type"));
+                    final int diskSize = Integer.parseInt(nodeLabels.get("cloud_ins_disk"));
+                    runInstance.setNodeDisk(diskSize);
+                    runInstance.setEffectiveNodeDisk(diskSize);
+                    runInstance.setCloudRegionId(Long.parseLong(nodeLabels.get("cloud_region_id")));
+                    runningInstance.setInstance(runInstance);
+                    return runningInstance;
+                })
+                .orElse(null);
     }
 
     public Optional<NodePool> findPool(final String nodeLabel, final KubernetesClient client) {

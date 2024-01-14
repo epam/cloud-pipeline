@@ -38,7 +38,8 @@ import lombok.Setter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AWSRegionDTO.class, name = "AWS"),
         @JsonSubTypes.Type(value = AzureRegionDTO.class, name = "AZURE"),
-        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP")})
+        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP"),
+        @JsonSubTypes.Type(value = LocalRegionDTO.class, name = "LOCAL")})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractCloudRegionDTO {
 
