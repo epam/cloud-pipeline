@@ -113,6 +113,7 @@ public class ScaleDownHandler {
 
         if (isLocalNode(node)) {
             log.debug("Skipping node {} from local cluster", name);
+            return;
         }
 
         if (isUnavailable(node)) {
@@ -137,7 +138,7 @@ public class ScaleDownHandler {
 
     private boolean isLocalNode(final Node node) {
         return MapUtils.emptyIfNull(node.getMetadata().getLabels())
-                .getOrDefault(KubernetesConstants.CLOUD_REGION_LABEL, "").startsWith("local-");
+                .getOrDefault("cloud_provider", "").equalsIgnoreCase("LOCAL");
     }
 
     private String getNodeName(final Node node) {

@@ -101,4 +101,6 @@ public interface CloudFacade {
     InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
     boolean reassignKubeNode(String previousNodeId, String valueOf);
+
+    boolean instanceScalingSupported(Long cloudRegionId);
 }
