@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp.extractor;
 
 import com.epam.pipeline.entity.cluster.GpuDevice;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.resource.AbstractGCPObject;
 import com.epam.pipeline.manager.cloud.gcp.resource.GCPMachine;
@@ -52,7 +52,7 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
                 .collect(Collectors.toList());
     }
 
-    private GCPMachine toMachine(final GCPCustomInstanceType type) {
+    private GCPMachine toMachine(final CustomInstanceType type) {
         final String name = type.getGpu() > 0 && StringUtils.isNotBlank(type.getGpuType())
                 ? gpuCustomGpuMachine(type)
                 : customCpuMachine(type);
@@ -68,12 +68,12 @@ public class GCPCustomMachineExtractor implements GCPObjectExtractor {
         return GCPMachine.withCpu(name, CUSTOM_FAMILY, type.getCpu(), defaultMemory, extendedMemory);
     }
 
-    private String gpuCustomGpuMachine(final GCPCustomInstanceType type) {
+    private String gpuCustomGpuMachine(final CustomInstanceType type) {
         final String cpuMachineName = customCpuMachine(type);
         return String.format("gpu-%s-%s-%s", cpuMachineName, type.getGpuType().toLowerCase(), type.getGpu());
     }
 
-    private String customCpuMachine(final GCPCustomInstanceType type) {
+    private String customCpuMachine(final CustomInstanceType type) {
         return String.format("%s-%s-%s", CUSTOM_FAMILY, type.getCpu(), (int) (type.getRam() * MEGABYTES_IN_GIGABYTE));
     }
 }

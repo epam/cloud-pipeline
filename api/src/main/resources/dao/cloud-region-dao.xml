@@ -63,7 +63,9 @@
                         global_distribution_url,
                         dns_hosted_zone_id,
                         dns_hosted_zone_base,
-                        run_shift_enabled)
+                        run_shift_enabled,
+                        user_name,
+                        user_password)
                     VALUES (
                         :REGION_NAME,
                         :NAME,
@@ -105,7 +107,9 @@
                         :GLOBAL_DISTRIBUTION_URL,
                         :DNS_HOSTED_ZONE_ID,
                         :DNS_HOSTED_ZONE_BASE,
-                        :RUN_SHIFT_ENABLED)
+                        :RUN_SHIFT_ENABLED,
+                        :USER_NAME,
+                        :USER_PASSWORD)
                 ]]>
             </value>
         </constructor-arg>
@@ -155,6 +159,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -212,6 +218,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -269,6 +277,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -326,6 +336,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -383,6 +395,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -439,7 +453,9 @@
                         global_distribution_url = :GLOBAL_DISTRIBUTION_URL,
                         dns_hosted_zone_id = :DNS_HOSTED_ZONE_ID,
                         dns_hosted_zone_base = :DNS_HOSTED_ZONE_BASE,
-                        run_shift_enabled = :RUN_SHIFT_ENABLED
+                        run_shift_enabled = :RUN_SHIFT_ENABLED,
+                        user_name = :USER_NAME,
+                        user_password = :USER_PASSWORD
                     WHERE
                         region_id = :REGION_ID
                 ]]>
@@ -501,6 +517,8 @@
                         r.dns_hosted_zone_id,
                         r.dns_hosted_zone_base,
                         r.run_shift_enabled,
+                        r.user_name,
+                        r.user_password,
                         sm.id as mount_id,
                         sm.mount_root,
                         sm.mount_type,
@@ -519,7 +537,9 @@
                         r.cloud_provider,
                         r.storage_account_key,
                         r.aws_key_id,
-                        r.aws_access_key
+                        r.aws_access_key,
+                        r.user_name,
+                        r.user_password
                     FROM
                         pipeline.cloud_region r
                     WHERE r.region_id = :REGION_ID

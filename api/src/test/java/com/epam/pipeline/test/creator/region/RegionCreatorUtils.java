@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -91,10 +91,10 @@ public final class RegionCreatorUtils {
         return region;
     }
 
-    private static List<GCPCustomInstanceType> getGcpCustomInstanceTypes() {
-        final List<GCPCustomInstanceType> customInstanceTypes = new ArrayList<>();
-        customInstanceTypes.add(GCPCustomInstanceType.withCpu(NUMBER, NUMBER));
-        customInstanceTypes.add(GCPCustomInstanceType.withGpu(NUMBER, NUMBER, NUMBER, TEST_STRING));
+    private static List<CustomInstanceType> getGcpCustomInstanceTypes() {
+        final List<CustomInstanceType> customInstanceTypes = new ArrayList<>();
+        customInstanceTypes.add(CustomInstanceType.withCpu(NUMBER, NUMBER));
+        customInstanceTypes.add(CustomInstanceType.withGpu(NUMBER, NUMBER, NUMBER, TEST_STRING));
         return customInstanceTypes;
     }
 
