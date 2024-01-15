@@ -32,6 +32,7 @@ import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -186,18 +187,18 @@ public class ReassignHandler {
         pipelineRunManager.updateRunInstanceStartDate(runId, DateUtils.nowUTC());
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);
-        autoscalerService.adjustRunPrices(runId, disks);
+        if (CollectionUtils.isNotEmpty(disks)) {
+            autoscalerService.adjustRunPrices(runId, disks);
+        }
         reassignedNodes.add(previousNodeId);
         return true;
     }
 
     private boolean runReassign(final String previousNodeId,
                                 final Long runId) {
-        if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX)) {
+        if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX) ||
+                previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
             return cloudFacade.reassignPoolNode(previousNodeId, runId);
-        }
-        if (previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
-            return cloudFacade.reassignKubeNode(previousNodeId, String.valueOf(runId));
         }
         return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId);
     }

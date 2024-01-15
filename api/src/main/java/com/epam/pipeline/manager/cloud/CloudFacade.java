@@ -109,7 +109,5 @@ public interface CloudFacade {
 
     void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
 
-    boolean reassignKubeNode(String previousNodeId, String valueOf);
-
     boolean instanceScalingSupported(Long cloudRegionId);
 }
