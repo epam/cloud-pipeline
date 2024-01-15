@@ -30,10 +30,13 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.LocalRegion;
 import com.epam.pipeline.manager.cloud.CloudInstanceService;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.cluster.KubernetesManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,7 @@ import java.util.Optional;
 public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
 
     private final MessageHelper messageHelper;
+    private final KubernetesManager kubernetesManager;
 
     @Override
     public CloudProvider getProvider() {
@@ -124,13 +128,13 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public boolean reassignNode(LocalRegion region, Long oldId, Long newId) {
-        return false;
+    public boolean reassignNode(final LocalRegion region, final Long oldId, final Long newId) {
+        return reassignKubeNode(String.valueOf(oldId), String.valueOf(newId));
     }
 
     @Override
-    public boolean reassignPoolNode(LocalRegion region, String nodeLabel, Long newId) {
-        return false;
+    public boolean reassignPoolNode(final LocalRegion region, final String nodeLabel, final Long newId) {
+        return reassignKubeNode(nodeLabel, String.valueOf(newId));
     }
 
     @Override
@@ -150,8 +154,8 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public List<InstanceDisk> loadDisks(LocalRegion region, Long runId) {
-        return null;
+    public List<InstanceDisk> loadDisks(final LocalRegion region, final Long runId) {
+        return Collections.emptyList();
     }
 
     @Override
@@ -169,5 +173,15 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     public InstanceDNSRecord deleteInstanceDNSRecord(LocalRegion region, InstanceDNSRecord record) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_DNS_LOCAL_CLUSTER));
+    }
+
+    private boolean reassignKubeNode(final String oldLabel, final String newLabel) {
+        return kubernetesManager.findNodeByRunId(oldLabel)
+                .map(node -> {
+                    kubernetesManager.addNodeLabel(
+                            node.getMetadata().getName(), KubernetesConstants.RUN_ID_LABEL, newLabel);
+                    return true;
+                })
+                .orElse(false);
     }
 }
