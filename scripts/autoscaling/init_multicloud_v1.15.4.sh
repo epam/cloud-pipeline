@@ -409,8 +409,8 @@ _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=${SYSTEM_RESERVED_CPU},memory=${S
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
-_KUBE_VERSION=$(kubectl version --client=true -o json | jq -r '.clientVersion.minor')
-if (( "$_KUBE_VERSION" >=  19)); then
+_KUBELET_VERSION=$(kubelet --version | cut -f2 -d'.')
+if (( "$_KUBELET_VERSION" >=  19)); then
   _KUBE_OTHER_ARGS="$_KUBE_OTHER_ARGS --feature-gates CSIMigration=false"
 fi
 
