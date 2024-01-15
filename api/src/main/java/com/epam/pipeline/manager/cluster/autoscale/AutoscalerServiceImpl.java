@@ -153,7 +153,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                     runInstance.setNodeImage(nodeLabels.get("cloud_image"));
                     runInstance.setNodeType(nodeLabels.get("cloud_ins_type"));
                     runInstance.setNodeId(nodeLabels.get("cloud_ins_id"));
-                    runInstance.setNodeId(nodeLabels.get("cloud_ins_ip"));
+                    runInstance.setNodeIP(nodeLabels.get("cloud_ins_ip"));
                     final int diskSize = Integer.parseInt(nodeLabels.get("cloud_ins_disk"));
                     runInstance.setNodeDisk(diskSize);
                     runInstance.setEffectiveNodeDisk(diskSize);
