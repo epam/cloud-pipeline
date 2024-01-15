@@ -332,8 +332,10 @@ class MountStorageTask:
 
     def _load_mount_options_from_environ(self):
         for env_name, env_value in os.environ.items():
-            if env_name.startswith(MOUNT_OPTIONS_ENV_PREFIX):
-                yield int(env_name[len(MOUNT_OPTIONS_ENV_PREFIX):]), MountOptions().parse(env_value)
+            if env_name.startswith(MOUNT_OPTIONS_ENV_PREFIX) and not env_name.endswith('_PARAM_TYPE'):
+                storage_id = env_name[len(MOUNT_OPTIONS_ENV_PREFIX):]
+                if storage_id.isdigit():
+                    yield int(storage_id), MountOptions().parse(env_value)
 
     def _collect_storages_metadata(self, available_storages_with_mounts):
         storages_metadata_raw = self._load_storages_metadata_raw(available_storages_with_mounts)
