@@ -40,11 +40,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -75,7 +77,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     @Override
     public boolean requirementsMatchWithImages(final RunningInstance instanceOld,
                                                final InstanceRequest instanceNew) {
-        return requirementsMatch(instanceOld, instanceNew) && instanceOld.getPrePulledImages()
+        return requirementsMatch(instanceOld, instanceNew) && SetUtils.emptyIfNull(instanceOld.getPrePulledImages())
                 .contains(instanceNew.getRequestedImage());
     }
 
@@ -155,6 +157,7 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                     runInstance.setEffectiveNodeDisk(diskSize);
                     runInstance.setCloudRegionId(Long.parseLong(nodeLabels.get("cloud_region_id")));
                     runningInstance.setInstance(runInstance);
+                    runningInstance.setPrePulledImages(new HashSet<>());
                     return runningInstance;
                 })
                 .orElse(null);
