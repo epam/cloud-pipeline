@@ -151,14 +151,17 @@ public class AutoscalerServiceImpl implements AutoscalerService {
                     runInstance.setCloudProvider(CloudProvider.LOCAL);
                     runInstance.setNodePlatform("linux");
                     runInstance.setSpot(false);
-                    runInstance.setNodeImage(nodeLabels.get("cloud_image"));
-                    runInstance.setNodeType(nodeLabels.get("cloud_ins_type"));
-                    runInstance.setNodeId(nodeLabels.get("cloud_ins_id"));
-                    runInstance.setNodeIP(nodeLabels.get("cloud_ins_ip"));
-                    final int diskSize = Integer.parseInt(nodeLabels.get("cloud_ins_disk"));
+                    runInstance.setNodeName(nodeLabels.get(KubernetesConstants.CLOUD_INSTANCE_ID_LABEL));
+                    runInstance.setNodeImage(nodeLabels.get(KubernetesConstants.CLOUD_IMAGE_LABEL));
+                    runInstance.setNodeType(nodeLabels.get(KubernetesConstants.CLOUD_INSTANCE_TYPE_LABEL));
+                    runInstance.setNodeId(nodeLabels.get(KubernetesConstants.CLOUD_INSTANCE_ID_LABEL));
+                    runInstance.setNodeIP(nodeLabels.get(KubernetesConstants.CLOUD_INSTANCE_IP_LABEL));
+                    final int diskSize = Integer.parseInt(
+                            nodeLabels.get(KubernetesConstants.CLOUD_INSTANCE_DISK_LABEL));
                     runInstance.setNodeDisk(diskSize);
                     runInstance.setEffectiveNodeDisk(diskSize);
-                    runInstance.setCloudRegionId(Long.parseLong(nodeLabels.get("cloud_region_id")));
+                    runInstance.setCloudRegionId(Long.parseLong(
+                            nodeLabels.get(KubernetesConstants.CLOUD_REGION_ID_LABEL)));
                     runningInstance.setInstance(runInstance);
                     runningInstance.setPrePulledImages(new HashSet<>());
                     return runningInstance;
