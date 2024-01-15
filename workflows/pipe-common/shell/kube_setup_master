@@ -213,6 +213,9 @@ nodeRegistration:
   taints:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
+bootstrapTokens:
+  - groups:
+    ttl: 0s
 ---
 apiServer:
   timeoutForControlPlane: 4m0s
