@@ -404,8 +404,8 @@ public class SamplesMetadataTest
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
-                .sleep(20, SECONDS)
                 .ensure(byText(launchScript), visible);
 //        sleep(20, SECONDS);
         refresh();

@@ -110,7 +110,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
 
     public PipelineCodeTabAO uploadFile(File file) {
         sleep(5, SECONDS);
-        ensure(UPLOAD, visible);
+        ensure(UPLOAD, visible, enabled);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
         return this;
     }
