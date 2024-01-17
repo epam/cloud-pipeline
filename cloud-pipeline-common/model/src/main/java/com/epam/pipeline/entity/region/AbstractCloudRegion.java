@@ -40,7 +40,8 @@ import java.util.List;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AwsRegion.class, name = "AWS"),
         @JsonSubTypes.Type(value = AzureRegion.class, name = "AZURE"),
-        @JsonSubTypes.Type(value = GCPRegion.class, name = "GCP")})
+        @JsonSubTypes.Type(value = GCPRegion.class, name = "GCP"),
+        @JsonSubTypes.Type(value = LocalRegion.class, name = "LOCAL")})
 public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
 
     private final AclClass aclClass = AclClass.CLOUD_REGION;
