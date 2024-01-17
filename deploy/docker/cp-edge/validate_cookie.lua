@@ -65,6 +65,13 @@ local function split_str(inputstr, sep)
     return t
 end
 
+-- If edge_jwt_auth is set to true - it is requested to bypass authentication
+if ngx.var.edge_jwt_auth == "False" then
+    ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
+            "; User: bypass; Status: Successfully authenticated.")
+    return
+end
+
 -- Check if request alread contains a cookie or a header named "bearer"
 local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 if token then
