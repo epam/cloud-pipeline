@@ -405,8 +405,9 @@ public class SamplesMetadataTest
                 .click(DELETE)
                 .click(button("OK"))
                 .uploadFile(getFile(launchScript))
+                .sleep(20, SECONDS)
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
+//        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
