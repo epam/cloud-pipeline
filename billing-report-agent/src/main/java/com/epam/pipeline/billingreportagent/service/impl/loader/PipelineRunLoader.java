@@ -44,10 +44,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -85,9 +85,10 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .map(PipelineRun::getInstance)
                 .map(RunInstance::getCloudRegionId)
                 .distinct()
-                .collect(Collectors
-                        .toMap(Function.identity(), apiClient::loadAllInstanceTypesForRegion));
-
+                .collect(
+                        HashMap::new,
+                        (map, id) -> map.put(id, apiClient.loadAllInstanceTypesForRegion(id)),
+                        HashMap::putAll);
         return runs
                 .stream()
                 .map(run -> {
@@ -151,7 +152,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     }
 
     private ComputeType getRunType(final PipelineRun run, final Map<Long, List<InstanceType>> regionOffers) {
-        return regionOffers.get(run.getInstance().getCloudRegionId())
+        return ListUtils.emptyIfNull(regionOffers.get(run.getInstance().getCloudRegionId()))
                 .stream()
                 .filter(instanceOffer -> instanceOffer.getName().equals(run.getInstance().getNodeType()))
                 .findAny()
