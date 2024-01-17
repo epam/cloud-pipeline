@@ -25,21 +25,21 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @EqualsAndHashCode
-public class GCPCustomInstanceType {
+public class CustomInstanceType {
     private int cpu;
     private double ram;
     private int gpu;
     private String gpuType;
 
-    public static GCPCustomInstanceType withCpu(final int cpu,
-                                                final double ram) {
-        return new GCPCustomInstanceType(cpu, ram, 0, null);
+    public static CustomInstanceType withCpu(final int cpu,
+                                             final double ram) {
+        return new CustomInstanceType(cpu, ram, 0, null);
     }
 
-    public static GCPCustomInstanceType withGpu(final int cpu,
-                                                final double ram,
-                                                final int gpu,
-                                                final String gpuType) {
-        return new GCPCustomInstanceType(cpu, ram, gpu, gpuType);
+    public static CustomInstanceType withGpu(final int cpu,
+                                             final double ram,
+                                             final int gpu,
+                                             final String gpuType) {
+        return new CustomInstanceType(cpu, ram, gpu, gpuType);
     }
 }
