@@ -385,6 +385,7 @@ if [ -z "$_KUBE_PULL_TIMEOUT" ] || [[ "$_KUBE_PULL_TIMEOUT" == "@"*"@" ]]; then
   _KUBE_PULL_TIMEOUT="10m"
 fi
 _KUBE_OTHER_ARGS="--image-pull-progress-deadline $_KUBE_PULL_TIMEOUT"
+_KUBE_OTHER_ARGS="--enable-cadvisor-json-endpoints $_KUBE_OTHER_ARGS"
 
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
 _KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
