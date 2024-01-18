@@ -421,4 +421,13 @@ fi
 
 # This script will sit in the background 
 # and check until the endpoints are initialized
-nohup kube_configure_external_access &> "$LOG_DIR/kube_configure_external_access.log" &
+if util_version_compare "$CP_CAP_KUBE_VERSION" "1.25.0" "<"; then
+    pipe_log_info "Kubernetes version ($CP_CAP_KUBE_VERSION) is not sufficient for the external setup" "$KUBE_MASTER_SETUP_TASK"
+else
+    if [ "CP_CAP_KUBE_EXTERNAL_SETUP_ENABLED" == "true" ]; then
+        pipe_log_info "Kubernetes external setup is enabled, will check for endpoint and configure credentials" "$KUBE_MASTER_SETUP_TASK"
+        nohup kube_configure_external_access &> "$LOG_DIR/kube_configure_external_access.log" &
+    else
+        pipe_log_info "Kubernetes external setup is NOT enabled" "$KUBE_MASTER_SETUP_TASK"
+    fi
+fi
