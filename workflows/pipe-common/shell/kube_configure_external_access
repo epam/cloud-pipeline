@@ -136,7 +136,7 @@ else
     fi
 fi
 
-_ca_cert_b64=$(cat /tmp/kube.pem | base64 -w=0)
+_ca_cert_b64=$(cat /tmp/kube.pem | base64 -w 0)
 rm -f /tmp/kube.pem
 
 #############################################################
