@@ -357,6 +357,20 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_MOUNT_OPTIONS_",
+        "type": "string",
+        "description": "Allows to set mount options for a storage",
+        "passToWorkers": true,
+        "prefix": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_PATH_",
+        "type": "string",
+        "description": "Allows to set mount path for a storage",
+        "passToWorkers": true,
+        "prefix": true
+    },
+    {
         "name": "CP_CAP_FORCE_MOUNTS",
         "type": "string",
         "description": "If defined - will force specified mounts for the run, even if the limits are set",
