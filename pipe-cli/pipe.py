@@ -48,6 +48,7 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
+from src.utilities.cloud_provider_operations import CloudProviderOperations
 from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
@@ -2171,6 +2172,42 @@ def clean(force):
     """
     CleanOperationsManager().clean(force=force)
 
+
+
+@cli.group()
+def cloud():
+    """Direct cloud access operations
+    """
+    pass
+
+
+@cloud.command(name='configure')
+@click.option('-p', '--provider', required=True,
+              help='Name of the Cloud Provider (the only supported value is "aws")')
+@click.option('-c', '--config', required=False,
+              help='Path to the output configuration file, if a non-default location shall be used')
+@click.option('-d', '--default-profile', required=False,
+              help='Name of a profile to be set as a default')
+@click.option('--force', required=False, is_flag=True,
+              help='Will overwrite any existing configuration file')
+@common_options
+def cloud_provider_configure(provider, config, default_profile, force):
+    """Generates a configuration file to access the Cloud directly via native SDKs
+    """
+    if not force and CloudProviderOperations.config_exists(provider, config):
+        click.echo('Configuration file already exists. Use --force to overwrite.')
+        return
+
+    CloudProviderOperations.configure(provider, config, default_profile)
+
+@cloud.command(name='print-credentials')
+@click.option('-d', '--profile-id', required=True,
+              help='ID of a profile to generate credentials')
+@common_options
+def cloud_provider_print_credentials(profile_id):
+    """Prints temporary credentials for the Cloud Provider
+    """
+    CloudProviderOperations.generate_credentials(profile_id)
 
 if __name__ == '__main__':
     cli(sys.argv[1:])
