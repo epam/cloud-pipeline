@@ -72,21 +72,28 @@ def fetch_instance_launch_params(api, launch_adapter, run_id, inheritable_explic
 
 def get_inherited_worker_launch_params(api, run_id, inheritable_explicit_param_names,
                                        instance_inheritable_param_prefixes):
-    return dict(extract_params(list(get_inheritable_system_param_names(api)) + inheritable_explicit_param_names,
-                               instance_inheritable_param_prefixes,
+    inheritable_system_params, inheritable_system_prefixes = get_inheritable_system_param_names(api)
+    return dict(extract_params(inheritable_system_params + inheritable_explicit_param_names,
+                               inheritable_system_prefixes + instance_inheritable_param_prefixes,
                                get_run_params(api, run_id)))
 
 
 def get_inheritable_system_param_names(api):
     system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
     system_launch_params = json.loads(system_launch_params_string)
+    params = []
+    prefixes = []
     for system_launch_param in system_launch_params:
         param_name = system_launch_param.get('name')
         if not param_name:
             continue
         if not system_launch_param.get('passToWorkers', False):
             continue
-        yield param_name
+        if system_launch_param.get('prefix', False):
+            prefixes.append(param_name)
+        else:
+            params.append(param_name)
+    return params, prefixes
 
 
 def get_run_params(api, run_id):
