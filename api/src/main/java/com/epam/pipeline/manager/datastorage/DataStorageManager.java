@@ -231,6 +231,13 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorageDao.loadDataStoragesByIds(ids);
     }
 
+    public List<AbstractDataStorage> getDatastoragesByPaths(final List<String> paths) {
+        if (CollectionUtils.isEmpty(paths)) {
+            return Collections.emptyList();
+        }
+        return dataStorageDao.loadDataStoragesByPaths(paths);
+    }
+
     @Override
     public AbstractSecuredEntity changeOwner(Long id, String owner) {
         final AbstractDataStorage dataStorage = dataStorageDao.loadDataStorage(id);

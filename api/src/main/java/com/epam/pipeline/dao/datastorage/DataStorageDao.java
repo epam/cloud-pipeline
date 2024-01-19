@@ -81,6 +81,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageWithParentsQuery;
     private String loadDataStorageByPrefixesQuery;
     private String loadDataStoragesByIdsQuery;
+    private String loadDataStoragesByPathsQuery;
     private String loadDataStoragesFileShareId;
     private String loadToolsToMountQuery;
     private String loadToolsToMountsForAllStoragesQuery;
@@ -189,6 +190,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return getNamedParameterJdbcTemplate().query(loadDataStoragesByIdsQuery,
                 params, DataStorageParameters.getRowMapper());
 
+    }
+
+    public List<AbstractDataStorage> loadDataStoragesByPaths(final List<String> paths) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_PATHS.name(), paths);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByPathsQuery,
+                params, DataStorageParameters.getRowMapper());
     }
 
     public AbstractDataStorage loadDataStorage(Long id) {
@@ -363,6 +371,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
     }
 
+    public void setLoadDataStoragesByPathsQuery(final String loadDataStoragesByPathsQuery) {
+        this.loadDataStoragesByPathsQuery = loadDataStoragesByPathsQuery;
+    }
+
     public void setLoadDataStoragesFileShareId(String loadDataStoragesFileShareId) {
         this.loadDataStoragesFileShareId = loadDataStoragesFileShareId;
     }
@@ -418,6 +430,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         SENSITIVE,
 
         DATASTORAGE_IDS,
+        DATASTORAGE_PATHS,
         
         // tools to mount
         TOOL_ID,
