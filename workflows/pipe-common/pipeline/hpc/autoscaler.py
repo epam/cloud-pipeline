@@ -221,7 +221,7 @@ class GridEngineScaleUpHandler:
                            '--cmd-template "%s" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
-                           '--region-id %s ' \
+                           '--region-id %s -- ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional ' \
                            '%s ' \
@@ -235,7 +235,7 @@ class GridEngineScaleUpHandler:
         return run_id
 
     def _parameters_str(self, instance_launch_params):
-        return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
+        return ' '.join("{} '{}'".format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
