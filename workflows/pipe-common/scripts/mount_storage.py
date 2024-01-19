@@ -53,28 +53,14 @@ MOUNT_LIMITS_NONE = 'none'
 MOUNT_LIMITS_USER_DEFAULT = 'user_default'
 MOUNT_LIMITS_PARENT_FOLDER_ID = 'folder:'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
-MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
-MOUNT_OPTIONS_ENV_DELIMITER = ':'
+STORAGE_MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
+STORAGE_MOUNT_PATH_ENV_PREFIX = 'CP_CAP_MOUNT_PATH_'
 
 
 class MountOptions:
-    MOUNT_PATH_PREFIX = 'mount_path='
-    MOUNT_PARAMS_PREFIX = 'mount_params='
-
-    def __init__(self):
-        self.mount_params = None
-        self.mount_path = None
-
-    def parse(self, env_value):
-        parts = env_value.split(MOUNT_OPTIONS_ENV_DELIMITER)
-        for part in parts:
-            if part.startswith(self.MOUNT_PATH_PREFIX):
-                self.mount_path = part[len(self.MOUNT_PATH_PREFIX):]
-                continue
-            if part.startswith(self.MOUNT_PARAMS_PREFIX):
-                self.mount_params = part[len(self.MOUNT_PARAMS_PREFIX):]
-                continue
-        return self
+    def __init__(self, mount_params, mount_path):
+        self.mount_params = mount_params
+        self.mount_path = mount_path
 
 
 class PermissionHelper:
@@ -340,11 +326,24 @@ class MountStorageTask:
             traceback.print_exc()
 
     def _load_mount_options_from_environ(self):
+        result = {}
         for env_name, env_value in os.environ.items():
-            if env_name.startswith(MOUNT_OPTIONS_ENV_PREFIX) and not env_name.endswith('_PARAM_TYPE'):
-                storage_id = env_name[len(MOUNT_OPTIONS_ENV_PREFIX):]
+            if env_name.startswith(STORAGE_MOUNT_OPTIONS_ENV_PREFIX) and not env_name.endswith('_PARAM_TYPE'):
+                storage_id = env_name[len(STORAGE_MOUNT_OPTIONS_ENV_PREFIX):]
                 if storage_id.isdigit():
-                    yield int(storage_id), MountOptions().parse(env_value)
+                    storage_id = int(storage_id)
+                    if storage_id not in result:
+                        result[storage_id] = MountOptions(env_value,
+                                                          os.environ.get(STORAGE_MOUNT_PATH_ENV_PREFIX + str(storage_id), None))
+            if env_name.startswith(STORAGE_MOUNT_PATH_ENV_PREFIX) and not env_name.endswith('_PARAM_TYPE'):
+                storage_id = env_name[len(STORAGE_MOUNT_PATH_ENV_PREFIX):]
+                if storage_id.isdigit():
+                    storage_id = int(storage_id)
+                    if storage_id not in result:
+                        result[storage_id] = MountOptions(os.environ.get(STORAGE_MOUNT_OPTIONS_ENV_PREFIX + str(storage_id), None),
+                                                          env_value)
+
+        return result
 
     def _collect_storages_metadata(self, available_storages_with_mounts):
         storages_metadata_raw = self._load_storages_metadata_raw(available_storages_with_mounts)
