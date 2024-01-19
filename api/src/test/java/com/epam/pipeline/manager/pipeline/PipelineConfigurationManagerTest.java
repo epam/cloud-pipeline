@@ -21,8 +21,10 @@ import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,6 +35,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +50,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PipelineConfigurationManagerTest {
     public static final String NODE_LABEL_VALUE = "true";
@@ -70,6 +74,13 @@ public class PipelineConfigurationManagerTest {
     private static final String TEST_PATH_4 = "test/path4";
     public static final String NODE_LABEL = "node-label";
     public static final String OTHER_NODE_LABEL_VALUE = "false";
+    public static final String INHERITED_PARAM_NAME = "LIMIT_MOUNT";
+    public static final String INHERITED_PARAM_PREFIX = "MOUNT_OPTIONS_";
+    public static final String INHERITED_PARAM1_MATCHING_PREFIX = INHERITED_PARAM_PREFIX + "1";
+    public static final String INHERITED_PARAM2_MATCHING_PREFIX = INHERITED_PARAM_PREFIX + "2";
+    public static final String INHERITED_PARAM_VALUE1 = "test1";
+    public static final String INHERITED_PARAM_VALUE2 = "test2";
+    public static final String PARENT_ID = "1";
 
     @Mock
     private PipelineVersionManager pipelineVersionManager;
@@ -204,5 +215,88 @@ public class PipelineConfigurationManagerTest {
         Assert.assertNotNull(config.getPodAssignPolicy());
         Assert.assertEquals(NODE_LABEL, config.getPodAssignPolicy().getSelector().getLabel());
         Assert.assertEquals(NODE_LABEL_VALUE, config.getPodAssignPolicy().getSelector().getValue());
+    }
+
+    @Test
+    public void shouldPropagatePrefixParametersFromSystemParams() {
+        final List<DefaultSystemParameter> systemParams = new ArrayList<>();
+        final DefaultSystemParameter systemParameter = new DefaultSystemParameter();
+        systemParameter.setName(INHERITED_PARAM_PREFIX);
+        systemParameter.setPrefix(true);
+        systemParameter.setPassToWorkers(true);
+        systemParams.add(systemParameter);
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SYSTEM_PARAMETERS)).thenReturn(systemParams);
+
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(INHERITED_PARAM1_MATCHING_PREFIX, new PipeConfValueVO(INHERITED_PARAM_VALUE1));
+        parameters.put(INHERITED_PARAM2_MATCHING_PREFIX, new PipeConfValueVO(INHERITED_PARAM_VALUE2));
+        final PipelineConfiguration configuration = buildConfigWithParams(parameters);
+
+        final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
+                PARENT_ID, new PipelineStart(), configuration, false, true);
+
+        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
+                .get(INHERITED_PARAM1_MATCHING_PREFIX).getValue());
+        Assert.assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
+                .get(INHERITED_PARAM2_MATCHING_PREFIX).getValue());
+    }
+
+    @Test
+    public void shouldPropagateParametersFromSystemParams() {
+        final List<DefaultSystemParameter> systemParams = new ArrayList<>();
+        final DefaultSystemParameter systemParameter = new DefaultSystemParameter();
+        systemParameter.setName(INHERITED_PARAM_NAME);
+        systemParameter.setPassToWorkers(true);
+        systemParams.add(systemParameter);
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_SYSTEM_PARAMETERS)).thenReturn(systemParams);
+
+        final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(INHERITED_PARAM_NAME, new PipeConfValueVO(INHERITED_PARAM_VALUE1));
+        final PipelineConfiguration configuration = buildConfigWithParams(parameters);
+
+        final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
+                PARENT_ID, new PipelineStart(), configuration, false, true);
+
+        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
+    }
+
+    @Test
+    public void shouldPropagatePrefixParametersFromRunParam() {
+        final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(INHERITED_PARAM1_MATCHING_PREFIX, new PipeConfValueVO(INHERITED_PARAM_VALUE1));
+        parameters.put(INHERITED_PARAM2_MATCHING_PREFIX, new PipeConfValueVO(INHERITED_PARAM_VALUE2));
+        parameters.put(PipelineConfigurationManager.INHERITABLE_PARAMETER_PREFIXES,
+                new PipeConfValueVO(INHERITED_PARAM_PREFIX));
+        final PipelineConfiguration configuration = buildConfigWithParams(parameters);
+
+        final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
+                PARENT_ID, new PipelineStart(), configuration, false, true);
+
+        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters()
+                .get(INHERITED_PARAM1_MATCHING_PREFIX).getValue());
+        Assert.assertEquals(INHERITED_PARAM_VALUE2, workerConfig.getParameters()
+                .get(INHERITED_PARAM2_MATCHING_PREFIX).getValue());
+
+    }
+
+    @Test
+    public void shouldPropagateParametersFromRunParam() {
+        final HashMap<String, PipeConfValueVO> parameters = new HashMap<>();
+        parameters.put(INHERITED_PARAM_NAME, new PipeConfValueVO(INHERITED_PARAM_VALUE1));
+        parameters.put(PipelineConfigurationManager.INHERITABLE_PARAMETER_NAMES,
+                new PipeConfValueVO(INHERITED_PARAM_NAME));
+        final PipelineConfiguration configuration = buildConfigWithParams(parameters);
+
+        final PipelineConfiguration workerConfig = pipelineConfigurationManager.generateWorkerConfiguration(
+                PARENT_ID, new PipelineStart(), configuration, false, true);
+
+        Assert.assertEquals(INHERITED_PARAM_VALUE1, workerConfig.getParameters().get(INHERITED_PARAM_NAME).getValue());
+    }
+
+    private PipelineConfiguration buildConfigWithParams(final Map<String, PipeConfValueVO> parameters) {
+        final PipelineConfiguration configuration = new PipelineConfiguration();
+        configuration.setParameters(parameters);
+        configuration.setPodAssignPolicy(RunAssignPolicy.builder().build());
+        return configuration;
     }
 }
