@@ -134,7 +134,7 @@ class CloudProviderOperations(object):
 
     @classmethod
     def build_command(cls, profile_id):
-        executable_path = os.path.abspath(sys.argv[0]) if is_frozen() else (sys.executable + ' ' + sys.argv[0])
+        executable_path = sys.executable if is_frozen() else (sys.executable + ' ' + os.path.abspath(sys.argv[0]))
         return '{} cloud print-credentials --profile-id={}'.format(executable_path, profile_id)
 
     @classmethod
