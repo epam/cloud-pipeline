@@ -262,6 +262,10 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.instance_inheritable_params = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES', type=PARAM_STR, default=None,
             help='Specifies parameter names which will be inherited by workers.')
+        self.instance_inheritable_param_prefixes = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_PREFIXES', type=PARAM_STR,
+            default='CP_CAP_MOUNT_OPTIONS_',
+            help='Specifies parameter prefixes which will be inherited by workers.')
 
 
 class GridEngineQueueParameters(GridEngineParametersGroup):
