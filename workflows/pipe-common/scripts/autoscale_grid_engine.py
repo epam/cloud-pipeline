@@ -113,14 +113,9 @@ def extract_params(keys, prefixes, params):
     for prefix in prefixes:
         if not prefix:
             continue
-        for env in os.environ:
-            if env.startswith(prefix):
-                value = str(os.getenv(env))
-                if value:
-                    yield env, value
         for param in params:
             if param.startswith(prefix):
-                value = str(params.get(param, ''))
+                value = str(os.getenv(param, params.get(param, '')))
                 if value:
                     yield param, value
 
