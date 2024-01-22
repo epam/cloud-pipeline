@@ -141,6 +141,9 @@ import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
 import {getSelectOptions} from '../../../special/instance-type-info';
+import {
+  correctLimitMountsParameterValue
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -4322,11 +4325,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         return null;
       };
-      const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
-      const defaultValue = (getDefaultValue() || '')
-        .split(',')
-        .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
-        .join(',') || null;
+      const defaultValue = correctLimitMountsParameterValue(
+        getDefaultValue() || '',
+        dataStorageAvailable.value || []
+      );
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
         currentValue = defaultValue;
