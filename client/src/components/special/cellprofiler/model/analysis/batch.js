@@ -183,7 +183,6 @@ export async function submitBatchAnalysis (specification) {
   const limitMountsParameter = [...new Set(
     (getParameterValue(CP_CAP_LIMIT_MOUNTS) || '')
       .split(',')
-      .map(o => Number(o))
       .concat(storagesToMount)
   )].join(',');
   setParameterValue(CP_CAP_LIMIT_MOUNTS, limitMountsParameter);

@@ -103,6 +103,9 @@ import RescheduleRunControl, {
 } from '../../pipelines/launch/form/utilities/reschedule-run-control';
 import {getValidationError} from '../elements/EndpointInput';
 import {getSelectOptions} from '../../special/instance-type-info';
+import {
+  correctLimitMountsParameterValue
+} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -569,12 +572,10 @@ export default class EditToolForm extends React.Component {
             }
             if (key === CP_CAP_LIMIT_MOUNTS) {
               if (this.props.dataStorageAvailable.loaded) {
-                const availableMounts = new Set((this.props.dataStorageAvailable.value || [])
-                  .map(d => +d.id));
-                this.defaultLimitMounts = (props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '')
-                  .split(',')
-                  .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
-                  .join(',');
+                this.defaultLimitMounts = correctLimitMountsParameterValue(
+                  props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '',
+                  this.props.dataStorageAvailable.value || []
+                );
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               }

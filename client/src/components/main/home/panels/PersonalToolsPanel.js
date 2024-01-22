@@ -45,7 +45,7 @@ import {
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
 import AllowedInstancesCountWarning from
-  '../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
+'../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../../../runs/run-name';
 import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
@@ -60,6 +60,10 @@ import {
   applyUserCapabilities,
   checkRequiredCapabilitiesErrors
 } from '../../../pipelines/launch/form/utilities/run-capabilities';
+import {
+  getLimitMountsParameterValue,
+  getLimitMountsStorages
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -485,12 +489,10 @@ export default class PersonalToolsPanel extends React.Component {
         ) {
           await this.props.dataStorageAvailable.fetchIfNeededOrWait();
           if (this.props.dataStorageAvailable.loaded) {
-            const ids = new Set(
-              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
-                .split(',').map(i => +i)
+            const selection = getLimitMountsStorages(
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value,
+              this.props.dataStorageAvailable.value || []
             );
-            const selection = (this.props.dataStorageAvailable.value || [])
-              .filter(s => ids.has(+s.id));
             const hasSensitive = !!selection.find(s => s.sensitive);
             const filtered = selection
               .filter(
@@ -500,7 +502,10 @@ export default class PersonalToolsPanel extends React.Component {
                 )
               );
             if (filtered.length) {
-              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+                filtered,
+                defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
+              );
             } else {
               defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
             }
