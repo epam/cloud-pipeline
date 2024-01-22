@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {getLimitMountsStorages} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 function getSensitiveBuckets (parameters, dataStoragesStore) {
   if (!parameters || !parameters.hasOwnProperty(CP_CAP_LIMIT_MOUNTS) || !dataStoragesStore) {
@@ -32,9 +33,10 @@ function getSensitiveBuckets (parameters, dataStoragesStore) {
   if (!value || /^none$/i.test(value)) {
     return [];
   }
-  const ids = (value || '').split(',').map(id => +id);
-  return (dataStoragesStore.value || [])
-    .filter(storage => ids.indexOf(+(storage.id)) >= 0 && storage.sensitive);
+  const selection = getLimitMountsStorages(value || '', dataStoragesStore.value || []);
+  console.log(selection);
+  return selection
+    .filter(storage => storage.sensitive);
 }
 
 function SensitiveBucketsWarning (
