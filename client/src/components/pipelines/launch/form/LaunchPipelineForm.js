@@ -1399,11 +1399,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
     }
-    if (this.state.launchCluster && this.state.autoScaledCluster) {
-      payload.params[CP_CAP_AUTOSCALE] = {
-        type: 'boolean',
-        value: true
-      };
+    const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
+    const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
+      this.state.hybridAutoScaledClusterEnabled;
+    payload.params[CP_CAP_AUTOSCALE] = {
+      type: 'boolean',
+      value: launchAutoScaledCluster
+    };
+    payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
+      type: 'boolean',
+      value: launchAutoScaledHybridCluster
+    };
+    if (launchAutoScaledCluster) {
       payload.params[CP_CAP_AUTOSCALE_WORKERS] = {
         type: 'int',
         value: +this.state.maxNodesCount
@@ -1415,12 +1422,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       } else {
         delete payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE];
-      }
-      if (this.state.hybridAutoScaledClusterEnabled) {
-        payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
-          type: 'boolean',
-          value: true
-        };
       }
       if (this.state.gpuScalingConfiguration) {
         payload.params = applyGPUScalingParameters(
@@ -1435,29 +1436,44 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
       }
     }
+    payload.params[CP_CAP_SGE] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SPARK] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SLURM] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_KUBE] = {
+      type: 'boolean',
+      value: false
+    };
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.sparkEnabled) {
+    } else if (this.state.launchCluster && this.state.sparkEnabled) {
       payload.params[CP_CAP_SPARK] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.slurmEnabled) {
+    } else if (this.state.launchCluster && this.state.slurmEnabled) {
       payload.params[CP_CAP_SLURM] = {
+        type: 'boolean',
+        value: true
+      };
+    } else if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.params[CP_CAP_KUBE] = {
         type: 'boolean',
         value: true
       };
     }
     if (this.state.launchCluster && this.state.kubeEnabled) {
-      payload.params[CP_CAP_KUBE] = {
-        type: 'boolean',
-        value: true
-      };
       payload.params[CP_CAP_DIND_CONTAINER] = {
         type: 'boolean',
         value: true
