@@ -22,13 +22,16 @@ class CloudRegion(API):
         super(CloudRegion, self).__init__()
 
     @classmethod
-    def get_cloud_regions(cls):
+    def get_cloud_regions(cls, provider=None):
         api = cls.instance()
         response_data = api.call('cloud/region', None)
         if 'payload' in response_data:
-            return response_data['payload']
+            payload = response_data['payload']
+            if provider:
+                return [region for region in payload if 'provider' in region and region['provider'].lower() == provider.lower()]
+            else:
+                return payload
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load regions.")
-

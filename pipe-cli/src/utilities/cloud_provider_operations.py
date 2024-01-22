@@ -38,7 +38,7 @@ class CloudProviderOperations(object):
         if provider != 'aws':
             print('Only "aws" Cloud Provider is supported')
             return
-        config_file = CloudProviderOperations.get_config_file_path(provider, config_file)
+        config_file = cls.get_config_file_path(provider, config_file)
         return os.path.exists(config_file)
 
     @classmethod
@@ -48,7 +48,7 @@ class CloudProviderOperations(object):
             print('Only "aws" Cloud Provider is supported')
             return
 
-        config_file = CloudProviderOperations.get_config_file_path(provider, config_file)
+        config_file = cls.get_config_file_path(provider, config_file)
 
         user_manager = UserOperationsManager()
         current_user = user_manager.whoami()
@@ -58,6 +58,14 @@ class CloudProviderOperations(object):
             print("Got default profile id from a user account: {}".format(default_profile_id))
 
         all_profiles = CloudCredentialsProfile.find_profiles_by_user(current_user.get('id'))
+        all_profiles = [profile for profile in all_profiles 
+                        if 'cloudProvider' in profile and profile['cloudProvider'].lower() == provider.lower()]
+        if len(all_profiles) > 0:
+            print("Got {} profiles for a curent user".format(len(all_profiles)))
+        else:
+            print("No cloud profiles are available for a current user")
+            return
+
         if default_profile:
             for profile in all_profiles:
                 profile_id = profile.get('id')
@@ -65,25 +73,23 @@ class CloudProviderOperations(object):
                     default_profile_id = profile_id
                     print("Got default profile id forced by the command line ({}): {}".format(default_profile, default_profile_id))
 
-        if len(all_profiles) > 0:
-            print("Got {} profiles for a curent user".format(len(all_profiles)))
-        else:
-            print("No cloud profiles are available for a current user")
+        all_regions = CloudRegion.get_cloud_regions(provider)
+        if len(all_regions) == 0:
+            print('No regions are available for {} provider'.format(provider))
             return
 
-        user_profiles = {}
-        for cloud_region in CloudRegion.get_cloud_regions():
-            filtered_profiles = cls.filter_profiles_by_region(all_profiles, cloud_region)
-            if len(filtered_profiles) > 0:
-                user_profiles[cloud_region['regionId']] = filtered_profiles
-        if len(user_profiles.keys()) > 0:
-            print("{} profiles are left after filtering by the Cloud Region settings".format(len(user_profiles.keys())))
-        else:
-            print("No cloud profiles are left after filtering by the Cloud Region settings")
-            return
+        default_cloud_region = None
+        for region in all_regions:
+            if 'default' in region and region['default'] == 'true':
+                default_cloud_region = region
+        if not default_cloud_region:
+            default_cloud_region = all_regions[0]
+        
+        default_cloud_region_id = default_cloud_region['regionId']
+        print('Default region: {}'.format(default_cloud_region_id))
 
         print("Writing configuration to {}".format(config_file))
-        CloudProviderOperations.write_to_config_file(user_profiles, config_file, default_profile_id)
+        cls.write_to_config_file(all_profiles, default_cloud_region_id, config_file, default_profile_id)
 
     @classmethod
     def generate_credentials(cls, profile_id):
@@ -92,11 +98,11 @@ class CloudProviderOperations(object):
             credentials.get('keyID'),
             credentials.get('accessKey'),
             credentials.get('token'),
-            CloudProviderOperations.covert_time(credentials.get('expiration'))
+            CloudProviderOperations.convert_time(credentials.get('expiration'))
         ))
 
-
-    def covert_time(time_string):
+    @classmethod
+    def convert_time(cls, time_string):
         return dateutil.parser.parse(time_string).strftime(DATE_TIME_CREDENTIALS_FORMAT)
 
 
@@ -108,29 +114,27 @@ class CloudProviderOperations(object):
         return os.path.expanduser(config_file)
 
     @classmethod
-    def write_to_config_file(cls, profiles, config_file, default_profile_id=None):
+    def write_to_config_file(cls, profiles, region_id, config_file, default_profile_id=None):
         if not profiles:
             return
 
         CloudProviderOperations.create_config_dir(config_file)
-
-        for region_id in profiles.keys():
-            with open(config_file, 'w+') as f:
-                for profile in profiles[region_id]:
-                    default_profile_name = '[default]' if default_profile_id \
-                                                        and int(profile.get('id')) == int(default_profile_id) else None
-                    profile_name = '[profile %s]' % profile.get('profileName')
-                    credentials_process = 'credential_process = %s' % CloudProviderOperations.build_command(profile.get('id'))
-                    region_field = "region = " + str(region_id)
-                    if default_profile_name:
-                        CloudProviderOperations.write_content(f, credentials_process, default_profile_name, region_field)
-                        if profile.get('profileName') == 'default':
-                            continue
-                    CloudProviderOperations.write_content(f, credentials_process, profile_name, region_field)
+        with open(config_file, 'w+') as f:
+            for profile in profiles:
+                default_profile_name = '[default]' if default_profile_id \
+                                                    and int(profile.get('id')) == int(default_profile_id) else None
+                profile_name = '[profile %s]' % profile.get('profileName')
+                credentials_process = 'credential_process = %s' % CloudProviderOperations.build_command(profile.get('id'))
+                region_field = "region = " + str(region_id)
+                if default_profile_name:
+                    CloudProviderOperations.write_content(f, credentials_process, default_profile_name, region_field)
+                    if profile.get('profileName') == 'default':
+                        continue
+                CloudProviderOperations.write_content(f, credentials_process, profile_name, region_field)
 
     @classmethod
     def build_command(cls, profile_id):
-        executable_path = sys.argv[0] if is_frozen() else (sys.executable + ' ' + sys.argv[0])
+        executable_path = sys.executable if is_frozen() else (sys.executable + ' ' + os.path.abspath(sys.argv[0]))
         return '{} cloud print-credentials --profile-id={}'.format(executable_path, profile_id)
 
     @classmethod
@@ -163,12 +167,3 @@ class CloudProviderOperations(object):
             if role_profile_id:
                 return role_profile_id
         return None
-
-    @classmethod
-    def filter_profiles_by_region(cls, profiles, region):
-        if region.get('mountCredentialsRule') == 'NONE':
-            return []
-        if region.get('mountCredentialsRule') == 'ALL':
-            return profiles
-        if region.get('mountCredentialsRule') == 'CLOUD':
-            return [profile for profile in profiles if profile.get('cloudProvider') == region.get('provider')]
