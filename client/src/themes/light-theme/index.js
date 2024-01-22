@@ -100,6 +100,8 @@ export default {
     '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
+    '@local-icon': "@static_resource('icons/providers/local.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-ligh.svg')",
     '@eu-region-icon': "@static_resource('icons/regions/eu.svg')",
     '@us-region-icon': "@static_resource('icons/regions/us.svg')",
     '@sa-region-icon': "@static_resource('icons/regions/sa.svg')",
