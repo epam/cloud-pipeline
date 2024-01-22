@@ -56,6 +56,7 @@ import ProviderForm from './cloud-provider';
 import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 import RunShiftPolicy, {runShiftPoliciesEqual} from './cloud-regions/run-shift-policy';
+import RegionIdSelector from './region-id-selector';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -762,6 +763,7 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'globalDistributionUrl',
       'runShiftPolicy'
     ],
@@ -787,6 +789,7 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'globalDistributionUrl',
       'runShiftPolicy'
     ],
@@ -807,6 +810,7 @@ class AWSRegionForm extends React.Component {
       'mountCredentialsRule',
       'dnsHostedZoneBase',
       'dnsHostedZoneId',
+      'dnsHostedZone',
       'policy',
       {
         key: 'backupDuration',
@@ -816,6 +820,15 @@ class AWSRegionForm extends React.Component {
       'versioningEnabled',
       'globalDistributionUrl',
       'runShiftPolicy'
+    ],
+    LOCAL: [
+      'regionId',
+      'name',
+      'default',
+      'runShiftPolicy',
+      'customInstanceTypes',
+      'user',
+      'password'
     ]
   };
 
@@ -879,7 +892,8 @@ class AWSRegionForm extends React.Component {
   getFieldClassName = (field, defaultClassName) => {
     const classNames = defaultClassName ? [defaultClassName] : [];
     if (this.provider) {
-      const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+      const fields = this.cloudRegionFields[this.provider] || [];
+      const [cloudRegionField] = fields.filter(f => {
         return (typeof f === 'string' && f === field) ||
           (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
       });
@@ -895,7 +909,8 @@ class AWSRegionForm extends React.Component {
 
   providerSupportsField = (field) => {
     if (this.provider) {
-      const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+      const fields = this.cloudRegionFields[this.provider] || [];
+      const [cloudRegionField] = fields.filter(f => {
         return (typeof f === 'string' && f === field) ||
           (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
       });
@@ -916,7 +931,8 @@ class AWSRegionForm extends React.Component {
     }
     const check = (field, fn) => {
       if (this.provider) {
-        const [cloudRegionField] = this.cloudRegionFields[this.provider].filter(f => {
+        const fields = this.cloudRegionFields[this.provider] || [];
+        const [cloudRegionField] = fields.filter(f => {
           return (typeof f === 'string' && f === field) ||
             (typeof f === 'object' && f.hasOwnProperty('key') && f.key === field);
         });
@@ -981,6 +997,8 @@ class AWSRegionForm extends React.Component {
       check('storageLifecycleServiceProperties', checkJSONValue) ||
       check('storageAccount', checkStringValue) ||
       check('storageAccountKey', checkStringValue) ||
+      check('user', checkStringValue) ||
+      check('password', checkStringValue) ||
       check('resourceGroup', checkStringValue) ||
       check('subscription', checkStringValue) ||
       check('authFile', checkStringValue) ||
@@ -1527,32 +1545,12 @@ class AWSRegionForm extends React.Component {
                 initialValue: this.props.region.regionId,
                 rules: [{required: true, message: 'Region id is required'}]
               })(
-                <Select
-                  size="small"
-                  showSearch
-                  allowClear={false}
-                  placeholder="Region ID"
-                  optionFilterProp="children"
+                <RegionIdSelector
                   style={{marginTop: 4}}
-                  filterOption={
-                    (input, option) =>
-                      option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}
-                  disabled={!this.props.isNew || this.props.pending}>
-                  {
-                    (this.props.regionIds || []).map(r => {
-                      return (
-                        <Select.Option key={r} value={r} title={r}>
-                          <AWSRegionTag
-                            showProvider={false}
-                            provider={this.provider}
-                            regionUID={r}
-                            style={{marginRight: 5}}
-                          />{r}
-                        </Select.Option>
-                      );
-                    })
-                  }
-                </Select>
+                  regions={(this.props.regionIds || [])}
+                  provider={this.provider}
+                  disabled={!this.props.isNew || this.props.pending}
+                />
               )}
             </Form.Item>
             <Form.Item
@@ -1593,6 +1591,37 @@ class AWSRegionForm extends React.Component {
                   disabled={this.props.region.default}>
                   This is default cloud region
                 </Checkbox>
+              )}
+            </Form.Item>
+            <Form.Item
+              label="User"
+              required={this.props.isNew && this.providerSupportsField('user')}
+              className={this.getFieldClassName('user')}
+              {...this.formItemLayout}>
+              {getFieldDecorator('user', {
+                initialValue: this.props.region.user,
+                rules: [{
+                  required: this.props.isNew && this.providerSupportsField('user'),
+                  message: 'User is required'
+                }]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
+              )}
+            </Form.Item>
+            <Form.Item
+              label="Password"
+              required={this.props.isNew && this.providerSupportsField('password')}
+              className={this.getFieldClassName('password')}
+              {...this.formItemLayout}>
+              {getFieldDecorator('password', {
+                initialValue: undefined,
+                rules: [{required: this.props.isNew && this.providerSupportsField('password'), message: 'Password is required'}]
+              })(
+                <Input
+                  size="small"
+                  disabled={this.props.pending} />
               )}
             </Form.Item>
             <AWSRegionForm.Section
@@ -1669,6 +1698,7 @@ class AWSRegionForm extends React.Component {
             <AWSRegionForm.Section
               title="DNS hosted zone:"
               layout={this.formItemLayout}
+              className={this.getFieldClassName('dnsHostedZone')}
             >
               <Form.Item
                 className={classNames(
