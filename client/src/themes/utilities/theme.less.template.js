@@ -1839,6 +1839,13 @@ export default `
 @THEME .ant-tooltip-inner .provider.aws {
   background-image: @aws-icon-contrast;
 }
+@THEME .provider.local {
+  background-image: @local-icon;
+  background-color: transparent;
+}
+@THEME .ant-tooltip-inner .provider.local {
+  background-image: @local-icon-contrast;
+}
 @THEME .ant-tooltip-inner .provider.gcp {
   background-image: @gcp-icon-contrast;
 }
