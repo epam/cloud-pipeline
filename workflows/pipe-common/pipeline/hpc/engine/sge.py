@@ -354,7 +354,8 @@ class SunGridEngineCustomDemandSelector(GridEngineDemandSelector):
     def filter(self, jobs):
         initial_supply = functools.reduce(operator.add, self._grid_engine.get_global_supplies(), CustomResourceSupply())
         for job in sorted(jobs, key=lambda job: job.root_id):
-            initial_demand = CustomResourceDemand(values=job.requests)
+            initial_demand = CustomResourceDemand(values={key: value for key, value in job.requests.items()
+                                                          if key in initial_supply.values.keys()})
             remaining_demand, remaining_supply = initial_demand.subtract(initial_supply)
             if remaining_demand:
                 Logger.warn('Ignoring job #{job_id} {job_name} by {job_user} because '

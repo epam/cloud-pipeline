@@ -94,12 +94,26 @@ test_cases = [
      [job_2a,
       job_2b],
      [CustomResourceSupply(values={'a': 2})],
+     [job_2a,
+      job_2b]],
+
+    ['2a and 2b jobs using 2a/0b supply',
+     [job_2a,
+      job_2b],
+     [CustomResourceSupply(values={'a': 2, 'b': 0})],
      [job_2a]],
 
     ['2a and 2b jobs using 2b supply',
      [job_2a,
       job_2b],
      [CustomResourceSupply(values={'b': 2})],
+     [job_2a,
+      job_2b]],
+
+    ['2a and 2b jobs using 0b/2b supply',
+     [job_2a,
+      job_2b],
+     [CustomResourceSupply(values={'a': 0, 'b': 2})],
      [job_2b]],
 
     ['2a and 2b jobs using 2a/2b supply',
@@ -112,11 +126,21 @@ test_cases = [
     ['2a/2b job using 2a supply',
      [job_2a2b],
      [CustomResourceSupply(values={'a': 2})],
+     [job_2a2b]],
+
+    ['2a/2b job using 2a/0b supply',
+     [job_2a2b],
+     [CustomResourceSupply(values={'a': 2, 'b': 0})],
      []],
 
     ['2a/2b job using 2b supply',
      [job_2a2b],
      [CustomResourceSupply(values={'b': 2})],
+     [job_2a2b]],
+
+    ['2a/2b job using 0b/2b supply',
+     [job_2a2b],
+     [CustomResourceSupply(values={'a': 0, 'b': 2})],
      []],
 
     ['2a/2b job using 2a/2b supply',
