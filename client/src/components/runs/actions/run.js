@@ -54,6 +54,11 @@ import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStorage
 import {
   applyCustomCapabilitiesParameters
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import {
+  getLimitMountsStorages,
+  getLimitMountsParameterValue,
+  storageMatchesIdentifiers
+} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
@@ -206,8 +211,11 @@ function runFn (
     ) {
       dataStorageAvailable && await dataStorageAvailable.fetchIfNeededOrWait();
       if (dataStorageAvailable.loaded) {
-        const ids = new Set(payload.params[CP_CAP_LIMIT_MOUNTS].value.split(',').map(i => +i));
-        const selection = (dataStorageAvailable.value || []).filter(s => ids.has(+s.id));
+        const cpCapLimitMountsParameter = payload.params[CP_CAP_LIMIT_MOUNTS].value || '';
+        const selection = getLimitMountsStorages(
+          cpCapLimitMountsParameter,
+          dataStorageAvailable.value || []
+        );
         const hasSensitive = !!selection.find(s => s.sensitive);
         const filtered = selection
           .filter(
@@ -217,7 +225,10 @@ function runFn (
             )
           );
         if (filtered.length) {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+            filtered,
+            cpCapLimitMountsParameter
+          );
         } else {
           payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
         }
@@ -443,42 +454,18 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get initialSelectedDataStorageIndecis () {
-    if (/^none$/i.test(this.props.limitMounts)) {
-      return [];
-    }
-    return (
-      this.props.limitMounts ||
-      this.dataStorages.filter(d => !d.sensitive)
-        .map(d => `${d.id}`).join(',')
-    )
-      .split(',')
-      .map(d => +d);
-  }
-
-  @computed
-  get selectedDataStorageIndecis () {
-    if (/^none$/i.test(this.state.limitMounts)) {
-      return [];
-    }
-    return (
-      this.state.limitMounts ||
-      this.dataStorages.filter(d => !d.sensitive)
-        .map(d => `${d.id}`).join(',')
-    )
-      .split(',')
-      .map(d => +d);
-  }
-
-  @computed
   get dataStorages () {
     return (this.props.dataStorages || []).map(d => d);
   }
 
-  @computed
+  get selectedDataStorages () {
+    const {limitMounts} = this.state;
+    return this.getStoragesByIdentifiersString(limitMounts);
+  }
+
   get initialSelectedDataStorages () {
-    return this.dataStorages
-      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
+    const {limitMounts} = this.props;
+    return this.getStoragesByIdentifiersString(limitMounts);
   }
 
   @computed
@@ -490,7 +477,6 @@ export class RunConfirmation extends React.Component {
       );
   }
 
-  @computed
   get notConflictingIndecis () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
@@ -502,8 +488,8 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get initialLimitMountsHaveConflicts () {
-    return this.dataStorages
-      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+    return this.initialSelectedDataStorages
+      .filter(d => !!d.mountPoint)
       .map(d => d.mountPoint)
       .filter(notUniqueInArray)
       .length > 0;
@@ -511,11 +497,22 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get limitMountsHaveConflicts () {
-    return this.dataStorages
-      .filter(d => this.selectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+    return this.selectedDataStorages
+      .filter(d => !!d.mountPoint)
       .map(d => d.mountPoint)
       .filter(notUniqueInArray)
       .length > 0;
+  }
+
+  getStoragesByIdentifiersString(identifiersString) {
+    if (/^none$/i.test(identifiersString)) {
+      return [];
+    }
+    if (identifiersString) {
+      const ids = identifiersString.split(',');
+      return this.dataStorages.filter((d) => storageMatchesIdentifiers(d, ids));
+    }
+    return this.dataStorages.filter(d => !d.sensitive && !d.shared);
   }
 
   getInstanceTypes = () => {
@@ -627,9 +624,9 @@ export class RunConfirmation extends React.Component {
               option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
               option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
           value={
-            this.selectedDataStorageIndecis
-              .filter(i => this.notConflictingIndecis.indexOf(+i) === -1)
-              .map(i => i.toString())
+            this.selectedDataStorages
+              .filter(s => this.notConflictingIndecis.indexOf(s.id) === -1)
+              .map(s => s.id.toString())
           }
         >
           {this.getSelectStructure()}

@@ -50,6 +50,10 @@ import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import {withCurrentUserAttributes} from "../../../../utils/current-user-attributes";
+import {
+  getLimitMountsParameterValue,
+  getLimitMountsStorages
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -449,12 +453,10 @@ export default class PersonalToolsPanel extends React.Component {
         ) {
           await this.props.dataStorageAvailable.fetchIfNeededOrWait();
           if (this.props.dataStorageAvailable.loaded) {
-            const ids = new Set(
-              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
-                .split(',').map(i => +i)
+            const selection = getLimitMountsStorages(
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value,
+              this.props.dataStorageAvailable.value || []
             );
-            const selection = (this.props.dataStorageAvailable.value || [])
-              .filter(s => ids.has(+s.id));
             const hasSensitive = !!selection.find(s => s.sensitive);
             const filtered = selection
               .filter(
@@ -464,7 +466,10 @@ export default class PersonalToolsPanel extends React.Component {
                 )
               );
             if (filtered.length) {
-              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+              defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+                filtered,
+                defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value
+              );
             } else {
               defaultPayload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
             }
