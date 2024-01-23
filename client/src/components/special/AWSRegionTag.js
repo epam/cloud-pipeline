@@ -96,7 +96,6 @@ class AWSRegionTag extends React.Component {
   get zoneInfo () {
     if (this.zone) {
       const simpleZone = this.zone.toLowerCase().split('-')[0];
-      console.log(this.zone, simpleZone);
       let getGlobalFn = () => ({
         zone: simpleZone,
         result: simpleZone
@@ -267,7 +266,6 @@ class AWSRegionTag extends React.Component {
       }
     }
     const info = this.zoneInfo;
-    console.log(this.provider, this.zone, info);
     if (this.props.displayFlag && info) {
       if (this.props.plainMode) {
         parts.push(info.zone);
