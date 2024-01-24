@@ -684,7 +684,7 @@ export class RunConfirmation extends React.Component {
       const ids = identifiersString.split(',');
       return this.dataStorages.filter((d) => storageMatchesIdentifiers(d, ids));
     }
-    return this.dataStorages.filter(d => !d.sensitive && !d.shared);
+    return this.dataStorages.filter(d => !d.sensitive && !d.sourceStorageId);
   }
 
   getInstanceTypes = () => {
