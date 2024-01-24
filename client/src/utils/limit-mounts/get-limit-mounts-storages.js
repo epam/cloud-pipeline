@@ -28,7 +28,7 @@ function getStorageMatchingRuleForIdentifier (storage, lmIdentifier) {
  * @returns {{rule: string, storage: Storage, value: string}|undefined}
  */
 function getStorageMatchingRule (storage, lmIdentifiers = []) {
-  if (storage.shared) {
+  if (storage.sourceStorageId) {
     return undefined;
   }
   return lmIdentifiers
@@ -46,7 +46,7 @@ export function storageMatchesIdentifiers (storage, identifiers = []) {
   if (identifiers.some((id) => /^none$/i.test(id))) {
     return false;
   }
-  return !storage.shared &&
+  return !storage.sourceStorageId &&
     identifiers.some((id) => getStorageMatchingRuleForIdentifier(storage, id));
 }
 
@@ -57,7 +57,7 @@ export function storageMatchesIdentifiersString (storage, identifiersString) {
 
 function getStorageRuleForIdentifier (lmIdentifier, storages = []) {
   return storages
-    .filter((storage) => !storage.shared)
+    .filter((storage) => !storage.sourceStorageId)
     .map((storage) => getStorageMatchingRuleForIdentifier(storage, lmIdentifier))
     .filter(Boolean)[0];
 }
@@ -72,7 +72,7 @@ function getStoragesParsingRules (identifiers, storages = []) {
     return [];
   }
   return storages
-    .filter((storage) => !storage.shared)
+    .filter((storage) => !storage.sourceStorageId)
     .map((storage) => getStorageMatchingRule(storage, identifiers))
     .filter(Boolean);
 }
