@@ -22,6 +22,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -54,13 +55,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.google.common.base.Predicates.not;
 
 @Service
 public class PipelineVersionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineVersionManager.class);
     private static final String CONFIG_FILE_NAME = "config.json";
+    private static final String PIPELINE_ALIAS_LATEST = "latest";
 
     @Autowired private GitManager gitManager;
 
@@ -143,8 +148,11 @@ public class PipelineVersionManager {
 
     public List<ConfigurationEntry> loadConfigurationsFromScript(Long id, String version)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        return getPipelineConfigurations(pipeline, version);
+        final Pipeline pipeline = loadPipelineWithLatestVersion(id).orElse(null);
+        final String pipelineVersion = resolvePipelineVersion(pipeline, version).orElse(null);
+        Assert.notNull(pipeline, String.format("Pipeline #%s not found.", id));
+        Assert.notNull(pipelineVersion, String.format("Pipeline #%s version %s not found.", id, version));
+        return getPipelineConfigurations(pipeline, pipelineVersion);
     }
 
     public List<ConfigurationEntry> addConfiguration(Long id, ConfigurationEntry configuration)
@@ -236,6 +244,33 @@ public class PipelineVersionManager {
         return pipelineRepositoryService.createPipelineRevision(pipeline, registerPipelineVersionVO.getVersionName(),
                 registerPipelineVersionVO.getCommit(), registerPipelineVersionVO.getMessage(),
                 registerPipelineVersionVO.getReleaseDescription());
+    }
+
+    public Optional<String> resolvePipelineVersion(final Pipeline pipeline, final String version) {
+        return Optional.ofNullable(version).filter(not(PIPELINE_ALIAS_LATEST::equalsIgnoreCase)).map(Optional::of)
+                .orElseGet(() -> resolvePipelineLatestVersion(pipeline));
+    }
+
+    private Optional<String> resolvePipelineLatestVersion(final Pipeline pipeline) {
+        return extractLatestVersion(pipeline).map(Optional::of)
+                .orElseGet(() -> loadPipelineWithLatestVersion(pipeline)
+                        .flatMap(this::extractLatestVersion));
+    }
+
+    private Optional<String> extractLatestVersion(final Pipeline pipeline) {
+        return Optional.ofNullable(pipeline)
+                .map(Pipeline::getCurrentVersion)
+                .map(Revision::getName);
+    }
+
+    private Optional<Pipeline> loadPipelineWithLatestVersion(final Pipeline pipeline) {
+        return Optional.ofNullable(pipeline)
+                .map(BaseEntity::getId)
+                .flatMap(this::loadPipelineWithLatestVersion);
+    }
+
+    private Optional<Pipeline> loadPipelineWithLatestVersion(final Long id) {
+        return Optional.ofNullable(id).map(it -> pipelineManager.load(it, true));
     }
 
     private void mergeToolsRequirements(TaskGraphVO result) {

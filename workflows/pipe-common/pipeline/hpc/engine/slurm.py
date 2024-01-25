@@ -6,7 +6,8 @@ from pipeline.hpc.cmd import ExecutionError
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply
 from pipeline.hpc.engine.gridengine import GridEngine, GridEngineJobState, GridEngineJob, \
-    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator, AllocationRuleParsingError
+    GridEngineType, _perform_command, GridEngineDemandSelector, GridEngineJobValidator, AllocationRuleParsingError, \
+    GridEngineLaunchAdapter
 
 
 class SlurmGridEngine(GridEngine):
@@ -25,6 +26,18 @@ class SlurmGridEngine(GridEngine):
 
     def __init__(self, cmd_executor):
         self.cmd_executor = cmd_executor
+        self.job_state_to_codes = {
+            GridEngineJobState.RUNNING: ['RUNNING'],
+            GridEngineJobState.PENDING: ['PENDING'],
+            GridEngineJobState.SUSPENDED: ['SUSPENDED', 'STOPPED'],
+            GridEngineJobState.ERROR: ['DEADLINE', ' FAILED'],
+            GridEngineJobState.DELETED: ['DELETED', 'CANCELLED'],
+            GridEngineJobState.COMPLETED: ['COMPLETED', 'COMPLETING'],
+            GridEngineJobState.UNKNOWN: []
+        }
+
+    def get_engine_type(self):
+        return GridEngineType.SLURM
 
     def get_jobs(self):
         try:
@@ -32,7 +45,7 @@ class SlurmGridEngine(GridEngine):
         except ExecutionError:
             Logger.warn('Slurm jobs listing has failed.')
             return []
-        return self._parse_jobs(output)
+        return list(self._parse_jobs(output))
 
     def disable_host(self, host):
         self.cmd_executor.execute(SlurmGridEngine._SCONTROL_UPDATE_NODE_STATE % ("DRAIN", host))
@@ -71,9 +84,6 @@ class SlurmGridEngine(GridEngine):
                     - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
         return ResourceSupply()
 
-    def get_engine_type(self):
-        return GridEngineType.SLURM
-
     def is_valid(self, host):
         node_state = self._get_host_state(host)
         for bad_state in SlurmGridEngine._NODE_BAD_STATES:
@@ -96,38 +106,87 @@ class SlurmGridEngine(GridEngine):
             return "UNKNOWN"
 
     def _parse_jobs(self, scontrol_jobs_output):
-        jobs = []
-        jobs_des_lines = [line for line in scontrol_jobs_output.splitlines() if "JobId=" in line]
-        for job_desc in jobs_des_lines:
+        for job_desc in scontrol_jobs_output.splitlines():
+            if 'JobId=' not in job_desc:
+                continue
+
             job_dict = self._parse_dict(job_desc)
-            resources = self._parse_dict(job_dict.get("TRES"), line_sep=",")
-            general_resources = self._parse_dict(job_dict.get("GRES"), line_sep=",")
-            num_node = int(re.match("(\\d+)-?.*", job_dict.get("NumNodes", "1")).group(1))
-            # Splitting one job on 'num_node' ephemeral jobs. The idea is to instruct autoscaler that we need to spread
-            # this job to `num_node` nodes and provide portion of resources
-            # TODO maybe there is another way to achieve that?
-            for node_idx in range(num_node):
-                job_state = GridEngineJobState.from_letter_code(job_dict.get("JobState"))
-                if job_state == GridEngineJobState.PENDING:
-                    # In certain cases pending job's start date can be estimated start date.
-                    # It confuses autoscaler and therefore should be ignored.
-                    job_dict["StartTime"] = "Unknown"
-                jobs.append(
-                    GridEngineJob(
-                        id=job_dict.get("JobId") + "_" + str(node_idx),
-                        root_id=job_dict.get("JobId"),
-                        name=job_dict.get("JobName"),
-                        user=self._parse_user(job_dict.get("UserId")),
-                        state=job_state,
-                        datetime=self._parse_date(
-                            job_dict.get("StartTime") if job_dict.get("StartTime") != "Unknown" else job_dict.get("SubmitTime")),
-                        hosts=self._parse_nodelist(job_dict.get("NodeList")),
-                        cpu=int(job_dict.get("NumCPUs", "1")) // num_node,
-                        gpu=0 if "gpu" not in general_resources else int(general_resources.get("gpu")) // num_node,
-                        mem=self._parse_mem(self._find_memory_value(job_dict, resources))
-                    )
+
+            root_job_id = job_dict.get('JobId')
+            job_name = job_dict.get('JobName')
+            job_user = self._parse_user(job_dict.get('UserId'))
+            job_hosts = self._parse_nodelist(job_dict.get('NodeList'))
+
+            #       -> NumTasks=1
+            # ?     -> NumTasks=N/A
+            # -n 20 -> NumTasks=20
+            # -N 20 -> NumTasks=20 NumNodes=20
+            num_tasks_str = job_dict.get('NumTasks', '1')
+            num_tasks = int(num_tasks_str) if num_tasks_str.isdigit() else 1
+
+            job_state = GridEngineJobState.from_letter_code(job_dict.get('JobState'), self.job_state_to_codes)
+            if job_state == GridEngineJobState.PENDING:
+                # In certain cases pending job's start date can be estimated start date.
+                # It confuses autoscaler and therefore should be ignored.
+                job_dict['StartTime'] = 'Unknown'
+            job_datetime = self._parse_date(job_dict.get('StartTime') if job_dict.get('StartTime') != 'Unknown'
+                                            else job_dict.get('SubmitTime'))
+
+            # -c 20 -> MinCPUsNode=20
+            cpu_per_node = int(job_dict.get('MinCPUsNode', '1'))
+            job_cpu = cpu_per_node
+
+            # --gpus  20         -> TresPerJob=gres:gpu:20
+            # --gpus-per-job  20 -> TresPerJob=gres:gpu:20
+            # --gpus-per-task 20 -> TresPerTask=gres:gpu:20
+            # --gpus-per-node 20 -> TresPerNode=gres:gpu:20
+            tres_per_job = self._parse_tres(job_dict.get('TresPerJob', 'gres:gpu:0'))
+            tres_per_node = self._parse_tres(job_dict.get('TresPerNode', 'gres:gpu:0'))
+            tres_per_task = self._parse_tres(job_dict.get('TresPerTask', 'gres:gpu:0'))
+            gpu_per_job = int(tres_per_job.get('gpu', '0'))
+            gpu_per_node = int(tres_per_node.get('gpu', '0'))
+            gpu_per_task = int(tres_per_task.get('gpu', '0'))
+            job_gpu = max(int(gpu_per_job / num_tasks), gpu_per_node, gpu_per_task)
+
+            # --mem 200M         -> MinMemoryNode=200M
+            # --mem-per-cpu 200M -> MinMemoryCPU=200M
+            # --mem-per-gpu 200M -> MemPerTres=gres:gpu:200
+            mem_per_tres = self._parse_tres(job_dict.get('MemPerTres', 'gres:gpu:0'))
+            mem_per_node = self._parse_mem(job_dict.get('MinMemoryNode', '0M'))
+            mem_per_cpu = self._parse_mem(job_dict.get('MinMemoryCPU', '0M'))
+            mem_per_gpu = self._parse_mem(mem_per_tres.get('gpu', '0') + 'M')
+            job_mem = max(mem_per_node, mem_per_cpu * job_cpu, mem_per_gpu * job_gpu)
+
+            for task_idx in range(num_tasks):
+                job_id = root_job_id + '_' + str(task_idx)
+                yield GridEngineJob(
+                    id=job_id,
+                    root_id=root_job_id,
+                    name=job_name,
+                    user=job_user,
+                    state=job_state,
+                    datetime=job_datetime,
+                    hosts=job_hosts,
+                    cpu=job_cpu,
+                    gpu=job_gpu,
+                    mem=job_mem
                 )
-        return jobs
+
+    def _parse_tres(self, tres_str):
+        if not tres_str:
+            return {}
+
+        tres_dict = {}
+        for tres_str in tres_str.split(','):
+            tres_items = tres_str.split(':')
+            if len(tres_items) == 3:
+                tres_type, tres_group, tres_value = tres_items
+            elif len(tres_items) == 4:
+                tres_type, tres_group, tres_name, tres_value = tres_items
+            else:
+                continue
+            tres_dict[tres_group] = tres_value
+        return  tres_dict
 
     def _parse_date(self, date):
         return datetime.strptime(date, SlurmGridEngine._SCONTROL_DATETIME_FORMAT)
@@ -142,20 +201,12 @@ class SlurmGridEngine(GridEngine):
             ]
         }
 
-    def _find_memory_value(self, job_dict, resource_dict):
-        if "MinMemoryNode" in job_dict:
-            return job_dict.get("MinMemoryNode")
-        elif "mem" in resource_dict:
-            return resource_dict.get("mem")
-        else:
-            return "0M"
-
     def _parse_mem(self, mem_request):
         if not mem_request:
             return 0
         modifiers = {
-            'k': 1000, 'm': 1000 ** 2, 'g': 1000 ** 3,
-            'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3
+            'k': 1000, 'm': 1000 ** 2, 'g': 1000 ** 3, 't': 1000 ** 4,
+            'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3, 'T': 1024 ** 4,
         }
         if mem_request[-1] in modifiers:
             number = int(mem_request[:-1])
@@ -230,3 +281,17 @@ class SlurmJobValidator(GridEngineJobValidator):
                 continue
             valid_jobs.append(job)
         return valid_jobs, invalid_jobs
+
+
+class SlurmLaunchAdapter(GridEngineLaunchAdapter):
+
+    def __init__(self):
+        pass
+
+    def get_worker_init_task_name(self):
+        return 'SLURMWorkerSetup'
+
+    def get_worker_launch_params(self):
+        return {
+            'CP_CAP_SLURM': 'false'
+        }

@@ -51,7 +51,7 @@ public class DefaultNodeResourcesServiceTest {
 
     @Test
     public void buildShouldReturnEmptyResourcesIfThereAreNoInstanceTypes() {
-        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
+        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 
@@ -60,7 +60,7 @@ public class DefaultNodeResourcesServiceTest {
 
     @Test
     public void buildShouldReturnEmptyResourcesIfInstanceTypeHasNotBeenFound() {
-        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(), any(Long.class), any());
+        doReturn(Optional.empty()).when(instanceTypeCRUDService).find(any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 
@@ -81,7 +81,7 @@ public class DefaultNodeResourcesServiceTest {
         set(SystemPreferences.CLUSTER_NODE_EXTRA_MEM_MAX_MIB);
 
         doReturn(Optional.of(getInstanceType(CommonCreatorConstants.TEST_NAME, 2, 8)))
-                .when(instanceTypeCRUDService).find(any(), any(Long.class), any());
+                .when(instanceTypeCRUDService).find(any(Long.class), any());
 
         final NodeResources actual = service.build(getInstance());
 

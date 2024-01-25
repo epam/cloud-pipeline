@@ -125,6 +125,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updateLastNotificationQuery;
     private String updateProlongedAtTimeAndLastIdleNotificationTimeQuery;
     private String updateRunQuery;
+    private String updatePipelineNameForRunsQuery;
+    private String clearPipelineIdForRunsQuery;
     private String loadRunByPrettyUrlQuery;
     private String updateTagsQuery;
     private String loadAllRunsPossiblyActiveInPeriodQuery;
@@ -403,6 +405,21 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return;
         }
         getNamedParameterJdbcTemplate().batchUpdate(updateRunQuery, getParamsForBatchUpdate(runs));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void updatePipelineNameForRuns(final String pipelineName, final Long pipelineId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.PIPELINE_NAME.name(), pipelineName);
+        params.addValue(PipelineRunParameters.PIPELINE_ID.name(), pipelineId);
+        getNamedParameterJdbcTemplate().update(updatePipelineNameForRunsQuery, params);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void clearPipelineIdForRuns(final Long pipelineId) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.PIPELINE_ID.name(), pipelineId);
+        getNamedParameterJdbcTemplate().update(clearPipelineIdForRunsQuery, params);
     }
 
     public int countFilteredPipelineRuns(PipelineRunFilterVO filter, PipelineRunFilterVO.ProjectFilter projectFilter) {
@@ -1427,5 +1444,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
         this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
+    }
+
+    @Required
+    public void setUpdatePipelineNameForRunsQuery(final String updatePipelineNameForRunsQuery) {
+        this.updatePipelineNameForRunsQuery = updatePipelineNameForRunsQuery;
+    }
+
+    @Required
+
+    public void setClearPipelineIdForRunsQuery(final String clearPipelineIdForRunsQuery) {
+        this.clearPipelineIdForRunsQuery = clearPipelineIdForRunsQuery;
     }
 }

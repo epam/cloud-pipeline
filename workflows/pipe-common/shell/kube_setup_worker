@@ -36,6 +36,9 @@ fi
 
 pipe_log_info "Master info received: $_kube_master_name : $_kube_master_ip" "$_kube_worker_setup_task"
 
+unset KUBERNETES_SERVICE_HOST
+unset KUBERNETES_SERVICE_PORT
+
 # Kubeadm config
 CP_CAP_KUBE_MASTER_TOKEN=$(ssh $_kube_master_ip "set -o pipefail; http_proxy= https_proxy= kubeadm token list | tail -n 1 | cut -f1 -d' '")
 if [ $? -ne 0 ]; then
@@ -45,6 +48,7 @@ fi
 
 pipe_log_info "Kubeadm token received: $CP_CAP_KUBE_MASTER_TOKEN" "$_kube_worker_setup_task"
 
+export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
 export CP_CAP_KUBE_MASTER_API_PORT="${CP_CAP_KUBE_MASTER_API_PORT:-6443}"
 export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
 mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
@@ -55,7 +59,7 @@ export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
 ######################################
 # Install the common software packages
 ######################################
-kube_setup_common "$_kube_worker_setup_task" "$CP_CAP_KUBE_INSTALL_LOG"
+kube_setup_common "$_kube_worker_setup_task" "$CP_CAP_KUBE_INSTALL_LOG" "$CP_CAP_KUBE_VERSION"
 
 ######################################
 # Kubelet configuration
@@ -73,7 +77,8 @@ echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" > $_KUBE_DROPIN_PATH
 chmod +x $_KUBE_DROPIN_PATH
 
 systemctl daemon-reload
-systemctl enable kubelet
+systemctl start kubepods-besteffort.slice
+systemctl start kubepods-burstable.slice
 
 # Removing the proxies to connect to the master directly
 unset http_proxy https_proxy no_proxy

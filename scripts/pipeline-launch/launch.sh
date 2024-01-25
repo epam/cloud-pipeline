@@ -531,18 +531,33 @@ function configure_package_manager {
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/apt/sources.list.d/cuda.list \
                               /etc/apt/sources.list.d/nvidia-ml.list \
-                              /etc/apt/sources.list.d/tensorRT.list 
+                              /etc/apt/sources.list.d/tensorRT.list
 
-                        apt-get update -qq -y --allow-insecure-repositories && \
-                        apt-get install curl apt-transport-https gnupg -y -qq && \
+                        # todo: Remove these dependencies because their installation requires internet access
+                        if ! check_installed curl || ! check_installed gpg; then
+                            echo "Installing additional dependencies using default apt repos..."
+                            apt-get update -qq -y --allow-insecure-repositories && \
+                            apt-get install curl apt-transport-https gnupg -y -qq
+                        fi
+
+                        if check_cp_cap CP_CAP_OFFLINE; then
+                            echo "Disabling default apt repos..."
+                            echo "" > /etc/apt/sources.list
+                            rm -f /etc/apt/sources.list.d/*
+                        fi
+
+                        echo "Enabling Cloud Pipeline apt repo..."
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                         apt-get update -qq -y --allow-insecure-repositories
-                        
+
                         if [ $? -ne 0 ]; then
-                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                            echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                            sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        else
+                            echo "Using apt repo $CP_REPO_BASE_URL..."
+                            break
                         fi
                   done
             fi
@@ -776,10 +791,13 @@ function configure_owner_account() {
             export UID_SEED
             export OWNER_UID=$(( UID_SEED + OWNER_ID ))
             export OWNER_GID="$OWNER_UID"
+            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
             if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                # Check that a user is a member of all the groups. This is useful for the "committed" images
+                add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
                 return 0
             else
-                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
                 return "$?"
             fi
         fi
@@ -812,16 +830,19 @@ function get_pipe_preference_low_level() {
     fi
 }
 
+function get_owner_info () {
+      curl -X GET \
+            --insecure \
+            -s \
+            --max-time 30 \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            "$API/whoami"
+}
+
 function resolve_owner_id() {
     # Returns current cloud pipeline user id
-    curl -X GET \
-         --insecure \
-         -s \
-         --max-time 30 \
-         --header "Accept: application/json" \
-         --header "Authorization: Bearer $API_TOKEN" \
-         "$API/whoami" \
-        | jq -r '.payload.id // 0'
+    get_owner_info | jq -r '.payload.id // 0'
 }
 
 function check_user_created() {
@@ -843,6 +864,54 @@ function check_user_created() {
     fi
 }
 
+function create_user_extra_groups() {
+      if ! check_installed "groupadd" && ! check_installed "addgroup"; then
+            return
+      fi
+
+      _gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _groups_added=""
+      _user_groups=$(get_owner_info | jq -r '.payload.roles[] | (.id | tostring) + "," + .name')
+      while IFS=, read -r group_id group_name; do
+            real_group_id=$(( _gid_seed + group_id ))
+            _group_create_result=1
+            if ! getent group $real_group_id &> /dev/null; then
+                  if check_installed "groupadd"; then
+                        groupadd "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  elif check_installed "addgroup"; then
+                        addgroup "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  fi
+            else
+                  _group_create_result=0
+            fi
+            if [ $_group_create_result -eq 0 ]; then
+                  _groups_added="$_groups_added,$group_name"
+            fi
+      done <<< "$_user_groups"
+      echo "$_groups_added" | sed 's/,//'
+}
+
+function add_user_to_groups() {
+    local _user_name="$1"
+    local _user_groups="$2"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
+
+    echo "Adding user $_user_name to the groups: $_user_groups"
+    if check_installed "usermod"; then
+        IFS=',' read -r -a _user_groups_list <<< "$_user_groups"
+        for _user_group in "${_user_groups[@]}"; do
+            usermod -a -G "$_user_group" $_user_name
+        done
+    else
+        echo "Cannot add user $_user_name to any groups: usermod is not installed"
+        return 1
+    fi
+}
+
 function create_user() {
     local _user_name="$1"
     local _user_pass="$2"
@@ -850,6 +919,9 @@ function create_user() {
     local _user_gid="$4"
     local _user_home="$5"
     local _user_groups="$6"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
 
     echo "Creating user $_user_name..."
     if [ "$_user_uid" ] && [ "$_user_gid" ]; then
@@ -1088,6 +1160,10 @@ else
 fi
 export CP_CAP_RECOVERY_MODE_TERM="${CP_CAP_RECOVERY_MODE_TERM:-exit}"
 export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
+
+if check_cp_cap CP_SENSITIVE_RUN; then
+    export CP_CAP_OFFLINE="true"
+fi
 
 ######################################################
 # Configure Hyperthreading

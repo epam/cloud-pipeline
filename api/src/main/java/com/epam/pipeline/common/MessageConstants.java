@@ -403,6 +403,8 @@ public final class MessageConstants {
 
     // Cloud
     public static final String CLOUD_BUCKET_ALREADY_EXISTS = "cloud.bucket.already.exists";
+    public static final String ERROR_SCALING_LOCAL_CLUSTER = "cluster.local.scaling.error";
+    public static final String ERROR_DNS_LOCAL_CLUSTER = "cluster.local.dns.error";
 
     //CAdvicer
     public static final String DEBUG_SEND_CADVISOR_REQUEST = "cadvisor.send.request";

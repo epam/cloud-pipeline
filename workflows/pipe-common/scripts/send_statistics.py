@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
+import csv
+import io
+import itertools
+import json
 import logging
 import os
-import io
-import csv
-import itertools
-import argparse
 from datetime import datetime
-import json
+
 from enum import Enum
+
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
-
 
 DATE_FORMAT = "%Y-%m-%d"
 DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -61,10 +62,11 @@ class Top3(Enum):
 
 class Stat(object):
 
-    def __init__(self, compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
+    def __init__(self, compute_hours, compute_expense, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                  gpu_hours, clusters_compute_hours, worker_nodes_count,
                  top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities):
         self.compute_hours = compute_hours
+        self.compute_expense = compute_expense
         self.runs_count = runs_count
         self.storage_read = storage_read
         self.storage_write = storage_write
@@ -176,6 +178,7 @@ class Stat(object):
                                   'RUNS_COUNT': Stat.format_count(self.runs_count),
                                   'LOGIN_TIME': Stat.format_hours(self.login_time),
                                   'USAGE_WEIGHT': Stat.format_weight(self.usage_weight),
+                                  'COMPUTE_EXPENSES': Stat.format_count(self.compute_expense),
                                   'READ_REQUESTS': self.storage_read,
                                   'WRITE_REQUESTS': self.storage_write,
                                   'CPU': Stat.format_hours(self.cpu_hours),
@@ -278,7 +281,8 @@ def send_statistics():
             logger.debug('Loading all platfrom users')
             all_users = api.load_users()
 
-        users = [u for u in all_users if not u.get('blocked')]
+        skipped_users = os.getenv('SKIP_USERS', '').split(',') if os.getenv('SKIP_USERS', '') else []
+        users = [u for u in all_users if not u.get('blocked') and u.get('userName') not in skipped_users]
         send_to = os.getenv('SEND_TO_USER', None)
         cc_users = os.getenv('CC_USERS', '').split(',') if os.getenv('CC_USERS', '') else None
         if len(users) > 0:
@@ -307,17 +311,21 @@ def _send_users_stat(api, logger, from_date, to_date, users, template_path, send
     template, table_templ, table_center_templ = _get_templates(template_path)
 
     for user in users:
-        _user_name = user.get('userName')
-        logger.info('User: {}'.format(_user_name))
-        stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
-                               _user_name, user.get('id'))
-        if not stat.not_empty():
-            logger.info('No data found for user %s, skipping notification' % _user_name)
-            continue
-        receiver = send_to if send_to else _user_name
-        notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
-                            receiver, logger, cc_users=cc_users)
-        notifier.send_notifications(template, table_templ, table_center_templ, user)
+        try:
+            _user_name = user.get('userName')
+            logger.info('User: {}'.format(_user_name))
+            stat = _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, to_date,
+                                   _user_name, user.get('id'))
+            if not stat.not_empty():
+                logger.info('No data found for user %s, skipping notification' % _user_name)
+                continue
+            receiver = send_to if send_to else _user_name
+            notifier = Notifier(api, from_date, to_date, stat, os.getenv('CP_DEPLOY_NAME', 'Cloud Pipeline'),
+                                receiver, logger, cc_users=cc_users)
+            notifier.send_notifications(template, table_templ, table_center_templ, user)
+        except BaseException as e:
+            logger.error('Failed to generate stats for user {}: {}'.format(user.get('userName'), str(e.message)),
+                         trace=True)
 
 
 def expand_commas(data):
@@ -352,7 +360,8 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Runs count: {}.'.format(runs_count))
     usage_costs = _get_usage_costs(runs)
     logger.info('Usage costs: {}.'.format(usage_costs))
-    usage_weight = usage_costs / platform_usage_costs
+    compute_expense = usage_costs
+    usage_weight = usage_costs / platform_usage_costs * 100
     logger.info('Usage weight: {}.'.format(usage_weight))
     clusters_compute_hours = _get_cluster_compute_hours(api, from_date_time, to_date_time, user, runs)
     logger.info('Clusters compute hours: {}.'.format(clusters_compute_hours))
@@ -372,7 +381,7 @@ def _get_statistics(api, capabilities, logger, platform_usage_costs, from_date, 
     logger.info('Top 3 Used buckets: {}.'.format(top3_used_buckets))
     top3_run_capabilities = _get_top3_run_capabilities(api, from_date_time, to_date_time, user, capabilities, runs)
     logger.info('Top 3 Capabilities: {}.'.format(top3_run_capabilities))
-    return Stat(compute_hours, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
+    return Stat(compute_hours, compute_expense, runs_count, storage_read, storage_write, usage_weight, login_time, cpu_hours,
                 gpu_hours, clusters_compute_hours, worker_nodes_count,
                 top3_instance_types, top3_pipelines, top3_tools, top3_used_buckets, top3_run_capabilities)
 
@@ -391,8 +400,17 @@ def _get_login_time(api, from_date_time, to_date_time, user):
 
 
 def _get_platform_usage_cost(api, from_date, to_date):
-    all_run_dict = _get_runs(api, from_date, to_date, None)
-    return _get_usage_costs(all_run_dict)
+    body = {
+        "from": from_date,
+        "to": to_date,
+        "grouping": "RESOURCE_TYPE"
+    }
+    result = api._request(endpoint='billing/charts', http_method="post", data=body)
+    for item in result:
+        if item['groupingInfo']['RESOURCE_TYPE'] == 'COMPUTE':
+            return float(item['cost']) / 10000
+    logging.error('Failed to get total platform cost')
+    return 0
 
 
 def _get_runs(api, from_date, to_date, user):
@@ -447,7 +465,9 @@ def _get_top3_run_capabilities(api, from_date, to_date, user, capabilities, bill
     capabilities_dict = {}
     for c in capabilities:
         runs = api.filter_runs_all(from_date, to_date, user, {'partialParameters': CAPABILITY_TEMPLATE.format(c)})
-        capabilities_dict[c] = _calculate_runs_duration_hours(runs, billing_runs_stat)
+        hours = _calculate_runs_duration_hours(runs, billing_runs_stat)
+        if hours:
+            capabilities_dict[c] = hours
     return sorted(capabilities_dict.items(), key=lambda item: float(item[1]), reverse=True)[:3]
 
 

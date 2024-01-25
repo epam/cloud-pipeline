@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +17,19 @@
 KUBE_MASTER_SETUP_TASK="KubeMasterSetup"
 KUBE_MASTER_SETUP_TASK_WORKERS="KubeMasterSetupWorkers"
 
+unset KUBERNETES_SERVICE_HOST
+unset KUBERNETES_SERVICE_PORT
+
 ############################
 # Common functions
 ############################
 function wait_for_pod_ready() {
     local _pod_name="$1"
     local _try_count="$2"
+    local _pod_ns="${3:-kube-system}"
 
     for i in $(seq 1 $_try_count); do
-        local _all_ready_system_pods=$(kubectl get po -n kube-system \
+        local _all_ready_system_pods=$(kubectl get po -n $_pod_ns \
                                                 -o custom-columns=NAME:.metadata.name,TYPES:.status.conditions[*].type | \
                                         grep Ready | \
                                         cut -f1 -d' ')
@@ -38,7 +42,7 @@ function wait_for_pod_ready() {
 }
 
 function get_kube_workers_count() {
-    local _all_worker_nodes=$(kubectl get node --selector='!node-role.kubernetes.io/master' --no-headers 2>/dev/null)
+    local _all_worker_nodes=$(kubectl get node --selector='!node-role.kubernetes.io/master,!node-role.kubernetes.io/control-plane' --no-headers 2>/dev/null)
     if [ -z "$_all_worker_nodes" ]; then
         echo 0
         return
@@ -74,13 +78,32 @@ pipe_log_info "Everything looks OK" "$KUBE_MASTER_SETUP_TASK"
 ############################
 pipe_log_info "Starting kubernetes setup" "$KUBE_MASTER_SETUP_TASK"
 
+# 1.15.4 and 1.28.2 are tested
+export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
 export CP_CAP_KUBE_PODS_CIDR="${CP_CAP_KUBE_PODS_CIDR:-172.16.0.0/18}" # Default 16382 IPs:  172.16.0.1 - 172.16.63.254
 export CP_CAP_KUBE_SVC_CIDR="${CP_CAP_KUBE_SVC_CIDR:-172.16.64.0/22}"  # Default 254 IPs:    172.16.64.1 - 172.16.67.254 
 export CP_CAP_KUBE_DOMAIN="${CP_CAP_KUBE_DOMAIN:-${RUN_ID}.cp}"
+
+# Default CNI configs:
+# 1.15.4: https://raw.githubusercontent.com/epam/cloud-pipeline/48173e0be5236d7a103db388513862b4e84ca43f/workflows/pipe-common/resources/linux/k8s-dind/cni_1.15.4_canal.yaml
+# 1.28.2: https://raw.githubusercontent.com/epam/cloud-pipeline/48173e0be5236d7a103db388513862b4e84ca43f/workflows/pipe-common/resources/linux/k8s-dind/cni_1.28.2_flannel.yaml
+if [ -z "$CP_CAP_KUBE_CNI_CONFIG" ]; then
+    if [ "$CP_CAP_KUBE_VERSION" == "1.15.4" ]; then
+        export CP_CAP_KUBE_CNI_CONFIG="https://raw.githubusercontent.com/epam/cloud-pipeline/48173e0be5236d7a103db388513862b4e84ca43f/workflows/pipe-common/resources/linux/k8s-dind/cni_1.15.4_canal.yaml"
+    elif [ "$CP_CAP_KUBE_VERSION" == "1.28.2" ]; then
+        export CP_CAP_KUBE_CNI_CONFIG="https://raw.githubusercontent.com/epam/cloud-pipeline/48173e0be5236d7a103db388513862b4e84ca43f/workflows/pipe-common/resources/linux/k8s-dind/cni_1.28.2_flannel.yaml"
+    else
+        pipe_log_warn "CP_CAP_KUBE_CNI_CONFIG is not set and CP_CAP_KUBE_VERSION is ${CP_CAP_KUBE_VERSION}. Cannot guess a CNI config, will use a latest flannel." "$KUBE_MASTER_SETUP_TASK"
+        export CP_CAP_KUBE_CNI_CONFIG="https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml"
+    fi
+fi
 export CP_CAP_KUBE_CNI_CONFIG="${CP_CAP_KUBE_CNI_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/6d210f2dd2f376737f97269385ae6a192f0a521c/deploy/contents/k8s/kube-system/canal.yaml}"
 export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install/install.log}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS="${CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS:-60}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}"
+export CP_CAP_KUBE_MASTER_NODE_NAME="${CP_CAP_KUBE_MASTER_NODE_NAME:-$(hostname)}"
+export CP_CAP_KUBE_MASTER_NODE_IP=$(getent hosts "$CP_CAP_KUBE_MASTER_NODE_NAME" | awk '{ print $1 }')
+
 mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
 
 # If this is enabled - Kube's DNS IP will be added to the host machine, so the Services names can be resolved from host, not only from within the pods
@@ -97,12 +120,15 @@ if [ -z "$CP_CAP_KUBE_DNS_IP" ]; then
     export CP_CAP_KUBE_DNS_IP="${_kube_svc_dns_parts[0]}.${_kube_svc_dns_parts[1]}.${_kube_svc_dns_parts[2]}.$_kube_svc_dns_parts_last"
 fi
 
-pipe_log_info "- Install log: $CP_CAP_KUBE_INSTALL_LOG\n \
+pipe_log_info "- Kubernetes version: $CP_CAP_KUBE_VERSION\n \
+- Install log: $CP_CAP_KUBE_INSTALL_LOG\n \
 - Kube pods CIDR: $CP_CAP_KUBE_PODS_CIDR\n \
 - Kube services CIDR: $CP_CAP_KUBE_SVC_CIDR\n \
 - Kube domain: $CP_CAP_KUBE_DOMAIN\n \
 - Kube DNS IP: $CP_CAP_KUBE_DNS_IP\n \
 - Kube DNS IP added to host: $CP_CAP_KUBE_DNS_ADD_TO_HOST\n \
+- Kube Master node name: $CP_CAP_KUBE_MASTER_NODE_NAME\n \
+- Kube Master node IP: $CP_CAP_KUBE_MASTER_NODE_IP\n \
 - Kube CNI config URL: $CP_CAP_KUBE_CNI_CONFIG" "$KUBE_MASTER_SETUP_TASK"
 
 # Remove /usr/cpbin from the PATH, so the kubelet will use the "real" docker binary
@@ -111,12 +137,15 @@ export PATH=$(sed "s|$CP_USR_BIN||g" <<< "$PATH")
 ######################################
 # Install the common software packages
 ######################################
-kube_setup_common "$KUBE_MASTER_SETUP_TASK" "$CP_CAP_KUBE_INSTALL_LOG"
+kube_setup_common "$KUBE_MASTER_SETUP_TASK" \
+                  "$CP_CAP_KUBE_INSTALL_LOG" \
+                  "$CP_CAP_KUBE_VERSION"
 
 ######################################
 # Kubelet configuration
 ######################################
 modprobe br_netfilter
+
 cat <<EOF >/etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
@@ -129,8 +158,6 @@ echo "KUBELET_EXTRA_ARGS=--fail-swap-on=false" > $_KUBE_DROPIN_PATH
 chmod +x $_KUBE_DROPIN_PATH
 
 systemctl daemon-reload
-systemctl enable kubelet
-systemctl start kubelet
 
 # Unset http proxies, as the kube control plane pods will be confused by that
 bkp_http_proxy="$http_proxy"
@@ -146,6 +173,7 @@ fi
 pipe_log_info "Starting kubernetes master initialization" "$KUBE_MASTER_SETUP_TASK"
 
 _kubeadm_config_file=/tmp/${RANDOM}.yaml
+if util_version_compare "$CP_CAP_KUBE_VERSION" "1.25.0" "<"; then
 cat > $_kubeadm_config_file <<EOF
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
@@ -155,7 +183,7 @@ etcd:
 dns:
   type: kube-dns
 
-kubernetesVersion: v1.15.4
+kubernetesVersion: v$CP_CAP_KUBE_VERSION
 networking:
   dnsDomain: $CP_CAP_KUBE_DOMAIN
   serviceSubnet: $CP_CAP_KUBE_SVC_CIDR
@@ -171,6 +199,51 @@ bootstrapTokens:
   - groups:
     ttl: 0s
 EOF
+else
+cat > $_kubeadm_config_file <<EOF
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: $CP_CAP_KUBE_MASTER_NODE_IP
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  name: $CP_CAP_KUBE_MASTER_NODE_NAME
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+bootstrapTokens:
+  - groups:
+    ttl: 0s
+---
+apiServer:
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta3
+certificatesDir: /etc/kubernetes/pki
+clusterName: kubernetes
+controllerManager: {}
+dns: {}
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+imageRepository: registry.k8s.io
+kind: ClusterConfiguration
+kubernetesVersion: v$CP_CAP_KUBE_VERSION
+networking:
+  dnsDomain: $CP_CAP_KUBE_DOMAIN
+  podSubnet: $CP_CAP_KUBE_PODS_CIDR
+  serviceSubnet: $CP_CAP_KUBE_SVC_CIDR
+scheduler: {}
+---
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+cgroupDriver: cgroupfs
+EOF
+fi
+
+systemctl start kubepods-besteffort.slice
+systemctl start kubepods-burstable.slice
 
 kubeadm init --config $_kubeadm_config_file --ignore-preflight-errors=all
 
@@ -219,14 +292,85 @@ export CP_KUBE_FLANNEL_CIDR=$CP_CAP_KUBE_PODS_CIDR
 envsubst '${CP_KUBE_FLANNEL_CIDR}' < $_cni_config_file | kubectl apply -f -
 rm -f $_cni_config_file
 
-pipe_log_info "Waiting for the overlay networking to setup" "$KUBE_MASTER_SETUP_TASK"
-wait_for_pod_ready "calico-kube-controllers-" 20
-if [ $? -eq 0 ]; then
-    pipe_log_info "CNI is configured" "$KUBE_MASTER_SETUP_TASK"
+if kubectl get deploy calico-kube-controllers -n kube-system &> /dev/null; then
+    _cni_plugin="calico-kube-controllers"
+    pipe_log_info "Canal is detected as a CNI plugin" "$KUBE_MASTER_SETUP_TASK"
+elif kubectl get ds kube-flannel-ds -n kube-flannel &> /dev/null; then
+    _cni_plugin="kube-flannel-ds"
+    _cni_ns="kube-flannel"
+    pipe_log_info "Flannel is detected as a CNI plugin" "$KUBE_MASTER_SETUP_TASK"
 else
-    pipe_log_fail "[ERROR] calico-kube-controllers was not able to start in a reasonable time" "$KUBE_MASTER_SETUP_TASK"
-    exit 1
+    pipe_log_warn "Unknown service is used a CNI plugin" "$KUBE_MASTER_SETUP_TASK"
 fi
+
+if [ "$_cni_plugin" ]; then
+    pipe_log_info "Waiting for the overlay networking to setup" "$KUBE_MASTER_SETUP_TASK"
+    wait_for_pod_ready "${_cni_plugin}-" 20 "$_cni_ns"
+    if [ $? -eq 0 ]; then
+        pipe_log_info "CNI ($_cni_plugin) is configured" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_fail "[ERROR] CNI ($_cni_plugin) was not able to start in a reasonable time" "$KUBE_MASTER_SETUP_TASK"
+        exit 1
+    fi
+fi
+
+###############
+# Configure DNS
+###############
+if kubectl get deploy coredns -n kube-system &> /dev/null; then
+    pipe_log_info "Core DNS is detected as a DNS plugin, applying a tolerations patch" "$KUBE_MASTER_SETUP_TASK"
+    kubectl patch deploy -n kube-system coredns \
+                        --type='json' \
+                        -p='[{"op": "add", "path": "/spec/template/spec/tolerations/-", "value": {"effect": "NoSchedule", "key": "node-role.kubernetes.io/master"}}]'
+    if [ $? -eq 0 ]; then
+        pipe_log_info "Tolerations patch is applied to Core DNS" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_warn "Failed to apply tolerations patch to Core DNS. It may have troubles starting, please review a state manually." "$KUBE_MASTER_SETUP_TASK"
+    fi
+    _dns_plugin="coredns"
+elif kubectl get deploy kube-dns -n kube-system &> /dev/null; then
+    _dns_plugin="kube-dns"
+    pipe_log_info "Kube-DNS is detected as a DNS plugin" "$KUBE_MASTER_SETUP_TASK"
+else
+    pipe_log_warn "Unknown service is used a DNS plugin" "$KUBE_MASTER_SETUP_TASK"
+fi
+
+if [ "$_dns_plugin" ]; then
+    pipe_log_info "Waiting for the DNS plugin ($_dns_plugin) to setup" "$KUBE_MASTER_SETUP_TASK"
+    wait_for_pod_ready "${_dns_plugin}-" 20
+    if [ $? -eq 0 ]; then
+        pipe_log_info "$_dns_plugin is ready" "$KUBE_MASTER_SETUP_TASK"
+    else
+        pipe_log_warn "$_dns_plugin was not able to start in a reasonable time. Will keep running, but this may prevent user pods to run correctly. Please review the dns configuration manually" "$KUBE_MASTER_SETUP_TASK"
+    fi
+fi
+
+#######################
+# Configure GPU support
+#######################
+
+_node_gpus_count=$(nvidia-smi -L 2>/dev/null | wc -l)
+_node_gpus_count="${_node_gpus_count:-0}"
+pipe_log_info "$_node_gpus_count GPUs found" "$KUBE_MASTER_SETUP_TASK"
+
+if (( _node_gpus_count > 0 )); then
+    CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG="${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG:-https://raw.githubusercontent.com/epam/cloud-pipeline/7d7309a5764182197fc74059c1f76fbf708c8ac1/workflows/pipe-common/resources/linux/k8s-dind/nvidia-device-plugin-0.14.3_1.28.2.yml}"
+    pipe_log_info "Installing nvidia plugin from ${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG}" "$KUBE_MASTER_SETUP_TASK"
+    _nvidia_plugin_config_file=/tmp/${RANDOM}.yaml
+    wget -q "$CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG" -O $_nvidia_plugin_config_file
+    if [ $? -ne 0 ]; then
+        pipe_log_warn "[WARN] Cannot download nvidia plugin config from ${CP_CAP_KUBE_NVIDIA_PLUGIN_CONFIG}, GPUs will not be configured" "$KUBE_MASTER_SETUP_TASK"
+    else
+        kubectl apply -f "$_nvidia_plugin_config_file"
+        if [ $? -ne 0 ]; then
+            pipe_log_warn "[WARN] Failed to install Nvidia plugin, GPUs will not be functional" "$KUBE_MASTER_SETUP_TASK"
+        else
+            pipe_log_info "nvidia plugin was installed" "$KUBE_MASTER_SETUP_TASK"
+        fi
+        rm -f "$_nvidia_plugin_config_file"
+    fi
+fi
+
 
 pipe_log_success "Kubernetes master is started" "$KUBE_MASTER_SETUP_TASK"
 
@@ -260,4 +404,30 @@ if [ "$CP_CAP_KUBE_DNS_ADD_TO_HOST" == "true" ]; then
     echo "nameserver $CP_CAP_KUBE_DNS_IP" >> /tmp/resolv.conf
     echo "options rotate" >> /tmp/resolv.conf
     \cp /tmp/resolv.conf /etc/resolv.conf
+fi
+
+(
+    export CP_CAP_AUTOSCALE_TASK="KubeAutoscaling"
+    export CP_CAP_SGE_QUEUE_DEFAULT="true"
+    export CP_CAP_SGE_QUEUE_STATIC="true"
+    export CP_CAP_SGE_QUEUE_NAME="default"
+    export CP_CAP_SGE_MASTER_CORES="0"
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.kube.default.log" 2>&1 &
+)
+
+#############################################################
+# Configure external access
+#############################################################
+
+# This script will sit in the background 
+# and check until the endpoints are initialized
+if util_version_compare "$CP_CAP_KUBE_VERSION" "1.25.0" "<"; then
+    pipe_log_info "Kubernetes version ($CP_CAP_KUBE_VERSION) is not sufficient for the external setup" "$KUBE_MASTER_SETUP_TASK"
+else
+    if [ "CP_CAP_KUBE_EXTERNAL_SETUP_ENABLED" == "true" ]; then
+        pipe_log_info "Kubernetes external setup is enabled, will check for endpoint and configure credentials" "$KUBE_MASTER_SETUP_TASK"
+        nohup kube_configure_external_access &> "$LOG_DIR/kube_configure_external_access.log" &
+    else
+        pipe_log_info "Kubernetes external setup is NOT enabled" "$KUBE_MASTER_SETUP_TASK"
+    fi
 fi

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ function download_gradle_dependencies() {
               -x :client:buildUI \
               -x :cloud-pipeline-webdav-client:buildLinux \
               -x :cloud-pipeline-webdav-client:buildWin \
+              -x :cloud-pipeline-webdav-client:buildCli \
               -x :fs-browser:build \
               -x :data-sharing-service:client:buildUI \
               -x :data-sharing-service:api:build \
@@ -113,6 +114,7 @@ mv ${API_STATIC_PATH}/data-transfer-service-linux.zip data-transfer-service/buil
           -x :client:buildUI \
           -x :cloud-pipeline-webdav-client:buildLinux \
           -x :cloud-pipeline-webdav-client:buildWin \
+          -x :cloud-pipeline-webdav-client:buildCli \
           -x :fs-browser:build \
           -x :data-sharing-service:client:buildUI \
           -x :data-sharing-service:api:build \

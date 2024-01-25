@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import time
 import urllib3
 
 CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
+CP_EDGE_ENDPOINT_TAG_NAME = 'CP_EDGE_ENDPOINT_TAG_NAME'
 
 try:
         from pykube.config import KubeConfig
@@ -52,6 +53,8 @@ EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
+EDGE_COOKIE_NO_REPLACE = 'CP_EDGE_COOKIE_NO_REPLACE'
+EDGE_JWT_NO_AUTH = 'CP_EDGE_JWT_NO_AUTH'
 EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{region_name}')
 EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
@@ -538,9 +541,18 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
         run_info = run_cache['pipelineRun']
         if run_info:
                 if run_info.get("status") != 'RUNNING':
-                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not been proxied'.format(pod_run_id))
+                        do_log('Status for pipeline with id: {}, is not RUNNING. Service urls will not be proxied'.format(pod_run_id))
                         return {}
-
+                if 'pipelineRunParameters' in run_info:
+                        edge_endpoint_tag_name = [rp for rp in run_info["pipelineRunParameters"]
+                                                if 'name' in rp and rp["name"] == CP_EDGE_ENDPOINT_TAG_NAME]
+                        if edge_endpoint_tag_name and len(edge_endpoint_tag_name) > 0:
+                                run_info_tags = run_info.get("tags")
+                                if not (run_info_tags and "value" in edge_endpoint_tag_name[0] and run_info_tags.get(edge_endpoint_tag_name[0]["value"])):
+                                        do_log('Pipeline with id {} and run tag {} has not yet been initialized. '
+                                        'Service urls will not be proxied'
+                                        .format(pod_run_id, edge_endpoint_tag_name[0]["value"]))
+                                        return {}
                 pod_owner = run_info["owner"]
                 docker_image = run_info["dockerImage"]
                 runs_sids = run_info.get("runSids")
@@ -629,6 +641,19 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_target = edge_target + "/"
 
+                                        if EDGE_COOKIE_NO_REPLACE in additional:
+                                                additional = additional.replace(EDGE_COOKIE_NO_REPLACE, "")
+                                                edge_cookie_location = "/"
+                                        else:
+                                                edge_cookie_location = None
+
+                                        # This parameter will be passed to the respective lua auth script
+                                        # Only applied for the non-sensitive jobs
+                                        edge_jwt_auth = True
+                                        if EDGE_JWT_NO_AUTH in additional:
+                                                additional = additional.replace(EDGE_JWT_NO_AUTH, "")
+                                                edge_jwt_auth = False
+
                                         is_external_app = False
                                         if EDGE_EXTERNAL_APP in additional:
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
@@ -660,7 +685,9 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 "sensitive": sensitive,
                                                 "create_dns_record": create_dns_record,
                                                 "cloudRegionId": cloud_region_id,
-                                                "external_app": is_external_app
+                                                "external_app": is_external_app,
+                                                "cookie_location": edge_cookie_location,
+                                                "edge_jwt_auth": edge_jwt_auth
                                         }
                 else:
                         do_log('No endpoints required for the tool {}'.format(docker_image))
@@ -766,7 +793,9 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
                 .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
-                .replace('{additional}', service_spec["additional"])
+                .replace('{additional}', service_spec["additional"]) \
+                .replace('{edge_jwt_auth}', str(service_spec["edge_jwt_auth"])) \
+                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location)
         nginx_sensitive_route_definitions = []
         if service_spec["sensitive"]:
                 for sensitive_route in sensitive_routes:
@@ -782,7 +811,8 @@ def create_service_location(service_spec, service_url_dict, edge_region_id):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{additional}', service_spec["additional"])
+                                .replace('{additional}', service_spec["additional"]) \
+                                .replace('{edge_cookie_location}', service_spec["cookie_location"] if service_spec["cookie_location"] else service_location + sensitive_route['route'])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, service_spec.get('edge_location_path') + '.conf')
         if service_spec["sensitive"]:

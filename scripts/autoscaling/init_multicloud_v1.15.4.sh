@@ -385,6 +385,7 @@ if [ -z "$_KUBE_PULL_TIMEOUT" ] || [[ "$_KUBE_PULL_TIMEOUT" == "@"*"@" ]]; then
   _KUBE_PULL_TIMEOUT="10m"
 fi
 _KUBE_OTHER_ARGS="--image-pull-progress-deadline $_KUBE_PULL_TIMEOUT"
+_KUBE_OTHER_ARGS="--enable-cadvisor-json-endpoints $_KUBE_OTHER_ARGS"
 
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
 _KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
@@ -408,6 +409,11 @@ _KUBE_RESERVED_ARGS="--kube-reserved cpu=${KUBE_RESERVED_CPU},memory=${KUBE_RESE
 _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=${SYSTEM_RESERVED_CPU},memory=${SYSTEM_RESERVED_MEM},ephemeral-storage=${SYSTEM_RESERVED_DISK}"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
+
+_KUBELET_VERSION=$(kubelet --version | cut -f2 -d'.')
+if (( "$_KUBELET_VERSION" >=  19)); then
+  _KUBE_OTHER_ARGS="$_KUBE_OTHER_ARGS --feature-gates CSIMigration=false"
+fi
 
 echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS $_KUBE_OTHER_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH

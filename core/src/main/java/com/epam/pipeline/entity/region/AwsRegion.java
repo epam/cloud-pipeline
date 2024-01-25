@@ -47,4 +47,5 @@ public class AwsRegion extends AbstractCloudRegion implements VersioningAwareReg
     private Integer backupDuration;
     private boolean versioningEnabled;
     private String iamRole;
+    private String s3Endpoint;
 }

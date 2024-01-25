@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cloud.gcp;
 
 import com.epam.pipeline.entity.cluster.GpuDevice;
-import com.epam.pipeline.entity.region.GCPCustomInstanceType;
+import com.epam.pipeline.entity.region.CustomInstanceType;
 import com.epam.pipeline.entity.region.GCPCustomVMType;
 import com.epam.pipeline.entity.region.GCPRegion;
 import com.epam.pipeline.manager.cloud.gcp.extractor.GCPCustomMachineExtractor;
@@ -52,7 +52,7 @@ public class GCPCustomMachineExtractorTest {
     @Test
     public void testCustomCpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(CPU, RAM)));
+        region.setCustomInstanceTypes(Collections.singletonList(CustomInstanceType.withCpu(CPU, RAM)));
         final GCPMachine expectedMachine = GCPMachine.withCpu("custom-1-2048",
                 CUSTOM_FAMILY, CPU, RAM, 0, GCPCustomVMType.n1);
 
@@ -64,7 +64,7 @@ public class GCPCustomMachineExtractorTest {
     @Test
     public void testCustomGpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
+        region.setCustomInstanceTypes(Collections.singletonList(CustomInstanceType.withGpu(CPU, RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-1-2048-k80-3", CUSTOM_FAMILY, CPU, RAM, 0,
                 GPU, GpuDevice.from(K_80, NVIDIA), GCPCustomVMType.n1);
 
@@ -76,7 +76,7 @@ public class GCPCustomMachineExtractorTest {
     @Test
     public void testExtendedCustomMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(2 * CPU,
+        region.setCustomInstanceTypes(Collections.singletonList(CustomInstanceType.withCpu(2 * CPU,
                 EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM)));
         final GCPMachine expectedMachine = GCPMachine.withCpu("custom-2-15360-ext", CUSTOM_FAMILY, 2 * CPU,
                 EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM, GCPCustomVMType.n1);
@@ -89,7 +89,7 @@ public class GCPCustomMachineExtractorTest {
     @Test
     public void testExtendedCustomGpuMachineExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType
+        region.setCustomInstanceTypes(Collections.singletonList(CustomInstanceType
                 .withGpu(2 * CPU, EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM, GPU, K_80)));
         final GCPMachine expectedMachine = GCPMachine.withGpu("gpu-custom-2-15360-k80-3-ext",
                 CUSTOM_FAMILY, 2 * CPU, EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM,
@@ -103,7 +103,7 @@ public class GCPCustomMachineExtractorTest {
     @Test
     public void testExtendedCustomMachineWithFamilyExtraction() {
         final GCPRegion region = new GCPRegion();
-        region.setCustomInstanceTypes(Collections.singletonList(GCPCustomInstanceType.withCpu(2 * CPU,
+        region.setCustomInstanceTypes(Collections.singletonList(CustomInstanceType.withCpu(2 * CPU,
                 N2_EXTENDED_RAM_FACTOR * 2 + EXTENDED_RAM, "n2")));
         final GCPMachine expectedMachine = GCPMachine.withCpu("n2-custom-2-18432-ext", CUSTOM_FAMILY, 2 * CPU,
                 N2_EXTENDED_RAM_FACTOR * 2, EXTENDED_RAM, GCPCustomVMType.n2);

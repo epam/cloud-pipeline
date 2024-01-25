@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import ipaddress
 import os
-import requests
-import urllib3
 import re
-import time
+import traceback
 import uuid
+
+import datetime
+import requests
+import time
+import urllib3
 import yaml
 from kubernetes import client, config
 
@@ -30,26 +33,34 @@ K8S_OBJ_NAME_KEY = 'name'
 K8S_LABELS_KEY = 'labels'
 K8S_METADATA_KEY = 'metadata'
 K8S_METADATA_NAME_FIELD_SELECTOR = 'metadata.name={}'
+K8S_SPEC_KEY = 'spec'
+K8S_EGRESS_KEY = 'egress'
 NETPOL_OWNER_PLACEHOLDER = '<OWNER>'
 NETPOL_NAME_PREFIX_PLACEHOLDER = '<POLICY_NAME_PREFIX>'
 OWNER_LABEL = 'owner'
 PIPELINE_POD_LABEL_SELECTOR = 'type=pipeline'
 PIPELINE_POD_PHASE_SELECTOR = 'status.phase={}'
 SENSITIVE_LABEL = 'sensitive'
+POLICY_TYPE_COMMON = 'common'
+POLICY_TYPE_INTERNAL = 'internal'
+POLICY_TYPE_SENSITIVE = 'sensitive'
 TRACKED_POD_PHASES = ['Pending', 'Running']
 
 COMMON_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_COMMON_POLICY_PATH',
-                                        '/policy-manager/common-run-policy-template.yaml')
+                                        '/policy-manager/templates/common-run-policy-template.yaml')
 SENSITIVE_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_SENSITIVE_POLICY_PATH',
-                                           '/policy-manager/sensitive-run-policy-template.yaml')
+                                           '/policy-manager/templates/sensitive-run-policy-template.yaml')
+INTERNAL_NETPOL_TEMPLATE_PATH = os.getenv('CP_RUN_POLICY_MANAGER_INTERNAL_POLICY_PATH',
+                                         '/policy-manager/templates/internal-run-policy-template.yaml')
 MONITORING_PERIOD_SEC = int(os.getenv('CP_RUN_POLICY_MANAGER_POLL_PERIOD_SEC', 5))
 
 def log_message(message):
     print('[{}] {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'), message))
 
-def cp_get(api_method):
+# todo: Replace with pipe common usage
+def cp_get(api_method, access_key=None):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    access_key = os.getenv('CP_API_JWT_ADMIN')
+    access_key = access_key or os.getenv('CP_API_JWT_ADMIN')
     api_host = os.getenv('CP_API_SRV_INTERNAL_HOST')
     api_port = os.getenv('CP_API_SRV_INTERNAL_PORT')
     if not access_key or not api_host or not api_port:
@@ -62,8 +73,9 @@ def cp_get(api_method):
             return response['payload']
         else:
             return None
-    except Exception as err:
-        log_message('[ERROR] An error occured while calling Cloud Pipeline API:\n{}'.format(str(creation_error)))
+    except Exception:
+        log_message('[ERROR] An error occurred while calling Cloud Pipeline API:\n{}'
+                    .format(str(traceback.format_exc())))
         return None
 
 def get_permissive_roles_ids():
@@ -106,10 +118,10 @@ def load_all_active_policies():
     return policies_response['items']
 
 
-def create_policy(owner, is_sensitive):
-    log_message('Creating policy for [{}{}]'.format(owner, '-sensitive' if is_sensitive else ''))
+def create_policy(owner, policy_type):
+    log_message('Creating policy [{}-{}]...'.format(owner, policy_type))
     api = get_custom_resource_api()
-    policy_yaml = create_policy_yaml_object(owner, is_sensitive)
+    policy_yaml = create_policy_yaml_object(owner, policy_type)
     policy_name_template = policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
     sanitized_owner_name = sanitize_name(owner)
     policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
@@ -140,21 +152,82 @@ def sanitize_name(name: str):
     return re.sub('[^A-Za-z0-9]+', '-', name).lower()
 
 
-def create_policy_yaml_object(owner, is_sensitive):
-    with open(SENSITIVE_NETPOL_TEMPLATE_PATH if is_sensitive else COMMON_NETPOL_TEMPLATE_PATH, 'r') as file:
+def create_policy_yaml_object(owner, policy_type):
+    if policy_type == POLICY_TYPE_SENSITIVE:
+        policy_template_path = SENSITIVE_NETPOL_TEMPLATE_PATH
+    elif policy_type == POLICY_TYPE_INTERNAL:
+        policy_template_path = INTERNAL_NETPOL_TEMPLATE_PATH
+    else:
+        policy_template_path = COMMON_NETPOL_TEMPLATE_PATH
+    with open(policy_template_path, 'r') as file:
         new_policy_as_string = file.read()
         new_policy_as_string = new_policy_as_string.replace(NETPOL_OWNER_PLACEHOLDER, owner)
-    return yaml.load(new_policy_as_string, Loader=yaml.FullLoader) if new_policy_as_string else None
+    if not new_policy_as_string:
+        return None
+    policy_yaml = yaml.load(new_policy_as_string, Loader=yaml.FullLoader)
+    if policy_type in [POLICY_TYPE_INTERNAL, POLICY_TYPE_SENSITIVE]:
+        owner_file_share_ips = get_available_file_share_ips(owner)
+        owner_file_share_cidrs = [ip + '/32' for ip in owner_file_share_ips]
+        if owner_file_share_cidrs:
+            policy_yaml[K8S_SPEC_KEY][K8S_EGRESS_KEY].append({
+                'action': 'Allow',
+                'destination': {
+                    'nets': owner_file_share_cidrs
+                }
+            })
+    return policy_yaml
+
+
+def get_user_token(user_name):
+    log_message('Collecting token for {}...'.format(user_name))
+    token_wrapper = cp_get('user/token?name=' + user_name) or {}
+    return token_wrapper.get('token')
+
+
+def get_available_file_share_ips(user_name):
+    user_token = get_user_token(user_name)
+    if not user_token:
+        log_message('Access token has not been found for {} '.format(user_name))
+        return
+    log_message('Collecting available file share ips for {}...'.format(user_name))
+    for file_share_mount_root in sorted(set(get_available_file_share_mount_roots(user_token))):
+        file_share_ip = file_share_mount_root.split(':')[0]
+        if not file_share_ip:
+            log_message('Skipping empty file share ip...')
+            continue
+        if not is_valid_ip_address(file_share_ip):
+            log_message('Skipping invalid file share ip {}...'.format(file_share_ip))
+            continue
+        log_message('Collected file share ip {}...'.format(file_share_ip))
+        yield file_share_ip
+
+
+def get_available_file_share_mount_roots(token):
+    storages_with_file_shares = cp_get('datastorage/availableWithMounts', access_key=token) or []
+    for storage_with_file_share in storages_with_file_shares:
+        file_share_mount_root = storage_with_file_share.get('shareMount', {}).get('mountRoot') or ''
+        if not file_share_mount_root:
+            continue
+        yield file_share_mount_root
+
+
+def is_valid_ip_address(ip):
+    try:
+        ipaddress.ip_address(ip)
+        return True
+    except ValueError:
+        return False
 
 
 def delete_policy(policy_name):
-    log_message('Removing policy [{}]'.format(policy_name))
+    log_message('Deleting policy [{}]...'.format(policy_name))
     api = get_custom_resource_api()
     api.delete_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
                                         version=CALICO_RESOURCES_VERSION,
                                         namespace=NAMESPACE,
                                         plural=CALICO_NETPOL_PLURAL,
                                         name=policy_name)
+    log_message('Policy [{}] deleted successfully'.format(policy_name))
 
 
 def load_all_pipeline_pods():
@@ -169,11 +242,21 @@ def load_all_pipeline_pods():
 
 
 def is_sensitive_policy(policy):
-    return SENSITIVE_LABEL in policy[K8S_METADATA_KEY][K8S_LABELS_KEY]
+    return policy[K8S_METADATA_KEY][K8S_LABELS_KEY].get('network_policy_type') == POLICY_TYPE_SENSITIVE \
+        or SENSITIVE_LABEL in policy[K8S_METADATA_KEY][K8S_LABELS_KEY]
 
 
 def is_sensitive_pod(pod):
-    return SENSITIVE_LABEL in pod.metadata.labels
+    return pod.metadata.labels.get('network_policy_type') == POLICY_TYPE_SENSITIVE \
+        or SENSITIVE_LABEL in pod.metadata.labels
+
+
+def is_internal_policy(policy):
+    return policy[K8S_METADATA_KEY][K8S_LABELS_KEY].get('network_policy_type') == POLICY_TYPE_INTERNAL
+
+
+def is_internal_pod(pod):
+    return pod.metadata.labels.get('network_policy_type') == POLICY_TYPE_INTERNAL
 
 
 def get_pods_owners_set(pods):
@@ -192,12 +275,16 @@ def get_policies_owners_set(policies):
     return owners
 
 
-def create_missed_policies(active_pods, active_policies, is_sensitive):
+def create_missed_policies(active_pods, active_policies, policy_type):
     pods_owners = get_pods_owners_set(active_pods)
     users_affected_by_policies = get_policies_owners_set(active_policies)
     for owner in pods_owners:
         if owner not in users_affected_by_policies:
-            create_policy(owner, is_sensitive)
+            try:
+                create_policy(owner, policy_type)
+            except Exception:
+                log_message('[ERROR] Error occurred while CREATING policy [{}-{}]:\n{}'
+                            .format(owner, policy_type, traceback.format_exc()))
 
 
 def drop_excess_policies(active_pods, active_policies):
@@ -206,7 +293,11 @@ def drop_excess_policies(active_pods, active_policies):
         policy_metadata = policy[K8S_METADATA_KEY]
         user_affected_by_policy = policy_metadata[K8S_LABELS_KEY][OWNER_LABEL]
         if user_affected_by_policy not in pods_owners:
-            delete_policy(policy_metadata[K8S_OBJ_NAME_KEY])
+            try:
+                delete_policy(policy_metadata[K8S_OBJ_NAME_KEY])
+            except Exception:
+                log_message('[ERROR] Error occurred while DELETING policy [{}]:\n{}'
+                            .format(policy_metadata[K8S_OBJ_NAME_KEY], traceback.format_exc()))
 
 
 def main():
@@ -217,37 +308,58 @@ def main():
             if permissive_checks_enabled():
                 try:
                     permissive_users = get_permissive_users()
-                except Exception as permissive_users_error:
-                    log_message('[ERROR] Error ocurred while getting a list of permissive users:\n{}'.format(str(permissive_users_error)))
+                except Exception:
+                    log_message('[ERROR] Error occurred while getting a list of permissive users:\n{}'
+                                .format(traceback.format_exc()))
 
             active_policies = load_all_active_policies()
             sensitive_policies = []
+            internal_policies = []
             common_policies = []
             for policy in active_policies:
-                sensitive_policies.append(policy) if is_sensitive_policy(policy) else common_policies.append(policy)
+                if is_sensitive_policy(policy):
+                    sensitive_policies.append(policy)
+                elif is_internal_policy(policy):
+                    internal_policies.append(policy)
+                else:
+                    common_policies.append(policy)
 
             active_pods = load_all_pipeline_pods()
             sensitive_pods = []
+            internal_pods = []
             common_pods = []
             for pod in active_pods:
                 pod_owner = pod.metadata.labels.get(OWNER_LABEL)
                 if not is_sensitive_pod(pod) and pod_owner in permissive_users:
                     continue
-                sensitive_pods.append(pod) if is_sensitive_pod(pod) else common_pods.append(pod)
+                if is_sensitive_pod(pod):
+                    sensitive_pods.append(pod)
+                elif is_internal_pod(pod):
+                    internal_pods.append(pod)
+                else:
+                    common_pods.append(pod)
+
             try:
-                create_missed_policies(common_pods, common_policies, False)
-                create_missed_policies(sensitive_pods, sensitive_policies, True)
-            except Exception as creation_error:
-                log_message('[ERROR] Error ocurred while CREATING new policies:\n{}'.format(str(creation_error)))
+                create_missed_policies(common_pods, common_policies, POLICY_TYPE_COMMON)
+                create_missed_policies(internal_pods, internal_policies, POLICY_TYPE_INTERNAL)
+                create_missed_policies(sensitive_pods, sensitive_policies, POLICY_TYPE_SENSITIVE)
+            except Exception:
+                log_message('[ERROR] Error occurred while CREATING new policies:\n{}'
+                            .format(traceback.format_exc()))
+
+            # todo: Update existing policies
 
             try:
                 drop_excess_policies(common_pods, common_policies)
+                drop_excess_policies(internal_pods, internal_policies)
                 drop_excess_policies(sensitive_pods, sensitive_policies)
-            except Exception as deletion_error:
-                log_message('[ERROR] Error ocurred while DELETING policies:\n{}'.format(str(deletion_error)))
+            except Exception:
+                log_message('[ERROR] Error occurred while DELETING policies:\n{}'
+                            .format(traceback.format_exc()))
             
-        except Exception as general_error:
-            log_message('[ERROR] General error ocurred:\n{}'.format(str(general_error)))
+        except Exception:
+            log_message('[ERROR] General error occurred:\n{}'
+                        .format(traceback.format_exc()))
 
         time.sleep(float(MONITORING_PERIOD_SEC))
 

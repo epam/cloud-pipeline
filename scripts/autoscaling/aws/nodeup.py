@@ -146,6 +146,14 @@ def get_preference(preference_name):
         pipe_log('An error occured while getting preference {}, empty value is going to be used'.format(preference_name))
         return None
 
+def get_run_info(run_id):
+    pipe_api = PipelineAPI(api_url, None)
+    try:
+        return pipe_api.load_run_efficiently(run_id)
+    except:
+        pipe_log('An error occured while getting info for run id {}'.format(run_id))
+        return None
+
 def load_cloud_config():
     global __CLOUD_METADATA__
     global __CLOUD_TAGS__
@@ -238,7 +246,7 @@ def get_security_groups(aws_region, security_groups):
 def get_well_known_hosts(aws_region):
     return get_cloud_config_section(aws_region, "well_known_hosts")
 
-def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image):
+def get_allowed_instance_image(cloud_region, instance_type, instance_platform, default_image, api_token, run_id):
     default_init_script = os.path.dirname(os.path.abspath(__file__)) + '/init.sh'
     default_embedded_scripts = None
     default_object = { "instance_mask_ami": default_image, "instance_mask": None, "init_script": default_init_script,
@@ -249,6 +257,33 @@ def get_allowed_instance_image(cloud_region, instance_type, instance_platform, d
         return default_object
 
     for image_config in instance_images_config:
+        permissions = set(image_config["permissions"]) if "permissions" in image_config else None
+        try:
+            if permissions:
+                pipe_log('Image config with restricted roles found ({}), checking permissions'.format(permissions))
+                api_token_data = api_token.split(".")[1]
+                api_token_data = api_token_data + "="*divmod(len(api_token_data),4)[1]
+                api_token_data = json.loads(base64.urlsafe_b64decode(api_token_data))
+                api_token_roles = set(api_token_data["roles"])
+                if not (permissions & api_token_roles):
+                    continue
+        except:
+            # If something is wrong with the permissions check - do not use a restricted image
+            continue
+
+        docker_image_list = image_config["docker_image"] if "docker_image" in image_config else None
+        try:
+            if docker_image_list:
+                pipe_log('Image config with restricted docker image found ({}), checking for match with a current run'.format(docker_image_list))
+                run_info = get_run_info(run_id)
+                if  not run_info or \
+                    not 'dockerImage' in run_info or \
+                    not run_info['dockerImage'] in docker_image_list:
+                    continue
+        except:
+            # If something is wrong with the permissions check - do not use a restricted image
+            continue
+
         image_platform = image_config["platform"]
         instance_mask = image_config["instance_mask"]
         instance_mask_ami = image_config["ami"]
@@ -405,7 +440,8 @@ def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_h
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                            global_distribution_url, swap_size, pre_pull_images, node_ssh_port)
+                                            global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
+                                            run_id)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, security_groups, subnet, network_interface, is_dedicated, performance_network)
@@ -760,8 +796,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                         global_distribution_url, swap_size, pre_pull_images, node_ssh_port):
-    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img)
+                         global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id):
+    allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
@@ -1518,8 +1554,12 @@ def main():
             api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
         api.session.verify = False
 
+        api_url = os.environ["API"]
+        api_token = os.environ["API_TOKEN"]
+        api_user = os.environ["API_USER"]
+
         instance_additional_spec = None
-        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img)
+        allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
         if allowed_instance and allowed_instance["instance_mask"]:
             pipe_log('Found matching rule {instance_mask} for requested instance type {instance_type}'.format(instance_mask=allowed_instance["instance_mask"], instance_type=ins_type))
             instance_additional_spec = allowed_instance["additional_spec"]
@@ -1539,9 +1579,6 @@ def main():
             ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id)
 
         if not ins_id:
-            api_url = os.environ["API"]
-            api_token = os.environ["API_TOKEN"]
-            api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,

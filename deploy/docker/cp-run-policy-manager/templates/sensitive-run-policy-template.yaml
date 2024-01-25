@@ -1,0 +1,17 @@
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  name: <POLICY_NAME_PREFIX>-runs-policy-sensitive
+  namespace: default
+  labels:
+    owner: <OWNER>
+    network_policy_type: sensitive
+    sensitive: 'true'
+spec:
+  selector: owner == '<OWNER>' && sensitive == 'true'
+  types:
+    - Ingress
+  ingress:
+    - action: Allow
+      source:
+        selector: cloud-pipeline/cp-edge == 'true' || (owner == '<OWNER>' && sensitive == 'true')

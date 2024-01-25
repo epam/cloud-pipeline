@@ -46,7 +46,7 @@ public class InstancePriceListAspect {
     @AfterReturning(pointcut = "execution(* com.epam.pipeline.manager.region.CloudRegionManager.update(..))",
             returning = "region")
     public void updatePriceListForUpdatedRegion(JoinPoint joinPoint, AbstractCloudRegion region) {
-        if (region.getProvider().equals(CloudProvider.GCP)) {
+        if (region.getProvider().equals(CloudProvider.GCP) || region.getProvider().equals(CloudProvider.LOCAL)) {
             instanceOfferScheduler.updatePriceList(region);
         }
     }

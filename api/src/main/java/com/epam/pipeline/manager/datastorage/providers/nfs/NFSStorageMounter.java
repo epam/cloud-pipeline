@@ -16,6 +16,7 @@ import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
@@ -79,8 +81,11 @@ public class NFSStorageMounter {
                 final AbstractCloudRegionCredentials credentials = cloudRegion.getProvider() == CloudProvider.AZURE ?
                         regionManager.loadCredentials(cloudRegion) : null;
 
+                final String defaultMountOptions = StringUtils.isNotBlank(dataStorage.getMountOptions()) ?
+                        dataStorage.getMountOptions() : fileShareMount.getMountOptions();
+
                 final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
-                        dataStorage.getMountOptions(), protocol);
+                        defaultMountOptions, protocol);
 
                 final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
 
@@ -125,10 +130,11 @@ public class NFSStorageMounter {
         }
     }
 
-    public void chown(final File file, final PipelineUser user, final Integer seed) {
+    public void chown(final File file, final PipelineUser user, final Integer seed, final Integer groupUID) {
         final Long userUID = user.getId() + seed;
+        final Long resolvedGroupUID = Optional.ofNullable(groupUID).map(Integer::longValue).orElse(userUID);
         final String path = file.getAbsoluteFile().getPath();
-        final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, userUID, path);
+        final String cmd = String.format(CHOWN_CMD_PATTERN, userUID, resolvedGroupUID, path);
         try {
             cmdExecutor.executeCommand(cmd);
         } catch (CmdExecutionException e) {

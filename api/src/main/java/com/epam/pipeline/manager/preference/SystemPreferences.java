@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
+import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -66,6 +67,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.EnumPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -216,6 +218,9 @@ public class SystemPreferences {
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
 
+    public static final BooleanPreference DATA_STORAGE_NFS_NETWORK_ACCESS_RESTRICTED = new BooleanPreference(
+            "storage.mounts.nfs.network.access.restricted", false, DATA_STORAGE_GROUP, pass, true);
+
     /**
      * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
      * */
@@ -351,6 +356,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
             "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final EnumPreference<GitlabIssueVisibility> GITLAB_ISSUE_VISIBILITY = new EnumPreference<>(
+            "git.gitlab.issue.visibility", GitlabIssueVisibility.OWNER, GIT_GROUP);
     public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
             "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
             GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
@@ -740,6 +747,8 @@ public class SystemPreferences {
     public static final LongPreference KUBE_POD_GRACE_PERIOD_SECONDS = new LongPreference(
             "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
+            LAUNCH_GROUP, pass, true);
+    public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
             LAUNCH_GROUP, pass, true);
 
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(

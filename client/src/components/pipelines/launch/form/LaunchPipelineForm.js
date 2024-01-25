@@ -144,6 +144,9 @@ import RescheduleRunControl, {
   rescheduleRunParameterValue
 } from './utilities/reschedule-run-control';
 import {getSelectOptions} from '../../../special/instance-type-info';
+import {
+  correctLimitMountsParameterValue
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -1396,11 +1399,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
       }
     }
-    if (this.state.launchCluster && this.state.autoScaledCluster) {
-      payload.params[CP_CAP_AUTOSCALE] = {
-        type: 'boolean',
-        value: true
-      };
+    const launchAutoScaledCluster = this.state.launchCluster && this.state.autoScaledCluster;
+    const launchAutoScaledHybridCluster = launchAutoScaledCluster &&
+      this.state.hybridAutoScaledClusterEnabled;
+    payload.params[CP_CAP_AUTOSCALE] = {
+      type: 'boolean',
+      value: launchAutoScaledCluster
+    };
+    payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
+      type: 'boolean',
+      value: launchAutoScaledHybridCluster
+    };
+    if (launchAutoScaledCluster) {
       payload.params[CP_CAP_AUTOSCALE_WORKERS] = {
         type: 'int',
         value: +this.state.maxNodesCount
@@ -1412,12 +1422,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         };
       } else {
         delete payload.params[CP_CAP_AUTOSCALE_PRICE_TYPE];
-      }
-      if (this.state.hybridAutoScaledClusterEnabled) {
-        payload.params[CP_CAP_AUTOSCALE_HYBRID] = {
-          type: 'boolean',
-          value: true
-        };
       }
       if (this.state.gpuScalingConfiguration) {
         payload.params = applyGPUScalingParameters(
@@ -1432,29 +1436,44 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         );
       }
     }
+    payload.params[CP_CAP_SGE] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SPARK] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_SLURM] = {
+      type: 'boolean',
+      value: false
+    };
+    payload.params[CP_CAP_KUBE] = {
+      type: 'boolean',
+      value: false
+    };
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.sparkEnabled) {
+    } else if (this.state.launchCluster && this.state.sparkEnabled) {
       payload.params[CP_CAP_SPARK] = {
         type: 'boolean',
         value: true
       };
-    }
-    if (this.state.launchCluster && this.state.slurmEnabled) {
+    } else if (this.state.launchCluster && this.state.slurmEnabled) {
       payload.params[CP_CAP_SLURM] = {
+        type: 'boolean',
+        value: true
+      };
+    } else if (this.state.launchCluster && this.state.kubeEnabled) {
+      payload.params[CP_CAP_KUBE] = {
         type: 'boolean',
         value: true
       };
     }
     if (this.state.launchCluster && this.state.kubeEnabled) {
-      payload.params[CP_CAP_KUBE] = {
-        type: 'boolean',
-        value: true
-      };
       payload.params[CP_CAP_DIND_CONTAINER] = {
         type: 'boolean',
         value: true
@@ -2396,57 +2415,55 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
         });
       }
-    } else {
-      if (pipeline) {
-        const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
-        if (existedPipeline) {
-          this.addedParameters = {};
-          this.rebuildParameters = {
-            [PARAMETERS]: true,
-            [SYSTEM_PARAMETERS]: true
-          };
-          this.setState({
-            pipeline: existedPipeline,
-            version: pipeline.version,
-            pipelineConfiguration: pipeline.configuration,
-            fireCloudMethodName: null,
-            fireCloudMethodNamespace: null,
-            fireCloudMethodSnapshot: null,
-            fireCloudMethodConfiguration: null,
-            fireCloudMethodConfigurationSnapshot: null,
-            fireCloudInputs: {},
-            fireCloudOutputs: {},
-            fireCloudInputsErrors: {},
-            fireCloudOutputsErrors: {},
-            fireCloudDefaultInputs: [],
-            fireCloudDefaultOutputs: []
-          }, () => {
-            if (this.props.onSelectPipeline) {
-              this.props.onSelectPipeline({
-                pipeline: existedPipeline,
-                version: pipeline.version,
-                configuration: pipeline.configuration
-              }, () => {
-                this.prevParameters = this.props.form.getFieldsValue().parameters;
-                this.reset(true);
-                this.evaluateEstimatedPrice({});
-              });
-            }
-          });
-        }
-      } else {
+    } else if (pipeline) {
+      const [existedPipeline] = this.props.pipelines.filter(p => p.id === pipeline.id);
+      if (existedPipeline) {
+        this.addedParameters = {};
+        this.rebuildParameters = {
+          [PARAMETERS]: true,
+          [SYSTEM_PARAMETERS]: true
+        };
         this.setState({
-          pipeline: null,
-          version: null,
-          configuration: null
+          pipeline: existedPipeline,
+          version: pipeline.version,
+          pipelineConfiguration: pipeline.configuration,
+          fireCloudMethodName: null,
+          fireCloudMethodNamespace: null,
+          fireCloudMethodSnapshot: null,
+          fireCloudMethodConfiguration: null,
+          fireCloudMethodConfigurationSnapshot: null,
+          fireCloudInputs: {},
+          fireCloudOutputs: {},
+          fireCloudInputsErrors: {},
+          fireCloudOutputsErrors: {},
+          fireCloudDefaultInputs: [],
+          fireCloudDefaultOutputs: []
         }, () => {
           if (this.props.onSelectPipeline) {
-            this.props.onSelectPipeline(null, () => {
+            this.props.onSelectPipeline({
+              pipeline: existedPipeline,
+              version: pipeline.version,
+              configuration: pipeline.configuration
+            }, () => {
+              this.prevParameters = this.props.form.getFieldsValue().parameters;
               this.reset(true);
+              this.evaluateEstimatedPrice({});
             });
           }
         });
       }
+    } else {
+      this.setState({
+        pipeline: null,
+        version: null,
+        configuration: null
+      }, () => {
+        if (this.props.onSelectPipeline) {
+          this.props.onSelectPipeline(null, () => {
+            this.reset(true);
+          });
+        }
+      });
     }
     this.closePipelineBrowser();
     this.formFieldsChanged();
@@ -4510,11 +4527,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         }
         return null;
       };
-      const availableMounts = new Set((dataStorageAvailable.value || []).map(d => +d.id));
-      const defaultValue = (getDefaultValue() || '')
-        .split(',')
-        .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
-        .join(',') || null;
+      const defaultValue = correctLimitMountsParameterValue(
+        getDefaultValue() || '',
+        dataStorageAvailable.value || []
+      );
       let currentValue = this.props.form.getFieldValue(`${ADVANCED}.limitMounts`);
       if (currentValue === undefined) {
         currentValue = defaultValue;
@@ -5793,6 +5809,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           pipelineId={this.state.pipeline ? this.state.pipeline.id : undefined}
           version={this.state.version}
           pipelineConfiguration={this.state.pipelineConfiguration}
+          allowSelectLatestVersion={!!this.props.isDetachedConfiguration}
           fireCloudMethod={this.state.fireCloudMethodName}
           fireCloudNamespace={this.state.fireCloudMethodNamespace}
           fireCloudMethodSnapshot={this.state.fireCloudMethodSnapshot}

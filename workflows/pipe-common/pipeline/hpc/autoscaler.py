@@ -22,7 +22,7 @@ from datetime import timedelta
 import itertools
 import time
 
-from pipeline.hpc.engine.gridengine import GridEngineJobState, GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineJobState
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand
 from pipeline.hpc.utils import Clock
@@ -129,7 +129,7 @@ class GridEngineScaleUpHandler:
     _GE_POLL_TIMEOUT = 60
     _GE_POLL_ATTEMPTS = 6
 
-    def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, instance_disk,
+    def __init__(self, cmd_executor, api, grid_engine, launch_adapter, host_storage, parent_run_id, instance_disk,
                  instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
                  polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_launch_params=None, clock=Clock()):
@@ -141,6 +141,7 @@ class GridEngineScaleUpHandler:
         :param cmd_executor: Cmd executor.
         :param api: Cloud pipeline client.
         :param grid_engine: Grid engine client.
+        :param launch_adapter: Grid engine launch adapter.
         :param host_storage: Additional hosts storage.
         :param parent_run_id: Additional nodes parent run id.
         :param instance_disk: Additional nodes disk size.
@@ -159,6 +160,7 @@ class GridEngineScaleUpHandler:
         self.executor = cmd_executor
         self.api = api
         self.grid_engine = grid_engine
+        self.launch_adapter = launch_adapter
         self.host_storage = host_storage
         self.parent_run_id = parent_run_id
         self.instance_disk = instance_disk
@@ -219,7 +221,7 @@ class GridEngineScaleUpHandler:
                            '--cmd-template "%s" ' \
                            '--parent-id %s ' \
                            '--price-type %s ' \
-                           '--region-id %s ' \
+                           '--region-id %s -- ' \
                            'cluster_role worker ' \
                            'cluster_role_type additional ' \
                            '%s ' \
@@ -233,7 +235,7 @@ class GridEngineScaleUpHandler:
         return run_id
 
     def _parameters_str(self, instance_launch_params):
-        return ' '.join('{} {}'.format(key, value) for key, value in instance_launch_params.items())
+        return ' '.join("{} '{}'".format(key, value) for key, value in instance_launch_params.items())
 
     def _pipe_cli_price_type(self, price_type):
         """
@@ -293,8 +295,9 @@ class GridEngineScaleUpHandler:
             if run['initialized']:
                 Logger.info('Additional worker #%s has been marked as initialized.' % run_id)
                 Logger.info('Checking additional worker #%s grid engine initialization status...' % run_id)
-                run_sge_tasks = self.api.load_task(run_id, self.get_grid_engine_worker_task_name())
-                if any(run_sge_task.get('status') == 'SUCCESS' for run_sge_task in run_sge_tasks):
+                run_grid_engine_tasks = self.api.load_task(run_id, self.launch_adapter.get_worker_init_task_name())
+                if any(run_grid_engine_task.get('status') == 'SUCCESS'
+                       for run_grid_engine_task in run_grid_engine_tasks):
                     Logger.info('Additional worker #%s has been initialized.' % run_id)
                     return
             Logger.info('Additional worker #%s hasn\'t been initialized yet. Only %s attempts remain left.'
@@ -304,12 +307,6 @@ class GridEngineScaleUpHandler:
         error_msg = 'Additional worker #%s hasn\'t been initialized after %s seconds.' % (run_id, self.polling_timeout)
         Logger.warn(error_msg, crucial=True)
         raise ScalingError(error_msg)
-
-    def get_grid_engine_worker_task_name(self):
-        if self.grid_engine.get_engine_type() == GridEngineType.SLURM:
-            return 'SLURMWorkerSetup'
-        else:
-            return 'SGEWorkerSetup'
 
     def _enable_worker_in_grid_engine(self, pod):
         Logger.info('Enabling additional worker %s in grid engine...' % pod.name)

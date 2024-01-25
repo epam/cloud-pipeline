@@ -29,7 +29,10 @@ import java.util.Map;
 @Getter
 public class PipeConfValueVO {
 
-    public static final String DEFAULT_TYPE = "string";
+    public static final String INTEGER_TYPE = "int";
+    public static final String STRING_TYPE = "string";
+    public static final String BOOLEAN_TYPE = "boolean";
+    public static final String DEFAULT_TYPE = STRING_TYPE;
     public static final String DEFAULT_VALUE = "";
     public static final boolean DEFAULT_REQUIRED = false;
     protected static final  List<String> DEFAULT_AVAIL_VALUES = new ArrayList<>();

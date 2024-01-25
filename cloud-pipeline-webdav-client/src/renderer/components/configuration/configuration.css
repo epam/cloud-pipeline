@@ -1,0 +1,64 @@
+.configuration {
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  font-size: 10pt;
+}
+
+.configuration-body {
+  flex: 1;
+  overflow: auto;
+}
+
+.configuration-footer {
+  height: 28px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.configuration-footer > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+.configuration-row,
+.version-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  margin-right: 5px;
+  line-height: 26px;
+  min-height: 26px;
+}
+
+.configuration-row .property-title-container {
+  min-width: 100px;
+  margin-right: 5px;
+}
+
+.configuration-row .property-value-container {
+  flex: 1;
+}
+
+.configuration-row .property-value-container:not(:last-child) {
+  margin-right: 5px;
+}
+
+.divider {
+  margin: 10px 0;
+  height: 1px;
+  background-color: #ccc;
+}
+
+.version-row {
+  font-size: smaller;
+  color: #999;
+}
+
+.version-row .version {
+  margin-left: 5px;
+  font-weight: bold;
+}

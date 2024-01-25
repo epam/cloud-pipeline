@@ -178,7 +178,8 @@ export const LaunchClusterTooltip = {
     childNodeInstanceFamily: 'child node instance family',
     gpuScaling: 'gpu scaling',
     enableGridEngine: 'enable grid engine',
-    enableSlurm: 'enable slurm'
+    enableSlurm: 'enable slurm',
+    enableKube: 'enable kube'
   }
 };
 

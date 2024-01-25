@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -34,6 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,7 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -91,12 +94,31 @@ public class S3TemporaryCredentialsGenerator implements TemporaryCredentialsGene
                 .map(storage -> new ImmutablePair<>(storage, cloudRegionManager.getAwsRegion(storage)))
                 .collect(Collectors.toList());
 
+        final Optional<AwsRegion> customEndpoint = storagesWithRegions.stream()
+                .map(Pair::getRight)
+                .filter(region -> StringUtils.isNotBlank(region.getS3Endpoint()))
+                .findFirst();
+
+        if (customEndpoint.isPresent()) {
+            return localRegionCredentials(customEndpoint.get());
+        }
+
         final String role = buildRole(storagesWithRegions);
         final String profile = buildProfile(storagesWithRegions);
         final String policy = createPolicyWithPermissions(actions, buildKmsArns(storagesWithRegions));
         final String regionCode = buildRegion(storagesWithRegions);
 
         return AWSUtils.generate(duration, policy, role, profile, regionCode);
+    }
+
+    private TemporaryCredentials localRegionCredentials(final AwsRegion region) {
+        final AwsRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
+        Assert.notNull(credentials, "Missing local AWS region credentials");
+        return TemporaryCredentials.builder()
+                .keyId(credentials.getKeyId())
+                .accessKey(credentials.getAccessKey())
+                .region(region.getRegionCode())
+                .build();
     }
 
     @Override

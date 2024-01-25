@@ -11,6 +11,13 @@ spec:
       labels:
         cloud-pipeline/cp-api-srv: "true"
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                cloud-pipeline/cp-api-srv: "true"
+            topologyKey: kubernetes.io/hostname
       nodeSelector:
         cloud-pipeline/cp-api-srv: "true"
       tolerations:

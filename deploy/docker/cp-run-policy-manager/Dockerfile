@@ -22,8 +22,7 @@ RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/3.6/ge
 
 
 RUN mkdir /policy-manager
-ADD common-run-policy-template.yaml /policy-manager
-ADD sensitive-run-policy-template.yaml /policy-manager
+ADD templates /policy-manager/templates
 ADD policy_manager.py /policy-manager
 
 ADD init /policy-manager/init

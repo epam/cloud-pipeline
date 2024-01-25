@@ -66,7 +66,8 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     fireCloudMethodConfigurationSnapshot: PropTypes.string,
     visible: PropTypes.bool,
     onSelect: PropTypes.func,
-    onCancel: PropTypes.func
+    onCancel: PropTypes.func,
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   rootItems = [];
@@ -211,7 +212,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
               className={`pipelines-library-tree-node-${item.key}`}
               title={this.renderItemTitle(item)}
               key={item.key}
-              isLeaf={item.isLeaf}/>
+              isLeaf={item.isLeaf} />
           );
         } else {
           return (
@@ -477,6 +478,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             listingMode
             configurationSelectionMode
             readOnly
+            allowSelectLatestVersion={!!this.props.allowSelectLatestVersion}
           />
         );
       } else {

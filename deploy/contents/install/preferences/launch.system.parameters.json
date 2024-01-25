@@ -76,6 +76,13 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_KUBE_VERSION",
+        "type": "string",
+        "description": "Sets Kubernetes version to be installed: 1.15.4 and 1.28.2 are available",
+        "defaultValue": "1.15.4",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse",
@@ -263,9 +270,10 @@
     },
     {
         "name": "CP_CAP_DIND_VERSION",
-        "type": "boolean",
-        "description": "Allows to select docker version, used for DIND setup. Default: 18.09.6",
-        "defaultValue": "true"
+        "type": "string",
+        "description": "Allows to select docker version, used for DIND setup",
+        "defaultValue": "18.09.6",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
@@ -347,6 +355,20 @@
         "type": "string",
         "description": "If defined - will limit mounts for the run",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_OPTIONS_",
+        "type": "string",
+        "description": "Allows to set mount options for a storage",
+        "passToWorkers": true,
+        "prefix": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_PATH_",
+        "type": "string",
+        "description": "Allows to set mount path for a storage",
+        "passToWorkers": true,
+        "prefix": true
     },
     {
         "name": "CP_CAP_FORCE_MOUNTS",
@@ -596,6 +618,13 @@
         "type": "boolean",
         "defaultValue": "true",
         "description": "Changes default mail client if favor to pipe_mail script.",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_NETWORK_POLICY_TYPE",
+        "type": "string",
+        "description": "Specifies run network policy type. Allowed values are: common and internal.",
+        "defaultValue": "common",
         "passToWorkers": true
     }
 ]

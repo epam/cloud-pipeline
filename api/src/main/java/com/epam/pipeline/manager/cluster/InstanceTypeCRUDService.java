@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.cluster;
 import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
-import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -34,13 +33,13 @@ public class InstanceTypeCRUDService {
 
     private final InstanceOfferDao instanceOfferDao;
 
-    public Optional<InstanceType> find(final CloudProvider provider, final Long regionId, final String name) {
-        return find(provider, regionId).stream()
+    public Optional<InstanceType> find(final Long regionId, final String name) {
+        return find(regionId).stream()
                 .filter(type -> Objects.equals(name, type.getName()))
                 .findFirst();
     }
 
-    public List<InstanceType> find(final CloudProvider provider, final Long regionId) {
+    public List<InstanceType> find(final Long regionId) {
         final InstanceOfferRequestVO request = new InstanceOfferRequestVO();
         request.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
         request.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
@@ -48,7 +47,6 @@ public class InstanceTypeCRUDService {
         request.setUnit(CloudInstancePriceService.HOURS_UNIT);
         request.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
         request.setRegionId(regionId);
-        request.setCloudProvider(provider.name());
         return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceTypes(request));
     }
 }

@@ -122,7 +122,7 @@ export function validateDescription (value) {
   }
 }
 
-function renderStatusIcon (status) {
+function renderStatusIcon (status, record) {
   switch (status) {
     case NATRouteStatuses.ACTIVE:
       return (
@@ -181,7 +181,14 @@ function renderStatusIcon (status) {
       );
     case NATRouteStatuses.FAILED:
       return (
-        <Tooltip title={status}>
+        <Tooltip title={(
+          <p>
+            {status}
+            {record.lastErrorMessage ? (
+              <span><br />{record.lastErrorMessage}</span>
+            ) : null}
+          </p>
+        )}>
           <Icon
             className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
             type="exclamation-circle-o" />

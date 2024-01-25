@@ -50,6 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -70,6 +71,8 @@ public class PipelineConfigurationManager {
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
     public static final String WORKER_CLUSTER_ROLE = "worker";
     public static final String WORKER_CMD_TEMPLATE = "sleep infinity";
+    public static final String INHERITABLE_PARAMETER_NAMES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES";
+    public static final String INHERITABLE_PARAMETER_PREFIXES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_PREFIXES";
 
     @Autowired
     private PipelineVersionManager pipelineVersionManager;
@@ -94,6 +97,9 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private CloudRegionManager regionManager;
+
+    @Autowired
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
 
     public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
                                                                      final PipelineStart runVO) {
@@ -148,8 +154,7 @@ public class PipelineConfigurationManager {
     }
 
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
-        Map<String, PipeConfValueVO> params = runVO.getParams() == null
-                ? Collections.emptyMap() : runVO.getParams();
+        Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
 
         configuration.setMainFile(defaultConfig.getMainFile());
@@ -164,6 +169,8 @@ public class PipelineConfigurationManager {
                 .stream()
                 .filter(entry -> entry.getValue().isRequired() || !StringUtils.isEmpty(entry.getValue().getValue()))
                 .forEach(entry -> runParameters.put(entry.getKey(), entry.getValue()));
+
+        runParameters.putAll(launchCapabilitiesProcessor.process(runParameters));
 
         //fill in default values, only if user's value wasn't provided
         if (defaultConfig.getParameters() != null) {
@@ -327,12 +334,17 @@ public class PipelineConfigurationManager {
                 SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
         ListUtils.emptyIfNull(systemParameters)
                 .stream()
-                .filter(param -> param.isPassToWorkers() &&
-                        configParameters.containsKey(param.getName()))
+                .filter(DefaultSystemParameter::isPassToWorkers)
                 .forEach(param -> {
-                    final String paramName = param.getName();
-                    updatedParams.put(paramName, configParameters.get(paramName));
+                    if (param.isPrefix()) {
+                        processPrefixParam(param.getName(), configParameters, updatedParams);
+                    } else {
+                        processInheritedParam(param.getName(), configParameters, updatedParams);
+                    }
                 });
+
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_NAMES, configParameters, updatedParams, false);
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_PREFIXES, configParameters, updatedParams, true);
 
         updatedParams.put(PipelineRun.PARENT_ID_PARAM, new PipeConfValueVO(parentId));
         if (isNFS) {
@@ -527,5 +539,40 @@ public class PipelineConfigurationManager {
 
     private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
         return StringUtils.isEmpty(configuration.getRunAs()) ? runVO.getRunAs() : configuration.getRunAs();
+    }
+
+    private static void processExplicitlyInheritedParams(final String paramName,
+                                                         final Map<String, PipeConfValueVO> configParameters,
+                                                         final Map<String, PipeConfValueVO> updatedParams,
+                                                         final boolean prefix) {
+        final PipeConfValueVO inheritableParameters = configParameters.get(paramName);
+        if (inheritableParameters != null && StringUtils.hasText(inheritableParameters.getValue())) {
+            Arrays.stream(StringUtils.commaDelimitedListToStringArray(inheritableParameters.getValue()))
+                    .forEach(param -> {
+                        if (prefix) {
+                            processPrefixParam(param, configParameters, updatedParams);
+                        } else {
+                            processInheritedParam(param, configParameters, updatedParams);
+                        }
+                    });
+        }
+    }
+
+    private static void processInheritedParam(final String paramName,
+                                              final Map<String, PipeConfValueVO> configParameters,
+                                              final Map<String, PipeConfValueVO> updatedParams) {
+        if (configParameters.containsKey(paramName)) {
+            updatedParams.put(paramName, configParameters.get(paramName));
+        }
+    }
+
+    private static void processPrefixParam(final String paramName,
+                                           final Map<String, PipeConfValueVO> configParameters,
+                                           final Map<String, PipeConfValueVO> updatedParams) {
+        configParameters.forEach((name, value) -> {
+            if (name.startsWith(paramName)) {
+                updatedParams.put(name, value);
+            }
+        });
     }
 }

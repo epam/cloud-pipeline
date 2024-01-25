@@ -483,6 +483,10 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         private void createNodeForRun(List<CompletableFuture<Void>> tasks, String runId,
                                       InstanceRequest requiredInstance) {
+            if (!cloudFacade.instanceScalingSupported(requiredInstance.getInstance().getCloudRegionId())) {
+                log.debug("Node scaling is not supported for region requested run {}", runId);
+                return;
+            }
             long longId = Long.parseLong(runId);
             addNodeUpTask(longId);
             tasks.add(CompletableFuture.runAsync(() -> {

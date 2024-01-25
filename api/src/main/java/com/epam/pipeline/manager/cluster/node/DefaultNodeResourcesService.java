@@ -74,7 +74,7 @@ public class DefaultNodeResourcesService implements NodeResourcesService {
     }
 
     private Optional<InstanceType> findInstanceType(final RunInstance instance) {
-        return instanceTypeCRUDService.find(instance.getCloudProvider(), instance.getCloudRegionId(),
+        return instanceTypeCRUDService.find(instance.getCloudRegionId(),
                 instance.getNodeType());
     }
 
