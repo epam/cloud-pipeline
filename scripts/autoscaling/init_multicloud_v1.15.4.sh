@@ -494,6 +494,14 @@ if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] 
   IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
   for _DOCKER in "${DOCKERS[@]}"; do
     _REGISTRY="${_DOCKER%%/*}"
+    IFS=':' read -r -a _rh <<< "$_REGISTRY"
+    for i in $(seq 1 10); do 
+        nc -w 1 -z ${_rh[0]} ${_rh[1]}
+        _r=$?
+        [ $_r -eq 0 ] && break
+        sleep 3
+    done
+    [ $_r -ne 0 ] && echo "Cannot reach $_REGISTRY" && continue
     docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
     docker pull "$_DOCKER"
   done
