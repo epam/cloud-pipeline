@@ -188,6 +188,21 @@ local function get_basic_token()
     return pass
 end
 
+local function is_allowed_connect_host(host, host_whitelist)
+    if is_empty(host) then
+        return false
+    end
+    if is_empty(host_whitelist) then
+        return false
+    end
+    for host_whitelist_suffix in host_whitelist.gmatch(host_whitelist, '([^,]+)') do
+        if host:sub(-#host_whitelist_suffix) == host_whitelist_suffix then
+            return true
+        end
+    end
+    return false
+end
+
 local token = get_basic_token()
 
 if is_empty(token) then
@@ -222,6 +237,10 @@ if not jwt_obj["verified"] then
     ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
 
-check_run_permissions(username, token)
+local connect_host = ngx.var.connect_host
+local connect_host_whitelist = os.getenv("CP_EDGE_CONNECT_PROXY_AUTHENTICATION_WHITELIST")
+if not is_allowed_connect_host(connect_host, connect_host_whitelist) then
+    check_run_permissions(username, token)
+end
 
 ngx.log(ngx.WARN,"[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username .. "; Status: Successfully authenticated.")
