@@ -19,6 +19,9 @@ package com.epam.pipeline.manager.execution;
 import com.epam.pipeline.entity.cluster.DockerMount;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
@@ -26,10 +29,12 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.container.ContainerMemoryResourceService;
 import com.epam.pipeline.manager.cluster.container.ContainerResources;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.EmptyDirVolumeSource;
 import io.fabric8.kubernetes.api.model.EnvVar;
@@ -86,17 +91,20 @@ public class PipelineExecutor {
     private static final String DEFAULT_KUBE_SERVICE_ACCOUNT = "default";
 
     private final PreferenceManager preferenceManager;
+    private final ContextualPreferenceManager contextualPreferenceManager;
     private final String kubeNamespace;
     private final AuthManager authManager;
     private final KubernetesManager kubernetesManager;
     private final Map<ContainerMemoryResourcePolicy, ContainerMemoryResourceService> memoryRequestServices;
 
     public PipelineExecutor(final PreferenceManager preferenceManager,
+                            ContextualPreferenceManager contextualPreferenceManager,
                             final AuthManager authManager,
                             final List<ContainerMemoryResourceService> memoryRequestServices,
                             @Value("${kube.namespace}") final String kubeNamespace,
                             final KubernetesManager kubernetesManager) {
         this.preferenceManager = preferenceManager;
+        this.contextualPreferenceManager = contextualPreferenceManager;
         this.kubeNamespace = kubeNamespace;
         this.authManager = authManager;
         this.memoryRequestServices = CommonUtils.groupByKey(memoryRequestServices,
@@ -220,8 +228,8 @@ public class PipelineExecutor {
         final boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
         spec.setServiceAccountName(kubeServiceAccount);
-
-        spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+        final List<DockerMount> commonMounts = getMountPreference(run);
+        spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
 
         Optional.of(PodSpecMapperHelper.buildTolerations(nodeTolerances))
                 .filter(CollectionUtils::isNotEmpty)
@@ -233,8 +241,21 @@ public class PipelineExecutor {
 
         spec.setContainers(Collections.singletonList(getContainer(run,
                 envVars, dockerImage, command, imagePullPolicy,
-                isDockerInDockerEnabled, isSystemdEnabled, isParentPod, template)));
+                isDockerInDockerEnabled, isSystemdEnabled, isParentPod, template, commonMounts)));
         return spec;
+    }
+
+    private List<DockerMount> getMountPreference(final PipelineRun run) {
+        if (run.getInstance() == null || run.getInstance().getCloudRegionId() == null) {
+            return Collections.emptyList();
+        }
+        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
+                ContextualPreferenceLevel.REGION,
+                run.getInstance().getCloudRegionId().toString());
+
+        final ContextualPreference preference = contextualPreferenceManager.search(
+                Collections.singletonList(SystemPreferences.LAUNCH_COMMON_MOUNTS.getKey()), resource);
+        return ContextualPreferenceManager.parse(preference, new TypeReference<List<DockerMount>>() {});
     }
 
     private void configurePodDns(final PipelineRun run, final PodSpec spec) {
@@ -253,14 +274,16 @@ public class PipelineExecutor {
     }
 
 
-    private Container getContainer(PipelineRun run,
-                                   List<EnvVar> envVars,
-                                   String dockerImage,
-                                   String command,
-                                   ImagePullPolicy imagePullPolicy,
-                                   boolean isDockerInDockerEnabled,
-                                   boolean isSystemdEnabled, boolean isParentPod,
-                                   OSSpecificLaunchCommandTemplate template) {
+    private Container getContainer(final PipelineRun run,
+                                   final List<EnvVar> envVars,
+                                   final String dockerImage,
+                                   final String command,
+                                   final ImagePullPolicy imagePullPolicy,
+                                   final boolean isDockerInDockerEnabled,
+                                   final boolean isSystemdEnabled,
+                                   final boolean isParentPod,
+                                   final OSSpecificLaunchCommandTemplate template,
+                                   final List<DockerMount> commonMounts) {
         Container container = new Container();
         container.setName("pipeline");
         SecurityContext securityContext = new SecurityContext();
@@ -277,10 +300,10 @@ public class PipelineExecutor {
             mergedArgs.add(command);
             container.setArgs(mergedArgs);
         }
-        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
         container.setTerminationMessagePath("/dev/termination-log");
         container.setImagePullPolicy(imagePullPolicy.getName());
-        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled));
+        container.setVolumeMounts(getMounts(isDockerInDockerEnabled, isSystemdEnabled, commonMounts));
         if (isParentPod) {
             buildContainerResources(run, envVars, container);
         }
@@ -348,7 +371,9 @@ public class PipelineExecutor {
                 .collect(Collectors.joining(","));
     }
 
-    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
+    private List<Volume> getVolumes(final boolean isDockerInDockerEnabled,
+                                    final boolean isSystemdEnabled,
+                                    final List<DockerMount> commonMounts) {
         final List<Volume> volumes = new ArrayList<>();
         volumes.add(createVolume(REF_DATA_MOUNT, "/ebs/reference"));
         volumes.add(createVolume(RUNS_DATA_MOUNT, "/ebs/runs"));
@@ -359,8 +384,6 @@ public class PipelineExecutor {
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
-        final List<DockerMount> commonMounts = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_COMMON_MOUNTS);
         if (CollectionUtils.isNotEmpty(commonMounts)) {
             commonMounts.forEach(mount -> volumes.add(createVolume(mount.getName(), mount.getHostPath())));
         }
@@ -370,7 +393,9 @@ public class PipelineExecutor {
         return volumes;
     }
 
-    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled, final boolean isSystemdEnabled) {
+    private List<VolumeMount> getMounts(final boolean isDockerInDockerEnabled,
+                                        final boolean isSystemdEnabled,
+                                        final List<DockerMount> commonMounts) {
         final List<VolumeMount> mounts = new ArrayList<>();
         mounts.add(getVolumeMount(REF_DATA_MOUNT, "/common"));
         mounts.add(getVolumeMount(RUNS_DATA_MOUNT, "/runs"));
@@ -381,8 +406,6 @@ public class PipelineExecutor {
                 CollectionUtils.isNotEmpty(dockerMounts)) {
             dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
         }
-        final List<DockerMount> commonMounts = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_COMMON_MOUNTS);
         if (CollectionUtils.isNotEmpty(commonMounts)) {
             commonMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
         }
