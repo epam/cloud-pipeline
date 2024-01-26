@@ -47,7 +47,7 @@ function OOMCheck (
     : [];
   const storages = (dataStorages || [])
     .filter(storage => !storage.mountDisabled)
-    .filter(storage => (allNonSensitive && !storage.sensitive) ||
+    .filter(storage => (allNonSensitive && !storage.sensitive && !storage.sourceStorageId) ||
       storageMatchesIdentifiers(storage, ids))
     .filter(storage => !/^nfs$/i.test(storage.type))
     .length;
