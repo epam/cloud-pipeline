@@ -45,7 +45,7 @@ function OOMCheck (
     ? limitMounts.split(',')
     : [];
   const storages = (dataStorages || [])
-    .filter(storage => (allNonSensitive && !storage.sensitive) ||
+    .filter(storage => (allNonSensitive && !storage.sensitive && !storage.sourceStorageId) ||
       storageMatchesIdentifiers(storage, ids))
     .filter(storage => !/^nfs$/i.test(storage.type))
     .length;
