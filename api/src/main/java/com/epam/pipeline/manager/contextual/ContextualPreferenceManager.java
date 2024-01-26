@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.contextual;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -34,8 +35,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -164,6 +168,14 @@ public class ContextualPreferenceManager {
         return contextualPreferenceHandler.search(preferences, resources())
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, "no resource")));
+    }
+
+    public static <T> T parse(final ContextualPreference preference,
+                              final TypeReference<T> type) {
+        if (preference == null || StringUtils.isBlank(preference.getValue())) {
+            return null;
+        }
+        return JsonMapper.parseData(preference.getValue(), type);
     }
 
     private void validateNames(final List<String> names) {
