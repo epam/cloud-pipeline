@@ -63,8 +63,8 @@ public class ContextualPreferenceConfiguration {
     public ToolContextualPreferenceHandler toolContextualPreferenceHandler(
             final ToolDao toolDao,
             final ContextualPreferenceDao contextualPreferenceDao,
-            final SystemPreferenceHandler systemPreferenceHandler) {
-        return new ToolContextualPreferenceHandler(toolDao, contextualPreferenceDao, systemPreferenceHandler);
+            final RegionContextualPreferenceHandler regionPreferenceHandler) {
+        return new ToolContextualPreferenceHandler(toolDao, contextualPreferenceDao, regionPreferenceHandler);
     }
 
     @Bean
