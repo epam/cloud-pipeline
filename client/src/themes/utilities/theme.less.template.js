@@ -486,7 +486,8 @@ export default `
 }
 @THEME .ant-form-item-control.has-error .ant-select-selection,
 @THEME .ant-form-item-control.has-error .ant-input,
-@THEME .ant-form-item-control.has-error .CodeMirror-wrap {
+@THEME .ant-form-item-control.has-error .CodeMirror-wrap,
+@THEME .has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
 @THEME .cp-text-not-important {

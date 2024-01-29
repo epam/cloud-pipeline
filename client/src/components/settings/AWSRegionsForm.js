@@ -57,6 +57,11 @@ import highlightText from '../special/highlightText';
 import styles from './AWSRegionsForm.css';
 import RunShiftPolicy, {runShiftPoliciesEqual} from './cloud-regions/run-shift-policy';
 import RegionIdSelector from './region-id-selector';
+import CloudRegionContextualSetting, {
+  fetchContextualSettingValue,
+  updateContextualSettingValue,
+  launchCommonMountsSetting
+} from './cloud-regions/contextual-setting';
 
 const AWS_REGION_ITEM_TYPE = 'CLOUD_REGION';
 
@@ -332,7 +337,7 @@ export default class AWSRegionsForm extends React.Component {
     this.awsRegionForm = form;
   };
 
-  onSaveRegion = async (region) => {
+  onSaveRegion = async (region, settings = []) => {
     const fileShareMounts = region.fileShareMounts;
     region.fileShareMounts = undefined;
     region.customInstanceTypes = fromJSON(region.customInstanceTypes, []);
@@ -348,11 +353,23 @@ export default class AWSRegionsForm extends React.Component {
         this.currentRegion.fileShareMounts,
         fileShareMounts
       );
+      await this.saveContextualSettings(this.state.currentRegionId, settings);
       hide();
       await this.props.awsRegions.fetch();
       if (this.awsRegionForm) {
         this.awsRegionForm.rebuild();
       }
+    }
+  };
+
+  saveContextualSettings = async (regionId, settings) => {
+    if (settings.length > 0) {
+      await Promise.all(settings.map((setting) => updateContextualSettingValue(
+        setting.setting,
+        setting.value,
+        setting.type || 'STRING',
+        regionId
+      )));
     }
   };
 
@@ -442,7 +459,7 @@ export default class AWSRegionsForm extends React.Component {
     }
   };
 
-  onCreateRegion = async (region) => {
+  onCreateRegion = async (region, settings = []) => {
     region.id = undefined;
     region.provider = this.state.newRegion;
     const fileShareMounts = region.fileShareMounts;
@@ -461,6 +478,7 @@ export default class AWSRegionsForm extends React.Component {
         await this.awsRegionForm.submitPermissions(id);
       }
       await this.updateMounts(id, [], fileShareMounts);
+      await this.saveContextualSettings(id, settings);
       hide();
       await this.props.awsRegions.fetch();
       this.props.availableCloudRegions.invalidateCache(provider);
@@ -701,10 +719,15 @@ class AWSRegionForm extends React.Component {
     pending: PropTypes.bool
   };
 
+  contextualSettingsFetchToken = {};
+
   state = {
     findUserVisible: false,
     findGroupVisible: false,
-    groupSearchString: null
+    groupSearchString: null,
+    contextualSettingInitialValue: {},
+    contextualSettingValue: {},
+    contextualSettingValid: {}
   };
 
   cloudRegionFileShareMountsComponent;
@@ -832,7 +855,15 @@ class AWSRegionForm extends React.Component {
     ]
   };
 
+  cloudRegionContextualSettings = {
+    AWS: [launchCommonMountsSetting],
+    GCP: [launchCommonMountsSetting],
+    AZURE: [launchCommonMountsSetting],
+    LOCAL: [launchCommonMountsSetting]
+  };
+
   @observable _modified = false;
+  @observable _contextualSettingValid = true;
 
   @observable permissions = null;
 
@@ -924,6 +955,18 @@ class AWSRegionForm extends React.Component {
     return false;
   };
 
+  getProviderContextualSettingConfiguration = (setting) => {
+    if (this.provider) {
+      const settings = this.cloudRegionContextualSettings[this.provider] || [];
+      return settings.find((s) => s.setting === setting);
+    }
+    return undefined;
+  };
+
+  providerSupportsContextualSetting = (setting) => {
+    return !!this.getProviderContextualSettingConfiguration(setting);
+  };
+
   onFormFieldChanged = () => {
     if (!this.props.region || !this.props.form) {
       this._modified = false;
@@ -981,7 +1024,32 @@ class AWSRegionForm extends React.Component {
       this.props.region.runShiftPolicy,
       this.props.form.getFieldValue('runShiftPolicy')
     );
-    this._modified = check('regionId', checkStringValue) ||
+    const isContextualSettingChanged = (setting) => {
+      if (this.provider && this.providerSupportsContextualSetting(setting)) {
+        const {contextualSettingInitialValue, contextualSettingValue} = this.state;
+        const initial = contextualSettingInitialValue
+          ? contextualSettingInitialValue[setting]
+          : undefined;
+        const current = contextualSettingValue
+          ? contextualSettingValue[setting]
+          : undefined;
+        return (initial || '') !== (current || '');
+      }
+      return false;
+    };
+    const contextualSettingsChanged = () => {
+      if (this.provider) {
+        const allSettings = this.cloudRegionContextualSettings[this.provider] || [];
+        for (let i = 0; i < allSettings.length; i += 1) {
+          if (isContextualSettingChanged(allSettings[i].setting)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+    this._modified = contextualSettingsChanged() ||
+      check('regionId', checkStringValue) ||
       check('name', checkStringValue) ||
       check('globalDistributionUrl', checkStringValue) ||
       check('default', checkBOOLValue) ||
@@ -1032,6 +1100,11 @@ class AWSRegionForm extends React.Component {
   @computed
   get modified () {
     return this._modified || this.permissionsModified;
+  }
+
+  @computed
+  get contextualSettingsValid () {
+    return this._contextualSettingValid;
   }
 
   isRemovingPermission = (sid) => {
@@ -1142,6 +1215,9 @@ class AWSRegionForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
+    if (!this._contextualSettingValid) {
+      return;
+    }
     this.props.form.validateFieldsAndScroll(async (err, values) => {
       if (/^azure$/i.test(this.provider) && !values.priceOfferId && !values.enterpriseAgreements) {
         message.error('Price Offer ID or Enterprise Agreement must be specified', 5);
@@ -1154,10 +1230,33 @@ class AWSRegionForm extends React.Component {
         values.storageLifecycleServiceProperties = buildSLSProperties(
           values.storageLifecycleServiceProperties
         );
+        const {
+          contextualSettingValue,
+          contextualSettingInitialValue
+        } = this.state;
+        const settings = [...new Set([
+          ...Object.keys(contextualSettingValue),
+          ...Object.keys(contextualSettingInitialValue)
+        ])];
+        const contextualSettings = settings
+          .map((setting) => {
+            const config = this.getProviderContextualSettingConfiguration(setting);
+            return {
+              setting,
+              value: contextualSettingValue
+                ? contextualSettingValue[setting]
+                : undefined,
+              initial: contextualSettingInitialValue
+                ? contextualSettingInitialValue[setting]
+                : undefined,
+              type: config ? config.type : undefined
+            };
+          })
+          .filter((o) => (o.value || '') !== (o.initial || ''));
         if (this.props.isNew) {
-          this.props.onCreate && await this.props.onCreate(values);
+          this.props.onCreate && await this.props.onCreate(values, contextualSettings);
         } else {
-          this.props.onSubmit && await this.props.onSubmit(values);
+          this.props.onSubmit && await this.props.onSubmit(values, contextualSettings);
           await this.submitPermissions();
         }
       }
@@ -1504,6 +1603,48 @@ class AWSRegionForm extends React.Component {
     );
   };
 
+  onContextualSettingsChanged = () => {
+    const {
+      contextualSettingValid
+    } = this.state;
+    this._contextualSettingValid = !Object.values(contextualSettingValid || {}).some((v) => !v);
+    this.onFormFieldChanged();
+  };
+
+  onChangeContextualSetting = (setting, value, valid) => {
+    const {contextualSettingValue, contextualSettingValid} = this.state;
+    this.setState({
+      contextualSettingValue: {
+        ...(contextualSettingValue || {}),
+        [setting]: value
+      },
+      contextualSettingValid: {
+        ...(contextualSettingValid || {}),
+        [setting]: valid
+      }
+    }, this.onContextualSettingsChanged);
+  };
+
+  renderContextualSetting = (setting) => {
+    const config = this.getProviderContextualSettingConfiguration(setting);
+    if (config) {
+      const {contextualSettingValue} = this.state;
+      return (
+        <CloudRegionContextualSetting
+          disabled={this.props.pending}
+          regionId={this.props.region.id}
+          setting={setting}
+          value={contextualSettingValue ? (contextualSettingValue[setting] || '') : ''}
+          onChange={this.onChangeContextualSetting}
+          title={config.title ? `${config.title}:` : `${setting}:`}
+          type={config.type}
+          {...this.formItemLayout}
+        />
+      );
+    }
+    return null;
+  };
+
   render () {
     if (!this.props.region) {
       return null;
@@ -1513,6 +1654,12 @@ class AWSRegionForm extends React.Component {
       if (this.permissionsModified) {
         this.revertPermissions();
       }
+      this.setState({
+        contextualSettingValue: {
+          ...this.state.contextualSettingInitialValue
+        },
+        contextualSettingValid: {}
+      });
       resetFields();
     };
     const onCancel = () => {
@@ -1695,6 +1842,9 @@ class AWSRegionForm extends React.Component {
                 )}
               </Form.Item>
             </AWSRegionForm.Section>
+            {
+              this.renderContextualSetting(launchCommonMountsSetting.setting)
+            }
             <AWSRegionForm.Section
               title="DNS hosted zone:"
               layout={this.formItemLayout}
@@ -2195,7 +2345,7 @@ class AWSRegionForm extends React.Component {
               onClick={onCancel}>Cancel</Button>
             <Button
               id="edit-region-form-create-button"
-              disabled={!this.modified}
+              disabled={!this.modified || !this.contextualSettingsValid}
               type="primary"
               size="small"
               onClick={this.handleSubmit}>Create</Button>
@@ -2233,7 +2383,7 @@ class AWSRegionForm extends React.Component {
               onClick={() => revertForm()}>Revert</Button>
             <Button
               id="edit-region-form-ok-button"
-              disabled={!this.modified}
+              disabled={!this.modified || !this.contextualSettingsValid}
               type="primary"
               size="small"
               onClick={this.handleSubmit}>Save</Button>
@@ -2259,6 +2409,53 @@ class AWSRegionForm extends React.Component {
     }
   }
 
+  rebuildContextualSettings = async () => {
+    this.contextualSettingsFetchToken = {};
+    const token = this.contextualSettingsFetchToken;
+    const commitChanges = (state) => {
+      if (token === this.contextualSettingsFetchToken) {
+        this.setState(state, this.onContextualSettingsChanged);
+      }
+    };
+    const {provider} = this;
+    const {region} = this.props;
+    if (provider && region) {
+      const settings = this.cloudRegionContextualSettings[provider] || [];
+      if (region.isNew) {
+        commitChanges({
+          contextualSettingInitialValue: {},
+          contextualSettingValue: {},
+          contextualSettingValid: {}
+        });
+      } else {
+        const fetchSettingValue = (setting) => fetchContextualSettingValue(
+          setting.setting,
+          region.id
+        );
+        const settingsValues = await Promise.all(settings.map(fetchSettingValue));
+        const value = settings.reduce((result, setting, idx) => ({
+          ...result,
+          [setting.setting]: settingsValues[idx]
+        }), {});
+        commitChanges({
+          contextualSettingInitialValue: {
+            ...value
+          },
+          contextualSettingValue: {
+            ...value
+          },
+          contextualSettingValid: {}
+        });
+      }
+    } else {
+      commitChanges({
+        contextualSettingInitialValue: {},
+        contextualSettingValue: {},
+        contextualSettingValid: {}
+      });
+    }
+  };
+
   rebuild = () => {
     this.props.form.resetFields();
     if (this.corsRulesEditor) {
@@ -2272,6 +2469,7 @@ class AWSRegionForm extends React.Component {
     }
     this.onFormFieldChanged();
     this.fetchPermissions();
+    this.rebuildContextualSettings();
   };
 
   componentDidMount () {
