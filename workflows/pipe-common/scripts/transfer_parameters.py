@@ -608,7 +608,10 @@ class InputDataTask:
             for root, d_names, f_names in os.walk(source):
                 for f in f_names:
                     path = os.path.join(root, f)
-                    files.append(File(os.path.relpath(path, start=source), os.path.getsize(path)))
+                    if os.path.exists(path):
+                        files.append(File(os.path.relpath(path, start=source), os.path.getsize(path)))
+                    else:
+                        Logger.warn('File {} does not exist or a broken symlink'.format(path), self.task_name)
         return sorted(files, key=lambda x: x.size, reverse=True)
 
     def get_path_without_folder(self, source, path):
