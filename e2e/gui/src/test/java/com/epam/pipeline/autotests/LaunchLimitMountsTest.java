@@ -268,6 +268,7 @@ public class LaunchLimitMountsTest
                 .searchStorage(storage1)
                 .selectStorage(storage1)
                 .ok()
+                .setCommand("sleep infinity")
                 .clickAddSystemParameter()
                 .selectSystemParameters("CP_S3_FUSE_TYPE")
                 .ok()

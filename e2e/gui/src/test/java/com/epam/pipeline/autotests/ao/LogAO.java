@@ -397,9 +397,9 @@ public class LogAO implements AccessObject<LogAO> {
         if (!get(PARAMETERS).exists()) {
             return this;
         }
-        $(byXpath(format(
+        ensure(byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
-                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+                        "and contains(.//text(), '%s')]]", name)), not(Condition.exist));
         return this;
     }
 
@@ -460,6 +460,7 @@ public class LogAO implements AccessObject<LogAO> {
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
                 ".//td[contains(., '%s')]]", name, value));
     }
+
 
     public LogAO checkMountLimitsParameter(String...storages) {
         Arrays.stream(storages)
