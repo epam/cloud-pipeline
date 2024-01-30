@@ -111,6 +111,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         }
     };
 
+
     /**
      * Checks if tree item is selected.
      */
@@ -283,6 +284,11 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
                 .find(byCssSelector(".ant-tree-switcher.ant-tree-switcher_open")).shouldBe(visible).click();
         return this;
     }
+
+    public PipelinesLibraryAO waitUntilPipelineVersionsOpened (String item) {
+        $(treeItem(item)).find(".ant-tree-child-tree").has(cssClass("ant-tree-child-tree-open"));
+        return this;
+    };
 
     public PipelinesLibraryAO scrollToItem(String item) {
         $(treeItem(item)).scrollIntoView(true);

@@ -247,6 +247,7 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
             .click(parentItem)
             .click(childItem)
             .click(pipelineItem)
+            .waitUntilPipelineVersionsOpened(pipeline)
             .ensure(pipelineItem, expandedItem, selectedItem, backgroundColorNotBlackOrWhite)
             .click(switcherOf(pipelineItem))
             .ensure(pipelineItem, collapsedItem, selectedItem, backgroundColorNotBlackOrWhite)
