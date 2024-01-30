@@ -284,6 +284,11 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         return this;
     }
 
+    public PipelinesLibraryAO scrollToItem(String item) {
+        $(treeItem(item)).scrollIntoView(true);
+        return this;
+    }
+
     public PipelinesLibraryAO removeFolder(String folderName) {
         cd(folderName)
                 .resetMouse()

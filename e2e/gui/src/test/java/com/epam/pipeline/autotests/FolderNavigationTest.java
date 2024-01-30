@@ -243,6 +243,7 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     @TestCase("EPMCMBIBPC-394")
     public void collapsePipelineTest() {
         pipelinesLibrary()
+            .scrollToItem(parentFolder)
             .click(parentItem)
             .click(childItem)
             .click(pipelineItem)
