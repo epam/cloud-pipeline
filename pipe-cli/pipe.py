@@ -801,7 +801,9 @@ def view_cluster_for_node(node_name):
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
-@click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
+@click.option('-t', '--timeout', type=int,
+              help='Specifies run timeout in minutes. '
+                   'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
