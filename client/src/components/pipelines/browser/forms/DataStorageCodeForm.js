@@ -37,6 +37,7 @@ import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateD
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import SampleSheet, {utilities} from '../../../special/sample-sheet';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
+import {base64toString} from '../../../../utils/base64';
 
 function validateJSON (content) {
   if (!content) {
@@ -147,7 +148,7 @@ export default class DataStorageCodeForm extends React.Component {
       !this._modifiedCode
     ) {
       this._originalCode = this._fileContents.value.content
-        ? atob(this._fileContents.value.content)
+        ? base64toString(this._fileContents.value.content)
         : '';
       this.validateAndCorrectFile(this._originalCode);
     }

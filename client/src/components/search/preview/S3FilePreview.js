@@ -34,6 +34,7 @@ import Markdown from '../../special/markdown';
 import VSIPreview from './vsi-preview';
 import HCSPreview from './hcs-preview';
 import auditStorageAccessManager from '../../../utils/audit-storage-access';
+import {base64toString} from '../../../utils/base64';
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -99,7 +100,7 @@ export default class S3FilePreview extends React.Component {
         return null;
       }
       const preview = this.props.preview.value.content
-        ? atob(this.props.preview.value.content)
+        ? base64toString(this.props.preview.value.content)
         : '';
       const truncated = this.props.preview.value.truncated;
       const noContent = !preview;

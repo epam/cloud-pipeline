@@ -41,6 +41,7 @@ import Markdown from '../../../special/markdown';
 import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDialog';
 import roleModel from '../../../../utils/roleModel';
 import download from '../utilities/download-pipeline-file';
+import {base64toString} from '../../../../utils/base64';
 import * as styles from './PipelineDocuments.css';
 
 function correctFolderPath (folder) {
@@ -252,7 +253,7 @@ export default class PipelineDocuments extends Component {
             if (request.error) {
               throw new Error(request.error);
             }
-            state.defaultFileContent = atob(request.response);
+            state.defaultFileContent = base64toString(request.response);
             state.defaultFileModifiedContent = state.defaultFileContent;
           }
         } catch (error) {
