@@ -26,6 +26,7 @@ import styles from './metadata-sample-sheet-value.css';
 import SampleSheetEditDialog from '../edit-dialog';
 import {buildEmptySampleSheet} from '../utilities';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
+import {base64toString} from '../../../../utils/base64';
 
 function fetchSampleSheetContents (options = {}) {
   return new Promise(async (resolve, reject) => {
@@ -53,7 +54,7 @@ function fetchSampleSheetContents (options = {}) {
           if (!content) {
             throw new Error(request.error || 'Error fetching file content');
           }
-          resolve(atob(content));
+          resolve(base64toString(content));
           return;
         }
       }

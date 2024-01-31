@@ -66,6 +66,7 @@ import WdlDocumentProperties from './forms/form-items/wdl-document-properties';
 import {clearQuotes} from './forms/utilities/string-utilities';
 import buildWdlContentsResolver from './utilities/wdl-contents-resolver';
 import getPipelineFilePath from './utilities/get-pipeline-file-path';
+import {base64toString} from '../../../../../utils/base64';
 
 const graphFitContentOpts = {
   padding: 24,
@@ -1172,7 +1173,7 @@ export default class WdlGraph extends Graph {
         if (request.error) {
           throw new Error(request.error);
         }
-        state.script = atob(request.response);
+        state.script = base64toString(request.response);
         state.uri = mainFilePath;
       } catch (error) {
         state.loadError = error.message;

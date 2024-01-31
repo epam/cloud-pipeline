@@ -42,6 +42,7 @@ import roleModel from '../../../../utils/roleModel';
 import escapeRegExp from '../../../../utils/escape-reg-exp';
 import Panel from '../../../special/panel';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
+import {base64toString} from '../../../../utils/base64';
 
 const {SA, SAM, $} = window;
 
@@ -94,7 +95,7 @@ function readStorageFileJson (storage, path) {
           } = request.value;
           if (content) {
             try {
-              resolve(JSON.parse(atob(content)));
+              resolve(JSON.parse(base64toString(content)));
             } catch (e) {
               // eslint-disable-next-line
               throw new Error(`Error reading content for path ${path} (storage #${storage}): ${e.message}`);
