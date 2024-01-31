@@ -36,6 +36,7 @@ import styles from './DataStorageCodeForm.css';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import auditStorageAccessManager from '../../../../utils/audit-storage-access';
+import {base64toString} from '../../../../utils/base64';
 
 @inject(({routing}, params) => ({
   routing
@@ -114,7 +115,7 @@ export default class DataStorageCodeForm extends React.Component {
       !this._originalCode
     ) {
       this._originalCode = this._fileContents.value.content
-        ? atob(this._fileContents.value.content)
+        ? base64toString(this._fileContents.value.content)
         : '';
     }
   }

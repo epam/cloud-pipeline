@@ -31,6 +31,8 @@ import Papa from 'papaparse';
 import Remarkable from 'remarkable';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github.css';
+import {base64toString} from '../../../utils/base64';
+
 
 const MarkdownRenderer = new Remarkable('commonmark', {
   html: true,
@@ -101,7 +103,7 @@ export default class PipelineDocumentPreview extends React.Component {
         };
       }
       const preview = this.props.preview.response
-        ? atob(this.props.preview.response)
+        ? base64toString(this.props.preview.response)
         : '';
       const noContent = !preview;
       return {
