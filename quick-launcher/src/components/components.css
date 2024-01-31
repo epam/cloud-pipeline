@@ -11,6 +11,37 @@
   align-items: center;
 }
 
+.content.loading-progress {
+  display: flex;
+  flex-direction: column;
+}
+
+.content.loading-progress .row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.content.loading-progress .progress-row {
+  margin-top: 10px;
+  width: min(400px, 50vw);
+  height: 4px;
+  background-color: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+.content.loading-progress .progress-row .progress-value {
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.75);
+  border-radius: 5px;
+}
+
+.content.loading-progress .progress-message {
+  font-size: small;
+  width: min(400px, 50vw);
+  line-height: 1;
+}
+
 .content.error {
   margin-top: 5px;
   max-width: calc(100vw - 360px);
@@ -375,7 +406,7 @@
   position: fixed;
   bottom: 10px;
   left: 10px;
-  font-size: 70px;
+  font-size: 50px;
   line-height: 70px;
   color: rgba(255, 255, 255, 0.5);
 }

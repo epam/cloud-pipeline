@@ -14,6 +14,7 @@ import { getApplicationTypeSettings } from "../models/folder-application-types";
 import useApplicationIcon from "./utilities/use-application-icon";
 import Markdown from './shared/markdown';
 import './components.css';
+import useRunProgress from "./utilities/use-run-progress";
 
 function stopJobs (runs = []) {
   const wrapStopRun = run => new Promise((resolve, reject) => {
@@ -230,7 +231,7 @@ export default function Application ({id: applicationId, name: appName, launchOp
   }, [stopJobs, stopRunsError, reLaunch, setStopping]);
   const settings = useContext(SettingsContext);
   useStopLaunch(applicationId, user?.userName);
-  const seconds = useTimer(settings?.showTimer && !launchError && runId && !url);
+  const {seconds, start} = useTimer(settings?.showTimer && !launchError && runId && !url);
   const {
     redirectText = {},
     redirectStyle = 'default'
@@ -242,6 +243,37 @@ export default function Application ({id: applicationId, name: appName, launchOp
   } = redirectText;
   let redirectTemplate = seconds > 0 ? (withTime || immediate) : immediate;
   redirectTemplate = (redirectTemplate || '').replace('{SECONDS}', seconds);
+  const checkProgressRunId = useMemo(() => {
+    if (
+      url ||
+      stopRunsError ||
+      launchError ||
+      error ||
+      stopping
+    ) {
+      return undefined;
+    }
+    return runId;
+  }, [
+    url,
+    stopRunsError,
+    launchError,
+    error,
+    stopping,
+    runId,
+  ]);
+  const progressInfo = useRunProgress(
+    checkProgressRunId,
+    application?.appType,
+  );
+  const {
+    showProgress = false,
+    progress,
+    message: progressMessage,
+  } = useMemo(() => (progressInfo || {
+    showProgress: false,
+    message: undefined,
+  }), [progressInfo]);
   if (!application) {
     return (
       <div className="content error">
@@ -260,6 +292,7 @@ export default function Application ({id: applicationId, name: appName, launchOp
       className="timer"
       enabled={settings?.showTimer && !launchError && runId}
       seconds={seconds}
+      start={start}
     />
   );
   if (url && showWhiteScreen) {
@@ -380,9 +413,25 @@ export default function Application ({id: applicationId, name: appName, launchOp
     );
   } else {
     content = (
-      <div className="content loading">
-        <LoadingIndicator style={{marginRight: 5, width: 15, height: 15}} />
-        <span>Launching {appName || application.name}...</span>
+      <div className="content loading-progress">
+        <div className="row">
+          <LoadingIndicator style={{marginRight: 5, width: 15, height: 15}} />
+          <span>Launching {appName || application.name}...</span>
+        </div>
+        {
+          showProgress && (
+            <div className="progress-row">
+              <div className="progress-value" style={{ width: `${progress * 100}%`}} />
+            </div>
+          )
+        }
+        {
+          !showProgress && progressMessage && (
+            <div className="row progress-message">
+              <span>{progressMessage}</span>
+            </div>
+          )
+        }
       </div>
     );
   }

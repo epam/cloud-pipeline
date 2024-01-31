@@ -395,6 +395,11 @@ async function launchTool(application, user, options) {
         console.log(`${joinedLaunchOptions.instance_size} instance will be used`);
         payload.instance_size = joinedLaunchOptions.instance_size;
       }
+      // Region
+      if (joinedLaunchOptions.region !== undefined) {
+        console.log(`#${joinedLaunchOptions.region} region will be used`);
+        payload.cloudRegionId = joinedLaunchOptions.region;
+      }
       payload.parameters = attachParameters(
         payload.parameters,
         joinedLaunchOptions.gatewaySpecParameters || {}

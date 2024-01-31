@@ -7,7 +7,11 @@ import {Router} from '@reach/router';
 import ModeSelector from './mode-selector';
 import {ContextMenuOverlay} from './components/shared/context-menu';
 
-console.log('APPLICATION VERSION', BUILD_VERSION);
+if (BUILD_DESCRIPTION) {
+  console.log('APPLICATION VERSION', BUILD_VERSION, `(${BUILD_DESCRIPTION})`);
+} else {
+  console.log('APPLICATION VERSION', BUILD_VERSION);
+}
 
 ReactDOM.render(
   (

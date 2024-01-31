@@ -15,6 +15,7 @@ export default function applicationAvailable(appInfo, user, settings) {
   const userToTest = settings?.isAnonymous
     ? (settings.originalUser || user)
     : user;
+  const allowAll = !!users.find(o => !o.principal && /^ROLE_ALL$/i.test(o.name));
   const availableForUsers = new Set(users.filter(o => o.principal).map(o => (o.name || '').toUpperCase()));
   const availableForRoles = new Set(users.filter(o => !o.principal).map(o => (o.name || '').toUpperCase()));
   const {
@@ -23,6 +24,7 @@ export default function applicationAvailable(appInfo, user, settings) {
     admin
   } = userToTest || {};
   return admin ||
+    allowAll ||
     (owner || '').toUpperCase() === (userName || '').toUpperCase() ||
     availableForUsers.has((userName || '').toUpperCase()) ||
     roles

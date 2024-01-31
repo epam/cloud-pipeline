@@ -8,8 +8,10 @@ const webpack = require('webpack');
 const env = require('./utilities/envs');
 const {isProductionMode, isDevelopmentMode} = require('./utilities/mode');
 const getLastCommitSHA = require('./utilities/get-last-commit-sha');
+const getCommitMessage = require('./utilities/get-commit-message');
 
 const BUILD_VERSION = env.BUILD_VERSION || getLastCommitSHA();
+const BUILD_DESCRIPTION = env.BUILD_DESCRIPTION || getCommitMessage(BUILD_VERSION);
 
 function valueOrDefault (value, defaultValue) {
   if (value === undefined) {
@@ -55,10 +57,15 @@ const globalVariables = {
   'SHOW_TIMER': [1, true, 'true', '1', undefined].indexOf(env.SHOW_TIMER) >= 0,
   'PRETTY_URL_DOMAIN': env.PRETTY_URL_DOMAIN,
   'PRETTY_URL_PATH': env.PRETTY_URL_PATH,
-  'BUILD_VERSION': BUILD_VERSION
+  'BUILD_VERSION': BUILD_VERSION,
+  'BUILD_DESCRIPTION': BUILD_DESCRIPTION,
 };
 
-console.log('Application version is set to', BUILD_VERSION);
+if (BUILD_DESCRIPTION) {
+  console.log('Application version is set to', BUILD_VERSION, `(${BUILD_DESCRIPTION})`);
+} else {
+  console.log('Application version is set to', BUILD_VERSION);
+}
 console.log('Application will be hosted at:', globalVariables.PUBLIC_URL || '/');
 
 if (globalVariables.CPAPI) {

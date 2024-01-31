@@ -122,17 +122,17 @@ export default function ApplicationCard(
         isHidden={isHidden}
       />
       {
-        (application.deprecated || application.readOnly || isHidden) && (
+        (application.deprecated || application.readOnly || application.disablePackages || isHidden) && (
           <span
             className="labels"
           >
             {
-              (application.deprecated || application.readOnly) && (
+              (application.deprecated || application.readOnly || application.disablePackages) && (
                 <span
                   className="deprecated"
                 >
                   {
-                    application.readOnly ? 'READ ONLY' : 'DEPRECATED'
+                    (application.readOnly || application.disablePackages) ? 'READ ONLY' : 'DEPRECATED'
                   }
                 </span>
               )

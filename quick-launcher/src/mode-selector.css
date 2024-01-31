@@ -12,7 +12,8 @@
   align-items: center;
 }
 
-.loading span {
+.loading span,
+.loading-progress span {
   z-index: 1;
   margin-left: 5px;
   color: #aaa;

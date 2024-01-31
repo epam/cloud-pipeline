@@ -33,7 +33,8 @@ export default function FolderApplicationCard(
     appType,
     latest,
     deprecated,
-    readOnly
+    readOnly,
+    disablePackages
   } = application || {};
   const gatewayParseError = info.__gatewaySpecError__;
   const {icon} = useApplicationIcon(storage, iconFile ? iconFile.path : undefined);
@@ -188,10 +189,10 @@ export default function FolderApplicationCard(
           )
         }
         {
-          (deprecated || readOnly) && (
+          (deprecated || readOnly || disablePackages) && (
             <span className="deprecated">
               {
-                readOnly ? 'READ ONLY' : 'DEPRECATED'
+                (readOnly || disablePackages) ? 'READ ONLY' : 'DEPRECATED'
               }
             </span>
           )

@@ -199,6 +199,12 @@ const defaultSettings = {
     parameter: 'CP_RGATEWAY_DISABLE_PACKAGES',
     warning: undefined
   },
+  // runProgress: {
+  //   task: 'MountDataStorages',
+  //   pollingInterval: 5000,
+  //   progress: 'Step (\\d+)/(\\d+)',
+  // },
+  runProgress: false
 };
 
 function parseUrl(url, verbose = false) {

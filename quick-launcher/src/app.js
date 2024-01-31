@@ -290,7 +290,7 @@ function App({launch, location}) {
                     checked={showAll}
                     onChange={onChangeShowAll}
                   />
-                  Show all
+                  Show deprecated / read only
                 </div>
               </div>
               {

@@ -20,6 +20,7 @@ import {
 import './components/components.css';
 import './app.css';
 import applicationAvailable from "./models/folder-applications/application-available";
+import { useAppTypeQuery } from './utilities/use-app-type-query';
 
 function FolderApp ({location}) {
   const settings = useSettings();
@@ -60,7 +61,7 @@ function FolderApp ({location}) {
     () => [...new Set((applications || []).map((o) => o.appType))].filter(Boolean).sort(),
     [applications]
   );
-  const [filterAppType, setFilterAppType] = useState(undefined);
+  const [filterAppType, setFilterAppType] = useAppTypeQuery(applicationTypes);
   const onChangeFilterAppType = useCallback((newFilterAppType) => {
     setFilterAppType((current) => (current === newFilterAppType ? undefined : newFilterAppType));
   }, [setFilterAppType]);
@@ -247,8 +248,9 @@ function FolderApp ({location}) {
               )
             }
             {
-              applicationTypes.length > 1 && applicationTypes.map((appType) => (
+              !application && applicationTypes.length > 1 && applicationTypes.map((appType) => (
                 <span
+                  key={appType}
                   className={
                     classNames(
                       'application-type-card',

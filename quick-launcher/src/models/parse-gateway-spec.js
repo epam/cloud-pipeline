@@ -16,6 +16,7 @@ function processGatewaySpec (appSettings, content, resolve, reject) {
       instance,
       users = [],
       mounts,
+      region,
       parameters,
       ...placeholders
     } = json;
@@ -76,6 +77,7 @@ function processGatewaySpec (appSettings, content, resolve, reject) {
             limitMountsPlaceholders,
             users,
             limitMounts,
+            region,
             gatewaySpecParameters: processGatewaySpecParameters(parameters)
           });
         });
@@ -84,6 +86,7 @@ function processGatewaySpec (appSettings, content, resolve, reject) {
         instance_size,
         limitMounts,
         users,
+        region,
         gatewaySpecParameters: processGatewaySpecParameters(parameters)
       });
     }
