@@ -103,6 +103,7 @@ class FacetedSearch extends React.Component {
     facets: [],
     domain: undefined,
     createOtherDomain: false,
+    disableCounts: false,
     otherDomainName: 'Other',
     error: undefined,
     facetsCount: {},
@@ -175,7 +176,8 @@ class FacetedSearch extends React.Component {
     const {
       facetsLoaded,
       facetsCount,
-      initialFacetsCount = {}
+      initialFacetsCount = {},
+      disableCounts
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return {name: DocumentTypeFilterName, values: []};
@@ -191,15 +193,15 @@ class FacetedSearch extends React.Component {
           name: key,
           count: filter[key] || 0
         }))
-        .sort((a, b) => b.count - a.count)
-        .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+        .sort((a, b) => disableCounts ? 0 : b.count - a.count)
+        .filter(v => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
           ? v.count > 0
           : (
             initialFacetsCount.hasOwnProperty(DocumentTypeFilterName) &&
             initialFacetsCount[DocumentTypeFilterName].hasOwnProperty(v.name) &&
             Number(initialFacetsCount[DocumentTypeFilterName][v.name]) > 0
           )
-        )
+        ))
     };
   };
 
@@ -208,30 +210,34 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       facets,
       facetsCount,
-      initialFacetsCount = {}
+      initialFacetsCount = {},
+      disableCounts
     } = this.state;
     if (!facetsLoaded || !facetsCount) {
       return [];
     }
     return facets
-      .filter(d => FacetedSearch.HIDE_VALUE_IF_EMPTY
+      .filter(d => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
         ? initialFacetsCount.hasOwnProperty(d.name)
         : facetsCount.hasOwnProperty(d.name)
-      )
+      ))
       .map(d => ({
         name: d.name,
         domain: d.domain,
         values: d.values
-          .map(v => ({name: v, count: facetsCount[d.name][v] || 0}))
-          .sort((a, b) => b.count - a.count)
-          .filter(v => FacetedSearch.HIDE_VALUE_IF_EMPTY
+          .map(v => ({
+            name: v,
+            count: (facetsCount[d.name] ? facetsCount[d.name][v] : undefined) || 0
+          }))
+          .sort((a, b) => disableCounts ? a.name.localeCompare(b.name) : b.count - a.count)
+          .filter(v => disableCounts || (FacetedSearch.HIDE_VALUE_IF_EMPTY
             ? v.count > 0
             : (
               initialFacetsCount[d.name] &&
               initialFacetsCount[d.name].hasOwnProperty(v.name) &&
               Number(initialFacetsCount[d.name][v.name]) > 0
             )
-          )
+          ))
       }));
   }
 
@@ -531,7 +537,8 @@ class FacetedSearch extends React.Component {
             pageSize,
             searchToken: currentSearchToken,
             facetsToken: currentFacetsToken,
-            storageFileDisplayNameTemplates = []
+            storageFileDisplayNameTemplates = [],
+            disableCounts
           } = this.state;
           if (facets.length === 0) {
             // eslint-disable-next-line
@@ -580,7 +587,8 @@ class FacetedSearch extends React.Component {
                 metadataFields: this.metadataFields
               },
               scrollingParameters: continuousOptions,
-              abortSignal: this.abortSignal
+              abortSignal: this.abortSignal,
+              skipFacets: disableCounts
             })
               .then(result => {
                 if (result && result.aborted) {
@@ -644,7 +652,7 @@ class FacetedSearch extends React.Component {
                     : undefined
                 }));
                 if (actualFacetsToken !== facetsToken) {
-                  state.facetsCount = facetsCount;
+                  state.facetsCount = facetsCount || {};
                   state.facetsToken = facetsToken;
                 }
                 if (actualSearchToken === searchToken) {
@@ -683,6 +691,7 @@ class FacetedSearch extends React.Component {
         if (systemDictionaries.loaded && configuration) {
           const {
             createOtherDomain = false,
+            disableCounts = false,
             otherDomainName = 'Other',
             dictionaries = []
           } = configuration || {};
@@ -715,7 +724,8 @@ class FacetedSearch extends React.Component {
               : {},
             '*',
             sortingOrder,
-            abortSignal
+            abortSignal,
+            disableCounts
           )
             .then((result) => {
               const {
@@ -727,6 +737,7 @@ class FacetedSearch extends React.Component {
               }
               this.setState({
                 createOtherDomain,
+                disableCounts,
                 otherDomainName,
                 extraColumnsConfiguration,
                 initialFacetsCount: facetsCount,
@@ -1047,6 +1058,7 @@ class FacetedSearch extends React.Component {
       advancedSearchMode,
       domain,
       createOtherDomain,
+      disableCounts,
       otherDomainName
     } = this.state;
     const filterFacetByDomain = (facet) => {
@@ -1126,6 +1138,7 @@ class FacetedSearch extends React.Component {
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
                 onChange={this.onChangeFilter(DocumentTypeFilterName)}
                 onClearFilters={this.onClearFilters}
+                showCounts={!disableCounts}
               />
             )
           }
@@ -1223,7 +1236,8 @@ class FacetedSearch extends React.Component {
                           selection={(activeFilters || {})[filter.name]}
                           onChange={this.onChangeFilter(filter.name)}
                           preferences={this.getFilterPreferences(filter.name)}
-                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY}
+                          showEmptyValues={!FacetedSearch.HIDE_VALUE_IF_EMPTY || disableCounts}
+                          showCounts={!disableCounts}
                         />
                       ))
                   }
