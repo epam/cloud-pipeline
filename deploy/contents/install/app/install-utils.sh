@@ -1549,8 +1549,14 @@ function configure_idp_metadata {
                     -k
         if [ $? -eq 0 ] && [ -f "${metadata_file}" ]; then
             metadata_exists=1
-            idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
-                                 "${certificate_dir}/sso-public-cert.pem"
+            if [ "${service_external_port}" -eq "443" ]; then
+                idp_register_app "https://${service_external_host}/${context_path}/" \
+                                                 "${certificate_dir}/sso-public-cert.pem"
+            else
+                idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
+                                                 "${certificate_dir}/sso-public-cert.pem"
+            fi
+
         fi
     fi
 
