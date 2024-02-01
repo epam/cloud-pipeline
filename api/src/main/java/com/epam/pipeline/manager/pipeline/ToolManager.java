@@ -161,7 +161,7 @@ public class ToolManager implements SecuredEntityManager {
         Assert.isTrue(isToolUniqueInGroup(tool.getImage(), group.getId()),
                       messageHelper.getMessage(MessageConstants.ERROR_TOOL_ALREADY_EXIST, tool.getImage(),
                                                group.getName()));
-        validateInstanceType(tool);
+        validateInstanceType(null, tool.getInstanceType());
         DockerRegistry registry = dockerRegistryManager.load(group.getRegistryId());
         if (checkExistence) {
             try {
@@ -203,7 +203,7 @@ public class ToolManager implements SecuredEntityManager {
         if (!StringUtils.isEmpty(tool.getRam())) {
             loadedTool.setRam(tool.getRam());
         }
-        validateInstanceType(tool);
+        validateInstanceType(loadedTool.getId(), tool.getInstanceType());
 
         loadedTool.setInstanceType(tool.getInstanceType());
         loadedTool.setDisk(tool.getDisk());
@@ -224,7 +224,7 @@ public class ToolManager implements SecuredEntityManager {
      * Loads all tools for the specified registry and labels.
      * @param registry registry name where tool is located, optional,
      *                 if it doesn't exist tools for all registries will be loaded.
-     * @param labels labels of a tool, optional, if it doesn't exist filtering by labels will not applied.
+     * @param labels labels of a tool, optional, if it doesn't exist filtering by labels will not be applied.
      * @return list of all matched tools
      */
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -335,7 +335,7 @@ public class ToolManager implements SecuredEntityManager {
 
     /**
      * Resolves tool symlinks if there are any by the given image name.
-     * 
+     *
      * @param image Image name.
      * @return Resolved tool.
      */
@@ -843,7 +843,7 @@ public class ToolManager implements SecuredEntityManager {
             ToolVersion toolVersion = dockerClient.getVersionAttributes(dockerRegistry,
                     imageWithoutTag, tag);
             if (Objects.isNull(toolVersion) || Objects.isNull(toolVersion.getSize())) {
-                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE, 
+                LOGGER.warn(messageHelper.getMessage(MessageConstants.ERROR_TOOL_VERSION_INVALID_SIZE,
                         tool.getImage()));
                 return 0;
             }
@@ -873,7 +873,7 @@ public class ToolManager implements SecuredEntityManager {
                 request.getGroupId()));
         Assert.isTrue(!sourceTool.isSymlink(), messageHelper.getMessage(
                 MessageConstants.ERROR_TOOL_SYMLINK_TARGET_SYMLINK));
-        
+
         final String targetImage = getSymlinkTargetImage(sourceTool, targetGroup);
 
         Assert.isTrue(!Objects.equals(sourceTool.getToolGroupId(), targetGroup.getId()), messageHelper.getMessage(
@@ -961,10 +961,10 @@ public class ToolManager implements SecuredEntityManager {
                 MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED));
     }
 
-    private void validateInstanceType(final Tool tool) {
-        Assert.isTrue(isInstanceTypeAllowed(tool.getId(), tool.getInstanceType()),
+    private void validateInstanceType(final Long toolId, final String instanceType) {
+        Assert.isTrue(isInstanceTypeAllowed(toolId, instanceType),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
-                        tool.getInstanceType()));
+                        instanceType));
     }
 
     private boolean isInstanceTypeAllowed(final Long toolId, final String instanceType) {
