@@ -472,10 +472,12 @@ public class PipelineExecutor {
                 SystemPreferences.DOCKER_IN_DOCKER_MOUNTS);
         if (isDockerInDockerEnabled &&
                 CollectionUtils.isNotEmpty(dockerMounts)) {
-            dockerMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+            dockerMounts.forEach(mount -> mounts.add(
+                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
         }
         if (CollectionUtils.isNotEmpty(commonMounts)) {
-            commonMounts.forEach(mount -> mounts.add(getVolumeMount(mount.getName(), mount.getMountPath())));
+            commonMounts.forEach(mount -> mounts.add(
+                    getVolumeMount(mount.getName(), mount.getMountPath(), mount.isReadOnly())));
         }
         if (isSystemdEnabled) {
             mounts.add(getVolumeMount(HOST_CGROUP_MOUNT.getName(), HOST_CGROUP_MOUNT.getMountPath()));
@@ -483,10 +485,15 @@ public class PipelineExecutor {
         return mounts;
     }
 
-    private VolumeMount getVolumeMount(String name, String path) {
+    private VolumeMount getVolumeMount(final String name, final String path) {
+        return getVolumeMount(name, path, false);
+    }
+
+    private VolumeMount getVolumeMount(final String name, final String path, final boolean readOnly) {
         VolumeMount mount = new VolumeMount();
         mount.setName(name);
         mount.setMountPath(path);
+        mount.setReadOnly(readOnly);
         return mount;
     }
 
