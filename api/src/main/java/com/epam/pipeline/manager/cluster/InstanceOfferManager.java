@@ -341,7 +341,8 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        final List<ContextualPreferenceExternalResource> resources = Collections.singletonList(toolResource);
+        final List<ContextualPreferenceExternalResource> resources = toolResource != null
+                ? Collections.singletonList(toolResource) : Collections.emptyList();
         return isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
                 || isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
