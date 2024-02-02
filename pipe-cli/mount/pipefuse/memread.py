@@ -75,11 +75,11 @@ class _ReadBuffer:
             self._offset += shrink_size
 
 
-class BufferingReadAheadFileSystemClient(FileSystemClientDecorator):
+class MemoryBufferingReadAheadFileSystemClient(FileSystemClientDecorator):
 
     def __init__(self, inner, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier, capacity):
         """
-        Buffering read ahead file system client decorator.
+        Memory buffering read ahead file system client decorator.
 
         It performs reading ahead of requested regions in order to reduce a number of subsequent calls
         to an inner file system client.
@@ -90,7 +90,7 @@ class BufferingReadAheadFileSystemClient(FileSystemClientDecorator):
         :param read_ahead_size_multiplier: Sequential read ahead size multiplier.
         :param capacity: Single file buffer capacity in bytes.
         """
-        super(BufferingReadAheadFileSystemClient, self).__init__(inner)
+        super(MemoryBufferingReadAheadFileSystemClient, self).__init__(inner)
         self._inner = inner
         self._read_ahead_min_size = read_ahead_min_size
         self._read_ahead_max_size = read_ahead_max_size
