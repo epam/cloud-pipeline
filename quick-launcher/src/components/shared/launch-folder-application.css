@@ -79,6 +79,18 @@
   margin-left: 5px;
 }
 
+.launch-folder-application-tags {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.launch-folder-application-tags .launch-folder-application-tag {
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
 .launch-folder-application-short-description,
 .launch-folder-application-description {
   color: #ddd;

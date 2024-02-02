@@ -67,6 +67,7 @@ export default function FolderApplicationCard(
   }
   const owner = info.user;
   const ownerInfo = info.ownerInfo;
+  const tags = info.tags || [];
   const Wrapper = ({children}) => {
     if (!disabled && !onClick && published && url) {
       return (
@@ -181,13 +182,22 @@ export default function FolderApplicationCard(
             )
           }
         </div>
-        {
-          appType && (
-            <div className="application-type">
-              {appType}
-            </div>
-          )
-        }
+        <div className="tags">
+          {
+            (tags || []).map((tag, idx) => (
+              <div className="tag" key={`tag-${idx}`}>
+                {tag}
+              </div>
+            ))
+          }
+          {
+            appType && (
+              <div className="application-type">
+                {appType}
+              </div>
+            )
+          }
+        </div>
         {
           (deprecated || readOnly || disablePackages) && (
             <span className="deprecated">

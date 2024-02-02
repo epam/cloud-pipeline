@@ -29,6 +29,7 @@ export default function LaunchFolderApplication (
     .filter(propertyName => !!info[propertyName]);
   const owner = info?.user;
   const ownerInfo = info?.ownerInfo;
+  const externalUrl = info?.externalUrl;
   if (!application) {
     return null;
   }
@@ -47,15 +48,16 @@ export default function LaunchFolderApplication (
           )
         }
         {
-          url && (
+          (url || externalUrl) && (
             <a
               className="launch-folder-application-launch-a"
-              href={url}
+              href={externalUrl || url}
+              target={externalUrl ? '_blank' : undefined}
             >
               <div
                 className="launch-folder-application-launch"
               >
-                LAUNCH
+                {externalUrl ? 'OPEN' : 'LAUNCH'}
               </div>
             </a>
           )
@@ -151,6 +153,25 @@ export default function LaunchFolderApplication (
             </span>
             </div>
           ))
+        }
+        {
+          info?.tags && info.tags.length > 0 && (
+            <div
+              className={
+                classNames(
+                  'launch-folder-application-tags',
+                  'launch-folder-application-row',
+                  'launch-folder-application-property'
+                )
+              }
+            >
+              {(info?.tags || []).map((tag, idx) => (
+                <div key={`tag-${idx}`} className="launch-folder-application-tag">
+                  {tag}
+                </div>
+              ))}
+            </div>
+          )
         }
         {
           fullDescription && (

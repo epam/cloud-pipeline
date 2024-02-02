@@ -237,15 +237,28 @@
   overflow: hidden;
 }
 
-.app.app-folder .application-type {
+.app.app-folder .application-type,
+.app.app-folder .tags .tag {
+  margin: 2px;
+  padding: 1px 2px;
+  font-size: x-small;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 5px;
+  text-transform: uppercase;
+}
+
+.app.app-folder .tags {
   position: absolute;
   bottom: 0;
   right: 0;
-  padding: 4px;
   font-size: x-small;
-  background-color: rgba(0, 0, 0, 0.75);
-  border-radius: 5px 0 5px 0;
-  text-transform: uppercase;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  max-width: calc(100% - 100px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app.app-folder .deprecated {
