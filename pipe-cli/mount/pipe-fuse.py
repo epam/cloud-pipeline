@@ -14,14 +14,14 @@
 
 import argparse
 import ctypes
-import errno
 import logging
 import os
 import platform
-import sys
 import traceback
 
+import errno
 import future.utils
+import sys
 from cachetools import TTLCache
 
 
@@ -50,15 +50,16 @@ from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
 from pipefuse.api import CloudPipelineClient, CloudType
 from pipefuse.audit import AuditFileSystemClient
-from pipefuse.buffread import BufferingReadAheadFileSystemClient
-from pipefuse.buffwrite import BufferingWriteFileSystemClient
+from pipefuse.memread import MemoryBufferingReadAheadFileSystemClient
+from pipefuse.memwrite import MemoryBufferingWriteFileSystemClient
 from pipefuse.cache import ListingCache, ThreadSafeListingCache, \
     CachingListingFileSystemClient
 from pipefuse.fslock import get_lock
-from pipefuse.fuseutils import MB, GB
+from pipefuse.fuseutils import MB, GB, MINUTE, HOUR
 from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.path import PathExpandingStorageFileSystemClient
 from pipefuse.pipefs import PipeFS, RestrictingOperationsFS, ResilientFS
+from pipefuse.diskread import DiskBufferingReadAllFileSystemClient, DiskBufferTTLDaemon
 from pipefuse.record import RecordingFileSystemClient, RecordingFS
 from pipefuse.s3 import S3StorageLowLevelClient
 from pipefuse.storage import StorageHighLevelFileSystemClient
@@ -86,6 +87,7 @@ _xattrs_include_prefix = 'user'
 
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
+          read_disk_buffer_path, read_disk_buffer_read_ahead_size, read_disk_buffer_ttl, read_disk_buffer_ttl_delay,
           write_buffer_size, trunc_buffer_size, chunk_size,
           listing_cache_ttl, listing_cache_size,
           xattrs_include_prefixes, xattrs_exclude_prefixes,
@@ -107,6 +109,11 @@ def start(mountpoint, webdav, bucket,
     read_ahead_max_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
     read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
                                                read_ahead_size_multiplier))
+    read_disk_buffer_path = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_PATH', read_disk_buffer_path)
+    read_disk_buffer_read_ahead_size = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE',
+                                                     read_disk_buffer_read_ahead_size))
+    read_disk_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL', read_disk_buffer_ttl))
+    read_disk_buffer_ttl_delay = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL_DELAY', read_disk_buffer_ttl_delay))
     audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
     audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
     fs_name = os.getenv('CP_PIPE_FUSE_FS_NAME', 'PIPE_FUSE')
@@ -169,18 +176,34 @@ def start(mountpoint, webdav, bucket,
             client = ExtendedAttributesCachingFileSystemClient(client, xattrs_cache)
         else:
             logging.info('Extended attributes caching is disabled.')
+    if read_disk_buffer_path:
+        logging.info('Disk buffering read is enabled.')
+        client = DiskBufferingReadAllFileSystemClient(client,
+                                                      read_ahead_size=read_disk_buffer_read_ahead_size,
+                                                      path=read_disk_buffer_path)
+        if read_disk_buffer_ttl > 0:
+            logging.info('Disk buffering read ttl is enabled.')
+            daemons.append(DiskBufferTTLDaemon(path=read_disk_buffer_path,
+                                               ttl=read_disk_buffer_ttl,
+                                               delay=read_disk_buffer_ttl_delay))
+        else:
+            logging.info('Disk buffering read ttl is not enabled.')
+    else:
+        logging.info('Disk buffering read is disabled.')
     if read_buffer_size > 0:
-        client = BufferingReadAheadFileSystemClient(client,
-                                                    read_ahead_min_size=read_ahead_min_size,
-                                                    read_ahead_max_size=read_ahead_max_size,
-                                                    read_ahead_size_multiplier=read_ahead_size_multiplier,
-                                                    capacity=read_buffer_size)
+        logging.info('Memory buffering read is enabled.')
+        client = MemoryBufferingReadAheadFileSystemClient(client,
+                                                          read_ahead_min_size=read_ahead_min_size,
+                                                          read_ahead_max_size=read_ahead_max_size,
+                                                          read_ahead_size_multiplier=read_ahead_size_multiplier,
+                                                          capacity=read_buffer_size)
     else:
-        logging.info('Read buffering is disabled.')
+        logging.info('Memory buffering read is disabled.')
     if write_buffer_size > 0:
-        client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
+        logging.info('Memory buffering write is enabled.')
+        client = MemoryBufferingWriteFileSystemClient(client, capacity=write_buffer_size)
     else:
-        logging.info('Write buffering is disabled.')
+        logging.info('Memory buffering write is disabled.')
     if trunc_buffer_size > 0:
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
@@ -348,6 +371,14 @@ if __name__ == '__main__':
     parser.add_argument("--read-ahead-size-multiplier", type=int, required=False, default=2,
                         help="Sequential read ahead size multiplier. "
                              "Can be configured via CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER environment variable.")
+    parser.add_argument("--read-disk-buffer-path", required=False, default='',
+                        help="Read disk buffer path")
+    parser.add_argument("--read-disk-buffer-read-ahead-size", type=int, required=False, default=512 * MB,
+                        help="Read disk buffer read size")
+    parser.add_argument("--read-disk-buffer-ttl", type=int, required=False, default=1 * HOUR,
+                        help="Read disk buffer time to live, seconds")
+    parser.add_argument("--read-disk-buffer-ttl-delay", type=int, required=False, default=2 * HOUR,
+                        help="Read disk buffer time to live polling delay, seconds")
     parser.add_argument("-wb", "--write-buffer-size", type=int, required=False, default=512 * MB,
                         help="Write buffer size for a single file")
     parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
@@ -356,7 +387,7 @@ if __name__ == '__main__':
                         help="Multipart upload chunk size. Can be also specified via "
                              "CP_PIPE_FUSE_CHUNK_SIZE environment variable.")
     parser.add_argument("-t", "--cache-ttl", "--listing-cache-ttl", dest="listing_cache_ttl",
-                        type=int, required=False, default=60,
+                        type=int, required=False, default=1 * MINUTE,
                         help="Listing cache time to live, seconds")
     parser.add_argument("-s", "--cache-size", "--listing-cache-size", dest="listing_cache_size",
                         type=int, required=False, default=100,
@@ -372,7 +403,7 @@ if __name__ == '__main__':
                         help="Extended attribute prefixes to be excluded from processing. "
                              "Use --xattrs-exclude-prefix=\"*\" to disable all extended attributes processing. "
                              "The argument can be specified multiple times.")
-    parser.add_argument("--xattrs-cache-ttl", type=int, required=False, default=60,
+    parser.add_argument("--xattrs-cache-ttl", type=int, required=False, default=1 * MINUTE,
                         help="Extended attributes cache time to live, seconds.")
     parser.add_argument("--xattrs-cache-size", type=int, required=False, default=1000,
                         help="Number of simultaneous extended attributes caches.")
@@ -388,12 +419,12 @@ if __name__ == '__main__':
                         help="Logging level.")
     parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.",
                         default=True)
-    parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
+    parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=10 * MINUTE,
                         help="Delay between path lock monitoring cycles, seconds.")
     parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
     parser.add_argument("--storage-class-exclude", type=str, required=False, action="append", default=[],
                         help="Storage classes that shall be excluded from listing.")
-    parser.add_argument("--audit-buffer-ttl", type=int, required=False, default=60,
+    parser.add_argument("--audit-buffer-ttl", type=int, required=False, default=1 * MINUTE,
                         help="Data access audit buffer time to live, seconds.")
     parser.add_argument("--audit-buffer-size", type=int, required=False, default=100,
                         help="Number of entries in data access audit buffer.")
@@ -428,6 +459,10 @@ if __name__ == '__main__':
               read_buffer_size=args.read_buffer_size,
               read_ahead_min_size=args.read_ahead_min_size, read_ahead_max_size=args.read_ahead_max_size,
               read_ahead_size_multiplier=args.read_ahead_size_multiplier,
+              read_disk_buffer_path=args.read_disk_buffer_path,
+              read_disk_buffer_read_ahead_size=args.read_disk_buffer_read_ahead_size,
+              read_disk_buffer_ttl=args.read_disk_buffer_ttl,
+              read_disk_buffer_ttl_delay=args.read_disk_buffer_ttl_delay,
               write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
               chunk_size=args.chunk_size,
               listing_cache_ttl=args.listing_cache_ttl, listing_cache_size=args.listing_cache_size,
