@@ -521,10 +521,8 @@ if is_service_requested cp-api-srv; then
                                 "${CP_IDP_EXTERNAL_PORT}" \
                                 "${CP_IDP_INTERNAL_HOST}" \
                                 "${CP_IDP_INTERNAL_PORT}" \
-                                "${CP_API_SRV_EXTERNAL_HOST}" \
-                                "${CP_API_SRV_EXTERNAL_PORT}" \
-                                "${CP_API_SRV_CERT_DIR}" \
-                                "pipeline"
+                                "${CP_API_SRV_SSO_ENDPOINT_ID:-https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/}" \
+                                "${CP_API_SRV_CERT_DIR}"
 
         print_info "-> Creating RSA key pair (JWT signing)"
         generate_rsa_key_pair   $CP_API_SRV_CERT_DIR/jwt.key.private \
@@ -933,7 +931,7 @@ if is_service_requested cp-git; then
                 sleep $CP_GITLAB_INIT_TIMEOUT
                 api_register_gitlab "$GITLAB_IMP_TOKEN"
 
-                idp_register_app "https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}" \
+                idp_register_app "${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}" \
                                  "$CP_GITLAB_CERT_DIR/sso-public-cert.pem"
 
                 print_info "-> Registering DataTransfer pipeline"
@@ -1213,10 +1211,8 @@ if is_service_requested cp-share-srv; then
                                 "${CP_IDP_EXTERNAL_PORT}" \
                                 "${CP_IDP_INTERNAL_HOST}" \
                                 "${CP_IDP_INTERNAL_PORT}" \
-                                "${CP_SHARE_SRV_EXTERNAL_HOST}" \
-                                "${CP_SHARE_SRV_EXTERNAL_PORT}" \
-                                "${CP_SHARE_SRV_CERT_DIR}" \
-                                "proxy"
+                                "${CP_SHARE_SRV_SAML_ENDPOINT_ID:-https://${CP_SHARE_SRV_EXTERNAL_HOST}:${CP_SHARE_SRV_EXTERNAL_PORT}/proxy/}" \
+                                "${CP_SHARE_SRV_CERT_DIR}"
 
         print_info "-> Deploying Share Service service"
 

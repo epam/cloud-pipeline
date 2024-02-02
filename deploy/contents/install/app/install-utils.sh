@@ -1526,10 +1526,8 @@ function configure_idp_metadata {
     local idp_external_port="${4}"
     local idp_internal_host="${5}"
     local idp_internal_port="${6}"
-    local service_external_host="${7}"
-    local service_external_port="${8}"
-    local certificate_dir="${9}"
-    local context_path="${10}"
+    local service_sso_endpoint_id="${7}"
+    local certificate_dir="${8}"
 
     local metadata_exists=0
     local metadata_dir=$(dirname "${metadata_file}")
@@ -1549,14 +1547,7 @@ function configure_idp_metadata {
                     -k
         if [ $? -eq 0 ] && [ -f "${metadata_file}" ]; then
             metadata_exists=1
-            if [ "${service_external_port}" -eq "443" ]; then
-                idp_register_app "https://${service_external_host}/${context_path}/" \
-                                                 "${certificate_dir}/sso-public-cert.pem"
-            else
-                idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
-                                                 "${certificate_dir}/sso-public-cert.pem"
-            fi
-
+            idp_register_app "${service_sso_endpoint_id}" "${certificate_dir}/sso-public-cert.pem"
         fi
     fi
 
