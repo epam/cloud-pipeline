@@ -31,8 +31,8 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: baseline;
-  min-width: 150;
-  margin-right: 10;
+  min-width: 150px;
+  margin-right: 10px;
 }
 
 .day-selector-container {

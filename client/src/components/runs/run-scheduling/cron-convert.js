@@ -28,6 +28,7 @@ const DECODERS = {
         daySelectorMode: 'computed',
         ordinal: ordinal.join(''),
         day: dw,
+        dayNumber: 1,
         every: Number(month.split('/')[1])
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
@@ -65,12 +66,13 @@ const DECODERS = {
   [ruleModes.yearly]: ({dayOfMonth, dayOfWeek, month}) => {
     if (dayOfMonth === '?') {
       // Every Nth day of week
-      const [dayOfWee, ...ordinal] = dayOfWeek;
+      const [dw, ...ordinal] = dayOfWeek;
       return {
         mode: ruleModes.yearly,
         daySelectorMode: 'computed',
         ordinal: ordinal.join(''),
-        day: dayOfWee,
+        day: dw,
+        dayNumber: 1,
         month
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
