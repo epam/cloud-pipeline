@@ -38,6 +38,10 @@ module "eks" {
 
       instance_types = [var.eks_system_node_group_instance_type]
 
+      labels = {
+        "cp/node-group-type" : "cp-system"
+      }
+
       min_size     = var.eks_system_node_group_size
       max_size     = var.eks_system_node_group_size
       desired_size = var.eks_system_node_group_size
