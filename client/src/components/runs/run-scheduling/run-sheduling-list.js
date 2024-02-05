@@ -2,14 +2,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
 import classNames from 'classnames';
-import daysOfWeek from './days-of-week';
+import {DAYS} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
 
 function getDayOfWeek (value) {
-  const [dayOfWeek] = daysOfWeek.filter(({value: dayValue}) => +dayValue === +value);
+  const [dayOfWeek] = DAYS.filter(({key: dayValue}) => +dayValue === +value);
   if (dayOfWeek) {
-    return dayOfWeek.day;
+    return dayOfWeek.title;
   }
   return '';
 }
