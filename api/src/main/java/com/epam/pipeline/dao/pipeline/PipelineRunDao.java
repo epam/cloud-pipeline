@@ -595,6 +595,15 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         clausesCount = addOwnerClause(params, whereBuilder, clausesCount, filter.getOwners());
         clausesCount = addRoleClause(params, whereBuilder, clausesCount, filter.getRoles());
 
+        if (CollectionUtils.isNotEmpty(filter.getRegionIds())) {
+            appendAnd(whereBuilder, clausesCount);
+            whereBuilder.append(" r.node_cloud_region in (:")
+                    .append(PipelineRunParameters.NODE_CLOUD_REGION.name())
+                    .append(')');
+            params.addValue(PipelineRunParameters.NODE_CLOUD_REGION.name(), filter.getRegionIds());
+            clausesCount++;
+        }
+
         if (CollectionUtils.isNotEmpty(filter.getPipelineIds())) {
             appendAnd(whereBuilder, clausesCount);
             whereBuilder.append(" r.pipeline_id in (:")

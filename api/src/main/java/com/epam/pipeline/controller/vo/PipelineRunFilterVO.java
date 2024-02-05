@@ -34,6 +34,7 @@ import org.apache.commons.collections4.MapUtils;
 @Getter
 @Setter
 public class PipelineRunFilterVO implements AclSecuredFilter {
+    private List<Long> regionIds;
     private List<Long> pipelineIds;
     private List<String> versions;
     private List<TaskStatus> statuses;
@@ -78,7 +79,8 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     }
 
     private boolean areSimpleArgumentsEmpty() {
-        return CollectionUtils.isEmpty(pipelineIds) && CollectionUtils.isEmpty(versions)
+        return CollectionUtils.isEmpty(pipelineIds) && CollectionUtils.isEmpty(regionIds)
+                && CollectionUtils.isEmpty(versions)
                 && startDateFrom == null && endDateTo == null && partialParameters == null
                 && parentId == null && CollectionUtils.isEmpty(owners) && CollectionUtils.isEmpty(roles)
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
