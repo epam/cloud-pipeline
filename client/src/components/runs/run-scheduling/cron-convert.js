@@ -21,7 +21,7 @@ const DECODERS = {
   }),
   [ruleModes.monthly]: ({dayOfMonth, dayOfWeek, month}) => {
     if (dayOfMonth === '?') {
-      // Every Nth day of week
+      // On nth day of week (1-7)
       const [dw, ...ordinal] = dayOfWeek;
       return {
         mode: ruleModes.monthly,
@@ -32,7 +32,7 @@ const DECODERS = {
         every: Number(month.split('/')[1])
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
-      // Every # weekday
+      // On nth weekday
       const ordinal = dayOfMonth.replace('W', '');
       return {
         mode: ruleModes.monthly,
@@ -43,7 +43,7 @@ const DECODERS = {
         every: Number(month.split('/')[1])
       };
     } else if (dayOfMonth === 'L') {
-      // Every Last (Weekday | Day | day of week)
+      // On Last (Weekday | Day | day of week)
       return {
         mode: ruleModes.monthly,
         daySelectorMode: 'computed',
@@ -54,7 +54,7 @@ const DECODERS = {
       };
     }
     return {
-      // every # Day
+      // On nth Day
       mode: ruleModes.monthly,
       daySelectorMode: 'numeric',
       ordinal: ORDINALS[0].cronCode,
@@ -65,7 +65,7 @@ const DECODERS = {
   },
   [ruleModes.yearly]: ({dayOfMonth, dayOfWeek, month}) => {
     if (dayOfMonth === '?') {
-      // Every Nth day of week
+      // On nth day of week (1-7)
       const [dw, ...ordinal] = dayOfWeek;
       return {
         mode: ruleModes.yearly,
@@ -76,7 +76,7 @@ const DECODERS = {
         month
       };
     } else if (dayOfMonth.includes('W') && dayOfWeek === '?') {
-      // Every # weekday
+      // On nth weekday
       const ordinal = dayOfMonth.replace('W', '');
       return {
         mode: ruleModes.yearly,
@@ -87,7 +87,7 @@ const DECODERS = {
         month
       };
     } else if (dayOfMonth === 'L') {
-      // Every Last (Weekday | Day | day of week)
+      // On Last (Weekday | Day | day of week)
       return {
         mode: ruleModes.yearly,
         daySelectorMode: 'computed',
@@ -98,7 +98,7 @@ const DECODERS = {
       };
     }
     return {
-      // every # Day
+      // On nth Day
       mode: ruleModes.yearly,
       daySelectorMode: 'numeric',
       ordinal: ORDINALS[0].cronCode,
