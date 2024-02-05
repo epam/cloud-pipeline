@@ -610,6 +610,11 @@ function parse_options {
         -s|--service)
         parse_env_option "$2"
         services_count=$((services_count+1))
+        if [ -n "${CP_SERVICES_ENABLED}" ]; then 
+           export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${2}"
+        else 
+           export CP_SERVICES_ENABLED="${2}"
+        fi
         shift # past argument
         shift # past value
         ;;
@@ -627,7 +632,7 @@ function parse_options {
     esac
     done
     set -- "${POSITIONAL[@]}" # restore positional parameters
-    
+
     local cp_bad_command_msg="\"install\" or \"remove\" command shall be specified"
     if [[ "$#" == 0 ]] || [[ "$#" > 1 ]]; then
         cp_bad_command=1 
@@ -745,7 +750,13 @@ function parse_options {
     if [ $services_count == 0 ]; then
         print_warn "No specific services (-s|--service) are specified, ALL will be installed"
         export CP_INSTALL_SERVICES_ALL=1
+        export CP_SERVICES_ENABLED="all"
     fi
+    #Propagate this variable in the ConfigMap to be used by Cloud-Pipeline services (e.g. edge) during runtime
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_SERVICES_ENABLED" \
+                        "$CP_SERVICES_ENABLED"
+    
 
     if [ -z "$CP_DEPLOYMENT_ID" ]; then
         export CP_DEPLOYMENT_ID=$(head /dev/urandom | tr -dc a-z | head -c 10)
