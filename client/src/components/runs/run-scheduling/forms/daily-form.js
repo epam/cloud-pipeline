@@ -42,7 +42,7 @@ export default class DailyForm extends React.Component {
         <InputNumber
           disabled={disabled}
           min={1}
-          max={366}
+          max={31}
           onChange={this.onChange}
           value={schedule.every}
           size="small"
