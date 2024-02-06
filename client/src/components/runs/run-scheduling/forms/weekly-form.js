@@ -60,12 +60,12 @@ export default class WeeklyForm extends React.Component {
               <Tooltip key={key} title={title}>
                 <Button
                   size="small"
-                  style={{minWidth: '27px'}}
+                  style={{minWidth: '41px'}}
                   type={schedule.dayOfWeek.includes(key) ? 'primary' : ''}
                   onClick={() => this.toggleDay(key)}
                   disabled={disabled}
                 >
-                  {title[0]}
+                  {title.substring(0, 3)}
                 </Button>
               </Tooltip>
             ))

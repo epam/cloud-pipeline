@@ -31,7 +31,8 @@ export default class DaySelector extends React.Component {
       daySelectorMode: PropTypes.string,
       every: PropTypes.number
     }),
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+    maximumDays: PropTypes.number
   };
 
   onChangeDaySelectorMode = (event) => {
@@ -67,7 +68,7 @@ export default class DaySelector extends React.Component {
   };
 
   render () {
-    const {disabled, schedule} = this.props;
+    const {disabled, schedule, maximumDays} = this.props;
     return (
       <div className={styles.daySelectorContainer}>
         <div className={styles.section}>
@@ -79,7 +80,7 @@ export default class DaySelector extends React.Component {
           <InputNumber
             disabled={disabled || schedule.daySelectorMode !== DAY_SELECTOR_MODES.numeric}
             min={1}
-            max={29}
+            max={maximumDays || 31}
             onChange={this.onChangeDayNumber}
             value={schedule.dayNumber}
             size="small"
