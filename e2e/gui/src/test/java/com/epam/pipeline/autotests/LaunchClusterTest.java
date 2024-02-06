@@ -306,6 +306,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -327,7 +328,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
                 .waitForSshLink()
                 .clickTaskWithName("SLURMMasterSetup")
-                .ensure(log(), containsMessages("Master ENV is ready"))
+                .ensure(log(), containsMessages("SLURM master node has been successfully configured"))
                 .clickTaskWithName("SLURMMasterSetupWorkers")
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell

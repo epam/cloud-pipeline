@@ -404,16 +404,19 @@ public class SamplesMetadataTest
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
+//        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
-                                .ensure(withText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(save())
                                 .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))

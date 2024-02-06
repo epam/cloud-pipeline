@@ -195,7 +195,7 @@ public class ToolsParametersTest
                 .ensure(configurationParameter("MY_PARAM1", "MY_VALUE1"), exist)
                 .ensure(configurationParameter("MY_PARAM2", "MY_VALUE2"), exist)
                 .ensure(configurationParameter("MY_BOOLEAN_PARAM", "false"), exist)
-                .ensure(configurationParameter("MY_NUMBER_PARAM", "21"), exist);
+                .ensure(configurationParameter("MY_NUMBER_PARAM", "12"), exist);
     }
 
     @Test

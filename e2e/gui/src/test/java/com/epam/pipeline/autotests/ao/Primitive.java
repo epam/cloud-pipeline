@@ -142,7 +142,6 @@ public enum Primitive {
     FILES_PANEL,
     CROSS,
     CONFIGURATION,
-    ESTIMATE_PRICE,
     INSTANCE,
     EXEC_ENVIRONMENT,
     PARAMETERS,

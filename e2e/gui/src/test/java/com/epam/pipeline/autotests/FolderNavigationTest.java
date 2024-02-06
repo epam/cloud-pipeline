@@ -195,6 +195,7 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     @TestCase("EPMCMBIBPC-337")
     public void expandFolderTest() {
         pipelinesLibrary()
+            .performIf(parentItem, expandedItem, tree -> tree.click(switcherOf(parentItem)))
             .ensure(parentItem, collapsedItem)
             .ensure(childItem, not(visible))
             .click(switcherOf(parentItem))
@@ -242,9 +243,11 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     @TestCase("EPMCMBIBPC-394")
     public void collapsePipelineTest() {
         pipelinesLibrary()
+            .scrollToItem(parentFolder)
             .click(parentItem)
             .click(childItem)
             .click(pipelineItem)
+            .waitUntilPipelineVersionsOpened(pipeline)
             .ensure(pipelineItem, expandedItem, selectedItem, backgroundColorNotBlackOrWhite)
             .click(switcherOf(pipelineItem))
             .ensure(pipelineItem, collapsedItem, selectedItem, backgroundColorNotBlackOrWhite)

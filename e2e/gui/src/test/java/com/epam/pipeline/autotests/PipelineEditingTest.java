@@ -116,6 +116,7 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     public void deletePipelineFileTest() {
         new PipelineCodeTabAO(PIPELINE_NAME)
                 .deleteFile(RENAMED_FILE_NAME)
+                .sleep(10, SECONDS)
                 .ensure(byText(RENAMED_FILE_NAME.toLowerCase() + ".py"), not(exist));
     }
 

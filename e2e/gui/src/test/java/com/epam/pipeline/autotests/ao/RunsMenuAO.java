@@ -227,7 +227,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public ElementsCollection allRuns() {
-        return $("tbody").shouldBe(visible).findAll("tr");
+        return $("tbody").shouldBe(visible).findAll("tr").filter(visible);
     }
 
     public RunsMenuAO ensureHasOwner(String owner) {

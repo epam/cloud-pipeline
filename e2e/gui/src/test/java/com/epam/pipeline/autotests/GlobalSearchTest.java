@@ -111,7 +111,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                                                 .selectTool(testingTool)
                                                 .click(OK)
                                 )
-                                .ensure(byText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .click(SAVE)
                                 .ensureDisable(SAVE)
                 );

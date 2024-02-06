@@ -146,6 +146,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO checkEstimatedPriceTooltip(String message) {
+        get(INFORMATION_ICON).hover();
+        $(byText(message)).shouldBe(exist);
+        return this;
+    }
+
     public PipelineRunFormAO setDisk(String disk) {
         return setValue(DISK, disk);
     }
@@ -330,7 +336,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO launch() {
-        ensure(byText("Estimated price per hour:"), visible);
+        ensure(ESTIMATED_PRICE, visible);
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
@@ -519,6 +525,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .setServiceName(dnsName)
                 .setPort(port)
                 .save();
+    }
+
+    public PipelineRunFormAO checkEstimatedPriceValue(String expected_value) {
+        ensure(className("launch-pipeline-form__price"), text(expected_value));
+        return this;
     }
 
     @Override

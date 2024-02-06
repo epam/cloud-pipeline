@@ -86,28 +86,31 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText(fileName)).click();
 
         //Click Edit
-        $$(".pipeline-code-form__button").findBy(text("Edit")).shouldBe(exist).click();
 
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Edit")).waitUntil(exist, DEFAULT_TIMEOUT).click();
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Save")).waitUntil(exist, DEFAULT_TIMEOUT);
+
+        SelenideElement editor = $(byClassName("CodeMirror-code"));
         sleep(500, MILLISECONDS);
-        Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
-        for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
-        }
-        action.perform();
+        editor.shouldBe();
+        Utils.selectAllAndClearTextField(editor);
+        Utils.clickAndSendKeysWithSlashes(editor, newText);
 
-        Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
-
-        $$(".pipeline-code-form__button").findBy(text("Save")).click();
+        $(className("ant-modal-content")).$$(".pipeline-code-form__button")
+                .findBy(text("Save")).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $(className("ant-modal-content")).waitUntil(not(exist), DEFAULT_TIMEOUT);
+        sleep(1000, MILLISECONDS);
 
         return this;
     }
 
     public PipelineCodeTabAO uploadFile(File file) {
         sleep(5, SECONDS);
-        ensure(UPLOAD, visible);
+        ensure(UPLOAD, visible, enabled);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
         return this;
     }
@@ -196,6 +199,18 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return this;
     }
 
+    public PipelineCodeTabAO waitUntilSaveEnding() {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while ($(withText("Committing changes...")).exists()
+                && attempt < maxAttempts) {
+            sleep(1, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -237,7 +252,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         public PipelineCodeTabAO saveAndCommitWithMessage(String message) {
-            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS);
+            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS).waitUntilSaveEnding();
         }
 
         private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {

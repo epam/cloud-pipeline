@@ -271,8 +271,10 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .uploadFile(newFile2)
                 .selectPage()
                 .validateAllFilesAreSelected()
+                .ensureVisible(SELECTION_ACTIONS)
+                .click(SELECTION_ACTIONS)
                 .ensureVisible(REMOVE_ALL, CLEAR_SELECTION)
-                .ensure(SELECT_ALL, not(visible));
+                .ensure(SELECT_ALL, disabled);
     }
 
     @Test(priority = 14)

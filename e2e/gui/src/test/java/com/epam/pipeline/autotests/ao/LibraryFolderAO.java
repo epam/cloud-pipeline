@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 
@@ -60,6 +61,7 @@ public class LibraryFolderAO implements AccessObject<LibraryFolderAO> {
     }
 
     public LibraryFolderEditPopupAO clickEditButton() {
+        get(SETTINGS).waitUntil(enabled, DEFAULT_TIMEOUT);
         click(SETTINGS);
         click(EDIT_FOLDER);
         return new LibraryFolderEditPopupAO(this);
