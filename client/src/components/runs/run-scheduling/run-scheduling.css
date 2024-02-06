@@ -18,11 +18,12 @@
   max-height: 400px;
   overflow-y: auto;
   overflow-x: hidden;
-  flex-direction: column;
+  display: flex;
+  justify-content: stretch;
 }
 
 .rule-row {
-  flex-direction: column;
+  width: 100%;
 }
 
 .error-row {
@@ -32,10 +33,12 @@
 
 .scheduling {
   padding: 5px;
+  width: 100%;
 }
 
 .scheduling-with-timezone {
   padding: 5px 5px 0;
+  width: 100%;
 }
 
 .timezone {
@@ -43,4 +46,5 @@
   color: rgba(0, 0, 0, 0.5);
   text-align: right;
   font-size: 11px;
+  width: 100%;
 }
