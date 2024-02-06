@@ -120,15 +120,19 @@ export CP_EDGE_INGRESS_API_CONNECT_TIMEOUT="${CP_EDGE_INGRESS_API_CONNECT_TIMEOU
 export CP_EDGE_INGRESS_API_SEND_TIMEOUT="${CP_EDGE_INGRESS_API_SEND_TIMEOUT:-60s}"
 export CP_EDGE_INGRESS_API_READ_TIMEOUT="${CP_EDGE_INGRESS_API_READ_TIMEOUT:-60s}"
 
-if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
+services="${CP_SERVICES_ENABLED:-all}"
+if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then 
     export CP_DOLLAR="$"
-    for ingress_config in $(ls /etc/nginx/ingress/cp-*.conf); do
-        config_content="$(envsubst < $ingress_config)"
-        echo "$config_content" > "$ingress_config"
+    # Loop through each file in ingress directory /etc/nginx/ingress/ 
+    for ingress_config_tmpl in $(ls ./etc/nginx/ingress/cp-*.conf.tmpl); do
+      filename=$(basename "$ingress_config_tmpl")
+      service_name="${filename%.conf.tmpl}"
+      if [[ "$services" == "all" ]] || [[ ",${services}," =~ ",${service_name}," ]]; then
+        config_content="$(envsubst < $ingress_config_tmpl)"
+        echo "$config_content" > "${ingress_config_tmpl%.tmpl}"
+      fi
     done
     unset CP_DOLLAR
-else
-    rm -f /etc/nginx/ingress/*
 fi
 
 # Copy the "external apps" configurations to a docker filesystem
