@@ -77,7 +77,7 @@ function StatusesRegionsFilterComponent (
       style={{minWidth: 120, maxWidth: 300}}
     >
       <Row>
-        <div style={{maxHeight: 400, overflowY: 'auto'}}>
+        <div>
           <span style={{marginLeft: 5}}>Run statuses:</span>
           {
             allStatuses
@@ -106,29 +106,26 @@ function StatusesRegionsFilterComponent (
                 {'\u00A0'}
               </div>
               <span style={{marginLeft: 5}}>Regions:</span>
-              {
-                allRegions
-                  .map(region => {
-                    return (
-                      <Row
-                        style={{margin: 5}}
-                        key={region.id}
-                      >
-                        <Checkbox
-                          onChange={onChangeRegionsSelected(region.id)}
-                          checked={enabledRegionsSet.has(region.id)}
-                        >
-                          <AWSRegionTag
-                            showProvider
-                            regionUID={region.regionId}
-                            style={{fontSize: 'larger', marginRight: 3}}
-                          />
-                          {region.name}
-                        </Checkbox>
-                      </Row>
-                    );
-                  })
-              }
+              <div style={{maxHeight: 150, overflowY: 'auto'}}>
+                {allRegions.map(region => (
+                  <Row
+                    style={{margin: 5}}
+                    key={region.id}
+                  >
+                    <Checkbox
+                      onChange={onChangeRegionsSelected(region.id)}
+                      checked={enabledRegionsSet.has(region.id)}
+                    >
+                      <AWSRegionTag
+                        showProvider
+                        regionUID={region.regionId}
+                        style={{fontSize: 'larger', marginRight: 3}}
+                      />
+                      {region.name}
+                    </Checkbox>
+                  </Row>
+                ))}
+              </div>
             </div>
           ) : null}
         </div>
