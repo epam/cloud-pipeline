@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,34 +17,27 @@
 import React from 'react';
 import {Checkbox, Icon, Popover, Row} from 'antd';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import RunName from '../../run-name';
 import {parseRunServiceUrlConfiguration} from '../../../../utils/multizone';
 import StatusIcon from '../../../special/run-status-icon';
 import MultizoneUrl from '../../../special/multizone-url';
-import {
-  getFiltersState,
-  onFilterDropdownVisibilityChangedGenerator,
-  onFilterGenerator
-} from './state-utilities';
+import {multipleParametersFilterState} from './state-utilities';
 import Statuses, {getStatusName} from '../statuses';
 import RunLoadingPlaceholder from './run-loading-placeholder';
 import styles from './run-table-columns.css';
 
-function getColumnFilter (state, setState) {
-  const parameter = 'statuses';
-  const onFilterDropdownVisibleChange = onFilterDropdownVisibilityChangedGenerator(
-    parameter,
-    state,
-    setState
-  );
-  const {
-    value,
-    visible: filterDropdownVisible,
-    onChange,
-    filtered
-  } = getFiltersState(parameter, state, setState);
-  const onFilter = onFilterGenerator(parameter, state, setState);
+function StatusesRegionsFilterComponent (
+  {
+    cloudRegionsInfo,
+    statuses = [],
+    regions = [],
+    onChange = () => {},
+    onOk = () => {},
+    clear = () => {}
+  }
+) {
   const allStatuses = [
     Statuses.running,
     Statuses.pausing,
@@ -54,17 +47,26 @@ function getColumnFilter (state, setState) {
     Statuses.failure,
     Statuses.stopped
   ];
-  const clear = () => onFilter([]);
-  const enabledStatuses = new Set(value || []);
+  const allRegions = cloudRegionsInfo.loaded
+    ? cloudRegionsInfo.value.map((r) => r)
+    : [];
+  const enabledStatusesSet = new Set(statuses || []);
+  const enabledRegionsSet = new Set(regions || []);
   const onChangeStatusSelected = (status) => (e) => {
-    if (e.target.checked && !enabledStatuses.has(status)) {
-      onChange([...enabledStatuses, status]);
-    } else if (!e.target.checked && enabledStatuses.has(status)) {
-      onChange([...enabledStatuses].filter((s) => s !== status));
+    if (e.target.checked && !enabledStatusesSet.has(status)) {
+      onChange([...enabledStatusesSet, status], regions);
+    } else if (!e.target.checked && enabledStatusesSet.has(status)) {
+      onChange([...enabledStatusesSet].filter((s) => s !== status), regions);
     }
   };
-  const onOK = () => onFilterDropdownVisibleChange(false);
-  const filterDropdown = (
+  const onChangeRegionsSelected = (region) => (e) => {
+    if (e.target.checked && !enabledRegionsSet.has(region)) {
+      onChange(statuses, [...enabledRegionsSet, region]);
+    } else if (!e.target.checked && enabledRegionsSet.has(region)) {
+      onChange(statuses, [...enabledRegionsSet].filter((s) => s !== region));
+    }
+  };
+  return (
     <div
       className={
         classNames(
@@ -72,10 +74,11 @@ function getColumnFilter (state, setState) {
           'cp-filter-popover-container'
         )
       }
-      style={{width: 120}}
+      style={{minWidth: 120, maxWidth: 300}}
     >
       <Row>
         <div style={{maxHeight: 400, overflowY: 'auto'}}>
+          <span style={{marginLeft: 5}}>Run statuses:</span>
           {
             allStatuses
               .map(status => {
@@ -86,7 +89,7 @@ function getColumnFilter (state, setState) {
                   >
                     <Checkbox
                       onChange={onChangeStatusSelected(status)}
-                      checked={enabledStatuses.has(status)}
+                      checked={enabledStatusesSet.has(status)}
                     >
                       {getStatusName(status)}
                     </Checkbox>
@@ -94,6 +97,40 @@ function getColumnFilter (state, setState) {
                 );
               })
           }
+          {allRegions.length ? (
+            <div>
+              <div
+                className={classNames('cp-divider', 'horizontal')}
+                style={{margin: '5px 0'}}
+              >
+                {'\u00A0'}
+              </div>
+              <span style={{marginLeft: 5}}>Regions:</span>
+              {
+                allRegions
+                  .map(region => {
+                    return (
+                      <Row
+                        style={{margin: 5}}
+                        key={region.id}
+                      >
+                        <Checkbox
+                          onChange={onChangeRegionsSelected(region.id)}
+                          checked={enabledRegionsSet.has(region.id)}
+                        >
+                          <AWSRegionTag
+                            showProvider
+                            regionUID={region.regionId}
+                            style={{fontSize: 'larger', marginRight: 3}}
+                          />
+                          {region.name}
+                        </Checkbox>
+                      </Row>
+                    );
+                  })
+              }
+            </div>
+          ) : null}
         </div>
       </Row>
       <Row
@@ -101,10 +138,40 @@ function getColumnFilter (state, setState) {
         justify="space-between"
         className={styles.filterActionsButtonsContainer}
       >
-        <a onClick={onOK}>OK</a>
+        <a onClick={onOk}>OK</a>
         <a onClick={clear}>Clear</a>
       </Row>
     </div>
+  );
+}
+
+const StatusesRegionsFilter = inject('cloudRegionsInfo')(observer(StatusesRegionsFilterComponent));
+
+function getColumnFilter (state, setState) {
+  const statusesParameter = 'statuses';
+  const cloudRegionsParameter = 'regionIds';
+  const {
+    onChange: onChangeStatusesAndRegions,
+    onFilter,
+    values = {},
+    visible: filterDropdownVisible,
+    filtered,
+    onDropdownVisibilityChanged: onFilterDropdownVisibleChange
+  } = multipleParametersFilterState(state, setState, statusesParameter, cloudRegionsParameter);
+  const {
+    [statusesParameter]: statusesValue = [],
+    [cloudRegionsParameter]: regionsValue = []
+  } = values;
+  const onClear = () => onFilter(undefined, undefined);
+  const onOk = () => onFilter(statusesValue, regionsValue);
+  const filterDropdown = (
+    <StatusesRegionsFilter
+      onOk={onOk}
+      clear={onClear}
+      onChange={onChangeStatusesAndRegions}
+      statuses={statusesValue}
+      regions={regionsValue}
+    />
   );
   return {
     filterDropdown,
