@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
 import classNames from 'classnames';
-import {DAYS} from './forms';
+import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
 
@@ -117,14 +117,53 @@ class RunSchedulingList extends React.Component {
     );
   };
 
-  getScheduleString = ({mode, every, dayOfWeek, time: {hours, minutes}}, timeZone) => {
+  getScheduleString = (schedule, timeZone) => {
+    const {
+      mode,
+      every,
+      day,
+      dayOfWeek,
+      daySelectorMode,
+      dayNumber,
+      month,
+      ordinal,
+      time: {hours, minutes}
+    } = schedule;
     const zone = !isTimeZoneEqualCurrent(timeZone) ? timeZone : null;
-    const recurrence = mode === ruleModes.daily
-      ? `every ${every} day${+every > 1 ? 's' : ''}`
-      : `on ${dayOfWeek.sort().map((day) => getDayOfWeek(+day)).join(', ')}`;
-
+    let recurrence;
+    const scheduleOrdinal = ORDINALS
+      .find(({cronCode}) => ordinal === cronCode);
+    const scheduleDay = [...DAYS, ...Object.values(COMPUTED_DAYS)]
+      .find(({key}) => key === day);
+    const scheduleMonth = MONTHS.find(({key}) => key === month);
+    switch (mode) {
+      case ruleModes.daily:
+        recurrence = `every ${every} day${+every > 1 ? 's' : ''}`;
+        break;
+      case ruleModes.weekly:
+        recurrence = `on ${dayOfWeek.sort().map((day) => getDayOfWeek(+day)).join(', ')}`;
+        break;
+      case ruleModes.monthly:
+        if (!scheduleOrdinal || !scheduleDay) {
+          recurrence = '';
+        }
+        recurrence = daySelectorMode === 'numeric'
+          ? `every ${every} month, on ${dayNumber} day.`
+          : `every ${every} month, on ${scheduleOrdinal.title} ${scheduleDay.title}`;
+        break;
+      case ruleModes.yearly:
+        if (!scheduleOrdinal || !scheduleDay || !scheduleMonth) {
+          recurrence = '';
+        }
+        recurrence = daySelectorMode === 'numeric'
+          ? `every ${scheduleMonth.title}, on ${dayNumber} day.`
+          : `every ${scheduleMonth.title}, on ${scheduleOrdinal.title} ${scheduleDay.title}`;
+        break;
+    }
     const time = `${`0${hours}`.slice(-2)}:${`0${minutes}`.slice(-2)}`;
-
+    if (!recurrence) {
+      return '';
+    }
     return `At ${time}, ${recurrence}${zone ? ` (${zone})` : ''}`;
   };
 
