@@ -1,4 +1,4 @@
-# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import re
 import subprocess
 
 from internal.api.storages_api import Storages
+from internal.api.users_api import Users, DAV_SCOPE_ATTR_KEY
 from internal.config import Config
 from internal.model.mask import Mask, FullMask
 
@@ -37,6 +38,7 @@ class Synchronization(object):
         self.__config__ = config if config is not None else Config.instance()
         self.__users__ = []
         self.__storages__ = []
+        self.__all_users__ = Users(config).loadAll()
 
     def synchronize(self, user_ids=None, use_symlinks=False, filter_mask=FullMask.READ):
         def user_matches_criteria(test_user):
@@ -119,7 +121,15 @@ class Synchronization(object):
             syncing_storages = {}
             for storage in self.__storages__:
                 for storage_user, storage_user_mask in storage.users.items():
-                    if storage_user.username.strip().lower() == user.strip().lower():
+                    _user_lower = user.strip().lower()
+                    if storage_user.username.strip().lower() == _user_lower:
+                        if _user_lower in self.__all_users__:
+                            _user_entity = self.__all_users__[_user_lower]
+                            if DAV_SCOPE_ATTR_KEY in _user_entity \
+                                and 'owner' in _user_entity[DAV_SCOPE_ATTR_KEY] \
+                                and storage.owner.strip().lower() != _user_lower:
+                                logging.info('Skipping storage {} as the user has "owner" scope and is not an owner'.format(storage.name))
+                                continue
                         syncing_storages[storage] = storage_user_mask
 
             if use_symlinks:
