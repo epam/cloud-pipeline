@@ -752,7 +752,10 @@ function parse_options {
         export CP_INSTALL_SERVICES_ALL=1
         export CP_SERVICES_ENABLED="all"
     fi
-    #In case of redeploy of existing deployment use CP_OVERWRITE_SERVICES_ENABLED variable to set already deployed services that need to be proxied by nginx
+
+    # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
+    # (f.i. In case of redeploy of existing deployment CP_OVERWRITE_SERVICES_ENABLED variable can be used to identify already deployed services that need to be proxied by edge service)  
+    # In this case this variable would be propagated to the current session and available here, because of function parse_env_option
     if [ -n "$CP_OVERWRITE_SERVICES_ENABLED" ]; then
         export CP_SERVICES_ENABLED=$CP_OVERWRITE_SERVICES_ENABLED
     fi    
