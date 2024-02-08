@@ -570,6 +570,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return clausesCount;
     }
 
+    @SuppressWarnings("checkstyle:methodlength")
     private String makeFilterCondition(PipelineRunFilterVO filter,
                                        PipelineRunFilterVO.ProjectFilter projectFilter,
                                        MapSqlParameterSource params,
