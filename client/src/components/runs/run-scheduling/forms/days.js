@@ -31,6 +31,20 @@ export const ORDINALS = [{
   cronCode: 'L'
 }];
 
+export function getOrdinalSuffix (number) {
+  if (Number.isNaN(number)) {
+    return '';
+  }
+  const n = Number(number);
+  if (n > 3 && n < 21) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+};
+
 export const DAYS = [
   {title: 'Monday', key: '2'},
   {title: 'Tuesday', key: '3'},
