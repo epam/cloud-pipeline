@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Row} from 'antd';
 import classNames from 'classnames';
-import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS} from './forms';
+import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS, getOrdinalSuffix} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
 import RunScheduleDialog from './run-scheduling-dialog';
 
@@ -147,16 +147,17 @@ class RunSchedulingList extends React.Component {
         if (!scheduleOrdinal || !scheduleDay) {
           recurrence = '';
         }
+        const everyString = `every ${every} month${+every > 1 ? 's' : ''}`;
         recurrence = daySelectorMode === 'numeric'
-          ? `every ${every} month, on ${dayNumber} day.`
-          : `every ${every} month, on ${scheduleOrdinal.title} ${scheduleDay.title}`;
+          ? `${everyString}, on ${dayNumber}${getOrdinalSuffix(dayNumber)} day.`
+          : `${everyString}, on ${scheduleOrdinal.title} ${scheduleDay.title}`;
         break;
       case ruleModes.yearly:
         if (!scheduleOrdinal || !scheduleDay || !scheduleMonth) {
           recurrence = '';
         }
         recurrence = daySelectorMode === 'numeric'
-          ? `every ${scheduleMonth.title}, on ${dayNumber} day.`
+          ? `every ${scheduleMonth.title}, on ${dayNumber}${getOrdinalSuffix(dayNumber)} day.`
           : `every ${scheduleMonth.title}, on ${scheduleOrdinal.title} ${scheduleDay.title}`;
         break;
     }
