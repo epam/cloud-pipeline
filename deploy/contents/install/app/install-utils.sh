@@ -752,6 +752,10 @@ function parse_options {
         export CP_INSTALL_SERVICES_ALL=1
         export CP_SERVICES_ENABLED="all"
     fi
+    #In case of redeploy of existing deployment use CP_OVERWRITE_SERVICES_ENABLED variable to set already deployed services that need to be proxied by nginx
+    if [ -n "$CP_OVERWRITE_SERVICES_ENABLED" ]; then
+        export CP_SERVICES_ENABLED=$CP_OVERWRITE_SERVICES_ENABLED
+    fi    
     #Propagate this variable in the ConfigMap to be used by Cloud-Pipeline services (e.g. edge) during runtime
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_SERVICES_ENABLED" \
