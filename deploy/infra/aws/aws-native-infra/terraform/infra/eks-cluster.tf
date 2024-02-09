@@ -37,6 +37,17 @@ module "eks" {
       name = "${local.resource_name_prefix}-system-ng"
 
       instance_types = [var.eks_system_node_group_instance_type]
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = var.eks_system_node_group_volume_size
+            volume_type           = var.eks_system_node_group_volume_type
+            encrypted             = true
+            delete_on_termination = true
+          }
+        }
+      }
 
       labels = {
         "cp/node-group-type" : "cp-system"

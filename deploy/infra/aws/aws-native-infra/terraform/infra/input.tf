@@ -19,7 +19,7 @@ variable "subnet_ids" {
 }
 
 variable "cp_api_access_cidr_blocks" {
-  default = "0.0.0.0/0"
+  default     = "0.0.0.0/0"
   description = "CIDR blocks to which access to Cloud Pipeline API will be granted. Split by comma."
 
 }
@@ -51,6 +51,17 @@ variable "eks_system_node_group_size" {
   type        = number
   default     = 1
   description = "Number of nodes o spin up for internal-system eks node group. (Nodes that will host internal workload such as fsx-csi plugin, autoscaler, etc)"
+}
+
+variable "eks_system_node_group_volume_size" {
+  type        = number
+  default     = 200
+  description = "Volume size of cp-system EKS node."
+}
+variable "eks_system_node_group_volume_type" {
+  default     = "gp3"
+  type        = string
+  description = "Volume type of cp-system EKS node."
 }
 
 variable "efs_performance_mode" {
