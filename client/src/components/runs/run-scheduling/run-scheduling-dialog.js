@@ -130,25 +130,28 @@ export default class RunScheduleDialog extends React.Component {
     const validationErrors = [];
     const cronExpressions = rules.map((r, index) => ({
       ruleIndex: index,
-      expression: CronConvert.convertToCronString(r.schedule)
+      expression: CronConvert.convertToCronString(r.schedule),
+      removed: r.removed
     }));
     rules.forEach(({removed, schedule: {mode, dayOfWeek}}, index) => {
       if (!removed && mode === ruleModes.weekly &&
         (dayOfWeek.length === 0 || (dayOfWeek.length === 1 && dayOfWeek[0] === '*'))) {
         validationErrors.push({index, message: 'You must choose at least one weekday.'});
       }
-      const hasDuplicates = cronExpressions.find(({expression, ruleIndex}) => {
-        const currentExpression = cronExpressions[index].expression;
-        return currentExpression === expression && index !== ruleIndex;
-      });
-      if (hasDuplicates) {
+      const hasDuplicates = cronExpressions
+        .find(({expression, ruleIndex, removed}) => {
+          const current = cronExpressions[index];
+          return current.expression === expression &&
+            index !== ruleIndex &&
+            !removed;
+        });
+      if (!removed && hasDuplicates) {
         validationErrors.push({
           index,
           message: 'A rule with the same configuration already exists.'
         });
       }
     });
-
     this.setState({validationErrors});
     return !(validationErrors.length > 0);
   };
