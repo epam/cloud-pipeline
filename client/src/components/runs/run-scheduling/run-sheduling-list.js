@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Icon, Row} from 'antd';
+import {Icon, Row, Spin} from 'antd';
 import classNames from 'classnames';
 import {COMPUTED_DAYS, DAYS, MONTHS, ORDINALS, getOrdinalSuffix} from './forms';
 import {isTimeZoneEqualCurrent, CronConvert, ruleModes} from './cron-convert';
@@ -170,6 +170,7 @@ class RunSchedulingList extends React.Component {
 
   renderList = () => {
     const {rules} = this.state;
+    const {pending} = this.props;
     const renderRule = ({action, schedule, timeZone}, i) => {
       return (
         <Row type="flex" key={`rule_${action}_${i}`}>
@@ -177,16 +178,14 @@ class RunSchedulingList extends React.Component {
         </Row>
       );
     };
-
-    return (rules || []).map(renderRule);
+    return (
+      <Spin spinning={!!pending}>
+        {(rules || []).map(renderRule)}
+      </Spin>
+    );
   };
 
   render () {
-    const {pending} = this.props;
-    if (pending) {
-      return <Icon type="loading" />;
-    }
-
     return (
       <Row type="flex" style={{flexDirection: 'column'}}>
         {this.renderList()}
