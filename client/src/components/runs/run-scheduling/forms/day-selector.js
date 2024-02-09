@@ -48,9 +48,7 @@ export default class DaySelector extends React.Component {
     onChange && onChange({
       ...schedule,
       ordinal: value,
-      day: schedule.day === COMPUTED_DAYS.day.key
-        ? DAYS[0].key
-        : schedule.day
+      day: DAYS[0].key
     });
   };
 
