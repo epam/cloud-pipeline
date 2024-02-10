@@ -362,6 +362,14 @@ resource "aws_iam_policy" "cp_main_service" {
         "Resource" : [
           "arn:aws:iam::*:role/${local.resource_name_prefix}*"
         ]
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "iam:GetRole",
+          "iam:PassRole"
+        ],
+        "Resource": aws_iam_role.eks_node_execution.arn
       }
     ]
   })
