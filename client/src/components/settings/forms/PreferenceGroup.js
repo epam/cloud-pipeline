@@ -78,7 +78,6 @@ export default class PreferenceGroup extends React.Component {
     return initialValue !== value || preference.visible !== formPreference.visible;
   };
 
-  @computed
   get modified () {
     if (!this.props.preferences || this.props.preferences.length === 0) {
       return false;
