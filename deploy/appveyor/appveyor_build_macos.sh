@@ -19,10 +19,10 @@ set -e
 source ~/venv2.7*/bin/activate
 
 HOMEBREW_NO_AUTO_UPDATE=1 brew install zlib openssl@1.1
-export CFLAGS="-I$(brew --prefix openssl)/include -I$(xcrun --show-sdk-path)/usr/include"
-export LDFLAGS="-L$(brew --prefix openssl)/lib"
-export CFLAGS="-I$(brew --prefix openssl)/include $CFLAGS"
-export LDFLAGS="-L$(brew --prefix openssl)/lib $LDFLAGS"
+export CFLAGS="-I$(brew --prefix zlib)/include -I$(xcrun --show-sdk-path)/usr/include"
+export LDFLAGS="-L$(brew --prefix zlib)/lib"
+export CFLAGS="-I$(brew --prefix openssl@1.1)/include $CFLAGS"
+export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib $LDFLAGS"
 
 echo $CFLAGS
 echo $LDFLAGS
