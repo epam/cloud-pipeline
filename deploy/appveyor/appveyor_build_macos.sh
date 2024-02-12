@@ -18,12 +18,13 @@ set -e
 
 source ~/venv2.7*/bin/activate
 
+HOMEBREW_NO_AUTO_UPDATE=1 brew install zlib
 export CFLAGS="-I$(brew --prefix openssl)/include -I$(xcrun --show-sdk-path)/usr/include"
 export LDFLAGS="-L$(brew --prefix openssl)/lib"
-
 echo $CFLAGS
 echo $LDFLAGS
 
+HOMEBREW_NO_AUTO_UPDATE=1 brew install pyenv
 pyenv install 2.7.18
 pyenv global 2.7.18
 
