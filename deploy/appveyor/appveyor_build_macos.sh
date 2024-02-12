@@ -17,8 +17,16 @@
 set -e
 
 source ~/venv2.7*/bin/activate
-export LDFLAGS="-L/usr/local/opt/zlib/lib"
-export CPPFLAGS="-I/usr/local/opt/zlib/include"
+
+export CFLAGS="-I$(brew --prefix openssl)/include -I$(xcrun --show-sdk-path)/usr/include"
+export LDFLAGS="-L$(brew --prefix openssl)/lib"
+
+echo $CFLAGS
+echo $LDFLAGS
+
+pyenv install 2.7.18
+pyenv global 2.7.18
+
 
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
