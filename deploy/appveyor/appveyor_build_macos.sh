@@ -31,6 +31,8 @@ HOMEBREW_NO_AUTO_UPDATE=1 brew install pyenv
 pyenv install 2.7.18
 pyenv global 2.7.18
 
+pyenv versions
+echo $PATH
 
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
