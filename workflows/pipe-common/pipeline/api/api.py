@@ -1333,9 +1333,17 @@ class PipelineAPI:
             raise RuntimeError("Failed to load permissions for entity '{}' with ID '{}', error: {}".format(
                 entity_class, str(entity_id), str(e)))
 
-    def update_pipeline_run_tags(self, run_id, tags):
+    def update_pipeline_run_tags(self, run_id, tags, keep_existing_tags=False):
         try:
-            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data=tags)
+            if 'tags' in tags:
+                tags = tags['tags']
+
+            if keep_existing_tags:
+                run = self.load_run(run_id)
+                current_tags = run.get('tags') or {}
+                tags.update(current_tags)
+
+            return self._request(endpoint=self.RUN_TAG.format(id=str(run_id)), http_method='post', data={ 'tags': tags })
         except Exception as e:
             raise RuntimeError("Failed to update tags for run ID '{}', error: {}".format(str(run_id), str(e)))
 

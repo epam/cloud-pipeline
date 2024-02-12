@@ -68,6 +68,9 @@ function log_oom_killer_events() {
     then
       EVENT_MESSAGE=$(echo "$i" | sed -e 's/\[[^][]*\]//g' | xargs)
       pipe_log_warn "[WARN] $EVENT_MESSAGE" "$LOG_TASK"
+      if [ "$CP_OOM_TAG_RUNS" == "true" ]; then
+        pipe_tag "$CP_OOM_TAG_NAME" "$CP_OOM_TAG_VALUE"
+      fi
     fi
   done
 }
@@ -147,6 +150,9 @@ export API_TOKEN
 
 LOG_TASK="${LOG_TASK:-OOM Logs}"
 MONITORING_DELAY="${MONITORING_DELAY:-10}"
+CP_OOM_TAG_RUNS="${CP_OOM_TAG_RUNS:-false}"
+CP_OOM_TAG_NAME="${CP_OOM_TAG_NAME:-PROC_OUT_OF_MEMORY}"
+CP_OOM_TAG_VALUE="${CP_OOM_TAG_VALUE:-true}"
 
 LAST_SYNC_MARK=0
 if [[ -s "$SYNC_FILE" ]]; then
