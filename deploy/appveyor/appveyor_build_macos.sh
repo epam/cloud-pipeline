@@ -16,25 +16,7 @@
 
 set -e
 
-source ~/venv2.7*/bin/activate
-
-HOMEBREW_NO_AUTO_UPDATE=1 brew install zlib openssl@1.1
-export CFLAGS="-I$(brew --prefix zlib)/include -I$(xcrun --show-sdk-path)/usr/include"
-export LDFLAGS="-L$(brew --prefix zlib)/lib"
-export CFLAGS="-I$(brew --prefix openssl@1.1)/include $CFLAGS"
-export LDFLAGS="-L$(brew --prefix openssl@1.1)/lib $LDFLAGS"
-
-echo $CFLAGS
-echo $LDFLAGS
-
-HOMEBREW_NO_AUTO_UPDATE=1 brew install pyenv
-pyenv install 2.7.18
-pyenv global 2.7.18
-
-eval "$(pyenv init -)"
-
-pyenv versions
-echo $PATH
+source ~/venv2.8*/bin/activate
 
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
@@ -42,9 +24,6 @@ echo $PATH
           --no-daemon \
           -x :pipe-cli:test
 
-deactivate
-
-source ~/venv3.8*/bin/activate
 pip install awscli
 
 cd pipe-cli
