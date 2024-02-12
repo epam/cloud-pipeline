@@ -17,6 +17,9 @@
 set -e
 
 source ~/venv2.7*/bin/activate
+export LDFLAGS="-L/usr/local/opt/zlib/lib"
+export CPPFLAGS="-I/usr/local/opt/zlib/include"
+
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
           pipe-cli:buildMac \
