@@ -5,6 +5,7 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
+    - custom-py2
 
 skip_tags: true
 max_jobs: 1
