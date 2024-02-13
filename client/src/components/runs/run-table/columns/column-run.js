@@ -30,7 +30,7 @@ import styles from './run-table-columns.css';
 
 function StatusesRegionsFilterComponent (
   {
-    cloudRegionsInfo,
+    awsRegions: cloudRegionsInfo,
     statuses = [],
     regions = [],
     onChange = () => {},
@@ -142,7 +142,7 @@ function StatusesRegionsFilterComponent (
   );
 }
 
-const StatusesRegionsFilter = inject('cloudRegionsInfo')(observer(StatusesRegionsFilterComponent));
+const StatusesRegionsFilter = inject('awsRegions')(observer(StatusesRegionsFilterComponent));
 
 function getColumnFilter (state, setState) {
   const statusesParameter = 'statuses';
