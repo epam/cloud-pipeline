@@ -60,6 +60,8 @@ EDGE_DNS_RECORD_FORMAT = os.getenv('CP_EDGE_DNS_RECORD_FORMAT', '{job_name}.{reg
 EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT = os.getenv('EDGE_DISABLE_NAME_SUFFIX_FOR_DEFAULT_ENDPOINT', 'True').lower() == 'true'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
 EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
+EDGE_ALL_PODS_SELECTOR_LABEL_NAME = os.getenv('EDGE_ALL_PODS_SELECTOR_LABEL_NAME', 'spawned_by')
+EDGE_ALL_PODS_SELECTOR_LABEL_VALUE = os.getenv('EDGE_ALL_PODS_SELECTOR_LABEL_VALUE', 'pipeline-api')
 RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
@@ -693,7 +695,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
 def load_pods_for_runs_with_endpoints():
         pods_with_endpoints = []
-        all_pipeline_pods = Pod.objects(kube_api).filter(selector={'type': 'pipeline'})\
+        all_pipeline_pods = Pod.objects(kube_api).filter(selector={EDGE_ALL_PODS_SELECTOR_LABEL_NAME: EDGE_ALL_PODS_SELECTOR_LABEL_VALUE}) \
                                                  .filter(field_selector={"status.phase": "Running"})
         for pod in all_pipeline_pods.response['items']:
                 pipeline_env_parameters = None
