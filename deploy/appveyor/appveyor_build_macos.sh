@@ -18,6 +18,12 @@ set -e
 
 source ~/venv2.7*/bin/activate
 
+HOMEBREW_NO_AUTO_UPDATE=1 brew install zlib
+export CFLAGS="-I$(brew --prefix zlib)/include -I$(xcrun --show-sdk-path)/usr/include"
+export LDFLAGS="-L$(brew --prefix zlib)/lib"
+
+echo $CFLAGS $LDFLAGS
+
 which python2
 which pip
 which pip2
