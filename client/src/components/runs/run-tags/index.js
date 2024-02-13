@@ -30,7 +30,8 @@ const KNOWN_TAGS = [
   'sge_in_use',
   'slurm_in_use',
   'recovered',
-  'node_unavailable'
+  'node_unavailable',
+  'proc_out_of_memory'
 ];
 
 const isInstanceLink = (tag) => {
@@ -93,7 +94,7 @@ function Tag (
           'accent',
           {
             warning: /^idle$/i.test(tag),
-            critical: /^(pressure|recovered)$/i.test(tag),
+            critical: /^(pressure|recovered|proc_out_of_memory)$/i.test(tag),
             hovered: /^recovered$/i.test(tag),
             primary: /^(sge_in_use|slurm_in_use)$/i.test(tag),
             filled: /^black$/i.test(theme),
