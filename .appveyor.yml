@@ -15,7 +15,7 @@ matrix:
 environment:
   matrix:
     - job_name: CLI_MacOS
-      appveyor_build_worker_image: macos
+      appveyor_build_worker_image: macos-catalina
     - job_name: Build_All
       job_depends_on: CLI_MacOS
       appveyor_build_worker_image: Ubuntu1604
