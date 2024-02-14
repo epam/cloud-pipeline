@@ -642,7 +642,10 @@ class S3Mounter(StorageMounter):
             if debug_libfuse:
                 merged_options = merged_options + ',debug'
             if mount_options:
-                merged_options = merged_options + ',' + self.remove_prefix(mount_options.strip(), '-o').strip()
+                if mount_options.startswith('-c'):
+                    merged_options = merged_options + ' ' + mount_options
+                else:
+                    merged_options = merged_options + ',' + self.remove_prefix(mount_options.strip(), '-o').strip()
             if logging_level:
                 params['logging_level'] = logging_level
             return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
