@@ -21,4 +21,4 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/os: linux
-        cp/node-group-type: cp-system
+        cloud-pipeline/node-group-type: system

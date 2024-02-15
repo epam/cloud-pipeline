@@ -50,7 +50,7 @@ module "eks" {
       }
 
       labels = {
-        "cp/node-group-type" : "cp-system"
+        "cloud-pipeline/node-group-type" : "system"
       }
 
       min_size     = var.eks_system_node_group_size
