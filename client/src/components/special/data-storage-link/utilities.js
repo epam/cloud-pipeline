@@ -91,7 +91,7 @@ export function getStorageLinkInfo (options) {
     storage = findStorageByPath(correctedPath, storages);
   }
   let relativePath = correctedPath || '';
-  if (storage && relativePath.startsWith((storage.pathMask || '').toLowerCase())) {
+  if (storage && relativePath.toLowerCase().startsWith((storage.pathMask || '').toLowerCase())) {
     relativePath = relativePath.slice((storage.pathMask || '').length);
   }
   if (relativePath.startsWith('/')) {
