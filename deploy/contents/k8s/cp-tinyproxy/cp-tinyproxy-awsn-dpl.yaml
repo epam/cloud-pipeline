@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-tinyproxy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-tinyproxy: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-tinyproxy: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-tinyproxy: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-tinyproxy
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:tinyproxy-$CP_VERSION
+          imagePullPolicy: "IfNotPresent"
+          command: ["/init"]
+          env:
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/tinyproxy/logs
+              subPath: tinyproxy/logs
+              name: cp-system
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

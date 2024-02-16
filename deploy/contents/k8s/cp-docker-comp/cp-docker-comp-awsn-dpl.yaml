@@ -31,10 +31,11 @@ spec:
               name: cp-config-global
           volumeMounts:
             - mountPath: ${CP_DOCKER_COMP_WORKING_DIR}
-              name: docker-comp-wd
+              subPath: docker-comp/wd
+              name: cp-system
       volumes:
-        - name: docker-comp-wd
-          hostPath:
-            path: /opt/docker-comp/wd
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

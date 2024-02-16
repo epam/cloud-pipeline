@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-vm-monitor
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-vm-monitor: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-vm-monitor: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-vm-monitor: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      serviceAccountName: cp-main-service
+      containers:
+        - name: cp-vm-monitor
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:vm-monitor-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - name: cp-system
+              mountPath: /opt/vm-monitor/logs
+              subPath: vm-monitor/logs
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/api/sso
+              subPath: api/sso
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/gitlab/pki
+              subPath: gitlab/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/gitlab/sso
+              subPath: gitlab/sso
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/docker-registry/pki
+              subPath: docker-registry/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/edge/pki
+              subPath: edge/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/share-srv/pki
+              subPath: share-srv/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/share-srv/sso
+              subPath: share-srv/sso
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /fs/core-fs
+              name: cp-system
+              readOnly: true
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
