@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress
+  namespace: default
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-scheme: ${CP_EDGE_ELB_SCHEME}
+    service.beta.kubernetes.io/aws-load-balancer-subnets: ${CP_EDGE_ELB_SUBNETS}
+    service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${CP_EDGE_ELB_EIPALLOCS}
+    service.beta.kubernetes.io/aws-load-balancer-security-groups: ${CP_EDGE_ELB_SG}
+spec:
+  type: LoadBalancer
+  selector:
+    cloud-pipeline/role: "EDGE"
+    cloud-pipeline/region: $CP_CLOUD_REGION_ID
+    cloud-pipeline/cp-edge: "true"
+  ports:
+    - port: 443
+      targetPort: 8080
+      protocol: TCP
