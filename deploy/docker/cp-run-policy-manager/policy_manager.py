@@ -34,6 +34,7 @@ K8S_LABELS_KEY = 'labels'
 K8S_METADATA_KEY = 'metadata'
 K8S_METADATA_NAME_FIELD_SELECTOR = 'metadata.name={}'
 K8S_SPEC_KEY = 'spec'
+K8S_INGRESS_KEY = 'ingress'
 K8S_EGRESS_KEY = 'egress'
 NETPOL_OWNER_PLACEHOLDER = '<OWNER>'
 NETPOL_NAME_PREFIX_PLACEHOLDER = '<POLICY_NAME_PREFIX>'
@@ -121,10 +122,22 @@ def load_all_active_policies():
 def create_policy(owner, policy_type):
     log_message('Creating policy [{}-{}]...'.format(owner, policy_type))
     api = get_custom_resource_api()
+    sanitized_owner_name = sanitize_name(owner)
     policy_yaml = create_policy_yaml_object(owner, policy_type)
     policy_name_template = policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
-    sanitized_owner_name = sanitize_name(owner)
-    policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
+    policy_name_prefix = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER, sanitized_owner_name)
+    policy_name = generate_policy_name(api, policy_name_prefix)
+    policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name
+    api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                        version=CALICO_RESOURCES_VERSION,
+                                        namespace=NAMESPACE,
+                                        plural=CALICO_NETPOL_PLURAL,
+                                        body=policy_yaml)
+    log_message('Policy [{}] created successfully'.format(policy_name))
+
+
+def generate_policy_name(api, policy_name_prefix):
+    policy_name_candidate = policy_name_prefix
     while True:
         existing_policy_response = api.list_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
                                                                      version=CALICO_RESOURCES_VERSION,
@@ -132,20 +145,11 @@ def create_policy(owner, policy_type):
                                                                      plural=CALICO_NETPOL_PLURAL,
                                                                      field_selector=K8S_METADATA_NAME_FIELD_SELECTOR
                                                                      .format(policy_name_candidate))
-        if len(existing_policy_response.get('items')) > 0:
-            log_message('Policy with name [{}] exists already: generating suffix for the current one.'
-                        .format(policy_name_candidate))
-            policy_name_candidate = policy_name_template.replace(NETPOL_NAME_PREFIX_PLACEHOLDER,
-                                                                 sanitized_owner_name + '-' + str(uuid.uuid4())[:8])
-        else:
-            policy_yaml[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name_candidate
-            api.create_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
-                                                version=CALICO_RESOURCES_VERSION,
-                                                namespace=NAMESPACE,
-                                                plural=CALICO_NETPOL_PLURAL,
-                                                body=policy_yaml)
-            log_message('Policy [{}] created successfully'.format(policy_name_candidate))
-            break
+        if not existing_policy_response.get('items', []):
+            return policy_name_candidate
+        log_message('Policy with name [{}] exists already: generating suffix for the current one.'
+                    .format(policy_name_candidate))
+        policy_name_candidate = policy_name_prefix + '-' + str(uuid.uuid4())[:8]
 
 
 def sanitize_name(name: str):
@@ -179,7 +183,6 @@ def create_policy_yaml_object(owner, policy_type):
 
 
 def get_user_token(user_name):
-    log_message('Collecting token for {}...'.format(user_name))
     token_wrapper = cp_get('user/token?name=' + user_name) or {}
     return token_wrapper.get('token')
 
@@ -189,16 +192,12 @@ def get_available_file_share_ips(user_name):
     if not user_token:
         log_message('Access token has not been found for {} '.format(user_name))
         return
-    log_message('Collecting available file share ips for {}...'.format(user_name))
     for file_share_mount_root in sorted(set(get_available_file_share_mount_roots(user_token))):
         file_share_ip = file_share_mount_root.split(':')[0]
         if not file_share_ip:
-            log_message('Skipping empty file share ip...')
             continue
         if not is_valid_ip_address(file_share_ip):
-            log_message('Skipping invalid file share ip {}...'.format(file_share_ip))
             continue
-        log_message('Collected file share ip {}...'.format(file_share_ip))
         yield file_share_ip
 
 
@@ -217,6 +216,23 @@ def is_valid_ip_address(ip):
         return True
     except ValueError:
         return False
+
+
+def update_policy(owner, policy_type, actual_policy):
+    policy_name = actual_policy[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
+    required_policy = create_policy_yaml_object(owner, policy_type)
+    required_policy[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY] = policy_name
+    if actual_policy[K8S_SPEC_KEY] == required_policy[K8S_SPEC_KEY]:
+        return
+    log_message('Updating policy [{}]...'.format(policy_name))
+    api = get_custom_resource_api()
+    api.patch_namespaced_custom_object(group=CALICO_RESOURCES_GROUP,
+                                       version=CALICO_RESOURCES_VERSION,
+                                       namespace=NAMESPACE,
+                                       plural=CALICO_NETPOL_PLURAL,
+                                       name=policy_name,
+                                       body=required_policy)
+    log_message('Policy [{}] updated successfully'.format(policy_name))
 
 
 def delete_policy(policy_name):
@@ -275,29 +291,45 @@ def get_policies_owners_set(policies):
     return owners
 
 
-def create_missed_policies(active_pods, active_policies, policy_type):
-    pods_owners = get_pods_owners_set(active_pods)
-    users_affected_by_policies = get_policies_owners_set(active_policies)
+def create_missing_policies(pods, policies, policy_type):
+    pods_owners = get_pods_owners_set(pods)
+    policies_owners = get_policies_owners_set(policies)
     for owner in pods_owners:
-        if owner not in users_affected_by_policies:
-            try:
-                create_policy(owner, policy_type)
-            except Exception:
-                log_message('[ERROR] Error occurred while CREATING policy [{}-{}]:\n{}'
-                            .format(owner, policy_type, traceback.format_exc()))
+        if owner in policies_owners:
+            continue
+        try:
+            create_policy(owner, policy_type)
+        except Exception:
+            log_message('[ERROR] Error occurred while CREATING policy [{}-{}]:\n{}'
+                        .format(owner, policy_type, traceback.format_exc()))
 
 
-def drop_excess_policies(active_pods, active_policies):
-    pods_owners = get_pods_owners_set(active_pods)
-    for policy in active_policies:
-        policy_metadata = policy[K8S_METADATA_KEY]
-        user_affected_by_policy = policy_metadata[K8S_LABELS_KEY][OWNER_LABEL]
-        if user_affected_by_policy not in pods_owners:
-            try:
-                delete_policy(policy_metadata[K8S_OBJ_NAME_KEY])
-            except Exception:
-                log_message('[ERROR] Error occurred while DELETING policy [{}]:\n{}'
-                            .format(policy_metadata[K8S_OBJ_NAME_KEY], traceback.format_exc()))
+def update_existing_policies(pods, policies, policy_type):
+    pods_owners = get_pods_owners_set(pods)
+    for policy in policies:
+        policy_name = policy[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
+        policy_owner = policy[K8S_METADATA_KEY][K8S_LABELS_KEY][OWNER_LABEL]
+        if policy_owner not in pods_owners:
+            continue
+        try:
+            update_policy(policy_owner, policy_type, policy)
+        except Exception:
+            log_message('[ERROR] Error occurred while UPDATING policy [{}]:\n{}'
+                        .format(policy_name, traceback.format_exc()))
+
+
+def drop_existing_policies(pods, policies):
+    pods_owners = get_pods_owners_set(pods)
+    for policy in policies:
+        policy_name = policy[K8S_METADATA_KEY][K8S_OBJ_NAME_KEY]
+        policy_owner = policy[K8S_METADATA_KEY][K8S_LABELS_KEY][OWNER_LABEL]
+        if policy_owner in pods_owners:
+            continue
+        try:
+            delete_policy(policy_name)
+        except Exception:
+            log_message('[ERROR] Error occurred while DELETING policy [{}]:\n{}'
+                        .format(policy_name, traceback.format_exc()))
 
 
 def main():
@@ -339,24 +371,18 @@ def main():
                 else:
                     common_pods.append(pod)
 
+            policy_sets = [(common_pods, common_policies, POLICY_TYPE_COMMON),
+                           (internal_pods, internal_policies, POLICY_TYPE_INTERNAL),
+                           (sensitive_pods, sensitive_policies, POLICY_TYPE_SENSITIVE)]
             try:
-                create_missed_policies(common_pods, common_policies, POLICY_TYPE_COMMON)
-                create_missed_policies(internal_pods, internal_policies, POLICY_TYPE_INTERNAL)
-                create_missed_policies(sensitive_pods, sensitive_policies, POLICY_TYPE_SENSITIVE)
+                for pods, policies, policy_type in policy_sets:
+                    create_missing_policies(pods, policies, policy_type)
+                    update_existing_policies(pods, policies, policy_type)
+                    drop_existing_policies(pods, policies)
             except Exception:
-                log_message('[ERROR] Error occurred while CREATING new policies:\n{}'
+                log_message('[ERROR] Error occurred while processing new policies:\n{}'
                             .format(traceback.format_exc()))
 
-            # todo: Update existing policies
-
-            try:
-                drop_excess_policies(common_pods, common_policies)
-                drop_excess_policies(internal_pods, internal_policies)
-                drop_excess_policies(sensitive_pods, sensitive_policies)
-            except Exception:
-                log_message('[ERROR] Error occurred while DELETING policies:\n{}'
-                            .format(traceback.format_exc()))
-            
         except Exception:
             log_message('[ERROR] General error occurred:\n{}'
                         .format(traceback.format_exc()))
