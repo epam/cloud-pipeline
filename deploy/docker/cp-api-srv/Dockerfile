@@ -12,13 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build . \
-#   -t ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-srv-latest \
-#   --build-arg CP_API_DIST_URL="https://..." \
-#   --build-arg OPENSSL_DIST_URL="https://..." \
-#   --build-arg OSSLSIGNCODE_DIST_URL="https://..."
+ARG BASE_IMAGE="centos:7"
 
-FROM centos:7
+FROM $BASE_IMAGE AS compile-stage
+
+ENV CP_API_HOME="/opt/api"
+
+ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+
+ADD dist/bin $CP_API_HOME
+RUN ls -dp $CP_API_HOME/* \
+        | grep '\.jar$' \
+        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
+        | xargs rm -f
+
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -91,39 +99,24 @@ RUN pip install -I  portalocker==1.7.1 \
 # GCP - specific packages
 RUN pip install -I google-api-python-client
 
-# API distribution
-ARG CP_API_DIST_URL=""
-ENV CP_API_HOME="/opt/api"
-ARG REQUIRED_JARS_REGEX="pipeline|jwt-generator|data-transfer-service"
+RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
+    && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    rm -rf bin/pipe-templates/__SYSTEM && \
-    mkdir -p $CP_API_HOME && \
-    ls -dp bin/* \
-        | grep '\.jar$' \
-        | grep -v -E "/($REQUIRED_JARS_REGEX)\.jar$" \
-        | xargs rm -f && \
-    mv bin/* $CP_API_HOME/ && \
-    rm -f cloud-pipeline.tgz && \
-    rm -rf bin
+ENV CP_API_HOME="/opt/api"
+
+COPY --from=compile-stage $CP_API_HOME $CP_API_HOME
+
+ADD dist/pipe-common.tar.gz $CP_API_HOME/pipe-common
+RUN cd $CP_API_HOME/pipe-common  \
+    && pip install -I .
+
 ADD config $CP_API_HOME/config
 
-# Install pipe-common package
-RUN mkdir -p /tmp/pipe-temp && \
-    cp /opt/api/pipeline.jar /tmp/pipe-temp/ && \
-    cd /tmp/pipe-temp/ && \
-    unzip -qq pipeline.jar && \
-    pip install -I /tmp/pipe-temp/BOOT-INF/classes/static/pipe-common.tar.gz && \
-    cd / && \
-    rm -rf /tmp/pipe-temp
-
 # Install projects templates
-ADD folder-templates /opt/api/folder-templates
+ADD folder-templates $CP_API_HOME/folder-templates
 
 # Install error-pages templates
-ADD error-pages /opt/api/static/error
+ADD error-pages $CP_API_HOME/static/error
 
 # Add initialization scripts (api jar and git-sync)
 ADD init-api /init-api
@@ -136,11 +129,8 @@ RUN chmod +x /init* && \
     chmod +x /update-trust && \
     chmod +x /liveness-git-sync.sh
 
-RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
-    && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
-
 COPY filebeat-template.yml /etc/filebeat/
 
-WORKDIR /opt/api
+WORKDIR $CP_API_HOME
 
 CMD ["/init-api"]

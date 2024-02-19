@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+ARG BASE_IMAGE="ubuntu:18.04"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN apt update && \
@@ -24,29 +25,21 @@ RUN apt update && \
                 python3 python3-venv python3-pip python3-dev \
                 build-essential libssl-dev libffi-dev python3-setuptools
 
-RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust==0.12.1
+RUN python3 -m pip install --upgrade pip \
+    && pip3 install setuptools_rust==0.12.1 \
+    && python3 -m pip install wheel \
+    && python3 -m pip install uwsgi==2.0.20
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_GITLAB_READER_HOME="/opt/gitlab-reader"
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_GITLAB_READER_HOME && \
-    mv bin/gitreader.tar.gz $CP_GITLAB_READER_HOME/ && \
-    rm -rf /tmp/* && \
-    cd $CP_GITLAB_READER_HOME/ && \
-    tar -zxf $CP_GITLAB_READER_HOME/gitreader.tar.gz && \
-    rm -rf $CP_GITLAB_READER_HOME/gitreader.tar.gz  && \
-    mv gitreader* gitreader && \
-    chown -R root:root gitreader && chmod -R 777 gitreader
+ADD dist/bin/gitreader.tar.gz $CP_GITLAB_READER_HOME
 
-RUN cd $CP_GITLAB_READER_HOME/gitreader && \
-    python3 -m pip install wheel && \
-    python3 -m pip install uwsgi==2.0.20 && \
-    python3 setup.py install
-
+RUN cd $CP_GITLAB_READER_HOME/ \
+    && mv gitreader* gitreader \
+    && chown -R root:root gitreader \
+    && chmod -R 777 gitreader \
+    && cd $CP_GITLAB_READER_HOME/gitreader \
+    && python3 setup.py install
 
 ADD init.sh /init.sh
 RUN chmod +x /init.sh

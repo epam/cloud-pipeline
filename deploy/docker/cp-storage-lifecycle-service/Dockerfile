@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:18.04
+ARG BASE_IMAGE="ubuntu:18.04"
+FROM $BASE_IMAGE
+
 RUN apt update && \
         apt install -y \
                     wget \
@@ -21,39 +23,25 @@ RUN apt update && \
                     gcc \
                     python3 python3-venv python3-pip python3-dev \
                     build-essential libssl-dev libffi-dev python3-setuptools
-RUN python3 -m pip install --upgrade pip && python3 -m pip install setuptools_rust
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install setuptools_rust
 
-# API distribution
-ARG CP_API_DIST_URL=""
-ENV COMMON_REPO_DIR=/usr/sbin/CommonRepo
+ENV COMMON_REPO_DIR="/usr/sbin/CommonRepo"
 ENV CP_SLS_HOME="/opt/cp-sls"
 ENV CP_SLS_RUN_MODE=""
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    cd bin && \
-    mkdir -p $CP_SLS_HOME && \
-    mv sls.tar.gz $CP_SLS_HOME/ && \
-    unzip pipeline.jar && \
-    mkdir -p $COMMON_REPO_DIR && \
-    mv BOOT-INF/classes/static/pipe-common.tar.gz $COMMON_REPO_DIR/pipe-common.tar.gz && \
-    # Installing pipe-common
-    cd $COMMON_REPO_DIR && \
-    tar xf pipe-common.tar.gz && \
-    python3 -m pip install . $CP_PIP_EXTRA_ARGS -I && \
-    chmod 777 . -R && \
-    rm -f pipe-common.tar.gz && \
-    # Copy sls distro
-    cd $CP_SLS_HOME/ && \
-    tar -zxf $CP_SLS_HOME/sls.tar.gz && \
-    rm -rf $CP_SLS_HOME/sls.tar.gz  && \
-    mv sls* sls && \
-    chown -R root:root sls && chmod -R 777 sls && \
-    rm -rf /tmp/*
+ADD dist/bin/sls.tar.gz $CP_SLS_HOME
+RUN cd $CP_SLS_HOME/ \
+    && mv sls* sls \
+    && chown -R root:root sls \
+    && chmod -R 777 sls \
+    && cd $CP_SLS_HOME/sls \
+    && python3 setup.py install
 
-RUN cd $CP_SLS_HOME/sls && \
-    python3 setup.py install
+ADD dist/pipe-common.tar.gz $COMMON_REPO_DIR
+RUN cd $COMMON_REPO_DIR \
+    && chmod 777 . -R \
+    && python3 -m pip install . $CP_PIP_EXTRA_ARGS -I
 
 ADD liveness.sh /liveness.sh
 RUN chmod +x /liveness.sh

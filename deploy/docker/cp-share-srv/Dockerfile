@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# docker build . \
-#   -t ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:share-srv-latest \
-#   --build-arg CP_API_DIST_URL="https://..."
-
-FROM centos:7
+ARG BASE_IMAGE="centos:7"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -27,26 +24,17 @@ RUN yum install -y \
                 unzip \
                 openssl
 
-
-# SHARE distribution
-ARG CP_API_DIST_URL=""
 ENV CP_SHARE_HOME="/opt/share-srv"
 
-RUN cd /tmp && \
-     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-     tar -zxf cloud-pipeline.tgz && \
-     mkdir -p $CP_SHARE_HOME && \
-     mv bin/data-sharing-service.jar $CP_SHARE_HOME/ && \
-     rm -f cloud-pipeline.tgz && \
-     rm -rf bin
+ADD dist/bin/data-sharing-service.jar $CP_SHARE_HOME/data-sharing-service.jar
 
 ADD config $CP_SHARE_HOME/config
 ADD init /init
 ADD update-trust /update-trust
 
-RUN chmod +x /init* && \
+RUN chmod +x /init && \
     chmod +x /update-trust
 
-WORKDIR /opt/share-srv
+WORKDIR $CP_SHARE_HOME
 
 CMD ["/init"]

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+ARG BASE_IMAGE="centos:7"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -38,17 +39,11 @@ RUN cd /tmp && \
     package-cleanup --cleandupes -y && \
     rm -rf lustre-client*
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_SEARCH_HOME="/opt/search"
 ENV CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_SEARCH_HOME && \
-    mv bin/elasticsearch-agent.jar $CP_SEARCH_HOME/ && \
-    mv bin/search-mappings $CP_SEARCH_MAPPINGS_LOCATION && \
-    rm -rf /tmp/*
+
+ADD dist/bin/elasticsearch-agent.jar $CP_SEARCH_HOME/elasticsearch-agent.jar
+ADD dist/bin/search-mappings $CP_SEARCH_MAPPINGS_LOCATION
 
 ADD config $CP_SEARCH_HOME/config
 

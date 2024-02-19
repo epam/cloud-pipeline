@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7.7.1908
+ARG BASE_IMAGE="library/centos:7.7.1908"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -22,17 +23,11 @@ RUN yum install -y \
                 python \
                 unzip
 
-# API distribution
-ARG CP_API_DIST_URL=""
-ENV CP_VM_MONITOR_HOME="/opt/vm-monitor" \
-    CP_VM_MONITOR_TEMPLATES_LOCATION="${CP_VM_MONITOR_HOME}/templates"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_VM_MONITOR_HOME && \
-    mv bin/vm-monitor.jar $CP_VM_MONITOR_HOME/ && \
-    mv bin/vm-monitor-templates ${CP_VM_MONITOR_TEMPLATES_LOCATION} && \
-    rm -rf /tmp/*
+ENV CP_VM_MONITOR_HOME="/opt/vm-monitor"
+ENV CP_VM_MONITOR_TEMPLATES_LOCATION="${CP_VM_MONITOR_HOME}/templates"
+
+ADD dist/bin/vm-monitor.jar $CP_VM_MONITOR_HOME/vm-monitor.jar
+ADD dist/bin/vm-monitor-templates $CP_VM_MONITOR_TEMPLATES_LOCATION
 
 ADD config $CP_VM_MONITOR_HOME/config
 
