@@ -444,8 +444,14 @@ class StorageMounter:
 
     @staticmethod
     def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
-        if result == 0:
+        if os.getenv('CP_CAP_MOUNT_SKIP_EXISTING', 'false').lower() == 'true' and not StorageMounter.is_windows():
+            check_command = "/bin/mount | awk '{{ print $1 \" \" $3 }}' | grep '{path} {mount}'".format(**params)
+            exit_code = common.execute_cmd_command(check_command, executable=None if StorageMounter.is_windows() else '/bin/bash')
+            if exit_code == 0:
+                Logger.info('-->{path} already mounted to {mount}'.format(**params), task_name=task_name)
+                return
+        exit_code = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
+        if exit_code == 0:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
             Logger.warn('--> Failed mounting {path} to {mount}'.format(**params), task_name=task_name)
