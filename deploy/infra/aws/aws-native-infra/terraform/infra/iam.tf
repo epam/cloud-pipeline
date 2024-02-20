@@ -265,6 +265,19 @@ resource "aws_iam_policy" "cp_main_service" {
         ]
       },
       {
+        "Action" : [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:DescribeKey",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:ListKeys",
+        ]
+        "Effect" : "Allow",
+        "Resource" : "*",
+        "Sid" : "KMSAllowOps"
+      },
+      {
         "Sid" : "EFSAllow",
         "Effect" : "Allow",
         "Action" : [
@@ -364,12 +377,12 @@ resource "aws_iam_policy" "cp_main_service" {
         ]
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "iam:GetRole",
           "iam:PassRole"
         ],
-        "Resource": aws_iam_role.eks_node_execution.arn
+        "Resource" : aws_iam_role.eks_node_execution.arn
       }
     ]
   })
@@ -413,8 +426,8 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
     Version   = "2012-10-17"
     Statement = [
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "s3:ListBucket",
           "s3:GetObject",
           "s3:PutObject",
@@ -433,14 +446,14 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
           "s3:PutObjectAcl",
           "s3:GetObjectAcl"
         ],
-        "Resource": [
+        "Resource" : [
           "arn:aws:s3:::*"
         ]
       },
       {
-        "Sid": "KMSAllowOps",
-        "Effect": "Allow",
-        "Action": [
+        "Sid" : "KMSAllowOps",
+        "Effect" : "Allow",
+        "Action" : [
           "kms:Decrypt",
           "kms:Encrypt",
           "kms:DescribeKey",
@@ -448,7 +461,7 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
           "kms:GenerateDataKey*",
           "kms:ListKeys"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       }
     ]
   })
