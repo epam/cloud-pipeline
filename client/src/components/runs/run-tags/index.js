@@ -121,7 +121,6 @@ function Tag (
     theme,
     onMouseEnter,
     onMouseLeave,
-    onClick,
     onFocus,
     predefinedTags
   }
@@ -135,6 +134,11 @@ function Tag (
   const isInstanceLink = instance &&
     instance.nodeName &&
     `${tagOptions.instanceLink}` !== 'false';
+  const handleClick = event => {
+    if (tagOptions.link || isInstanceLink) {
+      event && event.stopPropagation();
+    }
+  };
   const element = (
     <span
       className={
@@ -152,7 +156,7 @@ function Tag (
       }
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onClick={onClick}
+      onClick={handleClick}
       onFocus={onFocus}
     >
       {(display || '').toUpperCase()}
@@ -164,7 +168,7 @@ function Tag (
         className={styles.link}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        onClick={onClick}
+        onClick={handleClick}
         onFocus={onFocus}
         href={tagOptions.link}
         target="_blank"
@@ -182,7 +186,7 @@ function Tag (
         className={styles.link}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        onClick={onClick}
+        onClick={handleClick}
         onFocus={onFocus}
       >
         {element}
