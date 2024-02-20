@@ -159,7 +159,7 @@ function Tag (
       onClick={handleClick}
       onFocus={onFocus}
     >
-      {(display || '').toUpperCase()}
+      {tagOptions.display || (display || '').toUpperCase()}
     </span>
   );
   if (tagOptions.link) {
