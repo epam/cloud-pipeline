@@ -766,6 +766,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get uiRunsTags () {
+    const value = this.getPreferenceValue('ui.runs.tags');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.runs.tags" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
+  @computed
   get uiToolsFilters () {
     const value = this.getPreferenceValue('ui.tools.filters');
     if (value) {
