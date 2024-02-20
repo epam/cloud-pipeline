@@ -625,6 +625,12 @@ function parse_options {
         shift # past argument
         shift # past value
         ;;
+        -dt|--deployment-type)
+        # New variable for K8s deployment type for example: classic, aws_native(Amazon Elastic Kubernetes Service), etc.
+        export CP_DEPLOYMENT_TYPE="$2"
+        shift # past argument
+        shift # past value
+        ;;
         *)    # unknown option
         POSITIONAL+=("$1") # save it in an array for later
         shift # past argument
@@ -765,6 +771,13 @@ function parse_options {
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_DEPLOYMENT_ID" \
                         "$CP_DEPLOYMENT_ID"
+
+    if  [ "$CP_DEPLOYMENT_TYPE" == "aws_native" ] ; then
+        if [ -z "$CP_EKS_CSI_DRIVER_TYPE" ] || [ -z "$CP_EKS_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] ; then
+        print_err "For AWS native deployment you must set variable CP_EKS_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_EKS_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
+        fi 
+        return 1
+    fi
     
     return 0
 }
@@ -988,24 +1001,30 @@ function prepare_kube_dns {
 }
 
 function get_kube_resource_spec_file_by_type {
-    local original_spec_file="$1"
+    local original_spec_location="$1"
     local resource_type="$2"
 
     if [ "$resource_type" == "--svc" ]; then
-        if [ -f "$original_spec_file" ]; then
-            echo "$original_spec_file"
+        if [ -f "$original_spec_location" ]; then
+            echo "$original_spec_location"
             return 0
         fi
-        local spec_dir="$(dirname $original_spec_file)"
-        local spec_file="$(basename $original_spec_file)"
+        local spec_dir="$(dirname $original_spec_location)"
+        local spec_file="$(basename $original_spec_location)"
 
         local spec_ext="${spec_file##*.}"
         local spec_file="${spec_file%.*}"
         local spec_suffix="${CP_KUBE_SERVICES_TYPE:-"node-port"}"
         
         echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
-    else
-        echo "$original_spec_file"
+    
+    elif [ "$resource_type" == "--ktz" ]; then 
+        local spec_dir="$(dirname $original_spec_location)"
+        template_file="/tmp/cp_kube_res_${spec_dir}_${RANDOM}.yaml"
+        kustomize build "$original_spec_location" > "$template_file"
+        echo "$template_file"    
+    else       
+        echo "$original_spec_location"
     fi
 }
 
@@ -1038,10 +1057,10 @@ function set_kube_service_external_ip {
 }
 
 function create_kube_resource {
-    local spec_file="$1"
+    local spec_location="$1"
     local resource_type="$2"
 
-    spec_file="$(get_kube_resource_spec_file_by_type "$spec_file" "$resource_type")"
+    spec_file="$(get_kube_resource_spec_file_by_type "$spec_location" "$resource_type")"
 
     local updated_spec_file="/tmp/$(basename $spec_file)"
     envsubst < $spec_file > "$updated_spec_file"
@@ -1490,6 +1509,12 @@ function generate_rsa_key_pair {
 function is_service_requested {
     local service=${1//[^a-zA-Z_0-9]/_}
     [ "${!service}" == "1" ] || [ "$CP_INSTALL_SERVICES_ALL" == "1" ]
+    return $?
+}
+
+function is_deployment_type_requested {
+    local dt=$1
+    [ "${dt}" == "$CP_DEPLOYMENT_TYPE" ]
     return $?
 }
 
