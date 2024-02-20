@@ -60,10 +60,10 @@ fi
 
 if is_deployment_type_requested classic; then
 
-print_ok "[Setting up Kube master]"
+   print_ok "[Setting up Kube master]"
 
-KUBE_MASTER_IS_INSTALLED=0;
-kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
+   KUBE_MASTER_IS_INSTALLED=0;
+   kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
 
 if [ "$KUBE_MASTER_IS_INSTALLED" != 1 ] && [ "$CP_INSTALL_KUBE_MASTER" != 1 ]; then
     print_err "Kube master is not installed or cannot be accessed. Please run installation with -m|--install-kube-master to install master node or enable access to the master from a current node"
