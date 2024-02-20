@@ -57,6 +57,7 @@ fi
 ##########
 # Install kube master
 ##########
+
 if is_deployment_type_requested classic; then
 
 print_ok "[Setting up Kube master]"
@@ -1372,17 +1373,17 @@ if is_service_requested cp-storage-lifecycle-service; then
     echo
 fi
 
-if is_deployment_type_requested aws_eks; then
+if is_deployment_type_requested aws_native; then
 
-   if [ $CP_EKS_CSI_DRIVER_TYPE = "efs"] && [ -n $CP_EKS_EFS_CSI_EXECUTION_ROLE]; then
-      print_ok "[Starting install EFS CSI driver in AWS EKS deployment]"
-      create_kube_resource $K8S_SPECS_HOME/efs-csi --ktz
-   else 
-      print_err "To mount EFS file system please set CP_EKS_EFS_CSI_EXECUTION_ROLE variable"
-   
-   if [ $CP_EKS_CSI_DRIVER_TYPE = "fsx"]; then
+   if [ $CP_EKS_CSI_DRIVER_TYPE = "efs"] && [ -n $CP_EKS_CSI_EXECUTION_ROLE]; then
+      print_ok "[Starting install CSI driver in AWS EKS deployment]"
+      create_kube_resource $K8S_SPECS_HOME/cp-system-fs-efs --ktz
+
+   elif [ $CP_EKS_CSI_DRIVER_TYPE = "fsx"] && [ -n $CP_EKS_CSI_EXECUTION_ROLE]; then
       print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
-      create_kube_resource $K8S_SPECS_HOME/fsx-csi --ktz
+      create_kube_resource $K8S_SPECS_HOME/cp-system-fs-fsx --ktz
+   else 
+      print_err "To mount file system please set CP_EKS_CSI_EXECUTION_ROLE variable"   
    fi
 
 fi

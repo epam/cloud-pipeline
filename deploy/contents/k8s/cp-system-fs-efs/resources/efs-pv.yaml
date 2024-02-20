@@ -2,10 +2,10 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: efs-pv
+  name: cp-system-pv
 spec:
   capacity:
-    storage: 200Gi
+    storage: 500Gi
   volumeMode: Filesystem
   accessModes:
     - ReadWriteMany
