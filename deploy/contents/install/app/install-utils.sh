@@ -626,7 +626,7 @@ function parse_options {
         shift # past value
         ;;
         -dt|--deployment-type)
-        # New variable for K8s deployment type for example: classic, aws_native(Amazon Elastic Kubernetes Service), etc.
+        # New variable for K8s deployment type for example: classic, aws-native(Amazon Elastic Kubernetes Service), etc.
         export CP_DEPLOYMENT_TYPE="$2"
         shift # past argument
         shift # past value
@@ -772,12 +772,24 @@ function parse_options {
                         "CP_DEPLOYMENT_ID" \
                         "$CP_DEPLOYMENT_ID"
 
-    if  [ "$CP_DEPLOYMENT_TYPE" == "aws_native" ] ; then
-        if [ -z "$CP_EKS_CSI_DRIVER_TYPE" ] || [ -z "$CP_EKS_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] ; then
-        print_err "For AWS native deployment you must set variable CP_EKS_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_EKS_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
-        fi 
+
+    if [ "$CP_DEPLOYMENT_TYPE" != "aws-native" ] && [ "$CP_DEPLOYMENT_TYPE" != "classic" ]; then
+        print_err "-dt / --deployment-type value $CP_DEPLOYMENT_TYPE is not supported! Supported values is: 'aws-native', 'classic'"
         return 1
     fi
+    # Check if required variables were specified.
+    # Define additional variables for aws-native deployment type.
+    if is_deployment_type_requested aws-native ; then
+        if [ -z "$CP_EKS_CSI_DRIVER_TYPE" ] || [ -z "$CP_EKS_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] ; then
+            print_err "For AWS native deployment you must set variable CP_EKS_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_EKS_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
+            return 1
+        fi
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="${CP_KUBE_DNS_DEPLOYMENT_NAME:-coredns}"
+        export CP_EDGE_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-elb}"
+    fi
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_DEPLOYMENT_TYPE" \
+                        "$CP_DEPLOYMENT_TYPE"
     
     return 0
 }
@@ -849,7 +861,7 @@ function get_svc_preferred_external_ip {
 }
 
 function is_kube_dns_configured_for_custom_entries {
-   kubectl get deployment kube-dns -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
+   kubectl get deployment ${CP_KUBE_DNS_DEPLOYMENT_NAME} -n kube-system -o yaml | grep -q "hostsdir=/etc/hosts.d"
    return $?
 }
 
@@ -1093,39 +1105,41 @@ function register_custom_name_in_dns {
     fi
 
     print_info "Registering DNS entry $custom_name as $custom_target_value (source type: $custom_target_type)"
-    # Check config map with hosts exists
-    if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
-        # If so - add new/update existing entry
-        current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
-        if [ $? -ne 0 ]; then
-            print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
-            return 1
-        fi
-        # Delete existing entry
-        if grep -q " $custom_name" <<< "$current_custom_names"; then
-            current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
-        fi
-        # And add an update one
-        current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
-        # Escape the newlines
-        current_custom_names="$(escape_string "$current_custom_names")"
-        # Apply changes to the configmap
-        kubectl patch cm cp-dnsmasq-hosts \
-            -n kube-system \
-            --type merge \
-            -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
-        if [ $? -ne 0 ]; then
-            print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
-            print_info "================"
-            print_info "$current_custom_names"
-            print_info "================"
-            echo
-            return 1
-        fi
+    print_info "CP_KUBE_DNS_DEPLOYMENT_NAME configured as ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
+    if [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "kube-dns" ]; then
+        # Check config map with hosts exists
+        if kubectl get cm cp-dnsmasq-hosts -n kube-system > /dev/null 2>&1; then
+            # If so - add new/update existing entry
+            current_custom_names="$(kubectl get cm cp-dnsmasq-hosts -n kube-system -o json | jq -r '.data.hosts')"
+            if [ $? -ne 0 ]; then
+                print_err "Unable to get current list of custom entries from cp-dnsmasq-hosts map. $custom_name for $custom_target_value WILL NOT be registered"
+                return 1
+            fi
+            # Delete existing entry
+            if grep -q " $custom_name" <<< "$current_custom_names"; then
+                current_custom_names="$(sed "/ $custom_name/d" <<< "$current_custom_names")"
+            fi
+            # And add an update one
+            current_custom_names="$current_custom_names\n${custom_target_value} ${custom_name}"
+            # Escape the newlines
+            current_custom_names="$(escape_string "$current_custom_names")"
+            # Apply changes to the configmap
+            kubectl patch cm cp-dnsmasq-hosts \
+                -n kube-system \
+                --type merge \
+                -p "{\"data\":{\"hosts\":\"${current_custom_names}\"}}"
+            if [ $? -ne 0 ]; then
+                print_err "Unable to patch cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+                print_info "================"
+                print_info "$current_custom_names"
+                print_info "================"
+                echo
+                return 1
+            fi
 
-    else
-        # Else create it from scratch
-cat <<EOF | kubectl apply -f -
+        else
+            # Else create it from scratch
+    cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -1135,18 +1149,61 @@ data:
   hosts: |
     ${custom_target_value} ${custom_name}
 EOF
-         if [ $? -ne 0 ]; then
-            print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
-            return 1
+             if [ $? -ne 0 ]; then
+                print_err "Unable to create cp-dnsmasq-hosts map with $custom_name for ${custom_target_value}. Entry WILL NOT be registered"
+                return 1
+            fi
         fi
+
+        # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
+        if ! is_kube_dns_configured_for_custom_entries; then
+            prepare_kube_dns
+        fi
+
+    elif [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "coredns" ]; then
+      current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
+      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
+      sed -i "/.* $custom_name/d" $current_custom_names_file
+      echo "${custom_target_value} ${custom_name}" >> $current_custom_names_file
+      current_custom_names=$(cat ${current_custom_names_file})
+      cat <<EOF | kubectl replace -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        errors
+        health {
+            lameduck 5s
+          }
+        ready
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          fallthrough in-addr.arpa ip6.arpa
+        }
+        hosts {
+            ${current_custom_names}
+            fallthrough
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf
+        cache 30
+        loop
+        reload
+        loadbalance
+    }
+EOF
+      rm -rf $current_custom_names_file
+    else
+      print_err "Unsupported kube dns deployment type: ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
+      return 1
     fi
 
-    # Check if kube-dns is configured (e.g. if kube was deployed prior to this functionality added)
-    if ! is_kube_dns_configured_for_custom_entries; then
-        prepare_kube_dns
-    fi
     # Trigger dns update (rollout)
-    kubectl patch deployment kube-dns \
+    kubectl patch deployment ${CP_KUBE_DNS_DEPLOYMENT_NAME} \
         -n kube-system \
         --patch "{\"spec\": {\"template\": {\"metadata\": {\"annotations\": {\"cp-updated\": \"$(date)\"}}}}}"
 
@@ -1156,7 +1213,7 @@ EOF
     fi
 
     # Wait for the pods restart
-    kubectl rollout status deployment/kube-dns -n kube-system -w
+    kubectl rollout status deployment/${CP_KUBE_DNS_DEPLOYMENT_NAME} -n kube-system -w
     # Just in case...
     sleep 10
 

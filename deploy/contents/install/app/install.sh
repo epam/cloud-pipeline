@@ -59,18 +59,17 @@ fi
 ##########
 
 if is_deployment_type_requested classic; then
+    print_ok "[Setting up Kube master]"
 
-   print_ok "[Setting up Kube master]"
+    KUBE_MASTER_IS_INSTALLED=0;
+    kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
 
-   KUBE_MASTER_IS_INSTALLED=0;
-   kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
-
-   if [ "$KUBE_MASTER_IS_INSTALLED" != 1 ] && [ "$CP_INSTALL_KUBE_MASTER" != 1 ]; then
+    if [ "$KUBE_MASTER_IS_INSTALLED" != 1 ] && [ "$CP_INSTALL_KUBE_MASTER" != 1 ]; then
     print_err "Kube master is not installed or cannot be accessed. Please run installation with -m|--install-kube-master to install master node or enable access to the master from a current node"
     exit 1
-   fi
+    fi
 
-   if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
+    if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
         if [ "$KUBE_MASTER_IS_INSTALLED" == 1 ]; then
             print_info "Kube master is already installed, skipping installation"
         else
@@ -108,7 +107,7 @@ if is_deployment_type_requested classic; then
     CP_KUBE_INTERNAL_HOST=${CP_KUBE_INTERNAL_HOST:-"kubernetes.default.svc.cluster.local"}
     print_info "-> Kube API address is set to external: \"$CP_KUBE_EXTERNAL_HOST:$CP_KUBE_EXTERNAL_PORT\", internal: \"$CP_KUBE_INTERNAL_HOST:$CP_KUBE_INTERNAL_PORT\""
 
-    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
+    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
     if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
         sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
         print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
@@ -177,6 +176,22 @@ if is_deployment_type_requested classic; then
     echo
 fi
 
+# For aws-native deployment
+if is_deployment_type_requested aws-native; then
+
+   if [ "$CP_EKS_CSI_DRIVER_TYPE" = "efs" ]; then
+      print_ok "[Starting install CSI driver in AWS EKS deployment]"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-efs --ktz
+   elif [ "$CP_EKS_CSI_DRIVER_TYPE" = "fsx" ]; then
+      print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz
+   else
+      print_err "Unsupported CP_EKS_CSI_DRIVER_TYPE was provided."
+      exit 1
+   fi
+
+fi
+
 ##########
 # Setup config for Kube
 ##########
@@ -194,7 +209,11 @@ echo
 ##########
 print_ok "[Creating roles to the Kube nodes]"
 
-KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
+if is_deployment_type_requested classic; then
+    KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
+elif is_deployment_type_requested aws-native; then
+    KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep "cloud-pipeline/node-group-type=system" | cut -f1 -d' ')
+fi
 
 # Allow to schedule API DB to the master
 CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -1373,19 +1392,5 @@ if is_service_requested cp-storage-lifecycle-service; then
     echo
 fi
 
-if is_deployment_type_requested aws_native; then
-
-   if [ $CP_EKS_CSI_DRIVER_TYPE = "efs"] && [ -n $CP_EKS_CSI_EXECUTION_ROLE]; then
-      print_ok "[Starting install CSI driver in AWS EKS deployment]"
-      create_kube_resource $K8S_SPECS_HOME/cp-system-fs-efs --ktz
-
-   elif [ $CP_EKS_CSI_DRIVER_TYPE = "fsx"] && [ -n $CP_EKS_CSI_EXECUTION_ROLE]; then
-      print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
-      create_kube_resource $K8S_SPECS_HOME/cp-system-fs-fsx --ktz
-   else 
-      print_err "To mount file system please set CP_EKS_CSI_EXECUTION_ROLE variable"   
-   fi
-
-fi
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
