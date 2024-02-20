@@ -18,9 +18,10 @@ variable "subnet_ids" {
   description = "Ids of the VCP subnets to be used for Compute Layer EKS cluster"
 }
 
-variable "cp_api_access_cidr_blocks" {
-  default     = "0.0.0.0/0"
-  description = "CIDR blocks to which access to Cloud Pipeline API will be granted. Split by comma."
+variable "cp_api_access_prefix_lists" {
+  default     = []
+  type        = list(string)
+  description = "Prefix Lists to which access to Cloud Pipeline API will be granted."
 
 }
 
