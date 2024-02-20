@@ -891,6 +891,9 @@ public class SystemPreferences {
             null, UI_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference UI_UPLOAD_CHUNK_SIZE = new IntPreference("ui.upload.chunk.size.mb", 
             null, UI_GROUP, isNullOrGreaterThan(0));
+    public static final ObjectPreference<List<Object>> UI_RUNS_TAGS = new ObjectPreference<>(
+            "ui.runs.tags", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
