@@ -1514,7 +1514,7 @@ function is_service_requested {
 
 function is_deployment_type_requested {
     local dt=${1//[^a-zA-Z_0-9]/_}
-    [[ "${!dt}" == "$CP_DEPLOYMENT_TYPE" || "$CP_DEPLOYMENT_TYPE" == "classic"]]
+    ["${!dt}" == "$CP_DEPLOYMENT_TYPE"]
     return $?
 }
 
