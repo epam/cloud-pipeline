@@ -53,11 +53,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
@@ -101,8 +101,8 @@ public class DtsSynchronizationService {
         this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;
         this.preferenceService = preferenceService;
-        this.activeSyncRules = new ConcurrentHashMap<>();
-        this.activeTransferTasks = new ConcurrentHashMap<>();
+        this.activeSyncRules = Collections.synchronizedMap(new LinkedHashMap<>());
+        this.activeTransferTasks = Collections.synchronizedMap(new LinkedHashMap<>());
         this.dtsRuleExpander = dtsRuleExpander;
         this.illuminaValidator = illuminaValidator;
         this.syncToken = syncToken;
