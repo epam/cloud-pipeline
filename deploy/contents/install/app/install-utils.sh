@@ -1181,10 +1181,10 @@ EOF
         fi
 
     elif [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "coredns" ]; then
+      #TODO: is there a better way to compile the Corefile? right now it seems to be a fuzzy solution
       current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
-      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
+      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\s+\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
       sed -i "/.* $custom_name/d" $current_custom_names_file
-      echo "${custom_target_value} ${custom_name}" >> $current_custom_names_file
       current_custom_names=$(cat ${current_custom_names_file})
       cat <<EOF | kubectl replace -f -
 apiVersion: v1
@@ -1205,7 +1205,8 @@ data:
           fallthrough in-addr.arpa ip6.arpa
         }
         hosts {
-            ${current_custom_names}
+${current_custom_names}
+            ${custom_target_value} ${custom_name}
             fallthrough
         }
         prometheus :9153

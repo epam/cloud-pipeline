@@ -24,6 +24,7 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      serviceAccountName: cp-main-service
       containers:
         - name: cp-edge
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:edge-$CP_VERSION
