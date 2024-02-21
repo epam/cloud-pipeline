@@ -405,7 +405,7 @@ module "cp_irsa" {
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["default:cp-api-srv"]
+      namespace_service_accounts = ["default:cp-main-service"]
     }
   }
 
