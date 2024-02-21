@@ -1033,7 +1033,7 @@ function get_kube_resource_spec_file_by_type {
         echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
     
     elif [ "$resource_type" == "--ktz" ]; then 
-        local spec_dir="$(dirname $original_spec_location)"
+        local spec_dir="$(basename $original_spec_location)"
         template_file="/tmp/cp_kube_res_${spec_dir}_${RANDOM}.yaml"
         kustomize build "$original_spec_location" > "$template_file"
         echo "$template_file"    
