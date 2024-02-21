@@ -1051,8 +1051,7 @@ function get_kube_resource_spec_file_by_type {
             local spec_suffix="awsn"
             local resolved_spec_location="${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
             if [ ! -f "${resolved_spec_location}" ]; then
-                print_err "Error while applying resource ${original_spec_location}. Can't find ${resolved_spec_location}."
-                return 1
+                echo "$original_spec_location"
             fi
         fi
         echo "$resolved_spec_location"
@@ -1199,15 +1198,11 @@ data:
         errors
         health {
             lameduck 5s
-          }
+        }
         ready
         kubernetes cluster.local in-addr.arpa ip6.arpa {
           pods insecure
           fallthrough in-addr.arpa ip6.arpa
-        }
-        hosts {
-            ${current_custom_names}
-            fallthrough
         }
         prometheus :9153
         forward . /etc/resolv.conf
@@ -1215,6 +1210,14 @@ data:
         loop
         reload
         loadbalance
+    }
+    com {
+      errors
+      hosts {
+        ${current_custom_names}
+        fallthrough
+      }
+      forward . /etc/resolv.conf
     }
 EOF
       rm -rf $current_custom_names_file

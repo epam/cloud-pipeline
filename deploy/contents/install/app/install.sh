@@ -408,7 +408,7 @@ if is_service_requested cp-api-db; then
     if is_install_requested; then
         print_info "-> Deploying postgres DB"
         create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-svc.yaml --svc
 
         print_info "-> Waiting for postgres DB to initialize"
         wait_for_deployment "cp-api-db"
