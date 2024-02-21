@@ -370,6 +370,9 @@ echo
 # For aws-native deployment
 if is_deployment_type_requested aws-native; then
 
+   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-account/cp-main-service-account.yaml --res "delete"
+   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-account/cp-main-service-account.yaml
+
    if [ "$CP_CSI_DRIVER_TYPE" = "efs" ]; then
       print_ok "[Starting install CSI driver in AWS EKS deployment]"
       create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-efs --ktz "delete"
