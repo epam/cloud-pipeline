@@ -57,6 +57,31 @@ module "eks" {
       max_size     = var.eks_system_node_group_size
       desired_size = var.eks_system_node_group_size
     }
+
+    bastion = {
+      name = "${local.resource_name_prefix}-bstn-ng"
+
+      instance_types = [var.eks_system_node_group_instance_type]
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = var.eks_system_node_group_volume_size
+            volume_type           = var.eks_system_node_group_volume_type
+            encrypted             = true
+            delete_on_termination = true
+          }
+        }
+      }
+
+      labels = {
+        "cloud-pipeline/node-group-type" : "bastion"
+      }
+
+      min_size     = 1
+      max_size     = 1
+      desired_size = 1
+    }
   }
 
   # aws-auth configmap
