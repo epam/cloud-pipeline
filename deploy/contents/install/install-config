@@ -16,7 +16,6 @@ CP_KUBE_FLANNEL_CIDR=10.244.0.0/16
 CP_KUBE_KUBELET_PORT=10250
 CP_KUBE_DNS_DEPLOYMENT_NAME=kube-dns
 CP_CLOUD_CREDENTIALS_LOCATION=/root/.cloud/credentials
-CP_DEPLOYMENT_TYPE=classic
 
 # cp-api-srv config
 PSG_HOST=cp-api-db.default.svc.cluster.local

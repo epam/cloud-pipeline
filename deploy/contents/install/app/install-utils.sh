@@ -773,10 +773,12 @@ function parse_options {
                         "$CP_DEPLOYMENT_ID"
 
 
+    export CP_DEPLOYMENT_TYPE="${CP_DEPLOYMENT_TYPE:-classic}"
     if [ "$CP_DEPLOYMENT_TYPE" != "aws-native" ] && [ "$CP_DEPLOYMENT_TYPE" != "classic" ]; then
         print_err "-dt / --deployment-type value $CP_DEPLOYMENT_TYPE is not supported! Supported values is: 'aws-native', 'classic'"
         return 1
     fi
+    print_info "Deployment type: $CP_DEPLOYMENT_TYPE configured"
     # Check if required variables were specified.
     # Define additional variables for aws-native deployment type.
     if is_deployment_type_requested aws-native ; then
