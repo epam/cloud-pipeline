@@ -3,4 +3,5 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: efs-sc
+  namespace: default
 provisioner: efs.csi.aws.com

@@ -786,8 +786,10 @@ function parse_options {
             print_err "For AWS native deployment you must set variable CP_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
             return 1
         fi
-        export CP_KUBE_DNS_DEPLOYMENT_NAME="${CP_KUBE_DNS_DEPLOYMENT_NAME:-coredns}"
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="coredns"
         export CP_EDGE_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-elb}"
+    else
+        export CP_KUBE_DNS_DEPLOYMENT_NAME="kube-dns"
     fi
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_DEPLOYMENT_TYPE" \
@@ -1037,8 +1039,23 @@ function get_kube_resource_spec_file_by_type {
         template_file="/tmp/cp_kube_res_${spec_dir}_${RANDOM}.yaml"
         kustomize build "$original_spec_location" > "$template_file"
         echo "$template_file"    
-    else       
-        echo "$original_spec_location"
+    else
+        local resolved_spec_location="$original_spec_location"
+        # Here we should be dealing with dpl files
+        if is_deployment_type_requested aws-native; then
+            local spec_dir="$(dirname $original_spec_location)"
+            local spec_file="$(basename $original_spec_location)"
+
+            local spec_ext="${spec_file##*.}"
+            local spec_file="${spec_file%.*}"
+            local spec_suffix="awsn"
+            local resolved_spec_location="${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
+            if [ ! -f "${resolved_spec_location}" ]; then
+                print_err "Error while applying resource ${original_spec_location}. Can't find ${resolved_spec_location}."
+                return 1
+            fi
+        fi
+        echo "$resolved_spec_location"
     fi
 }
 
@@ -1073,12 +1090,14 @@ function set_kube_service_external_ip {
 function create_kube_resource {
     local spec_location="$1"
     local resource_type="$2"
+    local action="${3:-create}"
 
     spec_file="$(get_kube_resource_spec_file_by_type "$spec_location" "$resource_type")"
+    print_ok "Configured $spec_file as resource that will be applied."
 
-    local updated_spec_file="/tmp/env_resolved_$(basename $spec_file)"
-    envsubst < $spec_file > "$updated_spec_file"
-    kubectl create -f "$updated_spec_file"
+    local updated_spec_file="/tmp/envsubsted_$(basename "${spec_file}")"
+    envsubst < "$spec_file" > "$updated_spec_file"
+    kubectl "${action}" -f "$updated_spec_file"
     rm -f "$updated_spec_file"
 }
 
@@ -1164,7 +1183,7 @@ EOF
 
     elif [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "coredns" ]; then
       current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
-      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
+      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
       sed -i "/.* $custom_name/d" $current_custom_names_file
       echo "${custom_target_value} ${custom_name}" >> $current_custom_names_file
       current_custom_names=$(cat ${current_custom_names_file})
