@@ -61,7 +61,7 @@ module "eks" {
     bastion = {
       name = "${local.resource_name_prefix}-bstn-ng"
 
-      instance_types = [var.eks_system_node_group_instance_type]
+      instance_types = [var.eks_bastion_node_group_instance_type]
       block_device_mappings = {
         xvda = {
           device_name = "/dev/xvda"

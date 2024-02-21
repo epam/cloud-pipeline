@@ -44,6 +44,12 @@ variable "eks_cluster_version" {
 
 variable "eks_system_node_group_instance_type" {
   type        = string
+  default     = "m5.xlarge"
+  description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
+}
+
+variable "eks_bastion_node_group_instance_type" {
+  type        = string
   default     = "m5.large"
   description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
 }
