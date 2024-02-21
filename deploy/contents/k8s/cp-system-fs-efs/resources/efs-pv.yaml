@@ -13,5 +13,5 @@ spec:
   storageClassName: efs-sc
   csi:
     driver: efs.csi.aws.com
-    volumeHandle: ${CP_EKS_CSI_FILESYSTEM_ID}
+    volumeHandle: ${CP_SYSTEM_FILESYSTEM_ID}
 

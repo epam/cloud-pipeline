@@ -782,8 +782,8 @@ function parse_options {
     # Check if required variables were specified.
     # Define additional variables for aws-native deployment type.
     if is_deployment_type_requested aws-native ; then
-        if [ -z "$CP_EKS_CSI_DRIVER_TYPE" ] || [ -z "$CP_EKS_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] ; then
-            print_err "For AWS native deployment you must set variable CP_EKS_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_EKS_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
+        if [ -z "$CP_CSI_DRIVER_TYPE" ] || [ -z "$CP_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] ; then
+            print_err "For AWS native deployment you must set variable CP_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
             return 1
         fi
         export CP_KUBE_DNS_DEPLOYMENT_NAME="${CP_KUBE_DNS_DEPLOYMENT_NAME:-coredns}"

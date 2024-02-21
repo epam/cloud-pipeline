@@ -16,4 +16,4 @@ metadata:
   name: fsx-csi-controller-sa
   namespace: kube-system
   annotations:
-    eks.amazonaws.com/role-arn: ${CP_EKS_CSI_EXECUTION_ROLE}
+    eks.amazonaws.com/role-arn: ${CP_CSI_EXECUTION_ROLE}

@@ -179,14 +179,14 @@ fi
 # For aws-native deployment
 if is_deployment_type_requested aws-native; then
 
-   if [ "$CP_EKS_CSI_DRIVER_TYPE" = "efs" ]; then
+   if [ "$CP_CSI_DRIVER_TYPE" = "efs" ]; then
       print_ok "[Starting install CSI driver in AWS EKS deployment]"
       create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-efs --ktz
-   elif [ "$CP_EKS_CSI_DRIVER_TYPE" = "fsx" ]; then
+   elif [ "$CP_CSI_DRIVER_TYPE" = "fsx" ]; then
       print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
       create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz
    else
-      print_err "Unsupported CP_EKS_CSI_DRIVER_TYPE was provided."
+      print_err "Unsupported CP_CSI_DRIVER_TYPE was provided."
       exit 1
    fi
 
