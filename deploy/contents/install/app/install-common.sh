@@ -31,7 +31,7 @@ curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack
     chmod +x /tmp/install_kustomize.sh && \
     /tmp/install_kustomize.sh 5.3.0 && \
     rm -f /tmp/install_kustomize.sh && \
-    mv kustomize /usr/local/bin/kustomize
+    mv kustomize /usr/bin/kustomize
 
 git config --global http.sslVerify "false"
 
