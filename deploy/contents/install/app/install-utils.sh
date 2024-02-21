@@ -1204,20 +1204,16 @@ data:
           pods insecure
           fallthrough in-addr.arpa ip6.arpa
         }
+        hosts {
+            ${current_custom_names}
+            fallthrough
+        }
         prometheus :9153
         forward . /etc/resolv.conf
         cache 30
         loop
         reload
         loadbalance
-    }
-    com {
-      errors
-      hosts {
-        ${current_custom_names}
-        fallthrough
-      }
-      forward . /etc/resolv.conf
     }
 EOF
       rm -rf $current_custom_names_file
