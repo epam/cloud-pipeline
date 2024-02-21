@@ -1051,7 +1051,7 @@ function get_kube_resource_spec_file_by_type {
             local spec_suffix="awsn"
             local resolved_spec_location="${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
             if [ ! -f "${resolved_spec_location}" ]; then
-                echo "$original_spec_location"
+                resolved_spec_location="$original_spec_location"
             fi
         fi
         echo "$resolved_spec_location"
