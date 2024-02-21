@@ -395,98 +395,6 @@ if is_install_requested; then
     CP_INSTALL_SUMMARY="\n[Summary]\nInstalled services are accessible via the following endpoints:"
 fi
 
-# EDGE
-if is_service_requested cp-edge; then
-    print_ok "[Starting EDGE deployment]"
-
-    print_info "-> Deleting existing instance of EDGE"
-    delete_deployment_and_service   "cp-edge" \
-                                    "/opt/edge"
-
-    if is_install_requested; then
-        print_info "-> Creating self-signed SSL certificate for EDGE (${CP_EDGE_EXTERNAL_HOST}, ${CP_EDGE_INTERNAL_HOST})"
-        generate_self_signed_key_pair   $CP_EDGE_CERT_DIR/ssl-private-key.pem \
-                                        $CP_EDGE_CERT_DIR/ssl-public-cert.pem \
-                                        $CP_EDGE_EXTERNAL_HOST \
-                                        $CP_EDGE_INTERNAL_HOST
-
-        export EDGE_EXTERNAL_SCHEMA="https"
-        update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                                "EDGE_EXTERNAL_SCHEMA" \
-                                "$EDGE_EXTERNAL_SCHEMA"
-
-        export API_EXTERNAL="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/"
-        update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                                "API_EXTERNAL" \
-                                "$API_EXTERNAL"
-
-        export EDGE_EXTERNAL="$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
-        update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                                "EDGE_EXTERNAL" \
-                                "$EDGE_EXTERNAL"
-
-        init_kube_config_map
-
-        print_ok "-> EDGE addresses parameters set:"
-        print_ok "   EDGE_EXTERNAL_SCHEMA:  $EDGE_EXTERNAL_SCHEMA"
-        print_ok "   API_EXTERNAL:          $API_EXTERNAL"
-        print_ok "   EDGE_EXTERNAL:         $EDGE_EXTERNAL"
-
-        print_info "-> Deploying EDGE"
-        # If the "ingress" service type is used - EDGE shall still use "external-ip" or "node-port", as EDGE will act as an ingress proxy
-        # By default, "external-ip" is used. Unless overridden by "$CP_EDGE_KUBE_SERVICES_TYPE"
-        # After the external ip is set - CP_KUBE_SERVICES_TYPE is reverted back to "ingress"
-        CP_KUBE_SERVICES_TYPE_BKP="$CP_KUBE_SERVICES_TYPE"
-        if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
-            export CP_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-external-ip}"
-            print_info "\"ingress\" service types are used for the deployment. EDGE will be deployed as ${CP_KUBE_SERVICES_TYPE}. If this is not desired, override this by setting \"-env CP_EDGE_KUBE_SERVICES_TYPE=\""
-        fi
-
-        set_kube_service_external_ip CP_EDGE_SVC_EXTERNAL_IP_LIST \
-                                     CP_EDGE_NODE_IP \
-                                     CP_EDGE_KUBE_NODE_NAME \
-                                     "cloud-pipeline/cp-edge"
-        if [ $? -ne 0 ]; then
-            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-edge"
-            exit 1
-        fi
-        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml --svc
-        expose_cluster_port "cp-edge" \
-                            "${CP_EDGE_EXTERNAL_PORT}" \
-                            "8080"
-        expose_cluster_port "cp-edge" \
-                            "${CP_EDGE_WEB_EXTERNAL_PORT}" \
-                            "8181"
-        expose_cluster_port "cp-edge" \
-                            "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
-                            "8282"
-        register_svc_custom_names_in_cluster "cp-edge" "$CP_EDGE_EXTERNAL_HOST"
-
-        print_info "-> Waiting for EDGE to initialize"
-        wait_for_deployment "cp-edge"
-
-        print_info "-> Setting EDGE Service labels:"
-        __edge_external_host__="cloud-pipeline/external-host=$CP_EDGE_EXTERNAL_HOST"
-        echo $__edge_external_host__
-        kubectl label svc cp-edge $__edge_external_host__
-
-        __edge_external_port__="cloud-pipeline/external-port=$CP_EDGE_EXTERNAL_PORT"
-        echo $__edge_external_port__
-        kubectl label svc cp-edge $__edge_external_port__
-
-        __edge_external_schema__="cloud-pipeline/external-scheme=$EDGE_EXTERNAL_SCHEMA"
-        echo $__edge_external_schema__
-        kubectl label svc cp-edge $__edge_external_schema__
-
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
-
-        export CP_KUBE_SERVICES_TYPE="$CP_KUBE_SERVICES_TYPE_BKP"
-        unset CP_KUBE_SERVICES_TYPE_BKP
-    fi
-    echo
-fi
-
 # API postgres db
 if is_service_requested cp-api-db; then
     print_ok "[Starting postgres DB deployment]"
@@ -813,6 +721,98 @@ if is_service_requested cp-docker-registry; then
             print_err "Default docker registry was not registered correctly or a manifest file is not available ($CP_DOCKER_MANIFEST_PATH), base tools images WILL NOT be pushed"
         fi
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-docker-registry: $CP_DOCKER_EXTERNAL_HOST:$CP_DOCKER_EXTERNAL_PORT"
+    fi
+    echo
+fi
+
+# EDGE
+if is_service_requested cp-edge; then
+    print_ok "[Starting EDGE deployment]"
+
+    print_info "-> Deleting existing instance of EDGE"
+    delete_deployment_and_service   "cp-edge" \
+                                    "/opt/edge"
+
+    if is_install_requested; then
+        print_info "-> Creating self-signed SSL certificate for EDGE (${CP_EDGE_EXTERNAL_HOST}, ${CP_EDGE_INTERNAL_HOST})"
+        generate_self_signed_key_pair   $CP_EDGE_CERT_DIR/ssl-private-key.pem \
+                                        $CP_EDGE_CERT_DIR/ssl-public-cert.pem \
+                                        $CP_EDGE_EXTERNAL_HOST \
+                                        $CP_EDGE_INTERNAL_HOST
+
+        export EDGE_EXTERNAL_SCHEMA="https"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                "EDGE_EXTERNAL_SCHEMA" \
+                                "$EDGE_EXTERNAL_SCHEMA"
+
+        export API_EXTERNAL="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                "API_EXTERNAL" \
+                                "$API_EXTERNAL"
+
+        export EDGE_EXTERNAL="$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                "EDGE_EXTERNAL" \
+                                "$EDGE_EXTERNAL"
+
+        init_kube_config_map
+
+        print_ok "-> EDGE addresses parameters set:"
+        print_ok "   EDGE_EXTERNAL_SCHEMA:  $EDGE_EXTERNAL_SCHEMA"
+        print_ok "   API_EXTERNAL:          $API_EXTERNAL"
+        print_ok "   EDGE_EXTERNAL:         $EDGE_EXTERNAL"
+
+        print_info "-> Deploying EDGE"
+        # If the "ingress" service type is used - EDGE shall still use "external-ip" or "node-port", as EDGE will act as an ingress proxy
+        # By default, "external-ip" is used. Unless overridden by "$CP_EDGE_KUBE_SERVICES_TYPE"
+        # After the external ip is set - CP_KUBE_SERVICES_TYPE is reverted back to "ingress"
+        CP_KUBE_SERVICES_TYPE_BKP="$CP_KUBE_SERVICES_TYPE"
+        if [ "$CP_KUBE_SERVICES_TYPE" == "ingress" ]; then
+            export CP_KUBE_SERVICES_TYPE="${CP_EDGE_KUBE_SERVICES_TYPE:-external-ip}"
+            print_info "\"ingress\" service types are used for the deployment. EDGE will be deployed as ${CP_KUBE_SERVICES_TYPE}. If this is not desired, override this by setting \"-env CP_EDGE_KUBE_SERVICES_TYPE=\""
+        fi
+
+        set_kube_service_external_ip CP_EDGE_SVC_EXTERNAL_IP_LIST \
+                                     CP_EDGE_NODE_IP \
+                                     CP_EDGE_KUBE_NODE_NAME \
+                                     "cloud-pipeline/cp-edge"
+        if [ $? -ne 0 ]; then
+            print_err "$CP_KUBE_SERVICES_TYPE services mode type is set, but set_kube_service_external_ip failed for cp-edge"
+            exit 1
+        fi
+        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-edge/cp-edge-svc.yaml --svc
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_EXTERNAL_PORT}" \
+                            "8080"
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_WEB_EXTERNAL_PORT}" \
+                            "8181"
+        expose_cluster_port "cp-edge" \
+                            "${CP_EDGE_CONNECT_EXTERNAL_PORT}" \
+                            "8282"
+        register_svc_custom_names_in_cluster "cp-edge" "$CP_EDGE_EXTERNAL_HOST"
+
+        print_info "-> Waiting for EDGE to initialize"
+        wait_for_deployment "cp-edge"
+
+        print_info "-> Setting EDGE Service labels:"
+        __edge_external_host__="cloud-pipeline/external-host=$CP_EDGE_EXTERNAL_HOST"
+        echo $__edge_external_host__
+        kubectl label svc cp-edge $__edge_external_host__
+
+        __edge_external_port__="cloud-pipeline/external-port=$CP_EDGE_EXTERNAL_PORT"
+        echo $__edge_external_port__
+        kubectl label svc cp-edge $__edge_external_port__
+
+        __edge_external_schema__="cloud-pipeline/external-scheme=$EDGE_EXTERNAL_SCHEMA"
+        echo $__edge_external_schema__
+        kubectl label svc cp-edge $__edge_external_schema__
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-edge: $EDGE_EXTERNAL_SCHEMA://$CP_EDGE_EXTERNAL_HOST:$CP_EDGE_EXTERNAL_PORT"
+
+        export CP_KUBE_SERVICES_TYPE="$CP_KUBE_SERVICES_TYPE_BKP"
+        unset CP_KUBE_SERVICES_TYPE_BKP
     fi
     echo
 fi

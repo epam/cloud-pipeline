@@ -32,10 +32,10 @@ metadata:
   namespace: default
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: external
-    service.beta.kubernetes.io/aws-load-balancer-scheme: ${CP_EDGE_ELB_SCHEME}
-    service.beta.kubernetes.io/aws-load-balancer-subnets: ${CP_EDGE_ELB_SUBNETS}
-    service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${CP_EDGE_ELB_EIPALLOCS}
-    service.beta.kubernetes.io/aws-load-balancer-security-groups: ${CP_EDGE_ELB_SG}
+    service.beta.kubernetes.io/aws-load-balancer-scheme: ${CP_EDGE_AWS_ELB_SCHEME}
+    service.beta.kubernetes.io/aws-load-balancer-subnets: ${CP_EDGE_AWS_ELB_SUBNETS}
+    service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${CP_EDGE_AWS_ELB_EIPALLOCS}
+    service.beta.kubernetes.io/aws-load-balancer-security-groups: ${CP_EDGE_AWS_ELB_SG}
 spec:
   type: LoadBalancer
   selector:
