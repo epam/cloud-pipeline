@@ -1076,7 +1076,7 @@ function create_kube_resource {
 
     spec_file="$(get_kube_resource_spec_file_by_type "$spec_location" "$resource_type")"
 
-    local updated_spec_file="/tmp/$(basename $spec_file)"
+    local updated_spec_file="/tmp/env_resolved_$(basename $spec_file)"
     envsubst < $spec_file > "$updated_spec_file"
     kubectl create -f "$updated_spec_file"
     rm -f "$updated_spec_file"

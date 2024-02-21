@@ -27,9 +27,11 @@ yum install -y \
             gettext \
             iproute-tc
 
-curl --silent --location --remote-name "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.3.0/kustomize_kustomize.v5.3.0_linux_amd64" && \
-chmod a+x kustomize_kustomize.v5.3.0_linux_amd64 && \
-sudo mv kustomize_kustomize.v5.3.0_linux_amd64 /usr/local/bin/kustomize
+curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -o /tmp/install_kustomize.sh && \
+    chmod +x /tmp/install_kustomize.sh && \
+    /tmp/install_kustomize.sh 5.3.0 && \
+    rm -f /tmp/install_kustomize.sh && \
+    mv kustomize /usr/local/bin/kustomize
 
 git config --global http.sslVerify "false"
 
