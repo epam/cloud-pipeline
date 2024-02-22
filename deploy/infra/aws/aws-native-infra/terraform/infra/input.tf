@@ -71,6 +71,16 @@ variable "eks_system_node_group_volume_type" {
   description = "Volume type of cp-system EKS node."
 }
 
+variable "eks_additional_role_mapping" {
+  type = list(object({
+    iam_role_arn  = string
+    eks_role_name = string
+    eks_groups    = list(string)
+  }))
+  default     = []
+  description = "List of additional roles mapping for aws_auth map. With this parameter you can configure access to the EKS cluster for AWS IAM entities."
+}
+
 variable "efs_performance_mode" {
   type        = string
   default     = "generalPurpose"
