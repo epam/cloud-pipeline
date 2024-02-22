@@ -30,8 +30,8 @@ variable "vpc_id" {
 }
 
 variable "jump_box_ami" {
-  default     = "ami-00caa7df15d2e771f"
-  description = "AMI to be used for bastion ec2 instance"
+  default     = ""
+  description = "AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used."
 }
 
 variable "iam_role_permissions_boundary_arn" {
