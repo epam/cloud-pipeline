@@ -7,7 +7,7 @@ module "bastion_ec2_instance" {
   user_data_base64            = base64encode(local.user_data)
   user_data_replace_on_change = true
 
-  ami           = var.jump_box_ami
+  ami           = var.jump_box_ami != "" ? var.jump_box_ami : data.aws_ami.eks_ami.id
   instance_type = var.jump_box_instance_type
 
   monitoring             = true
@@ -18,10 +18,6 @@ module "bastion_ec2_instance" {
       encrypted = true
     }
   ]
-
-  metadata_options = {
-    http_tokens = "required"
-  }
 
   tags = local.tags
 }
@@ -38,19 +34,17 @@ locals {
     sudo ./aws/install && \
     rm -rf awscliv2.zip ./aws
 
-    sudo yum install git jq curl docker vim wget -y
+    sudo yum install git jq curl vim wget -y
 
     sudo wget https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
     sudo unzip terraform_1.5.0_linux_amd64.zip 
     chmod +x terraform
     sudo mv terraform /usr/local/bin/
     sudo rm terraform_1.5.0_linux_amd64.zip
-    curl -LO https://dl.k8s.io/release/v1.28.2/bin/linux/amd64/kubectl
+
+    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
     sudo install -o root -g root -m 0755 kubectl /usr/bin/kubectl
 
-    sudo systemctl enable docker.service
-    sudo systemctl start docker.service
-   
   EOT
 }
 
