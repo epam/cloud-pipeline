@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry:2.8.3
+FROM registry:3.0.0-alpha.1
 
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
