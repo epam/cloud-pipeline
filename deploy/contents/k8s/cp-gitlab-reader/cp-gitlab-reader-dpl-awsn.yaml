@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-gitlab-reader
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-gitlab-reader: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-gitlab-reader
+      namespace: default
+      labels:
+        cloud-pipeline/cp-gitlab-reader: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-gitlab-reader: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-gitlab-reader
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:gitlab-reader-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init.sh"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /var/opt/gitlab
+              subPath: gitlab/data
+              name: cp-system
+            - mountPath: ${CP_GITLAB_READER_LOG_DIR}
+              subPath: git-reader/logs
+              name: cp-system
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret
+    

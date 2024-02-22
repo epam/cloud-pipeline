@@ -1,9 +1,12 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: cp-docker-comp
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-docker-comp: "true"
   replicas: 1
   template:
     metadata:
@@ -32,6 +35,6 @@ spec:
       volumes:
         - name: docker-comp-wd
           hostPath:
-            path: ${CP_DOCKER_COMP_WORKING_DIR}
+            path: /opt/docker-comp/wd
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

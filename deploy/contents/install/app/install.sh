@@ -57,121 +57,124 @@ fi
 ##########
 # Install kube master
 ##########
-print_ok "[Setting up Kube master]"
 
-KUBE_MASTER_IS_INSTALLED=0;
-kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
+if is_deployment_type_requested classic; then
+    print_ok "[Setting up Kube master]"
 
-if [ "$KUBE_MASTER_IS_INSTALLED" != 1 ] && [ "$CP_INSTALL_KUBE_MASTER" != 1 ]; then
+    KUBE_MASTER_IS_INSTALLED=0;
+    kubectl get no >/dev/null 2>&1 && { KUBE_MASTER_IS_INSTALLED=1;  }
+
+    if [ "$KUBE_MASTER_IS_INSTALLED" != 1 ] && [ "$CP_INSTALL_KUBE_MASTER" != 1 ]; then
     print_err "Kube master is not installed or cannot be accessed. Please run installation with -m|--install-kube-master to install master node or enable access to the master from a current node"
     exit 1
-fi
-
-if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
-    if [ "$KUBE_MASTER_IS_INSTALLED" == 1 ]; then
-        print_info "Kube master is already installed, skipping installation"
-    else
-        print_info "Starting Kube master installation"
-        . install-master.sh
-        if [ $? -ne 0 ]; then
-            print_err "Errors occured during master installation - please review any output above"
-            print_err "Aborting installation"
-            exit 1
-        fi
-
-        export CP_KUBE_MIN_DNS_REPLICAS=${CP_KUBE_MIN_DNS_REPLICAS:-1}
-        print_info "-> Enabling DNS autoscaling with a minimal replicas count: $CP_KUBE_MIN_DNS_REPLICAS"
-        kubectl delete configmap "dns-autoscaler" --namespace "kube-system"
-        delete_deployment_and_service "dns-autoscaler"
-        create_kube_resource $K8S_SPECS_HOME/cp-dns-autoscale/cp-dns-autoscale-dpl.yaml
-        print_info "-> Waiting for the DNS autoscaler to initialize"
-        wait_for_deployment "dns-autoscaler"
-
-        print_info "-> Configuring Kube DNS well-known entries"
-        prepare_kube_dns "$CP_DNS_STATIC_ENTRIES"
     fi
-else
-    print_info "Kube master installation skipped"
-fi
-echo
 
-# Initialize kube master host address
-print_ok "[Initialize Kube API address]"
-export CP_KUBE_EXTERNAL_HOST=${CP_KUBE_EXTERNAL_HOST:-${!CP_KUBE_EXTERNAL_HOST_TYPE}}
-update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                    "CP_KUBE_EXTERNAL_HOST" \
-                    "$CP_KUBE_EXTERNAL_HOST"
+    if [ "$CP_INSTALL_KUBE_MASTER" == 1 ]; then
+        if [ "$KUBE_MASTER_IS_INSTALLED" == 1 ]; then
+            print_info "Kube master is already installed, skipping installation"
+        else
+            print_info "Starting Kube master installation"
+            . install-master.sh
+            if [ $? -ne 0 ]; then
+                print_err "Errors occured during master installation - please review any output above"
+                print_err "Aborting installation"
+                exit 1
+            fi
 
-CP_KUBE_INTERNAL_HOST=${CP_KUBE_INTERNAL_HOST:-"kubernetes.default.svc.cluster.local"}
-print_info "-> Kube API address is set to external: \"$CP_KUBE_EXTERNAL_HOST:$CP_KUBE_EXTERNAL_PORT\", internal: \"$CP_KUBE_INTERNAL_HOST:$CP_KUBE_INTERNAL_PORT\""
+            export CP_KUBE_MIN_DNS_REPLICAS=${CP_KUBE_MIN_DNS_REPLICAS:-1}
+            print_info "-> Enabling DNS autoscaling with a minimal replicas count: $CP_KUBE_MIN_DNS_REPLICAS"
+            kubectl delete configmap "dns-autoscaler" --namespace "kube-system"
+            delete_deployment_and_service "dns-autoscaler"
+            create_kube_resource $K8S_SPECS_HOME/cp-dns-autoscale/cp-dns-autoscale-dpl.yaml
+            print_info "-> Waiting for the DNS autoscaler to initialize"
+            wait_for_deployment "dns-autoscaler"
 
-CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
-if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
-    sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
-    print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
-fi
+            print_info "-> Configuring Kube DNS well-known entries"
+            prepare_kube_dns "$CP_DNS_STATIC_ENTRIES"
+        fi
+    else
+        print_info "Kube master installation skipped"
+    fi
+    echo
 
-if [ -z "$CP_PREF_CLUSTER_PROXIES_DNS_POST" ]; then
-    export CP_PREF_CLUSTER_PROXIES_DNS_POST="$CP_KUBE_DNS_HOST"
+    # Initialize kube master host address
+    print_ok "[Initialize Kube API address]"
+    export CP_KUBE_EXTERNAL_HOST=${CP_KUBE_EXTERNAL_HOST:-${!CP_KUBE_EXTERNAL_HOST_TYPE}}
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                    "CP_PREF_CLUSTER_PROXIES_DNS_POST" \
-                    "$CP_PREF_CLUSTER_PROXIES_DNS_POST"
-    print_warn "DNS proxy is not defined, kube-dns $CP_PREF_CLUSTER_PROXIES_DNS_POST will be used for all nodes. If other behavior is expected -please specify it using \"--env CP_PREF_CLUSTER_PROXIES_DNS_POST=\" option"
+                        "CP_KUBE_EXTERNAL_HOST" \
+                        "$CP_KUBE_EXTERNAL_HOST"
+
+    CP_KUBE_INTERNAL_HOST=${CP_KUBE_INTERNAL_HOST:-"kubernetes.default.svc.cluster.local"}
+    print_info "-> Kube API address is set to external: \"$CP_KUBE_EXTERNAL_HOST:$CP_KUBE_EXTERNAL_PORT\", internal: \"$CP_KUBE_INTERNAL_HOST:$CP_KUBE_INTERNAL_PORT\""
+
+    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+    if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
+        sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
+        print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
+    fi
+
+    if [ -z "$CP_PREF_CLUSTER_PROXIES_DNS_POST" ]; then
+        export CP_PREF_CLUSTER_PROXIES_DNS_POST="$CP_KUBE_DNS_HOST"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_PREF_CLUSTER_PROXIES_DNS_POST" \
+                        "$CP_PREF_CLUSTER_PROXIES_DNS_POST"
+        print_warn "DNS proxy is not defined, kube-dns $CP_PREF_CLUSTER_PROXIES_DNS_POST will be used for all nodes. If other behavior is expected -please specify it using \"--env CP_PREF_CLUSTER_PROXIES_DNS_POST=\" option"
+    fi
+    echo
+
+    # Get kubeadm token
+    print_ok "[Configuring kubeadm credentials]"
+
+    set -o pipefail
+    export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
+    set +o pipefail
+    if [ $? -ne 0 ]; then
+        print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
+        exit 1
+    else
+        print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_KUBE_KUBEADM_TOKEN" \
+                            "$CP_KUBE_KUBEADM_TOKEN"
+    fi
+    echo
+
+    set -o pipefail
+    export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
+    set +o pipefail
+    if [ $? -ne 0 ]; then
+        print_err "Errors occurred during retrieval of the kubeadm cert hash. Please review any output above, exiting"
+        exit 1
+    else
+        print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_KUBE_KUBEADM_CERT_HASH" \
+                            "$CP_KUBE_KUBEADM_CERT_HASH"
+    fi
+    echo
+
+    # Get kube account token
+    print_ok "[Configuring kube node credentials]"
+
+    set -o pipefail
+    export CP_KUBE_NODE_TOKEN="$(kubectl --namespace=kube-system describe sa canal \
+    | grep Tokens \
+    | cut -d: -f2 \
+    | xargs kubectl --namespace=kube-system get secret -o json \
+    | jq -r '.data.token' \
+    | base64 --decode)"
+    set +o pipefail
+    if [ $? -ne 0 ]; then
+        print_err "Errors occurred during retrieval of the kube node token. Please review any output above, exiting"
+        exit 1
+    else
+        print_info "-> kube node token retrieved: $CP_KUBE_ACCOUNT_TOKEN"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_KUBE_NODE_TOKEN" \
+                            "$CP_KUBE_NODE_TOKEN"
+    fi
+    echo
 fi
-echo
-
-# Get kubeadm token
-print_ok "[Configuring kubeadm credentials]"
-
-set -o pipefail
-export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
-set +o pipefail
-if [ $? -ne 0 ]; then
-    print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
-    exit 1
-else
-    print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
-    update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                        "CP_KUBE_KUBEADM_TOKEN" \
-                        "$CP_KUBE_KUBEADM_TOKEN"
-fi
-echo
-
-set -o pipefail
-export CP_KUBE_KUBEADM_CERT_HASH="$(openssl x509 -in /etc/kubernetes/pki/ca.crt -noout -pubkey | openssl rsa -pubin -outform DER 2>/dev/null | sha256sum | cut -d' ' -f1)"
-set +o pipefail
-if [ $? -ne 0 ]; then
-    print_err "Errors occurred during retrieval of the kubeadm cert hash. Please review any output above, exiting"
-    exit 1
-else
-    print_info "-> kubeadm cert hash retrieved: $CP_KUBE_KUBEADM_CERT_HASH"
-    update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                        "CP_KUBE_KUBEADM_CERT_HASH" \
-                        "$CP_KUBE_KUBEADM_CERT_HASH"
-fi
-echo
-
-# Get kube account token
-print_ok "[Configuring kube node credentials]"
-
-set -o pipefail
-export CP_KUBE_NODE_TOKEN="$(kubectl --namespace=kube-system describe sa canal \
-  | grep Tokens \
-  | cut -d: -f2 \
-  | xargs kubectl --namespace=kube-system get secret -o json \
-  | jq -r '.data.token' \
-  | base64 --decode)"
-set +o pipefail
-if [ $? -ne 0 ]; then
-    print_err "Errors occurred during retrieval of the kube node token. Please review any output above, exiting"
-    exit 1
-else
-    print_info "-> kube node token retrieved: $CP_KUBE_ACCOUNT_TOKEN"
-    update_config_value "$CP_INSTALL_CONFIG_FILE" \
-                        "CP_KUBE_NODE_TOKEN" \
-                        "$CP_KUBE_NODE_TOKEN"
-fi
-echo
 
 ##########
 # Setup config for Kube
@@ -190,7 +193,11 @@ echo
 ##########
 print_ok "[Creating roles to the Kube nodes]"
 
-KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
+if is_deployment_type_requested classic; then
+    KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep node-role.kubernetes.io/master | cut -f1 -d' ')
+elif is_deployment_type_requested aws-native; then
+    KUBE_MASTER_NODE_NAME=$(kubectl get nodes --show-labels | grep "cloud-pipeline/node-group-type=system" | cut -f1 -d' ')
+fi
 
 # Allow to schedule API DB to the master
 CP_DB_KUBE_NODE_NAME=${CP_DB_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
@@ -360,6 +367,28 @@ else
 fi
 echo
 
+# For aws-native deployment
+if is_deployment_type_requested aws-native; then
+
+   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-account/cp-main-service-account.yaml --res "delete"
+   create_kube_resource "$K8S_SPECS_HOME"/cp-main-service-account/cp-main-service-account.yaml
+
+   if [ "$CP_CSI_DRIVER_TYPE" = "efs" ]; then
+      print_ok "[Starting install CSI driver in AWS EKS deployment]"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-efs --ktz "delete"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-efs --ktz
+   elif [ "$CP_CSI_DRIVER_TYPE" = "fsx" ]; then
+      print_ok "[Starting install FSX CSI driver in AWS EKS deployment]"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz "delete"
+      create_kube_resource "$K8S_SPECS_HOME"/cp-system-fs-fsx --ktz
+   else
+      print_err "Unsupported CP_CSI_DRIVER_TYPE was provided."
+      exit 1
+   fi
+
+fi
+
+
 ##########
 # Run Pods
 ##########
@@ -382,7 +411,7 @@ if is_service_requested cp-api-db; then
     if is_install_requested; then
         print_info "-> Deploying postgres DB"
         create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-svc.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-api-db/cp-api-db-svc.yaml --svc
 
         print_info "-> Waiting for postgres DB to initialize"
         wait_for_deployment "cp-api-db"
@@ -707,7 +736,7 @@ if is_service_requested cp-edge; then
     delete_deployment_and_service   "cp-edge" \
                                     "/opt/edge"
 
-    if is_install_requested; then   
+    if is_install_requested; then
         print_info "-> Creating self-signed SSL certificate for EDGE (${CP_EDGE_EXTERNAL_HOST}, ${CP_EDGE_INTERNAL_HOST})"
         generate_self_signed_key_pair   $CP_EDGE_CERT_DIR/ssl-private-key.pem \
                                         $CP_EDGE_CERT_DIR/ssl-public-cert.pem \
@@ -728,7 +757,7 @@ if is_service_requested cp-edge; then
         update_config_value "$CP_INSTALL_CONFIG_FILE" \
                                 "EDGE_EXTERNAL" \
                                 "$EDGE_EXTERNAL"
-        
+
         init_kube_config_map
 
         print_ok "-> EDGE addresses parameters set:"

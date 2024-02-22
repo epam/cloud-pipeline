@@ -27,3 +27,13 @@ output "cluster_node_execution_role" {
   description = "The role of the cluster node execution."
   value       = aws_iam_role.eks_node_execution
 }
+
+output "etc_bucket" {
+  description = "Cloud-pipeline etc bucket name"
+  value = module.s3_etc.s3_bucket_id
+}
+
+output "docker_bucket" {
+  description = "Cloud-pipeline docker registry bucket name"
+  value = module.s3_docker.s3_bucket_id
+}

@@ -15,11 +15,13 @@ module "https_access_sg" {
   version                           = "5.1.0"
   vpc_id                            = data.aws_vpc.this.id
   name                              = "${local.resource_name_prefix}-https-access-sg"
-  computed_ingress_with_cidr_blocks = [
+  ingress_prefix_list_ids = var.cp_api_access_prefix_lists
+  ingress_with_prefix_list_ids = [
     {
-      rule        = "https-443-tcp",
-      cidr_blocks = var.cp_api_access_cidr_blocks
-    }
+      from_port = 443
+      to_port   = 443
+      protocol  = "tcp"
+    },
   ]
   tags = local.tags
 }

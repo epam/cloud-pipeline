@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-monitoring-srv
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-monitoring-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-monitoring-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-monitoring-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-monitoring-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:monitoring-service-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/init"]
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - name: cp-system
+              subPath: monitoring/logs
+              mountPath: /opt/monitoring/logs
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

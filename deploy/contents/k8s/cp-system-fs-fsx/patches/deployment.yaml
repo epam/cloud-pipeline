@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fsx-csi-controller
+  labels:
+    app.kubernetes.io/name: aws-fsx-csi-driver
+spec:
+  replicas: 1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/name: fsx-csi-controller-sa
+  name: fsx-csi-controller-sa
+  namespace: kube-system
+  annotations:
+    eks.amazonaws.com/role-arn: ${CP_CSI_EXECUTION_ROLE}

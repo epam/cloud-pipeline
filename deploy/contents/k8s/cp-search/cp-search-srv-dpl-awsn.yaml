@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-search-srv
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      name: cp-search-srv
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-search-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CP_SEARCH_DISABLE_NFS_FILE
+              value: "false"
+            - name: CP_SEARCH_DISABLE_NFS_OBSERVER_SYNC
+              value: "true"
+            - name: LANG
+              value: en_US.UTF-8
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/search/logs
+              subPath: search/logs
+              name: cp-system
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

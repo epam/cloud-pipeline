@@ -22,7 +22,7 @@ module "eks" {
   create_kms_key            = false
   cluster_encryption_config = {
     resources        = ["secrets"]
-    provider_key_arn = module.kms.key_arn
+    provider_key_arn = module.kms_eks.key_arn
   }
 
   eks_managed_node_group_defaults = {
@@ -57,6 +57,31 @@ module "eks" {
       max_size     = var.eks_system_node_group_size
       desired_size = var.eks_system_node_group_size
     }
+
+    bastion = {
+      name = "${local.resource_name_prefix}-bstn-ng"
+
+      instance_types = [var.eks_bastion_node_group_instance_type]
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = var.eks_system_node_group_volume_size
+            volume_type           = var.eks_system_node_group_volume_type
+            encrypted             = true
+            delete_on_termination = true
+          }
+        }
+      }
+
+      labels = {
+        "cloud-pipeline/node-group-type" : "bastion"
+      }
+
+      min_size     = 1
+      max_size     = 1
+      desired_size = 1
+    }
   }
 
   # aws-auth configmap
@@ -75,7 +100,7 @@ module "eks" {
 
   cluster_enabled_log_types              = ["audit", "api", "authenticator", "scheduler", "controllerManager"]
   cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
-  cloudwatch_log_group_kms_key_id        = module.kms.key_arn
+  cloudwatch_log_group_kms_key_id        = module.kms_eks.key_arn
   tags                                   = local.tags
 }
 

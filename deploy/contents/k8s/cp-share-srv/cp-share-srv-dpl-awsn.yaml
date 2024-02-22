@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cp-share-srv
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-share-srv: "true"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-share-srv: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-share-srv: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-share-srv
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:share-srv-$CP_VERSION
+          imagePullPolicy: "Always"
+          securityContext:
+            privileged: true
+          command: ["/init"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+          - configMapRef:
+              name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/share-srv/pki
+              subPath: share-srv/pki
+              name: cp-system
+            - mountPath: /opt/share-srv/sso
+              subPath: share-srv/sso
+              name: cp-system
+            - mountPath: /opt/share-srv/logs
+              subPath: share-srv/logs
+              name: cp-system
+            - mountPath: /opt/idp/pki
+              subPath: idp/pki
+              name: cp-system
+            - mountPath: /opt/common/pki
+              subPath: common/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/api/pki
+              subPath: api/pki
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/share-srv/prefs
+              subPath: share-srv/prefs
+              name: cp-system
+              readOnly: true
+            - mountPath: /opt/share-srv/static
+              subPath: share-srv/static
+              name: cp-system
+              readOnly: true
+      volumes:
+        - name: cp-system
+          persistentVolumeClaim:
+            claimName: cp-system-pvc
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

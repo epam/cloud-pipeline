@@ -18,9 +18,10 @@ variable "subnet_ids" {
   description = "Ids of the VCP subnets to be used for Compute Layer EKS cluster"
 }
 
-variable "cp_api_access_cidr_blocks" {
-  default     = "0.0.0.0/0"
-  description = "CIDR blocks to which access to Cloud Pipeline API will be granted. Split by comma."
+variable "cp_api_access_prefix_lists" {
+  default     = []
+  type        = list(string)
+  description = "Prefix Lists to which access to Cloud Pipeline API will be granted."
 
 }
 
@@ -42,6 +43,12 @@ variable "eks_cluster_version" {
 }
 
 variable "eks_system_node_group_instance_type" {
+  type        = string
+  default     = "m5.xlarge"
+  description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
+}
+
+variable "eks_bastion_node_group_instance_type" {
   type        = string
   default     = "m5.large"
   description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
