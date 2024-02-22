@@ -20,7 +20,7 @@ data "aws_ami" "eks_ami" {
 
   filter {
     name   = "name"
-    values = ["amazon-eks-node-1.29-v20240202"]
+    values = ["amazon-eks-node-1.28-v20240213"]
   }
 
   filter {
