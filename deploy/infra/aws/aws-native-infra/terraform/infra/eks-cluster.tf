@@ -19,7 +19,7 @@ module "eks" {
   cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
 
   # External encryption key
-  create_kms_key            = false
+  create_kms_key = false
   cluster_encryption_config = {
     resources        = ["secrets"]
     provider_key_arn = module.kms_eks.key_arn
@@ -87,16 +87,18 @@ module "eks" {
   # aws-auth configmap
   manage_aws_auth_configmap = true
 
-  aws_auth_roles = [
+  aws_auth_roles = concat([
     {
       rolearn  = aws_iam_role.eks_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
-      groups   = [
+      groups = [
         "system:bootstrappers",
         "system:nodes",
       ]
     }
-  ]
+    ],
+    local.sso_additional_role_mapping
+  )
 
   cluster_enabled_log_types              = ["audit", "api", "authenticator", "scheduler", "controllerManager"]
   cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
