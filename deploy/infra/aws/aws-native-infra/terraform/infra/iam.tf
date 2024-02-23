@@ -71,7 +71,7 @@ resource "aws_iam_policy" "eks_node_observability" {
   path        = "/"
 
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -169,7 +169,7 @@ module "fsx_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns             = {
+  role_policy_arns = {
     fsx_policy = data.aws_iam_policy.AmazonFSxFullAccess.arn
   }
 
@@ -192,7 +192,7 @@ module "efs_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_efs_csi_policy = true
-  role_policy_arns      = {
+  role_policy_arns = {
     efs_policy = data.aws_iam_policy.AmazonElasticFileSystemFullAccess.arn
   }
 
@@ -217,7 +217,7 @@ resource "aws_iam_policy" "cp_main_service" {
   path        = "/"
 
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         "Sid" : "S3Allow",
@@ -398,7 +398,7 @@ module "cp_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns             = {
+  role_policy_arns = {
     policy = aws_iam_policy.cp_main_service.arn
   }
 
@@ -423,7 +423,7 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
   path        = "/"
 
   policy = jsonencode({
-    Version   = "2012-10-17"
+    Version = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -492,4 +492,30 @@ resource "aws_iam_role" "cp_s3_via_sts" {
 resource "aws_iam_role_policy_attachment" "cp_s3_via_sts" {
   role       = aws_iam_role.cp_s3_via_sts.name
   policy_arn = aws_iam_policy.cp_s3_via_sts.arn
+}
+
+/*
+===============================================================================
+  AWS Load Balancer Controller service account and role
+===============================================================================
+*/
+
+module "aws_lbc_addon_sa_role" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "5.30.0"
+
+  role_name                     = "${local.resource_name_prefix}-EKS-LBC-SA"
+  role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
+  policy_name_prefix            = local.resource_name_prefix
+
+  attach_load_balancer_controller_policy = true
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
+    }
+  }
+
+  tags = local.tags
 }
