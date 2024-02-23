@@ -19,7 +19,7 @@ ln -s /usr/local/share/ca-certificates/cp-api/ssl-public-cert.pem  /usr/local/sh
 update-ca-certificates
 
 # Setup storage driver configuration (S3 / Azure BLOB / Local FS)
-storage_driver_config="/tmp/storage_driver_config_${RANDOM}"
+storage_driver_config=""
 
 
 if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
@@ -37,7 +37,7 @@ if [ "$CP_DOCKER_STORAGE_TYPE" == "obj" ]; then
       CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
     fi
 
-cat > $storage_driver_config <<-EOF
+read -r -d '' storage_driver_config <<-EOF
   s3:
     region: ${CP_DOCKER_STORAGE_REGION:-$CP_CLOUD_REGION_ID}
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
@@ -54,7 +54,7 @@ EOF
     CP_DOCKER_STORAGE_KEY_NAME=${CP_DOCKER_STORAGE_KEY_NAME:-$CP_AZURE_STORAGE_ACCOUNT}
     CP_DOCKER_STORAGE_KEY_SECRET=${CP_DOCKER_STORAGE_KEY_SECRET:-$CP_AZURE_STORAGE_KEY}
 
-cat > $storage_driver_config <<-EOF
+read -r -d '' storage_driver_config <<-EOF
   azure: 
     accountname: ${CP_DOCKER_STORAGE_KEY_NAME}
     accountkey: ${CP_DOCKER_STORAGE_KEY_SECRET}
@@ -69,7 +69,7 @@ EOF
            CP_DOCKER_STORAGE_ROOT_DIR="cloud-pipeline-${CP_DEPLOYMENT_ID:-dockers}"
      fi
 
-cat > $storage_driver_config <<-EOF
+read -r -d '' storage_driver_config <<-EOF
   gcs:
     bucket: ${CP_DOCKER_STORAGE_CONTAINER}
     keyfile: ${CP_CLOUD_CREDENTIALS_LOCATION}
@@ -81,10 +81,10 @@ EOF
   fi
 fi
 
-if [ ! -f "$storage_driver_config" ]; then
+if [ -z "$storage_driver_config" ]; then
   echo "Setting default local filesystem driver configuration"
 
-cat > $storage_driver_config <<-EOF
+read -r -d '' storage_driver_config <<-EOF
   filesystem:
     rootdirectory: /var/lib/registry
     maxthreads: 100
@@ -136,7 +136,4 @@ storage:
 EOF
 
 # Update config file with storage driver params
-cat "${storage_driver_config}" >> $config_path
-
-# delete tmp file
-rm -rf "${storage_driver_config}"
+echo "${storage_driver_config}" >> $config_path
