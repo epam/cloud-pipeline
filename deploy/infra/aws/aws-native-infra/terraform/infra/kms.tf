@@ -19,35 +19,16 @@ module "kms" {
         "Resource" : "*"
       },
       {
-        "Sid" : "Allow logs encryption",
+        "Sid" : "Allow access for Key Administrators",
         "Effect" : "Allow",
         "Principal" : {
-          "Service" : "logs.${data.aws_region.current.name}.amazonaws.com"
-        },
-        "Action" : [
-          "kms:Encrypt*",
-          "kms:Decrypt*",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:Describe*"
-        ],
-        "Resource" : "*",
-        "Condition" : {
-          "ArnLike" : {
-            "kms:EncryptionContext:aws:logs:arn" : "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:*"
-          }
-        }
-      },
-      {
-        "Sid": "Allow access for Key Administrators",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": [
+          "AWS" : [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot",
-            module.cp_irsa.iam_role_arn
+            module.cp_irsa.iam_role_arn,
+            aws_iam_role.eks_cp_system_node_execution.arn
           ]
         },
-        "Action": [
+        "Action" : [
           "kms:Create*",
           "kms:Describe*",
           "kms:Enable*",
@@ -63,44 +44,46 @@ module "kms" {
           "kms:ScheduleKeyDeletion",
           "kms:CancelKeyDeletion"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Sid": "Allow use of the key",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": [
+        "Sid" : "Allow use of the key",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot",
-            module.cp_irsa.iam_role_arn
+            module.cp_irsa.iam_role_arn,
+            aws_iam_role.eks_cp_system_node_execution.arn
           ]
         },
-        "Action": [
+        "Action" : [
           "kms:Encrypt",
           "kms:Decrypt",
           "kms:ReEncrypt*",
           "kms:GenerateDataKey*",
           "kms:DescribeKey"
         ],
-        "Resource": "*"
+        "Resource" : "*"
       },
       {
-        "Sid": "Allow attachment of persistent resources",
-        "Effect": "Allow",
-        "Principal": {
-          "AWS": [
+        "Sid" : "Allow attachment of persistent resources",
+        "Effect" : "Allow",
+        "Principal" : {
+          "AWS" : [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot",
-            module.cp_irsa.iam_role_arn
+            module.cp_irsa.iam_role_arn,
+            aws_iam_role.eks_cp_system_node_execution.arn
           ]
         },
-        "Action": [
+        "Action" : [
           "kms:CreateGrant",
           "kms:ListGrants",
           "kms:RevokeGrant"
         ],
-        "Resource": "*",
-        "Condition": {
-          "Bool": {
-            "kms:GrantIsForAWSResource": "true"
+        "Resource" : "*",
+        "Condition" : {
+          "Bool" : {
+            "kms:GrantIsForAWSResource" : "true"
           }
         }
       }
@@ -154,7 +137,10 @@ module "kms_eks" {
         "Sid" : "Allow logs encryption",
         "Effect" : "Allow",
         "Principal" : {
-          "AWS" : [aws_iam_role.eks_cluster_execution.arn, aws_iam_role.eks_node_execution.arn]
+          "AWS" : [
+            aws_iam_role.eks_cluster_execution.arn, aws_iam_role.eks_cp_system_node_execution.arn,
+            aws_iam_role.eks_cp_worker_node_execution.arn
+          ]
         },
         "Action" : [
           "kms:Encrypt*",

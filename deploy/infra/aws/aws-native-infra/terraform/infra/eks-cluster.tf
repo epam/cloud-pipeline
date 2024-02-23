@@ -28,7 +28,7 @@ module "eks" {
   eks_managed_node_group_defaults = {
     ami_type               = "AL2_x86_64"
     create_iam_role        = false
-    iam_role_arn           = aws_iam_role.eks_node_execution.arn
+    iam_role_arn           = aws_iam_role.eks_cp_system_node_execution.arn
     vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
   }
 
@@ -36,11 +36,11 @@ module "eks" {
     system = {
       name = "${local.resource_name_prefix}-system-ng"
 
-      instance_types = [var.eks_system_node_group_instance_type]
+      instance_types        = [var.eks_system_node_group_instance_type]
       block_device_mappings = {
         xvda = {
           device_name = "/dev/xvda"
-          ebs = {
+          ebs         = {
             volume_size           = var.eks_system_node_group_volume_size
             volume_type           = var.eks_system_node_group_volume_type
             encrypted             = true
@@ -57,31 +57,6 @@ module "eks" {
       max_size     = var.eks_system_node_group_size
       desired_size = var.eks_system_node_group_size
     }
-
-    bastion = {
-      name = "${local.resource_name_prefix}-bstn-ng"
-
-      instance_types = [var.eks_bastion_node_group_instance_type]
-      block_device_mappings = {
-        xvda = {
-          device_name = "/dev/xvda"
-          ebs = {
-            volume_size           = var.eks_system_node_group_volume_size
-            volume_type           = var.eks_system_node_group_volume_type
-            encrypted             = true
-            delete_on_termination = true
-          }
-        }
-      }
-
-      labels = {
-        "cloud-pipeline/node-group-type" : "bastion"
-      }
-
-      min_size     = 1
-      max_size     = 1
-      desired_size = 1
-    }
   }
 
   # aws-auth configmap
@@ -89,7 +64,7 @@ module "eks" {
 
   aws_auth_roles = concat([
     {
-      rolearn  = aws_iam_role.eks_node_execution.arn
+      rolearn  = aws_iam_role.eks_cp_system_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
       groups = [
         "system:bootstrappers",
@@ -118,4 +93,3 @@ resource "aws_eks_addon" "cw_observability" {
     aws_cloudwatch_log_group.cw_performance
   ]
 }
-

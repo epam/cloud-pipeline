@@ -23,17 +23,22 @@ output "cluster_certificate_authority_data" {
   value       = module.eks.cluster_certificate_authority_data
 }
 
-output "cluster_node_execution_role" {
-  description = "The role of the cluster node execution."
-  value       = aws_iam_role.eks_node_execution
+output "cluster_cp_system_node_execution_role" {
+  description = "The role of the cluster node for nodes from cp-system node group."
+  value       = aws_iam_role.eks_cp_system_node_execution
 }
 
-output "etc_bucket" {
+output "cluster_cp_worker_node_execution_role" {
+  description = "The role of the cluster node, for cp-worker nodes which will be launched by Cloud-Pipeline."
+  value       = aws_iam_role.eks_cp_worker_node_execution
+}
+
+output "cp_etc_bucket" {
   description = "Cloud-pipeline etc bucket name"
   value = module.s3_etc.s3_bucket_id
 }
 
-output "docker_bucket" {
+output "cp_docker_bucket" {
   description = "Cloud-pipeline docker registry bucket name"
   value = module.s3_docker.s3_bucket_id
 }
