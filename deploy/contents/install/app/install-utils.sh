@@ -1189,11 +1189,15 @@ EOF
 
     elif [ "${CP_KUBE_DNS_DEPLOYMENT_NAME}" == "coredns" ]; then
       #TODO: is there a better way to compile the Corefile? right now it seems to be a fuzzy solution
-      current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
-      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Po '\s+\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
-      sed -i "/.* $custom_name/d" $current_custom_names_file
-      current_custom_names=$(cat ${current_custom_names_file})
-      cat <<EOF | kubectl replace -f -
+      local compiled_corefile="/tmp/coredns-conf-${RANDOM}"
+      local current_custom_names_file="/tmp/coredns-custom-hosts-${RANDOM}"
+
+      kubectl get cm coredns -n kube-system -o json | jq -r '.data.Corefile' | grep -Pzo  '.*hosts.*(.*\n)*' | grep -Pzo '\s+\d+\.\d+\.\d+\.\d+.*' > $current_custom_names_file
+      sed -i "/ $custom_name/d" $current_custom_names_file && \
+      sed -i '/^$/d' $current_custom_names_file && \
+      sed -i -e 's/^/    /' $current_custom_names_file
+
+      cat > $compiled_corefile <<-EOF
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -1212,7 +1216,11 @@ data:
           fallthrough in-addr.arpa ip6.arpa
         }
         hosts {
-${current_custom_names}
+EOF
+
+cat $current_custom_names_file >> $compiled_corefile
+
+cat >> $compiled_corefile <<-EOF
             ${custom_target_value} ${custom_name}
             fallthrough
         }
@@ -1224,7 +1232,8 @@ ${current_custom_names}
         loadbalance
     }
 EOF
-      rm -rf $current_custom_names_file
+      kubectl replace -f $compiled_corefile
+      rm -rf $current_custom_names_file $compiled_corefile
     else
       print_err "Unsupported kube dns deployment type: ${CP_KUBE_DNS_DEPLOYMENT_NAME}."
       return 1

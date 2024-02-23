@@ -42,8 +42,31 @@ resource "aws_iam_role_policy_attachment" "eks_cluster" {
   EKS Node IAM
 ===============================================================================
 */
-resource "aws_iam_role" "eks_node_execution" {
-  name = "${local.resource_name_prefix}EKSNodeExecutionRole"
+resource "aws_iam_role" "eks_cp_system_node_execution" {
+  name = "${local.resource_name_prefix}EKSCPSystemNodeExecutionRole"
+
+  permissions_boundary = var.iam_role_permissions_boundary_arn
+
+  assume_role_policy = jsonencode({
+
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : [
+            "ec2.amazonaws.com"
+          ]
+        },
+        "Action" : "sts:AssumeRole"
+      }
+    ]
+
+  })
+}
+
+resource "aws_iam_role" "eks_cp_worker_node_execution" {
+  name = "${local.resource_name_prefix}EKSCPWorkerNodeExecutionRole"
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -102,16 +125,129 @@ resource "aws_iam_policy" "eks_node_observability" {
           "kms:Encrypt",
           "kms:GenerateDataKey",
         ],
-        "Resource" : module.kms.key_arn
+        "Resource" : module.kms_eks.key_arn
       }
     ]
   })
   tags = local.tags
 }
 
-resource "aws_iam_role_policy_attachment" "eks_node_observability" {
-  role       = aws_iam_role.eks_node_execution.name
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_execution" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
   policy_arn = aws_iam_policy.eks_node_observability.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_node_observability" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
+  policy_arn = aws_iam_policy.eks_node_observability.arn
+}
+
+
+# Allowing for CP System node execution role to access Docker Registry S3 bucket, because registry:2.7.1 doesn't support
+# IRSA auth (to get use of service account on kube to assume AWS Role), and updating to registry:3.0.1-alpha (where IRSA is supported)
+# is not possible because of problem with registry token auth
+resource "aws_iam_policy" "s3_bucket_docker_store_access" {
+  name        = "${local.resource_name_prefix}_s3_bucket_docker_store_access"
+  description = "Access to s3 bucket where docker registry will store images"
+  path        = "/"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        "Sid" : "S3Allow",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:GetLifecycleConfiguration",
+          "s3:DeleteObjectVersion",
+          "s3:GetObjectVersionTagging",
+          "s3:ListBucketVersions",
+          "s3:RestoreObject",
+          "s3:GetObjectAcl",
+          "s3:AbortMultipartUpload",
+          "s3:GetObjectTagging",
+          "s3:PutObjectTagging",
+          "s3:*Delete*",
+          "s3:PutBucketVersioning",
+          "s3:PutObjectAcl",
+          "s3:DeleteObjectTagging",
+          "s3:ListBucketMultipartUploads",
+          "s3:PutObjectVersionTagging",
+          "s3:DeleteObjectVersionTagging",
+          "s3:ListMultipartUploadParts",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:GetBucketCORS",
+          "s3:PutBucketPolicy",
+          "s3:GetBucketLocation",
+          "s3:GetObjectVersion"
+        ],
+        "Resource" : [
+          "${module.s3_docker.s3_bucket_arn}/*"
+        ]
+      },
+      {
+        "Sid" : "S3BucketAllow",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:GetLifecycleConfiguration",
+          "s3:GetBucketTagging",
+          "s3:ListBucketVersions",
+          "s3:ListBucket",
+          "s3:GetBucketPolicy",
+          "s3:AbortMultipartUpload",
+          "s3:PutBucketTagging",
+          "s3:PutLifecycleConfiguration",
+          "s3:PutBucketAcl",
+          "s3:*Delete*",
+          "s3:PutBucketVersioning",
+          "s3:ListBucketMultipartUploads",
+          "s3:GetBucketVersioning",
+          "s3:PutBucketCORS",
+          "s3:GetBucketAcl",
+          "s3:ListMultipartUploadParts",
+          "s3:GetBucketCORS",
+          "s3:PutBucketPolicy",
+          "s3:GetBucketLocation",
+          "s3:PutEncryptionConfiguration",
+          "s3:GetEncryptionConfiguration",
+          "s3:ListAllMyBuckets"
+        ],
+        "Resource" : [
+          module.s3_docker.s3_bucket_arn
+        ]
+      },
+      {
+        "Sid" : "S3BucketsAllow",
+        "Effect" : "Allow",
+        "Action" : [
+          "s3:ListAllMyBuckets"
+        ],
+        "Resource" : [
+          "arn:aws:s3:::*"
+        ]
+      },
+      {
+        "Action" : [
+          "kms:Decrypt",
+          "kms:Encrypt",
+          "kms:DescribeKey",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:ListKeys",
+        ]
+        "Effect" : "Allow",
+        "Resource" : module.kms.key_arn,
+        "Sid" : "KMSAllowOps"
+      }
+    ]
+  })
+  tags = local.tags
+}
+
+resource "aws_iam_role_policy_attachment" "s3_bucket_docker_store_access" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = aws_iam_policy.s3_bucket_docker_store_access.arn
 }
 
 data "aws_iam_policy" "AmazonEKSWorkerNodePolicy" {
@@ -119,8 +255,13 @@ data "aws_iam_policy" "AmazonEKSWorkerNodePolicy" {
 }
 
 
-resource "aws_iam_role_policy_attachment" "eks_worker_node" {
-  role       = aws_iam_role.eks_node_execution.name
+resource "aws_iam_role_policy_attachment" "eks_cp_system_worker_node" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = data.aws_iam_policy.AmazonEKSWorkerNodePolicy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_worker_node" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
   policy_arn = data.aws_iam_policy.AmazonEKSWorkerNodePolicy.arn
 }
 
@@ -128,8 +269,13 @@ data "aws_iam_policy" "AmazonEC2ContainerRegistryReadOnly" {
   arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
-resource "aws_iam_role_policy_attachment" "eks_node_ecr_read_only" {
-  role       = aws_iam_role.eks_node_execution.name
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_ecr_read_only" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = data.aws_iam_policy.AmazonEC2ContainerRegistryReadOnly.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_ecr_read_only" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
   policy_arn = data.aws_iam_policy.AmazonEC2ContainerRegistryReadOnly.arn
 }
 
@@ -137,8 +283,13 @@ data "aws_iam_policy" "AmazonEKS_CNI_Policy" {
   arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 
-resource "aws_iam_role_policy_attachment" "eks_node_cni" {
-  role       = aws_iam_role.eks_node_execution.name
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_cni" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = data.aws_iam_policy.AmazonEKS_CNI_Policy.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_cni" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
   policy_arn = data.aws_iam_policy.AmazonEKS_CNI_Policy.arn
 }
 
@@ -146,8 +297,13 @@ data "aws_iam_policy" "AWSXrayWriteOnlyAccess" {
   arn = "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
 }
 
-resource "aws_iam_role_policy_attachment" "AWSXrayWriteOnly" {
-  role       = aws_iam_role.eks_node_execution.name
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_AWSXrayWriteOnly" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = data.aws_iam_policy.AWSXrayWriteOnlyAccess.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_AWSXrayWriteOnly" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
   policy_arn = data.aws_iam_policy.AWSXrayWriteOnlyAccess.arn
 }
 
@@ -274,7 +430,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "kms:ListKeys",
         ]
         "Effect" : "Allow",
-        "Resource" : "*",
+        "Resource" : module.kms.key_arn,
         "Sid" : "KMSAllowOps"
       },
       {
@@ -382,7 +538,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "iam:GetRole",
           "iam:PassRole"
         ],
-        "Resource" : aws_iam_role.eks_node_execution.arn
+        "Resource" : aws_iam_role.eks_cp_system_node_execution.arn
       }
     ]
   })

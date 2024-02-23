@@ -48,16 +48,10 @@ variable "eks_system_node_group_instance_type" {
   description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
 }
 
-variable "eks_bastion_node_group_instance_type" {
-  type        = string
-  default     = "m5.large"
-  description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
-}
-
 variable "eks_system_node_group_size" {
   type        = number
   default     = 1
-  description = "Number of nodes o spin up for internal-system eks node group. (Nodes that will host internal workload such as fsx-csi plugin, autoscaler, etc)"
+  description = "Number of nodes to spin up for internal-system eks node group. (Nodes that will host internal workload such as fsx-csi plugin, etc)"
 }
 
 variable "eks_system_node_group_volume_size" {

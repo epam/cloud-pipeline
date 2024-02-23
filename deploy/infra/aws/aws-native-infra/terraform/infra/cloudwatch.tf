@@ -12,7 +12,7 @@ resource "aws_cloudwatch_log_group" "cw_application" {
 
 resource "aws_cloudwatch_log_group" "cw_dataplane" {
   name              = "/aws/containerinsights/${module.eks.cluster_name}/dataplane"
-  kms_key_id        = module.kms.key_arn
+  kms_key_id        = module.kms_eks.key_arn
   retention_in_days = var.eks_cloudwatch_logs_retention_in_days
 }
 
