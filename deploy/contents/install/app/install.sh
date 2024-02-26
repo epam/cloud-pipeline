@@ -107,7 +107,7 @@ if is_deployment_type_requested classic; then
     CP_KUBE_INTERNAL_HOST=${CP_KUBE_INTERNAL_HOST:-"kubernetes.default.svc.cluster.local"}
     print_info "-> Kube API address is set to external: \"$CP_KUBE_EXTERNAL_HOST:$CP_KUBE_EXTERNAL_PORT\", internal: \"$CP_KUBE_INTERNAL_HOST:$CP_KUBE_INTERNAL_PORT\""
 
-    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
     if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
         sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
         print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
@@ -220,7 +220,7 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
             fi
         fi
 
-        CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+        CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
         if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
             sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
             print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
