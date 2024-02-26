@@ -826,7 +826,7 @@ function wait_kube_node_to_be_ready {
     while [ $count -lt "$threshold" ]
     do
         count=$((count + 1))
-        if is_kube_node_ready $node_name; then
+        if [ $(is_kube_node_ready $node_name) == "True" ]; then
             print_ok "Node $node_name is ready!"
             return 0
         fi

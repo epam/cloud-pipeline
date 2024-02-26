@@ -107,7 +107,7 @@ if is_deployment_type_requested classic; then
     CP_KUBE_INTERNAL_HOST=${CP_KUBE_INTERNAL_HOST:-"kubernetes.default.svc.cluster.local"}
     print_info "-> Kube API address is set to external: \"$CP_KUBE_EXTERNAL_HOST:$CP_KUBE_EXTERNAL_PORT\", internal: \"$CP_KUBE_INTERNAL_HOST:$CP_KUBE_INTERNAL_PORT\""
 
-    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+    CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
     if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
         sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
         print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
@@ -220,12 +220,12 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
             fi
         fi
 
-        CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+        CP_KUBE_DNS_HOST=$(get_service_cluster_ip "kube-dns" "kube-system")
         if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
             sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
             print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
         fi
-    esle
+    else
         print_warn "-> There is no realization for cluster joining procedure for '$CP_DEPLOYMENT_TYPE' deployment type"
     fi
 fi
@@ -585,11 +585,15 @@ if is_service_requested cp-api-srv; then
     delete_deployment_and_service   "cp-bkp-worker-cp-api-srv"
 
     if is_install_requested; then
-        print_info "-> Creating postgres DB user and schema for API Service"
-        create_user_and_db  "cp-api-db" \
-                            "$PSG_USER" \
-                            "$PSG_PASS" \
-                            "$PSG_DB"
+        if is_service_requested cp-api-db; then
+            print_info "-> Creating postgres DB user and schema for API Service"
+            create_user_and_db  "cp-api-db" \
+                                "$PSG_USER" \
+                                "$PSG_PASS" \
+                                "$PSG_DB"
+        else
+            print_warn "-> API DB is not required to be deployed, so assuming it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advanced."
+        fi
 
 
         generate_ssl_sso_certificates   "API" \
