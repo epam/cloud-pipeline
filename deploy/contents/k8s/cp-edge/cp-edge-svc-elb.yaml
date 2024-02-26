@@ -32,6 +32,7 @@ metadata:
   namespace: default
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
     service.beta.kubernetes.io/aws-load-balancer-scheme: ${CP_EDGE_AWS_ELB_SCHEME}
     service.beta.kubernetes.io/aws-load-balancer-subnets: ${CP_EDGE_AWS_ELB_SUBNETS}
     service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${CP_EDGE_AWS_ELB_EIPALLOCS}
