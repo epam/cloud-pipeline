@@ -15,7 +15,7 @@ module "cp_system_efs" {
   attach_policy = false
 
   # Mount targets / security group
-  mount_targets              = { for snet_id in data.aws_subnets.this.ids : snet_id => { subnet_id = snet_id } }
+  mount_targets = { for snet_id in data.aws_subnets.this.ids : snet_id => { subnet_id = snet_id } }
 
   security_group_description = "${local.resource_name_prefix} EFS security group"
   security_group_vpc_id      = var.vpc_id
