@@ -174,6 +174,60 @@ if is_deployment_type_requested classic; then
                             "$CP_KUBE_NODE_TOKEN"
     fi
     echo
+elif is_deployment_type_requested aws-native; then
+  print_info "-> Configuring access to the EKS cluster."
+  aws eks update-kubeconfig --region "$CP_CLOUD_REGION_ID" --name "$CP_KUBE_CLUSTER_NAME"
+
+  if [ $? -ne 0 ]; then
+      print_err "Something was wrong, cannot configure kubeconfig for the EKS cluster."
+      exit 1
+  fi
+
+  export CP_KUBE_KUBEADM_CERT_HASH="empty"
+  export CP_KUBE_KUBEADM_TOKEN="empty"
+  export CP_KUBE_NODE_TOKEN="empty"
+  print_info "-> CP_KUBE_NODE_TOKEN, CP_KUBE_KUBEADM_TOKEN, CP_KUBE_KUBEADM_CERT_HASH will be set as 'empty' for '$CP_DEPLOYMENT_TYPE' deployment type"
+  update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                      "CP_KUBE_KUBEADM_CERT_HASH" \
+                      "$CP_KUBE_KUBEADM_CERT_HASH"
+  update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                      "CP_KUBE_KUBEADM_TOKEN" \
+                      "$CP_KUBE_KUBEADM_TOKEN"
+  update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                      "CP_KUBE_NODE_TOKEN" \
+                      "$CP_KUBE_NODE_TOKEN"
+fi
+
+if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
+    print_info "-> -jc|--join-cluster was provided, will try to join kube cluster with current instance"
+    if is_deployment_type_requested aws-native ; then
+        print_info "-> Joining EKS cluster..."
+        if [ ! -f /etc/eks/bootstrap.sh ]; then
+            print_err "Script /etc/eks/bootstrap.sh could not be found. Can't join EKS cluster. Did you use eks optimized AMI for this node?"
+            exit 1
+        fi
+
+        /etc/eks/bootstrap.sh "$CP_KUBE_CLUSTER_NAME"
+        if [ $? -ne 0 ]; then
+            print_err "/etc/eks/bootstrap.sh failed to join node to the cluster."
+            exit 1
+        else
+          _node_name="$HOSTNAME"
+            wait_kube_node_to_be_ready "$_node_name"
+            if [ $? -ne 0 ]; then
+                print_err "Fail to join $_node_name in cluster $CP_KUBE_CLUSTER_NAME."
+                exit 1
+            fi
+        fi
+
+        CP_KUBE_DNS_HOST=$(get_service_cluster_ip "${CP_KUBE_DNS_DEPLOYMENT_NAME}" "kube-system")
+        if ! grep $CP_KUBE_DNS_HOST /etc/resolv.conf -q; then
+            sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
+            print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
+        fi
+    esle
+        print_warn "-> There is no realization for cluster joining procedure for '$CP_DEPLOYMENT_TYPE' deployment type"
+    fi
 fi
 
 ##########
