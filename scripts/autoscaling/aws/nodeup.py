@@ -795,7 +795,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                          global_distribution_url, swap_size, pre_pull_images, node_ssh_port, run_id):
     allowed_instance = get_allowed_instance_image(aws_region, ins_type, ins_platform, ins_img, api_token, run_id)
     if allowed_instance and allowed_instance["init_script"]:
