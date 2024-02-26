@@ -585,11 +585,15 @@ if is_service_requested cp-api-srv; then
     delete_deployment_and_service   "cp-bkp-worker-cp-api-srv"
 
     if is_install_requested; then
-        print_info "-> Creating postgres DB user and schema for API Service"
-        create_user_and_db  "cp-api-db" \
-                            "$PSG_USER" \
-                            "$PSG_PASS" \
-                            "$PSG_DB"
+        if is_service_requested cp-api-db; then
+            print_info "-> Creating postgres DB user and schema for API Service"
+            create_user_and_db  "cp-api-db" \
+                                "$PSG_USER" \
+                                "$PSG_PASS" \
+                                "$PSG_DB"
+        else
+            print_warn "-> API DB is not required to be deployed, so assuming it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advanced."
+        fi
 
 
         generate_ssl_sso_certificates   "API" \
