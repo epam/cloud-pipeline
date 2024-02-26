@@ -592,7 +592,7 @@ if is_service_requested cp-api-srv; then
                                 "$PSG_PASS" \
                                 "$PSG_DB"
         else
-            print_warn "-> API DB is not required to be deployed, so assuming it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advanced."
+            print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advance."
         fi
 
 
@@ -918,11 +918,17 @@ if is_service_requested cp-git; then
     delete_deployment_and_service   "cp-bkp-worker-cp-git"
 
     if is_install_requested; then
-        print_info "-> Creating postgres DB user and schema for GitLab"
-        create_user_and_db  "cp-gitlab-db" \
-                            "$GITLAB_DATABASE_USERNAME" \
-                            "$GITLAB_DATABASE_PASSWORD" \
-                            "$GITLAB_DATABASE_DATABASE"
+      if is_service_requested cp-api-db; then
+          print_info "-> Creating postgres DB user and schema for GitLab"
+          create_user_and_db  "cp-gitlab-db" \
+                              "$GITLAB_DATABASE_USERNAME" \
+                              "$GITLAB_DATABASE_PASSWORD" \
+                              "$GITLAB_DATABASE_DATABASE"
+      else
+          print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (GITLAB_DATABASE_USERNAME, GITLAB_DATABASE_PASSWORD, GITLAB_DATABASE_DATABASE) in advance."
+      fi
+
+
 
         print_info "-> Creating self-signed SSL certificate for GitLab (${CP_GITLAB_EXTERNAL_HOST}, ${CP_GITLAB_INTERNAL_HOST})"
         generate_self_signed_key_pair   $CP_GITLAB_CERT_DIR/ssl-private-key.pem \
@@ -1132,11 +1138,15 @@ if is_service_requested cp-clair; then
                                     "/opt/clair"
 
     if is_install_requested; then
-        print_info "-> Creating postgres DB user and schema for Clair"
-        create_user_and_db  "cp-api-db" \
-                            "$CP_CLAIR_DATABASE_USERNAME" \
-                            "$CP_CLAIR_DATABASE_PASSWORD" \
-                            "$CP_CLAIR_DATABASE_DATABASE"
+        if is_service_requested cp-api-db; then
+            print_info "-> Creating postgres DB user and schema for Clair"
+            create_user_and_db  "cp-api-db" \
+                                "$CP_CLAIR_DATABASE_USERNAME" \
+                                "$CP_CLAIR_DATABASE_PASSWORD" \
+                                "$CP_CLAIR_DATABASE_DATABASE"
+        else
+            print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (CP_CLAIR_DATABASE_USERNAME, CP_CLAIR_DATABASE_PASSWORD, CP_CLAIR_DATABASE_DATABASE) in advance."
+        fi
 
         print_info "-> Deploying Clair"
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-dpl.yaml
