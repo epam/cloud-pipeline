@@ -434,12 +434,12 @@ def get_random_subnet(ec2):
 
 
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
-                 is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client,
+                 is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, kube_client,
                  global_distribution_url, pre_pull_images, instance_additional_spec,
                  availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
-                                            kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                            kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name,
                                             global_distribution_url, swap_size, pre_pull_images, node_ssh_port,
                                             run_id)
     if is_spot:
@@ -818,6 +818,7 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@KUBE_CLUSTER_NAME@', kube_cluster_name) \
                                            .replace('@API_URL@', api_url) \
                                            .replace('@API_TOKEN@', api_token) \
                                            .replace('@API_USER@', api_user) \
@@ -1449,6 +1450,7 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kubeadm_cert_hash", type=str, required=True)
     parser.add_argument("--kube_node_token", type=str, required=True)
+    parser.add_argument("--kube_cluster_name", type=str, required=False)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
@@ -1481,6 +1483,7 @@ def main():
     kubeadm_token = args.kubeadm_token
     kubeadm_cert_hash = args.kubeadm_cert_hash
     kube_node_token = args.kube_node_token
+    kube_cluster_name = args.kube_cluster_name
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     availability_zone = args.availability_zone
@@ -1580,7 +1583,7 @@ def main():
 
         if not ins_id:
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
-                                          num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api,
+                                          num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_cluster_name, api,
                                           global_distribution_url, pre_pull_images, instance_additional_spec,
                                           availability_zone, security_groups, subnet, network_interface, is_dedicated, node_ssh_port, performance_network)
 

@@ -586,6 +586,10 @@ function parse_options {
         export CP_INSTALL_KUBE_MASTER=1
         shift # past argument
         ;;
+        -jc|--join-cluseter)
+        export CP_JOIN_KUBE_CLUSTER=1
+        shift # past argument
+        ;;
         -e|--erase-data)
         export CP_FORCE_DATA_ERASE=1
         shift # past argument
@@ -782,8 +786,8 @@ function parse_options {
     # Check if required variables were specified.
     # Define additional variables for aws-native deployment type.
     if is_deployment_type_requested aws-native ; then
-        if [ -z "$CP_KUBE_EXTERNAL_HOST" ] || [ -z "$CP_CSI_DRIVER_TYPE" ] || [ -z "$CP_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] || [ -z "$CP_MAIN_SERVICE_ROLE" ] ; then
-            print_err "For AWS native deployment you must set variable CP_KUBE_EXTERNAL_HOST, CP_MAIN_SERVICE_ROLE, CP_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
+        if [ -z "$CP_KUBE_CLUSTER_NAME" ] || [ -z "$CP_KUBE_EXTERNAL_HOST" ] || [ -z "$CP_CSI_DRIVER_TYPE" ] || [ -z "$CP_CSI_EXECUTION_ROLE" ] || [ -z "$CP_SYSTEM_FILESYSTEM_ID" ] || [ -z "$CP_MAIN_SERVICE_ROLE" ] ; then
+            print_err "For AWS native deployment you must set variable CP_KUBE_CLUSTER_NAME, CP_KUBE_EXTERNAL_HOST, CP_MAIN_SERVICE_ROLE, CP_CSI_DRIVER_TYPE, CP_SYSTEM_FILESYSTEM_ID and CP_CSI_EXECUTION_ROLE to mount EFS or FSx filesystem"
             return 1
         fi
         export CP_KUBE_DNS_DEPLOYMENT_NAME="coredns"
@@ -796,6 +800,34 @@ function parse_options {
                         "$CP_DEPLOYMENT_TYPE"
     
     return 0
+}
+
+function is_kube_node_ready {
+  node_name=$1
+  local node_status=$(kubectl get no "$node_name" -o json 2>/dev/null \
+                            | jq '.status.conditions[] | select(.type=="Ready") | .status' -r)
+  if [ $? -ne 0 ]; then
+      echo "False"
+  fi
+  echo "$node_status"
+}
+
+function wait_kube_node_to_be_ready {
+    node_name=$1
+    threshold=${2:-30}
+    count=1
+    while [ $count -lt "$threshold" ]
+    do
+        count=$((count + 1))
+        if is_kube_node_ready $node_name; then
+            print_ok "Node $node_name is ready!"
+            return 0
+        fi
+        print_info "Waiting $node_name to be ready..."
+        sleep 5
+    done
+    print_err "After $count attempts, $node_name still isn't ready."
+    return 1
 }
 
 function get_kube_node_ip_list {
