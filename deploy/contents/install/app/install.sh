@@ -225,7 +225,7 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
             sed -i "1s/^/nameserver $CP_KUBE_DNS_HOST\n/" /etc/resolv.conf
             print_info "-> Kube DNS is set to /etc/resolv.conf (nameserver $CP_KUBE_DNS_HOST)"
         fi
-    esle
+    else
         print_warn "-> There is no realization for cluster joining procedure for '$CP_DEPLOYMENT_TYPE' deployment type"
     fi
 fi
