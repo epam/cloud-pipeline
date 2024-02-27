@@ -10,12 +10,17 @@ variable "project_name" {
 
 variable "vpc_id" {
   type        = string
-  description = "Id of the VCP to be used for Compute Layer"
+  description = "Id of the VCP to be used for Cloud Pipeline"
 }
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "Ids of the VCP subnets to be used for Compute Layer EKS cluster"
+  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster"
+
+  validation {
+    condition     = length(var.subnet_ids) > 0
+    error_message = "At least one subnet id in list must be specified"
+  }
 }
 
 variable "cp_api_access_prefix_lists" {
@@ -89,6 +94,10 @@ variable "deploy_filesystem_type" {
   type        = string
   default     = "efs"
   description = "Option to create EFS or FSx Lustre filesystem: must be set efs or fsx.If leave as is, neather will be created."
+  validation {
+    condition     = contains(["efs", "fsx"], var.deploy_filesystem_type)
+    error_message = "The value of the deploy_filesystem_type variable can be only efs or fsx. Please check that variable is set correctly."
+  }
 }
 
 variable "efs_performance_mode" {
@@ -109,12 +118,6 @@ variable "efs_provisioned_throughput_in_mibps" {
   description = "EFS throughput, measured in MiB/s"
 }
 
-variable "fsx_s3_import_path" {
-  type        = string
-  default     = null
-  description = "S3 URI (with optional prefix) that you're using as the data repository for your FSx for Lustre file system"
-}
-
 variable "fsx_storage_capacity" {
   type        = number
   default     = 1200
@@ -131,16 +134,5 @@ variable "fsx_per_unit_storage_throughput" {
   type        = number
   default     = 200
   description = "Describes the amount of read and write throughput for each 1 tebibyte of storage, in MB/s/TiB, required for the PERSISTENT_1 and PERSISTENT_2 deployment_type"
-}
-
-variable "fsx_subnet_id" {
-  type        = list(string)
-  description = "A list of IDs for the subnets that the file system will be accessible from. File systems currently support only one subnet. The file server is also launched in that subnet's Availability Zone."
-}
-
-variable "aws_kms_key" {
-  type        = string
-  default     = null
-  description = "ARN for the KMS Key to encrypt the file system at rest, applicable for PERSISTENT_1 and PERSISTENT_2 deployment_type"
 }
 

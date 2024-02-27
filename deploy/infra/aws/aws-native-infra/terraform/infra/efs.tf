@@ -36,10 +36,9 @@ module "cp_system_efs" {
 
 resource "aws_fsx_lustre_file_system" "fsx" {
   count                       = var.deploy_filesystem_type == "fsx" ? 1 : 0
-  import_path                 = var.fsx_s3_import_path
   storage_capacity            = var.fsx_storage_capacity
-  subnet_ids                  = var.fsx_subnet_id
+  subnet_ids                  = var.subnet_ids[0]
   deployment_type             = var.fsx_deployment_type
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
-  kms_key_id                  = var.aws_kms_key
+  kms_key_id                  = module.kms.key_arn
 }
