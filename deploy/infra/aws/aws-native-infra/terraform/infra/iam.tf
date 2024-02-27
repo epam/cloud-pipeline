@@ -88,6 +88,11 @@ resource "aws_iam_role" "eks_cp_worker_node_execution" {
   })
 }
 
+resource "aws_iam_instance_profile" "test_profile" {
+  name = "${local.resource_name_prefix}EKSCPWorkerNodeExecutionRole_IP"
+  role = aws_iam_role.eks_cp_worker_node_execution.name
+}
+
 resource "aws_iam_policy" "eks_node_observability" {
   name        = "${local.resource_name_prefix}_eks_observability"
   description = "Access to write logs by CW Agent and FluentBit to the cloudwatch log groups"
