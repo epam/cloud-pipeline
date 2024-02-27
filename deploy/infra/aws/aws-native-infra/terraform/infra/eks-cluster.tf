@@ -70,6 +70,14 @@ module "eks" {
         "system:bootstrappers",
         "system:nodes",
       ]
+    },
+    {
+      rolearn  = aws_iam_role.eks_cp_worker_node_execution.arn
+      username = "system:node:{{EC2PrivateDNSName}}"
+      groups = [
+        "system:bootstrappers",
+        "system:nodes",
+      ]
     }
     ],
     local.sso_additional_role_mapping
