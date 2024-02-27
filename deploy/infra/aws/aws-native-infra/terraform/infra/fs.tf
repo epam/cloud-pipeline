@@ -37,8 +37,10 @@ module "cp_system_efs" {
 resource "aws_fsx_lustre_file_system" "fsx" {
   count                       = var.deploy_filesystem_type == "fsx" ? 1 : 0
   storage_capacity            = var.fsx_storage_capacity
-  subnet_ids                  = var.subnet_ids[0]
+  subnet_ids                  = [var.subnet_ids[0]]
   deployment_type             = var.fsx_deployment_type
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
   kms_key_id                  = module.kms.key_arn
+  security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+  tags = local.tags
 }
