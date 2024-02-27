@@ -99,7 +99,7 @@ resource "aws_iam_policy" "eks_node_observability" {
   path        = "/"
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",
@@ -330,7 +330,7 @@ module "fsx_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns = {
+  role_policy_arns             = {
     fsx_policy = data.aws_iam_policy.AmazonFSxFullAccess.arn
   }
 
@@ -353,7 +353,7 @@ module "efs_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_efs_csi_policy = true
-  role_policy_arns = {
+  role_policy_arns      = {
     efs_policy = data.aws_iam_policy.AmazonElasticFileSystemFullAccess.arn
   }
 
@@ -378,7 +378,7 @@ resource "aws_iam_policy" "cp_main_service" {
   path        = "/"
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [
       {
         "Sid" : "S3Allow",
@@ -543,7 +543,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "iam:GetRole",
           "iam:PassRole"
         ],
-        "Resource" : aws_iam_role.eks_cp_system_node_execution.arn
+        "Resource" : [aws_iam_role.eks_cp_system_node_execution.arn, aws_iam_role.eks_cp_worker_node_execution.arn]
       }
     ]
   })
@@ -559,7 +559,7 @@ module "cp_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns = {
+  role_policy_arns             = {
     policy = aws_iam_policy.cp_main_service.arn
   }
 
@@ -584,7 +584,7 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
   path        = "/"
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version   = "2012-10-17"
     Statement = [
       {
         "Effect" : "Allow",

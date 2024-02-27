@@ -19,7 +19,7 @@ module "eks" {
   cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
 
   # External encryption key
-  create_kms_key = false
+  create_kms_key            = false
   cluster_encryption_config = {
     resources        = ["secrets"]
     provider_key_arn = module.kms_eks.key_arn
@@ -30,6 +30,11 @@ module "eks" {
     create_iam_role        = false
     iam_role_arn           = aws_iam_role.eks_cp_system_node_execution.arn
     vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+    metadata_options       = {
+      "http_endpoint" : "enabled",
+      "http_put_response_hop_limit" : 1,
+      "http_tokens" : "optional"
+    }
   }
 
   eks_managed_node_groups = {
@@ -66,7 +71,7 @@ module "eks" {
     {
       rolearn  = aws_iam_role.eks_cp_system_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
-      groups = [
+      groups   = [
         "system:bootstrappers",
         "system:nodes",
       ]
@@ -74,12 +79,12 @@ module "eks" {
     {
       rolearn  = aws_iam_role.eks_cp_worker_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
-      groups = [
+      groups   = [
         "system:bootstrappers",
         "system:nodes",
       ]
     }
-    ],
+  ],
     local.sso_additional_role_mapping
   )
 
