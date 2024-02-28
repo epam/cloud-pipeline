@@ -7,6 +7,10 @@ locals {
     var.additional_tags
   )
 
+  eks_system_node_labels = {
+    "cloud-pipeline/node-group-type" : "system"
+  }
+
   resource_name_prefix = "${var.project_name}-${var.env}"
   cluster_name         = "${local.resource_name_prefix}-eks-cluster"
   efs_name             = "${local.resource_name_prefix}-efs-file-system"

@@ -18,6 +18,16 @@ module "eks" {
 
   cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
 
+  cluster_addons = {
+    coredns = {
+      most_recent = true
+      configuration_values = jsonencode({
+        replicaCount = 3
+        nodeSelector: local.eks_system_node_labels
+      })
+    }
+  }
+
   # External encryption key
   create_kms_key            = false
   cluster_encryption_config = {
@@ -54,9 +64,7 @@ module "eks" {
         }
       }
 
-      labels = {
-        "cloud-pipeline/node-group-type" : "system"
-      }
+      labels = local.eks_system_node_labels
 
       min_size     = var.eks_system_node_group_size
       max_size     = var.eks_system_node_group_size
