@@ -15,7 +15,7 @@ variable "vpc_id" {
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster"
+  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc."
 
   validation {
     condition     = length(var.subnet_ids) > 0
@@ -45,6 +45,16 @@ variable "additional_tags" {
 variable "eks_cluster_version" {
   type    = string
   default = "1.28"
+}
+
+variable "eks_system_node_group_subnet_ids" {
+  type        = list(string)
+  description = "Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group."
+
+  validation {
+    condition     = length(var.eks_system_node_group_subnet_ids) > 0
+    error_message = "At least one subnet id in list must be specified"
+  }
 }
 
 variable "eks_system_node_group_instance_type" {

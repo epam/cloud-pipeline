@@ -42,6 +42,7 @@ module "eks" {
     create_iam_role        = false
     iam_role_arn           = aws_iam_role.eks_cp_system_node_execution.arn
     vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+    subnet_ids                     = data.aws_subnets.this.ids
     metadata_options       = {
       "http_endpoint" : "enabled",
       "http_put_response_hop_limit" : 1,
@@ -49,30 +50,7 @@ module "eks" {
     }
   }
 
-  eks_managed_node_groups = {
-    system = {
-      name = "${local.resource_name_prefix}-system-ng"
-
-      instance_types        = [var.eks_system_node_group_instance_type]
-      block_device_mappings = {
-        xvda = {
-          device_name = "/dev/xvda"
-          ebs         = {
-            volume_size           = var.eks_system_node_group_volume_size
-            volume_type           = var.eks_system_node_group_volume_type
-            encrypted             = true
-            delete_on_termination = true
-          }
-        }
-      }
-
-      labels = local.eks_system_node_labels
-
-      min_size     = var.eks_system_node_group_size
-      max_size     = var.eks_system_node_group_size
-      desired_size = var.eks_system_node_group_size
-    }
-  }
+  eks_managed_node_groups = local.system_node_groups
 
   cluster_enabled_log_types              = ["audit", "api", "authenticator", "scheduler", "controllerManager"]
   cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
