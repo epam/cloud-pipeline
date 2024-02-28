@@ -592,7 +592,7 @@ if is_service_requested cp-api-srv; then
                                 "$PSG_PASS" \
                                 "$PSG_DB"
         else
-            print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advance."
+            print_warn "-> API DB is not requested to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (PSG_USER, PSG_PASS, PSG_DB) in advance."
         fi
 
 
@@ -918,14 +918,14 @@ if is_service_requested cp-git; then
     delete_deployment_and_service   "cp-bkp-worker-cp-git"
 
     if is_install_requested; then
-      if is_service_requested cp-api-db; then
+      if is_service_requested cp-gitlab-db; then
           print_info "-> Creating postgres DB user and schema for GitLab"
           create_user_and_db  "cp-gitlab-db" \
                               "$GITLAB_DATABASE_USERNAME" \
                               "$GITLAB_DATABASE_PASSWORD" \
                               "$GITLAB_DATABASE_DATABASE"
       else
-          print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (GITLAB_DATABASE_USERNAME, GITLAB_DATABASE_PASSWORD, GITLAB_DATABASE_DATABASE) in advance."
+          print_warn "-> GitLab DB is not requested to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (GITLAB_DATABASE_USERNAME, GITLAB_DATABASE_PASSWORD, GITLAB_DATABASE_DATABASE) in advance."
       fi
 
 
@@ -1145,7 +1145,7 @@ if is_service_requested cp-clair; then
                                 "$CP_CLAIR_DATABASE_PASSWORD" \
                                 "$CP_CLAIR_DATABASE_DATABASE"
         else
-            print_warn "-> API DB is not required to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (CP_CLAIR_DATABASE_USERNAME, CP_CLAIR_DATABASE_PASSWORD, CP_CLAIR_DATABASE_DATABASE) in advance."
+            print_warn "-> API DB is not requested to be deployed. Assume it is already prepared, or it is an external service and preconfigured with all required settings (CP_CLAIR_DATABASE_USERNAME, CP_CLAIR_DATABASE_PASSWORD, CP_CLAIR_DATABASE_DATABASE) in advance."
         fi
 
         print_info "-> Deploying Clair"

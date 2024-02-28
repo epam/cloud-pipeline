@@ -10,6 +10,12 @@ module "bastion_ec2_instance" {
   ami           = var.jump_box_ami != "" ? var.jump_box_ami : data.aws_ami.eks_ami.id
   instance_type = var.jump_box_instance_type
 
+  metadata_options = {
+    "http_endpoint": "enabled",
+    "http_put_response_hop_limit": 1,
+    "http_tokens": "optional"
+  }
+
   monitoring             = true
   vpc_security_group_ids = concat(var.additional_security_groups, [module.internal_bastion_access_sg.security_group_id])
   subnet_id              = var.subnet_id

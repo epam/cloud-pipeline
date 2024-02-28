@@ -10,12 +10,17 @@ variable "project_name" {
 
 variable "vpc_id" {
   type        = string
-  description = "Id of the VCP to be used for Compute Layer"
+  description = "Id of the VCP to be used for Cloud Pipeline"
 }
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "Ids of the VCP subnets to be used for Compute Layer EKS cluster"
+  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster"
+
+  validation {
+    condition     = length(var.subnet_ids) > 0
+    error_message = "At least one subnet id in list must be specified"
+  }
 }
 
 variable "cp_api_access_prefix_lists" {
@@ -75,6 +80,31 @@ variable "eks_additional_role_mapping" {
   description = "List of additional roles mapping for aws_auth map. With this parameter you can configure access to the EKS cluster for AWS IAM entities."
 }
 
+variable "eks_cloudwatch_logs_retention_in_days" {
+  type        = number
+  default     = 30
+  description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
+}
+
+variable "create_ssh_rsa_key_pair" {
+  default     = true
+  description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
+}
+
+###################################################################
+#                  File systems for Cloud-Pipeline deployment
+###################################################################
+
+variable "deploy_filesystem_type" {
+  type        = string
+  default     = "efs"
+  description = "Option to create EFS or FSx Lustre filesystem: must be set efs or fsx.If leave as is, neather will be created."
+  validation {
+    condition     = contains(["efs", "fsx"], var.deploy_filesystem_type)
+    error_message = "The value of the deploy_filesystem_type variable can be only efs or fsx. Please check that variable is set correctly."
+  }
+}
+
 variable "efs_performance_mode" {
   type        = string
   default     = "generalPurpose"
@@ -93,8 +123,21 @@ variable "efs_provisioned_throughput_in_mibps" {
   description = "EFS throughput, measured in MiB/s"
 }
 
-variable "eks_cloudwatch_logs_retention_in_days" {
+variable "fsx_storage_capacity" {
   type        = number
-  default     = 30
-  description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
+  default     = 1200
+  description = "FSx Lustre storage capacity in MB"
 }
+
+variable "fsx_deployment_type" {
+  type        = string
+  default     = "PERSISTENT_1"
+  description = "The filesystem deployment type. One of: SCRATCH_1, SCRATCH_2, PERSISTENT_1, PERSISTENT_2"
+}
+
+variable "fsx_per_unit_storage_throughput" {
+  type        = number
+  default     = 200
+  description = "Describes the amount of read and write throughput for each 1 tebibyte of storage, in MB/s/TiB, required for the PERSISTENT_1 and PERSISTENT_2 deployment_type"
+}
+
