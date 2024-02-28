@@ -24,16 +24,16 @@ output "cluster_certificate_authority_data" {
 }
 
 output "cluster_cp_system_node_execution_role" {
-  description = "The role of the cluster node for nodes from cp-system node group."
+  description = "The role of the cluster node for nodes from Cloud-Pipeline system node group."
   value       = aws_iam_role.eks_cp_system_node_execution
 }
 
 output "cluster_cp_worker_node_execution_role" {
-  description = "The role of the cluster node, for cp-worker nodes which will be launched by Cloud-Pipeline."
+  description = "The role of the cluster node, for Cloud-Pipeline worker nodes which will be launched by Cloud-Pipeline."
   value       = aws_iam_role.eks_cp_worker_node_execution
 }
 
-output "cp_ssh_rsa_key_pair_id" {
+output "cp_ssh_rsa_key_pair" {
   description = "RSA key pair to use during Cloud-Pipeline deployment"
   value       =  module.ssh_rsa_key_pair
 }

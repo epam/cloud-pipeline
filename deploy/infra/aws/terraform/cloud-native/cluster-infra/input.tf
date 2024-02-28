@@ -50,24 +50,24 @@ variable "eks_cluster_version" {
 variable "eks_system_node_group_instance_type" {
   type        = string
   default     = "m5.xlarge"
-  description = "Node instance type for system ng, which will host autoscaler, fsx-csi controller, etc."
+  description = "Node instance type for system ng, which will host Cloud-Pipeline services."
 }
 
 variable "eks_system_node_group_size" {
   type        = number
   default     = 1
-  description = "Number of nodes to spin up for internal-system eks node group. (Nodes that will host internal workload such as fsx-csi plugin, etc)"
+  description = "Number of nodes to spin up for Cloud-Pipeline system EKS node group."
 }
 
 variable "eks_system_node_group_volume_size" {
   type        = number
   default     = 200
-  description = "Volume size of cp-system EKS node."
+  description = "Volume size of Cloud-Pipeline system EKS node."
 }
 variable "eks_system_node_group_volume_type" {
   default     = "gp3"
   type        = string
-  description = "Volume type of cp-system EKS node."
+  description = "Volume type of Cloud-Pipeline system EKS node."
 }
 
 variable "eks_additional_role_mapping" {
@@ -77,7 +77,7 @@ variable "eks_additional_role_mapping" {
     eks_groups    = list(string)
   }))
   default     = []
-  description = "List of additional roles mapping for aws_auth map. With this parameter you can configure access to the EKS cluster for AWS IAM entities."
+  description = "List of additional roles mapping for aws_auth map."
 }
 
 variable "eks_cloudwatch_logs_retention_in_days" {
@@ -98,10 +98,10 @@ variable "create_ssh_rsa_key_pair" {
 variable "deploy_filesystem_type" {
   type        = string
   default     = "efs"
-  description = "Option to create EFS or FSx Lustre filesystem: must be set efs or fsx.If leave as is, neather will be created."
+  description = "Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created."
   validation {
-    condition     = contains(["efs", "fsx"], var.deploy_filesystem_type)
-    error_message = "The value of the deploy_filesystem_type variable can be only efs or fsx. Please check that variable is set correctly."
+    condition     = contains(["efs", "fsx", null], var.deploy_filesystem_type)
+    error_message = "The value of the deploy_filesystem_type variable can be only efs or fsx or null. Please check that variable is set correctly."
   }
 }
 
