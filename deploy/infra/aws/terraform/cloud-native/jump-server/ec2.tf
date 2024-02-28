@@ -1,4 +1,4 @@
-module "bastion_ec2_instance" {
+module "ec2_instance" {
   source = "terraform-aws-modules/ec2-instance/aws"
   name   = "${local.resource_name_prefix}-bastion"
 
@@ -7,8 +7,8 @@ module "bastion_ec2_instance" {
   user_data_base64            = base64encode(local.user_data)
   user_data_replace_on_change = true
 
-  ami           = var.jump_box_ami != "" ? var.jump_box_ami : data.aws_ami.eks_ami.id
-  instance_type = var.jump_box_instance_type
+  ami           = var.ami_id != "" ? var.ami_id : data.aws_ami.eks_ami.id
+  instance_type = var.instance_type
 
   metadata_options = {
     "http_endpoint": "enabled",

@@ -10,7 +10,7 @@ variable "project_name" {
 
 variable "subnet_id" {
   type        = string
-  description = "Ids of the VCP subnets to be used for Data Layer EKS cluster"
+  description = "Id of the VCP subnet to be used to launch an instance"
 }
 
 variable "iam_instance_profile" {
@@ -19,9 +19,9 @@ variable "iam_instance_profile" {
   description = "EC2 instance profile name"
 }
 
-variable "jump_box_instance_type" {
+variable "instance_type" {
   default     = "t3.micro"
-  description = "Instance Type that will be used for bastion instance"
+  description = "Instance Type that will be used"
 }
 
 variable "vpc_id" {
@@ -29,9 +29,14 @@ variable "vpc_id" {
   description = "Id of the VCP to be used for deployment of the bastion instance"
 }
 
-variable "jump_box_ami" {
+variable "ami_id" {
   default     = ""
   description = "AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used."
+}
+
+variable "ami_name_filter" {
+  description = "AMI name to be used as filter in data source to find an AMI id."
+  default = "amazon-eks-node-1.28-v20240213"
 }
 
 variable "iam_role_permissions_boundary_arn" {

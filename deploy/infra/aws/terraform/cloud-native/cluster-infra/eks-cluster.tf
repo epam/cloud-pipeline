@@ -16,7 +16,9 @@ module "eks" {
   subnet_ids                     = data.aws_subnets.this.ids
   cluster_endpoint_public_access = false
 
-  cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
+  cluster_additional_security_group_ids = concat(
+    var.additional_security_group_ids, [module.internal_cluster_access_sg.security_group_id]
+  )
 
   cluster_addons = {
     coredns = {
