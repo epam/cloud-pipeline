@@ -33,6 +33,11 @@ output "cluster_cp_worker_node_execution_role" {
   value       = aws_iam_role.eks_cp_worker_node_execution
 }
 
+output "cp_ssh_rsa_key_pair_id" {
+  description = "RSA key pair to use during Cloud-Pipeline deployment"
+  value       =  module.ssh_rsa_key_pair
+}
+
 output "cp_etc_bucket" {
   description = "Cloud-pipeline etc bucket name"
   value = module.s3_etc.s3_bucket_id

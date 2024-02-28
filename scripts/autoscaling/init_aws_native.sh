@@ -148,5 +148,5 @@ _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
 /etc/eks/bootstrap.sh "@KUBE_CLUSTER_NAME@" --kubelet-extra-args "$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS"
 
-nc -l -k 8888 &
 update_nameserver "$nameserver_post_val" "infinity" &
+nc -l -k 8888 &

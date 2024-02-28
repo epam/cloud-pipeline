@@ -86,8 +86,13 @@ variable "eks_cloudwatch_logs_retention_in_days" {
   description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
 }
 
+variable "create_ssh_rsa_key_pair" {
+  default     = true
+  description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
+}
+
 ###################################################################
-#                  Optional file systems
+#                  File systems for Cloud-Pipeline deployment
 ###################################################################
 
 variable "deploy_filesystem_type" {

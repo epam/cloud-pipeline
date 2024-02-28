@@ -93,6 +93,23 @@ resource "aws_iam_instance_profile" "test_profile" {
   role = aws_iam_role.eks_cp_worker_node_execution.name
 }
 
+
+data "aws_iam_policy" "AmazonSSMManagedInstanceCore" {
+  arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+
+resource "aws_iam_role_policy_attachment" "eks_cp_system_node_ssm_core" {
+  role       = aws_iam_role.eks_cp_system_node_execution.name
+  policy_arn = data.aws_iam_policy.AmazonSSMManagedInstanceCore.arn
+}
+
+resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_ssm_core" {
+  role       = aws_iam_role.eks_cp_worker_node_execution.name
+  policy_arn = data.aws_iam_policy.AmazonSSMManagedInstanceCore.arn
+}
+
+
 resource "aws_iam_policy" "eks_node_observability" {
   name        = "${local.resource_name_prefix}_eks_observability"
   description = "Access to write logs by CW Agent and FluentBit to the cloudwatch log groups"
@@ -490,6 +507,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "ec2:CancelSpotFleetRequests",
           "ec2:CreateKeyPair",
           "ec2:CreateImage",
+          "ec2:ModifyInstanceMetadataOptions",
           "ec2:RequestSpotFleet",
           "ec2:DeleteVolume",
           "ec2:DescribeNetworkInterfaces",
