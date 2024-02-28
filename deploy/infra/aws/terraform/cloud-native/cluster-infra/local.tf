@@ -3,7 +3,7 @@ locals {
   tags = merge({
     Environment = var.env
     Project     = var.project_name
-  },
+    },
     var.additional_tags
   )
 
@@ -19,12 +19,12 @@ locals {
     for subnet_id in var.eks_system_node_group_subnet_ids : "system_${subnet_id}" => {
       name = "system-${subnet_id}-ng"
 
-      subnet_ids            = [subnet_id]
-      instance_types        = [var.eks_system_node_group_instance_type]
+      subnet_ids     = [subnet_id]
+      instance_types = [var.eks_system_node_group_instance_type]
       block_device_mappings = {
         xvda = {
           device_name = "/dev/xvda"
-          ebs         = {
+          ebs = {
             volume_size           = var.eks_system_node_group_volume_size
             volume_type           = var.eks_system_node_group_volume_type
             encrypted             = true
@@ -54,4 +54,5 @@ locals {
     }
   ]
 
+  cloud_pipeline_db_configuration = var.create_cloud_pipeline_db_configuration && var.deploy_rds ? var.cloud_pipeline_db_configuration : [] 
 }

@@ -35,15 +35,35 @@ output "cluster_cp_worker_node_execution_role" {
 
 output "cp_ssh_rsa_key_pair" {
   description = "RSA key pair to use during Cloud-Pipeline deployment"
-  value       =  module.ssh_rsa_key_pair
+  value       = module.ssh_rsa_key_pair
 }
 
 output "cp_etc_bucket" {
   description = "Cloud-pipeline etc bucket name"
-  value = module.s3_etc.s3_bucket_id
+  value       = module.s3_etc.s3_bucket_id
 }
 
 output "cp_docker_bucket" {
   description = "Cloud-pipeline docker registry bucket name"
-  value = module.s3_docker.s3_bucket_id
+  value       = module.s3_docker.s3_bucket_id
+}
+
+output "rds_root_pass_secret" {
+  description = "Id of the secretsmanager secret where password of the RDS root_user is stored"
+  value       = try(aws_secretsmanager_secret.rds_root_secret[0].id, null)
+}
+
+output "rds_address" {
+  description = "The address of the RDS instance"
+  value       = try(module.cp_rds.db_instance_address, null)
+}
+
+output "rds_root_username" {
+  description = "Username of the RDS default user"
+  value       = try(module.cp_rds.db_instance_username, null)
+}
+
+output "rds_port" {
+  description = "The port on which the RDS instance accepts connections"
+  value       = try(module.cp_rds.db_instance_port, null)
 }
