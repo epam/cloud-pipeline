@@ -5,7 +5,7 @@
 */
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "19.5.1"
+  version = "20.4.0"
 
   cluster_name    = local.cluster_name
   cluster_version = var.eks_cluster_version
@@ -20,10 +20,10 @@ module "eks" {
 
   cluster_addons = {
     coredns = {
-      most_recent = true
+      most_recent          = true
       configuration_values = jsonencode({
         replicaCount = 3
-        nodeSelector: local.eks_system_node_labels
+        nodeSelector : local.eks_system_node_labels
       })
     }
   }
@@ -72,7 +72,16 @@ module "eks" {
     }
   }
 
-  # aws-auth configmap
+  cluster_enabled_log_types              = ["audit", "api", "authenticator", "scheduler", "controllerManager"]
+  cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
+  cloudwatch_log_group_kms_key_id        = module.kms_eks.key_arn
+  tags                                   = local.tags
+}
+
+module "eks-aws-auth" {
+  source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
+  version = "20.4.0"
+
   manage_aws_auth_configmap = true
 
   aws_auth_roles = concat([
@@ -95,11 +104,6 @@ module "eks" {
   ],
     local.sso_additional_role_mapping
   )
-
-  cluster_enabled_log_types              = ["audit", "api", "authenticator", "scheduler", "controllerManager"]
-  cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
-  cloudwatch_log_group_kms_key_id        = module.kms_eks.key_arn
-  tags                                   = local.tags
 }
 
 ##############################################################
@@ -114,3 +118,58 @@ resource "aws_eks_addon" "cw_observability" {
     aws_cloudwatch_log_group.cw_performance
   ]
 }
+
+##############################################################
+#       AWS Load Balancer Controller add-on
+##############################################################
+
+resource "helm_release" "alb-controller" {
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  version    = "1.7.1"
+
+
+  set {
+    name  = "region"
+    value = data.aws_region.current.id
+  }
+
+  set {
+    name  = "vpcId"
+    value = data.aws_vpc.this.id
+  }
+
+  set {
+    name  = "rbac.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = module.aws_lbc_addon_sa_role.iam_role_arn
+  }
+
+
+  set {
+    name  = "nodeSelector.cloud-pipeline/node-group-type"
+    value = "system"
+  }
+
+  set {
+    name  = "clusterName"
+    value = module.eks.cluster_name
+  }
+
+  set {
+    name  = "enableServiceMutatorWebhook"
+    value = "false"
+  }
+}
+
