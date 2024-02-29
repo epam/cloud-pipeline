@@ -157,3 +157,74 @@ variable "create_ssh_rsa_key_pair" {
   description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
 }
 
+###################################################################
+#                  AWS RDS for Cloud-Pipeline deployment
+###################################################################
+variable "deploy_rds" {
+  type        = bool
+  default     = true
+  description = "Option to create RDS instance or not"
+}
+
+variable "create_cloud_pipeline_db_configuration" {
+  type        = bool
+  default     = true
+  description = "Option to create additional database or not"
+}
+
+variable "rds_instance_type" {
+  type        = string
+  default     = "db.m6i.large"
+  description = "The instance type of the RDS instance"
+}
+
+variable "rds_storage_size" {
+  type        = number
+  default     = 200
+  description = "The allocated RDS storage size in gigabytes"
+}
+
+variable "rds_default_db_name" {
+  type        = string
+  default     = "postgres"
+  description = "The DB name to create. If omitted, no database is created initially"
+}
+
+variable "rds_root_username" {
+  type        = string
+  default     = "postgres"
+  description = "Username for the master DB user"
+}
+
+variable "rds_root_password" {
+  type        = string
+  default     = null
+  description = "Password for the default master DB user"
+}
+
+variable "cloud_pipeline_db_configuration" {
+  type = list(object({
+    username = string
+    password = string
+    database = string
+  }))
+  default = [ 
+  {
+    username = "pipeline"
+    password = "pipeline"
+    database = "pipeline"
+  },
+  {
+    username = "clair"
+    password = "clair"
+    database = "clair"
+  }
+   ]
+  description = "Username with password and database, wich will be created by Postgres provider.Username will be owner of database."
+}
+
+variable "rds_db_port" {
+  type        = number
+  default     = 5432
+  description = "The port on which the RDS instance accepts connections"
+}
