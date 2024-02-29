@@ -14,6 +14,7 @@ module "eks" {
 
   vpc_id                         = data.aws_vpc.this.id
   subnet_ids                     = data.aws_subnets.this.ids
+  authentication_mode            = "CONFIG_MAP"
   cluster_endpoint_public_access = false
 
   cluster_additional_security_group_ids = concat(
