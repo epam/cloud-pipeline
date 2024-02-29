@@ -64,6 +64,8 @@ module "eks-aws-auth" {
   source  = "terraform-aws-modules/eks/aws//modules/aws-auth"
   version = "20.4.0"
 
+  depends_on = [module.eks]
+
   manage_aws_auth_configmap = true
 
   aws_auth_roles = concat([
