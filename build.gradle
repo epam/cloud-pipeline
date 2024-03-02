@@ -22,6 +22,10 @@ allprojects {
     checkstyle {
         toolVersion = "7.2"
     }
+    
+    tasks.withType(JavaCompile).configureEach {
+        options.fork = true
+    }
 }
 
 class Version {
