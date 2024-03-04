@@ -22,7 +22,7 @@ module "cp_system_efs" {
   security_group_vpc_id      = var.vpc_id
   security_group_rules = {
     vpc = {
-      # relying on the defaults provdied for EFS/NFS (2049/TCP + ingress)
+      # relying on the defaults providied for EFS/NFS (2049/TCP + ingress)
       description = "NFS ingress from VPC"
       cidr_blocks = [data.aws_vpc.this.cidr_block]
     }
@@ -41,6 +41,6 @@ resource "aws_fsx_lustre_file_system" "fsx" {
   deployment_type             = var.fsx_deployment_type
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
   kms_key_id                  = module.kms.key_arn
-  security_group_ids = [module.internal_cluster_access_sg.security_group_id]
-  tags = local.tags
+  security_group_ids          = concat([module.internal_cluster_access_sg.security_group_id], var.additional_security_group_ids)
+  tags                        = local.tags
 }

@@ -15,7 +15,7 @@ variable "vpc_id" {
 
 variable "subnet_ids" {
   type        = list(string)
-  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster"
+  description = "Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc."
 
   validation {
     condition     = length(var.subnet_ids) > 0
@@ -45,6 +45,16 @@ variable "additional_tags" {
 variable "eks_cluster_version" {
   type    = string
   default = "1.28"
+}
+
+variable "eks_system_node_group_subnet_ids" {
+  type        = list(string)
+  description = "Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group."
+
+  validation {
+    condition     = length(var.eks_system_node_group_subnet_ids) > 0
+    error_message = "At least one subnet id in list must be specified"
+  }
 }
 
 variable "eks_system_node_group_instance_type" {
@@ -84,11 +94,6 @@ variable "eks_cloudwatch_logs_retention_in_days" {
   type        = number
   default     = 30
   description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
-}
-
-variable "create_ssh_rsa_key_pair" {
-  default     = true
-  description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
 }
 
 ###################################################################
@@ -141,3 +146,85 @@ variable "fsx_per_unit_storage_throughput" {
   description = "Describes the amount of read and write throughput for each 1 tebibyte of storage, in MB/s/TiB, required for the PERSISTENT_1 and PERSISTENT_2 deployment_type"
 }
 
+variable "additional_security_group_ids" {
+  type        = list(string)
+  default     = []
+  description = "List of SG's IDs to attach to EKS cluster."
+}
+
+variable "create_ssh_rsa_key_pair" {
+  default     = true
+  description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
+}
+
+###################################################################
+#                  AWS RDS for Cloud-Pipeline deployment
+###################################################################
+variable "deploy_rds" {
+  type        = bool
+  default     = true
+  description = "Option to create RDS instance or not"
+}
+
+variable "create_cloud_pipeline_db_configuration" {
+  type        = bool
+  default     = true
+  description = "Option to create additional database or not"
+}
+
+variable "rds_instance_type" {
+  type        = string
+  default     = "db.m6i.large"
+  description = "The instance type of the RDS instance"
+}
+
+variable "rds_storage_size" {
+  type        = number
+  default     = 200
+  description = "The allocated RDS storage size in gigabytes"
+}
+
+variable "rds_default_db_name" {
+  type        = string
+  default     = "postgres"
+  description = "The DB name to create. If omitted, no database is created initially"
+}
+
+variable "rds_root_username" {
+  type        = string
+  default     = "postgres"
+  description = "Username for the master DB user"
+}
+
+variable "rds_root_password" {
+  type        = string
+  default     = null
+  description = "Password for the default master DB user"
+}
+
+variable "cloud_pipeline_db_configuration" {
+  type = list(object({
+    username = string
+    password = string
+    database = string
+  }))
+  default = [ 
+  {
+    username = "pipeline"
+    password = "pipeline"
+    database = "pipeline"
+  },
+  {
+    username = "clair"
+    password = "clair"
+    database = "clair"
+  }
+   ]
+  description = "Username with password and database, wich will be created by Postgres provider.Username will be owner of database."
+}
+
+variable "rds_db_port" {
+  type        = number
+  default     = 5432
+  description = "The port on which the RDS instance accepts connections"
+}

@@ -212,7 +212,7 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
             print_err "/etc/eks/bootstrap.sh failed to join node to the cluster."
             exit 1
         else
-          _node_name="$HOSTNAME"
+            _node_name="$HOSTNAME"
             wait_kube_node_to_be_ready "$_node_name"
             if [ $? -ne 0 ]; then
                 print_err "Fail to join $_node_name in cluster $CP_KUBE_CLUSTER_NAME."
