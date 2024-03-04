@@ -235,8 +235,9 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                             perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
                             ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
                             xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
-                            compat-db-headers compat-db47 libpipeline man-db \
-        && yum install -y -q gridengine \
+                            compat-db-headers compat-db47 libpipeline man-db
+
+        yum install -y -q gridengine \
                             gridengine-debuginfo \
                             gridengine-devel \
                             gridengine-drmaa4ruby \
