@@ -18,6 +18,18 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
+if [ "$CP_OS" == "rocky" ]; then
+    _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
+else
+    _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
+fi
+export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-$_CP_CAP_DIND_VERSION_DEFAULT}"
+export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
+export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
+export CP_CAP_DIND_DISTR_PREFIX="${CP_CAP_DIND_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/distr"}"
+
+pipe_log_info "Installing docker: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
+
 ######################################################
 # Check if this is a RPM Linux distribution
 ######################################################
@@ -29,15 +41,18 @@ IS_RPM_BASED=$?
 ######################################################
 _DIND_DEP_INSTALL_RESULT=0
 if [ $IS_RPM_BASED -eq 0 ]; then
+    if util_version_compare "$CP_CAP_DIND_VERSION" "20.10.24" "<"; then
+        _extra_packages="btrfs-progs"
+    fi
     yum install -y -q \
-                btrfs-progs \
                 e2fsprogs \
                 iptables \
                 iproute \
                 xfsprogs \
                 xz \
                 pigz \
-                kmod
+                kmod \
+                findutils $_extra_packages
     _DIND_DEP_INSTALL_RESULT=$?
 else
     apt install -y -qq \
@@ -64,11 +79,8 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 ######################################################
 
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-18.09.6}"
-export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
-export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
 
-wget -q -O docker.tgz "https://download.docker.com/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
+wget -q -O docker.tgz "${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
 
 if [ $? -ne 0 ]; then
     pipe_log_fail "Unable to install download docker distribution ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"

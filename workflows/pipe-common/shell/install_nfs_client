@@ -26,8 +26,16 @@ then
     CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
-    OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
-    LUSTRE_VERSION=$([ $OS_VERSION_ID -eq 6 ] && echo "2.10.8-1" || echo "2.12.5-1")
+    OS_VERSION_ID=$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
+    if [ "$OS_VERSION_ID" == "6" ]; then
+        LUSTRE_VERSION="2.10.8-1"
+    elif [ "$OS_VERSION_ID" == "7" ]; then
+        LUSTRE_VERSION="2.12.5-1"
+    elif [ "$OS_VERSION_ID" == "8" ]; then
+        LUSTRE_VERSION="2.10.8-2"
+    else
+        LUSTRE_VERSION="NA"
+    fi
     LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
     LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
