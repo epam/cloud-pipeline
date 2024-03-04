@@ -803,13 +803,13 @@ function parse_options {
 }
 
 function is_kube_node_ready {
-  node_name=$1
+  local node_name=$1
   local node_status=$(kubectl get no "$node_name" -o json 2>/dev/null \
                             | jq '.status.conditions[] | select(.type=="Ready") | .status' -r)
-  if [ $? -ne 0 ]; then
-      echo "False"
+  if [ "${node_status}" != "True" ]; then
+      return 1
   fi
-  echo "$node_status"
+  return 0
 }
 
 function wait_kube_node_to_be_ready {
@@ -819,8 +819,8 @@ function wait_kube_node_to_be_ready {
     while [ $count -lt "$threshold" ]
     do
         count=$((count + 1))
-        if [ $(is_kube_node_ready $node_name) == "True" ]; then
-            print_ok "Node $node_name is ready!"
+        if is_kube_node_ready "$node_name"; then
+            print_ok "Node $node_name is ready"
             return 0
         fi
         print_info "Waiting $node_name to be ready..."
