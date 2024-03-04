@@ -155,5 +155,7 @@ resource "helm_release" "alb-controller" {
     name  = "enableServiceMutatorWebhook"
     value = "false"
   }
+
+  depends_on = [module.eks]
 }
 

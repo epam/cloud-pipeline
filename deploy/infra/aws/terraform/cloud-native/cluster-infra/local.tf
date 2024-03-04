@@ -54,5 +54,5 @@ locals {
     }
   ]
 
-  cloud_pipeline_db_configuration = var.create_cloud_pipeline_db_configuration && var.deploy_rds ? var.cloud_pipeline_db_configuration : [] 
+  cloud_pipeline_db_configuration = var.create_cloud_pipeline_db_configuration && var.deploy_rds ? var.cloud_pipeline_db_configuration : []
 }

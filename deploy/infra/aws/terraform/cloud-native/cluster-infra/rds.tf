@@ -89,12 +89,16 @@ resource "postgresql_role" "this" {
   password        = each.value.password != null ? each.value.password : random_password.this[each.key].result
   login           = true
   create_database = "false"
+
+  depends_on = [aws_secretsmanager_secret.rds_root_secret, aws_secretsmanager_secret_version.rds_root_secret]
 }
 
 resource "postgresql_database" "this" {
   for_each = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db })
   name     = each.value.database
   owner    = each.value.username
+
+  depends_on = [aws_secretsmanager_secret.rds_root_secret, aws_secretsmanager_secret_version.rds_root_secret]
 }
 
 

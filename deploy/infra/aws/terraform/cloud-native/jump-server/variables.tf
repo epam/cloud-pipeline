@@ -20,7 +20,7 @@ variable "iam_instance_profile" {
 }
 
 variable "instance_type" {
-  default     = "t3.micro"
+  default     = "t3.small"
   description = "Instance Type that will be used"
 }
 
@@ -36,7 +36,7 @@ variable "ami_id" {
 
 variable "ami_name_filter" {
   description = "AMI name to be used as filter in data source to find an AMI id."
-  default = "amazon-eks-node-1.28-v20240213"
+  default = "amazon-eks-node-1.29-v20240227"
 }
 
 variable "iam_role_permissions_boundary_arn" {
