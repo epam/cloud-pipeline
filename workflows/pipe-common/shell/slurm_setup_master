@@ -14,6 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+########################################
+# Build instructions: slurm RPMs for EL8
+# yum install -y epel-release
+# yum install -y yum-utils
+# yum config-manager --set-enabled powertools
+# yum install -y rpm-build munge-devel munge-libs pam-devel perl python3 readline-devel
+# GLOBAL_DISTRIBUTION_URL=https://cloud-pipeline-oss-builds-eu-west-1.s3.eu-west-1.amazonaws.com/
+# CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+# _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
+# wget $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+# rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
+# ls -la /root/rpmbuild/RPMS/x86_64/*
+########################################
+
 SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_MASTER_SETUP_TASK="SLURMMasterSetup"
 SLURM_MASTER_SETUP_TASK_WORKERS="SLURMMasterSetupWorkers"
@@ -265,11 +279,12 @@ install_slurm_rhel() {
 
 pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
 
+OS_VERSION_ID=$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SLURM_SYNTHETIC_WORKER="${CP_CAP_SLURM_SYNTHETIC_WORKER:-true}"
 export CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
 export CP_SLURM_PACKAGE_DEB_URL="${CP_SLURM_PACKAGE_DEB_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/deb/slurm_22.05.5_amd64.deb"}"
-export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el7.x86_64.tar"}"
+export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el${OS_VERSION_ID:-7}.x86_64.tar"}"
 
 if check_cp_cap CP_CAP_SLURM_PREINSTALLED; then
     pipe_log_info "Skipping SLURM packages installation because packages are preinstalled" "$SLURM_MASTER_SETUP_TASK"
