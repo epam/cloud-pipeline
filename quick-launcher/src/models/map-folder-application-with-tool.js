@@ -7,8 +7,8 @@ export function findToolForFolderApplication (folderApplication, tools) {
   } = folderApplication;
   let tool;
   if (folderAppInfo && folderAppInfo.toolId) {
-    tool = {id: folderAppInfo.toolId};
-    console.log(`Application "${folderApplication.name}" has docker image specified in gateway.spec json: #${folderAppInfo.toolId}`);
+    tool = {id: folderAppInfo.toolId, version: folderAppInfo.toolVersion || 'latest'};
+    console.log(`Application "${folderApplication.name}" has docker image specified in gateway.spec json: #${tool.id} (version ${tool.version})`);
   } else if (appType) {
     tool = tools.find(aTool => aTool._folder_ && aTool._folderAppType_ === appType);
     if (!tool) {
@@ -33,6 +33,7 @@ export default function mapFolderApplication (folderApplication, tools) {
   return {
     ...folderApplication,
     toolId: tool.id,
+    toolVersion: tool.version || 'latest',
     image: tool.image,
     hasIcon: !!folderApplication.icon,
     __launch_parameters__: {

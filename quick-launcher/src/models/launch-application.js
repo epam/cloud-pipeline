@@ -23,6 +23,7 @@ import performPreRunChecks from './pre-run-checks';
 import {getPortParameters} from './utilities/ports';
 import { getApplicationTypeSettings } from "./folder-application-types";
 import { getCapabilitiesParameters } from "../components/utilities/run-capabilities";
+import getTool from './cloud-pipeline-api/tool';
 
 function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
   const {id, status, initialized, serviceUrl} = run || {};
@@ -185,10 +186,26 @@ async function launchTool(application, user, options) {
       ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}${options?.__validation__ ? ';validation' : ''}`
       : undefined;
     const toolId = application.toolId || application.id;
+    let {image} = application;
+    let toolVersion = version || 'latest';
+    if (image) {
+      image = `${image}:${toolVersion}`;
+    }
+    if (!image && toolId) {
+      const {
+        registry,
+        image: dockerImage,
+      } = await getTool(toolId);
+      if (registry && dockerImage) {
+        toolVersion = application.toolVersion || 'latest';
+        image = `${registry}/${dockerImage}:${toolVersion}`;
+        console.log(`Using docker image (from toolId #${toolId} and version "${toolVersion}"): ${image}`);
+      }
+    }
     const userRuns = await getApplicationRun(
       application.id,
       user?.userName,
-      `${application.image}:${version || 'latest'}`,
+      image,
       options.__validation__ ? undefined : appOwner,
       appSettings.checkRunPrettyUrl && prettyUrlObj && !(options?.__skip_pretty_url_check__)
         ? prettyUrlString
@@ -217,7 +234,7 @@ async function launchTool(application, user, options) {
           application,
         }
       );
-      const settings = await getToolSettings(toolId, version);
+      const settings = await getToolSettings(toolId, toolVersion);
       const node = await getAvailableNodeWrapper(appSettings);
       if (settings.useParentNodeId) {
         if (node) {
@@ -428,7 +445,7 @@ async function launchTool(application, user, options) {
       }
       const launchedRun = await launchToolRequest(
         application.id,
-        `${application.image}:${version || 'latest'}`,
+        image,
         payload
       );
       if (launchedRun) {
