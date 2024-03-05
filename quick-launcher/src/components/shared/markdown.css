@@ -1,0 +1,13 @@
+.markdown a {
+  color: #ccc;
+}
+
+.markdown a:hover,
+.markdown a:active,
+.markdown a:focus {
+  color: white;
+}
+
+.markdown.no-padding-markdown p {
+  margin: 5px;
+}
