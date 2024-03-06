@@ -1,5 +1,5 @@
 module "cp_system_efs" {
-  count   = var.deploy_filesystem_type == "efs" ? 1 : 0
+  create  = var.deploy_filesystem_type == "efs" ? true : false
   source  = "terraform-aws-modules/efs/aws"
   version = "1.3.1"
 

@@ -44,7 +44,7 @@ variable "additional_tags" {
 
 variable "eks_cluster_version" {
   type    = string
-  default = "1.28"
+  default = "1.29"
 }
 
 variable "eks_system_node_group_subnet_ids" {
@@ -208,19 +208,19 @@ variable "cloud_pipeline_db_configuration" {
     password = string
     database = string
   }))
-  default = [ 
-  {
-    username = "pipeline"
-    password = "pipeline"
-    database = "pipeline"
-  },
-  {
-    username = "clair"
-    password = "clair"
-    database = "clair"
-  }
-   ]
-  description = "Username with password and database, wich will be created by Postgres provider.Username will be owner of database."
+  default = [
+    {
+      username = "pipeline"
+      password = "pipeline"
+      database = "pipeline"
+    },
+    {
+      username = "clair"
+      password = "clair"
+      database = "clair"
+    }
+  ]
+  description = "Username with password and database, which will be created by Postgres provider. Username will be owner of the database."
 }
 
 variable "rds_db_port" {
