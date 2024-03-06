@@ -144,7 +144,8 @@ install_slurm_rhel() {
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel  \
                 rrdtool-devel ncurses-devel man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+    _pkgs_dir="$SHARED_FOLDER/slurm-pkgs"
+    yum --nogpgcheck localinstall ${_pkgs_dir}/* -y
 }
 
 pipe_log_info "Installing SLURM worker" "$SLURM_WORKER_SETUP_TASK"
