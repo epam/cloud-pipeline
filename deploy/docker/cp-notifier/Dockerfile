@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+ARG BASE_IMAGE="centos:7"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -22,15 +23,9 @@ RUN yum install -y \
                 python \
                 unzip
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_NOTIFIER_HOME="/opt/notifier"
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_NOTIFIER_HOME && \
-    mv bin/notifier.jar $CP_NOTIFIER_HOME/ && \
-    rm -rf /tmp/*
+
+ADD dist/bin/notifier.jar $CP_NOTIFIER_HOME/notifier.jar
 
 ADD config $CP_NOTIFIER_HOME/config
 

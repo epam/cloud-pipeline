@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7.7.1908
+ARG BASE_IMAGE="centos:7.7.1908"
+FROM $BASE_IMAGE
 
 ENV CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
-ENV COMMON_REPO_DIR=/usr/sbin/CommonRepo
-ARG CP_API_DIST_URL
 
 RUN yum install curl -y
 
@@ -53,24 +52,6 @@ RUN yum install -y wget \
 RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
     python2 -m pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
 
-# Install "pipeline/CommonRepo" python package
-RUN if [ "$CP_API_DIST_URL" ]; then \
-        mkdir -p /tmp/cp && \
-        curl -s -k "$CP_API_DIST_URL" > /tmp/cp/cloud-pipeline.tar.gz && \
-        cd /tmp/cp &&  \
-        tar -zxf cloud-pipeline.tar.gz && \
-        cd bin && \
-        unzip pipeline.jar && \
-        mkdir -p $COMMON_REPO_DIR && \
-        mv BOOT-INF/classes/static/pipe-common.tar.gz $COMMON_REPO_DIR/pipe-common.tar.gz && \
-        rm -rf /tmp/cp && \
-        cd $COMMON_REPO_DIR && \
-        tar xf pipe-common.tar.gz && \
-        python2 -m pip install . $CP_PIP_EXTRA_ARGS -I && \
-        chmod 777 . -R && \
-        rm -f pipe-common.tar.gz; \
-    fi
-
 # Install NFS/SMB/Lustre clients
 RUN cd /tmp && \
     yum install nfs-utils cifs-utils -y && \
@@ -97,7 +78,15 @@ RUN yum install -y -q perl perl-Env.noarch perl-Exporter.noarch perl-File-BaseDi
                         gridengine-guiinst \
                         gridengine-qmaster \
                         gridengine-qmon
+
 ENV CP_CAP_SGE_PREINSTALLED="true"
 
 # Install LFS
 RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client 
+
+ENV COMMON_REPO_DIR="/usr/sbin/CommonRepo"
+
+ADD dist/pipe-common.tar.gz $COMMON_REPO_DIR
+RUN cd $COMMON_REPO_DIR  \
+    && chmod 777 . -R \
+    && python2 -m pip install . $CP_PIP_EXTRA_ARGS -I

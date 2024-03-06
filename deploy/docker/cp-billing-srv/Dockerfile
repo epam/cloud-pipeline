@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+ARG BASE_IMAGE="centos:7"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -21,16 +22,9 @@ RUN yum install -y \
                 java-1.8.0-openjdk \
                 unzip
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_BILLING_HOME="/opt/billing"
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_BILLING_HOME && \
-    mv bin/billing-report-agent.jar $CP_BILLING_HOME/ && \
-    rm -rf /tmp/*
+ADD dist/bin/billing-report-agent.jar $CP_BILLING_HOME/billing-report-agent.jar
 
 ADD config $CP_BILLING_HOME/config
 
