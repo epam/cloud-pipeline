@@ -23,6 +23,13 @@ unset KUBERNETES_SERVICE_PORT
 ############################
 # Common functions
 ############################
+function check_is_ip() {
+    if [[ $CP_CAP_KUBE_MASTER_NODE_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
 function wait_for_pod_ready() {
     local _pod_name="$1"
     local _try_count="$2"
@@ -102,7 +109,22 @@ export CP_CAP_KUBE_INSTALL_LOG="${CP_CAP_KUBE_INSTALL_LOG:-/var/log/kube-install
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS="${CP_CAP_KUBE_MASTER_EXEC_WAIT_ATTEMPTS:-60}"
 export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}"
 export CP_CAP_KUBE_MASTER_NODE_NAME="${CP_CAP_KUBE_MASTER_NODE_NAME:-$(hostname)}"
+
+pipe_log_info "Getting current IP from getent" "$KUBE_MASTER_SETUP_TASK"
 export CP_CAP_KUBE_MASTER_NODE_IP=$(getent hosts "$CP_CAP_KUBE_MASTER_NODE_NAME" | awk '{ print $1 }')
+if ! check_is_ip "$CP_CAP_KUBE_MASTER_NODE_IP"; then
+    pipe_log_info "Getting current IP from hostname" "$KUBE_MASTER_SETUP_TASK"
+    CP_CAP_KUBE_MASTER_NODE_IP=$(hostname -i)
+fi
+if ! check_is_ip "$CP_CAP_KUBE_MASTER_NODE_IP"; then
+    pipe_log_info "Getting current IP from ip route" "$KUBE_MASTER_SETUP_TASK"
+    CP_CAP_KUBE_MASTER_NODE_IP=$(ip -o route get to 10.96.0.1 | sed -n 's/.*src \([0-9.]\+\).*/\1/p')
+fi
+if ! check_is_ip "$CP_CAP_KUBE_MASTER_NODE_IP"; then
+    pipe_log_fail "[ERROR] Cannot get current IP by any method, exiting" "$KUBE_MASTER_SETUP_TASK"
+    exit 1
+fi
+
 
 mkdir -p $(dirname $CP_CAP_KUBE_INSTALL_LOG)
 
