@@ -1614,6 +1614,12 @@ echo "-"
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
     [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+
+        # Make sure sysctl is available
+        _SYSCTL_INSTALL_COMMAND=
+        get_install_command_by_current_distr _SYSCTL_INSTALL_COMMAND "procps"
+        eval "$_SYSCTL_INSTALL_COMMAND"
+
         _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
         if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
             echo "Systemd already active, skipping installation"
