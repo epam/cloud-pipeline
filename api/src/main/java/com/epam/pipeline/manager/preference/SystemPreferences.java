@@ -1049,6 +1049,10 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
             "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT = new IntPreference(
+            "search.elastic.billing.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT = new IntPreference(
+            "search.elastic.billing.retry.timeout", 30000, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_CP_INDEX_PREFIX = new StringPreference(
             "search.elastic.index.common.prefix", null, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_REQUESTS_INDEX_PREFIX = new StringPreference(
