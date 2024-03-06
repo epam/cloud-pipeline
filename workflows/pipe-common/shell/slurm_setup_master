@@ -263,20 +263,21 @@ install_slurm_rhel() {
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
+    _pkgs_dir="$SHARED_FOLDER/slurm-pkgs"
     _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
-    mkdir -p /common/slurm-pkgs
+    mkdir -p ${_pkgs_dir}
     wget -q "$CP_SLURM_PACKAGE_RPM_URL" --directory-prefix=$_TMP_PACKAGE_DIR
     if [[ $? -ne 0 ]]; then
         rm -rf /root/rpmbuild/RPMS/x86_64/*
         wget -q $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
         rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
-        cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
+        cp /root/rpmbuild/RPMS/x86_64/* ${_pkgs_dir}/
     else
         tar -xf $_TMP_PACKAGE_DIR/slurm*.tar --directory $_TMP_PACKAGE_DIR
-        mv $_TMP_PACKAGE_DIR/slurm*/* /common/slurm-pkgs/
+        mv $_TMP_PACKAGE_DIR/slurm*/* ${_pkgs_dir}/
     fi
 
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
+    yum --nogpgcheck localinstall ${_pkgs_dir}/* -y
 }
 
 pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
