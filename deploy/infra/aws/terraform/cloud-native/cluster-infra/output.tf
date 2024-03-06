@@ -60,7 +60,8 @@ output "cp_docker_bucket" {
 
 output "rds_root_pass_secret" {
   description = "Id of the secretsmanager secret where password of the RDS root_user is stored"
-  value       = try(aws_secretsmanager_secret.rds_root_secret[0].id, null)
+  value       = try(aws_secretsmanager_secret_version.rds_root_secret[0].secret_string, null)
+  sensitive = true
 }
 
 output "rds_address" {
@@ -112,4 +113,6 @@ output "https_access_security_group" {
   description = "Security group that used by load balancer with https public access"
   value       = try(module.https_access_sg.security_group_id, null)
 }
+
+ 
 

@@ -24,16 +24,12 @@ To get started with deployment, please make sure that you satisfy requirements b
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | = 1.5.0 |
 
 1. Manually create S3 Bucket to store remote state of the terraform deployment.
-> This bucket can be then reused to also store all others terraform deployment state files.
-1. Manually create DynamoDB table to store terraform lock records.
+2. Manually create DynamoDB table to store terraform lock records.
    - Table schema:
    ```
       LockID (String) - Partition key
    ```
-> This table can be then reused to also store all others terraform locks for other deployments.
->
-1. Create VPC with private subnet for cluster.
-2. If needed open access from internet - public subnet and Elastic IP address.
+This instruction supposes availability of the VPC, list of private subnets and some kind of the public access(public subnet, transit gateway, VPN from corporate network etc.) in AWS account where resources will be deployed.
 
 ### Deployment process
 
@@ -72,11 +68,11 @@ main.tf
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "cloud-pipeline-infra-test"
+    bucket         = "xxxxxxxxxxxx-infra-test"
     key            = "test-eks-jumpbox/terraform.tfstate"
     region         = "eu-west-1"
     encrypt        = true
-    dynamodb_table = "cloud-pipeline-infra-test"
+    dynamodb_table = "xxxxxxxxxxxx-infra-test"
   }
   required_version = "1.5.0"
 }
@@ -87,7 +83,7 @@ provider "aws" {
 
 module test-eks-bastion {
     source = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/jump-server?ref=f_aws_native_infra"
-    project_name                      = "cloud-pipeline"
+    project_name                      = "xxxxxxxxxxxx"
     env                               = "test"
     vpc_id                            = "vpc-xxxxxxxxxxxx"
     subnet_id                         = "subnet-xxxxxxxxxxxx"
@@ -166,11 +162,11 @@ main.tf
 ```hcl
 terraform {
   backend "s3" {
-    bucket         = "cloud-pipeline-infra-test"
+    bucket         = "xxxxxxxxxxxx-infra-test"
     key            = "test-eks/terraform.tfstate"
     region         = "eu-west-1"
     encrypt        = true
-    dynamodb_table = "cloud-pipeline-infra-test"
+    dynamodb_table = "xxxxxxxxxxxx-infra-test"
   }
   required_version = "1.5.0"
 }
@@ -219,7 +215,7 @@ provider "postgresql" {
 
 module "cp-test-eks-infra" {
   source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
-  project_name                      = "cloud-pipeline"
+  project_name                      = "xxxxxxxxxxxx"
   env                               = "test-eks"
   vpc_id                            = "vpc-xxxxxxxxxxxx"
   cp_api_access_prefix_lists        = ["pl-xxxxxxxxxxxx"]
@@ -234,6 +230,7 @@ module "cp-test-eks-infra" {
       eks_groups    = ["system:bootstrappers", "system:nodes"]
     }
   ]
+}  
 
 ```
 versions.tf (if Cloud-Pipepline database configuration should be deployed):
@@ -323,21 +320,21 @@ pipectl install \
  -d "library/centos:7" \
  -dt aws-native \
  -jc \
- -env CP_MAIN_SERVICE_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/cloud-pipeline-test-eksCPExecutionRole" \
+ -env CP_MAIN_SERVICE_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/xxxxxxxxxxxx-CPExecutionRole" \
  -env CP_CSI_DRIVER_TYPE=efs \
  -env CP_SYSTEM_FILESYSTEM_ID="fs-xxxxxxxxxxxx" \
- -env CP_CSI_EXECUTION_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/cloud-pipeline-test-eks-efs_csi-ExecutionRole" \
+ -env CP_CSI_EXECUTION_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/xxxxxxxxxxxx-efs_csi-ExecutionRole" \
  -env CP_DOCKER_DIST_SRV="quay.io/" \
  -env CP_AWS_KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxxxxxx" \
- -env CP_PREF_CLUSTER_SSH_KEY_NAME="cloud-pipeline-test-eks-key" \
+ -env CP_PREF_CLUSTER_SSH_KEY_NAME="xxxxxxxxxxxx-key" \
  -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="sg-xxxxxxxxxxxx" \
- -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/cloud-pipeline-test-eksS3viaSTSRole" \
- -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/cloud-pipeline-test-eks-key.pem" \
+ -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="arn:aws:iam::xxxxxxxxxxxx:role/xxxxxxxxxxxx-S3viaSTSRole" \
+ -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/xxxxxxxxxxxx-key.pem" \
  -env CP_DOCKER_STORAGE_TYPE="obj" \
  -env CP_DOCKER_STORAGE_CONTAINER="$REGISTRY_BUCKET_NAME" \
- -env CP_DEPLOYMENT_ID="cloud-pipeline-test-eks" \
+ -env CP_DEPLOYMENT_ID="xxxxxxxxxxxx-eks" \
  -env CP_CLOUD_REGION_ID="eu-west-1" \
- -env CP_KUBE_CLUSTER_NAME="cloud-pipeline-test-eks-eks-cluster" \
+ -env CP_KUBE_CLUSTER_NAME="xxxxxxxxxxxx-eks-cluster" \
  -env CP_KUBE_EXTERNAL_HOST="https://xxxxxxxxxxxx.sk1.eu-west-1.eks.amazonaws.com" \
  -env CP_KUBE_SERVICES_TYPE="ingress" \
  -env CP_EDGE_AWS_ELB_SCHEME="internet-facing" \
@@ -381,7 +378,7 @@ pipectl install \
  -env CP_EDGE_INTERNAL_HOST="edge.test-eks.aws.cloud-pipeline.com" \
  -env CP_EDGE_WEB_CLIENT_MAX_SIZE=0 \
  -s cp-clair \
- -env CP_CLAIR_DATABASE_HOST="cloud-pipeline-test-eks-rds.cb3gk1eg62cd.eu-west-1.rds.amazonaws.com" \
+ -env CP_CLAIR_DATABASE_HOST="xxxxxxxxxxxx-rds.xxxxxxxxxxxx.eu-west-1.rds.amazonaws.com" \
  -s cp-docker-comp \
  -env CP_DOCKER_COMP_WORKING_DIR="/cloud-pipeline/docker-comp/wd" \
  -s cp-search \
