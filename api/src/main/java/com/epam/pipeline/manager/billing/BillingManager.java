@@ -158,7 +158,7 @@ public class BillingManager {
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         verifyRequest(request);
-        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
+        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildBillingClient()) {
             final LocalDate from = request.getFrom();
             final LocalDate to = request.getTo();
             final BillingGrouping grouping = request.getGrouping();
@@ -199,7 +199,7 @@ public class BillingManager {
     }
 
     public Double getQuotaExpense(final Quota quota, final LocalDate from, final LocalDate to) {
-        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
+        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildBillingClient()) {
             final HashMap<String, List<String>> filters = buildQuotaFilters(quota);
             final SearchRequest searchRequest = new SearchRequest()
                     .indicesOptions(IndicesOptions.strictExpandOpen())
