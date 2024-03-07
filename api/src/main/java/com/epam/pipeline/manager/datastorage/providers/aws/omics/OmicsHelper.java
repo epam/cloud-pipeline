@@ -1,0 +1,146 @@
+/*
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.epam.pipeline.manager.datastorage.providers.aws.omics;
+
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
+import com.amazonaws.services.omics.AmazonOmics;
+import com.amazonaws.services.omics.AmazonOmicsClientBuilder;
+import com.amazonaws.services.omics.model.*;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
+import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
+import com.epam.pipeline.manager.cloud.aws.AWSUtils;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Objects;
+
+@RequiredArgsConstructor
+public class OmicsHelper {
+    private static final String ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "referenceId should not be empty";
+    private static final String REFERENCE_IS_NOT_FOUND_MESSAGE = "Reference is not found by referenceId '%s'";
+    private static final String SSE_CONFIG_TYPE = "KMS";
+
+    private final AwsRegion region;
+    private final String roleArn;
+    private final AwsRegionCredentials credentials;
+
+    public OmicsHelper(final AwsRegion region, final String roleArn) {
+        this(region, roleArn, null);
+    }
+
+    public OmicsHelper(final AwsRegion region, final AwsRegionCredentials credentials) {
+        this(region, null, credentials);
+    }
+
+    public CreateReferenceStoreResult registerOmicsRefStorage(final AWSOmicsReferenceDataStorage storage) {
+        final CreateReferenceStoreRequest createReferenceStoreRequest = new CreateReferenceStoreRequest()
+                .withName(storage.getName())
+                .withDescription(storage.getDescription());
+        if (region.getKmsKeyArn() != null) {
+            SseConfig sseConfig = new SseConfig();
+            sseConfig.setKeyArn(region.getKmsKeyArn());
+            sseConfig.setType(SSE_CONFIG_TYPE);
+            createReferenceStoreRequest.setSseConfig(sseConfig);
+        }
+        return omics().createReferenceStore(createReferenceStoreRequest);
+    }
+
+    public DeleteReferenceStoreResult deleteOmicsRefStorage(final AWSOmicsReferenceDataStorage storage) {
+        return omics()
+                .deleteReferenceStore(
+                        new DeleteReferenceStoreRequest().withId(storage.getCloudStorageId())
+                );
+    }
+
+    public CreateSequenceStoreResult registerOmicsSeqStorage(final AWSOmicsSequenceDataStorage storage) {
+        final CreateSequenceStoreRequest createReferenceStoreRequest = new CreateSequenceStoreRequest()
+                .withName(storage.getName())
+                .withDescription(storage.getDescription());
+        if (region.getKmsKeyArn() != null) {
+            SseConfig sseConfig = new SseConfig();
+            sseConfig.setKeyArn(region.getKmsKeyArn());
+            sseConfig.setType("KMS");
+            createReferenceStoreRequest.setSseConfig(sseConfig);
+        }
+        return omics().createSequenceStore(createReferenceStoreRequest);
+    }
+
+    public GetReferenceMetadataResult getOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage,
+                                                             final String referenceId) {
+        if (StringUtils.isBlank(referenceId)) {
+            throw new DataStorageException(ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+        }
+        try {
+            return omics().getReferenceMetadata(
+                    new GetReferenceMetadataRequest().withReferenceStoreId(dataStorage.getCloudStorageId())
+                            .withId(referenceId)
+            );
+        } catch (ResourceNotFoundException e) {
+            return null;
+        }
+    }
+
+    public void deleteOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
+        if (StringUtils.isBlank(referenceId)) {
+            throw new DataStorageException(ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+        }
+        if (doesReferenceExist(dataStorage, referenceId)) {
+            throw new DataStorageException(String.format(REFERENCE_IS_NOT_FOUND_MESSAGE, referenceId));
+        }
+        omics().deleteReference(
+                new DeleteReferenceRequest()
+                        .withReferenceStoreId(dataStorage.getCloudStorageId())
+                        .withId(referenceId)
+        );
+    }
+
+    public ListReferencesResult listItems(final AWSOmicsReferenceDataStorage dataStorage,
+                                          final Integer pageSize, final String marker) {
+        return omics().listReferences(
+                new ListReferencesRequest()
+                        .withReferenceStoreId(dataStorage.getCloudStorageId())
+                        .withMaxResults(pageSize)
+                        .withNextToken(marker)
+        );
+    }
+
+    private boolean doesReferenceExist(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
+        return getOmicsRefStorageFile(dataStorage, referenceId) == null;
+    }
+
+    private AmazonOmics omics() {
+        final AWSCredentialsProvider credentialsProvider;
+        if (StringUtils.isNotBlank(roleArn)) {
+            credentialsProvider = new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, AWSUtils.ROLE_SESSION_NAME)
+                    .withRoleSessionDurationSeconds(AWSUtils.MIN_SESSION_DURATION)
+                    .build();
+        } else if (Objects.nonNull(credentials)) {
+            credentialsProvider = new AWSStaticCredentialsProvider(
+                    new BasicAWSCredentials(credentials.getKeyId(), credentials.getAccessKey())
+            );
+        } else {
+            credentialsProvider = AWSUtils.getCredentialsProvider(region.getProfile());
+        }
+        return AmazonOmicsClientBuilder.standard().withCredentials(credentialsProvider).build();
+    }
+}

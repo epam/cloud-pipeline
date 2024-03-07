@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,37 +25,29 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 /**
  * An entity, that represents a Data Storage, backed by Amazon S3 bucket
  */
 @Getter
 @Setter
 @NoArgsConstructor
-public class S3bucketDataStorage extends AWSDataStorage {
-
-    /**
-     * A list of allowed CIDR strings, that define access control
-     */
-    private List<String> allowedCidrs;
+public class AWSOmicsSequenceDataStorage extends AWSDataStorage {
 
     private String tempCredentialsRole;
-    private String kmsKeyArn;
     private boolean useAssumedCredentials;
 
-    public S3bucketDataStorage(final Long id, final String name, final String path) {
+    public AWSOmicsSequenceDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
     }
 
-    public S3bucketDataStorage(final Long id, final String name, final String path,
-            final StoragePolicy policy, String mountPoint) {
-        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.S3, policy, mountPoint);
+    public AWSOmicsSequenceDataStorage(final Long id, final String name, final String path,
+                                       final StoragePolicy policy, String mountPoint) {
+        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.AWS_OMICS_SEQ, policy, mountPoint);
     }
 
-    public S3bucketDataStorage(final DataStorageVO vo) {
+    public AWSOmicsSequenceDataStorage(final DataStorageVO vo) {
         super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
-                DataStorageType.S3, vo.getStoragePolicy(), vo.getMountPoint());
+                DataStorageType.AWS_OMICS_SEQ, vo.getStoragePolicy(), vo.getMountPoint());
     }
 
     @Override
@@ -70,12 +62,12 @@ public class S3bucketDataStorage extends AWSDataStorage {
 
     @Override
     public String getPathMask() {
-        return  "s3://" + getPath();
+        return  "omics://" + getPath();
     }
 
     @Override
     public boolean isPolicySupported() {
-        return true;
+        return false;
     }
 
 }

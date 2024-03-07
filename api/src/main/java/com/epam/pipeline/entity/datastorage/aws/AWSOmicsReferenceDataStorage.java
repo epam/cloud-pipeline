@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -25,7 +24,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An entity, that represents a Data Storage, backed by Amazon S3 bucket
@@ -33,29 +33,30 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class S3bucketDataStorage extends AWSDataStorage {
+public class AWSOmicsReferenceDataStorage extends AWSDataStorage {
 
-    /**
-     * A list of allowed CIDR strings, that define access control
-     */
-    private List<String> allowedCidrs;
+    public static final String AWS_OMICS_REFERENCE_STORE_PATH_TEMPLATE = "omics://%s.storage.%s.amazonaws.com/%s";
+    public static final Pattern AWS_OMICS_REFERENCE_STORE_PATH_FORMAT =
+            Pattern.compile("omics://(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)");
+
+    public static final Pattern REFERENCE_STORE_ARN_FORMAT =
+            Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)");
 
     private String tempCredentialsRole;
-    private String kmsKeyArn;
     private boolean useAssumedCredentials;
 
-    public S3bucketDataStorage(final Long id, final String name, final String path) {
+    public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
     }
 
-    public S3bucketDataStorage(final Long id, final String name, final String path,
-            final StoragePolicy policy, String mountPoint) {
-        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.S3, policy, mountPoint);
+    public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path,
+                                        final StoragePolicy policy, String mountPoint) {
+        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.AWS_OMICS_REF, policy, mountPoint);
     }
 
-    public S3bucketDataStorage(final DataStorageVO vo) {
+    public AWSOmicsReferenceDataStorage(final DataStorageVO vo) {
         super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
-                DataStorageType.S3, vo.getStoragePolicy(), vo.getMountPoint());
+                DataStorageType.AWS_OMICS_REF, vo.getStoragePolicy(), vo.getMountPoint());
     }
 
     @Override
@@ -70,12 +71,20 @@ public class S3bucketDataStorage extends AWSDataStorage {
 
     @Override
     public String getPathMask() {
-        return  "s3://" + getPath();
+        return  "omics://" + getPath();
     }
 
     @Override
     public boolean isPolicySupported() {
-        return true;
+        return false;
     }
 
+    public String getCloudStorageId() {
+        final Matcher matcher = AWS_OMICS_REFERENCE_STORE_PATH_FORMAT.matcher(getPath());
+        if (matcher.find()) {
+            return matcher.group();
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
 }

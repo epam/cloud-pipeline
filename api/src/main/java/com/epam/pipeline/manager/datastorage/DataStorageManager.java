@@ -410,8 +410,14 @@ public class DataStorageManager implements SecuredEntityManager {
 
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
+        final DataStorageType dataStorageType =
+                Optional.ofNullable(dataStorageVO.getType()).orElse(
+                        DataStorageType.fromServiceType(
+                                storageRegion.getProvider(), dataStorageVO.getServiceType()
+                        )
+                );
         checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
-                                    dataStorageVO.getSourceStorageId() != null);
+                                    dataStorageVO.getSourceStorageId() != null, dataStorageType);
         verifyStoragePolicy(dataStorageVO.getStoragePolicy());
         validateMirroringParameters(dataStorageVO);
 
@@ -685,7 +691,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public boolean checkExistence(AbstractDataStorage dataStorage) {
         checkDatastorageDoesntExist(dataStorage.getName(), dataStorage.getPath(),
-                                    dataStorage.getSourceStorageId() != null);
+                                    dataStorage.getSourceStorageId() != null, dataStorage.getType());
         return storageProviderManager.checkStorage(dataStorage);
     }
 
@@ -1186,12 +1192,21 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorage;
     }
 
-    private void checkDatastorageDoesntExist(final String name, final String path, final boolean isMirror) {
+    private void checkDatastorageDoesntExist(final String name, final String path,
+                                             final boolean isMirror, final DataStorageType storageType) {
         final String usePath = StringUtils.isEmpty(path) ? name : path;
         final List<AbstractDataStorage> matchingStorage =
             dataStorageDao.loadDataStorageByNameOrPath(name, isMirror ? null : usePath, true);
         Assert.isTrue(CollectionUtils.isEmpty(matchingStorage),
                       messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST, name, path));
+        if (storageType.equals(DataStorageType.AWS_OMICS_REF)) {
+            final String nameOfExisting = dataStorageDao.loadDataStorageByType(storageType)
+                    .stream().findFirst().map(BaseEntity::getName).orElse(null);
+            Assert.isNull(
+                    nameOfExisting,
+                    messageHelper.getMessage(MessageConstants.AWS_OMICS_REFERENCE_STORE_ALREADY_EXISTS, nameOfExisting)
+            );
+        }
     }
 
     private void verifyStoragePolicy(StoragePolicy policy) {

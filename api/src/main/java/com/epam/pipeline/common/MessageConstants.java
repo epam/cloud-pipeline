@@ -866,6 +866,10 @@ public final class MessageConstants {
     public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
     public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
 
+    // AWS Omics
+    public static final String AWS_OMICS_REFERENCE_STORE_ALREADY_EXISTS =
+            "error.aws.omics.reference.store.already.exists";
+
 
     private MessageConstants() {
         // no-op
