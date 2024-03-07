@@ -330,7 +330,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadDataStorageByType(final DataStorageType dataStorageType) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(DataStorageParameters.DATASTORAGE_TYPE.name(), dataStorageType);
+        params.addValue(DataStorageParameters.DATASTORAGE_TYPE.name(), dataStorageType.getId());
         return getNamedParameterJdbcTemplate().query(loadDataStorageByTypeQuery,
                 params, DataStorageParameters.getRowMapper());
 
@@ -459,9 +459,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByRootIdsQuery = loadDataStoragesByRootIdsQuery;
     }
 
-    public void setLoadDataStorageBySericeType(final String loadDataStorageBySericeTypeQuery) {
+    public void setLoadDataStorageByTypeQuery(final String loadDataStorageBySericeTypeQuery) {
         this.loadDataStorageByTypeQuery = loadDataStorageBySericeTypeQuery;
-
     }
 
     public enum DataStorageParameters {

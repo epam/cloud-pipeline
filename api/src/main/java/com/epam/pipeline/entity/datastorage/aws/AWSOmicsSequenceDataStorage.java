@@ -17,13 +17,16 @@
 package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import net.minidev.json.annotate.JsonIgnore;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * An entity, that represents a Data Storage, backed by Amazon S3 bucket
@@ -33,31 +36,20 @@ import lombok.Setter;
 @NoArgsConstructor
 public class AWSOmicsSequenceDataStorage extends AWSDataStorage {
 
-    private String tempCredentialsRole;
-    private boolean useAssumedCredentials;
+    public static final Pattern AWS_OMICS_SEQUENCE_STORE_PATH_FORMAT =
+            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<sequenceStoreId>.*)/readSet/");
+
+    public static final Pattern SEQUENCE_STORE_ARN_FORMAT =
+            Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):sequenceStore/(?<sequenceStoreId>.*)");
+    public static final String SEQUENCE_STORE_ID_GROUP = "sequenceStoreId";
 
     public AWSOmicsSequenceDataStorage(final Long id, final String name, final String path) {
-        this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
+        super(id, name, path, DataStorageType.AWS_OMICS_SEQ, null, "");
     }
 
-    public AWSOmicsSequenceDataStorage(final Long id, final String name, final String path,
-                                       final StoragePolicy policy, String mountPoint) {
-        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.AWS_OMICS_SEQ, policy, mountPoint);
-    }
 
     public AWSOmicsSequenceDataStorage(final DataStorageVO vo) {
-        super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
-                DataStorageType.AWS_OMICS_SEQ, vo.getStoragePolicy(), vo.getMountPoint());
-    }
-
-    @Override
-    public String getMountOptions() {
-        return "";
-    }
-
-    @Override
-    public String getDelimiter() {
-        return ProviderUtils.DELIMITER;
+        super(vo.getId(), vo.getName(), null, DataStorageType.AWS_OMICS_SEQ, null, "");
     }
 
     @Override
@@ -68,6 +60,16 @@ public class AWSOmicsSequenceDataStorage extends AWSDataStorage {
     @Override
     public boolean isPolicySupported() {
         return false;
+    }
+
+    @JsonIgnore
+    public String getCloudStorageId() {
+        final Matcher matcher = AWS_OMICS_SEQUENCE_STORE_PATH_FORMAT.matcher(getPath());
+        if (matcher.find()) {
+            return matcher.group(SEQUENCE_STORE_ID_GROUP);
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
 }

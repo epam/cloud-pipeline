@@ -40,10 +40,6 @@ public class S3bucketDataStorage extends AWSDataStorage {
      */
     private List<String> allowedCidrs;
 
-    private String tempCredentialsRole;
-    private String kmsKeyArn;
-    private boolean useAssumedCredentials;
-
     public S3bucketDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
     }
@@ -56,16 +52,6 @@ public class S3bucketDataStorage extends AWSDataStorage {
     public S3bucketDataStorage(final DataStorageVO vo) {
         super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
                 DataStorageType.S3, vo.getStoragePolicy(), vo.getMountPoint());
-    }
-
-    @Override
-    public String getMountOptions() {
-        return "";
-    }
-
-    @Override
-    public String getDelimiter() {
-        return ProviderUtils.DELIMITER;
     }
 
     @Override

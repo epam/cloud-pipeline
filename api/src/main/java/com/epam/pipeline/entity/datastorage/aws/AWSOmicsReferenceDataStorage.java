@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -35,38 +36,19 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class AWSOmicsReferenceDataStorage extends AWSDataStorage {
 
-    public static final String AWS_OMICS_REFERENCE_STORE_PATH_TEMPLATE = "omics://%s.storage.%s.amazonaws.com/%s";
     public static final Pattern AWS_OMICS_REFERENCE_STORE_PATH_FORMAT =
-            Pattern.compile("omics://(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)");
+            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference/");
 
     public static final Pattern REFERENCE_STORE_ARN_FORMAT =
             Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)");
-
-    private String tempCredentialsRole;
-    private boolean useAssumedCredentials;
+    public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
     public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path) {
-        this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
-    }
-
-    public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path,
-                                        final StoragePolicy policy, String mountPoint) {
-        super(id, name, ProviderUtils.normalizeBucketName(path), DataStorageType.AWS_OMICS_REF, policy, mountPoint);
+        super(id, name, path, DataStorageType.AWS_OMICS_REF, null, "");
     }
 
     public AWSOmicsReferenceDataStorage(final DataStorageVO vo) {
-        super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
-                DataStorageType.AWS_OMICS_REF, vo.getStoragePolicy(), vo.getMountPoint());
-    }
-
-    @Override
-    public String getMountOptions() {
-        return "";
-    }
-
-    @Override
-    public String getDelimiter() {
-        return ProviderUtils.DELIMITER;
+        super(vo.getId(), vo.getName(), null, DataStorageType.AWS_OMICS_REF, null, "");
     }
 
     @Override
@@ -79,10 +61,11 @@ public class AWSOmicsReferenceDataStorage extends AWSDataStorage {
         return false;
     }
 
+    @JsonIgnore
     public String getCloudStorageId() {
         final Matcher matcher = AWS_OMICS_REFERENCE_STORE_PATH_FORMAT.matcher(getPath());
         if (matcher.find()) {
-            return matcher.group();
+            return matcher.group(REFERENCE_STORE_ID_GROUP);
         } else {
             throw new IllegalArgumentException();
         }

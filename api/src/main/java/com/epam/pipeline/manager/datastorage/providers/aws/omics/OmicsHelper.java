@@ -33,11 +33,14 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class OmicsHelper {
-    private static final String ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "referenceId should not be empty";
+    private static final String REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "referenceId should not be empty";
+    private static final String READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "readSetId should not be empty";
     private static final String REFERENCE_IS_NOT_FOUND_MESSAGE = "Reference is not found by referenceId '%s'";
+    private static final String READSET_IS_NOT_FOUND_MESSAGE = "ReadSet is not found by id '%s'";
     private static final String SSE_CONFIG_TYPE = "KMS";
 
     private final AwsRegion region;
@@ -76,19 +79,26 @@ public class OmicsHelper {
         final CreateSequenceStoreRequest createReferenceStoreRequest = new CreateSequenceStoreRequest()
                 .withName(storage.getName())
                 .withDescription(storage.getDescription());
-        if (region.getKmsKeyArn() != null) {
-            SseConfig sseConfig = new SseConfig();
-            sseConfig.setKeyArn(region.getKmsKeyArn());
-            sseConfig.setType("KMS");
-            createReferenceStoreRequest.setSseConfig(sseConfig);
+        final String keyArn = Optional.ofNullable(storage.getKmsKeyArn()).orElse(region.getKmsKeyArn());
+        if (keyArn != null) {
+            createReferenceStoreRequest.setSseConfig(
+                    new SseConfig().withKeyArn(keyArn).withType("KMS")
+            );
         }
         return omics().createSequenceStore(createReferenceStoreRequest);
+    }
+
+    public DeleteSequenceStoreResult deleteOmicsSeqStorage(final AWSOmicsSequenceDataStorage storage) {
+        return omics()
+                .deleteSequenceStore(
+                        new DeleteSequenceStoreRequest().withId(storage.getCloudStorageId())
+                );
     }
 
     public GetReferenceMetadataResult getOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage,
                                                              final String referenceId) {
         if (StringUtils.isBlank(referenceId)) {
-            throw new DataStorageException(ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+            throw new DataStorageException(REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
         try {
             return omics().getReferenceMetadata(
@@ -100,9 +110,24 @@ public class OmicsHelper {
         }
     }
 
+    public GetReadSetMetadataResult getOmicsSeqStorageFile(final AWSOmicsSequenceDataStorage dataStorage,
+                                                           final String readSetId) {
+        if (StringUtils.isBlank(readSetId)) {
+            throw new DataStorageException(READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+        }
+        try {
+            return omics().getReadSetMetadata(
+                    new GetReadSetMetadataRequest().withSequenceStoreId(dataStorage.getCloudStorageId())
+                            .withId(readSetId)
+            );
+        } catch (ResourceNotFoundException e) {
+            return null;
+        }
+    }
+
     public void deleteOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
         if (StringUtils.isBlank(referenceId)) {
-            throw new DataStorageException(ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+            throw new DataStorageException(REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
         if (doesReferenceExist(dataStorage, referenceId)) {
             throw new DataStorageException(String.format(REFERENCE_IS_NOT_FOUND_MESSAGE, referenceId));
@@ -114,8 +139,23 @@ public class OmicsHelper {
         );
     }
 
-    public ListReferencesResult listItems(final AWSOmicsReferenceDataStorage dataStorage,
-                                          final Integer pageSize, final String marker) {
+    public void deleteOmicsSeqStorageFile(final AWSOmicsSequenceDataStorage dataStorage,
+                                          final String sequenceId) {
+        if (StringUtils.isBlank(sequenceId)) {
+            throw new DataStorageException(READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+        }
+        if (doesReadSetExist(dataStorage, sequenceId)) {
+            throw new DataStorageException(String.format(READSET_IS_NOT_FOUND_MESSAGE, sequenceId));
+        }
+        omics().batchDeleteReadSet(
+                new BatchDeleteReadSetRequest()
+                        .withSequenceStoreId(dataStorage.getCloudStorageId())
+                        .withIds(sequenceId)
+        );
+    }
+
+    public ListReferencesResult listReferences(final AWSOmicsReferenceDataStorage dataStorage,
+                                               final Integer pageSize, final String marker) {
         return omics().listReferences(
                 new ListReferencesRequest()
                         .withReferenceStoreId(dataStorage.getCloudStorageId())
@@ -124,8 +164,22 @@ public class OmicsHelper {
         );
     }
 
+    public ListReadSetsResult listReadSets(final AWSOmicsSequenceDataStorage dataStorage,
+                                           final Integer pageSize, final String marker) {
+        return omics().listReadSets(
+                new ListReadSetsRequest()
+                        .withSequenceStoreId(dataStorage.getCloudStorageId())
+                        .withMaxResults(pageSize)
+                        .withNextToken(marker)
+        );
+    }
+
     private boolean doesReferenceExist(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
         return getOmicsRefStorageFile(dataStorage, referenceId) == null;
+    }
+
+    private boolean doesReadSetExist(final AWSOmicsSequenceDataStorage dataStorage, final String readSetId) {
+        return getOmicsSeqStorageFile(dataStorage, readSetId) == null;
     }
 
     private AmazonOmics omics() {
@@ -142,5 +196,11 @@ public class OmicsHelper {
             credentialsProvider = AWSUtils.getCredentialsProvider(region.getProfile());
         }
         return AmazonOmicsClientBuilder.standard().withCredentials(credentialsProvider).build();
+    }
+
+    public GetReadSetResult getReadSet(final AWSOmicsSequenceDataStorage dataStorage,
+                                       final String sequenceId) {
+        return omics().getReadSet(new GetReadSetRequest()
+                .withSequenceStoreId(dataStorage.getCloudStorageId()).withId(sequenceId));
     }
 }
