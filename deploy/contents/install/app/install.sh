@@ -207,7 +207,7 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
             exit 1
         fi
 
-        /etc/eks/bootstrap.sh "$CP_KUBE_CLUSTER_NAME"
+        /etc/eks/bootstrap.sh "$CP_KUBE_CLUSTER_NAME" --kubelet-extra-args "--node-labels=cloud-pipeline/cp-jump-server=true"
         if [ $? -ne 0 ]; then
             print_err "/etc/eks/bootstrap.sh failed to join node to the cluster."
             exit 1
@@ -227,6 +227,13 @@ if [ "$CP_JOIN_KUBE_CLUSTER" == "1" ]; then
         fi
     else
         print_warn "-> There is no realization for cluster joining procedure for '$CP_DEPLOYMENT_TYPE' deployment type"
+    fi
+    if [ -z "$CP_PREF_CLUSTER_PROXIES_DNS_POST" ]; then
+        export CP_PREF_CLUSTER_PROXIES_DNS_POST="$CP_KUBE_DNS_HOST"
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_PREF_CLUSTER_PROXIES_DNS_POST" \
+                        "$CP_PREF_CLUSTER_PROXIES_DNS_POST"
+        print_warn "DNS proxy is not defined, kube-dns $CP_PREF_CLUSTER_PROXIES_DNS_POST will be used for all nodes. If other behavior is expected -please specify it using \"--env CP_PREF_CLUSTER_PROXIES_DNS_POST=\" option"
     fi
 fi
 

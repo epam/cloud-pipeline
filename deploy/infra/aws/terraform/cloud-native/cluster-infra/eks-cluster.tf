@@ -58,6 +58,7 @@ module "eks" {
   cloudwatch_log_group_retention_in_days = var.eks_cloudwatch_logs_retention_in_days
   cloudwatch_log_group_kms_key_id        = module.kms_eks.key_arn
   tags                                   = local.tags
+
 }
 
 module "eks-aws-auth" {
@@ -156,6 +157,6 @@ resource "helm_release" "alb-controller" {
     value = "false"
   }
 
-  depends_on = [module.eks]
+  depends_on = [module.eks, module.internal_cluster_access_sg]
 }
 
