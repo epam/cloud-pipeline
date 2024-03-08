@@ -339,8 +339,9 @@ data "aws_iam_policy" "AmazonElasticFileSystemFullAccess" {
 }
 
 module "fsx_csi_irsa" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.30.0"
+  create_role = var.deploy_filesystem_type == "fsx" ? true : false
+  source      = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version     = "5.30.0"
 
   role_name                     = "${local.resource_name_prefix}-fsx_csi-ExecutionRole"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
@@ -362,8 +363,9 @@ module "fsx_csi_irsa" {
 }
 
 module "efs_csi_irsa" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "5.30.0"
+  create_role = var.deploy_filesystem_type == "efs" ? true : false
+  source      = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version     = "5.30.0"
 
   role_name                     = "${local.resource_name_prefix}-efs_csi-ExecutionRole"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn

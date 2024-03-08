@@ -51,6 +51,8 @@ locals {
     curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
     sudo install -o root -g root -m 0755 kubectl /usr/bin/kubectl
 
+    sudo yum install -y docker
+
   EOT
 }
 

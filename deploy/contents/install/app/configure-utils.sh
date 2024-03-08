@@ -890,6 +890,7 @@ function api_setup_base_preferences {
 
     ## Git
     api_set_preference "git.repository.indexing.enabled" "false" "false"
+    api_set_preference "git.gitlab.api.version" "${CP_GITLAB_API_VERSION:-"v3"}" "false"
     api_set_preference "git.fsbrowser.workdir" "${CP_FSBROWSER_VS_WD:-"/git-workdir"}" "true"
 
     ## Launch
