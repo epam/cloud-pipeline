@@ -21,8 +21,8 @@ To get started with deployment, please make sure that you satisfy requirements b
 
 ### Prerequisites
 
-| Name | Version |
-|------|---------|
+| Name                                                                      | Version |
+| ------------------------------------------------------------------------- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | = 1.5.0 |
 
 1. Manually create S3 Bucket to store remote state of the terraform deployment.
@@ -85,24 +85,24 @@ output "instance_role" {
 
 There is a list of variables that need to be passed:
 
-| Name | Description |
-|---|---|
-| `project_name` | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, iam roles etc.) |
-| `env` | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.) |
-| `vpc_id` | Id of the VCP to be used for deployment of the bastion instance. |
-| `subnet_id` | Id of the VCP subnet to be used to launch an instance |
-| `ami_id` | (Optional) AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used. |
-| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries |
+| Name                                | Description                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `project_name`                      | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, iam roles etc.)              |
+| `env`                               | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.) |
+| `vpc_id`                            | Id of the VCP to be used for deployment of the bastion instance.                                                                     |
+| `subnet_id`                         | Id of the VCP subnet to be used to launch an instance                                                                                |
+| `ami_id`                            | (Optional) AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used.                                           |
+| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries                                                                                          |
 
 ### Output of `jump-server` module
 
 Terraform module has the following outputs:
 
-| Name | Description |
-|---|---|
-| `jump_sever_id` | Id of created Jump Server instance. |
-| `output_message` | Login to Jump Server with command: aws ssm start-session --target ${module.ec2_instance.id} --region ${data.aws_region.current.name}. |
-| `jump_server_role` | ARN of bastion execution role that must be set in EKS deployment module |
+| Name               | Description                                                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `jump_sever_id`    | Id of created Jump Server instance.                                                                                                   |
+| `output_message`   | Login to Jump Server with command: aws ssm start-session --target ${module.ec2_instance.id} --region ${data.aws_region.current.name}. |
+| `jump_server_role` | ARN of bastion execution role that must be set in EKS deployment module                                                               |
 
 In the file Output.tf change the `jump-server` to your module name or leave as is if module name not changed.
 
@@ -254,20 +254,110 @@ output "ssh_key_name" {
   value = "CP_PREF_CLUSTER_SSH_KEY_NAME=${module.cluster-infra.cp_ssh_rsa_key_pair.key_pair_name}"
 }
 
+output "cp_deploy_script" {
+  value = <<-EOF
+ ./pipectl install \
+ -d "library/centos:7" \
+ -dt aws-native \
+ -jc \
+ -env CP_MAIN_SERVICE_ROLE="${module.cp-test-eks-infra.cluster_cp_main_execution_role}" \
+ -env CP_CSI_DRIVER_TYPE=efs \
+ -env CP_SYSTEM_FILESYSTEM_ID="${module.cp-test-eks-infra.cp_efs_filesystem_id}" \
+ -env CP_CSI_EXECUTION_ROLE="${module.cp-test-eks-infra.cp_efs_filesystem_exec_role}" \
+ -env CP_DOCKER_DIST_SRV="quay.io/" \
+ -env CP_AWS_KMS_ARN="${module.cp-test-eks-infra.cp_kms_arn}" \
+ -env CP_PREF_CLUSTER_SSH_KEY_NAME="${module.cp-test-eks-infra.cp_ssh_rsa_key_pair.key_pair_name}" \
+ -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="${module.cp-test-eks-infra.eks_cluster_primary_security_group_id}" \
+ -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="${module.cp-test-eks-infra.cp_s3_via_sts_role}" \
+ -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/cloud-pipeline-test-eks-key.pem" \
+ -env CP_DOCKER_STORAGE_TYPE="obj" \
+ -env CP_DOCKER_STORAGE_CONTAINER="${module.cp-test-eks-infra.cp_docker_bucket}" \
+ -env CP_DEPLOYMENT_ID="cloud-pipeline-test-eks" \
+ -env CP_CLOUD_REGION_ID="eu-west-1" \
+ -env CP_KUBE_CLUSTER_NAME="${module.cp-test-eks-infra.cluster_name}" \
+ -env CP_KUBE_EXTERNAL_HOST="${module.cp-test-eks-infra.cluster_endpoint}" \
+ -env CP_KUBE_SERVICES_TYPE="ingress" \
+ -env CP_EDGE_AWS_ELB_SCHEME="internet-facing" \
+ -env CP_EDGE_AWS_ELB_SUBNETS="<public-subnet-id>" \
+ -env CP_EDGE_AWS_ELB_EIPALLOCS="<user-ellastic-ip-id>" \
+ -env CP_EDGE_AWS_ELB_SG="${module.cp-test-eks-infra.https_access_security_group},${module.cp-test-eks-infra.eks_cluster_primary_security_group_id}" \
+ --external-host-dns \
+ -env PSG_HOST="${module.cp-test-eks-infra.rds_address}" \
+ -s cp-api-srv \
+ -env CP_API_SRV_EXTERNAL_PORT=443 \
+ -env CP_API_SRV_INTERNAL_PORT=443 \
+ -env CP_API_SRV_EXTERNAL_HOST="<user-domain-name>" \
+ -env CP_API_SRV_INTERNAL_HOST="<user-domain-name>" \
+ -env CP_API_SRV_IDP_CERT_PATH="/opt/idp/pki" \
+ -env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="<user-deployment-name>" \
+ -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME="${module.cp-test-eks-infra.cp_etc_bucket}" \
+ -env CP_API_SRV_SSO_BINDING="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" \
+ -env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER="true" \
+ -env CP_API_SRV_SAML_AUTO_USER_CREATE="EXPLICIT" \
+ -env CP_API_SRV_SAML_GROUPS_ATTRIBUTE_NAME="Group" \
+ -env CP_HA_DEPLOY_ENABLED="true" \
+-s cp-idp \
+ -env CP_IDP_EXTERNAL_HOST="auth.<user-domain-name>" \
+ -env CP_IDP_INTERNAL_HOST="auth.<user-domain-name>" \
+ -env CP_IDP_EXTERNAL_PORT=443 \
+ -env CP_IDP_INTERNAL_PORT=443 \
+ -s cp-docker-registry \
+ -env CP_DOCKER_EXTERNAL_PORT=443 \
+ -env CP_DOCKER_INTERNAL_PORT=443 \
+ -env CP_DOCKER_EXTERNAL_HOST="docker.<user-domain-name>" \
+ -env CP_DOCKER_INTERNAL_HOST="docker.<user-domain-name>" \
+ -env CP_DOCKER_STORAGE_ROOT_DIR="/docker-pub/" \
+ -s cp-edge \
+ -env CP_EDGE_EXTERNAL_PORT=443 \
+ -env CP_EDGE_INTERNAL_PORT=443 \
+ -env CP_EDGE_EXTERNAL_HOST="edge.<user-domain-name>" \
+ -env CP_EDGE_INTERNAL_HOST="edge.<user-domain-name>" \
+ -env CP_EDGE_WEB_CLIENT_MAX_SIZE=0 \
+ -s cp-clair \
+ -env CP_CLAIR_DATABASE_HOST="${module.cp-test-eks-infra.rds_address}" \
+ -s cp-docker-comp \
+ -env CP_DOCKER_COMP_WORKING_DIR="/cloud-pipeline/docker-comp/wd" \
+ -s cp-search \
+ -s cp-heapster \
+ -s cp-dav \
+ -env CP_DAV_AUTH_URL_PATH="webdav/auth-sso" \
+ -env CP_DAV_MOUNT_POINT="/dav-mount" \
+ -env CP_DAV_SERVE_DIR="/dav-serve" \
+ -env CP_DAV_URL_PATH="webdav" \
+ -s cp-gitlab-db \
+ -env GITLAB_DATABASE_VERSION="12.18" \
+ -s cp-git \
+ -env CP_GITLAB_VERSION=15 \
+ -env CP_GITLAB_SESSION_API_DISABLE="true" \
+ -env CP_GITLAB_API_VERSION=4 \
+ -env CP_GITLAB_EXTERNAL_PORT=443 \
+ -env CP_GITLAB_INTERNAL_PORT=443 \
+ -env CP_GITLAB_EXTERNAL_HOST="git.<user-domain-name>" \
+ -env CP_GITLAB_INTERNAL_HOST="git.<user-domain-name>" \
+ -env CP_GITLAB_EXTERNAL_URL="https://git.<user-domain-name>" \
+ -env CP_GITLAB_IDP_CERT_PATH="/opt/idp/pki" \
+ -s cp-git-sync \
+ -s cp-billing-srv \
+ -env CP_BILLING_DISABLE_GS="true" \
+ -env CP_BILLING_DISABLE_AZURE_BLOB="true" \
+ -env CP_BILLING_CENTER_KEY="billing-group"
+  EOF
+}
+
 ```
 
 To configure `cluster-infrastructure` deployment, there is a list of variables that need to be passed:
 
-| Name | Description |
-|---|---|
-| `project_name` | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.) |
-| `env` | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.) |
-| `vpc_id` | Id of the VCP to be used for deployment of the bastion instance. |
-| `subnet_ids` | Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. |
-| `deploy_filesystem_type` | (Optional) Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created. Default efs. |
-| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries |
-| `eks_system_node_group_subnet_ids` | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group. |
-| `eks_additional_role_mapping` | List of additional roles mapping for aws_auth map. |
+| Name                                | Description                                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `project_name`                      | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)              |
+| `env`                               | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.) |
+| `vpc_id`                            | Id of the VCP to be used for deployment of the bastion instance.                                                                     |
+| `subnet_ids`                        | Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc.                                              |
+| `deploy_filesystem_type`            | (Optional) Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created. Default efs.      |
+| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries                                                                                          |
+| `eks_system_node_group_subnet_ids`  | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group.                                                  |
+| `eks_additional_role_mapping`       | List of additional roles mapping for aws_auth map.                                                                                   |
 
 If deploy will use DataBase based on AWS RDS and need to create additional databases for Cloud-Pipeline services then provide additional value:
 
@@ -282,22 +372,22 @@ If deploy will not use Database based on AWS RDS then set to false `deploy_rds`,
 
 Terraform module cluster-infra has the following possible outputs:
 
-| Name | Description |
-|---|---|
-| `cluster_id` | The ID of the created EKS cluster. |
-| `cluster_name` | The name of the created EKS cluster. |
-| `cluster_arn` | The ARN of the created EKS cluster. |
-| `cluster_endpoint` | The endpoint of the created EKS cluster. |
-| `cluster_certificate_authority_data` | The Certificate Authority of the created EKS cluster |
-| `cluster_cp_system_node_execution_role` | The role of the cluster node for nodes from EKS cluster system node group. |
+| Name                                    | Description                                                                                          |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `cluster_id`                            | The ID of the created EKS cluster.                                                                   |
+| `cluster_name`                          | The name of the created EKS cluster.                                                                 |
+| `cluster_arn`                           | The ARN of the created EKS cluster.                                                                  |
+| `cluster_endpoint`                      | The endpoint of the created EKS cluster.                                                             |
+| `cluster_certificate_authority_data`    | The Certificate Authority of the created EKS cluster                                                 |
+| `cluster_cp_system_node_execution_role` | The role of the cluster node for nodes from EKS cluster system node group.                           |
 | `cluster_cp_worker_node_execution_role` | The role of the cluster node, for EKS cluster worker nodes which will be launched by Cloud-Pipeline. |
-| `cp_ssh_rsa_key_pair` | RSA key pair created during Cloud-Pipeline deployment |
-| `cp_etc_bucket` | Cloud-pipeline etc bucket name |
-| `cp_docker_bucket` | Cloud-pipeline docker registry bucket name |
-| `rds_root_pass_secret` | Id of the secretsmanager secret where password of the RDS root_user is stored |
-| `rds_address` | The address of the RDS instance |
-| `rds_root_username` | Username of the RDS default user |
-| `rds_port` | The port on which the RDS instance accepts connections |
+| `cp_ssh_rsa_key_pair`                   | RSA key pair created during Cloud-Pipeline deployment                                                |
+| `cp_etc_bucket`                         | Cloud-pipeline etc bucket name                                                                       |
+| `cp_docker_bucket`                      | Cloud-pipeline docker registry bucket name                                                           |
+| `rds_root_pass_secret`                  | Id of the secretsmanager secret where password of the RDS root_user is stored                        |
+| `rds_address`                           | The address of the RDS instance                                                                      |
+| `rds_root_username`                     | Username of the RDS default user                                                                     |
+| `rds_port`                              | The port on which the RDS instance accepts connections                                               |
 
 In the file Output.tf change the `cluster-infra` to your deployment module name or leave as is if module name not changed.
 
@@ -347,36 +437,35 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
  -s cp-api-srv \
  -env CP_API_SRV_EXTERNAL_PORT=443 \
  -env CP_API_SRV_INTERNAL_PORT=443 \
- -env CP_API_SRV_EXTERNAL_HOST="created-dns-name.aws.cloud-pipeline.com" \
- -env CP_API_SRV_INTERNAL_HOST="created-dns-name.aws.cloud-pipeline.com" \
+ -env CP_API_SRV_EXTERNAL_HOST="<user-domain-name>" \
+ -env CP_API_SRV_INTERNAL_HOST="<user-domain-name>" \
  -env CP_API_SRV_IDP_CERT_PATH="/opt/idp/pki" \
- -env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="Cloud-Pipeline" \
+ -env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="<user-deployment-name>" \
  -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME="$SYSTEM_BUCKET_NAME" \
  -env CP_API_SRV_SSO_BINDING="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" \
  -env CP_WIN_CODE_SIGN_CERT_PASS="123456" \
  -env CP_WIN_CODE_SIGN_CERT_DESC="CloudPipelineCLI" \
- -env CP_WIN_CODE_SIGN_CERT_URL="https://created-dns-name.aws.cloud-pipeline.com/pipeline/" \
+ -env CP_WIN_CODE_SIGN_CERT_URL="https://<user-domain-name>/pipeline/" \
  -env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER="true" \
  -env CP_API_SRV_SAML_AUTO_USER_CREATE="EXPLICIT" \
  -env CP_API_SRV_SAML_GROUPS_ATTRIBUTE_NAME="Group" \
  -env CP_HA_DEPLOY_ENABLED="true" \
 -s cp-idp \
- -env CP_IDP_EXTERNAL_HOST="auth.created-name.aws.cloud-pipeline.com" \
- -env CP_IDP_INTERNAL_HOST="auth.created-name.aws.cloud-pipeline.com" \
+ -env CP_IDP_EXTERNAL_HOST="auth.<user-domain-name>" \
+ -env CP_IDP_INTERNAL_HOST="auth.<user-domain-name>" \
  -env CP_IDP_EXTERNAL_PORT=443 \
  -env CP_IDP_INTERNAL_PORT=443 \
  -s cp-docker-registry \
  -env CP_DOCKER_EXTERNAL_PORT=443 \
  -env CP_DOCKER_INTERNAL_PORT=443 \
- -env CP_DOCKER_EXTERNAL_HOST="docker.created-name.aws.cloud-pipeline.com" \
- -env CP_DOCKER_INTERNAL_HOST="docker.created-name.aws.cloud-pipeline.com" \
+ -env CP_DOCKER_EXTERNAL_HOST="docker.<user-domain-name>" \
+ -env CP_DOCKER_INTERNAL_HOST="docker.<user-domain-name>" \
  -env CP_DOCKER_STORAGE_ROOT_DIR="/docker-pub/" \
  -s cp-edge \
- -env CP_EDGE_CLUSTER_RESOLVER="172.20.0.10" \
  -env CP_EDGE_EXTERNAL_PORT=443 \
  -env CP_EDGE_INTERNAL_PORT=443 \
- -env CP_EDGE_EXTERNAL_HOST="edge.created-name.aws.cloud-pipeline.com" \
- -env CP_EDGE_INTERNAL_HOST="edge.created-name.aws.cloud-pipeline.com" \
+ -env CP_EDGE_EXTERNAL_HOST="edge.<user-domain-name>" \
+ -env CP_EDGE_INTERNAL_HOST="edge.<user-domain-name>" \
  -env CP_EDGE_WEB_CLIENT_MAX_SIZE=0 \
  -s cp-clair \
  -env CP_CLAIR_DATABASE_HOST="xxxxxxxxxxxx-rds.xxxxxxxxxxxx.eu-west-1.rds.amazonaws.com" \
@@ -394,11 +483,12 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
  -s cp-git \
  -env CP_GITLAB_VERSION=15 \
  -env CP_GITLAB_SESSION_API_DISABLE="true" \
+ -env CP_GITLAB_API_VERSION=4 \
  -env CP_GITLAB_EXTERNAL_PORT=443 \
  -env CP_GITLAB_INTERNAL_PORT=443 \
- -env CP_GITLAB_EXTERNAL_HOST="git.created-name.aws.cloud-pipeline.com" \
- -env CP_GITLAB_INTERNAL_HOST="git.created-name.aws.cloud-pipeline.com" \
- -env CP_GITLAB_EXTERNAL_URL="https://git.created-name.aws.cloud-pipeline.com" \
+ -env CP_GITLAB_EXTERNAL_HOST="git.<user-domain-name>" \
+ -env CP_GITLAB_INTERNAL_HOST="git.<user-domain-name>" \
+ -env CP_GITLAB_EXTERNAL_URL="https://git.<user-domain-name>" \
  -env CP_GITLAB_IDP_CERT_PATH="/opt/idp/pki" \
  -s cp-git-sync \
  -s cp-billing-srv \
@@ -409,6 +499,8 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
 ````    
 
 Where:
+
+<user-domain-name> - domain name that user created using his Domain name provider.
 
 `CP_MAIN_SERVICE_ROLE` - EKS cluster main execution role 
 
