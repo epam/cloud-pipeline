@@ -18,13 +18,7 @@ package com.epam.pipeline.manager.datastorage.providers.aws.omics;
 
 import com.amazonaws.services.omics.model.*;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
-import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
@@ -33,10 +27,9 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +41,8 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class OmicsSequenceStorageProvider extends OmicsStorageProvider<AWSOmicsSequenceDataStorage> {
 
-    public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet/";
+    public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
+    public static final String FILE_TYPE = "fileType";
 
     public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
                                         final CloudRegionManager cloudRegionManager) {
@@ -92,26 +86,49 @@ public class OmicsSequenceStorageProvider extends OmicsStorageProvider<AWSOmicsS
     @Override
     public DataStorageListing getItems(final AWSOmicsSequenceDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker) {
-        if (StringUtils.isNotBlank(path)) {
-            log.warn("path field is not empty, but Omics Reference store doesn't support hierarchy.");
-        }
         if (BooleanUtils.isTrue(showVersion)) {
             log.warn("showVersion field is not empty, but Omics Reference store doesn't support versioning.");
         }
-        final ListReadSetsResult result = getOmicsHelper(dataStorage).listReadSets(dataStorage, pageSize, marker);
-        return new DataStorageListing(
-                result.getNextToken(),
-                Optional.ofNullable(result.getReadSets()).orElse(Collections.emptyList()).stream()
-                .map(readSet -> {
-                            final DataStorageFile file = new DataStorageFile();
-                            file.setPath(readSet.getId());
-                            file.setName(readSet.getName());
-                            file.setLabels(Collections.singletonMap(S3Helper.STORAGE_CLASS, readSet.getStatus()));
-                            file.setSize(readSet.getSequenceInformation().getTotalBaseCount());
-                            file.setChanged(S3Constants.getAwsDateFormat().format(readSet.getCreationTime()));
-                            return file;
-                        }).collect(Collectors.toList())
-        );
+        final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
+        if (StringUtils.isNotBlank(path)) {
+            if (!Pattern.compile("\\d+").matcher(path).find()) {
+                log.warn("Omics Sequence store supports only file id as a path.");
+            }
+            final GetReadSetMetadataResult seqStorageFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
+            final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
+
+            Arrays.asList(
+                    Pair.create(seqStorageFile.getFiles().getSource1(), "source1"),
+                    Pair.create(seqStorageFile.getFiles().getSource2(), "source2"),
+                    Pair.create(seqStorageFile.getFiles().getIndex(), "index")
+            ).forEach(fileInformation ->
+                    Optional.ofNullable(
+                            mapOmicsFileToDataStorageFile(
+                                    fileInformation.getKey(), path, fileInformation.getValue()
+                            )
+            ).ifPresent(file -> {
+                file.setChanged(S3Constants.getAwsDateFormat().format(seqStorageFile.getCreationTime()));
+                results.add(file);
+            }));
+
+            return new DataStorageListing(null, results);
+        } else {
+            final ListReadSetsResult result = omicsHelper.listReadSets(dataStorage, pageSize, marker);
+            return new DataStorageListing(
+                    result.getNextToken(),
+                    Optional.ofNullable(result.getReadSets()).orElse(Collections.emptyList()).stream()
+                            .map(readSet -> {
+                                final DataStorageFolder file = new DataStorageFolder();
+                                file.setPath(readSet.getId());
+                                file.setName(readSet.getName());
+                                file.setLabels(new HashMap<String, String>() {{
+                                    put(S3Helper.STORAGE_CLASS, readSet.getStatus());
+                                    put(FILE_TYPE, readSet.getFileType());
+                                }});
+                                return file;
+                            }).collect(Collectors.toList())
+            );
+        }
     }
 
     @Override
@@ -158,12 +175,4 @@ public class OmicsSequenceStorageProvider extends OmicsStorageProvider<AWSOmicsS
         pathDescription.setCompleted(true);
         return pathDescription;
     }
-
-    @Override
-    public DataStorageFile createFile(final AWSOmicsSequenceDataStorage dataStorage,
-                                      final String path, final byte[] contents) throws DataStorageException {
-        // TODO
-        return null;
-    }
-
 }

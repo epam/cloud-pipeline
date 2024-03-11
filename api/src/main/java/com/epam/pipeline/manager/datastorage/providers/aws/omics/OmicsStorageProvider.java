@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.omics;
 
 import com.amazonaws.services.omics.model.FileInformation;
+import com.amazonaws.services.omics.model.GetReadSetMetadataResult;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
@@ -8,11 +9,14 @@ import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionR
 import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.AWSDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
+import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.AllArgsConstructor;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.InputStream;
@@ -171,6 +175,12 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
         throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
     }
 
+    @Override
+    public DataStorageFile createFile(final T dataStorage, final String path,
+                                      final byte[] contents) throws DataStorageException {
+        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+    }
+
     protected OmicsHelper getOmicsHelper(AWSDataStorage dataStorage) {
         final AwsRegion region = getAwsRegion(dataStorage);
         if (dataStorage.isUseAssumedCredentials()) {
@@ -186,6 +196,18 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
 
     protected Long getSizeFromFileInformation(final FileInformation file) {
         return Optional.ofNullable(file).map(FileInformation::getContentLength).orElse(0L);
+    }
+
+    protected DataStorageFile mapOmicsFileToDataStorageFile(final FileInformation fileInformation,
+                                                            final String path, final String source) {
+        if (fileInformation != null) {
+            final DataStorageFile file = new DataStorageFile();
+            file.setPath(FilenameUtils.concat(path, source));
+            file.setName(source);
+            file.setSize(fileInformation.getContentLength());
+            return file;
+        }
+        return null;
     }
 
     private AwsRegion getAwsRegion(final AWSDataStorage dataStorage) {

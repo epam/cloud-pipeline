@@ -20,26 +20,21 @@ import com.amazonaws.services.omics.model.CreateReferenceStoreResult;
 import com.amazonaws.services.omics.model.GetReferenceMetadataResult;
 import com.amazonaws.services.omics.model.ListReferencesResult;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageListing;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
+import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
+import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -49,7 +44,7 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmicsReferenceDataStorage> {
 
-    public static final String REFERENCE_STORE_PATH_SUFFIX = "/reference/";
+    public static final String REFERENCE_STORE_PATH_SUFFIX = "/reference";
 
     public OmicsReferenceStorageProvider(final MessageHelper messageHelper,
                                          final CloudRegionManager cloudRegionManager) {
@@ -116,24 +111,48 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
     @Override
     public DataStorageListing getItems(final AWSOmicsReferenceDataStorage dataStorage, final String path,
                                        final Boolean showVersion, final Integer pageSize, final String marker) {
-        if (StringUtils.isNotBlank(path)) {
-            log.warn("path field is not empty, but Omics Reference store doesn't support hierarchy.");
-        }
         if (BooleanUtils.isTrue(showVersion)) {
             log.warn("showVersion field is not empty, but Omics Reference store doesn't support versioning.");
         }
-        final ListReferencesResult result = getOmicsHelper(dataStorage).listReferences(dataStorage, pageSize, marker);
-        return new DataStorageListing(
-            result.getNextToken(),
-            Optional.ofNullable(result.getReferences()).orElse(Collections.emptyList()).stream()
-                .map(refItem -> {
-                    final DataStorageFile file = new DataStorageFile();
-                    file.setPath(refItem.getId());
-                    file.setName(refItem.getName());
-                    file.setChanged(S3Constants.getAwsDateFormat().format(refItem.getUpdateTime()));
-                    return file;
-                }).collect(Collectors.toList())
-        );
+        final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
+        if (StringUtils.isNotBlank(path)) {
+            if (!Pattern.compile("\\d+").matcher(path).find()) {
+                log.warn("Omics Reference store supports only file id as a path.");
+            }
+            final GetReferenceMetadataResult seqFile = omicsHelper.getOmicsRefStorageFile(dataStorage, path);
+            final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
+
+            Arrays.asList(
+                    Pair.create(seqFile.getFiles().getSource(), "source"),
+                    Pair.create(seqFile.getFiles().getIndex(), "index")
+            ).forEach(fileInformation ->
+                    Optional.ofNullable(
+                            mapOmicsFileToDataStorageFile(
+                                    fileInformation.getKey(), path, fileInformation.getValue()
+                            )
+                    ).ifPresent(file -> {
+                        file.setChanged(S3Constants.getAwsDateFormat().format(seqFile.getCreationTime()));
+                        results.add(file);
+                    }));
+
+            return new DataStorageListing(null, results);
+        } else {
+            final ListReferencesResult result = getOmicsHelper(dataStorage)
+                    .listReferences(dataStorage, pageSize, marker);
+            return new DataStorageListing(
+                    result.getNextToken(),
+                    Optional.ofNullable(result.getReferences()).orElse(Collections.emptyList()).stream()
+                            .map(refItem -> {
+                                final DataStorageFolder file = new DataStorageFolder();
+                                file.setPath(refItem.getId());
+                                file.setName(refItem.getName());
+                                file.setLabels(new HashMap<String, String>() {{
+                                    put(S3Helper.STORAGE_CLASS, refItem.getStatus());
+                                }});
+                                return file;
+                            }).collect(Collectors.toList())
+            );
+        }
     }
 
     @Override
@@ -166,15 +185,8 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
         return pathDescription;
     }
 
-    @Override
-    public DataStorageFile createFile(final AWSOmicsReferenceDataStorage dataStorage,
-                                      final String path, final byte[] contents) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
-    }
-
     private long getReferenceSize(final GetReferenceMetadataResult referenceMetadata) {
         return getSizeFromFileInformation(referenceMetadata.getFiles().getIndex())
                 + getSizeFromFileInformation(referenceMetadata.getFiles().getSource());
     }
-
 }
