@@ -462,7 +462,6 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
  -env CP_DOCKER_INTERNAL_HOST="docker.<user-domain-name>" \
  -env CP_DOCKER_STORAGE_ROOT_DIR="/docker-pub/" \
  -s cp-edge \
- -env CP_EDGE_CLUSTER_RESOLVER="172.20.0.10" \
  -env CP_EDGE_EXTERNAL_PORT=443 \
  -env CP_EDGE_INTERNAL_PORT=443 \
  -env CP_EDGE_EXTERNAL_HOST="edge.<user-domain-name>" \
@@ -484,6 +483,7 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
  -s cp-git \
  -env CP_GITLAB_VERSION=15 \
  -env CP_GITLAB_SESSION_API_DISABLE="true" \
+ -env CP_GITLAB_API_VERSION=4 \
  -env CP_GITLAB_EXTERNAL_PORT=443 \
  -env CP_GITLAB_INTERNAL_PORT=443 \
  -env CP_GITLAB_EXTERNAL_HOST="git.<user-domain-name>" \
@@ -499,6 +499,8 @@ export KMS_ARN="arn:aws:kms:eu-west-1:xxxxxxxxxxxx:key/xxxxxxxx"
 ````    
 
 Where:
+
+<user-domain-name> - domain name that user created using his Domain name provider.
 
 `CP_MAIN_SERVICE_ROLE` - EKS cluster main execution role 
 
