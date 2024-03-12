@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AWSOmicsSequenceDataStorage extends AWSDataStorage {
+public class AWSOmicsSequenceDataStorage extends AWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_SEQUENCE_STORE_PATH_FORMAT =
             Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<sequenceStoreId>.*)/readSet/");
@@ -44,22 +44,12 @@ public class AWSOmicsSequenceDataStorage extends AWSDataStorage {
     public static final String SEQUENCE_STORE_ID_GROUP = "sequenceStoreId";
 
     public AWSOmicsSequenceDataStorage(final Long id, final String name, final String path) {
-        super(id, name, path, DataStorageType.AWS_OMICS_SEQ, null, "");
+        super(id, name, path, DataStorageType.AWS_OMICS_SEQ);
     }
 
 
     public AWSOmicsSequenceDataStorage(final DataStorageVO vo) {
-        super(vo.getId(), vo.getName(), null, DataStorageType.AWS_OMICS_SEQ, null, "");
-    }
-
-    @Override
-    public String getPathMask() {
-        return  "omics://" + getPath();
-    }
-
-    @Override
-    public boolean isPolicySupported() {
-        return false;
+        super(vo);
     }
 
     @JsonIgnore

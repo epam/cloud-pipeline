@@ -24,8 +24,11 @@ import com.amazonaws.services.omics.AmazonOmics;
 import com.amazonaws.services.omics.AmazonOmicsClientBuilder;
 import com.amazonaws.services.omics.model.*;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
@@ -34,6 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class OmicsHelper {
@@ -174,6 +178,96 @@ public class OmicsHelper {
         );
     }
 
+    public StartReadSetImportJobResult importSeqOmicsFile(final AWSOmicsDataStorage storage,
+                                                          final AWSOmicsFileImportJob importJob) {
+        return omics().startReadSetImportJob(
+                new StartReadSetImportJobRequest()
+                        .withSequenceStoreId(storage.getCloudStorageId())
+                        .withSources(importJob.getSources().stream().map(item ->
+                            new StartReadSetImportJobSourceItem()
+                                    .withName(item.getName())
+                                    .withDescription(item.getDescription())
+                                    .withGeneratedFrom(item.getGeneratedFrom())
+                                    .withReferenceArn(item.getReferenceArn())
+                                    .withSampleId(item.getSampleId())
+                                    .withSubjectId(item.getSubjectId())
+                                    .withSourceFileType(item.getSourceFileType().getId())
+                                    .withSourceFiles(
+                                            new SourceFiles()
+                                                    .withSource1(item.getSourceFiles().getSource1())
+                                                    .withSource2(item.getSourceFiles().getSource2())
+                                    )
+                        ).collect(Collectors.toList()))
+                        .withRoleArn(fetchAWSOmicsServiceRole(importJob))
+        );
+    }
+
+    public StartReferenceImportJobResult importRefOmicsFile(final AWSOmicsDataStorage storage,
+                                                            final AWSOmicsFileImportJob importJob) {
+        return omics().startReferenceImportJob(
+                new StartReferenceImportJobRequest()
+                        .withReferenceStoreId(storage.getCloudStorageId())
+                        .withSources(importJob.getSources().stream().map(item ->
+                                new StartReferenceImportJobSourceItem()
+                                        .withName(item.getName())
+                                        .withDescription(item.getDescription())
+                                        .withSourceFile(item.getSourceFiles().getSource1())
+                        ).collect(Collectors.toList()))
+                        .withRoleArn(fetchAWSOmicsServiceRole(importJob))
+        );
+    }
+
+    public ListReadSetImportJobsResult listSeqOmicsImportJobs(final AWSOmicsDataStorage storage,
+                                                              final String nextToken, final Integer maxResults,
+                                                              final AWSOmicsFileImportJobFilter filter) {
+        return omics().listReadSetImportJobs(
+                new ListReadSetImportJobsRequest()
+                        .withSequenceStoreId(storage.getCloudStorageId())
+                        .withMaxResults(maxResults)
+                        .withNextToken(nextToken)
+                        .withFilter(
+                                Optional.ofNullable(filter).map(awsOmicsFileImportJobFilter ->
+                                        new ImportReadSetFilter()
+                                                .withStatus(
+                                                        Optional.ofNullable(filter.getStatus())
+                                                                .map(Enum::name).orElse(null)
+                                                ).withCreatedAfter(filter.getCreatedAfter())
+                                                .withCreatedBefore(filter.getCreatedBefore())
+                                ).orElse(null)
+                        )
+        );
+    }
+
+    public ListReferenceImportJobsResult listRefOmicsImportJobs(final AWSOmicsDataStorage storage,
+                                                                final String nextToken, final Integer maxResults,
+                                                                final AWSOmicsFileImportJobFilter filter) {
+        return omics().listReferenceImportJobs(
+                new ListReferenceImportJobsRequest()
+                        .withReferenceStoreId(storage.getCloudStorageId())
+                        .withMaxResults(maxResults)
+                        .withNextToken(nextToken)
+                        .withFilter(
+                                Optional.ofNullable(filter).map(awsOmicsFileImportJobFilter ->
+                                    new ImportReferenceFilter().withStatus(
+                                                    Optional.ofNullable(filter.getStatus())
+                                                            .map(Enum::name).orElse(null)
+                                            ).withCreatedAfter(filter.getCreatedAfter())
+                                            .withCreatedBefore(filter.getCreatedBefore())
+                                ).orElse(null)
+                        )
+        );
+    }
+
+    private String fetchAWSOmicsServiceRole(AWSOmicsFileImportJob importJob) {
+        final String serviceRoleArn = Optional.ofNullable(importJob.getServiceRoleArn())
+                .orElse(region.getOmicsServiceRole());
+        if (serviceRoleArn == null) {
+            throw new DataStorageException("Omics Service role ARN is not provided. " +
+                    "Please, specify it in the region settings or provide with import job request.");
+        }
+        return serviceRoleArn;
+    }
+
     private boolean doesReferenceExist(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
         return getOmicsRefStorageFile(dataStorage, referenceId) == null;
     }
@@ -181,6 +275,7 @@ public class OmicsHelper {
     private boolean doesReadSetExist(final AWSOmicsSequenceDataStorage dataStorage, final String readSetId) {
         return getOmicsSeqStorageFile(dataStorage, readSetId) == null;
     }
+
 
     private AmazonOmics omics() {
         final AWSCredentialsProvider credentialsProvider;
@@ -196,11 +291,5 @@ public class OmicsHelper {
             credentialsProvider = AWSUtils.getCredentialsProvider(region.getProfile());
         }
         return AmazonOmicsClientBuilder.standard().withCredentials(credentialsProvider).build();
-    }
-
-    public GetReadSetResult getReadSet(final AWSOmicsSequenceDataStorage dataStorage,
-                                       final String sequenceId) {
-        return omics().getReadSet(new GetReadSetRequest()
-                .withSequenceStoreId(dataStorage.getCloudStorageId()).withId(sequenceId));
     }
 }
