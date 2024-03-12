@@ -44,6 +44,7 @@ public class AwsRegion extends AbstractCloudRegion implements VersioningAwareReg
     private String sshKeyName;
     //Not empty
     private String tempCredentialsRole;
+    private String omicsServiceRole;
     private Integer backupDuration;
     private boolean versioningEnabled;
     private String iamRole;
