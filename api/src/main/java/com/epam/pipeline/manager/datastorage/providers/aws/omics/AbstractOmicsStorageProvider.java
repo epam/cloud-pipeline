@@ -13,6 +13,7 @@ import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
@@ -50,6 +51,7 @@ public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage
 
     protected final MessageHelper messageHelper;
     protected final CloudRegionManager cloudRegionManager;
+    protected final AuthManager authManager;
 
     @Override
     public String buildFullStoragePath(final T dataStorage, final String name) {

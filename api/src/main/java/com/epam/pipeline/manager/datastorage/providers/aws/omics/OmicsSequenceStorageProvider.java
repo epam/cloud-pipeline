@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
@@ -59,8 +60,9 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
 
     public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
-                                        final CloudRegionManager cloudRegionManager) {
-        super(messageHelper, cloudRegionManager);
+                                        final CloudRegionManager cloudRegionManager,
+                                        final AuthManager authManager) {
+        super(messageHelper, cloudRegionManager, authManager);
     }
 
     @Override

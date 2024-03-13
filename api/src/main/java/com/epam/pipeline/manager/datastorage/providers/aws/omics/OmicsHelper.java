@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OmicsHelper {
     private static final Pattern AWS_OMICS_FILE_PATH_PATTERN =
-            Pattern.compile("((\\d+)/(source1|index|souce2))|(\\d+)");
+            Pattern.compile("^(((\\d+)/(source|source1|souce2|index))|(\\d+))$");
     private static final String PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "path should not be empty";
     private static final String PATH_SHOULD_BE_AS_MESSAGE =
             "path should be as: <fileId> or <fileId>/<source>";
@@ -279,7 +279,7 @@ public class OmicsHelper {
             if (!pathMatcher.find()) {
                 throw new DataStorageException(PATH_SHOULD_BE_AS_MESSAGE);
             }
-            omicsFileId = Optional.ofNullable(pathMatcher.group(2)).orElse(pathMatcher.group(4));
+            omicsFileId = Optional.ofNullable(pathMatcher.group(3)).orElse(pathMatcher.group(5));
         }
         return omicsFileId;
     }

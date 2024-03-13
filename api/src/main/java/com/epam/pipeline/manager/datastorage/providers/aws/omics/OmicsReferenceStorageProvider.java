@@ -26,10 +26,12 @@ import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.security.AuthManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,8 +56,9 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
     public static final String REFERENCE_STORE_PATH_SUFFIX = "/reference";
 
     public OmicsReferenceStorageProvider(final MessageHelper messageHelper,
-                                         final CloudRegionManager cloudRegionManager) {
-        super(messageHelper, cloudRegionManager);
+                                         final CloudRegionManager cloudRegionManager,
+                                         final AuthManager authManager) {
+        super(messageHelper, cloudRegionManager, authManager);
     }
 
     @Override
@@ -65,6 +68,8 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
 
     @Override
     public String createStorage(final AWSOmicsReferenceDataStorage storage) throws DataStorageException {
+        Assert.state(authManager.getCurrentUser().isAdmin(), messageHelper.getMessage(
+                MessageConstants.AWS_OMICS_REFERENCE_STORE_CREATION_ADMIN_ONLY, storage.getName()));
         final CreateReferenceStoreResult omicsRefStorage = getOmicsHelper(storage).registerOmicsRefStorage(storage);
         final Matcher arnMatcher = REFERENCE_STORE_ARN_FORMAT.matcher(omicsRefStorage.getArn());
         if (arnMatcher.find()) {
