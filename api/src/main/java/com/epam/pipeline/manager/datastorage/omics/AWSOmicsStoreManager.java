@@ -16,10 +16,7 @@
 
 package com.epam.pipeline.manager.datastorage.omics;
 
-import com.amazonaws.services.omics.model.ListReadSetImportJobsResult;
-import com.amazonaws.services.omics.model.ListReferenceImportJobsResult;
-import com.amazonaws.services.omics.model.StartReadSetImportJobResult;
-import com.amazonaws.services.omics.model.StartReferenceImportJobResult;
+import com.amazonaws.services.omics.model.*;
 import com.epam.pipeline.entity.datastorage.aws.AWSDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
@@ -33,6 +30,7 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -66,6 +64,12 @@ public class AWSOmicsStoreManager {
         } else {
             throw new IllegalArgumentException("Unsupported storage type: " + storage.getType());
         }
+    }
+
+    public AWSOmicsFilesActivationJob activateOmicsFiles(final AWSOmicsDataStorage storage,
+                                                           final AWSOmicsFilesActivationRequest request) {
+        Assert.notEmpty(request.getReadSetIds(), "Please, provide readSetIds to activate!");
+        return map(getOmicsHelper(storage, getAwsRegion(storage)).activateOmicsFiles(storage, request));
     }
 
     protected OmicsHelper getOmicsHelper(final AWSDataStorage dataStorage, final AwsRegion region) {
@@ -105,6 +109,15 @@ public class AWSOmicsStoreManager {
                 .serviceRoleArn(startReadSetImportJobResult.getRoleArn())
                 .status(AWSOmicsFileImportJobStatus.valueOf(startReadSetImportJobResult.getStatus()))
                 .creationTime(startReadSetImportJobResult.getCreationTime())
+                .build();
+    }
+
+    private AWSOmicsFilesActivationJob map(final StartReadSetActivationJobResult startReadSetActivationJobResult) {
+        return AWSOmicsFilesActivationJob.builder()
+                .id(startReadSetActivationJobResult.getId())
+                .storeId(startReadSetActivationJobResult.getSequenceStoreId())
+                .status(AWSOmicsFilesActicationJobStatus.valueOf(startReadSetActivationJobResult.getStatus()))
+                .creationTime(startReadSetActivationJobResult.getCreationTime())
                 .build();
     }
 

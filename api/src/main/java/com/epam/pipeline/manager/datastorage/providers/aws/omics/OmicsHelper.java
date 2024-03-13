@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
 import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationRequest;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
@@ -43,14 +44,16 @@ import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class OmicsHelper {
+    private static final Pattern AWS_OMICS_FILE_PATH_PATTERN =
+            Pattern.compile("((\\d+)/(source1|index|souce2))|(\\d+)");
     private static final String PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "path should not be empty";
     private static final String PATH_SHOULD_BE_AS_MESSAGE =
             "path should be as: <fileId> or <fileId>/<source>";
     private static final String REFERENCE_IS_NOT_FOUND_MESSAGE = "Reference is not found by referenceId '%s'";
     private static final String READSET_IS_NOT_FOUND_MESSAGE = "ReadSet is not found by id '%s'";
     private static final String SSE_CONFIG_TYPE = "KMS";
-    public static final Pattern AWS_OMICS_FILE_PATH_PATTERN =
-            Pattern.compile("((\\d+)/(source1|index|souce2))|(\\d+)");
+    private static final String OMICS_SERVICE_ROLE_ARN_NOT_FOUND = "Omics Service role ARN is not provided. " +
+            "Please, specify it in the region settings or provide with import job request.";
 
     private final AwsRegion region;
     private final String roleArn;
@@ -255,8 +258,20 @@ public class OmicsHelper {
         );
     }
 
+    public StartReadSetActivationJobResult activateOmicsFiles(final AWSOmicsDataStorage storage,
+                                                              final AWSOmicsFilesActivationRequest request) {
+        return omics().startReadSetActivationJob(
+                new StartReadSetActivationJobRequest()
+                        .withSequenceStoreId(storage.getCloudStorageId())
+                        .withSources(request.getReadSetIds().stream().map(item ->
+                                new StartReadSetActivationJobSourceItem()
+                                        .withReadSetId(parseFileId(item))
+                        ).collect(Collectors.toList()))
+        );
+    }
+
     private static String parseFileId(String path) {
-        final String readSetId;
+        final String omicsFileId;
         if (StringUtils.isBlank(path)) {
             throw new DataStorageException(PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
         } else {
@@ -264,17 +279,16 @@ public class OmicsHelper {
             if (!pathMatcher.find()) {
                 throw new DataStorageException(PATH_SHOULD_BE_AS_MESSAGE);
             }
-            readSetId = Optional.ofNullable(pathMatcher.group(2)).orElse(pathMatcher.group(4));
+            omicsFileId = Optional.ofNullable(pathMatcher.group(2)).orElse(pathMatcher.group(4));
         }
-        return readSetId;
+        return omicsFileId;
     }
 
     private String fetchAWSOmicsServiceRole(AWSOmicsFileImportJob importJob) {
         final String serviceRoleArn = Optional.ofNullable(importJob.getServiceRoleArn())
                 .orElse(region.getOmicsServiceRole());
         if (serviceRoleArn == null) {
-            throw new DataStorageException("Omics Service role ARN is not provided. " +
-                    "Please, specify it in the region settings or provide with import job request.");
+            throw new DataStorageException(OMICS_SERVICE_ROLE_ARN_NOT_FOUND);
         }
         return serviceRoleArn;
     }

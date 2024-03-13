@@ -19,9 +19,7 @@ package com.epam.pipeline.controller.datastorage.omics;
 import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
-import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
-import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobListing;
+import com.epam.pipeline.entity.datastorage.omics.*;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -68,5 +66,20 @@ public class AWSOmicsController extends AbstractRestController {
             @RequestParam(required = false) final Integer pageSize,
             @RequestBody(required = false) final AWSOmicsFileImportJobFilter filter) {
         return Result.success(awsOmicsStoreApiService.listImportJobs(id, nextToken, pageSize, filter));
+    }
+
+    @PostMapping("/{id}/activate")
+    @ResponseBody
+    @ApiOperation(
+            value = "Activate AWS Omics storage files.",
+            notes = "Activate AWS Omics storage files.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<AWSOmicsFilesActivationJob> activateOmicsFiles(
+            @PathVariable final Long id,
+            @RequestBody final AWSOmicsFilesActivationRequest request) {
+        return Result.success(awsOmicsStoreApiService.activateOmicsFiles(id, request));
     }
 }
