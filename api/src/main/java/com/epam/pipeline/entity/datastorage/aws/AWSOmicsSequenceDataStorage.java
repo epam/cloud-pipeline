@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 public class AWSOmicsSequenceDataStorage extends AWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_SEQUENCE_STORE_PATH_FORMAT =
-            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<sequenceStoreId>.*)/readSet/");
+            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<sequenceStoreId>.*)/readSet");
 
     public static final Pattern SEQUENCE_STORE_ARN_FORMAT =
             Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):sequenceStore/(?<sequenceStoreId>.*)");

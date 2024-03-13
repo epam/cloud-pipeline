@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 public class AWSOmicsReferenceDataStorage extends AWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_REFERENCE_STORE_PATH_FORMAT =
-            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference/");
+            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference");
 
     public static final Pattern REFERENCE_STORE_ARN_FORMAT =
             Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)");

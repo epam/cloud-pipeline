@@ -116,7 +116,7 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
 
     @Override
     public void deleteFolder(final T dataStorage, String path, final Boolean totally) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        deleteFile(dataStorage, path, null, totally);
     }
 
     @Override

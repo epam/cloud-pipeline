@@ -37,15 +37,20 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 public class OmicsHelper {
-    private static final String REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "referenceId should not be empty";
-    private static final String READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "readSetId should not be empty";
+    private static final String PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "path should not be empty";
+    private static final String PATH_SHOULD_BE_AS_MESSAGE =
+            "path should be as: <fileId> or <fileId>/<source>";
     private static final String REFERENCE_IS_NOT_FOUND_MESSAGE = "Reference is not found by referenceId '%s'";
     private static final String READSET_IS_NOT_FOUND_MESSAGE = "ReadSet is not found by id '%s'";
     private static final String SSE_CONFIG_TYPE = "KMS";
+    public static final Pattern AWS_OMICS_FILE_PATH_PATTERN =
+            Pattern.compile("((\\d+)/(source1|index|souce2))|(\\d+)");
 
     private final AwsRegion region;
     private final String roleArn;
@@ -100,10 +105,8 @@ public class OmicsHelper {
     }
 
     public GetReferenceMetadataResult getOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage,
-                                                             final String referenceId) {
-        if (StringUtils.isBlank(referenceId)) {
-            throw new DataStorageException(REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
-        }
+                                                             final String path) {
+        final String referenceId = parseFileId(path);
         try {
             return omics().getReferenceMetadata(
                     new GetReferenceMetadataRequest().withReferenceStoreId(dataStorage.getCloudStorageId())
@@ -115,10 +118,8 @@ public class OmicsHelper {
     }
 
     public GetReadSetMetadataResult getOmicsSeqStorageFile(final AWSOmicsSequenceDataStorage dataStorage,
-                                                           final String readSetId) {
-        if (StringUtils.isBlank(readSetId)) {
-            throw new DataStorageException(READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
-        }
+                                                           final String path) {
+        final String readSetId = parseFileId(path);
         try {
             return omics().getReadSetMetadata(
                     new GetReadSetMetadataRequest().withSequenceStoreId(dataStorage.getCloudStorageId())
@@ -129,32 +130,28 @@ public class OmicsHelper {
         }
     }
 
-    public void deleteOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage, final String referenceId) {
-        if (StringUtils.isBlank(referenceId)) {
-            throw new DataStorageException(REF_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
-        }
-        if (doesReferenceExist(dataStorage, referenceId)) {
-            throw new DataStorageException(String.format(REFERENCE_IS_NOT_FOUND_MESSAGE, referenceId));
+    public void deleteOmicsRefStorageFile(final AWSOmicsReferenceDataStorage dataStorage, final String path) {
+        final String refFileId = parseFileId(path);
+        if (doesReferenceExist(dataStorage, refFileId)) {
+            throw new DataStorageException(String.format(REFERENCE_IS_NOT_FOUND_MESSAGE, refFileId));
         }
         omics().deleteReference(
                 new DeleteReferenceRequest()
                         .withReferenceStoreId(dataStorage.getCloudStorageId())
-                        .withId(referenceId)
+                        .withId(refFileId)
         );
     }
 
     public void deleteOmicsSeqStorageFile(final AWSOmicsSequenceDataStorage dataStorage,
-                                          final String sequenceId) {
-        if (StringUtils.isBlank(sequenceId)) {
-            throw new DataStorageException(READSET_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
-        }
-        if (doesReadSetExist(dataStorage, sequenceId)) {
-            throw new DataStorageException(String.format(READSET_IS_NOT_FOUND_MESSAGE, sequenceId));
+                                          final String path) {
+        final String seqFileId = parseFileId(path);
+        if (doesReadSetExist(dataStorage, seqFileId)) {
+            throw new DataStorageException(String.format(READSET_IS_NOT_FOUND_MESSAGE, seqFileId));
         }
         omics().batchDeleteReadSet(
                 new BatchDeleteReadSetRequest()
                         .withSequenceStoreId(dataStorage.getCloudStorageId())
-                        .withIds(sequenceId)
+                        .withIds(seqFileId)
         );
     }
 
@@ -256,6 +253,20 @@ public class OmicsHelper {
                                 ).orElse(null)
                         )
         );
+    }
+
+    private static String parseFileId(String path) {
+        final String readSetId;
+        if (StringUtils.isBlank(path)) {
+            throw new DataStorageException(PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
+        } else {
+            final Matcher pathMatcher = AWS_OMICS_FILE_PATH_PATTERN.matcher(path);
+            if (!pathMatcher.find()) {
+                throw new DataStorageException(PATH_SHOULD_BE_AS_MESSAGE);
+            }
+            readSetId = Optional.ofNullable(pathMatcher.group(2)).orElse(pathMatcher.group(4));
+        }
+        return readSetId;
     }
 
     private String fetchAWSOmicsServiceRole(AWSOmicsFileImportJob importJob) {

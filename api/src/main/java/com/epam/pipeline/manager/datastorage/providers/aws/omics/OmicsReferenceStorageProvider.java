@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage.*;
+
 
 @Service
 @Slf4j
@@ -59,7 +61,7 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
     @Override
     public String createStorage(final AWSOmicsReferenceDataStorage storage) throws DataStorageException {
         final CreateReferenceStoreResult omicsRefStorage = getOmicsHelper(storage).registerOmicsRefStorage(storage);
-        final Matcher arnMatcher = AWSOmicsReferenceDataStorage.REFERENCE_STORE_ARN_FORMAT.matcher(omicsRefStorage.getArn());
+        final Matcher arnMatcher = REFERENCE_STORE_ARN_FORMAT.matcher(omicsRefStorage.getArn());
         if (arnMatcher.find()) {
             return String.format(AWS_OMICS_STORE_PATH_TEMPLATE,
                     arnMatcher.group("account"),
@@ -167,7 +169,8 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
                                        final PathDescription pathDescription) {
         if (path != null) {
             final DataStorageFile file = findFile(dataStorage, path, null)
-                    .orElseThrow(() -> new DataStorageException(String.format("Reference not found by path %s", path)));
+                    .orElseThrow(() -> new DataStorageException(
+                            String.format("Reference not found by path %s", path)));
             pathDescription.setSize(file.getSize());
         } else {
             listDataStorageFiles(dataStorage, null)
