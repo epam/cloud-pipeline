@@ -24,7 +24,7 @@ import com.amazonaws.services.omics.AmazonOmics;
 import com.amazonaws.services.omics.AmazonOmicsClientBuilder;
 import com.amazonaws.services.omics.model.*;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
@@ -178,7 +178,7 @@ public class OmicsHelper {
         );
     }
 
-    public StartReadSetImportJobResult importSeqOmicsFile(final AWSOmicsDataStorage storage,
+    public StartReadSetImportJobResult importSeqOmicsFile(final AbstractAWSOmicsDataStorage storage,
                                                           final AWSOmicsFileImportJob importJob) {
         return omics().startReadSetImportJob(
                 new StartReadSetImportJobRequest()
@@ -202,7 +202,7 @@ public class OmicsHelper {
         );
     }
 
-    public StartReferenceImportJobResult importRefOmicsFile(final AWSOmicsDataStorage storage,
+    public StartReferenceImportJobResult importRefOmicsFile(final AbstractAWSOmicsDataStorage storage,
                                                             final AWSOmicsFileImportJob importJob) {
         return omics().startReferenceImportJob(
                 new StartReferenceImportJobRequest()
@@ -217,7 +217,7 @@ public class OmicsHelper {
         );
     }
 
-    public ListReadSetImportJobsResult listSeqOmicsImportJobs(final AWSOmicsDataStorage storage,
+    public ListReadSetImportJobsResult listSeqOmicsImportJobs(final AbstractAWSOmicsDataStorage storage,
                                                               final String nextToken, final Integer maxResults,
                                                               final AWSOmicsFileImportJobFilter filter) {
         return omics().listReadSetImportJobs(
@@ -238,7 +238,7 @@ public class OmicsHelper {
         );
     }
 
-    public ListReferenceImportJobsResult listRefOmicsImportJobs(final AWSOmicsDataStorage storage,
+    public ListReferenceImportJobsResult listRefOmicsImportJobs(final AbstractAWSOmicsDataStorage storage,
                                                                 final String nextToken, final Integer maxResults,
                                                                 final AWSOmicsFileImportJobFilter filter) {
         return omics().listReferenceImportJobs(
@@ -258,7 +258,7 @@ public class OmicsHelper {
         );
     }
 
-    public StartReadSetActivationJobResult activateOmicsFiles(final AWSOmicsDataStorage storage,
+    public StartReadSetActivationJobResult activateOmicsFiles(final AbstractAWSOmicsDataStorage storage,
                                                               final AWSOmicsFilesActivationRequest request) {
         return omics().startReadSetActivationJob(
                 new StartReadSetActivationJobRequest()
@@ -305,9 +305,10 @@ public class OmicsHelper {
     private AmazonOmics omics() {
         final AWSCredentialsProvider credentialsProvider;
         if (StringUtils.isNotBlank(roleArn)) {
-            credentialsProvider = new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, AWSUtils.ROLE_SESSION_NAME)
-                    .withRoleSessionDurationSeconds(AWSUtils.MIN_SESSION_DURATION)
-                    .build();
+            credentialsProvider = new STSAssumeRoleSessionCredentialsProvider.Builder(
+                    roleArn, AWSUtils.ROLE_SESSION_NAME
+            ).withRoleSessionDurationSeconds(AWSUtils.MIN_SESSION_DURATION)
+            .build();
         } else if (Objects.nonNull(credentials)) {
             credentialsProvider = new AWSStaticCredentialsProvider(
                     new BasicAWSCredentials(credentials.getKeyId(), credentials.getAccessKey())

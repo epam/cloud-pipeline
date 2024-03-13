@@ -28,13 +28,13 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public abstract class AWSOmicsDataStorage extends AWSDataStorage {
+public abstract class AbstractAWSOmicsDataStorage extends AbstractAWSDataStorage {
 
-    public AWSOmicsDataStorage(final Long id, final String name, final String path, DataStorageType type) {
+    public AbstractAWSOmicsDataStorage(final Long id, final String name, final String path, DataStorageType type) {
         super(id, name, path, type, null, "");
     }
 
-    public AWSOmicsDataStorage(final DataStorageVO vo) {
+    public AbstractAWSOmicsDataStorage(final DataStorageVO vo) {
         this(vo.getId(), vo.getName(), null, vo.getType());
     }
 

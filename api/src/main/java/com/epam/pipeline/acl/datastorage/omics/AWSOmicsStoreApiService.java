@@ -19,7 +19,7 @@ package com.epam.pipeline.acl.datastorage.omics;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.omics.*;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
@@ -54,7 +54,7 @@ public class AWSOmicsStoreApiService {
         return omicsStoreManager.activateOmicsFiles(fetchDataStorage(storageId), request);
     }
 
-    private AWSOmicsDataStorage fetchDataStorage(final Long storageId) {
+    private AbstractAWSOmicsDataStorage fetchDataStorage(final Long storageId) {
         final AbstractDataStorage dataStorage = dataStorageManager.load(storageId);
         Assert.isTrue(
                 DataStorageType.AWS_OMICS_REF.equals(dataStorage.getType()) ||
@@ -62,6 +62,6 @@ public class AWSOmicsStoreApiService {
                 "DataStorage should be of type [" + DataStorageType.AWS_OMICS_SEQ + ", "
                         + DataStorageType.AWS_OMICS_REF + "] to import AWS Omics files."
         );
-        return (AWSOmicsDataStorage) dataStorage;
+        return (AbstractAWSOmicsDataStorage) dataStorage;
     }
 }

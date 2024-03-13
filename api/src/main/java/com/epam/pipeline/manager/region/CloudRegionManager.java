@@ -21,7 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.region.AbstractCloudRegionDTO;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
-import com.epam.pipeline.entity.datastorage.aws.AWSDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.info.CloudRegionInfo;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
@@ -280,7 +280,7 @@ public class CloudRegionManager implements SecuredEntityManager {
         return CloudProvider.valueOf(preferenceManager.getPreference(SystemPreferences.CLOUD_DEFAULT_PROVIDER));
     }
 
-    public AwsRegion getAwsRegion(final AWSDataStorage dataStorage) {
+    public AwsRegion getAwsRegion(final AbstractAWSDataStorage dataStorage) {
         return (AwsRegion) getCloudRegion(CloudProvider.AWS, dataStorage.getRegionId());
     }
 

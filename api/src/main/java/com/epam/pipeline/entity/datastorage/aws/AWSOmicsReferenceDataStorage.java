@@ -18,8 +18,6 @@ package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,13 +32,17 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AWSOmicsReferenceDataStorage extends AWSOmicsDataStorage {
+public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_REFERENCE_STORE_PATH_FORMAT =
-            Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference");
+            Pattern.compile(
+                    "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference"
+            );
 
     public static final Pattern REFERENCE_STORE_ARN_FORMAT =
-            Pattern.compile("arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)");
+            Pattern.compile(
+                    "arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)"
+            );
     public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
     public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path) {

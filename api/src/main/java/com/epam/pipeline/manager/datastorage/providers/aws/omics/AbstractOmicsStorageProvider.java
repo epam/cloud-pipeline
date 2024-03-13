@@ -1,19 +1,15 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.omics;
 
 import com.amazonaws.services.omics.model.FileInformation;
-import com.amazonaws.services.omics.model.GetReadSetMetadataResult;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.*;
-import com.epam.pipeline.entity.datastorage.aws.AWSDataStorage;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
-import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.AllArgsConstructor;
 import org.apache.commons.io.FilenameUtils;
@@ -27,10 +23,14 @@ import java.util.Optional;
 import java.util.Set;
 
 @AllArgsConstructor
-public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implements StorageProvider<T> {
+public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage> implements StorageProvider<T> {
 
     public static final String AWS_OMICS_STORE_PATH_TEMPLATE = "%s.storage.%s.amazonaws.com/%s";
     public static final String EMPTY_MO = "";
+    public static final String RESTORE_ISNT_SUPPORTED_FOR_THIS_PROVIDER_MESSAGE =
+            "Restore mechanism isn't supported for this provider.";
+    public static final String MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER =
+            "Mechanism isn't supported for this provider.";
 
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
@@ -63,55 +63,55 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
 
     @Override
     public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
-        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(RESTORE_ISNT_SUPPORTED_FOR_THIS_PROVIDER_MESSAGE);
     }
 
     @Override
     public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
-        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(RESTORE_ISNT_SUPPORTED_FOR_THIS_PROVIDER_MESSAGE);
     }
 
     @Override
     public void verifyRestoreActionSupported() {
-        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(RESTORE_ISNT_SUPPORTED_FOR_THIS_PROVIDER_MESSAGE);
     }
 
     @Override
     public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest restoreMode) {
-        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(RESTORE_ISNT_SUPPORTED_FOR_THIS_PROVIDER_MESSAGE);
     }
 
     @Override
     public void applyStoragePolicy(final T dataStorage) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public void restoreFileVersion(final T dataStorage, final String path,
                                    final String version) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDownloadURL(final T dataStorage, final String path, final String version,
                                                           final ContentDisposition contentDisposition) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final T dataStorage, final String path) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateUrl(final T dataStorage, final String path,
                                                   final List<String> permissions, final Duration duration) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFolder createFolder(final T dataStorage, final String path) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
@@ -122,66 +122,66 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
     @Override
     public DataStorageFile moveFile(final T dataStorage, final String oldPath,
                                     final String newPath) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFolder moveFolder(final T dataStorage, final String oldPath,
                                         final String newPath) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFile copyFile(final T dataStorage, final String oldPath, final String newPath) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFolder copyFolder(final T dataStorage, final String oldPath, final String newPath) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public Map<String, String> updateObjectTags(final T dataStorage, final String path,
                                                 final Map<String, String> tags, final String version) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public Map<String, String> listObjectTags(final T dataStorage, final String path, final String version) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public Map<String, String> deleteObjectTags(final T dataStorage, final String path,
                                                 final Set<String> tagsToDelete, final String version) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageStreamingContent getStream(final T dataStorage, final String path, final String version) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageItemContent getFile(final T dataStorage, final String path, final String version,
                                           final Long maxDownloadSize) {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFile createFile(final T dataStorage, final String path,
                                       final InputStream dataStream) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
     @Override
     public DataStorageFile createFile(final T dataStorage, final String path,
                                       final byte[] contents) throws DataStorageException {
-        throw new UnsupportedOperationException("Mechanism isn't supported for this provider.");
+        throw new UnsupportedOperationException(MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER);
     }
 
-    protected OmicsHelper getOmicsHelper(AWSDataStorage dataStorage) {
+    protected OmicsHelper getOmicsHelper(AbstractAWSDataStorage dataStorage) {
         final AwsRegion region = getAwsRegion(dataStorage);
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
@@ -210,7 +210,7 @@ public abstract class OmicsStorageProvider<T extends AbstractDataStorage> implem
         return null;
     }
 
-    private AwsRegion getAwsRegion(final AWSDataStorage dataStorage) {
+    private AwsRegion getAwsRegion(final AbstractAWSDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
     }
 

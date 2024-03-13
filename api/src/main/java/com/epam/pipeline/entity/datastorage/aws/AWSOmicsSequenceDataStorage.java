@@ -18,8 +18,6 @@ package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -34,7 +32,7 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @NoArgsConstructor
-public class AWSOmicsSequenceDataStorage extends AWSOmicsDataStorage {
+public class AWSOmicsSequenceDataStorage extends AbstractAWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_SEQUENCE_STORE_PATH_FORMAT =
             Pattern.compile("(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<sequenceStoreId>.*)/readSet");

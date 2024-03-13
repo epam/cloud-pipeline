@@ -17,7 +17,6 @@
 package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -33,7 +32,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class S3bucketDataStorage extends AWSDataStorage {
+public class S3bucketDataStorage extends AbstractAWSDataStorage {
 
     /**
      * A list of allowed CIDR strings, that define access control

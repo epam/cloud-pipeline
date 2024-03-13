@@ -41,7 +41,7 @@ import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStora
 
 @Service
 @Slf4j
-public class OmicsSequenceStorageProvider extends OmicsStorageProvider<AWSOmicsSequenceDataStorage> {
+public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<AWSOmicsSequenceDataStorage> {
 
     public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
     public static final String FILE_TYPE = "fileType";
@@ -123,10 +123,12 @@ public class OmicsSequenceStorageProvider extends OmicsStorageProvider<AWSOmicsS
                                 final DataStorageFolder file = new DataStorageFolder();
                                 file.setPath(readSet.getId());
                                 file.setName(readSet.getName());
-                                file.setLabels(new HashMap<String, String>() {{
-                                    put(S3Helper.STORAGE_CLASS, readSet.getStatus());
-                                    put(FILE_TYPE, readSet.getFileType());
-                                }});
+                                file.setLabels(new HashMap<String, String>() {
+                                    {
+                                        put(S3Helper.STORAGE_CLASS, readSet.getStatus());
+                                        put(FILE_TYPE, readSet.getFileType());
+                                    }
+                                });
                                 return file;
                             }).collect(Collectors.toList())
             );

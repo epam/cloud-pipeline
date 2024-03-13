@@ -25,7 +25,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public abstract class AWSDataStorage extends AbstractDataStorage {
+public abstract class AbstractAWSDataStorage extends AbstractDataStorage {
     /**
      * Id of AWS region in which bucket is created.
      * If null bucket is assumed to be created in default regions (for backward compatibility only).
@@ -35,11 +35,11 @@ public abstract class AWSDataStorage extends AbstractDataStorage {
     private boolean useAssumedCredentials;
     private String kmsKeyArn;
 
-    public AWSDataStorage() {
+    public AbstractAWSDataStorage() {
     }
 
-    public AWSDataStorage(final Long id, String name, String path,
-                          DataStorageType dataStorageType, StoragePolicy policy, String mountPoint) {
+    public AbstractAWSDataStorage(final Long id, String name, String path,
+                                  DataStorageType dataStorageType, StoragePolicy policy, String mountPoint) {
         super(id, name, path, dataStorageType, policy, mountPoint);
     }
 

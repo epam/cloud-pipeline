@@ -44,7 +44,7 @@ import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStor
 
 @Service
 @Slf4j
-public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmicsReferenceDataStorage> {
+public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<AWSOmicsReferenceDataStorage> {
 
     public static final String REFERENCE_STORE_PATH_SUFFIX = "/reference";
 
@@ -148,9 +148,11 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
                                 final DataStorageFolder file = new DataStorageFolder();
                                 file.setPath(refItem.getId());
                                 file.setName(refItem.getName());
-                                file.setLabels(new HashMap<String, String>() {{
-                                    put(S3Helper.STORAGE_CLASS, refItem.getStatus());
-                                }});
+                                file.setLabels(new HashMap<String, String>() {
+                                    {
+                                        put(S3Helper.STORAGE_CLASS, refItem.getStatus());
+                                    }
+                                });
                                 return file;
                             }).collect(Collectors.toList())
             );
@@ -176,11 +178,11 @@ public class OmicsReferenceStorageProvider extends OmicsStorageProvider<AWSOmics
             listDataStorageFiles(dataStorage, null)
                     .forEach(file -> {
                         final DataStorageFile fileInfo = findFile(dataStorage, file.getPath(), null)
-                                .orElseThrow(
-                                        () -> new DataStorageException(
-                                                String.format("Reference not found by path %s", file.getPath())
-                                        )
-                                );
+                            .orElseThrow(
+                                () -> new DataStorageException(
+                                        String.format("Reference not found by path %s", file.getPath())
+                                )
+                            );
                         pathDescription.increaseSize(fileInfo.getSize());
                     });
         }

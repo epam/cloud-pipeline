@@ -17,8 +17,8 @@
 package com.epam.pipeline.manager.datastorage.omics;
 
 import com.amazonaws.services.omics.model.*;
-import com.epam.pipeline.entity.datastorage.aws.AWSDataStorage;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.omics.*;
@@ -41,7 +41,7 @@ public class AWSOmicsStoreManager {
 
     private final CloudRegionManager cloudRegionManager;
 
-    public AWSOmicsFileImportJob importOmicsFiles(final AWSOmicsDataStorage storage,
+    public AWSOmicsFileImportJob importOmicsFiles(final AbstractAWSOmicsDataStorage storage,
                                                   final AWSOmicsFileImportJob importJob) {
         final AwsRegion region = getAwsRegion(storage);
         if (storage instanceof AWSOmicsSequenceDataStorage) {
@@ -53,7 +53,8 @@ public class AWSOmicsStoreManager {
         }
     }
 
-    public AWSOmicsFileImportJobListing listImportJobs(final AWSOmicsDataStorage storage, final String nextToken,
+    public AWSOmicsFileImportJobListing listImportJobs(final AbstractAWSOmicsDataStorage storage,
+                                                       final String nextToken,
                                                        final Integer maxResults,
                                                        final AWSOmicsFileImportJobFilter filter) {
         final AwsRegion region = getAwsRegion(storage);
@@ -66,13 +67,13 @@ public class AWSOmicsStoreManager {
         }
     }
 
-    public AWSOmicsFilesActivationJob activateOmicsFiles(final AWSOmicsDataStorage storage,
+    public AWSOmicsFilesActivationJob activateOmicsFiles(final AbstractAWSOmicsDataStorage storage,
                                                            final AWSOmicsFilesActivationRequest request) {
         Assert.notEmpty(request.getReadSetIds(), "Please, provide readSetIds to activate!");
         return map(getOmicsHelper(storage, getAwsRegion(storage)).activateOmicsFiles(storage, request));
     }
 
-    protected OmicsHelper getOmicsHelper(final AWSDataStorage dataStorage, final AwsRegion region) {
+    protected OmicsHelper getOmicsHelper(final AbstractAWSDataStorage dataStorage, final AwsRegion region) {
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
                     .orElse(region.getTempCredentialsRole());
@@ -84,7 +85,7 @@ public class AWSOmicsStoreManager {
         return new OmicsHelper(region, getAwsCredentials(region));
     }
 
-    private AwsRegion getAwsRegion(final AWSDataStorage dataStorage) {
+    private AwsRegion getAwsRegion(final AbstractAWSDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
     }
 
