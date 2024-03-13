@@ -16,23 +16,36 @@
 
 package com.epam.pipeline.manager.datastorage.providers.aws.omics;
 
-import com.amazonaws.services.omics.model.*;
+import com.amazonaws.services.omics.model.CreateSequenceStoreResult;
+import com.amazonaws.services.omics.model.GetReadSetMetadataResult;
+import com.amazonaws.services.omics.model.ListReadSetsResult;
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageFolder;
+import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
-import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -44,7 +57,6 @@ import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStora
 public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<AWSOmicsSequenceDataStorage> {
 
     public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
-    public static final String FILE_TYPE = "fileType";
 
     public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
                                         final CloudRegionManager cloudRegionManager) {
@@ -62,9 +74,9 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         final Matcher arnMatcher = SEQUENCE_STORE_ARN_FORMAT.matcher(omicsRefStorage.getArn());
         if (arnMatcher.find()) {
             return String.format(AWS_OMICS_STORE_PATH_TEMPLATE,
-                    arnMatcher.group("account"),
-                    arnMatcher.group("region"),
-                    arnMatcher.group("sequenceStoreId")
+                    arnMatcher.group(ACCOUNT),
+                    arnMatcher.group(REGION),
+                    arnMatcher.group(SEQUENCE_STORE_ID)
             ) + READ_SET_STORE_PATH_SUFFIX;
         } else {
             throw new IllegalArgumentException();
@@ -86,60 +98,49 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     }
 
     @Override
-    public DataStorageListing getItems(final AWSOmicsSequenceDataStorage dataStorage, final String path,
-                                       final Boolean showVersion, final Integer pageSize, final String marker) {
-        if (BooleanUtils.isTrue(showVersion)) {
-            log.warn("showVersion field is not empty, but Omics Reference store doesn't support versioning.");
-        }
+    DataStorageListing listOmicsFileSources(final AWSOmicsSequenceDataStorage dataStorage,
+                                                      final String path) {
         final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
-        if (StringUtils.isNotBlank(path)) {
-            if (!Pattern.compile("\\d+").matcher(path).find()) {
-                log.warn("Omics Sequence store supports only file id as a path.");
-            }
-            final GetReadSetMetadataResult seqStorageFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
-            final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
+        final GetReadSetMetadataResult seqStorageFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
+        final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
 
-            Arrays.asList(
-                    Pair.create(seqStorageFile.getFiles().getSource1(), "source1"),
-                    Pair.create(seqStorageFile.getFiles().getSource2(), "source2"),
-                    Pair.create(seqStorageFile.getFiles().getIndex(), "index")
-            ).forEach(fileInformation ->
-                    Optional.ofNullable(
-                            mapOmicsFileToDataStorageFile(
-                                    fileInformation.getKey(), path, fileInformation.getValue()
-                            )
-            ).ifPresent(file -> {
-                file.setChanged(S3Constants.getAwsDateFormat().format(seqStorageFile.getCreationTime()));
-                results.add(file);
-            }));
+        Arrays.asList(
+                Pair.create(seqStorageFile.getFiles().getSource1(), SOURCE_1),
+                Pair.create(seqStorageFile.getFiles().getSource2(), SOURCE_2),
+                Pair.create(seqStorageFile.getFiles().getIndex(), INDEX)
+        ).forEach(fileInformation ->
+                Optional.ofNullable(
+                        mapOmicsFileToDataStorageFile(
+                                fileInformation.getKey(), path, fileInformation.getValue()
+                        )
+                ).ifPresent(file -> {
+                    file.setChanged(S3Constants.getAwsDateFormat().format(seqStorageFile.getCreationTime()));
+                    results.add(file);
+                }));
 
-            return new DataStorageListing(null, results);
-        } else {
-            final ListReadSetsResult result = omicsHelper.listReadSets(dataStorage, pageSize, marker);
-            return new DataStorageListing(
-                    result.getNextToken(),
-                    Optional.ofNullable(result.getReadSets()).orElse(Collections.emptyList()).stream()
-                            .map(readSet -> {
-                                final DataStorageFolder file = new DataStorageFolder();
-                                file.setPath(readSet.getId());
-                                file.setName(readSet.getName());
-                                file.setLabels(new HashMap<String, String>() {
-                                    {
-                                        put(S3Helper.STORAGE_CLASS, readSet.getStatus());
-                                        put(FILE_TYPE, readSet.getFileType());
-                                    }
-                                });
-                                return file;
-                            }).collect(Collectors.toList())
-            );
-        }
+        return new DataStorageListing(null, results);
     }
 
     @Override
-    public DataStorageListing getItems(final AWSOmicsSequenceDataStorage dataStorage, final String path,
-                                       final Boolean showVersion, final Integer pageSize, final String marker,
-                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
-        return getItems(dataStorage, path, showVersion, pageSize, marker);
+    DataStorageListing listOmicsFiles(final AWSOmicsSequenceDataStorage dataStorage,
+                                                final Integer pageSize, final String marker) {
+        final ListReadSetsResult result = getOmicsHelper(dataStorage).listReadSets(dataStorage, pageSize, marker);
+        return new DataStorageListing(
+                result.getNextToken(),
+                Optional.ofNullable(result.getReadSets()).orElse(Collections.emptyList()).stream()
+                        .map(readSet -> {
+                            final DataStorageFolder file = new DataStorageFolder();
+                            file.setPath(readSet.getId());
+                            file.setName(readSet.getName());
+                            file.setLabels(new HashMap<String, String>() {
+                                {
+                                    put(S3Helper.STORAGE_CLASS, readSet.getStatus());
+                                    put(FILE_TYPE, readSet.getFileType());
+                                }
+                            });
+                            return file;
+                        }).collect(Collectors.toList())
+        );
     }
 
     @Override
@@ -160,7 +161,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     public void deleteFile(final AWSOmicsSequenceDataStorage dataStorage, final String path,
                            final String version, final Boolean totally) throws DataStorageException {
         if (StringUtils.isNotBlank(version)) {
-            log.warn("Version field is not empty, but Omics Reference store doesn't support versioning.");
+            log.warn(messageHelper.getMessage(MessageConstants.AWS_OMICS_STORE_DOESNT_SUPPORT_VERSIONING));
         }
         getOmicsHelper(dataStorage).deleteOmicsSeqStorageFile(dataStorage, path);
     }
@@ -171,7 +172,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         if (path != null) {
             final DataStorageFile file = findFile(dataStorage, path, null)
                     .orElseThrow(() -> new DataStorageException(
-                            String.format("Reference not found by path %s", path)));
+                            messageHelper.getMessage(MessageConstants.AWS_OMICS_FILE_NOT_FOUND, path)));
             pathDescription.setSize(file.getSize());
         } else {
             listDataStorageFiles(dataStorage, null)
