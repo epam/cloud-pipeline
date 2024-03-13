@@ -52,6 +52,8 @@ locals {
     sudo install -o root -g root -m 0755 kubectl /usr/bin/kubectl
 
     sudo yum install -y docker
+    sudo systemctl enable docker
+    sudo systemctl start docker
 
   EOT
 }
