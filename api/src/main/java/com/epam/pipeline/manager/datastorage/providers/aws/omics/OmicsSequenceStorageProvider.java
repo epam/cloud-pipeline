@@ -58,6 +58,8 @@ import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStora
 public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<AWSOmicsSequenceDataStorage> {
 
     public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
+    public static final String SUBJECT_ID = "SubjectId";
+    public static final String SAMPLE_ID = "SampleId";
 
     public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
                                         final CloudRegionManager cloudRegionManager,
@@ -138,6 +140,8 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
                                 {
                                     put(S3Helper.STORAGE_CLASS, readSet.getStatus());
                                     put(FILE_TYPE, readSet.getFileType());
+                                    put(SUBJECT_ID, readSet.getSubjectId());
+                                    put(SAMPLE_ID, readSet.getSampleId());
                                 }
                             });
                             return file;
