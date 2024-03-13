@@ -6,16 +6,17 @@ This document provides a guidance how to deploy infrastructure using terraform a
 The process of the deployment can be performed with the following steps:
 
 - [Cloud-pipeline based on AWS EKS Deployment step-by-step guide](#cloud-pipeline-based-on-aws-eks-deployment-step-by-step-guide)
-  - [Overview](#overview)
-  - [Resources deployment using Terraform](#resources-deployment-using-terraform)
-    - [Prerequisites](#prerequisites)
-    - [Jump-server deployment](#jump-server-deployment)
-      - [Outputs table of `jump-server` module](#outputs-table-of-jump-server-module)
-    - [Cluster-infrastructure deployment](#cluster-infrastructure-deployment)
-      - [Outputs table of `cluster-infrastructure` module](#outputs-table-of-cluster-infrastructure-module)
-  - [Cloud-pipeline deployment](#cloud-pipeline-deployment)
+    - [Overview](#overview)
+    - [Resources deployment using Terraform](#resources-deployment-using-terraform)
+        - [Prerequisites](#prerequisites)
+        - [Jump-server deployment](#jump-server-deployment)
+            - [Outputs table of `jump-server` module](#outputs-table-of-jump-server-module)
+        - [Cluster-infrastructure deployment](#cluster-infrastructure-deployment)
+            - [Outputs table of `cluster-infrastructure` module](#outputs-table-of-cluster-infrastructure-module)
+    - [Cloud-pipeline deployment](#cloud-pipeline-deployment)
 
->This guide uses best practice approach when code for resource creation stores in users private Git repository. 
+> This guide assumes that you store your terraform root modules in a private git repository and able to clone it from
+> remote instance.
 
 ## Resources deployment using Terraform
 
@@ -24,10 +25,11 @@ To get started with deployment, please make sure that you satisfy requirements b
 ### Prerequisites
 
 | Name                                                                      | Version |
-| ------------------------------------------------------------------------- | ------- |
+|---------------------------------------------------------------------------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | = 1.5.0 |
 
 To install terraform 1.50 on Linux amd64 type of OS you can run commands:
+
 ```
     sudo wget https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
     sudo unzip terraform_1.5.0_linux_amd64.zip 
@@ -36,30 +38,46 @@ To install terraform 1.50 on Linux amd64 type of OS you can run commands:
     sudo rm terraform_1.5.0_linux_amd64.zip
 ```
 
- To install terraform on other operating sysytem please follow the links 
- https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli <br>
- https://developer.hashicorp.com/terraform/install
+To install terraform to other operating system please follow the links
+https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli <br>
+https://developer.hashicorp.com/terraform/install
 
 1. Manually create S3 Bucket to store remote state of the terraform deployment.
 2. Manually create DynamoDB table to store terraform lock records.
-   - Table schema:
+    - Table schema:
    ```
       LockID (String) - Partition key
    ```
+
 > The following resources are dependencies and should be created in advance:
-> * VPC
-> *	Private subntes (where all infrastructure will be create: EKS cluster, RDS instance, FS, etc)
-> *	Mechanism to have inbound access to the VPC (IGW, transit gateway, VPN from corporate network etc.)
+> * VPC in your AWS account
+> * Private subntes (where all infrastructure will be created: EKS cluster, RDS instance, FS, etc.)
+> * Mechanism to have inbound access to the VPC (IGW, transit gateway, VPN from corporate network etc.)
 
+3. AWS Elastic IP allocation. <br>
+   Create AWS Elastic IP allocation to provide this value further during Cloud-Pipeline installation.
+   This value will be used to deploy AWS ELB in your account to route the traffic from users to Cloud-Pipeline services
+   This EIP also should be used to request DNS records creation from you DNS provider. The following scheme of the
+   records is proposed:
 
-### Jump-server deployment 
+| DNS record                                 | Record type | Value                               |
+|--------------------------------------------|-------------|-------------------------------------|
+| <cloud-pipeline-name>.<your-domain>        | A           | < EIP value >                       |
+| edge.<cloud-pipeline-name>.<your-domain>   | CNAME       | <cloud-pipeline-name>.<your-domain> |
+| docker.<cloud-pipeline-name>.<your-domain> | CNAME       | <cloud-pipeline-name>.<your-domain> |
+| git.<cloud-pipeline-name>.<your-domain>    | CNAME       | <cloud-pipeline-name>.<your-domain> |
+
+### Jump-server deployment
 
 To deploy required resources in your environment with terraform, please follow these steps:
-1. Create directory named for example `jump-server` in your environment deployment location and place Terraform files there: main.tf and output.tf.
 
-Example of the deployment `Jump-server` files:
+1. In the Git repo where you would like to store you terraform code: create directory named, for example,
+   `jump-server` and place Terraform files there: main.tf and output.tf.
+
+Templates of the deployment `Jump-server` files:
 
 main.tf
+
 ```hcl
 terraform {
   backend "s3" {
@@ -77,15 +95,17 @@ provider "aws" {
 }
 
 module jump-server {
-    source = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/jump-server?ref=<branch-tag-or-commit>"
-    project_name                      = "xxxxxxxxxxxx"
-    env                               = "xxxxxxx"
-    vpc_id                            = "vpc-xxxxxxxxxxxx"
-    subnet_id                         = "subnet-xxxxxxxxxxxx"
-    iam_role_permissions_boundary_arn   = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
+  source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/jump-server?ref=<branch-tag-or-commit>"
+  project_name                      = "xxxxxxxxxxxx"
+  env                               = "xxxxxxx"
+  vpc_id                            = "vpc-xxxxxxxxxxxx"
+  subnet_id                         = "subnet-xxxxxxxxxxxx"
+  iam_role_permissions_boundary_arn = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
 }
 ```
+
 output.tf
+
 ```hcl
 output "instance_connection" {
   value = module.jump-server.output_message
@@ -99,10 +119,11 @@ output "instance_role" {
   value = module.jump-server.jump_server_role
 }
 ```
+
 > Change xxxxxxxxxxxx to values that described is list of the variables:
 
 | Name                                | Description                                                                                                                          |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+|-------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
 | `bucket`                            | Name of the created S3 bucket to store terraform state file. See the [prerequisites](#prerequisites)                                 |
 | `dynamodb_table`                    | Name of the created DynamoDB table for terraform. See the [prerequisites](#prerequisites)                                            |
 | `project_name`                      | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, iam roles etc.)              |
@@ -110,10 +131,10 @@ output "instance_role" {
 | `vpc_id`                            | Id of the VCP to be used for deployment of the bastion instance.                                                                     |
 | `subnet_id`                         | Id of the VCP subnet to be used to launch an instance                                                                                |
 | `ami_id`                            | (Optional) AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used.                                           |
-| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries                                                                                          |
+| `iam_role_permissions_boundary_arn` | (Optional) Account specific role boundaries which will be applied during jump-server instance profile creation                       |
 
-1. Push created configuration in to your git repository.
-2. From `jump-server` directory run `terraform init`command, output of command must be like this:
+2. Push created configuration in to your git repository.
+3. From `jump-server` directory run `terraform init`command, output of command must be like this:
 
 ```
 Terraform has been successfully initialized!
@@ -123,7 +144,8 @@ any changes that are required for your infrastructure. All Terraform commands
 should now work.
 ```
 
-4. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation resources submit with **yes**.
+4. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation
+   resources submit with **yes**.
 
 Example of the **apply** output:
 
@@ -138,25 +160,29 @@ instance_role = "arn:aws:iam::xxxxxxxxxxx:role/xxxxxxxxxxx_BastionExecutionRole"
 #### Outputs table of `jump-server` module
 
 | Name                  | Description                                                                                                                           |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `instance_connection` | Id of created Jump Server instance.                                                                                                   |
 | `instance_id`         | Login to Jump Server with command: aws ssm start-session --target ${module.ec2_instance.id} --region ${data.aws_region.current.name}. |
 | `instance_role`       | ARN of bastion execution role that must be set in EKS deployment module                                                               |
 
->User can call terraform output again by run command:
+> User can call terraform output again by run command:
 
 ```hcl
    terraform output <output name from table above>
 ```
+
 > Note: In most cases this command will only show output after resources were deployed with terraform apply command.
 
-### Cluster-infrastructure deployment 
+### Cluster-infrastructure deployment
 
-1. Create directory named for example `cluster-infrastructure` and place your Terraform files: main.tf, output.tf and if additional databases will be deployed - versions.tf.
+1. In the Git repo where you would like to store you terraform code: create directory named, for example,
+   `cluster-infrastructure` and place your Terraform files: main.tf, output.tf and if you would like to deploy
+   cloud-pipeline databases configuration - versions.tf.
 
-Example of the `cluster-infrastructure` files deployment:
+Template of the `cluster-infrastructure` files deployment:
 
 main.tf
+
 ```hcl
 terraform {
   backend "s3" {
@@ -181,7 +207,7 @@ provider "kubernetes" {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
     # This requires the awscli to be installed locally where Terraform is executed
-    args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+    args        = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
   }
 }
 
@@ -194,7 +220,7 @@ provider "helm" {
       api_version = "client.authentication.k8s.io/v1beta1"
       command     = "aws"
       # This requires the awscli to be installed locally where Terraform is executed
-      args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+      args        = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
     }
   }
 }
@@ -216,7 +242,7 @@ module "cluster-infra" {
   subnet_ids                        = ["subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx"]
   iam_role_permissions_boundary_arn = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
   eks_system_node_group_subnet_ids  = ["subnet-xxxxxxxxxxxx"]
-  eks_additional_role_mapping = [
+  eks_additional_role_mapping       = [
     {
       iam_role_arn  = "arn:aws:iam::xxxxxxxxxxxx:role/xxxxxxxxxx-BastionExecutionRole"
       eks_role_name = "system:node:{{EC2PrivateDNSName}}"
@@ -240,6 +266,7 @@ terraform {
 ```
 
 output.tf
+
 ```hcl
 output "etc_bucket" {
   value = "SYSTEM_BUCKET_NAME=${module.cluster-infra.cp_etc_bucket}"
@@ -267,7 +294,7 @@ output "cp_s3_via_sts_role" {
 }
 
 output "efs_filesystem_id" {
-  value = "CP_SYSTEM_FILESYSTEM_ID=${module.cluster-infra.cp_efs_filesystem_id}" 
+  value = "CP_SYSTEM_FILESYSTEM_ID=${module.cluster-infra.cp_efs_filesystem_id}"
 }
 
 output "efs_filesystem_exec_role" {
@@ -385,35 +412,39 @@ output "cp_deploy_script" {
 }
 
 ```
+
 To configure `cluster-infrastructure` deployment, there is a list of variables that need to be specified:
 
-| Name                                     | Description                                                                                                                                                                                                                                                                                                |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bucket`                                 | Name of the created S3 bucket to store terraform state file. See the [prerequisites](#prerequisites)                                                                                                                                                                                                       |
-| `dynamodb_table`                         | Name of the created DynamoDB table for terraform. See the [prerequisites](#prerequisites)                                                                                                                                                                                                                  |
-| `project_name`                           | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)                                                                                                                                                                                    |
-| `env`                                    | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)                                                                                                                                                                       |
-| `vpc_id`                                 | Id of the VCP to be used for deployment of the bastion instance.                                                                                                                                                                                                                                           |
-| `subnet_ids`                             | Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc.                                                                                                                                                                                                                    |
-| `deploy_filesystem_type`                 | (Optional) Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created. Default efs.                                                                                                                                                                            |
-| `iam_role_permissions_boundary_arn`      | (Optional) Account specific role boundaries                                                                                                                                                                                                                                                                |
-| `eks_system_node_group_subnet_ids`       | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group.                                                                                                                                                                                                                        |
-| `eks_additional_role_mapping`            | List of additional roles mapping for aws_auth map.                                                                                                                                                                                                                                                         |
+| Name                                     | Description                                                                                                                                                                                                                                                                           |
+|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `bucket`                                 | Name of the created S3 bucket to store terraform state file. See the [prerequisites](#prerequisites)                                                                                                                                                                                  |
+| `dynamodb_table`                         | Name of the created DynamoDB table for terraform. See the [prerequisites](#prerequisites)                                                                                                                                                                                             |
+| `project_name`                           | Name of the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)                                                                                                                                                               |
+| `env`                                    | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)                                                                                                                                                  |
+| `vpc_id`                                 | Id of the VCP to be used for deployment of the infrastructure.                                                                                                                                                                                                                        |
+| `subnet_ids`                             | Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc.                                                                                                                                                                                               |
+| `eks_system_node_group_subnet_ids`       | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group.                                                                                                                                                                                                   |
+| `eks_additional_role_mapping`            | List of additional roles mapping for aws_auth map.                                                                                                                                                                                                                                    |
+| `deploy_filesystem_type`                 | (Optional) Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created. Default efs.                                                                                                                                                       |
 | `cloud_pipeline_db_configuration`        | (Optional) Username with password and database, which will be created. Username will be owner of the database. Additional settings with Postgresql provider and versions.tf file must be set. For example see [main.tf](#cluster-infrastructure-deployment) of the cluster deployment |
-| `create_cloud_pipeline_db_configuration` | (Optional) You can disable creation of the additional databases by setting to false |                                                                                                                          
-| `deploy_rds`                             | (Optional) You can disable deployment of the RDS instance by setting deploy_rds = false. In this case no db configuration will be created regardless the value of create_cloud_pipeline_db_configuration  |
+| `iam_role_permissions_boundary_arn`      | (Optional) Account specific role boundaries which will be applied during jump-server instance profile creation                                                                                                                                                                        |
+| `deploy_rds`                             | (Optional) You can disable deployment of the RDS instance by setting deploy_rds = false. In this case no db configuration will be created regardless the value of create_cloud_pipeline_db_configuration                                                                              |
+| `create_cloud_pipeline_db_configuration` | (Optional) You can disable creation of the cloud-pipeline database configuration by setting to false                                                                                                                                                                                  |                                                                                                                          
 
+2. Push created configuration in to your git repository.
+3. Install aws ssm
+   manager: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+4. Connect to created jump-server instance using command like:
 
-1. Push created configuration in to your git repository.
-2. Install aws ssm manager: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
-3. Connect to created jump-server instance using command like: 
 ```
 aws ssm start-session --target i-xxxxxxxxxxxxx --region <region>
 ```
-Where xxxxxxxx is your jump-server instance ID that could be found(also with full command) from [output](#output-of-jump-server-module) of the `terraform apply` jump-server deployment. 
 
-1. Clone from your git repository pushed previously configuration.
-2. From `cluster-infrastructure` directory run `terraform init`command, output of command must be like this:
+Where xxxxxxxx is your jump-server instance ID that could be found(also with full command)
+from [output](#output-of-jump-server-module) of the `terraform apply` jump-server deployment.
+
+5. Clone from your git repository pushed previously configuration.
+6. From `cluster-infrastructure` directory run `terraform init`command, output of command must be like this:
 
 ```
 Terraform has been successfully initialized!
@@ -423,7 +454,8 @@ any changes that are required for your infrastructure. All Terraform commands
 should now work.
 ```
 
-4. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation resources submit with **yes**.
+7. After successful output of the init command run `terraform apply` and when it shows list of the planned for creation
+   resources submit with **yes**.
 
 Example of the **apply** output:
 
@@ -538,7 +570,7 @@ ssh_key_name = "CP_PREF_CLUSTER_SSH_KEY_NAME=xxxxxxxxxxxxxxx-key"
 #### Outputs table of `cluster-infrastructure` module
 
 | Name                                    | Description                                                                                          |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------|
 | `cluster_id`                            | The ID of the created EKS cluster.                                                                   |
 | `cluster_name`                          | The name of the created EKS cluster.                                                                 |
 | `cluster_arn`                           | The ARN of the created EKS cluster.                                                                  |
@@ -549,46 +581,57 @@ ssh_key_name = "CP_PREF_CLUSTER_SSH_KEY_NAME=xxxxxxxxxxxxxxx-key"
 | `cp_ssh_rsa_key_pair`                   | RSA key pair created during Cloud-Pipeline deployment                                                |
 | `cp_etc_bucket`                         | Cloud-pipeline etc bucket name                                                                       |
 | `cp_docker_bucket`                      | Cloud-pipeline docker registry bucket name                                                           |
-| `rds_root_pass_secret`                  | Id of the secretsmanager secret where password of the RDS root_user is stored                        |
+| `rds_root_pass_secret`                  | Id of the Secrets Manager secret where password of the RDS root_user is stored                       |
 | `rds_address`                           | The address of the RDS instance                                                                      |
 | `rds_root_username`                     | Username of the RDS default user                                                                     |
 | `rds_port`                              | The port on which the RDS instance accepts connections                                               |
 | `cp_deploy_script`                      | Example of the pipeline install script with all necessary values from infrastructure deployment      |
 
->User can call terraform output again by run command:
+> User can call terraform output again by run command:
 
 ```hcl
    terraform output <output name from table above>
 ```
-> Note: In most cases this command will only show output after resources were deployed with terraform apply command.
+
+> Note: You should deploy infrastructure first, to see output values.
 
 ## Cloud-pipeline deployment
 
 1. Download latest pipectl binary file.
-2. Mount created file system into instance. For example for efs instance by using command:
-````
-sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-xxxxxxxxxxx.efs.<region>.amazonaws.com:/  /opt
-````
+2. Mount created file system into instance.
+    - For EFS (https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html):
+    ````
+    sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-xxxxxxxxxxx.efs.<region>.amazonaws.com:/  /opt
+    ````
+    - For FSx for Lustre (https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html):
+    ````
+    sudo mount -t lustre -o relatime,flock <file_system_dns_name>@tcp:/<mountname> /opt
+    ````
+
 3. Create ssh key from `cluster-infrastructure` deployment:
+
 ```
 sudo mkdir -p /opt/root/ssh
 
 terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem
 ```
-4. Take script from the `cluster-infrastructure` deployment [output](#output-of-cluster-infrastructure-module) and change xxxxxxxxxx values that not added automatically. For example:
+
+4. Take script from the `cluster-infrastructure` deployment [output](#output-of-cluster-infrastructure-module) and
+   change xxxxxxxxxx values that not added automatically. For example:
 
 `user-domain-name` - domain name that user created using own Domain name provider.
 
 `region `- AWS region id where resources deployed.
 
-`CP_CSI_DRIVER_TYPE` - Filesystem type that will be mounted in EKS, could be efs or fsx. 
+`CP_CSI_DRIVER_TYPE` - Filesystem type that will be mounted in EKS, could be efs or fsx, based on your terraform
+deployment settings.
 
-`CP_EDGE_AWS_ELB_EIPALLOCS` - Allocation ID of the created Elastic IP.
+`CP_EDGE_AWS_ELB_EIPALLOCS` - Allocation ID of the created Elastic IP. See prerequisites.
 
 `CP_CLOUD_REGION_ID` - AWS region id where resources deployed.
 
-`CP_API_SRV_EXTERNAL_HOST`, `CP_API_SRV_INTERNAL_HOST` and other DNS names of the services.
- 
+`CP_API_SRV_EXTERNAL_HOST`, `CP_API_SRV_INTERNAL_HOST`, etc. (`*_EXTERNAL_HOST`, `*_INTERNAL_HOST`) and other DNS names
+of the services.
 
-5.  Wait until deployment finishes.
-6.  Check kubernetes pods status and connection to resources. 
+5. Wait until deployment finishes.
+6. Check kubernetes pods status and connection to resources. 
