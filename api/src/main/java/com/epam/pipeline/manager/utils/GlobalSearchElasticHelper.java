@@ -24,11 +24,23 @@ public class GlobalSearchElasticHelper {
         return new RestHighLevelClient(buildLowLevelClientBuilder());
     }
 
+    public RestHighLevelClient buildBillingClient() {
+        final Integer socketTimeout = preferenceManager.getPreference(
+                SystemPreferences.SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT);
+        final Integer retryTimeout = preferenceManager.getPreference(
+                SystemPreferences.SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT);
+        return new RestHighLevelClient(buildLowLevelClientBuilder(socketTimeout, retryTimeout));
+    }
+
     public RestClientBuilder buildLowLevelClientBuilder() {
+        final Integer socketTimeout = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SOCKET_TIMEOUT);
+        return buildLowLevelClientBuilder(socketTimeout, null);
+    }
+
+    public RestClientBuilder buildLowLevelClientBuilder(final Integer socketTimeout, final Integer maxRetryTimeout) {
         final String host = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
         final Integer port = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
         final String schema = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
-        final Integer socketTimeout = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SOCKET_TIMEOUT);
 
         Assert.isTrue(Objects.nonNull(host) && Objects.nonNull(port) && Objects.nonNull(schema),
                 "One or more of the following parameters is not configured: "
@@ -36,9 +48,13 @@ public class GlobalSearchElasticHelper {
                         + SystemPreferences.SEARCH_ELASTIC_PORT.getKey() + ", "
                         + SystemPreferences.SEARCH_ELASTIC_SCHEME.getKey()
         );
-        return RestClient.builder(new HttpHost(host, port, schema))
+        final RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, schema))
                 .setRequestConfigCallback(requestConfigBuilder ->
                         requestConfigBuilder.setSocketTimeout(socketTimeout));
+        if (Objects.nonNull(maxRetryTimeout)) {
+            builder.setMaxRetryTimeoutMillis(maxRetryTimeout);
+        }
+        return builder;
     }
 
 }

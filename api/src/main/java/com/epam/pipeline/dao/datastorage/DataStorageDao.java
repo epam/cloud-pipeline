@@ -18,12 +18,7 @@ package com.epam.pipeline.dao.datastorage;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
-import com.epam.pipeline.entity.datastorage.DataStorageRoot;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -98,6 +93,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
     private String loadDataStoragesByRootIdsQuery;
+    private String loadDataStorageByTypeQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -332,6 +328,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params, DataStorageParameters.getRowMapper());
     }
 
+    public List<AbstractDataStorage> loadDataStorageByType(final DataStorageType dataStorageType) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_TYPE.name(), dataStorageType.getId());
+        return getNamedParameterJdbcTemplate().query(loadDataStorageByTypeQuery,
+                params, DataStorageParameters.getRowMapper());
+
+    }
+
     @Required
     public void setLoadDataStoragesByNFSRootPath(String loadDataStoragesByNFSRootPath) {
         this.loadDataStoragesByNFSRootPath = loadDataStoragesByNFSRootPath;
@@ -455,7 +459,9 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByRootIdsQuery = loadDataStoragesByRootIdsQuery;
     }
 
-
+    public void setLoadDataStorageByTypeQuery(final String loadDataStorageBySericeTypeQuery) {
+        this.loadDataStorageByTypeQuery = loadDataStorageBySericeTypeQuery;
+    }
 
     public enum DataStorageParameters {
         DATASTORAGE_ID,

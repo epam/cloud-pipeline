@@ -24,6 +24,8 @@ public final class MessageConstants {
     public static final String ERROR_PARENT_REQUIRED = "error.parent.required";
     public static final String ERROR_TOO_MANY_RESULTS = "error.too.many.results";
     public static final String ERROR_UNSUPPORTED_OPERATION = "error.unsupported.operation";
+    public static final String ERROR_MECHANISM_ISNT_SUPPORTED_FOR_THIS_PROVIDER =
+            "error.mechanism.isnt.supported";
 
     //Pipeline errors
     public static final String ERROR_PIPELINE_NOT_FOUND = "error.pipeline.not.found";
@@ -865,6 +867,17 @@ public final class MessageConstants {
     // Static resource
     public static final String ERROR_STATIC_RESOURCES_INVALID_PATH = "error.static.resources.invalid.path";
     public static final String ERROR_STATIC_RESOURCES_FOLDER_PATH = "error.static.resources.folder.path";
+
+    // AWS Omics
+    public static final String AWS_OMICS_REFERENCE_STORE_CREATION_ADMIN_ONLY =
+            "error.aws.omics.reference.store.creation.admin.only";
+    public static final String AWS_OMICS_REFERENCE_STORE_ALREADY_EXISTS =
+            "error.aws.omics.reference.store.already.exists";
+    public static final String AWS_OMICS_STORE_DOESNT_SUPPORT_VERSIONING =
+            "error.aws.omics.doesnt.support.versioning";
+    public static final String AWS_OMICS_STORE_INCORRECT_FILE_PATH =
+            "error.aws.omics.store.incorrect.file.path";
+    public static final String AWS_OMICS_FILE_NOT_FOUND = "error.aws.omics.file.not.found";
 
 
     private MessageConstants() {

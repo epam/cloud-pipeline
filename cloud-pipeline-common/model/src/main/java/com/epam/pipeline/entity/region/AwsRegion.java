@@ -47,5 +47,6 @@ public class AwsRegion extends AbstractCloudRegion {
     private Integer backupDuration;
     private boolean versioningEnabled;
     private String iamRole;
+    private String omicsServiceRole;
     private String s3Endpoint;
 }

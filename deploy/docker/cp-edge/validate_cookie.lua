@@ -65,7 +65,7 @@ local function split_str(inputstr, sep)
     return t
 end
 
--- If edge_jwt_auth is set to true - it is requested to bypass authentication
+-- If edge_jwt_auth is set to False - it is requested to bypass authentication
 if ngx.var.edge_jwt_auth == "False" then
     ngx.log(ngx.WARN,"[SECURITY] Application: " .. ngx.var.route_location_root ..
             "; User: bypass; Status: Successfully authenticated.")
@@ -143,6 +143,10 @@ if token then
         ngx.var.auth_user_name_cropped = split_str(username, '@')[1]
     end
     ngx.req.set_header('X-Auth-User', username)
+    if ngx.var.edge_pass_bearer == "True" then
+        ngx.req.set_header('X-Auth-Bearer', token)
+    end
+
     return
 end
 

@@ -24,28 +24,64 @@ import moment from 'moment-timezone';
 import RunTagDatePopover from './run-tag-date-popover';
 
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
-const KNOWN_TAGS = [
-  'idle',
-  'pressure',
-  'sge_in_use',
-  'slurm_in_use',
-  'recovered',
-  'node_unavailable',
-  'proc_out_of_memory'
-];
+const PREDEFINED_TAGS = [{
+  tag: 'idle',
+  color: 'warning'
+}, {
+  tag: 'pressure',
+  color: 'critical'
+}, {
+  tag: 'sge_in_use',
+  color: 'primary'
+}, {
+  tag: 'slurm_in_use',
+  color: 'primary'
+}, {
+  tag: 'recovered',
+  color: 'critical, hovered'
+}, {
+  tag: 'node_unavailable'
+}, {
+  tag: 'proc_out_of_memory',
+  color: 'critical'
+}];
 
-const isInstanceLink = (tag) => {
-  return KNOWN_TAGS.some(t => t.toLowerCase() === (tag || '').toLowerCase());
+const KNOWN_COLORS = {
+  default: '',
+  warning: 'warning',
+  critical: 'critical',
+  accent: 'hovered',
+  primary: 'primary'
 };
 
-const isKnownTag = (tag, preferenes) => {
-  return KNOWN_TAGS.some(t => t.toLowerCase() === (tag || '').toLowerCase());
+const mergePredefinedAndUserTags = (predefinedTags = [], userTags = []) => {
+  const tags = predefinedTags.map(tag => typeof tag === 'string' ? {tag} : tag);
+  userTags.forEach(userTag => {
+    const currentTag = typeof userTag === 'string' ? {tag: userTag} : userTag;
+    const knownIdx = tags.findIndex((t) => t.tag.toLowerCase() === currentTag.tag.toLowerCase());
+    if (knownIdx >= 0) {
+      tags[knownIdx] = Object.assign(tags[knownIdx], currentTag);
+      return;
+    }
+    tags.push(currentTag);
+  });
+  return tags;
 };
 
-const isKnownTagWithDateSuffix = (tag, preferences) => {
+const isKnownTag = (tagName, preferences = {}) => {
+  const userTags = preferences.uiRunsTags || [];
+  return mergePredefinedAndUserTags(PREDEFINED_TAGS, userTags)
+    .some(t => t.tag.toLowerCase() === (tagName || '').toLowerCase());
+};
+
+const isKnownTagWithDateSuffix = (tagName, preferences = {}) => {
   const suffix = preferences.systemRunTagDateSuffix;
-  const knownTagsWithDateSuffix = KNOWN_TAGS.map((knownTag) => `${knownTag}${suffix}`);
-  return knownTagsWithDateSuffix.some(t => t.toLowerCase() === (tag || '').toLowerCase());
+  const userTags = preferences.uiRunsTags || [];
+  const knownTagsWithDateSuffix = mergePredefinedAndUserTags(
+    PREDEFINED_TAGS,
+    userTags
+  ).map(({tag}) => `${tag}${suffix}`);
+  return knownTagsWithDateSuffix.some((tag) => tag.toLowerCase() === (tagName || '').toLowerCase());
 };
 
 const getDateInfo = (tags, tag, preferences) => {
@@ -66,24 +102,43 @@ const skipTag = (tag, tags, preferences) => {
     isKnownTagWithDateSuffix(tag, preferences);
 };
 
+const getTagColors = (color = '') => {
+  if (!color.length) {
+    return [];
+  }
+  return color
+    .split(',')
+    .filter(Boolean)
+    .map(color => KNOWN_COLORS[color.trim().toLowerCase()] || color);
+};
+
 function Tag (
   {
     className,
-    tag,
+    tagName,
     value,
     instance,
     theme,
     onMouseEnter,
     onMouseLeave,
-    onClick,
-    onFocus
+    onFocus,
+    predefinedTags
   }
 ) {
   let display = value;
   if (`${value}` === 'true') {
-    display = tag;
+    display = tagName;
   }
-  const isLink = instance && instance.nodeName && isInstanceLink(tag);
+  const tagOptions = predefinedTags
+    .find(({tag}) => tag.toLowerCase() === tagName.toLowerCase()) || {};
+  const isInstanceLink = instance &&
+    instance.nodeName &&
+    `${tagOptions.instanceLink}` !== 'false';
+  const handleClick = event => {
+    if (tagOptions.link || isInstanceLink) {
+      event && event.stopPropagation();
+    }
+  };
   const element = (
     <span
       className={
@@ -92,34 +147,46 @@ function Tag (
           className,
           'cp-tag',
           'accent',
+          ...getTagColors(tagOptions.color),
           {
-            warning: /^idle$/i.test(tag),
-            critical: /^(pressure|recovered|proc_out_of_memory)$/i.test(tag),
-            hovered: /^recovered$/i.test(tag),
-            primary: /^(sge_in_use|slurm_in_use)$/i.test(tag),
             filled: /^black$/i.test(theme),
-            link: isLink
+            link: tagOptions.link || isInstanceLink
           }
         )
       }
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onClick={onClick}
+      onClick={handleClick}
       onFocus={onFocus}
     >
-      {(display || '').toUpperCase()}
+      {tagOptions.display || (display || '').toUpperCase()}
     </span>
   );
-  if (isLink) {
+  if (tagOptions.link) {
+    return (
+      <a
+        className={styles.link}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+        onClick={handleClick}
+        onFocus={onFocus}
+        href={tagOptions.link}
+        target="_blank"
+      >
+        {element}
+      </a>
+    );
+  }
+  if (isInstanceLink) {
     const instanceLink = `/cluster/${instance.nodeName}/monitor`;
     return (
       <Link
-        id={tag}
+        id={tagName}
         to={instanceLink}
         className={styles.link}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        onClick={onClick}
+        onClick={handleClick}
         onFocus={onFocus}
       >
         {element}
@@ -148,27 +215,32 @@ function RunTagsComponent (
     return null;
   }
   const result = [];
-  for (let tag in tags) {
+  const predefinedTags = mergePredefinedAndUserTags(
+    PREDEFINED_TAGS,
+    preferences.uiRunsTags || []
+  );
+  for (let tagName in tags) {
     if (
-      Object.prototype.hasOwnProperty.call(tags, tag) &&
-      !skipTag(tag, tags, preferences) &&
-      (!onlyKnown || isKnownTag(tag, preferences))
+      Object.prototype.hasOwnProperty.call(tags, tagName) &&
+      !skipTag(tagName, tags, preferences) &&
+      (!onlyKnown || isKnownTag(tagName, preferences))
     ) {
-      const info = getDateInfo(tags, tag, preferences);
+      const info = getDateInfo(tags, tagName, preferences);
       result.push({
-        isKnown: isKnownTag(tag, preferences),
+        isKnown: isKnownTag(tagName, preferences),
         element: (
           <RunTagDatePopover
             date={info}
-            key={tag}
-            tag={tag}
+            key={tagName}
+            tag={tagName}
           >
             <Tag
               className={tagClassName}
-              tag={tag}
-              value={tags[tag]}
+              tagName={tagName}
+              value={tags[tagName]}
               instance={instance}
               theme={theme}
+              predefinedTags={predefinedTags}
             />
           </RunTagDatePopover>
         )

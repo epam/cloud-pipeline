@@ -19,7 +19,7 @@ class SlurmGridEngine(GridEngine):
     _SCONTROL_DELETE_NODE = "scontrol delete nodename=%s"
     _SCONTROL_PARSE_HOSTLIST = "scontrol show hostnames %s"
 
-    _NODE_BAD_STATES = ["DOWN", "DRAINING", "DRAIN", "DRAINED", "FAIL", "FAILING",  "INVAL"]
+    _NODE_BAD_STATES = ["DOWN", "DRAINING", "DRAIN", "DRAINED", "FAIL", "FAILING",  "INVAL", "UNKNOWN"]
 
     _SCONTROL_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _GET_JOBS = "scontrol -o show job"
@@ -77,11 +77,14 @@ class SlurmGridEngine(GridEngine):
                     - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
 
     def get_host_supply(self, host):
-        for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % host):
-            if "NodeName" in line:
-                node_desc = self._parse_dict(line)
-                return ResourceSupply(cpu=int(node_desc.get("CPUTot", "0"))) \
-                    - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
+        try:
+            for line in self.cmd_executor.execute_to_lines(SlurmGridEngine._SHOW_EXECUTION_HOST % host):
+                if "NodeName" in line:
+                    node_desc = self._parse_dict(line)
+                    return ResourceSupply(cpu=int(node_desc.get("CPUTot", "0"))) \
+                        - ResourceSupply(cpu=int(node_desc.get("CPUAlloc", "0")))
+        except ExecutionError as e:
+            Logger.warn("Problems with getting host '%s' info: %s" % (host, e))
         return ResourceSupply()
 
     def is_valid(self, host):
