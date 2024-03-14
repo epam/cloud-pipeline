@@ -17,9 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import {Modal} from 'antd';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
 import DtsInfo from './dts-info';
