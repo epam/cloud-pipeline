@@ -1,5 +1,5 @@
 resource "aws_iam_role" "bastion_execution" {
-  name                 = "${local.resource_name_prefix}BastionExecutionRole"
+  name                 = "${local.resource_name_prefix}_BastionExecutionRole"
   count                = var.iam_instance_profile == null ? 1 : 0
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
