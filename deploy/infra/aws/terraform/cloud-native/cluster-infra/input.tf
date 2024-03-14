@@ -157,6 +157,11 @@ variable "create_ssh_rsa_key_pair" {
   description = "If true, this module will create ssh_rsa key pair in the AWS account. This pair can be used during Cloud-Pipeline deployment process as a ssh key for worker nodes."
 }
 
+variable "enable_aws_omics_integration" {
+  default     = true
+  description = "If true, this module will create several resource to be used to integrate AWS Omics with Cloud-Pipeline (such as ECR, Omics Service Role)."
+}
+
 ###################################################################
 #                  AWS RDS for Cloud-Pipeline deployment
 ###################################################################

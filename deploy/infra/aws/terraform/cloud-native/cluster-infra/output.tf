@@ -38,6 +38,16 @@ output "cp_s3_via_sts_role" {
   value       = aws_iam_role.cp_s3_via_sts.arn
 }
 
+output "cp_aws_omics_service_role" {
+  description = "Role with permissions for Cloud-Pipeline AWS Omics service integration"
+  value       = try(aws_iam_role.cp_omics_service[0].arn, null)
+}
+
+output "cp_aws_omics_ecr" {
+  description = "ECR for AWS Omics service Cloud-Pipeline integration"
+  value       = try(aws_ecr_repository.cp_omics_ecr[0].repository_url, null)
+}
+
 output "cluster_cp_main_execution_role" {
   description = "Permissions for Cloud-Pipeline in cluster"
   value       = module.cp_irsa.iam_role_arn

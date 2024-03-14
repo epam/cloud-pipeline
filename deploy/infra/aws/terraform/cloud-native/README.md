@@ -293,6 +293,14 @@ output "cp_s3_via_sts_role" {
   value = "CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE=${module.cluster-infra.cp_s3_via_sts_role}"
 }
 
+output "cp_aws_omics_service_role" {
+  value = "CP_PREF_AWS_OMICS_SERVICE_ROLE=${module.cluster-infra.cp_aws_omics_service_role}"
+}
+
+output "cp_aws_omics_ecr" {
+  value = "CP_PREF_AWS_OMICS_ECR_REGISTRY=${module.cluster-infra.cp_aws_omics_ecr}"
+}
+
 output "efs_filesystem_id" {
   value = "CP_SYSTEM_FILESYSTEM_ID=${module.cluster-infra.cp_efs_filesystem_id}"
 }
@@ -336,6 +344,8 @@ output "cp_deploy_script" {
  -env CP_PREF_CLUSTER_SSH_KEY_NAME="${module.cp-test-eks-infra.cp_ssh_rsa_key_pair.key_pair_name}" \
  -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="${module.cp-test-eks-infra.eks_cluster_primary_security_group_id}" \
  -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="${module.cp-test-eks-infra.cp_s3_via_sts_role}" \
+ -env CP_PREF_AWS_OMICS_SERVICE_ROLE="${module.cp-test-eks-infra.cp_aws_omics_service_role}" \
+ -env CP_PREF_AWS_OMICS_ECR_REGISTRY="${module.cp-test-eks-infra.cp_aws_omics_ecr}" \
  -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/ssh-key.pem" \
  -env CP_DOCKER_STORAGE_TYPE="obj" \
  -env CP_DOCKER_STORAGE_CONTAINER="${module.cp-test-eks-infra.cp_docker_bucket}" \
@@ -478,6 +488,8 @@ cp_deploy_script = <<EOT
  -env CP_PREF_CLUSTER_SSH_KEY_NAME="xxxxxxxxxxxxxxx-key" \
  -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="sg-xxxxxxxxxxxxxxx" \
  -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="arn:aws:iam::xxxxxxxxxxxxxxx:role/xxxxxxxxxxxxxxxS3viaSTSRole" \
+ -env CP_PREF_AWS_OMICS_SERVICE_ROLE="arn:aws:iam::xxxxxxxxxxxxxxx:role/xxxxxxxxxxxxxxxS3viaSOmicsServiceRole" \
+ -env CP_PREF_AWS_OMICS_ECR_REGISTRY="xxxxxxxxxxxxxxxx.dkr.ecr.xxxxxxx.amazonaws.com/xxxxxxx_aws_omics" \
  -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/ssh-key.pem" \
  -env CP_DOCKER_STORAGE_TYPE="obj" \
  -env CP_DOCKER_STORAGE_CONTAINER="xxxxxxxxxxxxxxx-docker" \

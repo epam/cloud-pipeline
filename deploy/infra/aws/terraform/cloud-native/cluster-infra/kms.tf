@@ -53,7 +53,8 @@ module "kms" {
           "AWS" : [
             "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot",
             module.cp_irsa.iam_role_arn,
-            aws_iam_role.eks_cp_system_node_execution.arn
+            aws_iam_role.eks_cp_system_node_execution.arn,
+            aws_iam_role.eks_cp_worker_node_execution.arn
           ]
         },
         "Action" : [
