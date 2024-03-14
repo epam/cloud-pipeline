@@ -47,7 +47,8 @@ public class VMMonitorTest {
     private final Map<String, String> vmTags = Collections.singletonMap(RUN_ID_LABEL, RUN_ID_VALUE);
     private final Map<String, String> nodeLabels = Collections.singletonMap(POOL_ID_LABEL, POOL_ID_VALUE);
     private final AwsRegion region = new AwsRegion(CloudProvider.AWS, TEST_STRING, TEST_STRING, TEST_STRING,
-            TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, 0, true, TEST_STRING, TEST_STRING, null);
+            TEST_STRING, TEST_STRING, TEST_STRING, TEST_STRING, 0, true,
+            TEST_STRING, TEST_STRING, TEST_STRING, null);
     private VirtualMachine vm;
     private VMMonitor monitor;
 
