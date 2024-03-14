@@ -21,6 +21,7 @@ import SystemLogs from './system-logs';
 import NATGateway from './nat-gateway-configuration/nat-gateway-configuration';
 import SystemJobs from './system-jobs';
 import SubSettings from '../sub-settings';
+import DtsManagement from './dts';
 
 export default class SystemManagement extends React.Component {
   state={
@@ -53,7 +54,8 @@ export default class SystemManagement extends React.Component {
           style: {
             wordWrap: 'break-word'
           },
-          onOk () {
+          onOk: () => {
+            this.setState({modified: false});
             resolve(true);
           },
           onCancel () {
@@ -111,6 +113,11 @@ export default class SystemManagement extends React.Component {
             key: 'jobs',
             title: 'SYSTEM JOBS',
             render: () => (<SystemJobs router={this.props.router} />)
+          },
+          {
+            key: 'dts',
+            title: 'DTS',
+            render: () => (<DtsManagement handleModified={this.handleModified} />)
           }
         ]}
         router={this.props.router}

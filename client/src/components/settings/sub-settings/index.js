@@ -211,7 +211,8 @@ class SubSettings extends React.Component {
       emptyDataPlaceholder,
       showSectionsSearch,
       sectionsSearchPlaceholder,
-      hideListForSingleSection
+      hideListForSingleSection,
+      sectionsListClassName
     } = this.props;
     if (sections.length === 0) {
       return (
@@ -253,7 +254,7 @@ class SubSettings extends React.Component {
       >
         <SectionsList
           activeSectionKey={section}
-          className={classNames('cp-divider', 'right')}
+          className={classNames(sectionsListClassName, 'cp-divider', 'right')}
           sections={sections}
           showSearch={showSectionsSearch}
           searchPlaceholder={sectionsSearchPlaceholder}
@@ -267,6 +268,7 @@ class SubSettings extends React.Component {
 
 SubSettings.propTypes = {
   className: PropTypes.string,
+  sectionsListClassName: PropTypes.string,
   activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSectionChange: PropTypes.func,
   showSectionsSearch: PropTypes.bool,
