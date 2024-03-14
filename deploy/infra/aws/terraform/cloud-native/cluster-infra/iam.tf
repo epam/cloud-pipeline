@@ -137,7 +137,7 @@ resource "aws_iam_policy" "cp_ecr_omics_access" {
           "ecr:GetDownloadUrlForLayer",
           "ecr:GetAuthorizationToken"
         ]
-        Effect   : "Allow"
+        Effect : "Allow"
         Resource : aws_ecr_repository.cp_omics_ecr[0].arn
       }
     ]
@@ -304,7 +304,34 @@ resource "aws_iam_policy" "cp_main_service" {
           "iam:GetRole",
           "iam:PassRole"
         ],
-        "Resource" : [aws_iam_role.eks_cp_system_node_execution.arn, aws_iam_role.eks_cp_worker_node_execution.arn]
+        "Resource" : [
+          aws_iam_role.eks_cp_system_node_execution.arn,
+          aws_iam_role.eks_cp_worker_node_execution.arn
+        ]
+      }
+    ]
+  })
+  tags = local.tags
+}
+
+resource "aws_iam_policy" "cp_omics_service_role_access" {
+  name        = "${local.resource_name_prefix}_Omics_Service_Role_Access_policy"
+  description = "Permissions for managing AWS Omics Service role for ${local.resource_name_prefix}"
+  count       = var.enable_aws_omics_integration ? 1 : 0
+  path        = "/"
+
+  policy = jsonencode({
+    Version   = "2012-10-17"
+    Statement = [
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "iam:GetRole",
+          "iam:PassRole"
+        ],
+        "Resource" : [
+          aws_iam_role.cp_omics_service[0].arn
+        ]
       }
     ]
   })
@@ -342,6 +369,16 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
         ],
         "Resource" : [
           "arn:aws:s3:::*"
+        ]
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "omics:*"
+        ],
+        "Resource" : [
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
         ]
       }
     ]
@@ -569,7 +606,6 @@ resource "aws_iam_role" "eks_cp_worker_node_execution" {
         "Action" : "sts:AssumeRole"
       }
     ]
-
   })
 }
 
@@ -679,10 +715,15 @@ module "cp_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns             = {
-    policy = aws_iam_policy.cp_main_service.arn
-    kms_allow = aws_iam_policy.kms_data_access.arn
-  }
+  role_policy_arns             = merge(
+    {
+      policy    = aws_iam_policy.cp_main_service.arn
+      kms_allow = aws_iam_policy.kms_data_access.arn
+    },
+    var.enable_aws_omics_integration ? {
+      aws_omics = aws_iam_policy.cp_omics_service_role_access[0].arn
+    }: {}
+  )
 
   oidc_providers = {
     main = {
@@ -770,15 +811,24 @@ resource "aws_iam_policy" "cp_omics_service" {
       {
         "Effect" : "Allow",
         "Action" : [
-          "s3:ListBucket",
           "s3:GetObject",
+          "s3:ListBucket",
           "s3:PutObject",
-          "s3:GetObjectVersion",
-          "s3:ListBucketVersions",
-          "s3:GetObjectAcl"
+          "s3:GetBucketLocation"
         ],
         "Resource" : [
           "arn:aws:s3:::*"
+        ]
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "logs:DescribeLogStreams",
+          "logs:CreateLogStream",
+          "logs:CreateLogGroup"
+        ],
+        "Resource": [
+          "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
         ]
       }
     ]
