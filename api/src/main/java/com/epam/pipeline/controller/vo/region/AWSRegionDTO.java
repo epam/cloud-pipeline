@@ -35,6 +35,7 @@ public class AWSRegionDTO extends AbstractCloudRegionDTO {
     private String sshKeyName;
     private String tempCredentialsRole;
     private String omicsServiceRole;
+    private String omicsEcrUrl;
     private Integer backupDuration;
     private boolean versioningEnabled;
     private String iamRole;

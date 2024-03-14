@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.utifixxl.List;
+import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
