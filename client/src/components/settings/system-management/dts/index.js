@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Modal} from 'antd';
+import {Modal, message} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
@@ -83,48 +83,39 @@ class DtsManagement extends React.Component {
   };
 
   onSavePreferences = async ({dts, toUpdate = [], toDelete = []}) => {
-    let deletePromise;
-    let updatePromise;
-    if (toUpdate.length) {
-      updatePromise = new Promise(async (resolve) => {
-        const request = new DTSPreferencesUpdate(dts.id);
-        await request.send({
-          preferencesToUpdate: toUpdate.reduce((acc, current) => {
-            acc[current.key] = current.value;
-            return acc;
-          }, {})
-        });
-        resolve(request);
-      });
+    let deleteRequest;
+    let updateRequest;
+    if (!toUpdate.length && !toDelete.length) {
+      return;
     }
+    this.setState({pending: true});
     if (toDelete.length) {
-      deletePromise = new Promise(async (resolve) => {
-        const request = new DTSPreferencesDelete(dts.id);
-        await request.send({
-          preferenceKeysToRemove: toDelete.map(({key}) => key)
-        });
-        resolve(request);
+      deleteRequest = new DTSPreferencesDelete(dts.id);
+      await deleteRequest.send({
+        preferenceKeysToRemove: toDelete.map(({key}) => key)
       });
     }
-    if (deletePromise || updatePromise) {
-      this.setState({pending: true});
-      const [deleteResult, updateResult] = await Promise.all([
-        deletePromise,
-        updatePromise
-      ]);
-      if (deletePromise && deleteResult.error) {
-
-      }
-      if (updatePromise && updateResult.error) {
-
-      }
-      await this.props.dtsList.fetch();
-      this.setState({
-        pending: false,
-        modified: false,
-        refreshToken: this.state.refreshToken + 1
+    if (toUpdate.length) {
+      updateRequest = new DTSPreferencesUpdate(dts.id);
+      await updateRequest.send({
+        preferencesToUpdate: toUpdate.reduce((acc, current) => {
+          acc[current.key] = current.value;
+          return acc;
+        }, {})
       });
     }
+    if (deleteRequest && deleteRequest.error) {
+      message.error('Failed to delete preference.', 5);
+    }
+    if (updateRequest && updateRequest.error) {
+      message.error('Failed to update preference', 5);
+    }
+    await this.props.dtsList.fetch();
+    this.setState({
+      pending: false,
+      modified: false,
+      refreshToken: this.state.refreshToken + 1
+    });
   };
 
   renderDtsCard = (dts) => {

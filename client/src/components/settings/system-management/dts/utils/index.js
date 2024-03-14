@@ -103,8 +103,11 @@ function getModifiedPreferences (initialPreferences, preferences) {
 
 function getErrorPreferences (preferences = []) {
   const errors = preferences.reduce((acc, preference, index) => {
-    const hasDuplicates = preferences
-      .find(({key}, i) => key && key === preference.key && i !== index);
+    const hasDuplicates = !preference.markAsDeleted && preferences
+      .find(({key, markAsDeleted}, i) => key &&
+        key === preference.key &&
+        i !== index &&
+        !markAsDeleted);
     if (hasDuplicates) {
       acc.push({
         preference,
