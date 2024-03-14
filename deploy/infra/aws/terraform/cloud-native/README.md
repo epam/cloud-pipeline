@@ -332,34 +332,33 @@ output "ssh_key_name" {
 output "cp_deploy_script" {
   value = <<-EOF
  ./pipectl install \
- -d "library/centos:7" \
  -dt aws-native \
  -jc \
- -env CP_MAIN_SERVICE_ROLE="${module.cp-test-eks-infra.cluster_cp_main_execution_role}" \
+ -env CP_MAIN_SERVICE_ROLE="${module.cluster-infra.cluster_cp_main_execution_role}" \
  -env CP_CSI_DRIVER_TYPE=efs \
- -env CP_SYSTEM_FILESYSTEM_ID="${module.cp-test-eks-infra.cp_efs_filesystem_id}" \
- -env CP_CSI_EXECUTION_ROLE="${module.cp-test-eks-infra.cp_efs_filesystem_exec_role}" \
+ -env CP_SYSTEM_FILESYSTEM_ID="${module.cluster-infra.cp_efs_filesystem_id}" \
+ -env CP_CSI_EXECUTION_ROLE="${module.cluster-infra.cp_efs_filesystem_exec_role}" \
  -env CP_DOCKER_DIST_SRV="quay.io/" \
- -env CP_AWS_KMS_ARN="${module.cp-test-eks-infra.cp_kms_arn}" \
- -env CP_PREF_CLUSTER_SSH_KEY_NAME="${module.cp-test-eks-infra.cp_ssh_rsa_key_pair.key_pair_name}" \
- -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="${module.cp-test-eks-infra.eks_cluster_primary_security_group_id}" \
- -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="${module.cp-test-eks-infra.cp_s3_via_sts_role}" \
- -env CP_PREF_AWS_OMICS_SERVICE_ROLE="${module.cp-test-eks-infra.cp_aws_omics_service_role}" \
- -env CP_PREF_AWS_OMICS_ECR_REGISTRY="${module.cp-test-eks-infra.cp_aws_omics_ecr}" \
+ -env CP_AWS_KMS_ARN="${module.cluster-infra.cp_kms_arn}" \
+ -env CP_PREF_CLUSTER_SSH_KEY_NAME="${module.cluster-infra.cp_ssh_rsa_key_pair.key_pair_name}" \
+ -env CP_PREF_CLUSTER_INSTANCE_SECURITY_GROUPS="${module.cluster-infra.eks_cluster_primary_security_group_id}" \
+ -env CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE="${module.cluster-infra.cp_s3_via_sts_role}" \
+ -env CP_PREF_AWS_OMICS_SERVICE_ROLE="${module.cluster-infra.cp_aws_omics_service_role}" \
+ -env CP_PREF_AWS_OMICS_ECR_REGISTRY="${module.cluster-infra.cp_aws_omics_ecr}" \
  -env CP_CLUSTER_SSH_KEY="/opt/root/ssh/ssh-key.pem" \
  -env CP_DOCKER_STORAGE_TYPE="obj" \
- -env CP_DOCKER_STORAGE_CONTAINER="${module.cp-test-eks-infra.cp_docker_bucket}" \
+ -env CP_DOCKER_STORAGE_CONTAINER="${module.cluster-infra.cp_docker_bucket}" \
  -env CP_DEPLOYMENT_ID="<users-deployment-name>" \
  -env CP_CLOUD_REGION_ID="<region>" \
- -env CP_KUBE_CLUSTER_NAME="${module.cp-test-eks-infra.cluster_name}" \
- -env CP_KUBE_EXTERNAL_HOST="${module.cp-test-eks-infra.cluster_endpoint}" \
+ -env CP_KUBE_CLUSTER_NAME="${module.cluster-infra.cluster_name}" \
+ -env CP_KUBE_EXTERNAL_HOST="${module.cluster-infra.cluster_endpoint}" \
  -env CP_KUBE_SERVICES_TYPE="ingress" \
  -env CP_EDGE_AWS_ELB_SCHEME="internet-facing" \
  -env CP_EDGE_AWS_ELB_SUBNETS="<public-subnet-id>" \
  -env CP_EDGE_AWS_ELB_EIPALLOCS="<user-ellastic-ip-id>" \
- -env CP_EDGE_AWS_ELB_SG="${module.cp-test-eks-infra.https_access_security_group},${module.cp-test-eks-infra.eks_cluster_primary_security_group_id}" \
+ -env CP_EDGE_AWS_ELB_SG="${module.cluster-infra.https_access_security_group},${module.cluster-infra.eks_cluster_primary_security_group_id}" \
  --external-host-dns \
- -env PSG_HOST="${module.cp-test-eks-infra.rds_address}" \
+ -env PSG_HOST="${module.cluster-infra.rds_address}" \
  -s cp-api-srv \
  -env CP_API_SRV_EXTERNAL_PORT=443 \
  -env CP_API_SRV_INTERNAL_PORT=443 \
@@ -367,7 +366,7 @@ output "cp_deploy_script" {
  -env CP_API_SRV_INTERNAL_HOST="<user-domain-name>" \
  -env CP_API_SRV_IDP_CERT_PATH="/opt/idp/pki" \
  -env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME="<user-deployment-name>" \
- -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME="${module.cp-test-eks-infra.cp_etc_bucket}" \
+ -env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME="${module.cluster-infra.cp_etc_bucket}" \
  -env CP_API_SRV_SSO_BINDING="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" \
  -env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER="true" \
  -env CP_API_SRV_SAML_AUTO_USER_CREATE="EXPLICIT" \
@@ -391,7 +390,7 @@ output "cp_deploy_script" {
  -env CP_EDGE_INTERNAL_HOST="edge.<user-domain-name>" \
  -env CP_EDGE_WEB_CLIENT_MAX_SIZE=0 \
  -s cp-clair \
- -env CP_CLAIR_DATABASE_HOST="${module.cp-test-eks-infra.rds_address}" \
+ -env CP_CLAIR_DATABASE_HOST="${module.cluster-infra.rds_address}" \
  -s cp-docker-comp \
  -env CP_DOCKER_COMP_WORKING_DIR="/cloud-pipeline/docker-comp/wd" \
  -s cp-search \
@@ -476,7 +475,6 @@ Outputs:
 
 cp_deploy_script = <<EOT
  ./pipectl install \
- -d "library/centos:7" \
  -dt aws-native \
  -jc \
  -env CP_MAIN_SERVICE_ROLE="arn:aws:iam::xxxxxxxxxxxxxxx:role/xxxxxxxxxxxxxxxCPExecutionRole" \
