@@ -411,7 +411,7 @@ public class DataStorageManager implements SecuredEntityManager {
         final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
         final DataStorageType dataStorageType =
-                Optional.ofNullable(dataStorageVO.getType()).orElse(
+                Optional.ofNullable(dataStorageVO.getType()).orElseGet(() ->
                         DataStorageType.fromServiceType(
                                 storageRegion.getProvider(), dataStorageVO.getServiceType()
                         )
