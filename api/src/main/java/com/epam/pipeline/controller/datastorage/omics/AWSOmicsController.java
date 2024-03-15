@@ -47,8 +47,8 @@ public class AWSOmicsController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<AWSOmicsFileImportJob> importOmicsFiles(@PathVariable final Long id,
-                                                          @RequestBody final AWSOmicsFileImportJob importJob) {
-        return Result.success(awsOmicsStoreApiService.importOmicsFiles(id, importJob));
+                                                          @RequestBody final AWSOmicsFileImportRequest importRequest) {
+        return Result.success(awsOmicsStoreApiService.importOmicsFiles(id, importRequest));
     }
 
     @PostMapping("/{id}/import/list")

@@ -38,8 +38,8 @@ public class AWSOmicsStoreApiService {
     private final MessageHelper messageHelper;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public AWSOmicsFileImportJob importOmicsFiles(final Long storageId, final AWSOmicsFileImportJob importJob) {
-        return omicsStoreManager.importOmicsFiles(fetchDataStorage(storageId), importJob);
+    public AWSOmicsFileImportJob importOmicsFiles(final Long storageId, final AWSOmicsFileImportRequest importRequest) {
+        return omicsStoreManager.importOmicsFiles(fetchDataStorage(storageId), importRequest);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
