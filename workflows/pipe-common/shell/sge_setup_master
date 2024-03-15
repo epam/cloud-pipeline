@@ -61,6 +61,9 @@ configure_global() {
     sed -i '/gid_range/c\gid_range 20000-30000' ./global
 
     if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
+        mkdir -p "$COMMON_DIR/sge/logs"
+        chown sgeadmin:sgeadmin "$COMMON_DIR/sge/logs"
+        chmod 777 "$COMMON_DIR/sge/logs"
         sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR/shell/sge_prolog" ./global
         sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR/shell/sge_epilog" ./global
     fi

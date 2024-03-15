@@ -26,14 +26,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-echo "Executing Cloud Pipeline epilog script as $(whoami)..."
+exec &> >(tee -a "${COMMON_DIR:-/common}/sge/logs/${HOSTNAME}_epilog_${JOB_ID}")
 
-JOB_ENV_FILE="$SGE_JOB_SPOOL_DIR/environment"
-
-if [ ! -f "$JOB_ENV_FILE" ]; then
-    echo "ERROR: Job environment file is not accessible at $JOB_ENV_FILE. Exiting..."
-    exit 100
-fi
+echo "Executing Cloud Pipeline epilog script as $(whoami) on ${HOSTNAME} for job ${JOB_ID}..."
 
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU="${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU="${CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU:-/tmp/sge-gpus-locks}"
@@ -45,14 +40,27 @@ if [ "$JOB_GPUS_NUMBER" -le 0 ]; then
     exit 0
 fi
 
-JOB_GPU_DEVICES=$(grep -oP "CUDA_VISIBLE_DEVICES=\K.*" "$JOB_ENV_FILE" | sed -e "s/,/ /g")
-for GPU_DEVICE in $JOB_GPU_DEVICES; do
-    echo -n "Releasing GPU device $GPU_DEVICE... "
-    if ! rmdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE" 2>/dev/null; then
-        echo "NOT OK"
-        continue
+JOB_GPU_DEVICES=""
+JOB_GPU_DEVICES_NUMBER=0
+for GPU_DEVICE in "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total/"*; do
+    GPU_DEVICE="$(basename "$GPU_DEVICE")"
+    if [ -d "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE/$JOB_ID" ]; then
+        echo -n "Releasing GPU device $GPU_DEVICE... "
+        if ! rmdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE/$JOB_ID" \
+                   "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE" 2>/dev/null; then
+            echo "NOT OK"
+            continue
+        fi
+        JOB_GPU_DEVICES="$JOB_GPU_DEVICES $GPU_DEVICE"
+        JOB_GPU_DEVICES_NUMBER="$(( JOB_GPU_DEVICES_NUMBER + 1 ))"
+        echo "OK"
     fi
-    echo "OK"
 done
+
+if [ "$JOB_GPU_DEVICES_NUMBER" -lt "$JOB_GPUS_NUMBER" ]; then
+    echo "ERROR: Some GPU devices have not been released at $CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU ($JOB_GPU_DEVICES_NUMBER/$JOB_GPUS_NUMBER)"
+    echo "Exiting..."
+    exit 100
+fi
 
 exit 0
