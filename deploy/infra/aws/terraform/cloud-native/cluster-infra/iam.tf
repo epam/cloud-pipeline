@@ -308,6 +308,16 @@ resource "aws_iam_policy" "cp_main_service" {
           aws_iam_role.eks_cp_system_node_execution.arn,
           aws_iam_role.eks_cp_worker_node_execution.arn
         ]
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "omics:*"
+        ],
+        "Resource" : [
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
+        ]
       }
     ]
   })
@@ -829,6 +839,16 @@ resource "aws_iam_policy" "cp_omics_service" {
         ],
         "Resource": [
           "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
+        ]
+      },
+      {
+        "Effect" : "Allow",
+        "Action" : [
+          "omics:*"
+        ],
+        "Resource" : [
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
         ]
       }
     ]
