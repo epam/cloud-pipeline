@@ -42,12 +42,12 @@ public class AWSOmicsStoreManager {
     private final CloudRegionManager cloudRegionManager;
 
     public AWSOmicsFileImportJob importOmicsFiles(final AbstractAWSOmicsDataStorage storage,
-                                                  final AWSOmicsFileImportJob importJob) {
+                                                  final AWSOmicsFileImportRequest importRequest) {
         final AwsRegion region = getAwsRegion(storage);
         if (storage instanceof AWSOmicsSequenceDataStorage) {
-            return map(getOmicsHelper(storage, region).importSeqOmicsFile(storage, importJob));
+            return map(getOmicsHelper(storage, region).importSeqOmicsFile(storage, importRequest));
         } else if (storage instanceof AWSOmicsReferenceDataStorage) {
-            return map(getOmicsHelper(storage, region).importRefOmicsFile(storage, importJob));
+            return map(getOmicsHelper(storage, region).importRefOmicsFile(storage, importRequest));
         } else {
             throw new IllegalArgumentException("Unsupported storage type: " + storage.getType());
         }

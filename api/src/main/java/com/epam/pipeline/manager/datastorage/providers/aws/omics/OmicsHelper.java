@@ -27,8 +27,8 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
-import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
 import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportRequest;
 import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationRequest;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
@@ -179,11 +179,11 @@ public class OmicsHelper {
     }
 
     public StartReadSetImportJobResult importSeqOmicsFile(final AbstractAWSOmicsDataStorage storage,
-                                                          final AWSOmicsFileImportJob importJob) {
+                                                          final AWSOmicsFileImportRequest importRequest) {
         return omics().startReadSetImportJob(
                 new StartReadSetImportJobRequest()
                         .withSequenceStoreId(storage.getCloudStorageId())
-                        .withSources(importJob.getSources().stream().map(item ->
+                        .withSources(importRequest.getSources().stream().map(item ->
                             new StartReadSetImportJobSourceItem()
                                     .withName(item.getName())
                                     .withDescription(item.getDescription())
@@ -198,22 +198,22 @@ public class OmicsHelper {
                                                     .withSource2(item.getSourceFiles().getSource2())
                                     )
                         ).collect(Collectors.toList()))
-                        .withRoleArn(fetchAWSOmicsServiceRole(importJob))
+                        .withRoleArn(fetchAWSOmicsServiceRole(importRequest))
         );
     }
 
     public StartReferenceImportJobResult importRefOmicsFile(final AbstractAWSOmicsDataStorage storage,
-                                                            final AWSOmicsFileImportJob importJob) {
+                                                            final AWSOmicsFileImportRequest importRequest) {
         return omics().startReferenceImportJob(
                 new StartReferenceImportJobRequest()
                         .withReferenceStoreId(storage.getCloudStorageId())
-                        .withSources(importJob.getSources().stream().map(item ->
+                        .withSources(importRequest.getSources().stream().map(item ->
                                 new StartReferenceImportJobSourceItem()
                                         .withName(item.getName())
                                         .withDescription(item.getDescription())
                                         .withSourceFile(item.getSourceFiles().getSource1())
                         ).collect(Collectors.toList()))
-                        .withRoleArn(fetchAWSOmicsServiceRole(importJob))
+                        .withRoleArn(fetchAWSOmicsServiceRole(importRequest))
         );
     }
 
@@ -284,8 +284,8 @@ public class OmicsHelper {
         return omicsFileId;
     }
 
-    private String fetchAWSOmicsServiceRole(AWSOmicsFileImportJob importJob) {
-        final String serviceRoleArn = Optional.ofNullable(importJob.getServiceRoleArn())
+    private String fetchAWSOmicsServiceRole(final AWSOmicsFileImportRequest importRequest) {
+        final String serviceRoleArn = Optional.ofNullable(importRequest.getServiceRoleArn())
                 .orElse(region.getOmicsServiceRole());
         if (serviceRoleArn == null) {
             throw new DataStorageException(OMICS_SERVICE_ROLE_ARN_NOT_FOUND);
