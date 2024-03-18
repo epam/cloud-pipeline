@@ -20,22 +20,26 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This aspect controls sending notifications
  */
 @Aspect
 @Component
+@Slf4j
 public class NotificationAspect {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NotificationAspect.class);
     public static final String RESUME_RUN_FAILED = "Resume run failed.";
 
     @Autowired
@@ -62,18 +66,29 @@ public class NotificationAspect {
         )
     @Async("notificationsExecutor")
     public void notifyRunStatusChanged(JoinPoint joinPoint, PipelineRun run) {
+        final List<RunStatus> existingStatuses = runStatusManager.loadRunStatus(run.getId());
+        final Optional<RunStatus> lastStatus = ListUtils.emptyIfNull(existingStatuses).stream()
+                .max(Comparator.comparing(RunStatus::getTimestamp));
+        //check that status really changed
+        if (lastStatus.isPresent() && lastStatus.get().getStatus() == run.getStatus()) {
+            log.debug("Won't send notification for run {} as new status {} matches an existing one.",
+                    run.getId(), run.getStatus());
+            return;
+        }
+
         final RunStatus newStatus = RunStatus.builder()
                 .runId(run.getId()).status(run.getStatus())
                 .timestamp(DateUtils.nowUTC())
                 .reason(run.getStateReasonMessage())
                 .build();
+
         runStatusManager.saveStatus(newStatus);
         if (run.isTerminating()) {
-            LOGGER.debug("Won't send a notification [{} {}: {}] (filtered by status type)", run.getPipelineName(),
+            log.debug("Won't send a notification [{} {}: {}] (filtered by status type)", run.getPipelineName(),
                           run.getVersion(), run.getStatus());
             return;
         }
-        LOGGER.debug("Notify all about pipelineRun status changed {} {} {}: {}",
+        log.debug("Notify all about pipelineRun status changed {} {} {}: {}",
                      run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
     }
