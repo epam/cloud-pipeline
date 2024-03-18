@@ -67,6 +67,20 @@ module "kms" {
         "Resource" : "*"
       },
       {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": "omics.amazonaws.com"
+        },
+        "Action": [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:Encrypt",
+          "kms:GenerateDataKey*",
+          "kms:ReEncrypt*"
+        ],
+        "Resource": "*"
+      },
+      {
         "Sid" : "Allow attachment of persistent resources",
         "Effect" : "Allow",
         "Principal" : {

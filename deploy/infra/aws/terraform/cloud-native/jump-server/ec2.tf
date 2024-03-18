@@ -11,17 +11,18 @@ module "ec2_instance" {
   instance_type = var.instance_type
 
   metadata_options = {
-    "http_endpoint": "enabled",
-    "http_put_response_hop_limit": 1,
-    "http_tokens": "optional"
+    "http_endpoint" : "enabled",
+    "http_put_response_hop_limit" : 1,
+    "http_tokens" : "optional"
   }
 
   monitoring             = true
   vpc_security_group_ids = concat(var.additional_security_groups, [module.internal_bastion_access_sg.security_group_id])
   subnet_id              = var.subnet_id
-  root_block_device = [
+  root_block_device      = [
     {
-      encrypted = true
+      volume_size = var.ebs_volume_size
+      encrypted   = true
     }
   ]
 
