@@ -4,6 +4,7 @@ module "s3_etc" {
   bucket                   = "${local.resource_name_prefix}-etc"
   control_object_ownership = true
   object_ownership         = "BucketOwnerEnforced"
+  force_destroy            = true
 
 
   server_side_encryption_configuration = {
@@ -30,6 +31,7 @@ module "s3_docker" {
   bucket                   = "${local.resource_name_prefix}-docker"
   control_object_ownership = true
   object_ownership         = "BucketOwnerEnforced"
+  force_destroy            = true
 
 
   lifecycle_rule = [

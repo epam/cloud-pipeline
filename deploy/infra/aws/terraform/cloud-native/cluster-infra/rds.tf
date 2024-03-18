@@ -64,38 +64,37 @@ resource "aws_secretsmanager_secret_version" "rds_root_secret" {
 ##########################################################################
 
 resource "random_password" "this" {
-  for_each         = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null })
+  for_each         = { for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null }
   length           = 16
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 resource "aws_secretsmanager_secret" "this" {
-  for_each                = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null })
+  for_each                = { for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null }
   name                    = "rds/${local.resource_name_prefix}_${each.value.database}_db/${each.value.username}"
   description             = "Password for ${each.value.username} to RDS Database ${each.value.database}"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "this" {
-  for_each = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null })
+  for_each = { for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null }
 
   secret_id     = aws_secretsmanager_secret.this[each.key].arn
   secret_string = random_password.this[each.key].result
 }
 
 resource "postgresql_role" "this" {
-  for_each        = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db })
+  for_each        = { for db in local.cloud_pipeline_db_configuration : db.username => db }
   name            = each.value.username
   password        = each.value.password != null ? each.value.password : random_password.this[each.key].result
   login           = true
-  create_database = "false"
 
   depends_on = [aws_secretsmanager_secret.rds_root_secret, aws_secretsmanager_secret_version.rds_root_secret, module.internal_cluster_access_sg]
 }
 
 resource "postgresql_database" "this" {
-  for_each = tomap({ for db in local.cloud_pipeline_db_configuration : db.username => db })
+  for_each = { for db in local.cloud_pipeline_db_configuration : db.username => db }
   name     = each.value.database
   owner    = each.value.username
 
