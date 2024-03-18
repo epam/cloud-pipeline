@@ -24,19 +24,25 @@ variable "instance_type" {
   description = "Instance Type that will be used"
 }
 
+variable "ebs_volume_size" {
+  type    = number
+  default = 200
+  description = "Size of the ebs volume to attach to the jump-server"
+}
+
 variable "vpc_id" {
   type        = string
-  description = "Id of the VCP to be used for deployment of the bastion instance"
+  description = "Id of the VCP to be used for deployment of the jump server"
 }
 
 variable "ami_id" {
   default     = ""
-  description = "AMI to be used for bastion ec2 instance. If empty - eks-optimized will be used."
+  description = "AMI to be used for jump ec2 instance. If empty - eks-optimized will be used."
 }
 
 variable "ami_name_filter" {
   description = "AMI name to be used as filter in data source to find an AMI id."
-  default = "amazon-eks-node-1.29-v20240227"
+  default     = "amazon-eks-node-1.29-v20240227"
 }
 
 variable "iam_role_permissions_boundary_arn" {
