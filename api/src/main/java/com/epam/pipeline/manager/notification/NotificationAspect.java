@@ -74,11 +74,6 @@ public class NotificationAspect {
                     run.getId(), run.getStatus());
             return;
         }
-        if (run.isTerminating()) {
-            log.debug("Won't send a notification [{} {}: {}] (filtered by status type)", run.getPipelineName(),
-                          run.getVersion(), run.getStatus());
-            return;
-        }
         log.debug("Notify all about pipelineRun status changed {} {} {}: {}",
                      run.getPodId(), run.getPipelineName(), run.getVersion(), run.getStatus());
         notificationManager.notifyRunStatusChanged(run);
