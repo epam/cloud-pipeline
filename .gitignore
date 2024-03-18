@@ -8,3 +8,4 @@ api/src/main/resources/static/
 .vscode/
 docs/site
 dist
+jump-server.json

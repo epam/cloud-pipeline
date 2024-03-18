@@ -101,12 +101,21 @@ output "cp_efs_filesystem_exec_role" {
 
 output "cp_fsx_filesystem_id" {
   description = "ID of the created fsx filesystem"
-  value       = try(aws_fsx_lustre_file_system.fsx[0].id, null)
+  value       = try(aws_fsx_lustre_file_system.fsx[0].id , null)
+}
+
+output "cp_filesystem_mount_point" {
+  description = "Fylesystem mount point"
+  value       = var.deploy_filesystem_type == "efs" ? "${module.cp_system_efs.dns_name}:/" : "${aws_fsx_lustre_file_system.fsx[0].dns_name}@tcp:/${aws_fsx_lustre_file_system.fsx[0].mount_name}"
 }
 
 output "cp_fsx_filesystem_exec_role" {
   description = "Execution role with permission to interact with fsx filesystem, used by SCI driver"
   value       = try(module.fsx_csi_irsa.iam_role_arn, null)
+}
+
+output "deploy_filesystem_type" {
+  value = var.deploy_filesystem_type
 }
 
 output "cp_kms_arn" {
@@ -124,5 +133,7 @@ output "https_access_security_group" {
   value       = try(module.https_access_sg.security_group_id, null)
 }
 
-
+output "cp_deploy_script" {
+  value = local.deploy_script
+} 
 
