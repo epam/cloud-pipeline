@@ -44,6 +44,12 @@ public abstract class AbstractAWSOmicsDataStorage extends AbstractAWSDataStorage
     }
 
     @Override
+    public String getRoot() {
+        return getPath().substring(0, getPath().lastIndexOf(getDelimiter()) + 1);
+    }
+
+
+    @Override
     public boolean isPolicySupported() {
         return false;
     }
