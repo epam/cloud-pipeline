@@ -186,7 +186,7 @@ class DtsManagement extends React.Component {
   }
 }
 
-DtsInfo.propTypes = {
+DtsManagement.propTypes = {
   handleModified: PropTypes.func
 };
 

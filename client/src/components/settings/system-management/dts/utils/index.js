@@ -16,6 +16,8 @@
 
 import compareArrays from '../../../../../utils/compareArrays';
 
+const S3_LOGS_SOURCE = 'c:\\Program Files\\CloudPipeline\\DTS\\logs';
+
 const MAPPERS = {
   'dts.local.sync.rules': (value) => {
     let parsed = [];
@@ -119,7 +121,22 @@ function getErrorPreferences (preferences = []) {
   return errors;
 }
 
+function getDtsLogsLink (dts = {}) {
+  const syncRules = (dts.preferences || {})['dts.local.sync.rules'];
+  if (!syncRules) {
+    return null;
+  }
+  const preferences = MAPPERS['dts.local.sync.rules'](syncRules) || [];
+  const {destination} = preferences
+    .find(({source}) => (source || '').toLowerCase() === S3_LOGS_SOURCE.toLowerCase()) || {};
+  if (!destination) {
+    return null;
+  }
+  return destination;
+}
+
 export {
+  getDtsLogsLink,
   getErrorPreferences,
   getModifiedPreferences,
   mapPreferences,

@@ -14,11 +14,22 @@
  *  limitations under the License.
  */
 
-.table {
-  width: 100%;
-  border-collapse: collapse;
+.logs-container {
+  display: flex;
+  gap: 5px;
+  flex-direction: column;
 }
 
-.table td {
-  padding: 1px;
+.controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.logs-console {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.logs-console .console-line {
+  white-space: pre;
 }

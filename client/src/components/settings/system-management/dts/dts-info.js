@@ -17,11 +17,13 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {Button, Spin, Checkbox, Input, Icon} from 'antd';
+import {Button, Spin, Checkbox, Input, Icon, Tabs} from 'antd';
 import LocalSyncDtsPreference from './components/local-sync-dts-preference';
+import DtsLogs from './components/dts-logs';
 import {
   mapPreferences,
   unMapPreferences,
+  getDtsLogsLink,
   getModifiedPreferences,
   getErrorPreferences
 } from './utils';
@@ -33,11 +35,13 @@ class DtsInfo extends React.Component {
     initialPreferences: [],
     drafts: [],
     modifiedPreferences: [],
-    errors: []
+    errors: [],
+    logsFolder: undefined
   }
 
   componentDidMount () {
     this.initializeState();
+    this.checkLogsAvailable();
   }
 
   componentDidUpdate (prevProps) {
@@ -46,6 +50,7 @@ class DtsInfo extends React.Component {
       prevProps.refreshToken !== this.props.refreshToken
     ) {
       this.initializeState();
+      this.checkLogsAvailable();
     }
   }
 
@@ -67,6 +72,12 @@ class DtsInfo extends React.Component {
       modifiedPreferences: [],
       errors: []
     }, this.validate);
+  };
+
+  checkLogsAvailable = () => {
+    const {dts} = this.props;
+    const logsFolder = getDtsLogsLink(dts);
+    this.setState({logsFolder});
   };
 
   validate = () => {
@@ -261,38 +272,58 @@ class DtsInfo extends React.Component {
     )
   };
 
-  render () {
+  renderDtsTab = () => {
     const {modifiedPreferences, errors} = this.state;
-    const {pending} = this.props;
     return (
-      <Spin spinning={pending}>
-        <div style={{display: 'flex', flexDirection: 'column'}}>
-          {this.preferencesWithDrafts.map(this.renderPreference)}
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        {this.preferencesWithDrafts.map(this.renderPreference)}
+        <Button
+          onClick={this.addPreference}
+          style={{width: 150}}
+          size="small"
+        >
+          <Icon type="plus" /> Add preference
+        </Button>
+        <div
+          style={{display: 'flex', justifyContent: 'flex-end', gap: 5}}
+        >
           <Button
-            onClick={this.addPreference}
-            style={{width: 150}}
+            disabled={modifiedPreferences.length === 0}
+            onClick={this.onRevert}
             size="small"
           >
-            <Icon type="plus" /> Add preference
+            Revert
           </Button>
-          <div style={{display: 'flex', justifyContent: 'flex-end', gap: 5}}>
-            <Button
-              disabled={modifiedPreferences.length === 0}
-              onClick={this.onRevert}
-              size="small"
-            >
-              Revert
-            </Button>
-            <Button
-              disabled={errors.length > 0 || modifiedPreferences.length === 0}
-              onClick={this.onSave}
-              size="small"
-              type="primary"
-            >
-              Save
-            </Button>
-          </div>
+          <Button
+            disabled={errors.length > 0 || modifiedPreferences.length === 0}
+            onClick={this.onSave}
+            size="small"
+            type="primary"
+          >
+            Save
+          </Button>
         </div>
+      </div>
+    );
+  };
+
+  render () {
+    const {pending} = this.props;
+    const {logsFolder} = this.state;
+    return (
+      <Spin spinning={pending}>
+        <Tabs defaultActiveKey="dts" size="small" onChange={this.onChangeTab}>
+          <Tabs.TabPane tab="DTS" key="dts">
+            {this.renderDtsTab()}
+          </Tabs.TabPane>
+          {logsFolder ? (
+            <Tabs.TabPane tab="LOGS" key="logs">
+              <DtsLogs
+                folder={logsFolder}
+              />
+            </Tabs.TabPane>
+          ) : null}
+        </Tabs>
       </Spin>
     );
   }
