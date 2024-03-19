@@ -80,8 +80,8 @@ RUN mkdir -p "$HCS_TOOLS_HOME" && \
 
 ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bin:$HCS_TOOLS_HOME/raw2ometiff/bin:$PATH"
 
-COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/process_hcs_files.py"
-COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/process_hcs_files_cluster.py"
+COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py"
+COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files_cluster.py"
 COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
 COPY start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
 COPY start_cluster.sh "$HCS_TOOLS_HOME/scripts/start_cluster.sh"
