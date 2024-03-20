@@ -535,6 +535,12 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get allowCommitToOtherPersonalGroups () {
+    const value = this.getPreferenceValue('commit.allow.other.personal.group');
+    return (value || '').toLowerCase() !== 'false';
+  }
+
+  @computed
   get commitMaxLayers () {
     const value = this.getPreferenceValue('commit.max.layers');
     if (!value || Number.isNaN(Number(value))) {
