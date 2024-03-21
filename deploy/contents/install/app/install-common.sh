@@ -25,7 +25,8 @@ yum install -y \
             wget \
             git \
             gettext \
-            iproute-tc
+            iproute-tc \
+            openssl
 
 git config --global http.sslVerify "false"
 
