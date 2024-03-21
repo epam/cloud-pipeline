@@ -80,6 +80,14 @@ class OmicsDataStorage:
         instance.cloud_store_id, instance.region_name = cls._find_store_id_and_region_code(instance.path)
         return instance
 
+    @classmethod
+    def parse_path(cls, path):
+        result = re.search(OmicsDataStorage.PATH_PATTERN, path)
+        if result is not None:
+            return result.group(1), result.group(2), result.group(5)
+        else:
+            return None, None, None
+
     @staticmethod
     def _find_store_id_and_region_code(path):
         res = re.search(OmicsDataStorage.STORAGE_PATH_PATTERN, path)

@@ -4,11 +4,16 @@ import logging
 import os
 import traceback
 
-from omics.cpapi import CloudPipelineClient
+from omics.cloud_pipeline_api import CloudPipelineClient
 from omics import storage_operations
 import sys
+import jsonpickle
 
 _default_logging_level = 'ERROR'
+
+
+def dumps_to_json(object):
+    return jsonpickle.encode(object, unpicklable=False)
 
 
 def configure_logging(args):
@@ -21,7 +26,9 @@ def perform_command(group, command, parsed_args):
     api = CloudPipelineClient(os.getenv('API', ''), os.getenv('API_TOKEN', ''))
     match group:
         case 'storage':
-            storage_operations.perform_storage_command(api, command, parsed_args)
+            sys.stdout.write(
+                dumps_to_json(storage_operations.perform_storage_command(api, command, parsed_args)) + '\n'
+            )
         case _:
             raise RuntimeError()
 
@@ -40,7 +47,7 @@ if __name__ == '__main__':
     try:
         parsed_args = json.loads(args.raw_input)
         perform_command(args.group, args.command, parsed_args)
-    except Exception:
+    except Exception as e:
         logging.exception('Unhandled error')
         traceback.print_exc()
         sys.exit(1)
