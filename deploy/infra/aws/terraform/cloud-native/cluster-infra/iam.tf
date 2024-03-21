@@ -315,8 +315,8 @@ resource "aws_iam_policy" "cp_main_service" {
           "omics:*"
         ],
         "Resource" : [
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
         ]
       }
     ]
@@ -387,8 +387,8 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
           "omics:*"
         ],
         "Resource" : [
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
         ]
       }
     ]
@@ -838,7 +838,7 @@ resource "aws_iam_policy" "cp_omics_service" {
           "logs:CreateLogGroup"
         ],
         "Resource": [
-          "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
+          "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
         ]
       },
       {
@@ -847,8 +847,8 @@ resource "aws_iam_policy" "cp_omics_service" {
           "omics:*"
         ],
         "Resource" : [
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:referenceStore/*",
-          "arn:aws:omics:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:referenceStore/*",
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
         ]
       }
     ]
