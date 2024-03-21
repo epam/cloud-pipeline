@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -34,10 +33,13 @@ import java.util.regex.Pattern;
 public class OmicsSeqStoreTemporaryCredentialsGenerator
         extends AbstractAWSTemporaryCredentialsGenerator<AWSOmicsSequenceDataStorage> {
 
-    private static final String GET_OBJECT_ACTION = "omics:GetReadSet";
-    private static final String START_IMPORT_JOB_ACTION = "omics:StartReadSetImportJob";
-    private static final String DELETE_OBJECT_ACTION = "omics:DeleteReadSet";
-    private static final String LIST_OBJECTS_ACTION = "omics:ListReadSets";
+    private static final String GET_READSET_ACTION = "omics:GetReadSet*";
+    private static final String LIST_READSET_ACTION = "omics:ListReadSet*";
+    private static final String START_READSET_ACTION = "omics:StartReadSet*";
+    private static final String CREATE_READSET_ACTION = "omics:Create*ReadSet*";
+    private static final String DELETE_OBJECT_ACTION = "omics:*DeleteReadSet*";
+    private static final String COMPLETE_READSET_ACTION = "omics:Complete*ReadSet*";
+
     private static final Pattern AWS_OMICS_PATH_PATTERN
             = Pattern.compile("(?<account>.*).storage.(?<region>.*).amazonaws.com/(?<store>.*)/readSet");
     private static final String AWS_OMICS_STORE_ARN_TEMPLATE = "arn:aws:omics:%s:%s:sequenceStore/%s";
@@ -57,7 +59,7 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
     void addListingPermissions(final DataStorageAction action, final ArrayNode statements) {
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
-        actions.add(LIST_OBJECTS_ACTION);
+        actions.add(LIST_READSET_ACTION);
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildOmicsArn(action, true));
         statements.add(statement);
@@ -68,11 +70,14 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
         if (action.isRead()) {
-            actions.add(GET_OBJECT_ACTION);
+            actions.add(GET_READSET_ACTION);
+            actions.add(LIST_READSET_ACTION);
         }
         if (action.isWrite()) {
-            actions.add(START_IMPORT_JOB_ACTION);
+            actions.add(START_READSET_ACTION);
+            actions.add(CREATE_READSET_ACTION);
             actions.add(DELETE_OBJECT_ACTION);
+            actions.add(COMPLETE_READSET_ACTION);
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
         resource.add(buildOmicsArn(action, false));

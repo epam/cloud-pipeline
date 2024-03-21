@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
 public class OmicsRefStoreTemporaryCredentialsGenerator
         extends AbstractAWSTemporaryCredentialsGenerator<AWSOmicsReferenceDataStorage> {
 
-    private static final String GET_OBJECT_ACTION = "omics:GetReference";
+    private static final String GET_REFERENCE_ACTION = "omics:GetReference*";
     private static final String START_IMPORT_JOB_ACTION = "omics:StartReferenceImportJob";
-    private static final String DELETE_OBJECT_ACTION = "omics:DeleteReference";
+    private static final String DELETE_OBJECT_ACTION = "omics:DeleteReference*";
     private static final String LIST_OBJECTS_ACTION = "omics:ListReferences";
     private static final Pattern AWS_OMICS_PATH_PATTERN
             = Pattern.compile("(?<account>.*).storage.(?<region>.*).amazonaws.com/(?<store>.*)/reference");
@@ -67,7 +67,7 @@ public class OmicsRefStoreTemporaryCredentialsGenerator
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
         if (action.isRead()) {
-            actions.add(GET_OBJECT_ACTION);
+            actions.add(GET_REFERENCE_ACTION);
         }
         if (action.isWrite()) {
             actions.add(START_IMPORT_JOB_ACTION);
