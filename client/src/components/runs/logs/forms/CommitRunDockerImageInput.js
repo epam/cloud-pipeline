@@ -37,6 +37,7 @@ const isPersonalGroup = (group) => {
   return name.toLowerCase() === owner;
 };
 
+@roleModel.authenticationInfo
 @observer
 export default class CommitRunDockerImageInput extends React.Component {
   static propTypes = {
@@ -163,6 +164,15 @@ export default class CommitRunDockerImageInput extends React.Component {
   };
 
   @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (!authenticatedUserInfo || !authenticatedUserInfo.loaded) {
+      return false;
+    }
+    return authenticatedUserInfo.value.admin;
+  }
+
+  @computed
   get toolVersions () {
     if (this._tags && this._tags.loaded) {
       return (this._tags.value || []).map(t => t);
@@ -229,7 +239,7 @@ export default class CommitRunDockerImageInput extends React.Component {
         if (showOtherPersonalGroups) {
           return roleModel.writeAllowed(g) || hasToolsWithRights;
         }
-        return (roleModel.writeAllowed(g) || hasToolsWithRights) && !isPersonalGroup(g);
+        return (roleModel.writeAllowed(g) || hasToolsWithRights) && (this.isAdmin || !isPersonalGroup(g));
       });
   }
 
