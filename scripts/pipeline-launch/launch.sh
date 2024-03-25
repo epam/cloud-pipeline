@@ -2437,7 +2437,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if [ "$CP_OS" == "centos" ]; then
+      if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
             if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
                   get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
             fi
