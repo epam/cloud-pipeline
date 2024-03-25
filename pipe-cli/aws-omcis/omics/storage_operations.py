@@ -21,8 +21,17 @@ class OmicsStorageCopyOptions:
     def from_raw_input(args):
         mode = OmicsStorageCopyOptions.define_mode(args["source"], args["destination"])
         match mode:
-            case OmicsStorageCopyOptions.MODE_UPLOAD:
+            case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
+                description, subject_id, sample_id, reference_arn, generated_from = OmicsStorageCopyOptions.parse_additional_options(args["additional_options"])
                 return OmicsStorageUploadOptions(
+                    source=args["source"],
+                    destination=args["destination"],
+                    mode=mode,
+                    recursive=args.get("recursive", False),
+                    generated_from=generated_from
+                )
+            case OmicsStorageCopyOptions.MODE_DOWNLOAD:
+                return OmicsStorageDownloadOptions(
                     source=args["source"],
                     destination=args["destination"],
                     mode=mode,
@@ -41,6 +50,12 @@ class OmicsStorageCopyOptions:
                 return OmicsStorageCopyOptions.MODE_IMPORT
             else:
                 return OmicsStorageCopyOptions.MODE_UPLOAD
+
+    @classmethod
+    def parse_additional_options(cls, additional_options_string):
+        if not additional_options_string:
+            raise ValueError("Additional options should be provided to register file in Omics store!")
+        values = {}
 
 
 class OmicsStorageUploadOptions(OmicsStorageCopyOptions):
