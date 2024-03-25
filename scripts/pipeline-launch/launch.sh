@@ -422,7 +422,7 @@ function configure_package_manager {
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                         apt-get update -qq -y --allow-insecure-repositories
-                        
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
                               sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
@@ -1704,6 +1704,146 @@ fi
 
 ######################################################
 
+
+######################################################
+# Install additional packages
+######################################################
+
+echo "Install additional packages"
+echo "-"
+
+if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
+      EXTRA_PKG_INSTALL_COMMAND=
+      EXTRA_PKG_DISTRO_INSTALL_COMMAND=
+      if [ "$CP_CAP_EXTRA_PKG" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
+      fi
+      if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+            if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_RHEL_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_RHEL_URL"
+            fi
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]); then
+            if [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_DEB_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_DEB_URL"
+            fi
+      fi
+
+      if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
+            echo "Installing COMMON extra packages: $CP_CAP_EXTRA_PKG"
+            eval "$EXTRA_PKG_INSTALL_COMMAND"
+      fi
+
+      if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
+            echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
+            eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+
+      if [ "$CP_CAP_EXTRA_PKG_URL" ]; then
+            echo "Installing extra packages from external sources"
+            _old_pwd=$(pwd)
+            cd "$CP_USR_BIN"
+            for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_filename=$(basename "$_pkg")
+                  _pkg_filename_ext="${_pkg_filename##*.}"
+                  if [ -f "$_pkg_filename" ]; then
+                        rm -f "$_pkg_filename"
+                  fi
+                  if ! download_file "$_pkg"; then
+                        echo "[WARN] Failed downloading $_pkg extra package"
+                  else
+                        if [ "$_pkg_filename_ext" == "tgz" ]; then
+                              tar -zxf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "tar" ]; then
+                              tar -xf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "zip" ]; then
+                              unzip -o "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "gz" ]; then
+                              chmod +x "$_pkg_filename"
+                              gzip -d -f "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        fi
+                  fi
+            done
+            cd "$_old_pwd"
+      fi
+else
+      echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
+fi
+
+######################################################
+
+######################################################
+# Enable NFS observer
+######################################################
+
+echo "Setup NFS events observer"
+echo "-"
+
+if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
+    echo "NFS events observer is not requested"
+elif [ "$CP_SENSITIVE_RUN" == "true" ]; then
+    echo "NFS event watching is disabled for sensitive runs"
+else
+    inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
+    sysctl -w fs.inotify.max_user_watches=$inotify_watchers
+    sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+fi
+
+######################################################
+
+######################################################
+# Enable API_TOKEN refresher
+######################################################
+
+echo "Setup API_TOKEN refresher"
+echo "-"
+
+if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
+    echo "API_TOKEN refresh is not requested"
+else
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+fi
+
+######################################################
+
+
+######################################################
+# Enable mount restrictor
+######################################################
+
+echo "Setup mount restrictor"
+echo "-"
+
+if [ "$CP_MOUNT_RESTRICTOR_DISABLED" != "true" ]; then
+      initialise_wrappers "mount" "mount_restrictor" "$CP_USR_BIN"
+fi
+
+######################################################
+
+
+######################################################
+# Custom shells
+######################################################
+
+echo "Setup custom shells"
+echo "-"
+
+if [ "$CP_CAP_SHELL_LIST" ]; then
+      custom_shells_setup "$CP_CAP_SHELL_LIST"
+fi
+
+
+######################################################
 
 ######################################################
 echo Executing task
