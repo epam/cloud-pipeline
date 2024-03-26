@@ -50,6 +50,9 @@ export default class DataStorageNavigation extends React.Component {
 
   getRootPath = () => {
     if (this.props.storage) {
+      if (this.props.storage.type === 'AWS_OMICS_REF' || this.props.storage.type === 'AWS_OMICS_SEQ') {
+        return `${this.props.storage.pathMask.toLowerCase()}`;
+      }
       return `${this.props.storage.type.toLowerCase()}://${this.props.storage.path}`;
     }
     return '';
