@@ -51,13 +51,10 @@ export const ServiceTypes = {
   omicsSeq: 'AWS_OMICS_SEQ'
 };
 
-const OmicsServiceTypes = [{
-  name: 'Reference store',
-  value: ServiceTypes.omicsRef
-}, {
-  name: 'Sequence store',
-  value: ServiceTypes.omicsSeq
-}];
+const OmicsServiceTypes = {
+  [ServiceTypes.omicsRef]: 'Reference store',
+  [ServiceTypes.omicsSeq]: 'Sequence store'
+};
 
 @roleModel.authenticationInfo
 @inject('awsRegions', 'preferences')
@@ -144,11 +141,11 @@ export class DataStorageEditDialog extends React.Component {
       if (!err) {
         values.serviceType = this.isNfsMount
           ? ServiceTypes.fileShare
-          : (this.props.omicsStore
+          : (this.omicsStore
             ? this.state.omicsType
             : ServiceTypes.objectStorage);
         values.mountDisabled = this.state.mountDisabled;
-        if (!this.isNfsMount && !this.props.omicsStore && this.props.policySupported && this.state.versioningEnabled) {
+        if (!this.isNfsMount && !this.omicsStore && this.props.policySupported && this.state.versioningEnabled) {
           values.versioningEnabled = true;
         } else {
           values.backupDuration = undefined;
@@ -160,7 +157,7 @@ export class DataStorageEditDialog extends React.Component {
         values.shared = !this.isNfsMount && this.state.sharingEnabled;
         values.regionId = +values.regionId;
         const path = values.path;
-        if (!this.props.omicsStore) {
+        if (!this.omicsStore) {
           values.path = path.path;
         }
         if (this.isNfsMount) {
@@ -179,6 +176,17 @@ export class DataStorageEditDialog extends React.Component {
         ? this.props.dataStorage.storageType === 'NFS'
         : this.props.dataStorage.type === 'NFS'
       : this.props.isNfsMount;
+  }
+
+  @computed
+  get omicsStore () {
+    return this.props.dataStorage
+      ? this.props.dataStorage.storageType
+        ? (this.props.dataStorage.storageType === ServiceTypes.omicsSeq ||
+          this.props.dataStorage.storageType === ServiceTypes.omicsRef)
+        : (this.props.dataStorage.type === ServiceTypes.omicsSeq ||
+          this.props.dataStorage.type === ServiceTypes.omicsRef)
+      : this.props.omicsStore;
   }
 
   get userPermissions () {
@@ -223,7 +231,7 @@ export class DataStorageEditDialog extends React.Component {
 
   @computed
   get omicsTypes () {
-    return OmicsServiceTypes || [];
+    return Object.entries(OmicsServiceTypes || []);
   }
 
   @computed
@@ -338,7 +346,7 @@ export class DataStorageEditDialog extends React.Component {
           type="primary"
           htmlType="submit"
           disabled={(this.isNfsMount && !this.isStoragePathValid) ||
-            (this.props.omicsStore && (!this.state.omicsType || !this.isAliasValid))
+            (this.omicsStore && (!this.state.omicsType || !this.isAliasValid))
           }
           onClick={this.handleSubmit}>Create</Button>
       </Row>
@@ -393,7 +401,7 @@ export class DataStorageEditDialog extends React.Component {
         // eslint-disable-next-line standard/no-callback-literal
         callback('Storage path must begin with \'/\'');
       }
-    } else if ((!value || !value.path) && !this.props.omicsStore) {
+    } else if ((!value || !value.path) && !this.omicsStore) {
       // eslint-disable-next-line standard/no-callback-literal
       callback('Storage path is required');
     }
@@ -401,7 +409,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   validateAlias = (value, callback) => {
-    if (!value && this.props.omicsStore) {
+    if (!value && this.omicsStore) {
       this.setState({aliasValid: false});
       // eslint-disable-next-line standard/no-callback-literal
       callback('Alias is required');
@@ -436,12 +444,16 @@ export class DataStorageEditDialog extends React.Component {
         visible={this.props.visible}
         title={
           this.props.dataStorage
-            ? (this.isNfsMount ? 'Edit FS mount' : 'Edit object storage')
+            ? (this.isNfsMount
+              ? 'Edit FS mount'
+              : (this.omicsStore
+                ? 'Edit omics store'
+                : 'Edit object storage'))
             : (this.isNfsMount
               ? 'Create FS mount'
               : (this.props.addExistingStorageFlag
                 ? 'Add existing object storage'
-                : (this.props.omicsStore
+                : (this.omicsStore
                   ? 'Create omics store'
                   : 'Create object storage')))
         }
@@ -457,7 +469,7 @@ export class DataStorageEditDialog extends React.Component {
             <Tabs.TabPane key="info" tab="Info">
               <Form id="edit-storage-form">
                 {
-                  !this.props.omicsStore &&
+                  !this.omicsStore &&
                   <Form.Item
                     className={`${styles.dataStorageFormItem} edit-storage-storage-path-container`}
                     {...this.formItemLayout}
@@ -503,24 +515,24 @@ export class DataStorageEditDialog extends React.Component {
                   )}
                 </Form.Item>
                 {
-                  this.props.omicsStore &&
+                  this.omicsStore &&
                   <Form.Item
                     className={styles.dataStorageFormItem}
                     {...this.formItemLayout}
                     label="Omics service type">
                     {getFieldDecorator('omicsType', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.omicsType
-                        ? this.props.dataStorage.omicsType.toString()
+                      initialValue: this.props.dataStorage && this.props.dataStorage.type
+                        ? this.props.dataStorage.type
                         : undefined
                     })(
                       <Select
                         style={{width: '100%'}}
-                        disabled={!!this.omicsStore || isReadOnly}
+                        disabled={!!this.props.dataStorage || isReadOnly}
                         onChange={(type) => this.setState({omicsType: type})}
                       >
-                        {this.omicsTypes.map(type => {
-                          return <Select.Option key={type.value} title={type.name}>
-                            {type.name}
+                        {this.omicsTypes.map(([value, name]) => {
+                          return <Select.Option key={value} title={name}>
+                            {name}
                           </Select.Option>;
                         })}
                       </Select>
@@ -564,7 +576,7 @@ export class DataStorageEditDialog extends React.Component {
                   )}
                 </Form.Item>
                 {
-                  !this.props.omicsStore &&
+                  !this.omicsStore &&
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -580,7 +592,7 @@ export class DataStorageEditDialog extends React.Component {
                   </Row>
                 }
                 {
-                  (!this.props.omicsStore && !this.state.mountDisabled) && (
+                  (!this.omicsStore && !this.state.mountDisabled) && (
                     <Form.Item
                       className={styles.dataStorageFormItem}
                       {...this.formItemLayout}
@@ -596,7 +608,7 @@ export class DataStorageEditDialog extends React.Component {
                   )
                 }
                 {
-                  (!this.props.omicsStore && !this.isNfsMount) &&
+                  (!this.omicsStore && !this.isNfsMount) &&
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -611,7 +623,7 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 }
-                {!this.props.omicsStore &&
+                {!this.omicsStore &&
                 !this.isNfsMount &&
                 this.props.policySupported &&
                 this.currentRegionSupportsPolicy &&
@@ -630,7 +642,7 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 )}
-                {!this.props.omicsStore &&
+                {!this.omicsStore &&
                 !this.isNfsMount &&
                 this.props.policySupported &&
                 this.state.versioningEnabled &&
@@ -651,7 +663,7 @@ export class DataStorageEditDialog extends React.Component {
                   </Form.Item>
                 )}
                 {
-                  !this.props.omicsStore &&
+                  !this.omicsStore &&
                   !this.state.mountDisabled && (
                     <Form.Item
                       className={styles.dataStorageFormItem}
@@ -669,7 +681,7 @@ export class DataStorageEditDialog extends React.Component {
                   )
                 }
                 {
-                  !this.props.omicsStore &&
+                  !this.omicsStore &&
                   !this.state.mountDisabled && (
                     <Form.Item
                       className={styles.dataStorageFormItem}
@@ -687,7 +699,7 @@ export class DataStorageEditDialog extends React.Component {
                   )
                 }
                 {
-                  !this.props.omicsStore &&
+                  !this.omicsStore &&
                   !this.isNfsMount &&
                   (
                     (!this.props.dataStorage && !this.props.addExistingStorageFlag) ||
@@ -755,7 +767,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   checkIsOmics = (prevProps) => {
-    if (this.props.omicsStore && (prevProps && prevProps.omicsStore !== this.props.omicsStore)) {
+    if (this.omicsStore && (prevProps && prevProps.omicsStore !== this.props.omicsStore)) {
       const mountDisabled = false;
       const versioningEnabled = false;
       const sensitive = false;
