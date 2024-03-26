@@ -55,11 +55,11 @@ locals {
   ]
 
   cloud_pipeline_db_configuration = var.create_cloud_pipeline_db_configuration && var.deploy_rds ? var.cloud_pipeline_db_configuration : {}
-  
-  pipeline_db_pass  = var.cloud_pipeline_db_configuration["pipeline"].password != null ? var.cloud_pipeline_db_configuration["pipeline"].password : nonsensitive(random_password.this["pipeline"].result)
-  clair_db_pass = var.cloud_pipeline_db_configuration["clair"].password != null ? var.cloud_pipeline_db_configuration["clair"].password : nonsensitive(random_password.this["clair"].result)
-  
-  cp_filesystem_id = var.deploy_filesystem_type == "efs" ? module.cp_system_efs.id : try(aws_fsx_lustre_file_system.fsx[0].id, "<efs-id>") 
+
+  pipeline_db_pass = var.cloud_pipeline_db_configuration["pipeline"].password != null ? var.cloud_pipeline_db_configuration["pipeline"].password : nonsensitive(random_password.this["pipeline"].result)
+  clair_db_pass    = var.cloud_pipeline_db_configuration["clair"].password != null ? var.cloud_pipeline_db_configuration["clair"].password : nonsensitive(random_password.this["clair"].result)
+
+  cp_filesystem_id = var.deploy_filesystem_type == "efs" ? module.cp_system_efs.id : try(aws_fsx_lustre_file_system.fsx[0].id, "<efs-id>")
 
   deploy_idp = var.cp_deploy_idp ? [
     "-s cp-idp",
@@ -72,7 +72,7 @@ locals {
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
     "-d \"library/centos:7\"",
-    "-dt aws-native", 
+    "-dt aws-native",
     "-jc",
     "-env CP_MAIN_SERVICE_ROLE=\"${module.cp_irsa.iam_role_arn}\"",
     "-env CP_CSI_DRIVER_TYPE=\"${var.deploy_filesystem_type}\"",
@@ -90,16 +90,16 @@ locals {
     "-env CP_CLOUD_REGION_ID=\"${data.aws_region.current.name}\"",
     "-env CP_KUBE_CLUSTER_NAME=\"${module.eks.cluster_name}\"",
     "-env CP_KUBE_EXTERNAL_HOST=\"${module.eks.cluster_endpoint}\"",
-    "-env CP_KUBE_SERVICES_TYPE=\"ingress\"" ,
+    "-env CP_KUBE_SERVICES_TYPE=\"ingress\"",
     "-env CP_EDGE_AWS_ELB_SCHEME=\"internet-facing\"",
     "-env CP_EDGE_AWS_ELB_SUBNETS=\"${var.elb_public_subnet}\"",
     "-env CP_EDGE_AWS_ELB_EIPALLOCS=\"${var.eipalloc}\"",
     "-env CP_EDGE_AWS_ELB_SG=\"${module.https_access_sg.security_group_id},${module.internal_cluster_access_sg.security_group_id}\"",
-    "--external-host-dns" ,
+    "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env CP_CLAIR_DATABASE_PASSWORD=\"${local.clair_db_pass}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",
-    "-s cp-api-srv" ,
+    "-s cp-api-srv",
     "-env CP_API_SRV_EXTERNAL_PORT=443",
     "-env CP_API_SRV_INTERNAL_PORT=443",
     "-env CP_API_SRV_EXTERNAL_HOST=\"${var.cp_api_srv_host}\"",
@@ -155,5 +155,5 @@ locals {
     ],
     local.deploy_idp
   ))
- }
+}
 

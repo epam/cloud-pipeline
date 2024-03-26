@@ -37,10 +37,7 @@ Parameters:
   CPdeployIDP:
     Type: String
     Description: "Option to deploy internal Identical Provider service. Default true"
-    Default: true
-    AllowedValues:
-      - true
-      - false  
+    Default: "true"
   TFstateBucketName:
     Type: String
     Description: "S3 Bucket name where terraform state file for Cloud-Pipeline Infrastructure module will be stored"

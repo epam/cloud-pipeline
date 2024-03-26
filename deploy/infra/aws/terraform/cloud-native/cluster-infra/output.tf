@@ -71,7 +71,7 @@ output "cp_docker_bucket" {
 output "rds_root_pass_secret" {
   description = "Id of the secretsmanager secret where password of the RDS root_user is stored"
   value       = try(aws_secretsmanager_secret_version.rds_root_secret[0].secret_string, null)
-  sensitive = true
+  sensitive   = true
 }
 
 output "rds_address" {
@@ -101,7 +101,7 @@ output "cp_efs_filesystem_exec_role" {
 
 output "cp_fsx_filesystem_id" {
   description = "ID of the created fsx filesystem"
-  value       = try(aws_fsx_lustre_file_system.fsx[0].id , null)
+  value       = try(aws_fsx_lustre_file_system.fsx[0].id, null)
 }
 
 output "cp_filesystem_mount_point" {
@@ -135,5 +135,5 @@ output "https_access_security_group" {
 
 output "cp_deploy_script" {
   value = local.deploy_script
-} 
+}
 
