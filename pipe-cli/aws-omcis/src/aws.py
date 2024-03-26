@@ -1,4 +1,16 @@
-import os.path
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from boto3 import Session
 from botocore.config import Config
@@ -8,8 +20,8 @@ from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
-from .util.fs_utils import parse_local_path, files_size, filename_prefix
-from .util.progress_bar import ProgressBarSubscriber, FinalEventSubscriber
+from .util.fs_utils import parse_local_path
+from .util.progress_utils import ProgressBarSubscriber, FinalEventSubscriber
 
 
 class AWSOmicsFile:
@@ -119,43 +131,52 @@ class AWSOmicsOperation:
             _, result = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
         return result
 
-    def download_read_set(self, storage, from_path, to_path):
-        omics_file = OmicsUriParser(from_path).parse()
-        destination_dir, destination_file_name = parse_local_path(to_path)
+    def download_file(self, storage, source, destination):
+        if storage.type == OmicsStoreType.OMICS_SEQ:
+            self.download_read_set(storage, source, destination)
+        elif storage.type == OmicsStoreType.OMICS_REF:
+            self.download_reference(storage, source, destination)
+
+    def download_read_set(self, storage, source, destination):
+        omics_file = OmicsUriParser(source).parse()
+        destination_dir, destination_file_name = parse_local_path(destination)
         file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
-        if from_path.endswith(omics_file.file_name.lower()):
+        manager = TransferManager(
+            self.get_omics(storage, storage.region_name, read=True, write=True),
+            config=TransferConfig(directory=destination_dir)
+        )
+        if source.endswith(omics_file.file_name.lower()):
             subscribers = [
                 ProgressBarSubscriber(
                     file_metadata.size,
                     "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name)
                 )
             ]
-            manager = TransferManager(
-                self.get_omics(storage, storage.region_name, read=True, write=True),
-                config=TransferConfig(directory=destination_dir)
-            )
-            manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id,
-                                           omics_file.file_name, destination_file_name, subscribers=subscribers)
+            manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id, omics_file.file_name,
+                                           client_fileobj=destination_file_name, subscribers=subscribers)
         else:
             subscribers = [ProgressBarSubscriber(file_metadata.size, "readSet/{}".format(omics_file.resource_id))]
-            TransferManager(
-                self.get_omics(storage, storage.region_name, read=True, write=True)
-            ).download_read_set(storage.cloud_store_id, omics_file.resource_id,
-                                directory=destination_dir, subscribers=subscribers)
+            manager.download_read_set(storage.cloud_store_id, omics_file.resource_id, subscribers=subscribers)
 
-    def download_reference(self, storage, path):
-        reference = OmicsUriParser(path).parse()
+    def download_reference(self, storage, source, destination):
+        reference = OmicsUriParser(source).parse()
+        destination_dir, destination_file_name = parse_local_path(destination)
         file_metadata = self.get_file_metadata(storage, reference.resource_id)
+        manager = TransferManager(
+            self.get_omics(storage, storage.region_name, read=True, write=True),
+            config=TransferConfig(directory=destination_dir)
+        )
         subscribers = [ProgressBarSubscriber(file_metadata.size, "reference/{}".format(file_metadata.id))]
-        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
-        if path.endswith(reference.file_name.lower()):
+        if source.endswith(reference.file_name.lower()):
             manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name,
-                                            subscribers=subscribers)
+                                            client_fileobj=destination_file_name, subscribers=subscribers)
         else:
             manager.download_reference(storage.cloud_store_id, reference.resource_id, subscribers=subscribers)
 
     def upload_file(self, storage, sources, name, file_type, subject_id, sample_id,
                     description=None, generated_from=None, reference_arn=None):
+        if storage.type == OmicsStoreType.OMICS_REF:
+            raise RuntimeError("Direct upload to Omics Reference store isn't supported!")
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
         subscribers = [FinalEventSubscriber()]
         manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,

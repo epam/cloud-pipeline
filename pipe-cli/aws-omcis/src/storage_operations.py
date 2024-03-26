@@ -1,3 +1,17 @@
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os.path
 
 from .cloud_pipeline_api import CloudPipelineClient
@@ -21,6 +35,11 @@ class OmicsStorageCopyOptions:
 
     @staticmethod
     def from_raw_input(args):
+        if "recursive" in args and bool(args["recursive"]):
+            raise ValueError(
+                "'recursive' is not supported for Omics Store!"
+            )
+
         if "source" not in args or "destination" not in args:
             raise ValueError(
                 "'source', 'destination' should be provided to register Omics file!"
@@ -31,6 +50,10 @@ class OmicsStorageCopyOptions:
         mode = OmicsStorageCopyOptions.define_mode(source, destination)
         match mode:
             case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
+                if "additional_options" not in args:
+                    raise ValueError(
+                        "'additional_options' with values: [name=<>,subject_id=<>,sample_id=<>,file_type=<>,description=<optional>,generated_from=<optional>,reference=<optional>] should be provided to register Omics file!"
+                    )
                 name, description, subject_id, sample_id, reference_arn, generated_from, file_type \
                     = OmicsStorageCopyOptions.parse_additional_options(args["additional_options"])
                 return OmicsStorageUploadOptions(
@@ -120,9 +143,9 @@ class OmicsStorageCopyOperation(object):
         storage = cls._load_storage(api, options)
         match options.mode:
             case OmicsStorageCopyOptions.MODE_DOWNLOAD:
-                AWSOmicsOperation(api).download_read_set(storage, options.source, options.destination)
+                AWSOmicsOperation(api).download_file(storage, options.source, options.destination)
             case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
-                sources = cls._prepare_sources(options.source, options.omics_file_type)
+                sources = cls._prepare_sources(options.source)
                 copy_operation = AWSOmicsOperation(api).upload_file \
                     if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD \
                     else api.import_omics_file
@@ -148,7 +171,7 @@ class OmicsStorageCopyOperation(object):
         return options
 
     @classmethod
-    def _prepare_sources(cls, source, omics_file_type):
+    def _prepare_sources(cls, source):
         def _validate(path):
             if not path.startswith("s3://") and not os.path.isfile(path):
                 raise ValueError("Local file {} not found!".format(path))
