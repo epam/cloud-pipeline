@@ -26,6 +26,4 @@ import lombok.Getter;
 public class AWSOmicsSourceFiles {
     private final String source1;
     private final String source2;
-    private final String index;
-
 }

@@ -33,6 +33,5 @@ public class AWSOmicsFileImportJob {
     private final AWSOmicsFileImportJobStatus status;
     private final String statusMessage;
     private final Date creationTime;
-    private final List<AWSOmicsFileImportInfo> sources;
 }
 

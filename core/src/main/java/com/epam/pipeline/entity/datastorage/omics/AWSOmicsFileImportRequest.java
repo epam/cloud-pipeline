@@ -26,7 +26,6 @@ import java.util.List;
 @Builder(toBuilder = true)
 @AllArgsConstructor
 public class AWSOmicsFileImportRequest {
-    private final String storeId;
     private final String serviceRoleArn;
     private final List<AWSOmicsFileImportInfo> sources;
 }
