@@ -20,7 +20,7 @@ import lombok.Getter;
 
 @Getter
 public enum AWSOmicsFileType {
-    REF("REFERENCE", false), FASTQ("FASTQ", false),
+    REFERENCE("REFERENCE", false), FASTQ("FASTQ", false),
     BAM("BAM", true), CRAM("CRAM", true), UBAM("UBAM", false);
 
     private final String id;

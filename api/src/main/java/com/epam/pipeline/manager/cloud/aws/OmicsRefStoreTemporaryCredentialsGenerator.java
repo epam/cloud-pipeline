@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +60,7 @@ public class OmicsRefStoreTemporaryCredentialsGenerator
         final ArrayNode actions = statement.putArray(ACTION);
         actions.add(LIST_OBJECTS_ACTION);
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, true));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
@@ -74,16 +76,21 @@ public class OmicsRefStoreTemporaryCredentialsGenerator
             actions.add(DELETE_OBJECT_ACTION);
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, false));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
-    private String buildOmicsArn(final DataStorageAction action, final boolean list) {
+    private List<String> buildOmicsArn(final DataStorageAction action) {
         final Matcher omicsARNMatcher = AWS_OMICS_PATH_PATTERN.matcher(action.getPath());
         if (omicsARNMatcher.find()) {
-            return String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
-                    omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
-                    omicsARNMatcher.group("store") + (list ? "" : "/reference/*")
+            return Arrays.asList(
+                    String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+                            omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
+                            omicsARNMatcher.group("store")),
+                    String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+                            omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
+                            omicsARNMatcher.group("store") + "/*"
+                    )
             );
         } else {
             throw new IllegalArgumentException();

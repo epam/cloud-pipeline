@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +39,7 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
     private static final String LIST_READSET_ACTION = "omics:ListReadSet*";
     private static final String START_READSET_ACTION = "omics:StartReadSet*";
     private static final String CREATE_READSET_ACTION = "omics:Create*ReadSet*";
+    private static final String UPLOAD_READSET_ACTION = "omics:UploadReadSet*";
     private static final String DELETE_OBJECT_ACTION = "omics:*DeleteReadSet*";
     private static final String COMPLETE_READSET_ACTION = "omics:Complete*ReadSet*";
 
@@ -61,7 +64,7 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
         final ArrayNode actions = statement.putArray(ACTION);
         actions.add(LIST_READSET_ACTION);
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, true));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
@@ -76,20 +79,27 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
         if (action.isWrite()) {
             actions.add(START_READSET_ACTION);
             actions.add(CREATE_READSET_ACTION);
+            actions.add(UPLOAD_READSET_ACTION);
             actions.add(DELETE_OBJECT_ACTION);
             actions.add(COMPLETE_READSET_ACTION);
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, false));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
-    private String buildOmicsArn(final DataStorageAction action, final boolean list) {
+    private List<String> buildOmicsArn(final DataStorageAction action) {
         final Matcher omicsARNMatcher = AWS_OMICS_PATH_PATTERN.matcher(action.getPath());
         if (omicsARNMatcher.find()) {
-            return String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+            return Arrays.asList(
+                String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
                     omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
-                    omicsARNMatcher.group("store") + (list ? "" : "/readSet/*")
+                    omicsARNMatcher.group("store")
+                ),
+                String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+                        omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
+                        omicsARNMatcher.group("store") + "/*"
+                )
             );
         } else {
             throw new IllegalArgumentException();
