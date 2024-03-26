@@ -135,7 +135,7 @@ configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEM
 configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB" "<="
 
 if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" != "false" ]; then
-    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE" "BOOL" "0" "$true" "YES" "EXCL"
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE" "BOOL" "0" "true" "YES" "EXCL"
 else
     pipe_log_info "Skipping $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE configuration as CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED == $CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" "$_SGE_RESOURCES_SETUP_TASK"
 fi
