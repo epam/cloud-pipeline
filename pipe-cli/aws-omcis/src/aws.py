@@ -1,14 +1,16 @@
 import os.path
-import sys
 
 from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
+from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
-from .fs_utils import parse_local_path
+from .util.fs_utils import parse_local_path, files_size, filename_prefix
+from .util.progress_bar import ProgressBarSubscriber, FinalEventSubscriber
+
 
 class AWSOmicsFile:
 
@@ -27,14 +29,14 @@ class AWSOmicsFile:
     def from_aws_omics_ref_response(cls, response):
         file = cls._with_common_metadata_fields(response)
         file.type = "REFERENCE"
-        file.size = cls._get_ref_size(file)
+        file.size = cls._get_size(file)
         return file
 
     @classmethod
     def from_aws_omics_seq_response(cls, response):
         file = cls._with_common_metadata_fields(response)
         file.type = response.get("fileType", None)
-        file.size = cls._get_seq_size(response.get("sequenceInformation", {}))
+        file.size = cls._get_size(file)
         return file
 
     @classmethod
@@ -43,26 +45,24 @@ class AWSOmicsFile:
         file.name = response["name"]
         file.id = response["id"]
         file.status = response["status"]
-        file.description = response["description"]
+        file.description = response.get("description", None)
         file.modified = response.get("updateTime", response["creationTime"])
         file.raw = response
         file.files = response.get("files", [])
         return file
 
     @classmethod
-    def _get_ref_size(cls, file):
+    def _get_size(cls, file):
         size = 0
         if 'index' in file.files:
             size += file.files.get("index", {}).get("contentLength", 0)
         if 'source' in file.files:
-            size += file.files("source", {}).get("contentLength", 0)
+            size += file.files.get("source", {}).get("contentLength", 0)
+        if 'source1' in file.files:
+            size += file.files.get("source1", {}).get("contentLength", 0)
+        if 'source2' in file.files:
+            size += file.files.get("source2", {}).get("contentLength", 0)
         return size
-
-    @classmethod
-    def _get_seq_size(cls, sequence_info):
-        if 'totalBaseCount' in sequence_info:
-            return sequence_info["totalBaseCount"]
-        return 0
 
 
 class AWSOmicsOperation:
@@ -122,32 +122,44 @@ class AWSOmicsOperation:
     def download_read_set(self, storage, from_path, to_path):
         omics_file = OmicsUriParser(from_path).parse()
         destination_dir, destination_file_name = parse_local_path(to_path)
-        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
         if from_path.endswith(omics_file.file_name.lower()):
-            destination = to_path
-            if not destination_file_name:
-                destination = os.path.join(
-                    destination_dir,
-                    "{}.{}".format(omics_file.resource_id, omics_file.file_name)
+            subscribers = [
+                ProgressBarSubscriber(
+                    file_metadata.size,
+                    "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name)
                 )
+            ]
+            manager = TransferManager(
+                self.get_omics(storage, storage.region_name, read=True, write=True),
+                config=TransferConfig(directory=destination_dir)
+            )
             manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id,
-                                           omics_file.file_name, destination)
+                                           omics_file.file_name, destination_file_name, subscribers=subscribers)
         else:
-            manager.download_read_set(storage.cloud_store_id, omics_file.resource_id, directory=destination_dir)
+            subscribers = [ProgressBarSubscriber(file_metadata.size, "readSet/{}".format(omics_file.resource_id))]
+            TransferManager(
+                self.get_omics(storage, storage.region_name, read=True, write=True)
+            ).download_read_set(storage.cloud_store_id, omics_file.resource_id,
+                                directory=destination_dir, subscribers=subscribers)
 
     def download_reference(self, storage, path):
         reference = OmicsUriParser(path).parse()
+        file_metadata = self.get_file_metadata(storage, reference.resource_id)
+        subscribers = [ProgressBarSubscriber(file_metadata.size, "reference/{}".format(file_metadata.id))]
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
         if path.endswith(reference.file_name.lower()):
-            manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name)
+            manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name,
+                                            subscribers=subscribers)
         else:
-            manager.download_reference(storage.cloud_store_id, reference.resource_id)
+            manager.download_reference(storage.cloud_store_id, reference.resource_id, subscribers=subscribers)
 
     def upload_file(self, storage, sources, name, file_type, subject_id, sample_id,
                     description=None, generated_from=None, reference_arn=None):
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        subscribers = [FinalEventSubscriber()]
         manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,
-                                sample_id, reference_arn, generated_from, description)
+                                sample_id, reference_arn, generated_from, description, subscribers=subscribers)
 
     def get_omics(self, storage, region, list=False, read=False, write=False):
         return self.__assumed_session(storage, list, read, write).client('omics', config=Config(), region_name=region)

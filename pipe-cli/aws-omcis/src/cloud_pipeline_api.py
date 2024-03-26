@@ -18,7 +18,7 @@ import logging
 import requests
 import time
 
-from .omics_utils import OmicsUrl
+from .util.omics_utils import OmicsUrl
 
 
 class OmicsStoreType:

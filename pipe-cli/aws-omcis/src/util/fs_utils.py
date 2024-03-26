@@ -12,3 +12,16 @@ def parse_local_path(path):
     elif os.path.isdir(parent_dir):
         return parent_dir, basename
     raise ValueError("Path {} doesn't exists!".format(parent_dir))
+
+
+def files_size(paths):
+    size = 0
+    for file in paths:
+        if not os.path.isfile(file):
+            raise ValueError("File with path {} not found!".format(file))
+        size += os.path.getsize(file)
+    return size
+
+
+def filename_prefix(paths):
+    return os.path.basename(os.path.commonprefix(paths))

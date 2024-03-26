@@ -2,7 +2,7 @@ import os.path
 
 from .cloud_pipeline_api import CloudPipelineClient
 from .aws import AWSOmicsOperation, AWSOmicsFile
-from .omics_utils import OmicsUrl
+from .util.omics_utils import OmicsUrl
 
 S3_SCHEMA = "s3://"
 OMICS_SCHEMA = "omics://"
@@ -192,7 +192,7 @@ class OmicsStorageObject:
                 omics_file.name,
                 "{id}/{name}".format(id=omics_file.id, name=name),
                 omics_file.modified,
-                # TODO not sure that it is valid to use this value (omics_utils.py bills based on base pairs)
+                # TODO not sure that it is valid to use this value (omics bills based on base pairs)
                 f["contentLength"],
                 labels={
                     "status": omics_file.status,
@@ -253,7 +253,7 @@ class OmicsStoreListingOperation(object):
 def perform_storage_command(api, command, parsed_args):
     match command:
         case 'cp':
-            return OmicsStorageCopyOperation.copy(api, parsed_args)
+            OmicsStorageCopyOperation.copy(api, parsed_args)
         case 'ls':
             return OmicsStoreListingOperation.list(api, parsed_args)
         case _:

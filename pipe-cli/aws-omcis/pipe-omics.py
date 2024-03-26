@@ -26,9 +26,9 @@ def perform_command(group, command, parsed_args):
     api = CloudPipelineClient(os.getenv('API', ''), os.getenv('API_TOKEN', ''))
     match group:
         case 'storage':
-            sys.stdout.write(
-                dumps_to_json(storage_operations.perform_storage_command(api, command, parsed_args)) + '\n'
-            )
+            response = storage_operations.perform_storage_command(api, command, parsed_args)
+            if response:
+                sys.stdout.write(dumps_to_json(response) + '\n')
         case _:
             raise RuntimeError()
 
