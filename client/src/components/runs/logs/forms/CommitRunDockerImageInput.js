@@ -239,7 +239,7 @@ export default class CommitRunDockerImageInput extends React.Component {
         if (showOtherPersonalGroups) {
           return roleModel.writeAllowed(g) || hasToolsWithRights;
         }
-        return (roleModel.writeAllowed(g) || hasToolsWithRights) && (this.isAdmin || !isPersonalGroup(g));
+        return (roleModel.writeAllowed(g) || hasToolsWithRights) && (this.isAdmin || g.privateGroup || !isPersonalGroup(g));
       });
   }
 
