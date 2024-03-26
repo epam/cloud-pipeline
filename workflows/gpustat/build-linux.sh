@@ -37,7 +37,7 @@ python3 ./waf all
 cd \$_BUILD_TMP
 git clone https://github.com/sidoruka/gpustat-web
 cd gpustat-web
-git checkout 4eaeeab78bb531eb38d71c3081430ac4af121c64
+git checkout 436a351207c071c6dc3217bba48151694ead88a1
 cat > requirements.txt <<EOF
 six==1.7
 termcolor
@@ -70,7 +70,7 @@ chmod +x \$_BUILD_TMP/gpustat-web/dist/app/app
 cd \$_BUILD_TMP
 git clone https://github.com/sidoruka/gpustat
 cd gpustat 
-git checkout b0aff74661b3f52d60f517369c7160b87f982110
+git checkout 265c50f65930c591f70103b79794124f46697377
 cat > requirements.txt <<EOF
 nvidia-ml-py>=11.450.129
 psutil==5.6.0
