@@ -14,10 +14,11 @@
 
 import json
 import logging
-import re
 
 import requests
 import time
+
+from .omics_utils import OmicsUrl
 
 
 class OmicsStoreType:
@@ -27,6 +28,26 @@ class OmicsStoreType:
 
     def __init__(self):
         pass
+
+
+class OmicsStoreImportJob:
+
+    def __init__(self):
+        self.id = None
+        self.store_id = None
+        self.service_role_arn = None
+        self.status = None
+        self.creation_time = None
+
+    @classmethod
+    def load(cls, json):
+        instance = cls()
+        instance.id = json['id']
+        instance.store_id = json['storeId']
+        instance.session_token = json['serviceRoleArn'] if 'serviceRoleArn' in json else None
+        instance.expiration = json['status'] if 'status' in json else None
+        instance.region = json['creationTime'] if 'creationTime' in json else None
+        return instance
 
 
 class TemporaryCredentials:
@@ -51,9 +72,6 @@ class TemporaryCredentials:
 
 class OmicsDataStorage:
 
-    PATH_PATTERN = r"(\w+)://(\d+\.storage\.([\w-]+)\.amazonaws\.com/(\d+)/(?:readSet|reference))(?:/(\d+))?(?:/.*)?"
-    STORAGE_PATH_PATTERN = r"\d+\.storage\.([\w-]+)\.amazonaws\.com/(\d+)/(?:readSet|reference)(?:/)?"
-
     _READ_MASK = 1
     _WRITE_MASK = 1 << 1
 
@@ -77,23 +95,8 @@ class OmicsDataStorage:
         instance.mask = json['mask']
         instance.sensitive = json['sensitive']
         instance.type = json['type']
-        instance.cloud_store_id, instance.region_name = cls._find_store_id_and_region_code(instance.path)
+        instance.cloud_store_id, instance.region_name = OmicsUrl.find_store_id_and_region_code(instance.path)
         return instance
-
-    @classmethod
-    def parse_path(cls, path):
-        result = re.search(OmicsDataStorage.PATH_PATTERN, path)
-        if result is not None:
-            return result.group(1), result.group(2), result.group(5)
-        else:
-            return None, None, None
-
-    @staticmethod
-    def _find_store_id_and_region_code(path):
-        res = re.search(OmicsDataStorage.STORAGE_PATH_PATTERN, path)
-        if res is not None:
-            return res.group(2), res.group(1)
-        return None, None
 
     def is_read_allowed(self):
         return self._is_allowed(self._READ_MASK)
@@ -155,6 +158,35 @@ class CloudPipelineClient:
     def get_regions(self):
         logging.info('Getting regions...')
         return self._retryable_call('GET', 'cloud/region/info') or []
+
+    def import_omics_file(self, storage, sources, name, omics_file_type, description, sample_id, subject_id,
+                          generated_from=None, reference_arn=None):
+        def _prepare_sources(sources):
+            size = len(sources)
+            if not sources or size == 0 or size > 2:
+                raise ValueError("sources should be present and have no more then 2 items!")
+
+            return {
+                "source1": sources[0],
+                "source2": sources[1] if 1 < size else None
+            }
+
+        data = {
+            "sources": [
+                {
+                    "description": description,
+                    "generatedFrom": generated_from,
+                    "name": name,
+                    "sourceFileType": omics_file_type,
+                    "sampleId": sample_id,
+                    "subjectId": subject_id,
+                    "referenceArn": reference_arn,
+                    "sourceFiles": _prepare_sources(sources)
+                }
+            ]
+        }
+        payload = self._retryable_call('POST', 'omicsstore/{}/import'.format(storage.id), data=data) or {}
+        return OmicsStoreImportJob.load(payload)
 
     def get_temporary_credentials(self, storage, list=False, read=False, write=False):
         logging.info('Getting temporary credentials for data storage #%s...' % storage.id)

@@ -1,9 +1,14 @@
+import os.path
+import sys
+
 from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
+from omics.uriparse.uri_parse import OmicsUriParser
+from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
-
+from .fs_utils import parse_local_path
 
 class AWSOmicsFile:
 
@@ -113,6 +118,36 @@ class AWSOmicsOperation:
         else:
             _, result = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
         return result
+
+    def download_read_set(self, storage, from_path, to_path):
+        omics_file = OmicsUriParser(from_path).parse()
+        destination_dir, destination_file_name = parse_local_path(to_path)
+        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        if from_path.endswith(omics_file.file_name.lower()):
+            destination = to_path
+            if not destination_file_name:
+                destination = os.path.join(
+                    destination_dir,
+                    "{}.{}".format(omics_file.resource_id, omics_file.file_name)
+                )
+            manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id,
+                                           omics_file.file_name, destination)
+        else:
+            manager.download_read_set(storage.cloud_store_id, omics_file.resource_id, directory=destination_dir)
+
+    def download_reference(self, storage, path):
+        reference = OmicsUriParser(path).parse()
+        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        if path.endswith(reference.file_name.lower()):
+            manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name)
+        else:
+            manager.download_reference(storage.cloud_store_id, reference.resource_id)
+
+    def upload_file(self, storage, sources, name, file_type, subject_id, sample_id,
+                    description=None, generated_from=None, reference_arn=None):
+        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,
+                                sample_id, reference_arn, generated_from, description)
 
     def get_omics(self, storage, region, list=False, read=False, write=False):
         return self.__assumed_session(storage, list, read, write).client('omics', config=Config(), region_name=region)

@@ -4,8 +4,8 @@ import logging
 import os
 import traceback
 
-from omics.cloud_pipeline_api import CloudPipelineClient
-from omics import storage_operations
+from src.cloud_pipeline_api import CloudPipelineClient
+from src import storage_operations
 import sys
 import jsonpickle
 
