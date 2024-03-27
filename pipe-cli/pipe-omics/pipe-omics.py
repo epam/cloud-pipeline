@@ -18,7 +18,7 @@ import logging
 import os
 import traceback
 
-from src.cloud_pipeline_api import CloudPipelineClient
+from src import cloud_pipeline_api
 from src import storage_operations
 import sys
 import jsonpickle
@@ -37,7 +37,7 @@ def configure_logging(args):
 
 
 def perform_command(group, command, parsed_args):
-    api = CloudPipelineClient(os.getenv('API', ''), os.getenv('API_TOKEN', ''))
+    api = cloud_pipeline_api.CloudPipelineClient(os.getenv('API', ''), os.getenv('API_TOKEN', ''))
     match group:
         case 'storage':
             response = storage_operations.perform_storage_command(api, command, parsed_args)
