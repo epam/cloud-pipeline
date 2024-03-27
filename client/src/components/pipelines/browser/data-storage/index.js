@@ -263,6 +263,7 @@ export default class DataStorage extends React.Component {
     return this.storage.infoLoaded &&
       this.storage.info &&
       !/^nfs$/i.test(this.storage.info.type) &&
+      !this.isOmicsStore &&
       preferences &&
       preferences.loaded &&
       preferences.sharedStoragesSystemDirectory &&
@@ -417,6 +418,17 @@ export default class DataStorage extends React.Component {
     return this.state.selectedFile
       ? storageFileTagsEditable
       : this.storage.writeAllowed;
+  }
+
+  get isOmicsStore () {
+    const {type} = this.storage.info || {};
+    return type === 'AWS_OMICS_SEQ' || type === 'AWS_OMICS_REF';
+  }
+
+  get isOmicsFolder () {
+    return this.isOmicsStore && !!this.storage.pageElements &&
+      this.storage.pageElements.length > 0 &&
+      this.storage.pageElements.some(i => i.type === 'Folder');
   }
 
   onDataStorageEdit = async (storage) => {
@@ -1152,7 +1164,7 @@ export default class DataStorage extends React.Component {
           }} />
       );
     };
-    if (item.downloadable) {
+    if (item.downloadable && !this.isOmicsStore) {
       actions.push((
         <OpenInToolAction
           key="open-in-tool"
@@ -1181,7 +1193,7 @@ export default class DataStorage extends React.Component {
         : item.editable
       ) && (
         !item.archived || item.restored
-      )
+      ) && !this.isOmicsStore
     ) {
       actions.push(
         <Button
@@ -1205,9 +1217,10 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (item.isVersion
+    if ((item.isVersion
       ? item.deletable && this.versionControlsEnabled
-      : item.deletable
+      : item.deletable) &&
+      (!this.isOmicsStore || this.isOmicsFolder)
     ) {
       actions.push(separator());
       actions.push(
@@ -1483,7 +1496,9 @@ export default class DataStorage extends React.Component {
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable && (item.downloadable || item.editable || item.shareAvailable)) {
+        if (item.selectable &&
+          (item.downloadable || item.editable || item.shareAvailable) &&
+          (!this.isOmicsStore || this.isOmicsFolder)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -1940,13 +1955,13 @@ export default class DataStorage extends React.Component {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: itemsAvailableForDownload.length > 0
+      available: !this.isOmicsStore && itemsAvailableForDownload.length > 0
     };
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
-        this.restorableItems.length > 0,
+        this.restorableItems.length > 0 && !this.isOmicsStore,
       icon: 'reload'
     };
     const getShareActionTitle = () => {
@@ -2111,7 +2126,7 @@ export default class DataStorage extends React.Component {
     const {
       path
     } = this.props;
-    if (!path) {
+    if (!path || this.isOmicsStore) {
       return undefined;
     }
     return (
@@ -2163,21 +2178,28 @@ export default class DataStorage extends React.Component {
           type="flex"
           justify="space-between">
           <div>
-            <Button
-              id="select-all-button"
-              size="small" onClick={() => this.selectAll(undefined)}
-              disabled={!this.selectAllAvailable}
-            >
-              Select page
-            </Button>
             {
-              this.renderSelectionActionsButton()
+              (!this.isOmicsStore || this.isOmicsFolder) && (
+                <Button
+                  id="select-all-button"
+                  size="small" onClick={() => this.selectAll(undefined)}
+                  disabled={!this.selectAllAvailable}
+                >
+                  Select page
+                </Button>
+              )
+            }
+            {
+              (!this.isOmicsStore || this.isOmicsFolder) && (
+                this.renderSelectionActionsButton()
+              )
             }
           </div>
           <div style={{paddingRight: 8}}>
             {this.renderShareCurrentFolderButton()}
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
@@ -2211,7 +2233,8 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <UploadButton
                   multiple
                   onRefresh={() => this.refreshList()}
@@ -2290,7 +2313,8 @@ export default class DataStorage extends React.Component {
       key: 'archive',
       title: 'Show archived files',
       checked: this.showArchives,
-      available: (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write)
+      available: (!this.isOmicsStore &&
+        (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write))
     };
     const versionsAction = {
       key: 'version',
@@ -2435,7 +2459,7 @@ export default class DataStorage extends React.Component {
               type={ItemTypes.storage}
               textEditableField={name}
               onSaveEditableField={this.renameDataStorage}
-              readOnlyEditableField={!this.storage.writeAllowed}
+              readOnlyEditableField={!this.storage.writeAllowed || this.isOmicsStore}
               editStyleEditableField={{flex: 1}}
               icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
               iconClassName={
