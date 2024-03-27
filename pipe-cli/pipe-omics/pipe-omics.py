@@ -37,7 +37,11 @@ def configure_logging(args):
 
 
 def perform_command(group, command, parsed_args):
-    api = cloud_pipeline_api.CloudPipelineClient(os.getenv('API', ''), os.getenv('API_TOKEN', ''))
+    api_url = os.getenv('API', '')
+    api_token = os.getenv('API_TOKEN', '')
+    if not api_url or not api_token:
+        raise ValueError("API and API_TOKEN environment variables are required!")
+    api = cloud_pipeline_api.CloudPipelineClient(api_url, api_token)
     match group:
         case 'storage':
             response = storage_operations.perform_storage_command(api, command, parsed_args)
