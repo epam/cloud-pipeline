@@ -17,5 +17,5 @@ spec:
     volumeHandle: ${CP_SYSTEM_FILESYSTEM_ID}
     volumeAttributes:
       dnsname: ${CP_SYSTEM_FILESYSTEM_ID}.fsx.${CP_CLOUD_REGION_ID}.amazonaws.com
-      mountname: fsx
+      mountname: ${CP_SYSTEM_FILESYSTEM_MOUNTNAME}
  
