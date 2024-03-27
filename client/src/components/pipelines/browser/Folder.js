@@ -1622,12 +1622,16 @@ export default class Folder extends localization.LocalizedReactComponent {
               key={`${storageKey}_new`}>
               Create new object storage
             </MenuItem>
-            <MenuItem
-              id="create-omics-store-button"
-              className="create-omics-store-button"
-              key={`${storageKey}_${omicsStoreKey}`}>
-              Create Omics store
-            </MenuItem>
+            {
+              this.isAnyAwsRegion && (
+                <MenuItem
+                  id="create-omics-store-button"
+                  className="create-omics-store-button"
+                  key={`${storageKey}_${omicsStoreKey}`}>
+                  Create Omics store
+                </MenuItem>
+              )
+            }
             <MenuItem
               id="add-existing-storage-button"
               className="add-existing-storage-button"
@@ -2048,6 +2052,13 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       return !!this.state.issuesItem;
     }
+  }
+
+  get isAnyAwsRegion () {
+    const regions = this.props.awsRegions.loaded
+      ? (this.props.awsRegions.value || []).map(r => r) : [];
+    const awsRegions = regions.filter(region => region.provider === 'AWS');
+    return awsRegions && awsRegions.length;
   }
 
   render () {
