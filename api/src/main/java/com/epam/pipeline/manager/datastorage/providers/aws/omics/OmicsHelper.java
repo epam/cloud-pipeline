@@ -188,8 +188,9 @@ public class OmicsHelper {
                                     .withName(item.getName())
                                     .withDescription(item.getDescription())
                                     .withGeneratedFrom(item.getGeneratedFrom())
-                                    .withReferenceArn(item.getReferenceArn())
-                                    .withSampleId(item.getSampleId())
+                                    .withReferenceArn(
+                                            AWSOmicsReferenceDataStorage.filePathToArn(item.getReferencePath())
+                                    ).withSampleId(item.getSampleId())
                                     .withSubjectId(item.getSubjectId())
                                     .withSourceFileType(item.getSourceFileType().getId())
                                     .withSourceFiles(

@@ -28,7 +28,7 @@ public class AWSOmicsFileImportInfo {
     private final AWSOmicsFileType sourceFileType;
     private final String subjectId;
     private final String sampleId;
-    private final String referenceArn;
+    private final String referencePath;
     private final String name;
     private final String description;
     private final String generatedFrom;

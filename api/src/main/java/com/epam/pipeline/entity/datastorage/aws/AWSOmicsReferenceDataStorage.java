@@ -45,6 +45,21 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
             );
     public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
+
+    public static final Pattern AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT =
+            Pattern.compile(
+                    "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)"
+            );
+
+
+    public static final String AWS_OMICS_STORE_FILE_PATH_TEMPLATE = "arn:aws:omics:%s:%s:%s/%s/%s/%s";
+
+    public static final String ACCOUNT = "account";
+    public static final String REGION = "region";
+    public static final String FILE_ID = "fileId";
+    public static final String STORE_ID = "storeId";
+    public static final String FILE_TYPE = "fileType";
+
     public AWSOmicsReferenceDataStorage(final Long id, final String name, final String path) {
         super(id, name, path, DataStorageType.AWS_OMICS_REF);
     }
@@ -58,6 +73,21 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
         final Matcher matcher = AWS_OMICS_REFERENCE_STORE_PATH_FORMAT.matcher(getPath());
         if (matcher.find()) {
             return matcher.group(REFERENCE_STORE_ID_GROUP);
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
+
+     public static String filePathToArn(final String path) {
+        final Matcher matcher = AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT.matcher(path);
+        if (matcher.find()) {
+            return String.format(AWS_OMICS_STORE_FILE_PATH_TEMPLATE,
+                    matcher.group(REGION),
+                    matcher.group(ACCOUNT),
+                    matcher.group("referenceStore"),
+                    matcher.group(STORE_ID),
+                    matcher.group(FILE_TYPE),
+                    matcher.group(FILE_TYPE));
         } else {
             throw new IllegalArgumentException();
         }
