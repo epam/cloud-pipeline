@@ -60,7 +60,8 @@ locals {
   clair_db_pass    = var.cloud_pipeline_db_configuration["clair"].password != null ? var.cloud_pipeline_db_configuration["clair"].password : nonsensitive(random_password.this["clair"].result)
 
   cp_filesystem_id = var.deploy_filesystem_type == "efs" ? module.cp_system_efs.id : try(aws_fsx_lustre_file_system.fsx[0].id, "<efs-id>")
-
+  cp_filesystem_mountname = var.deploy_filesystem_type == "fsx" ? aws_fsx_lustre_file_system.fsx[0].mount_name : ""
+  
   deploy_idp = var.cp_deploy_idp ? [
     "-s cp-idp",
     "-env CP_IDP_EXTERNAL_HOST=\"${var.cp_idp_host}\"",
@@ -77,6 +78,7 @@ locals {
     "-env CP_MAIN_SERVICE_ROLE=\"${module.cp_irsa.iam_role_arn}\"",
     "-env CP_CSI_DRIVER_TYPE=\"${var.deploy_filesystem_type}\"",
     "-env CP_SYSTEM_FILESYSTEM_ID=\"${local.cp_filesystem_id}\"",
+    "-env CP_SYSTEM_FILESYSTEM_MOUNTNAME=\"${local.cp_filesystem_mountname}\"",
     "-env CP_CSI_EXECUTION_ROLE=\"${module.efs_csi_irsa.iam_role_arn}\"",
     "-env CP_DOCKER_DIST_SRV=\"quay.io/\"",
     "-env CP_AWS_KMS_ARN=\"${module.kms.key_arn}\"",
