@@ -19,14 +19,11 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
-import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -49,7 +46,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public abstract class AbstractAWSTemporaryCredentialsGenerator<T extends AbstractAWSDataStorage> implements TemporaryCredentialsGenerator<T> {
+public abstract class AbstractAWSTemporaryCredentialsGenerator<T extends AbstractAWSDataStorage>
+        implements TemporaryCredentialsGenerator<T> {
 
     private static final String KMS_DECRYPT_ACTION = "kms:Decrypt";
     private static final String KMS_ENCRYPT_ACTION = "kms:Encrypt";
@@ -130,9 +128,9 @@ public abstract class AbstractAWSTemporaryCredentialsGenerator<T extends Abstrac
         return statement;
     }
 
-    abstract void addListingPermissions(final DataStorageAction action, final ArrayNode statements);
+    abstract void addListingPermissions(DataStorageAction action, ArrayNode statements);
 
-    abstract void addActionToStatement(final DataStorageAction action, final ArrayNode statements);
+    abstract void addActionToStatement(DataStorageAction action, ArrayNode statements);
 
 
     private void addKmsActionToStatement(final String kmsArn, final ArrayNode statements) {
