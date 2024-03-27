@@ -71,7 +71,7 @@ output "cp_docker_bucket" {
 output "rds_root_pass_secret" {
   description = "Id of the secretsmanager secret where password of the RDS root_user is stored"
   value       = try(aws_secretsmanager_secret_version.rds_root_secret[0].secret_string, null)
-  sensitive = true
+  sensitive   = true
 }
 
 output "rds_address" {
@@ -104,9 +104,18 @@ output "cp_fsx_filesystem_id" {
   value       = try(aws_fsx_lustre_file_system.fsx[0].id, null)
 }
 
+output "cp_filesystem_mount_point" {
+  description = "Fylesystem mount point"
+  value       = var.deploy_filesystem_type == "efs" ? "${module.cp_system_efs.dns_name}:/" : "${aws_fsx_lustre_file_system.fsx[0].dns_name}@tcp:/${aws_fsx_lustre_file_system.fsx[0].mount_name}"
+}
+
 output "cp_fsx_filesystem_exec_role" {
   description = "Execution role with permission to interact with fsx filesystem, used by SCI driver"
   value       = try(module.fsx_csi_irsa.iam_role_arn, null)
+}
+
+output "deploy_filesystem_type" {
+  value = var.deploy_filesystem_type
 }
 
 output "cp_kms_arn" {
@@ -124,5 +133,7 @@ output "https_access_security_group" {
   value       = try(module.https_access_sg.security_group_id, null)
 }
 
-
+output "cp_deploy_script" {
+  value = local.deploy_script
+}
 
