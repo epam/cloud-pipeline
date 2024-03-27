@@ -554,11 +554,13 @@ export class DataStorageEditDialog extends React.Component {
                         style={{width: '100%'}}
                         disabled={!!this.props.dataStorage || isReadOnly}
                       >
-                        {this.awsRegions.map(region => {
-                          return <Select.Option key={region.id.toString()} title={region.name}>
-                            <AWSRegionTag regionUID={region.regionId} /> {region.name}
-                          </Select.Option>;
-                        })}
+                        {this.awsRegions
+                          .filter(region => (!this.omicsStore || region.provider === 'AWS'))
+                          .map(region => {
+                            return <Select.Option key={region.id.toString()} title={region.name}>
+                              <AWSRegionTag regionUID={region.regionId} /> {region.name}
+                            </Select.Option>;
+                          })}
                       </Select>
                     )}
                   </Form.Item>

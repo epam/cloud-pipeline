@@ -2620,14 +2620,14 @@ export default class DataStorage extends React.Component {
               }
               fileIsEmpty={this.isFileSelectedEmpty}
               extraKeys={[
-                /^nfs$/i.test(type)
+                (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                !/^nfs$/i.test(type) && !this.state.selectedFile
+                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
-              extraInfo={[
+              extraInfo={!this.isOmicsStore ? [
                 <LifeCycleCounter
                   storage={this.storage.info}
                   path={this.props.path}
@@ -2640,7 +2640,7 @@ export default class DataStorage extends React.Component {
                   )}
                 />,
                 <StorageSize storage={this.storage.info} />
-              ]}
+              ] : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
                 storageMask: mask,
