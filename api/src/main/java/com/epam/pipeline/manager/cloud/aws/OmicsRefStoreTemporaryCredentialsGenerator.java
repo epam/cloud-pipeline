@@ -26,6 +26,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,9 +35,9 @@ import java.util.regex.Pattern;
 public class OmicsRefStoreTemporaryCredentialsGenerator
         extends AbstractAWSTemporaryCredentialsGenerator<AWSOmicsReferenceDataStorage> {
 
-    private static final String GET_OBJECT_ACTION = "omics:GetReference";
+    private static final String GET_REFERENCE_ACTION = "omics:GetReference*";
     private static final String START_IMPORT_JOB_ACTION = "omics:StartReferenceImportJob";
-    private static final String DELETE_OBJECT_ACTION = "omics:DeleteReference";
+    private static final String DELETE_OBJECT_ACTION = "omics:DeleteReference*";
     private static final String LIST_OBJECTS_ACTION = "omics:ListReferences";
     private static final Pattern AWS_OMICS_PATH_PATTERN
             = Pattern.compile("(?<account>.*).storage.(?<region>.*).amazonaws.com/(?<store>.*)/reference");
@@ -58,7 +60,7 @@ public class OmicsRefStoreTemporaryCredentialsGenerator
         final ArrayNode actions = statement.putArray(ACTION);
         actions.add(LIST_OBJECTS_ACTION);
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, true));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
@@ -67,23 +69,28 @@ public class OmicsRefStoreTemporaryCredentialsGenerator
         final ObjectNode statement = getStatement();
         final ArrayNode actions = statement.putArray(ACTION);
         if (action.isRead()) {
-            actions.add(GET_OBJECT_ACTION);
+            actions.add(GET_REFERENCE_ACTION);
         }
         if (action.isWrite()) {
             actions.add(START_IMPORT_JOB_ACTION);
             actions.add(DELETE_OBJECT_ACTION);
         }
         final ArrayNode resource = statement.putArray(RESOURCE);
-        resource.add(buildOmicsArn(action, false));
+        buildOmicsArn(action).forEach(resource::add);
         statements.add(statement);
     }
 
-    private String buildOmicsArn(final DataStorageAction action, final boolean list) {
+    private List<String> buildOmicsArn(final DataStorageAction action) {
         final Matcher omicsARNMatcher = AWS_OMICS_PATH_PATTERN.matcher(action.getPath());
         if (omicsARNMatcher.find()) {
-            return String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
-                    omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
-                    omicsARNMatcher.group("store") + (list ? "" : "/reference/*")
+            return Arrays.asList(
+                    String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+                            omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
+                            omicsARNMatcher.group("store")),
+                    String.format(AWS_OMICS_STORE_ARN_TEMPLATE,
+                            omicsARNMatcher.group("region"), omicsARNMatcher.group("account"),
+                            omicsARNMatcher.group("store") + "/*"
+                    )
             );
         } else {
             throw new IllegalArgumentException();

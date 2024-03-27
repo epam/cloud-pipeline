@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__='0.17'
-__bundle_info__ = { 'bundle_type': 'one-folder', 'build_os_id': 'debian', 'build_os_version_id': '9' }
-__component_version__='79b5dd942945d48560ba9b8c796d7e94f33dd2c1'
+import os.path
+
+
+def parse_local_path(path):
+    parent_dir = os.path.dirname(path)
+    basename = os.path.basename(path)
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            return path, None
+        else:
+            raise ValueError("File with path {} already exists!".format(path))
+    elif os.path.isdir(parent_dir):
+        return parent_dir, basename
+    raise ValueError("Path {} doesn't exists!".format(parent_dir))
