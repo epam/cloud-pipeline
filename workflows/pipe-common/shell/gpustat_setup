@@ -60,7 +60,6 @@ while true; do
     echo "[INFO] --> Starting a new instance of gpustat"
     cd "$_GPUSTAT_HOME_WEB"
     nohup gpustat-web --port "$CP_GPUSTAT_PORT" \
-                      --no-verify-host \
                       --interval "$CP_GPUSTAT_REFRESH_INTERVAL" $_GPUSTAT_HOSTS >> /var/log/gpustat.log 2>&1 &
     echo $! > "$CP_GPUSTAT_PID_FILE"
 
