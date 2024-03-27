@@ -1,3 +1,5 @@
+import shutil
+
 from omics.transfer import OmicsTransferSubscriber
 
 
@@ -14,15 +16,17 @@ class ProgressBar:
            fill        - Optional  : bar fill character (Str)
            printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
-    def __init__(self, total, prefix='', suffix='', fill='█', print_end="\r"):
+    def __init__(self, total, prefix='', suffix='', fill='█', print_end="\r", autosize=True, wight_rate=0.3):
         self.total = total
         self.progress = 0
-        self.length = 100
         self.decimals = 1
         self.suffix = suffix
         self.prefix = prefix
         self.fill = fill
         self.printEnd = print_end
+        self.autosize = autosize
+        self.wight_rate = wight_rate
+        self.length = self._resize("0.00")
 
     def update(self, shift, prefix=None):
         self.progress += shift
@@ -30,8 +34,18 @@ class ProgressBar:
             self.prefix = prefix
         self._print()
 
+    def _resize(self, percent_label):
+        styling = '%s |%s| %s%% %s' % (self.prefix, self.fill, percent_label, self.suffix)
+        tcols, _ = shutil.get_terminal_size(fallback=(100, 1))
+        length = int(self.wight_rate * tcols) - len(styling)
+        if length < 30:
+            length = 30
+        return length
+
     def _print(self):
         percent = ("{0:." + str(self.decimals) + "f}").format(100 * (self.progress / float(self.total)))
+        if self.autosize:
+            self.length = self._resize(percent)
         filled_length = int(self.length * self.progress // self.total)
         bar = self.fill * filled_length + '-' * (self.length - filled_length)
         print(f'\r{self.prefix} |{bar}| {percent}% {self.suffix}', end=self.printEnd)

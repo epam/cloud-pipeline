@@ -41,6 +41,7 @@ python3 -m pip install -r \${PIPE_OMICS_SOURCES_DIR}/requirements.txt
 
 cd \$PIPE_OMICS_SOURCES_DIR && \
 pyinstaller \
+  --paths "\${PIPE_OMICS_SOURCES_DIR}" \
   --hidden-import=UserList \
   --hidden-import=UserString \
   --hidden-import=commands \
