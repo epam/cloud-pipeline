@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -472,6 +472,9 @@ fi
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
+
+# Add accounting file sync to the cloud storage
+sync_to_storage add "$SGE_ROOT/$SGE_CELL/common/accounting"
 
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 
