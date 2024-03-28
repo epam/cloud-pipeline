@@ -51,6 +51,8 @@ const S3_BUCKET_TYPE = 'S3';
 const NFS_BUCKET_TYPE = 'NFS';
 const AZ_BUCKET_TYPE = 'AZ';
 const GS_BUCKET_TYPE = 'GS';
+const OMICS_REF_BUCKET_TYPE = 'AWS_OMICS_REF';
+const OMICS_SEQ_BUCKET_TYPE = 'AWS_OMICS_SEQ';
 
 @connect({
   pipelinesLibrary
@@ -78,7 +80,9 @@ export default class BucketBrowser extends React.Component {
         S3_BUCKET_TYPE,
         GS_BUCKET_TYPE,
         NFS_BUCKET_TYPE,
-        DTS_ITEM_TYPE
+        DTS_ITEM_TYPE,
+        OMICS_REF_BUCKET_TYPE,
+        OMICS_SEQ_BUCKET_TYPE
       ])
     )
   };
@@ -223,7 +227,9 @@ export default class BucketBrowser extends React.Component {
         this.state.bucket.type === S3_BUCKET_TYPE ||
         this.state.bucket.type === AZ_BUCKET_TYPE ||
         this.state.bucket.type === GS_BUCKET_TYPE ||
-        this.state.bucket.type === NFS_BUCKET_TYPE
+        this.state.bucket.type === NFS_BUCKET_TYPE ||
+        this.state.bucket.type === OMICS_REF_BUCKET_TYPE ||
+        this.state.bucket.type === OMICS_SEQ_BUCKET_TYPE
     )) {
       const type = this.state.bucket.storageType || this.state.bucket.type;
       const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
@@ -235,6 +241,9 @@ export default class BucketBrowser extends React.Component {
             : this.state.bucket.mountPoint
           : null;
         return buildPath(mountPoint || `/cloud-data/${storagePath}`);
+      }
+      if (type === OMICS_REF_BUCKET_TYPE || type === OMICS_SEQ_BUCKET_TYPE) {
+        return buildPath(`${this.state.bucket.pathMask}`);
       }
       return buildPath(`${type.toLowerCase()}://${this.state.bucket.path}`);
     } else if (this.state.bucket && this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
