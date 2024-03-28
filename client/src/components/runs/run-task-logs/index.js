@@ -174,7 +174,8 @@ class RunTaskLogs extends React.Component {
       this.props.autoUpdate !== prevProps.autoUpdate ||
       this.props.taskName !== prevProps.taskName ||
       this.props.taskParameters !== prevProps.taskParameters ||
-      this.props.taskInstance !== prevProps.taskInstance
+      this.props.taskInstance !== prevProps.taskInstance ||
+      this.props.logs !== prevProps.logs
     ) {
       this.loadData();
     }
@@ -252,9 +253,20 @@ class RunTaskLogs extends React.Component {
       taskName,
       taskParameters,
       taskInstance,
-      autoUpdate
+      autoUpdate,
+      logs: logsProps
     } = this.props;
-    if (runId) {
+    if (logsProps && typeof logsProps === 'string' && !runId) {
+      this.setState({logs: logsProps.split('\n').map(text => ({
+        date: undefined,
+        log: text,
+        logHTML: ansiUp.ansi_to_html(text),
+        isError: isError(text),
+        isWarning: isWarning(text)
+      }))}, () => {
+        this.scrollDown(false);
+      });
+    } else if (runId) {
       this.setState({
         logs: [],
         maxLinesToDisplay: undefined,
@@ -614,10 +626,12 @@ class RunTaskLogs extends React.Component {
   render () {
     const {
       className,
+      lineClassName,
       style = {},
       showDate,
       showLineNumber,
-      autoUpdate
+      autoUpdate,
+      runId
     } = this.props;
     const {
       followLog,
@@ -662,19 +676,23 @@ class RunTaskLogs extends React.Component {
                 >
                   Expand more
                 </a>
-                <span
-                  style={{
-                    marginLeft: 5,
-                    marginRight: 5
-                  }}
-                >
-                  or
-                </span>
-                <a
-                  onClick={this.onDownloadClicked}
-                >
-                  download complete log
-                </a>
+                {runId && (
+                  <p>
+                    <span
+                      style={{
+                        marginLeft: 5,
+                        marginRight: 5
+                      }}
+                    >
+                      or
+                    </span>
+                    <a
+                      onClick={this.onDownloadClicked}
+                    >
+                      download complete log
+                    </a>
+                  </p>
+                )}
               </div>
             )
           }
@@ -707,7 +725,7 @@ class RunTaskLogs extends React.Component {
           {
             logs.map((log) => (
               <div
-                className={styles.consoleLine}
+                className={classNames(lineClassName, styles.consoleLine)}
                 key={`log-line-${log.index}`}
                 data-line={log.index}
               >
@@ -849,6 +867,7 @@ class RunTaskLogs extends React.Component {
 
 RunTaskLogs.propTypes = {
   className: PropTypes.string,
+  lineClassName: PropTypes.string,
   style: PropTypes.object,
   runId: PropTypes.number,
   taskName: PropTypes.string,

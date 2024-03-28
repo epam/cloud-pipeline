@@ -2892,11 +2892,11 @@ export default `
 @THEME .cp-nat-route-port-control {
   border-bottom: 1px solid @table-border-color;
 }
-@THEME .cp-user-status-online {
+@THEME .cp-status-online {
   fill: @color-green;
   stroke: @color-green;
 }
-@THEME .cp-user-status-offline {
+@THEME .cp-status-offline {
   stroke: @color-grey;
   fill: transparent;
 }
