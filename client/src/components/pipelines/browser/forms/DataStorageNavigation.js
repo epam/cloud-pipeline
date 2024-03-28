@@ -32,6 +32,11 @@ export default class DataStorageNavigation extends React.Component {
 
   state = {editable: false};
 
+  get isOmicsStore () {
+    const {type} = this.props.storage || {};
+    return type === 'AWS_OMICS_SEQ' || type === 'AWS_OMICS_REF';
+  }
+
   navigate = (event, path) => {
     event.stopPropagation();
     if (this.props.navigate && this.props.storage) {
@@ -50,6 +55,9 @@ export default class DataStorageNavigation extends React.Component {
 
   getRootPath = () => {
     if (this.props.storage) {
+      if (this.isOmicsStore) {
+        return `${this.props.storage.pathMask.toLowerCase()}`;
+      }
       return `${this.props.storage.type.toLowerCase()}://${this.props.storage.path}`;
     }
     return '';
@@ -95,7 +103,11 @@ export default class DataStorageNavigation extends React.Component {
     if (!mode) {
       this.control = false;
     }
-    this.setState({editable: mode});
+    if (this.isOmicsStore) {
+      this.setState({editable: false});
+    } else {
+      this.setState({editable: mode});
+    }
   };
 
   initializeInput = (input) => {
