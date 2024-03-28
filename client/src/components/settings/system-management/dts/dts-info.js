@@ -17,7 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import {Button, Spin, Checkbox, Input, Icon, Tabs} from 'antd';
+import {Modal, Button, Spin, Checkbox, Input, Icon, Tabs} from 'antd';
 import LocalSyncDtsPreference from './components/local-sync-dts-preference';
 import DtsLogs from './components/dts-logs';
 import {
@@ -60,10 +60,12 @@ class DtsInfo extends React.Component {
   }
 
   initializeState = () => {
-    const {dts} = this.props;
-    const initial = dts && dts.preferences
-      ? Object.entries(dts.preferences).map(([key, value]) => ({key, value}))
-      : [];
+    const {dts = {}} = this.props;
+    const initial = Object.entries({
+      'dts.local.sync.rules': '[]',
+      'dts.heartbeat.enabled': 'false',
+      ...(dts.preferences || {})
+    }).map(([key, value]) => ({key, value}));
     const mappedPreferences = mapPreferences(initial);
     this.setState({
       preferences: mappedPreferences.slice(),
@@ -136,18 +138,26 @@ class DtsInfo extends React.Component {
     this.validate();
   };
 
-  onSave = async () => {
+  onSave = () => {
     const {dts, onSave} = this.props;
     const {preferences, modifiedPreferences} = this.state;
     onSave && onSave({
       dts,
-      toUpdate: unMapPreferences(modifiedPreferences),
+      toUpdate: unMapPreferences(modifiedPreferences.filter(({markAsDeleted}) => !markAsDeleted)),
       toDelete: preferences.filter(preference => preference.markAsDeleted)
     });
   };
 
-  onRevert = () => {
-    this.initializeState();
+  onRevert = () => this.initializeState();
+
+  onDeleteDts = () => {
+    const {onDeleteDts, dts} = this.props;
+    Modal.confirm({
+      title: `Are you sure you want to delete ${dts.name || 'DTS'}?`,
+      okText: 'Delete',
+      okType: 'danger',
+      onOk: () => onDeleteDts && onDeleteDts(dts)
+    });
   };
 
   renderCheckboxPreference = (preference, index) => {
@@ -288,6 +298,14 @@ class DtsInfo extends React.Component {
           style={{display: 'flex', justifyContent: 'flex-end', gap: 5}}
         >
           <Button
+            onClick={this.onDeleteDts}
+            size="small"
+            type="danger"
+            style={{marginRight: 15}}
+          >
+            Delete
+          </Button>
+          <Button
             disabled={modifiedPreferences.length === 0}
             onClick={this.onRevert}
             size="small"
@@ -334,7 +352,8 @@ DtsInfo.propTypes = {
   onSave: PropTypes.func,
   onChange: PropTypes.func,
   pending: PropTypes.bool,
-  refreshToken: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  refreshToken: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  onDeleteDts: PropTypes.func
 };
 
 export default DtsInfo;

@@ -18,14 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Modal, message} from 'antd';
+import {Modal, message, Button} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
 import DtsInfo from './dts-info';
 import DTSPreferencesUpdate from '../../../../models/dts/DTSPreferencesUpdate';
 import DTSPreferencesDelete from '../../../../models/dts/DTSPreferencesDelete';
+import CreateDtsModal from './components/create-dts-modal';
 import styles from './dts.css';
+import DTSDelete from '../../../../models/dts/DTSDelete';
 
 @inject('dtsList')
 @observer
@@ -33,7 +35,8 @@ class DtsManagement extends React.Component {
   state = {
     pending: false,
     refreshToken: 0,
-    modified: false
+    modified: false,
+    showCreateDtsModal: false
   }
 
   @computed
@@ -82,6 +85,21 @@ class DtsManagement extends React.Component {
     });
   };
 
+  onDeleteDts = async (dts) => {
+    const {dtsList} = this.props;
+    if (!dts) {
+      return null;
+    }
+    const request = new DTSDelete(dts.id);
+    await request.send();
+    if (request.error) {
+      message.error(request.error, 5);
+    }
+    if (dtsList) {
+      await dtsList.fetch();
+    }
+  };
+
   onSavePreferences = async ({dts, toUpdate = [], toDelete = []}) => {
     let deleteRequest;
     let updateRequest;
@@ -119,19 +137,26 @@ class DtsManagement extends React.Component {
   };
 
   renderDtsCard = (dts) => {
+    const statusIcon = (
+      <svg height="10" width="10">
+        <circle cx="5" cy="5" r="4"
+          strokeWidth={1}
+          className={(dts.status || '').toLowerCase() === 'online'
+            ? 'cp-status-online'
+            : 'cp-status-offline'
+          }
+      />
+      </svg>
+    );
     return (
       <div className={styles.dtsCardContainer}>
         <div style={{display: 'flex', flexWrap: 'nowrap'}}>
-          <span className={styles.sectionText}>Id: {dts.id}</span>
           <span
             className={classNames(styles.sectionText, styles.ellipsis)}
             style={{marginLeft: 5}}
           >
-            {dts.name}
+            {statusIcon} {dts.name}
           </span>
-        </div>
-        <div>
-          Status: {dts.status}
         </div>
         <span
           className={classNames(
@@ -155,8 +180,16 @@ class DtsManagement extends React.Component {
     );
   };
 
+  openCreateDtsModal = () => this.setState({showCreateDtsModal: true});
+
+  closeCreateDtsModal = () => this.setState({showCreateDtsModal: false});
+
   render () {
-    const {pending, refreshToken} = this.state;
+    const {
+      pending,
+      refreshToken,
+      showCreateDtsModal
+    } = this.state;
     const sections = this.dtsList.map((dts) => ({
       key: dts.id,
       title: this.renderDtsCard(dts),
@@ -168,20 +201,37 @@ class DtsManagement extends React.Component {
             dts={dts}
             onSave={this.onSavePreferences}
             onChange={this.onChangePreferences}
+            onDeleteDts={this.onDeleteDts}
             pending={pending}
             refreshToken={refreshToken}
           />
         );
       }}));
     return (
-      <SubSettings
-        className={styles.container}
-        sectionsListClassName={styles.sectionList}
-        sections={sections}
-        showSectionsSearch
-        sectionsSearchPlaceholder="Filter dts"
-        canNavigate={this.confirmNavigation}
-      />
+      <div style={{height: '100%'}}>
+        <SubSettings
+          beforeListRowRenderer={() => (
+            <Button
+              size="small"
+              type="primary"
+              style={{width: '100%', marginBottom: 5}}
+              onClick={this.openCreateDtsModal}
+            >
+              Create DTS
+            </Button>
+          )}
+          className={styles.container}
+          sectionsListClassName={styles.sectionList}
+          sections={sections}
+          showSectionsSearch
+          sectionsSearchPlaceholder="Filter dts"
+          canNavigate={this.confirmNavigation}
+        />
+        <CreateDtsModal
+          visible={showCreateDtsModal}
+          onClose={this.closeCreateDtsModal}
+        />
+      </div>
     );
   }
 }

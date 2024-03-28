@@ -45,7 +45,8 @@ class SectionsList extends React.Component {
       sections = [],
       showSearch,
       searchPlaceholder,
-      className
+      className,
+      beforeListRowRenderer
     } = this.props;
     const {
       sectionSearch
@@ -89,6 +90,7 @@ class SectionsList extends React.Component {
             </div>
           )
         }
+        {beforeListRowRenderer ? beforeListRowRenderer() : null}
         <Table
           className={styles.list}
           rowKey="key"
@@ -115,6 +117,7 @@ class SectionsList extends React.Component {
 
 SectionsList.propTypes = {
   className: PropTypes.string,
+  beforeListRowRenderer: PropTypes.func,
   activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSectionChange: PropTypes.func,
   showSearch: PropTypes.bool,

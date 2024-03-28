@@ -91,6 +91,7 @@ class DtsLogs extends React.Component {
           pending: false
         });
       }
+      this.relativePathToFile = this.storage.getRelativePath(pathToFile);
       const {size, sizeExceeded} = await checkFile(pathToFile);
       if (size !== undefined && sizeExceeded) {
         return this.setState({sizeExceeded, pending: false});
@@ -99,7 +100,6 @@ class DtsLogs extends React.Component {
         this.setState({error: 'Log file not found.', pending: false});
         return message.error('Log file not found.', 5);
       }
-      this.relativePathToFile = this.storage.getRelativePath(pathToFile);
       const content = await this.storage.getFileContent(this.relativePathToFile);
       this.setState({
         logsString: content,
@@ -141,12 +141,13 @@ class DtsLogs extends React.Component {
           message={(
             <p>
               Logs size is more than <b>{SIZE_THRESHOLD_MB}mb</b> and cannot be viewed.
-              <a
-                style={{marginLeft: 5}}
-                onClick={this.downloadLogsFile}
-              >
-                Download logs file.
-              </a>
+              {this.downloadAvailable ? (
+                <a
+                  style={{marginLeft: 5}}
+                  onClick={this.downloadLogsFile}
+                >
+                  Download logs file.
+                </a>) : null}
             </p>
           )}
           type="info"

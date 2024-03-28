@@ -212,7 +212,8 @@ class SubSettings extends React.Component {
       showSectionsSearch,
       sectionsSearchPlaceholder,
       hideListForSingleSection,
-      sectionsListClassName
+      sectionsListClassName,
+      beforeListRowRenderer
     } = this.props;
     if (sections.length === 0) {
       return (
@@ -253,6 +254,7 @@ class SubSettings extends React.Component {
         }
       >
         <SectionsList
+          beforeListRowRenderer={beforeListRowRenderer}
           activeSectionKey={section}
           className={classNames(sectionsListClassName, 'cp-divider', 'right')}
           sections={sections}
@@ -286,7 +288,8 @@ SubSettings.propTypes = {
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   emptyDataPlaceholder: PropTypes.node,
   router: PropTypes.object,
-  hideListForSingleSection: PropTypes.bool
+  hideListForSingleSection: PropTypes.bool,
+  beforeListRowRenderer: PropTypes.func
 };
 
 export default observer(SubSettings);

@@ -8,7 +8,7 @@ export default function UserStatus ({online}) {
         cy="5"
         r="4"
         strokeWidth={1}
-        className={online ? 'cp-user-status-online' : 'cp-user-status-offline'}
+        className={online ? 'cp-status-online' : 'cp-status-offline'}
       />
     </svg>
   );
