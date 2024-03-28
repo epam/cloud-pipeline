@@ -129,7 +129,7 @@ class LocalSyncDtsPreference extends React.Component {
           <tbody>
             {(preference.value || []).map(this.renderScheduleRow)}
             <tr>
-              <td colSpan={columns.length}>
+              <td>
                 <Button
                   onClick={this.addScheduleRow}
                   style={{width: '100%'}}
