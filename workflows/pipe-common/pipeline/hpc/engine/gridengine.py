@@ -16,6 +16,7 @@ import math
 from datetime import datetime
 
 from pipeline.hpc.logger import Logger
+from pipeline.hpc.valid import WorkerValidatorHandler
 
 
 def _perform_command(action, msg, error_msg, skip_on_failure):
@@ -117,7 +118,7 @@ class GridEngineJob:
         return str(self.__dict__)
 
 
-class GridEngine:
+class GridEngine(WorkerValidatorHandler):
 
     def get_jobs(self):
         pass
