@@ -31,6 +31,12 @@
   font-size: smaller;
 }
 
+.dts-list-controls-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
 .dts-card-container {
   display: flex;
   flex-direction: column;

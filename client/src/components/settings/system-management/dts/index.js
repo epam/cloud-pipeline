@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Modal, message, Button} from 'antd';
+import {Modal, message, Button, Icon} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
@@ -49,8 +49,20 @@ class DtsManagement extends React.Component {
   }
 
   componentDidMount () {
+    this.dtsListFetch();
+  }
+
+  dtsListFetch = () => {
     const {dtsList} = this.props;
-    dtsList.fetch();
+    if (!this.pending)  {
+      dtsList.fetch();
+    }
+  };
+
+  @computed
+  get pending () {
+    const {dtsList} = this.props;
+    return (dtsList && dtsList.pending) || this.state.pending;
   }
 
   onChangePreferences = (modified) => {
@@ -186,7 +198,6 @@ class DtsManagement extends React.Component {
 
   render () {
     const {
-      pending,
       refreshToken,
       showCreateDtsModal
     } = this.state;
@@ -202,7 +213,7 @@ class DtsManagement extends React.Component {
             onSave={this.onSavePreferences}
             onChange={this.onChangePreferences}
             onDeleteDts={this.onDeleteDts}
-            pending={pending}
+            pending={this.pending}
             refreshToken={refreshToken}
           />
         );
@@ -211,14 +222,23 @@ class DtsManagement extends React.Component {
       <div style={{height: '100%'}}>
         <SubSettings
           beforeListRowRenderer={() => (
-            <Button
-              size="small"
-              type="primary"
-              style={{width: '100%', marginBottom: 5}}
-              onClick={this.openCreateDtsModal}
-            >
-              Create DTS
-            </Button>
+            <div className={styles.dtsListControlsRow}>
+              <Button
+                size="small"
+                type="primary"
+                style={{flexGrow: 1, marginBottom: 5}}
+                onClick={this.openCreateDtsModal}
+              >
+                Create DTS
+              </Button>
+              <Button
+                size="small"
+                disabled={this.pending}
+                onClick={this.dtsListFetch}
+              >
+                <Icon type="reload" />
+              </Button>
+            </div>
           )}
           className={styles.container}
           sectionsListClassName={styles.sectionList}
