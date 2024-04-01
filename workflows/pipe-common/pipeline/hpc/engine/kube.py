@@ -188,10 +188,11 @@ class KubeGridEngine(GridEngine):
                 if node_condition_status == 'True':
                     return True
                 Logger.warn('Execution host {host} is not ready which makes host invalid'
-                            .format(host=host))
+                            .format(host=host),
+                            crucial=True)
                 return False
         except Exception:
-            Logger.warn('Execution host {host} validation has failed'.format(host=host), trace=True)
+            Logger.warn('Execution host {host} validation has failed'.format(host=host), crucial=True, trace=True)
             return False
 
     def kill_jobs(self, jobs, force=False):

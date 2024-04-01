@@ -291,14 +291,17 @@ class SunGridEngine(GridEngine):
                     for host_state in host_states:
                         if host_state in self._BAD_HOST_STATES:
                             Logger.warn('Execution host %s GE state is %s which makes host invalid.'
-                                        % (host, host_state))
+                                        % (host, host_state),
+                                        crucial=True)
                             return False
                     if host_states:
                         Logger.warn('Execution host %s GE state is not empty but is considered valid: %s.'
-                                    % (host, host_states))
+                                    % (host, host_states),
+                                    crucial=True)
             return True
         except RuntimeError as e:
-            Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
+            Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e),
+                        crucial=True, trace=True)
             return False
 
     def kill_jobs(self, jobs, force=False):
