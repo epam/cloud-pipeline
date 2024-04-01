@@ -88,7 +88,8 @@ class SlurmGridEngine(GridEngine):
         node_state = self._get_host_state(host)
         for bad_state in SlurmGridEngine._NODE_BAD_STATES:
             if bad_state in node_state:
-                Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, bad_state))
+                Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, bad_state),
+                            crucial=True)
                 return False
         return True
 
@@ -102,7 +103,7 @@ class SlurmGridEngine(GridEngine):
                 if "NodeName" in line:
                     return self._parse_dict(line).get("State", "UNKNOWN")
         except ExecutionError as e:
-            Logger.warn("Problems with getting host '%s' info: %s" % (host, e))
+            Logger.warn("Problems with getting host '%s' info: %s" % (host, e), crucial=True, trace=True)
             return "UNKNOWN"
 
     def _parse_jobs(self, scontrol_jobs_output):

@@ -189,6 +189,10 @@ class GridEngineAutoscalingParametersGroup(GridEngineParametersGroup):
             name='CP_CAP_AUTOSCALE_IDLE_TIMEOUT', type=PARAM_INT, default=30,
             help='Specifies a timeout in seconds after which an inactive worker is considered idled.\n'
                  'If an autoscaling worker is idle then it is scaled down.')
+        self.scale_down_invalid_timeout = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_INVALID_TIMEOUT', type=PARAM_INT, default=60 * 60,
+            help='Specifies a timeout in seconds after which an unavailable worker is considered invalid.\n'
+                 'If an autoscaling worker is invalid then it is scaled down.')
         self.log_dir = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_LOGDIR', type=PARAM_STR, default=os.getenv('LOG_DIR', '/var/log'),
             help='Specifies logging directory.')
