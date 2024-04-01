@@ -42,6 +42,7 @@
   line-height: 0px;
   overflow: hidden;
   padding-left: 85px;
+  font-size: smaller;
 }
 
 .error-container.error {
