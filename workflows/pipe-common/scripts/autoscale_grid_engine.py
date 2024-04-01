@@ -47,9 +47,11 @@ from pipeline.hpc.logger import Logger
 from pipeline.hpc.param import GridEngineParameters, ValidationError
 from pipeline.hpc.pipe import CloudPipelineAPI, \
     CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
-    CloudPipelineWorkerValidator, CloudPipelineWorkerTagsHandler
+    CloudPipelineWorkerValidator, CloudPipelineWorkerValidatorHandler, \
+    CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
+from pipeline.hpc.valid import GracePeriodWorkerValidatorHandler
 from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.path import mkdir
 
@@ -265,6 +267,7 @@ def get_daemon():
     scale_down_batch_size = params.autoscaling.scale_down_batch_size.get()
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default=30))
     scale_down_idle_timeout = params.autoscaling.scale_down_idle_timeout.get()
+    scale_down_invalid_timeout = params.autoscaling.scale_down_invalid_timeout.get()
 
     active_timeout = params.autoscaling_advanced.active_timeout.get()
 
@@ -530,8 +533,13 @@ def get_daemon():
                                                               grid_engine=grid_engine,
                                                               host_storage=host_storage,
                                                               batch_size=scale_down_batch_size)
-    worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
+    worker_validator_handlers = [
+        CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils),
+        GracePeriodWorkerValidatorHandler(inner=grid_engine, grace_period=scale_down_invalid_timeout, clock=clock)
+    ]
+    worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,
                                                     grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                    handlers=worker_validator_handlers,
                                                     common_utils=common_utils, dry_run=dry_run)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
                                       demand_selector=demand_selector,

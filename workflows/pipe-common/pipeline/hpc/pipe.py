@@ -21,6 +21,7 @@ import time
 from pipeline.hpc.event import InsufficientInstanceEvent, FailingInstanceEvent, AvailableInstanceEvent
 from pipeline.hpc.instance.provider import GridEngineInstanceProvider, Instance
 from pipeline.hpc.logger import Logger
+from pipeline.hpc.valid import WorkerValidator, WorkerValidatorHandler
 
 
 class ServerError(RuntimeError):
@@ -153,19 +154,13 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
         return datetime.strptime(run_started, self._datetime_format)
 
 
-class GridEngineWorkerValidator:
-
-    def validate(self):
-        pass
-
-
-class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
+class CloudPipelineWorkerValidator(WorkerValidator):
 
     _STOP_RUN = 'pipe stop --yes %s'
     _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
-    _RUNNING_STATUS = 'RUNNING'
 
-    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, common_utils, dry_run):
+    def __init__(self, cmd_executor, host_storage, grid_engine, scale_down_handler, handlers,
+                 common_utils, dry_run):
         """
         Grid engine worker validator.
 
@@ -174,18 +169,18 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
         F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
         :param grid_engine: Grid engine.
-        :param api: Cloud pipeline client.
         :param cmd_executor: Cmd executor.
         :param host_storage: Additional hosts storage.
         :param scale_down_handler: Scale down handler.
+        :param handlers: Validation handlers.
         :param common_utils: helpful stuff
         :param dry_run: Dry run flag.
         """
         self.grid_engine = grid_engine
-        self.api = api
         self.executor = cmd_executor
         self.host_storage = host_storage
         self.scale_down_handler = scale_down_handler
+        self.handlers = handlers
         self.common_utils = common_utils
         self.dry_run = dry_run
 
@@ -200,12 +195,14 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
         Logger.info('Init: Workers validation.')
         valid_hosts, invalid_hosts = [], []
         for host in hosts:
-            run_id = self.common_utils.get_run_id_from_host(host)
-            if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
-                invalid_hosts.append((host, run_id))
+            if any(not handler.is_valid(host) for handler in self.handlers):
+                invalid_hosts.append(host)
                 continue
-        for host, run_id in invalid_hosts:
-            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host, crucial=True)
+        for host in invalid_hosts:
+            run_id = self.common_utils.get_run_id_from_host(host)
+            Logger.warn('Invalid additional host %s was found. '
+                        'It will be downscaled.' % host,
+                        crucial=True)
             if self.dry_run:
                 continue
             self._try_stop_worker(run_id)
@@ -215,24 +212,6 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
             self._remove_worker_from_hosts(host)
             self.host_storage.remove_host(host)
         Logger.info('Done: Workers validation.')
-
-    def _is_running(self, run_id):
-        try:
-            run_info = self.api.load_run(run_id)
-            status = run_info.get('status', 'not found').strip().upper()
-            if status == self._RUNNING_STATUS:
-                return True
-            Logger.warn('Additional worker #%s status is not %s but %s.'
-                        % (run_id, self._RUNNING_STATUS, status))
-            return False
-        except APIError as e:
-            Logger.warn('Additional worker #%s status retrieving has failed '
-                        'and it is considered not running: %s' % (run_id, str(e)))
-            return False
-        except Exception as e:
-            Logger.warn('Additional worker #%s status retrieving has failed '
-                        'but it is temporary considered running: %s' % (run_id, str(e)))
-            return True
 
     def _try_stop_worker(self, run_id):
         try:
@@ -256,6 +235,40 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
     def _remove_worker_from_hosts(self, host):
         Logger.info('Removing additional worker %s from the well-known hosts.' % host)
         self.scale_down_handler._remove_host_from_hosts(host)
+
+
+class CloudPipelineWorkerValidatorHandler(WorkerValidatorHandler):
+
+    _RUNNING_STATUS = 'RUNNING'
+
+    def __init__(self, api, common_utils):
+        self._api = api
+        self._common_utils = common_utils
+
+    def is_valid(self, host):
+        run_id = self._common_utils.get_run_id_from_host(host)
+        if self._is_running(run_id):
+            return True
+        Logger.warn('Not running additional host %s was found.' % host, crucial=True)
+        return False
+
+    def _is_running(self, run_id):
+        try:
+            run_info = self._api.load_run(run_id)
+            status = run_info.get('status', 'not found').strip().upper()
+            if status == self._RUNNING_STATUS:
+                return True
+            Logger.warn('Additional worker #%s status is not %s but %s.'
+                        % (run_id, self._RUNNING_STATUS, status))
+            return False
+        except APIError as e:
+            Logger.warn('Additional worker #%s status retrieving has failed '
+                        'and it is considered not running: %s' % (run_id, str(e)))
+            return False
+        except Exception as e:
+            Logger.warn('Additional worker #%s status retrieving has failed '
+                        'but it is temporary considered running: %s' % (run_id, str(e)))
+            return True
 
 
 class LastActionMarker:

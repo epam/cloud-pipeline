@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import logging
+from datetime import datetime
 
 from mock import Mock, MagicMock
 
 from pipeline.hpc.engine.gridengine import GridEngineJob
 from pipeline.hpc.host import MemoryHostStorage
-from pipeline.hpc.pipe import CloudPipelineWorkerValidator
+from pipeline.hpc.pipe import CloudPipelineWorkerValidator, CloudPipelineWorkerValidatorHandler
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
@@ -29,6 +30,13 @@ HOST3 = 'HOST-3'
 HOST1_RUN_ID = '1'
 HOST2_RUN_ID = '2'
 HOST3_RUN_ID = '3'
+host_run_id_dict = {
+    HOST1: HOST1_RUN_ID,
+    HOST2: HOST2_RUN_ID,
+    HOST3: HOST3_RUN_ID,
+}
+
+now = datetime(2018, 12, 21, 11, 10, 00)
 
 executor = Mock()
 host_storage = MemoryHostStorage()
@@ -36,8 +44,14 @@ grid_engine = Mock()
 api = Mock()
 scale_down_handler = Mock()
 common_utils = Mock()
-worker_validator = CloudPipelineWorkerValidator(cmd_executor=executor, api=api, host_storage=host_storage,
+clock = Mock()
+worker_validator_handlers = [
+    CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils),
+    grid_engine
+]
+worker_validator = CloudPipelineWorkerValidator(cmd_executor=executor, host_storage=host_storage,
                                                 grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                handlers=worker_validator_handlers,
                                                 common_utils=common_utils, dry_run=False)
 
 
@@ -49,7 +63,8 @@ def setup_function():
     grid_engine.is_valid = MagicMock(side_effect=[True, False, True])
     grid_engine.get_jobs = MagicMock(return_value=[])
     grid_engine.kill_jobs = MagicMock()
-    common_utils.get_run_id_from_host = MagicMock(side_effect=[HOST1_RUN_ID, HOST2_RUN_ID, HOST3_RUN_ID])
+    common_utils.get_run_id_from_host = MagicMock(side_effect=host_run_id_dict.get)
+    clock.now = MagicMock(return_value=now)
 
 
 def test_stopping_hosts_that_are_invalid_in_grid_engine():
