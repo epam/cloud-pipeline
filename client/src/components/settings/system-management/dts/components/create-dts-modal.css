@@ -19,14 +19,32 @@
   flex-direction: column;
 }
 
+.form-item-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 5px;
+}
+
 .form-item {
   display: flex;
   flex-wrap: nowrap;
   gap: 5px;
   align-items: center;
-  margin-bottom: 5px;
 }
 
 .form-item .label {
   min-width: 80px;
+}
+
+.error-container {
+  transition: all 0.2s ease;
+  opacity: 0;
+  line-height: 0px;
+  overflow: hidden;
+  padding-left: 85px;
+}
+
+.error-container.error {
+  opacity: 1;
+  line-height: 15px;
 }

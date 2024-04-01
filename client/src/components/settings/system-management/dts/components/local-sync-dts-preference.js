@@ -112,27 +112,28 @@ class LocalSyncDtsPreference extends React.Component {
       <div className={className} style={{margin: '10px 0px'}}>
         <b style={{marginLeft: 2}}>{preference.key}</b>
         <table className={styles.table}>
-          <thead>
-            <tr>
-              {columns.map(({title, key}) => (
-                <th
-                  style={{
-                    width: key === 'controls-column' ? '10px' : 'auto', textAlign: 'center'
-                  }}
-                  key={key}
-                >
-                  {title}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          {(preference.value || []).length ? (
+            <thead>
+              <tr>
+                {columns.map(({title, key}) => (
+                  <th
+                    style={{
+                      width: key === 'controls-column' ? '10px' : 'auto', textAlign: 'center'
+                    }}
+                    key={key}
+                  >
+                    {title}
+                  </th>
+                ))}
+              </tr>
+            </thead>) : null}
           <tbody>
             {(preference.value || []).map(this.renderScheduleRow)}
             <tr>
               <td>
                 <Button
                   onClick={this.addScheduleRow}
-                  style={{width: '100%'}}
+                  style={{width: '150px'}}
                   size="small"
                 >
                   <Icon type="plus" /> Add schedule

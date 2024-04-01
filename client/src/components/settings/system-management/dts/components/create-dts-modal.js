@@ -16,11 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import {observable, computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Modal, message, Button, Input, Checkbox} from 'antd';
+import {Row, Modal, message, Button, Input, Checkbox} from 'antd';
 import styles from './create-dts-modal.css';
 import DTSCreate from '../../../../../models/dts/DTSCreate';
-import propTypes from 'prop-types';
 
 @inject('dtsList')
 @observer
@@ -29,7 +30,13 @@ export default class CreateDtsModal extends React.Component {
     url: '',
     name: '',
     schedulable: true,
-    prefixes: []
+    prefixes: ''
+  }
+
+  @observable errors = {}
+
+  componentDidMount () {
+    this.validate();
   }
 
   reset = () => {
@@ -37,8 +44,9 @@ export default class CreateDtsModal extends React.Component {
       url: '',
       name: '',
       schedulable: true,
-      prefixes: ''
-    })
+      prefixes: '',
+      errors: {}
+    }, this.validate)
   };
 
   onOk = async () => {
@@ -49,7 +57,7 @@ export default class CreateDtsModal extends React.Component {
       url,
       name,
       schedulable,
-      prefixes: (prefixes || '').split('').filter(Boolean)
+      prefixes: (prefixes || '').split(' ').filter(Boolean)
     });
     if (request.error) {
       message.error(request.error, 5);
@@ -61,6 +69,20 @@ export default class CreateDtsModal extends React.Component {
     onClose && onClose();
   };
 
+  validate = () => {
+    const {url = '', name = '', prefixes = ''} = this.state;
+    this.errors = {
+      url: url.trim() ? undefined : 'Field is required',
+      name: name.trim() ? undefined : 'Field is required',
+      prefixes: prefixes.trim() ? undefined : 'Field is required'
+    }
+  };
+
+  @computed
+  get hasErrors () {
+    return Object.values(this.errors).filter(Boolean).length > 0;
+  }
+
   onCancel = () => {
     const {onClose} = this.props;
     this.reset();
@@ -68,11 +90,11 @@ export default class CreateDtsModal extends React.Component {
   };
 
   onChangeInputItem = (key) => (event) => {
-    this.setState({[key]: event.target.value});
+    this.setState({[key]: event.target.value}, this.validate);
   };
 
   onChangeCheckboxItem = (key) => (event) => {
-    this.setState({[key]: event.target.checked});
+    this.setState({[key]: event.target.checked}, this.validate);
   };
 
   renderFormItem = ({key, label= '', type = 'input'}) => {
@@ -93,10 +115,20 @@ export default class CreateDtsModal extends React.Component {
         </div>
       )
     }
-    if (renderers[type]) {
-      return renderers[type](key);
-    }
-    return renderers.input(key);
+    const renderFn = renderers[type] || renderers.input;
+    const error = this.errors[key];
+    return (
+      <div className={styles.formItemContainer}>
+        {renderFn(key)}
+        <div className={classNames(
+          'cp-error',
+          styles.errorContainer,
+          {[styles.error]: !!error}
+        )}>
+          {this.errors[key] || ''} &nbsp;
+        </div>
+      </div>
+    )
   };
 
   render () {
@@ -109,6 +141,21 @@ export default class CreateDtsModal extends React.Component {
         title="Create DTS"
         visible={visible}
         onOk={this.onOk}
+        footer={(
+          <Row type="flex" align="center" justify="end">
+            <Button onClick={this.onCancel}>
+              Cancel
+            </Button>
+            <Button
+              disabled={this.hasErrors}
+              type="primary"
+              onClick={this.onOk}
+              style={{marginLeft: 5}}
+            >
+              OK
+            </Button>
+          </Row>
+        )}
         onCancel={this.onCancel}
       >
         {this.renderFormItem({key: 'url', label: 'Url:'})}

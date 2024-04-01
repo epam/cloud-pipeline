@@ -50,7 +50,7 @@ class DtsManagement extends React.Component {
 
   componentDidMount () {
     const {dtsList} = this.props;
-    dtsList.fetchIfNeededOrWait();
+    dtsList.fetch();
   }
 
   onChangePreferences = (modified) => {
