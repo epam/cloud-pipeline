@@ -746,6 +746,8 @@ public class SystemPreferences {
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
     public static final LongPreference KUBE_POD_GRACE_PERIOD_SECONDS = new LongPreference(
             "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
+    public static final LongPreference KUBE_POD_DELETE_ATTEMPTS = new LongPreference(
+            "launch.kube.pod.delete.attempts", 5L, LAUNCH_GROUP, pass, false);
     public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
             LAUNCH_GROUP, pass, true);
     public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,

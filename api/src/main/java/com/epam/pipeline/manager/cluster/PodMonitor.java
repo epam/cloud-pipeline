@@ -108,7 +108,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
         private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
-
+        private final BlockingQueue<String> hangingPods = new LinkedBlockingQueue<>();
         private final String kubeNamespace;
         private final RunLogManager runLogManager;
         private final PipelineRunManager pipelineRunManager;
@@ -235,10 +235,25 @@ public class PodMonitor extends AbstractSchedulingManager {
                     boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
                     if (isPipelineDeleted) {
                         finishRun(pipelineRun);
+                    } else {
+                        hangingPods.add(pipelineRun.getPodId());
                     }
                 } catch (Exception e) {
                     LOGGER.error(messageHelper
                             .getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
+                    LOGGER.error(e.getMessage(), e);
+                }
+            }
+        }
+
+        @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
+        public void releaseHangingPods() {
+            while (!hangingPods.isEmpty()) {
+                try {
+                    String hangingPod = hangingPods.take();
+                    killHangingPod(hangingPod);
+                } catch (Exception e) {
+                    LOGGER.error(messageHelper.getMessage(MessageConstants.ERROR_POD_RELEASE_TASK, e));
                     LOGGER.error(e.getMessage(), e);
                 }
             }
@@ -559,7 +574,54 @@ public class PodMonitor extends AbstractSchedulingManager {
 
                 //check that we really deleted all pods
                 return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client, gracePeriod);
+            } catch (Exception e) {
+                hangingPods.add(podId);
+                return false;
             }
+        }
+
+        private void killHangingPod(String podId) {
+            LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
+            long gracePeriod = preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS);
+            long podDeleteAttempts = preferenceManager.getPreference(SystemPreferences.KUBE_POD_DELETE_ATTEMPTS);
+            try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
+                //delete pipeline pod
+                boolean isPodDeleted = false;
+                int count = 0;
+                while (!isPodDeleted && count < podDeleteAttempts) {
+                    isPodDeleted = deleteHangingPod(podId, gracePeriod, client);
+                    count++;
+                    try {
+                        Thread.sleep(DELETE_RETRY_DELAY);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        LOGGER.error(e.getMessage(), e);
+                    }
+                }
+                if (!isPodDeleted) {
+                    deleteHangingPod(podId, 0L, client);
+                }
+            }
+        }
+
+        private boolean deleteHangingPod(String podId, long gracePeriod, KubernetesClient client) {
+            client.pods().inNamespace(kubeNamespace).withName(podId)
+                    .withGracePeriod(gracePeriod).delete();
+
+            PodList podList =
+                    client.pods().inNamespace(kubeNamespace).withLabel(PIPELINE_ID_LABEL, podId)
+                            .list();
+            podList.getItems().forEach(pod -> {
+                LOGGER.info(messageHelper
+                        .getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, pod.getMetadata().getName()));
+                //skip pipeline pod, since it is already deleted
+                if (pod.getMetadata().getName().equals(podId)) {
+                    return;
+                }
+                client.pods().inNamespace(kubeNamespace).withName(pod.getMetadata().getName())
+                        .delete();
+            });
+            return true;
         }
 
         private boolean ensurePipelineIsDeleted(String runId, String podId,
