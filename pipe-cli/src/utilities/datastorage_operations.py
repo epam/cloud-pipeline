@@ -32,6 +32,7 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
 from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
+from src.utilities.extension.handler import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
 from src.utilities.storage.common import TransferResult
@@ -65,9 +66,14 @@ class EmptyFilesValues(object):
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, verify_destination=False):
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks,
+           additional_arguments, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+           on_empty_files, on_failures, clean=False, skip_existing=False, verify_destination=False):
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'cp', locals()):
+            sys.exit(0)
+
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
