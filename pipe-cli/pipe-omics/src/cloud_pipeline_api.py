@@ -160,7 +160,7 @@ class CloudPipelineClient:
         return self._retryable_call('GET', 'cloud/region/info') or []
 
     def import_omics_file(self, storage, sources, name, omics_file_type, description, sample_id, subject_id,
-                          generated_from=None, reference_arn=None):
+                          generated_from=None, reference_path=None):
         def _prepare_sources(sources):
             size = len(sources)
             if not sources or size == 0 or size > 2:
@@ -180,7 +180,7 @@ class CloudPipelineClient:
                     "sourceFileType": omics_file_type,
                     "sampleId": sample_id,
                     "subjectId": subject_id,
-                    "referenceArn": reference_arn,
+                    "referencePath": reference_path,
                     "sourceFiles": _prepare_sources(sources)
                 }
             ]

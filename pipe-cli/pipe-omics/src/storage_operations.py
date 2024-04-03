@@ -54,7 +54,7 @@ class OmicsStorageCopyOptions:
                     raise ValueError(
                         "'additional_options' with values: [name=<>,subject_id=<>,sample_id=<>,file_type=<>,description=<optional>,generated_from=<optional>,reference=<optional>] should be provided to register Omics file!"
                     )
-                name, description, subject_id, sample_id, reference_arn, generated_from, file_type \
+                name, description, subject_id, sample_id, reference_path, generated_from, file_type \
                     = OmicsStorageCopyOptions.parse_additional_options(args["additional_options"])
                 return OmicsStorageUploadOptions(
                     source=source,
@@ -65,7 +65,7 @@ class OmicsStorageCopyOptions:
                     description=description,
                     subject_id=subject_id,
                     sample_id=sample_id,
-                    reference_arn=reference_arn,
+                    reference_path=reference_path,
                     generated_from=generated_from
                 )
             case OmicsStorageCopyOptions.MODE_DOWNLOAD:
@@ -107,7 +107,7 @@ class OmicsStorageCopyOptions:
                 additional_options.get("description", None),
                 additional_options.get("subject_id", None),
                 additional_options.get("sample_id", None),
-                OmicsUrl.path_to_arn(additional_options.get("reference", None)),
+                additional_options.get("reference", None),
                 additional_options.get("generated_from", None),
                 _get_file_type(additional_options.get("file_type", None)))
 
@@ -115,7 +115,7 @@ class OmicsStorageCopyOptions:
 class OmicsStorageUploadOptions(OmicsStorageCopyOptions):
 
     def __init__(self, name, mode, source, destination, omics_file_type, subject_id,
-                 sample_id, description, reference_arn, generated_from):
+                 sample_id, description, reference_path, generated_from):
         OmicsStorageCopyOptions.__init__(self, mode, source, destination)
         self.name = name
         self.omics_file_type = omics_file_type
@@ -123,7 +123,7 @@ class OmicsStorageUploadOptions(OmicsStorageCopyOptions):
         self.sample_id = sample_id
         self.description = description
         self.generated_from = generated_from
-        self.reference_arn = reference_arn
+        self.reference_path = reference_path
 
 
 class OmicsStorageDownloadOptions(OmicsStorageCopyOptions):
@@ -146,11 +146,18 @@ class OmicsStorageCopyOperation(object):
                 AWSOmicsOperation(api).download_file(storage, options.source, options.destination)
             case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
                 sources = cls._prepare_sources(options.source)
-                copy_operation = AWSOmicsOperation(api).upload_file \
-                    if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD \
-                    else api.import_omics_file
-                copy_operation(storage, sources, options.name, options.omics_file_type, options.subject_id,
-                               options.sample_id, options.description, options.generated_from, options.reference_arn)
+                if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD:
+                    AWSOmicsOperation(api).upload_file(
+                        storage, sources, options.name, options.omics_file_type, options.subject_id,
+                        options.sample_id, options.description, options.generated_from,
+                        OmicsUrl.path_to_arn(options.reference_path)
+                    )
+                else:
+                    api.import_omics_file(
+                        storage, sources, options.name, options.omics_file_type, options.subject_id,
+                        options.sample_id, options.description, options.generated_from,
+                        options.reference_path
+                    )
             case _:
                 raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
 
@@ -175,7 +182,7 @@ class OmicsStorageCopyOperation(object):
         def _validate(path):
             if not path.startswith("s3://") and not os.path.isfile(path):
                 raise ValueError("Local file {} not found!".format(path))
-            return path
+            return path.strip()
 
         sources = source.split(",")
         if len(sources) > 2:
@@ -265,10 +272,11 @@ class OmicsStoreListingOperation(object):
 
         schema, storage_path, file_path = OmicsUrl.parse_path(path)
         if schema is None:
-            raise RuntimeError()
+            raise RuntimeError("Fail to parse Omics path url!")
         storage = api.load_storage(storage_path)
         show_details = bool(args_to_parse.get("show_details", False))
-        page_size = int(args_to_parse.get("page", 0))
+        page_arg = args_to_parse.get("page", 0)
+        page_size = 0 if page_arg is None else int(page_arg)
         show_all = bool(args_to_parse.get("show_all", False))
         return OmicsStorageListingOptions(storage, file_path, show_details, page_size, show_all)
 

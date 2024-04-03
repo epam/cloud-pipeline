@@ -79,6 +79,9 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
     }
 
      public static String filePathToArn(final String path) {
+        if (path == null) {
+            return null;
+        }
         final Matcher matcher = AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT.matcher(path);
         if (matcher.find()) {
             return String.format(AWS_OMICS_STORE_FILE_PATH_TEMPLATE,

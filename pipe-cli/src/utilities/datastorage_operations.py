@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import click
-import datetime
 import logging
 import multiprocessing
 import os
@@ -32,9 +31,10 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
 from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
-from src.utilities.extension.handler import ExtensionHandlerRegistry
+from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
+from src.utilities.printing.storage import print_storage_listing
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
@@ -67,7 +67,7 @@ class EmptyFilesValues(object):
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks,
-           additional_arguments, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+           additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
            on_empty_files, on_failures, clean=False, skip_existing=False, verify_destination=False):
 
         # Check if any external extension should handle this call
@@ -348,6 +348,11 @@ class DataStorageOperations(object):
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
         """Lists storage contents
         """
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'ls', locals()):
+            sys.exit(0)
+
         if path:
             root_bucket = None
             original_path = ''
@@ -477,66 +482,16 @@ class DataStorageOperations(object):
             click.echo(header)
 
         if show_details:
-            items_table = prettytable.PrettyTable()
             fields = ["Type", "Labels", "Modified", "Size", "Name"]
-            if show_versions:
-                fields.append("Version")
             if show_extended:
                 fields.extend(["Mount status", "Mount limits", "Metadata"])
                 cls.assign_metadata_to_items(items)
-            items_table.field_names = fields
-            items_table.align = "l"
-            items_table.border = False
-            items_table.padding_width = 2
-            items_table.align['Size'] = 'r'
-            for item in items:
-                name = item.name
-                changed = ''
-                size = ''
-                labels = ''
-                if item.type is not None and item.type in WrapperType.cloud_types():
-                    name = item.path
-                item_updated = item.deleted or item.changed
-                if item_updated is not None:
-                    if bucket_model is None:
-                        # need to wrap into datetime since bucket listing returns str
-                        item_datetime = datetime.datetime.strptime(item_updated, '%Y-%m-%d %H:%M:%S')
-                    else:
-                        item_datetime = item_updated
-                    changed = item_datetime.strftime('%Y-%m-%d %H:%M:%S')
-                if item.size is not None and not item.deleted:
-                    size = item.size
-                if item.labels is not None and len(item.labels) > 0 and not item.deleted:
-                    labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, item.labels))
-                item_type = "-File" if item.delete_marker or item.deleted else item.type
-                row = [item_type, labels, changed, size, name]
-                if show_versions:
-                    row.append('')
-                if show_extended:
-                    mount_status = item.mount_status
-                    mount_limits = STORAGE_DETAILS_SEPARATOR.join(item.tools_to_mount)
-                    item_metadata = STORAGE_DETAILS_SEPARATOR.join(['='.join(entry) for entry in item.metadata.items()])
-                    row.extend([mount_status, mount_limits, item_metadata])
-                items_table.add_row(row)
-                if show_versions and item.type == 'File':
-                    if item.deleted:
-                        # Additional synthetic delete version
-                        row = ['-File', '', item.deleted.strftime('%Y-%m-%d %H:%M:%S'), size, name, '- (latest)']
-                        items_table.add_row(row)
-                    for version in item.versions:
-                        version_type = "-File" if version.delete_marker else "+File"
-                        version_label = "{} (latest)".format(version.version) if version.latest else version.version
-                        labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, version.labels))
-                        size = '' if version.size is None else version.size
-                        row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name, version_label]
-                        items_table.add_row(row)
-
-            click.echo(items_table)
-            click.echo()
+            if show_versions:
+                fields.append("Version")
         else:
-            for item in items:
-                click.echo('{}\t\t'.format(item.path), nl=False)
-            click.echo()
+            fields = []
+
+        print_storage_listing(fields, items, bucket_model, show_details, show_extended, show_versions)
 
     @classmethod
     def assign_metadata_to_items(cls, items):

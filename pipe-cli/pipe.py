@@ -1242,8 +1242,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[follow] follows symlinks (default); \n'
                    '[skip] does not follow symlinks; \n'
                    '[filter] follows symlinks but checks for cyclic links.')
-@click.option('-a', '--additional-arguments', required=False,
-              help='Additional arguments. Comma separated list of additional arguments to be used during file copy.'
+@click.option('-a', '--additional-options', required=False,
+              help='Comma separated list of additional arguments to be used during file copy.'
                    ' f.i. additional args to register file in Omics Store: '
                    '"name=<filename>,subject_id=<subject_id>,sample_id=<sample_id>,file_type=fastq"')
 @click.option('-n', '--threads', type=int, required=False,
@@ -1286,7 +1286,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                      symlinks, additional_arguments, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      symlinks, additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
                       on_empty_files, on_failures, skip_existing, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
@@ -1327,7 +1327,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
 
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, additional_arguments, threads, io_threads,
+                             symlinks, additional_options, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
 
