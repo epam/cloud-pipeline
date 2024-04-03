@@ -48,7 +48,7 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT =
             Pattern.compile(
-                    "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)"
+                "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)"
             );
 
 
@@ -74,11 +74,15 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
         if (matcher.find()) {
             return matcher.group(REFERENCE_STORE_ID_GROUP);
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                String.format(
+                        "Can't get AWS Omics Store id from url because it doesn't match the schema: %s", getPath()
+                )
+            );
         }
     }
 
-     public static String filePathToArn(final String path) {
+    public static String filePathToArn(final String path) {
         if (path == null) {
             return null;
         }
@@ -92,7 +96,11 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
                     matcher.group(FILE_TYPE),
                     matcher.group(FILE_TYPE));
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                String.format(
+                        "Can't transform AWS Omics Path to ARN because it doesn't match the schema: %s", path
+                )
+            );
         }
     }
 }
