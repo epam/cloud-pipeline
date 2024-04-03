@@ -79,7 +79,11 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
                     arnMatcher.group(REFERENCE_STORE_ID)
             ) + REFERENCE_STORE_PATH_SUFFIX;
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                String.format(
+                    "Can't parse AWS Omics ARN because it doesn't match the schema: %s", omicsRefStorage.getArn()
+                )
+            );
         }
     }
 

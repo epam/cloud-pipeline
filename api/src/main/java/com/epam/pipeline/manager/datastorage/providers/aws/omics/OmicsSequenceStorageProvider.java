@@ -74,8 +74,8 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
 
     @Override
     public String createStorage(final AWSOmicsSequenceDataStorage storage) throws DataStorageException {
-        final CreateSequenceStoreResult omicsRefStorage = getOmicsHelper(storage).registerOmicsSeqStorage(storage);
-        final Matcher arnMatcher = SEQUENCE_STORE_ARN_FORMAT.matcher(omicsRefStorage.getArn());
+        final CreateSequenceStoreResult omicsSeqStorage = getOmicsHelper(storage).registerOmicsSeqStorage(storage);
+        final Matcher arnMatcher = SEQUENCE_STORE_ARN_FORMAT.matcher(omicsSeqStorage.getArn());
         if (arnMatcher.find()) {
             return String.format(AWS_OMICS_STORE_PATH_TEMPLATE,
                     arnMatcher.group(ACCOUNT),
@@ -83,7 +83,11 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
                     arnMatcher.group(SEQUENCE_STORE_ID)
             ) + READ_SET_STORE_PATH_SUFFIX;
         } else {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(
+                String.format(
+                    "Can't parse AWS Omics ARN because it doesn't match the schema: %s", omicsSeqStorage.getArn()
+                )
+            );
         }
     }
 

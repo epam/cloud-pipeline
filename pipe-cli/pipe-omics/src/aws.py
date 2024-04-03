@@ -33,6 +33,7 @@ class AWSOmicsFile:
         self.status = None
         self.description = None
         self.size = None
+        self.sizes = {}
         self.modified = None
         self.raw = None
         self.files = []
@@ -41,14 +42,14 @@ class AWSOmicsFile:
     def from_aws_omics_ref_response(cls, response):
         file = cls._with_common_metadata_fields(response)
         file.type = "REFERENCE"
-        file.size = cls._get_size(file)
+        file.size, file.sizes = cls._get_size(file)
         return file
 
     @classmethod
     def from_aws_omics_seq_response(cls, response):
         file = cls._with_common_metadata_fields(response)
         file.type = response.get("fileType", None)
-        file.size = cls._get_size(file)
+        file.size, file.sizes = cls._get_size(file)
         return file
 
     @classmethod
@@ -65,16 +66,14 @@ class AWSOmicsFile:
 
     @classmethod
     def _get_size(cls, file):
+        sizes = {}
         size = 0
-        if 'index' in file.files:
-            size += file.files.get("index", {}).get("contentLength", 0)
-        if 'source' in file.files:
-            size += file.files.get("source", {}).get("contentLength", 0)
-        if 'source1' in file.files:
-            size += file.files.get("source1", {}).get("contentLength", 0)
-        if 'source2' in file.files:
-            size += file.files.get("source2", {}).get("contentLength", 0)
-        return size
+        for file_name in ["index", "source", "source1", "source2"]:
+            if file_name in file.files:
+                file_size = file.files.get(file_name, {}).get("contentLength", 0)
+                size += file_size
+                sizes[file_name] = file_size
+        return size, sizes
 
 
 class AWSOmicsOperation:
@@ -145,10 +144,13 @@ class AWSOmicsOperation:
             self.get_omics(storage, storage.region_name, read=True, write=True),
             config=TransferConfig(directory=destination_dir)
         )
-        if source.endswith(omics_file.file_name.lower()):
+
+        # If original url have source[1|2] - will dowload only specific source, else - the whole file
+        source_file_name = omics_file.file_name.lower()
+        if source.endswith(source_file_name):
             subscribers = [
                 ProgressBarSubscriber(
-                    file_metadata.size,
+                    file_metadata.sizes[source_file_name],
                     "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name)
                 )
             ]
