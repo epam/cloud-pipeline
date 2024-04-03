@@ -67,7 +67,7 @@ chmod +x /tmp/pipe-omics/dist/pipe-omics/pipe-omics
 EOL
 
 docker pull "$_BUILD_PIPE_OMICS_DOCKER_IMAGE" &> /dev/null
-docker run -it \
+docker run -i --rm \
            -v "$PIPE_CLI_SOURCES_DIR":"$PIPE_CLI_SOURCES_DIR" \
            -v "$PIPE_CLI_LINUX_DIST_DIR":"$PIPE_CLI_LINUX_DIST_DIR" \
            -v "$_BUILD_PIPE_OMICS_SCRIPT_NAME":"$_BUILD_PIPE_OMICS_SCRIPT_NAME" \
