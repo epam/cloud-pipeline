@@ -44,7 +44,8 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
         );
     public static final Pattern AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT =
         Pattern.compile(
-            "(?:omics://)?(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)/?"
+            "(?:omics://)?(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/" +
+                    "(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)/?"
         );
     public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
