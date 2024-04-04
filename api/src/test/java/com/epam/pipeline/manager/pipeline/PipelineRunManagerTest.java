@@ -548,7 +548,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     @Test (expected = IllegalArgumentException.class)
     @WithMockUser
     public void shouldThrowExceptionOnInexistentRunTagUpdate() {
-        pipelineRunManager.updateTags(-1L, new TagsVO(null));
+        pipelineRunManager.updateTags(-1L, new TagsVO(null), true);
     }
 
     @Test
@@ -619,7 +619,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
                                                        final Map<String, String> newTags,
                                                        final Map<String, String> expectedTags) {
         final TagsVO tagsVO = new TagsVO(newTags);
-        pipelineRunManager.updateTags(run.getId(), tagsVO);
+        pipelineRunManager.updateTags(run.getId(), tagsVO, true);
         loadRunAndAssertTags(run.getId(), expectedTags);
     }
 

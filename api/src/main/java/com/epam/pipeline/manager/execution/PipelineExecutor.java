@@ -39,6 +39,7 @@ import io.fabric8.kubernetes.api.model.PodDNSConfig;
 import io.fabric8.kubernetes.api.model.PodSpec;
 import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.SecurityContext;
+import io.fabric8.kubernetes.api.model.Toleration;
 import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -48,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -186,6 +188,11 @@ public class PipelineExecutor {
         boolean isSystemdEnabled = isParameterEnabled(envVars, KubernetesConstants.CP_CAP_SYSTEMD_CONTAINER);
 
         spec.setVolumes(getVolumes(isDockerInDockerEnabled, isSystemdEnabled));
+
+        spec.setTolerations(Arrays.asList(
+                new Toleration(null, KubernetesConstants.KUBE_UNREACHABLE_NODE_LABEL, "Exists", null, null),
+                new Toleration(null, KubernetesConstants.KUBE_NOT_READY_NODE_LABEL, "Exists", null, null)
+        ));
 
         if (envVars.stream().anyMatch(envVar -> envVar.getName().equals(USE_HOST_NETWORK))){
             spec.setHostNetwork(true);

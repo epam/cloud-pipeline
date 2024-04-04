@@ -610,6 +610,9 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
 
+    public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
+
     /**
      * Level of CPU load, below which a Run is considered `idle`
      */
