@@ -83,13 +83,12 @@ class AWSOmicsOperation:
 
     def get_file_metadata(self, storage, file_id):
         omics = self.get_omics(storage, storage.region_name, read=True)
-        match storage.type:
-            case OmicsStoreType.OMICS_REF:
-                response = omics.get_reference_metadata(id=file_id, referenceStoreId=storage.cloud_store_id)
-                return AWSOmicsFile.from_aws_omics_ref_response(response)
-            case OmicsStoreType.OMICS_SEQ:
-                response = omics.get_read_set_metadata(id=file_id, sequenceStoreId=storage.cloud_store_id)
-                return AWSOmicsFile.from_aws_omics_seq_response(response)
+        if storage.type == OmicsStoreType.OMICS_REF:
+            response = omics.get_reference_metadata(id=file_id, referenceStoreId=storage.cloud_store_id)
+            return AWSOmicsFile.from_aws_omics_ref_response(response)
+        elif storage.type == OmicsStoreType.OMICS_SEQ:
+            response = omics.get_read_set_metadata(id=file_id, sequenceStoreId=storage.cloud_store_id)
+            return AWSOmicsFile.from_aws_omics_seq_response(response)
 
     def list_files(self, storage, token, page_size, show_all):
 
@@ -108,15 +107,14 @@ class AWSOmicsOperation:
 
         # Based on storage type choose appropriate SKD method and object mapping
         omics = self.get_omics(storage, storage.region_name, list=True)
-        match storage.type:
-            case OmicsStoreType.OMICS_REF:
-                aws_omics_method = omics.list_references
-                object_mapping = AWSOmicsFile.from_aws_omics_ref_response
-            case OmicsStoreType.OMICS_SEQ:
-                aws_omics_method = omics.list_read_sets
-                object_mapping = AWSOmicsFile.from_aws_omics_seq_response
-            case _:
-                raise RuntimeError("Unexpected storage type: " + storage.type)
+        if storage.type == OmicsStoreType.OMICS_REF:
+            aws_omics_method = omics.list_references
+            object_mapping = AWSOmicsFile.from_aws_omics_ref_response
+        elif storage.type == OmicsStoreType.OMICS_SEQ:
+            aws_omics_method = omics.list_read_sets
+            object_mapping = AWSOmicsFile.from_aws_omics_seq_response
+        else:
+            raise RuntimeError("Unexpected storage type: " + storage.type)
 
         # Perform listing
         result = []
@@ -180,6 +178,7 @@ class AWSOmicsOperation:
         if storage.type == OmicsStoreType.OMICS_REF:
             raise RuntimeError("Direct upload to Omics Reference store isn't supported!")
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+        print("Omics {} file(s) {}: upload started! Please wait...".format(file_type, sources))
         subscribers = [FinalEventSubscriber()]
         manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,
                                 sample_id, reference_arn, generated_from, description, subscribers=subscribers)

@@ -71,8 +71,5 @@ class ProgressBarSubscriber(OmicsTransferSubscriber):
 
 class FinalEventSubscriber(OmicsTransferSubscriber):
 
-    def on_queued(self, future, **kwargs):
-        print("Omics {} file {}: upload process started!".format(future.meta.call_args.file_type, future.meta.call_args.name))
-
     def on_done(self, future, **kwargs):
         print("Omics {} file {}: uploaded!".format(future.meta.call_args.file_type, future.meta.call_args.name))

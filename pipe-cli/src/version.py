@@ -14,4 +14,4 @@
 
 __version__='0.17'
 __bundle_info__ = { 'bundle_type': 'one-folder', 'build_os_id': 'debian', 'build_os_version_id': '9' }
-__component_version__='bf1434bfbc4b4072d35ed5df7de1d34e88eed732'
+__component_version__='fe7c4c74f7ae2e7c62ac2429c2ab213b6bb55133'

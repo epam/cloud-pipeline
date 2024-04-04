@@ -35,21 +35,18 @@ import java.util.regex.Pattern;
 public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
 
     public static final Pattern AWS_OMICS_REFERENCE_STORE_PATH_FORMAT =
-            Pattern.compile(
-                    "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference"
-            );
-
+        Pattern.compile(
+            "(?:omics://)?(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<referenceStoreId>.*)/reference/?"
+        );
     public static final Pattern REFERENCE_STORE_ARN_FORMAT =
-            Pattern.compile(
-                    "arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)"
-            );
-    public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
-
-
+        Pattern.compile(
+                "arn:aws:omics:(?<region>[^:]*):(?<account>[^:]*):referenceStore/(?<referenceStoreId>.*)"
+        );
     public static final Pattern AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT =
-            Pattern.compile(
-                "(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)"
-            );
+        Pattern.compile(
+            "(?:omics://)?(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)/?"
+        );
+    public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
 
     public static final String AWS_OMICS_STORE_FILE_PATH_TEMPLATE = "arn:aws:omics:%s:%s:%s/%s/%s/%s";

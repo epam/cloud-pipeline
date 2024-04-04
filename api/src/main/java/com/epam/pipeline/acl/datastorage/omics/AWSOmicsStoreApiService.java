@@ -16,11 +16,15 @@
 
 package com.epam.pipeline.acl.datastorage.omics;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
-import com.epam.pipeline.entity.datastorage.omics.*;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobListing;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportRequest;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationJob;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationRequest;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -35,23 +39,26 @@ public class AWSOmicsStoreApiService {
 
     private final DataStorageManager dataStorageManager;
     private final AWSOmicsStoreManager omicsStoreManager;
-    private final MessageHelper messageHelper;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public AWSOmicsFileImportJob importOmicsFiles(final Long storageId, final AWSOmicsFileImportRequest importRequest) {
-        return omicsStoreManager.importOmicsFiles(fetchDataStorage(storageId), importRequest);
+    public AWSOmicsFileImportJob importOmicsFiles(final Long id, final AWSOmicsFileImportRequest importRequest) {
+        return omicsStoreManager.importOmicsFiles(fetchDataStorage(id), importRequest);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public AWSOmicsFileImportJobListing listImportJobs(final Long storageId, final String nextToken,
+    public AWSOmicsFileImportJobListing listImportJobs(final Long id, final String nextToken,
                                                        final Integer pageSize,
                                                        final AWSOmicsFileImportJobFilter filter) {
-        return omicsStoreManager.listImportJobs(fetchDataStorage(storageId), nextToken, pageSize, filter);
+        return omicsStoreManager.listImportJobs(fetchDataStorage(id), nextToken, pageSize, filter);
     }
 
-    public AWSOmicsFilesActivationJob activateOmicsFiles(final Long storageId,
-                                                         final AWSOmicsFilesActivationRequest request) {
-        return omicsStoreManager.activateOmicsFiles(fetchDataStorage(storageId), request);
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public AWSOmicsFilesActivationJob activateOmicsFiles(final Long id, final AWSOmicsFilesActivationRequest request) {
+        AbstractAWSOmicsDataStorage storage = fetchDataStorage(id);
+        if (storage.getType() != DataStorageType.AWS_OMICS_SEQ) {
+            throw new IllegalArgumentException("Only AWS Omics Sequence Store supported for file activation!");
+        }
+        return omicsStoreManager.activateOmicsFiles(storage, request);
     }
 
     private AbstractAWSOmicsDataStorage fetchDataStorage(final Long storageId) {

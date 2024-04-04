@@ -42,13 +42,12 @@ def perform_command(group, command, parsed_args):
     if not api_url or not api_token:
         raise ValueError("API and API_TOKEN environment variables are required!")
     api = cloud_pipeline_api.CloudPipelineClient(api_url, api_token)
-    match group:
-        case 'storage':
-            response = storage_operations.perform_storage_command(api, command, parsed_args)
-            if response:
-                sys.stdout.write(dumps_to_json(response) + '\n')
-        case _:
-            raise RuntimeError()
+    if group == 'storage':
+        response = storage_operations.perform_storage_command(api, command, parsed_args)
+        if response:
+            sys.stdout.write(dumps_to_json(response) + '\n')
+    else:
+        raise RuntimeError("Unsupported command group. Supported value is: storage")
 
 
 if __name__ == '__main__':

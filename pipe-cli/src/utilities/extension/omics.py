@@ -55,7 +55,7 @@ class OmicsCopyFileHandler(OmicsFileOperationHandler):
 
     def _process_output(self, process, arguments, cmd):
         for stdout_line in iter(process.stdout.readline, ""):
-            if "uploaded!" in stdout_line or "started!" in stdout_line:
+            if "uploaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
                 click.echo(stdout_line)
             else:
                 click.echo(stdout_line.strip() + '\r', nl=False)
