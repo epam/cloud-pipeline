@@ -38,20 +38,20 @@ public class AWSOmicsStoreApiService {
     private final MessageHelper messageHelper;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public AWSOmicsFileImportJob importOmicsFiles(final Long storageId, final AWSOmicsFileImportRequest importRequest) {
-        return omicsStoreManager.importOmicsFiles(fetchDataStorage(storageId), importRequest);
+    public AWSOmicsFileImportJob importOmicsFiles(final Long id, final AWSOmicsFileImportRequest importRequest) {
+        return omicsStoreManager.importOmicsFiles(fetchDataStorage(id), importRequest);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public AWSOmicsFileImportJobListing listImportJobs(final Long storageId, final String nextToken,
+    public AWSOmicsFileImportJobListing listImportJobs(final Long id, final String nextToken,
                                                        final Integer pageSize,
                                                        final AWSOmicsFileImportJobFilter filter) {
-        return omicsStoreManager.listImportJobs(fetchDataStorage(storageId), nextToken, pageSize, filter);
+        return omicsStoreManager.listImportJobs(fetchDataStorage(id), nextToken, pageSize, filter);
     }
 
-    public AWSOmicsFilesActivationJob activateOmicsFiles(final Long storageId,
-                                                         final AWSOmicsFilesActivationRequest request) {
-        return omicsStoreManager.activateOmicsFiles(fetchDataStorage(storageId), request);
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public AWSOmicsFilesActivationJob activateOmicsFiles(final Long id, final AWSOmicsFilesActivationRequest request) {
+        return omicsStoreManager.activateOmicsFiles(fetchDataStorage(id), request);
     }
 
     private AbstractAWSOmicsDataStorage fetchDataStorage(final Long storageId) {
