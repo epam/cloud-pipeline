@@ -48,32 +48,31 @@ class OmicsStorageCopyOptions:
         source = args["source"]
         destination = args["destination"]
         mode = OmicsStorageCopyOptions.define_mode(source, destination)
-        match mode:
-            case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
-                if "additional_options" not in args:
-                    raise ValueError(
-                        "'additional_options' with values: [name=<>,subject_id=<>,sample_id=<>,file_type=<>,description=<optional>,generated_from=<optional>,reference=<optional>] should be provided to register Omics file!"
-                    )
-                name, description, subject_id, sample_id, reference_path, generated_from, file_type \
-                    = OmicsStorageCopyOptions.parse_additional_options(args["additional_options"])
-                return OmicsStorageUploadOptions(
-                    source=source,
-                    destination=destination,
-                    name=name,
-                    mode=mode,
-                    omics_file_type=file_type,
-                    description=description,
-                    subject_id=subject_id,
-                    sample_id=sample_id,
-                    reference_path=reference_path,
-                    generated_from=generated_from
+        if mode == OmicsStorageCopyOptions.MODE_UPLOAD or mode == OmicsStorageCopyOptions.MODE_IMPORT:
+            if "additional_options" not in args:
+                raise ValueError(
+                    "'additional_options' with values: [name=<>,subject_id=<>,sample_id=<>,file_type=<>,description=<optional>,generated_from=<optional>,reference=<optional>] should be provided to register Omics file!"
                 )
-            case OmicsStorageCopyOptions.MODE_DOWNLOAD:
-                return OmicsStorageDownloadOptions(
-                    source=source,
-                    destination=destination,
-                    mode=mode
-                )
+            name, description, subject_id, sample_id, reference_path, generated_from, file_type \
+                = OmicsStorageCopyOptions.parse_additional_options(args["additional_options"])
+            return OmicsStorageUploadOptions(
+                source=source,
+                destination=destination,
+                name=name,
+                mode=mode,
+                omics_file_type=file_type,
+                description=description,
+                subject_id=subject_id,
+                sample_id=sample_id,
+                reference_path=reference_path,
+                generated_from=generated_from
+            )
+        elif mode == OmicsStorageCopyOptions.MODE_DOWNLOAD:
+            return OmicsStorageDownloadOptions(
+                source=source,
+                destination=destination,
+                mode=mode
+            )
 
     @classmethod
     def define_mode(cls, source, destination):
@@ -141,39 +140,37 @@ class OmicsStorageCopyOperation(object):
     @classmethod
     def __copy(cls, api, options: OmicsStorageCopyOptions):
         storage = cls._load_storage(api, options)
-        match options.mode:
-            case OmicsStorageCopyOptions.MODE_DOWNLOAD:
-                AWSOmicsOperation(api).download_file(storage, options.source, options.destination)
-            case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
-                sources = cls._prepare_sources(options.source)
-                if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD:
-                    AWSOmicsOperation(api).upload_file(
-                        storage, sources, options.name, options.omics_file_type, options.subject_id,
-                        options.sample_id, options.description, options.generated_from,
-                        OmicsUrl.path_to_arn(options.reference_path)
-                    )
-                else:
-                    response = api.import_omics_file(
-                        storage, sources, options.name, options.omics_file_type, options.description,
-                        options.sample_id, options.subject_id,  options.generated_from,
-                        options.reference_path
-                    )
-                    if response:
-                        print("AWS Omics Import Job: '{}' successfully initiated!".format(response.id))
-            case _:
-                raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
+        if options.mode == OmicsStorageCopyOptions.MODE_DOWNLOAD:
+            AWSOmicsOperation(api).download_file(storage, options.source, options.destination)
+        elif options.mode == OmicsStorageCopyOptions.MODE_UPLOAD or options.mode == OmicsStorageCopyOptions.MODE_IMPORT:
+            sources = cls._prepare_sources(options.source)
+            if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD:
+                AWSOmicsOperation(api).upload_file(
+                    storage, sources, options.name, options.omics_file_type, options.subject_id,
+                    options.sample_id, options.description, options.generated_from,
+                    OmicsUrl.path_to_arn(options.reference_path)
+                )
+            else:
+                response = api.import_omics_file(
+                    storage, sources, options.name, options.omics_file_type, options.description,
+                    options.sample_id, options.subject_id,  options.generated_from,
+                    options.reference_path
+                )
+                if response:
+                    print("AWS Omics Import Job: '{}' successfully initiated!".format(response.id))
+        else:
+            raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
 
     @classmethod
     def _load_storage(cls, api, options):
-        match options.mode:
-            case OmicsStorageCopyOptions.MODE_DOWNLOAD:
-                _, storage_path, _ = OmicsUrl.parse_path(options.source)
-                return api.load_storage(storage_path)
-            case OmicsStorageCopyOptions.MODE_UPLOAD | OmicsStorageCopyOptions.MODE_IMPORT:
-                _, storage_path, _ = OmicsUrl.parse_path(options.destination)
-                return api.load_storage(storage_path)
-            case _:
-                raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
+        if options.mode == OmicsStorageCopyOptions.MODE_DOWNLOAD:
+            _, storage_path, _ = OmicsUrl.parse_path(options.source)
+            return api.load_storage(storage_path)
+        elif options.mode == OmicsStorageCopyOptions.MODE_UPLOAD or options.mode == OmicsStorageCopyOptions.MODE_IMPORT:
+            _, storage_path, _ = OmicsUrl.parse_path(options.destination)
+            return api.load_storage(storage_path)
+        else:
+            raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
 
     @classmethod
     def _validate(cls, options: OmicsStorageCopyOptions):
@@ -284,10 +281,9 @@ class OmicsStoreListingOperation(object):
 
 
 def perform_storage_command(api, command, parsed_args):
-    match command:
-        case 'cp':
-            OmicsStorageCopyOperation.copy(api, parsed_args)
-        case 'ls':
-            return OmicsStoreListingOperation.list(api, parsed_args)
-        case _:
-            raise RuntimeError("Unknown command: " + command)
+    if command == 'cp':
+        OmicsStorageCopyOperation.copy(api, parsed_args)
+    elif command == 'ls':
+        return OmicsStoreListingOperation.list(api, parsed_args)
+    else:
+        raise RuntimeError("Unknown command: " + command)
