@@ -699,7 +699,8 @@ public class SystemPreferences {
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
     public static final LongPreference KUBE_POD_GRACE_PERIOD_SECONDS = new LongPreference(
             "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
-
+    public static final LongPreference KUBE_POD_HANG_PERIOD_SECONDS = new LongPreference(
+            "launch.kube.pod.hang.period.seconds", 300L, LAUNCH_GROUP, pass, false);
     public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
             "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
