@@ -16,4 +16,4 @@
 
 wdl=$1
 inputs_json=$2
-python /cromwell_bin/cromwell_wrapper.py $wdl $inputs_json
+python2 /cromwell_bin/cromwell_wrapper.py $wdl $inputs_json
