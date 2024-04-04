@@ -72,6 +72,7 @@ export default class BucketBrowser extends React.Component {
     onCancel: PropTypes.func,
     multiple: PropTypes.bool,
     showOnlyFolder: PropTypes.bool,
+    selectOnlyFiles: PropTypes.bool,
     allowBucketSelection: PropTypes.bool,
     checkWritePermissions: PropTypes.bool,
     bucketTypes: PropTypes.arrayOf(
@@ -406,6 +407,14 @@ export default class BucketBrowser extends React.Component {
             readOnly: this.props.checkWritePermissions && !roleModel.writeAllowed({mask: i.permission})
           };
         } else {
+          if (this.props.selectOnlyFiles) {
+            const selectable = i.type.toLowerCase() === 'file';
+            return {
+              ...i,
+              selectable,
+              readOnly: false
+            };
+          }
           return {
             ...i,
             selectable: true,

@@ -48,12 +48,14 @@ import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageIte
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
+import OmicsStoreImport from '../../../../models/dataStorage/OmicsStoreImport';
 // eslint-disable-next-line max-len
 import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
 // eslint-disable-next-line max-len
 import LifeCycleRestoreCreate from '../../../../models/dataStorage/lifeCycleRules/LifeCycleRestoreCreate';
 import EditItemForm from '../forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialog';
+import {OmicsStorageImportDialog} from '../forms/OmicsStorageImportDialog';
 import {LifeCycleRestoreModal} from '../forms/life-cycle-rules/modals';
 import DataStorageNavigation from '../forms/DataStorageNavigation';
 import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
@@ -169,7 +171,8 @@ export default class DataStorage extends React.Component {
     previewModal: null,
     previewAvailable: false,
     previewPending: false,
-    restorePending: false
+    restorePending: false,
+    omicsDialogVisible: false
   };
 
   @observable storage = new DataStorageListing({
@@ -426,9 +429,7 @@ export default class DataStorage extends React.Component {
   }
 
   get isOmicsFolder () {
-    return this.isOmicsStore && !!this.storage.pageElements &&
-      this.storage.pageElements.length > 0 &&
-      this.storage.pageElements.some(i => i.type === 'Folder');
+    return this.isOmicsStore && !this.storage.pagePath && this.storage.path === '/';
   }
 
   onDataStorageEdit = async (storage) => {
@@ -497,6 +498,33 @@ export default class DataStorage extends React.Component {
       }
     }
   };
+
+  onImportOmicsJob = async (job) => {
+    if (!job || !this.storage.info) {
+      return;
+    }
+    const {parentFolderId} = this.storage.info;
+    const payload = {
+      sources: [
+        {...job}
+      ]
+    };
+    const hide = message.loading('Importing omics job...');
+    const request = new OmicsStoreImport(this.props.storageId);
+    await request.send(payload);
+    if (request.error) {
+      hide();
+      message.error(request.error, 5);
+    } else {
+      hide();
+      this.closeOmicsDialog();
+      this.storage.refreshStorageInfo();
+      this.props.folders.invalidateFolder(parentFolderId);
+      if (this.props.onReloadTree) {
+        this.props.onReloadTree(!parentFolderId);
+      }
+    }
+  }
 
   get items () {
     const {
@@ -633,6 +661,16 @@ export default class DataStorage extends React.Component {
 
   closeEditDialog = () => {
     this.setState({editDialogVisible: false}, () => {
+      this.storage.refreshStorageInfo();
+    });
+  };
+
+  openOmicsDialog = () => {
+    this.setState({omicsDialogVisible: true});
+  };
+
+  closeOmicsDialog = () => {
+    this.setState({omicsDialogVisible: false}, () => {
       this.storage.refreshStorageInfo();
     });
   };
@@ -2260,6 +2298,20 @@ export default class DataStorage extends React.Component {
                 />
               )
             }
+            {
+              this.storage.writeAllowed &&
+              this.isOmicsStore &&
+              this.isOmicsFolder && (
+                <Button
+                  id="import-button"
+                  size="small"
+                  type="primary"
+                  onClick={() => this.openOmicsDialog()}
+                >
+                  Import
+                </Button>
+              )
+            }
           </div>
         </Row>
       );
@@ -2657,6 +2709,13 @@ export default class DataStorage extends React.Component {
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
+        <OmicsStorageImportDialog
+          visible={this.state.omicsDialogVisible}
+          dataStorage={this.storage.info}
+          pending={this.storage.infoPending}
+          policySupported={policySupported}
+          onCancel={this.closeOmicsDialog}
+          onSubmit={this.onImportOmicsJob} />
         <ConvertToVersionedStorage
           storageName={name}
           visible={this.state.convertToVSDialogVisible}
