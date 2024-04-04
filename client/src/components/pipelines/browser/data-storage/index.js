@@ -49,6 +49,7 @@ import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/Generate
 import GenerateFolderDownloadUrl from '../../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
 import OmicsStoreImport from '../../../../models/dataStorage/OmicsStoreImport';
+import OmicsActivate from '../../../../models/dataStorage/OmicsActivate';
 // eslint-disable-next-line max-len
 import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
 // eslint-disable-next-line max-len
@@ -116,6 +117,8 @@ const standardClasses = [
 
 const isStandardClass = (storageClass) =>
   standardClasses.includes((storageClass || '').toUpperCase());
+
+const SUBMITTED_STATUS = 'SUBMITTED';
 
 @roleModel.authenticationInfo
 @inject(
@@ -425,7 +428,12 @@ export default class DataStorage extends React.Component {
 
   get isOmicsStore () {
     const {type} = this.storage.info || {};
-    return type === 'AWS_OMICS_SEQ' || type === 'AWS_OMICS_REF';
+    return type === ServiceTypes.omicsSeq || type === ServiceTypes.omicsRef;
+  }
+
+  get isSequenceStorage () {
+    const {type} = this.storage.info || {};
+    return type === ServiceTypes.omicsSeq;
   }
 
   get isOmicsFolder () {
@@ -873,6 +881,24 @@ export default class DataStorage extends React.Component {
           this.setState({restorePending: false});
           this.closeRestoreFilesDialog();
         });
+    });
+  };
+
+  restoreOmics = async () => {
+    const payload = {
+      readSetIds: this.restorableItems.map(item => item.path)
+    };
+    const request = new OmicsActivate(this.props.storageId);
+    this.setState({restorePending: true}, async () => {
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+        return this.setState({restorePending: false});
+      }
+      if (request.value && request.value.status === SUBMITTED_STATUS) {
+        message.info('Restoring was successfully initialised', 5);
+      }
+      this.setState({restorePending: false});
     });
   };
 
@@ -1982,7 +2008,8 @@ export default class DataStorage extends React.Component {
       share: 'share',
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
-      download: 'download'
+      download: 'download',
+      restoreOmics: 'restoreOmics'
     };
     const clearAction = {
       key: Keys.clear,
@@ -2000,6 +2027,13 @@ export default class DataStorage extends React.Component {
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
         this.restorableItems.length > 0 && !this.isOmicsStore,
+      icon: 'reload'
+    };
+    const restoreOmicsAction = {
+      key: Keys.restoreOmics,
+      title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
+      available: this.userLifeCyclePermissions.write &&
+        this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
     };
     const getShareActionTitle = () => {
@@ -2056,6 +2090,7 @@ export default class DataStorage extends React.Component {
     };
     appendAction(shareAction);
     appendAction(restoreAction);
+    appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
     appendAction(downloadAction);
     appendDivider();
@@ -2081,6 +2116,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.restore:
           this.openRestoreFilesDialog('file');
+          break;
+        case Keys.restoreOmics:
+          this.restoreOmics();
           break;
         case Keys.generateUrl:
           this.toggleGenerateDownloadUrlsModalFn(event);
