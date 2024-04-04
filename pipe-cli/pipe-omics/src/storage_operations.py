@@ -153,11 +153,13 @@ class OmicsStorageCopyOperation(object):
                         OmicsUrl.path_to_arn(options.reference_path)
                     )
                 else:
-                    api.import_omics_file(
-                        storage, sources, options.name, options.omics_file_type, options.subject_id,
-                        options.sample_id, options.description, options.generated_from,
+                    response = api.import_omics_file(
+                        storage, sources, options.name, options.omics_file_type, options.description,
+                        options.sample_id, options.subject_id,  options.generated_from,
                         options.reference_path
                     )
+                    if response:
+                        print("AWS Omics Import Job: '{}' successfully initiated!".format(response.id))
             case _:
                 raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
 
