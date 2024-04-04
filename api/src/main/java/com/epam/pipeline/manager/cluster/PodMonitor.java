@@ -69,8 +69,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -108,6 +111,7 @@ public class PodMonitor extends AbstractSchedulingManager {
         private static final int POD_RELEASE_TIMEOUT = 3000;
 
         private final BlockingQueue<PipelineRun> queueToKill = new LinkedBlockingQueue<>();
+        private final Map<String, LocalDateTime> hangingPods = new ConcurrentHashMap<>();
 
         private final String kubeNamespace;
         private final RunLogManager runLogManager;
@@ -200,7 +204,8 @@ public class PodMonitor extends AbstractSchedulingManager {
                             run.setTerminating(false);
                             //check that all tasks managed to reports its statuses
                             if (!checkChildrenPods(run, client, pod)) {
-                                continue;
+                                run.setTerminating(true);
+                                hangingPods.putIfAbsent(run.getPodId(), LocalDateTime.now());
                             }
                         } else if (status.getPhase().equals(KubernetesConstants.POD_FAILED_PHASE) ||
                                 (status.getReason() != null &&
@@ -217,6 +222,7 @@ public class PodMonitor extends AbstractSchedulingManager {
                 }
             }
             LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_MONITOR_CHECK_FINISHED));
+            LOGGER.debug("Hanging pods: {}", hangingPods);
         }
 
         @Scheduled(fixedDelay = POD_RELEASE_TIMEOUT)
@@ -235,6 +241,8 @@ public class PodMonitor extends AbstractSchedulingManager {
                     boolean isPipelineDeleted = killChildrenPods(pipelineRun.getPodId(), pipelineRun);
                     if (isPipelineDeleted) {
                         finishRun(pipelineRun);
+                    } else {
+                        hangingPods.putIfAbsent(pipelineRun.getPodId(), LocalDateTime.now());
                     }
                 } catch (Exception e) {
                     LOGGER.error(messageHelper
@@ -341,7 +349,8 @@ public class PodMonitor extends AbstractSchedulingManager {
 
             }
             return ensurePipelineIsDeleted(String.valueOf(run.getId()), run.getPodId(), client,
-                    preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS));
+                    preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS),
+                    preferenceManager.getPreference(SystemPreferences.KUBE_POD_HANG_PERIOD_SECONDS));
         }
 
         private void clearWorkerNodes(PipelineRun run, KubernetesClient client) {
@@ -363,6 +372,9 @@ public class PodMonitor extends AbstractSchedulingManager {
         }
 
         private void checkAndUpdateInstanceState(final PipelineRun run, final boolean allowRestart) {
+            if (run.getStatus().equals(TaskStatus.SUCCESS)) {
+                return;
+            }
             final RunInstance instance = run.getInstance();
             if (instance == null ||
                     run.getExecutionPreferences().getEnvironment() != ExecutionEnvironment.CLOUD_PLATFORM ||
@@ -473,6 +485,9 @@ public class PodMonitor extends AbstractSchedulingManager {
         }
 
         private void savePodStatus(PipelineRun run, Pod pod, KubernetesClient client) {
+            if (run.getStatus().equals(TaskStatus.SUCCESS)) {
+                return;
+            }
             StringBuilder status = new StringBuilder(run.getPodStatus() == null ? "" : run.getPodStatus());
             if (pod == null) {
                 status.append(KubernetesConstants.NODE_LOST);
@@ -526,13 +541,14 @@ public class PodMonitor extends AbstractSchedulingManager {
             LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_MONITOR_KILL_TASK, podId));
             Integer preference = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
             long gracePeriod = preferenceManager.getPreference(SystemPreferences.KUBE_POD_GRACE_PERIOD_SECONDS);
+            long podHangingPeriod = preferenceManager.getPreference(SystemPreferences.KUBE_POD_HANG_PERIOD_SECONDS);
             try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
                 //get pipeline logs
                 String log = "";
                 try {
                     log = kubernetesManager.getPodLogs(run.getPodId(), preference);
                 } catch (KubernetesClientException e) {
-                    LOGGER.error(e.getMessage(), e);
+                    LOGGER.error(e.getMessage());
                 }
                 //delete pipeline pod
                 client.pods().inNamespace(kubeNamespace).withName(run.getPodId())
@@ -558,24 +574,28 @@ public class PodMonitor extends AbstractSchedulingManager {
                 saveLog(run, run.getPodId(), log, run.getStatus());
 
                 //check that we really deleted all pods
-                return ensurePipelineIsDeleted(String.valueOf(run.getId()), podId, client, gracePeriod);
+                return ensurePipelineIsDeleted(String.valueOf(run.getId()),
+                        podId, client, gracePeriod, podHangingPeriod);
             }
         }
 
         private boolean ensurePipelineIsDeleted(String runId, String podId,
-                                                KubernetesClient client, long gracePeriod) {
+                                                KubernetesClient client,
+                                                long gracePeriod,
+                                                long podHangingPeriod) {
             List<Pod> leftPods = getChildPods(runId, podId, client);
             int count = 0;
+            long effectiveGracePeriod = isPodExpired(podId, podHangingPeriod) ? 0L : gracePeriod;
             while (!CollectionUtils.isEmpty(leftPods) && count < DELETE_RETRY_ATTEMPTS) {
 
                 client.pods().inNamespace(kubeNamespace)
                         .withLabel(PIPELINE_ID_LABEL, podId)
-                        .withGracePeriod(gracePeriod)
+                        .withGracePeriod(effectiveGracePeriod)
                         .delete();
 
                 client.pods().inNamespace(kubeNamespace)
                         .withLabel(KubernetesConstants.POD_WORKER_NODE_LABEL, runId)
-                        .withGracePeriod(gracePeriod)
+                        .withGracePeriod(effectiveGracePeriod)
                         .delete();
 
                 leftPods = getChildPods(runId, podId, client);
@@ -587,7 +607,24 @@ public class PodMonitor extends AbstractSchedulingManager {
                     LOGGER.error(e.getMessage(), e);
                 }
             }
-            return CollectionUtils.isEmpty(leftPods);
+            boolean deleted = CollectionUtils.isEmpty(leftPods);
+            if (deleted) {
+                hangingPods.remove(podId);
+            }
+            return deleted;
+        }
+
+        private boolean isPodExpired(final String podId, long podHangingPeriod) {
+            final LocalDateTime localDateTime = hangingPods.get(podId);
+            if (Objects.isNull(localDateTime)) {
+                return false;
+            }
+            boolean expired = LocalDateTime.now().isAfter(localDateTime.plusSeconds(podHangingPeriod));
+            if (expired) {
+                LOGGER.debug("Pod {} exceeded maximum hanging duration {} and will be force deleted",
+                        podId, podHangingPeriod);
+            }
+            return expired;
         }
 
         private List<Pod> getChildPods(String runId, String podId, KubernetesClient client) {
