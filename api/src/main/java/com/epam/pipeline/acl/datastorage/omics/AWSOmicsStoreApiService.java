@@ -16,11 +16,15 @@
 
 package com.epam.pipeline.acl.datastorage.omics;
 
-import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSOmicsDataStorage;
-import com.epam.pipeline.entity.datastorage.omics.*;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJob;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobFilter;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportJobListing;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFileImportRequest;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationJob;
+import com.epam.pipeline.entity.datastorage.omics.AWSOmicsFilesActivationRequest;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -35,7 +39,6 @@ public class AWSOmicsStoreApiService {
 
     private final DataStorageManager dataStorageManager;
     private final AWSOmicsStoreManager omicsStoreManager;
-    private final MessageHelper messageHelper;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public AWSOmicsFileImportJob importOmicsFiles(final Long id, final AWSOmicsFileImportRequest importRequest) {
@@ -51,7 +54,11 @@ public class AWSOmicsStoreApiService {
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public AWSOmicsFilesActivationJob activateOmicsFiles(final Long id, final AWSOmicsFilesActivationRequest request) {
-        return omicsStoreManager.activateOmicsFiles(fetchDataStorage(id), request);
+        AbstractAWSOmicsDataStorage storage = fetchDataStorage(id);
+        if (storage.getType() != DataStorageType.AWS_OMICS_SEQ) {
+            throw new IllegalArgumentException("Only AWS Omics Sequence Store supported for file activation!");
+        }
+        return omicsStoreManager.activateOmicsFiles(storage, request);
     }
 
     private AbstractAWSOmicsDataStorage fetchDataStorage(final Long storageId) {
