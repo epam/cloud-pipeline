@@ -48,12 +48,15 @@ import DataStorageItemDelete from '../../../../models/dataStorage/DataStorageIte
 import GenerateDownloadUrlsRequest from '../../../../models/dataStorage/GenerateDownloadUrls';
 import GenerateFolderDownloadUrl from '../../../../models/dataStorage/GenerateFolderDownloadUrl';
 import DataStorageConvert from '../../../../models/dataStorage/DataStorageConvert';
+import OmicsStoreImport from '../../../../models/dataStorage/OmicsStoreImport';
+import OmicsActivate from '../../../../models/dataStorage/OmicsActivate';
 // eslint-disable-next-line max-len
 import LifeCycleEffectiveHierarchy from '../../../../models/dataStorage/lifeCycleRules/LifeCycleEffectiveHierarchy';
 // eslint-disable-next-line max-len
 import LifeCycleRestoreCreate from '../../../../models/dataStorage/lifeCycleRules/LifeCycleRestoreCreate';
 import EditItemForm from '../forms/EditItemForm';
 import {DataStorageEditDialog, ServiceTypes} from '../forms/DataStorageEditDialog';
+import {OmicsStorageImportDialog} from '../forms/OmicsStorageImportDialog';
 import {LifeCycleRestoreModal} from '../forms/life-cycle-rules/modals';
 import DataStorageNavigation from '../forms/DataStorageNavigation';
 import RestrictedImagesInfo from '../forms/restrict-docker-images/restricted-images-info';
@@ -115,6 +118,8 @@ const standardClasses = [
 const isStandardClass = (storageClass) =>
   standardClasses.includes((storageClass || '').toUpperCase());
 
+const SUBMITTED_STATUS = 'SUBMITTED';
+
 @roleModel.authenticationInfo
 @inject(
   'awsRegions',
@@ -169,7 +174,8 @@ export default class DataStorage extends React.Component {
     previewModal: null,
     previewAvailable: false,
     previewPending: false,
-    restorePending: false
+    restorePending: false,
+    omicsDialogVisible: false
   };
 
   @observable storage = new DataStorageListing({
@@ -263,6 +269,7 @@ export default class DataStorage extends React.Component {
     return this.storage.infoLoaded &&
       this.storage.info &&
       !/^nfs$/i.test(this.storage.info.type) &&
+      !this.isOmicsStore &&
       preferences &&
       preferences.loaded &&
       preferences.sharedStoragesSystemDirectory &&
@@ -419,6 +426,20 @@ export default class DataStorage extends React.Component {
       : this.storage.writeAllowed;
   }
 
+  get isOmicsStore () {
+    const {type} = this.storage.info || {};
+    return type === ServiceTypes.omicsSeq || type === ServiceTypes.omicsRef;
+  }
+
+  get isSequenceStorage () {
+    const {type} = this.storage.info || {};
+    return type === ServiceTypes.omicsSeq;
+  }
+
+  get isOmicsFolder () {
+    return this.isOmicsStore && !this.storage.pagePath && this.storage.path === '/';
+  }
+
   onDataStorageEdit = async (storage) => {
     if (!this.storage.info) {
       return;
@@ -485,6 +506,33 @@ export default class DataStorage extends React.Component {
       }
     }
   };
+
+  onImportOmicsJob = async (job) => {
+    if (!job || !this.storage.info) {
+      return;
+    }
+    const {parentFolderId} = this.storage.info;
+    const payload = {
+      sources: [
+        {...job}
+      ]
+    };
+    const hide = message.loading('Importing omics job...');
+    const request = new OmicsStoreImport(this.props.storageId);
+    await request.send(payload);
+    if (request.error) {
+      hide();
+      message.error(request.error, 5);
+    } else {
+      hide();
+      this.closeOmicsDialog();
+      this.storage.refreshStorageInfo();
+      this.props.folders.invalidateFolder(parentFolderId);
+      if (this.props.onReloadTree) {
+        this.props.onReloadTree(!parentFolderId);
+      }
+    }
+  }
 
   get items () {
     const {
@@ -621,6 +669,16 @@ export default class DataStorage extends React.Component {
 
   closeEditDialog = () => {
     this.setState({editDialogVisible: false}, () => {
+      this.storage.refreshStorageInfo();
+    });
+  };
+
+  openOmicsDialog = () => {
+    this.setState({omicsDialogVisible: true});
+  };
+
+  closeOmicsDialog = () => {
+    this.setState({omicsDialogVisible: false}, () => {
       this.storage.refreshStorageInfo();
     });
   };
@@ -823,6 +881,24 @@ export default class DataStorage extends React.Component {
           this.setState({restorePending: false});
           this.closeRestoreFilesDialog();
         });
+    });
+  };
+
+  restoreOmics = async () => {
+    const payload = {
+      readSetIds: this.restorableItems.map(item => item.path)
+    };
+    const request = new OmicsActivate(this.props.storageId);
+    this.setState({restorePending: true}, async () => {
+      await request.send(payload);
+      if (request.error) {
+        message.error(request.error, 5);
+        return this.setState({restorePending: false});
+      }
+      if (request.value && request.value.status === SUBMITTED_STATUS) {
+        message.info('Restoring was successfully initialized', 5);
+      }
+      this.setState({restorePending: false});
     });
   };
 
@@ -1152,7 +1228,7 @@ export default class DataStorage extends React.Component {
           }} />
       );
     };
-    if (item.downloadable) {
+    if (item.downloadable && !this.isOmicsStore) {
       actions.push((
         <OpenInToolAction
           key="open-in-tool"
@@ -1181,7 +1257,7 @@ export default class DataStorage extends React.Component {
         : item.editable
       ) && (
         !item.archived || item.restored
-      )
+      ) && !this.isOmicsStore
     ) {
       actions.push(
         <Button
@@ -1205,9 +1281,10 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (item.isVersion
+    if ((item.isVersion
       ? item.deletable && this.versionControlsEnabled
-      : item.deletable
+      : item.deletable) &&
+      (!this.isOmicsStore || this.isOmicsFolder)
     ) {
       actions.push(separator());
       actions.push(
@@ -1483,7 +1560,9 @@ export default class DataStorage extends React.Component {
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
       render: (item) => {
-        if (item.selectable && (item.downloadable || item.editable || item.shareAvailable)) {
+        if (item.selectable &&
+          (item.downloadable || item.editable || item.shareAvailable) &&
+          (!this.isOmicsStore || this.isOmicsFolder)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -1929,7 +2008,8 @@ export default class DataStorage extends React.Component {
       share: 'share',
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
-      download: 'download'
+      download: 'download',
+      restoreOmics: 'restoreOmics'
     };
     const clearAction = {
       key: Keys.clear,
@@ -1940,13 +2020,20 @@ export default class DataStorage extends React.Component {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: itemsAvailableForDownload.length > 0
+      available: !this.isOmicsStore && itemsAvailableForDownload.length > 0
     };
     const restoreAction = {
       key: Keys.restore,
       title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
       available: this.userLifeCyclePermissions.write &&
-        this.restorableItems.length > 0,
+        this.restorableItems.length > 0 && !this.isOmicsStore,
+      icon: 'reload'
+    };
+    const restoreOmicsAction = {
+      key: Keys.restoreOmics,
+      title: `Restore transferred item${this.restorableItems.length > 1 ? 's' : ''}`,
+      available: this.userLifeCyclePermissions.write &&
+        this.restorableItems.length > 0 && this.isSequenceStorage && this.isOmicsFolder,
       icon: 'reload'
     };
     const getShareActionTitle = () => {
@@ -2003,6 +2090,7 @@ export default class DataStorage extends React.Component {
     };
     appendAction(shareAction);
     appendAction(restoreAction);
+    appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
     appendAction(downloadAction);
     appendDivider();
@@ -2028,6 +2116,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.restore:
           this.openRestoreFilesDialog('file');
+          break;
+        case Keys.restoreOmics:
+          this.restoreOmics();
           break;
         case Keys.generateUrl:
           this.toggleGenerateDownloadUrlsModalFn(event);
@@ -2111,7 +2202,7 @@ export default class DataStorage extends React.Component {
     const {
       path
     } = this.props;
-    if (!path) {
+    if (!path || this.isOmicsStore) {
       return undefined;
     }
     return (
@@ -2163,21 +2254,28 @@ export default class DataStorage extends React.Component {
           type="flex"
           justify="space-between">
           <div>
-            <Button
-              id="select-all-button"
-              size="small" onClick={() => this.selectAll(undefined)}
-              disabled={!this.selectAllAvailable}
-            >
-              Select page
-            </Button>
             {
-              this.renderSelectionActionsButton()
+              (!this.isOmicsStore || this.isOmicsFolder) && (
+                <Button
+                  id="select-all-button"
+                  size="small" onClick={() => this.selectAll(undefined)}
+                  disabled={!this.selectAllAvailable}
+                >
+                  Select page
+                </Button>
+              )
+            }
+            {
+              (!this.isOmicsStore || this.isOmicsFolder) && (
+                this.renderSelectionActionsButton()
+              )
             }
           </div>
           <div style={{paddingRight: 8}}>
             {this.renderShareCurrentFolderButton()}
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <Dropdown
                   placement="bottomRight"
                   trigger={['hover']}
@@ -2211,7 +2309,8 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              this.storage.writeAllowed && (
+              this.storage.writeAllowed &&
+              !this.isOmicsStore && (
                 <UploadButton
                   multiple
                   onRefresh={() => this.refreshList()}
@@ -2235,6 +2334,20 @@ export default class DataStorage extends React.Component {
                       : undefined
                   }
                 />
+              )
+            }
+            {
+              this.storage.writeAllowed &&
+              this.isOmicsStore &&
+              this.isOmicsFolder && (
+                <Button
+                  id="import-button"
+                  size="small"
+                  type="primary"
+                  onClick={() => this.openOmicsDialog()}
+                >
+                  Import
+                </Button>
               )
             }
           </div>
@@ -2290,7 +2403,8 @@ export default class DataStorage extends React.Component {
       key: 'archive',
       title: 'Show archived files',
       checked: this.showArchives,
-      available: (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write)
+      available: (!this.isOmicsStore &&
+        (this.userLifeCyclePermissions.read || this.userLifeCyclePermissions.write))
     };
     const versionsAction = {
       key: 'version',
@@ -2435,7 +2549,7 @@ export default class DataStorage extends React.Component {
               type={ItemTypes.storage}
               textEditableField={name}
               onSaveEditableField={this.renameDataStorage}
-              readOnlyEditableField={!this.storage.writeAllowed}
+              readOnlyEditableField={!this.storage.writeAllowed || this.isOmicsStore}
               editStyleEditableField={{flex: 1}}
               icon={!/^nfs$/i.test(type) ? 'inbox' : 'hdd'}
               iconClassName={
@@ -2596,14 +2710,14 @@ export default class DataStorage extends React.Component {
               }
               fileIsEmpty={this.isFileSelectedEmpty}
               extraKeys={[
-                /^nfs$/i.test(type)
+                (/^nfs$/i.test(type) && !this.isOmicsStore)
                   ? FS_MOUNTS_NOTIFICATIONS_ATTRIBUTE
                   : false,
-                !/^nfs$/i.test(type) && !this.state.selectedFile
+                ((!/^nfs$/i.test(type) && !this.state.selectedFile) && !this.isOmicsStore)
                   ? REQUEST_DAV_ACCESS_ATTRIBUTE
                   : false
               ].filter(Boolean)}
-              extraInfo={[
+              extraInfo={!this.isOmicsStore ? [
                 <LifeCycleCounter
                   storage={this.storage.info}
                   path={this.props.path}
@@ -2616,7 +2730,7 @@ export default class DataStorage extends React.Component {
                   )}
                 />,
                 <StorageSize storage={this.storage.info} />
-              ]}
+              ] : []}
               specialTagsProperties={{
                 storageType: this.fileShareMount ? this.fileShareMount.mountType : undefined,
                 storageMask: mask,
@@ -2633,6 +2747,13 @@ export default class DataStorage extends React.Component {
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
+        <OmicsStorageImportDialog
+          visible={this.state.omicsDialogVisible}
+          dataStorage={this.storage.info}
+          pending={this.storage.infoPending}
+          policySupported={policySupported}
+          onCancel={this.closeOmicsDialog}
+          onSubmit={this.onImportOmicsJob} />
         <ConvertToVersionedStorage
           storageName={name}
           visible={this.state.convertToVSDialogVisible}

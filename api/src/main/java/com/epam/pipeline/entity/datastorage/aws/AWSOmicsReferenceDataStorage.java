@@ -45,7 +45,7 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
     public static final Pattern AWS_OMICS_REFERENCE_STORE_FILE_PATH_FORMAT =
         Pattern.compile(
             "(?:omics://)?(?<account>[^:]*).storage.(?<region>[^:]*).amazonaws.com/" +
-                    "(?<storeId>.*)/(?<fileType>)/(?<fileId>.*)/?"
+                    "(?<storeId>.*)/(?<fileType>.*)/(?<fileId>.*)/?"
         );
     public static final String REFERENCE_STORE_ID_GROUP = "referenceStoreId";
 
@@ -89,7 +89,7 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
             return String.format(AWS_OMICS_STORE_FILE_PATH_TEMPLATE,
                     matcher.group(REGION),
                     matcher.group(ACCOUNT),
-                    matcher.group("referenceStore"),
+                    "referenceStore",
                     matcher.group(STORE_ID),
                     matcher.group(FILE_TYPE),
                     matcher.group(FILE_TYPE));

@@ -52,8 +52,10 @@ def perform_command(group, command, parsed_args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-g", "--group", type=str, choices=["storage"], required=True, help="")
-    parser.add_argument("-c", "--command", type=str, required=False, help="")
+    parser.add_argument("-g", "--group", type=str, choices=["storage"], required=True,
+                        help="pipe command group to be processed. F.i. 'storage'")
+    parser.add_argument("-c", "--command", type=str, required=False,
+                        help="pipe command to be processed. F.i. 'cp' or 'ls'")
     parser.add_argument("-i", "--raw-input", type=str, help="")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")

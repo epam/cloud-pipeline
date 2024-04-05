@@ -1,5 +1,9 @@
 FROM centos:7
 
+# How to install python 3.10 on centos:7
+# https://github.com/pyenv/pyenv/issues/2416
+# https://linuxstans.com/how-to-install-python-centos/
+
 RUN yum update -y && \
  yum groupinstall "Development Tools" -y && \
  yum install epel-release -y && \
