@@ -896,7 +896,7 @@ export default class DataStorage extends React.Component {
         return this.setState({restorePending: false});
       }
       if (request.value && request.value.status === SUBMITTED_STATUS) {
-        message.info('Restoring was successfully initialised', 5);
+        message.info('Restoring was successfully initialized', 5);
       }
       this.setState({restorePending: false});
     });
