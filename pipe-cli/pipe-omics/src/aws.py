@@ -61,7 +61,7 @@ class AWSOmicsFile:
         file.description = response.get("description", None)
         file.modified = response.get("updateTime", response["creationTime"])
         file.raw = response
-        file.files = response.get("files", [])
+        file.files = response.get("files", {})
         return file
 
     @classmethod
@@ -93,8 +93,7 @@ class AWSOmicsOperation:
     def list_files(self, storage, token, page_size, show_all):
 
         # Helper method to get one page with AWS SDK
-        def _get_page(store_id, aws_omics_method, object_mapping, token, page_size):
-            req_kwars = {'sequenceStoreId': store_id}
+        def _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size):
             if token is not None:
                 req_kwars["nextToken"] = token
             if page_size is not None and page_size > 0:
@@ -109,9 +108,11 @@ class AWSOmicsOperation:
         omics = self.get_omics(storage, storage.region_name, list=True)
         if storage.type == OmicsStoreType.OMICS_REF:
             aws_omics_method = omics.list_references
+            req_kwars = {'referenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_ref_response
         elif storage.type == OmicsStoreType.OMICS_SEQ:
             aws_omics_method = omics.list_read_sets
+            req_kwars = {'sequenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_seq_response
         else:
             raise RuntimeError("Unexpected storage type: " + storage.type)
@@ -119,13 +120,13 @@ class AWSOmicsOperation:
         # Perform listing
         result = []
         if show_all:
-            next_token, page = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
+            next_token, page = _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size)
             result.extend(page)
             while next_token is not None:
-                next_token, page = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, next_token, page_size)
+                next_token, page = _get_page(aws_omics_method, req_kwars, object_mapping, next_token, page_size)
                 result.extend(page)
         else:
-            _, result = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
+            _, result = _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size)
         return result
 
     def download_file(self, storage, source, destination):
