@@ -174,9 +174,14 @@ There are two methods to create a CloudFormation stack that deploys the infrastr
 #### Deploy Cloud Pipeline using AWS Console
 
 1. Go to the CloudFormation service in the AWS Console and select the "create stack" option.
+   ![create_stack](./images/create_stack.jpg)
 2. In the "Prerequisite - Prepare template" section, choose "Use an existing template".
+   ![prepare_tempalte](./images/prepare_template.jpg)
 3. Choose your 'jump-server.yaml' file under "Specify a template" and click "Next".
-4. Provide the Stack Name and all required parameters, then click "Next" to create the stack.
+4. On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.
+   ![stack_details](./images/stack_details.jpg)
+5. Click "Submit" to start stack creation.
+   ![submit](./images/submit.jpg)
 
 Follow the [Stack Parameters Description](#stack-parameters-description) section for a detailed explanation of each parameter.
 
