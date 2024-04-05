@@ -16,6 +16,7 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
+from omics.common.omics_file_types import ReadSetFileName, ReadSetFileType
 from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
@@ -36,7 +37,7 @@ class AWSOmicsFile:
         self.sizes = {}
         self.modified = None
         self.raw = None
-        self.files = []
+        self.files = {}
 
     @classmethod
     def from_aws_omics_ref_response(cls, response):
@@ -144,7 +145,7 @@ class AWSOmicsOperation:
             config=TransferConfig(directory=destination_dir)
         )
 
-        # If original url have source[1|2] - will dowload only specific source, else - the whole file
+        # If original url have source[1|2] - will download only specific source, else - the whole set
         source_file_name = omics_file.file_name.lower()
         if source.endswith(source_file_name):
             subscribers = [

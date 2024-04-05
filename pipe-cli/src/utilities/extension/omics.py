@@ -25,17 +25,16 @@ class OmicsFileOperationHandler(ExtensionHandler):
             cmd_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
             env=self._configure_envs(pipe_config)
         )
         quiet = arguments.get("quiet", False)
         self._process_output(process, quiet, arguments, cmd_args)
         return_code = process.wait()
         if return_code != 0 and not quiet:
-                click.echo("There was a problem of executing the command '{}'".format(cmd), file=sys.stderr)
-                for stderr_line in iter(process.stderr.readline, ""):
-                    click.echo(stderr_line, file=sys.stderr)
-                process.stderr.close()
+            click.echo("There was a problem of executing the command '{}'".format(cmd_args), file=sys.stderr)
+            for stderr_line in iter(process.stderr.readline, ""):
+                click.echo(stderr_line, file=sys.stderr)
+            process.stderr.close()
 
     def _process_output(self, process, quiet, arguments, cmd):
         pass
