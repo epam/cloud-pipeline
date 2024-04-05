@@ -19,7 +19,7 @@ PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
 cd -
 
 _BUILD_PIPE_OMICS_SCRIPT_NAME=/tmp/build_pipe_omics_pytinstaller_linux_$(date +%s).sh
-_BUILD_PIPE_OMICS_DOCKER_IMAGE="${_BUILD_PIPE_OMICS_DOCKER_IMAGE:-centos:7}"
+_BUILD_PIPE_OMICS_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pipe-omics-centos7-py310"
 
 # This dir will be mounted to the docker container to build pipe-omics and then to the container
 # where pipe-cli will be built, to copy pipe-omics inside a pipe-cli
@@ -28,27 +28,6 @@ mkdir -p $_PIPE_OMICS_BUILD_DIST_DIR
 
 # NOTE: Need to install and configure openssl11 to use during python compilation (without it pip will throw ssl error)
 cat > "$_BUILD_PIPE_OMICS_SCRIPT_NAME" <<EOL
-###
-# Setup Pyinstaller
-###
-
-yum update -y && \
- yum groupinstall "Development Tools" -y && \
- yum install epel-release -y && \
- yum install -y wget openssl11 openssl11-devel libffi-devel libffi-devel
-
-mkdir /usr/local/openssl11
-ln -s /usr/lib64/openssl11 /usr/local/openssl11/lib
-ln -s /usr/include/openssl11 /usr/local/openssl11/include
-
-cd /opt && \
-  wget https://www.python.org/ftp/python/3.10.11/Python-3.10.11.tgz && \
-  tar xzf Python-3.10.11.tgz && cd Python-3.10.11 && \
-  ./configure --enable-optimizations --with-openssl=/usr/local/openssl11 --prefix=/usr/local --enable-shared LDFLAGS="-Wl,-rpath /usr/local/lib" && \
-  make altinstall
-
-python3.10 -m pip install pyinstaller==6.5.0
-
 ###
 # Build pipe-omics
 ###
