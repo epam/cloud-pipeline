@@ -92,7 +92,7 @@ public class AWSOmicsReferenceDataStorage extends AbstractAWSOmicsDataStorage {
                     "referenceStore",
                     matcher.group(STORE_ID),
                     matcher.group(FILE_TYPE),
-                    matcher.group(FILE_TYPE));
+                    matcher.group(FILE_ID));
         } else {
             throw new IllegalArgumentException(
                 String.format(
