@@ -54,9 +54,9 @@ class ProgressBar:
             print(f'{self.prefix} |{bar}| {percent}% {self.suffix}')
         else:
             print(f'\r{self.prefix} |{bar}| {percent}% {self.suffix}', end=self.printEnd)
-        # Print New Line on Complete
-        if self.progress == self.total:
-            print()
+            # Print New Line on Complete
+            if self.progress == self.total:
+                print()
 
 
 class ProgressBarSubscriber(OmicsTransferSubscriber):
@@ -71,7 +71,7 @@ class ProgressBarSubscriber(OmicsTransferSubscriber):
         )
 
     def on_done(self, future, **kwargs):
-        print("\nFile {} uploaded!".format(future.meta.call_args.fileobj))
+        print("File {} downloaded!".format(future.meta.call_args.fileobj))
 
 
 class FinalEventSubscriber(OmicsTransferSubscriber):

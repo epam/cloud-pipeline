@@ -225,13 +225,17 @@ class OmicsStorageCopyOperation(OmicsStorageOperation):
 
     def _load_storage(self, options):
         if options.mode == OmicsStorageCopyOptions.MODE_DOWNLOAD:
-            _, storage_path, _ = OmicsUrl.parse_path(options.source)
-            return self.operation_config.api.load_storage(storage_path)
+            omics_store_url = options.source
         elif options.mode == OmicsStorageCopyOptions.MODE_UPLOAD or options.mode == OmicsStorageCopyOptions.MODE_IMPORT:
-            _, storage_path, _ = OmicsUrl.parse_path(options.destination)
-            return self.operation_config.api.load_storage(storage_path)
+            omics_store_url = options.destination
         else:
             raise RuntimeError("Wrong copy mode of OmicsCopyOperation: '{}'".format(options.mode))
+
+        _, storage_path, _ = OmicsUrl.parse_path(omics_store_url)
+        if not storage_path:
+            raise RuntimeError("Fail to parse Omics Store URL: '{}'".format(omics_store_url))
+
+        return self.operation_config.api.load_storage(storage_path)
 
     def _prepare_sources(self, source):
         def _validate(path):
@@ -265,7 +269,7 @@ class OmicsStoreListingOperation(OmicsStorageOperation):
 
         print(
             __dumps_to_json(
-                self.__list(self._filter_and_normalize_args(self.operation_config.api, args))
+                self.__list(self._filter_and_normalize_args(args))
             )
         )
 
@@ -282,8 +286,7 @@ class OmicsStoreListingOperation(OmicsStorageOperation):
                 )
             ]
 
-    @classmethod
-    def _filter_and_normalize_args(cls, api: CloudPipelineClient, args_to_parse: dict):
+    def _filter_and_normalize_args(self, args_to_parse: dict):
         path = args_to_parse.get("path", None)
         if path is None:
             raise RuntimeError("Path should be provided")
@@ -291,20 +294,9 @@ class OmicsStoreListingOperation(OmicsStorageOperation):
         schema, storage_path, file_path = OmicsUrl.parse_path(path)
         if schema is None:
             raise RuntimeError("Fail to parse Omics path url!")
-        storage = api.load_storage(storage_path)
+        storage = self.operation_config.api.load_storage(storage_path)
         show_details = bool(args_to_parse.get("show_details", False))
         page_arg = args_to_parse.get("page", 0)
         page_size = 0 if page_arg is None else int(page_arg)
         show_all = bool(args_to_parse.get("show_all", False))
         return OmicsStorageListingOptions(storage, file_path, show_details, page_size, show_all)
-
-
-def perform_storage_command(config, command, parsed_args):
-    if command == 'cp':
-        OmicsStorageCopyOperation(config).copy(parsed_args)
-    elif command == 'ls':
-        OmicsStoreListingOperation(config).list(parsed_args)
-    else:
-        raise RuntimeError("Unknown command: " + command)
-
-

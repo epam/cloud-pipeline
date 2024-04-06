@@ -15,7 +15,7 @@
 import os.path
 
 
-def parse_local_path(path):
+def define_local_location(path):
     parent_dir = os.path.dirname(path)
     basename = os.path.basename(path)
     if os.path.exists(path):

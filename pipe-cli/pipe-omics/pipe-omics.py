@@ -19,7 +19,7 @@ import os
 import traceback
 
 from src import cloud_pipeline_api
-from src import storage_operations
+from src.storage_operations import OmicsStorageCopyOperation, OmicsStoreListingOperation
 import sys
 
 _default_logging_level = 'ERROR'
@@ -52,7 +52,12 @@ def configure_logging(config: CommandConfig):
 
 def perform_command(config: CommandConfig, group: str, command: str, parsed_args: dict):
     if group == 'storage':
-        storage_operations.perform_storage_command(config, command, parsed_args)
+        if command == 'cp':
+            OmicsStorageCopyOperation(config).copy(parsed_args)
+        elif command == 'ls':
+            OmicsStoreListingOperation(config).list(parsed_args)
+        else:
+            raise RuntimeError("Unknown command: " + command)
     else:
         raise RuntimeError("Unsupported command group. Supported value is: storage")
 
