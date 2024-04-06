@@ -22,7 +22,7 @@ from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
-from .util.fs_utils import define_local_location
+from .util.exception import PipeOmicsException
 from .util.progress_utils import ProgressBarSubscriber, FinalEventSubscriber
 
 
@@ -146,7 +146,21 @@ class AWSOmicsOperation:
             _, result = _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size)
         return result
 
-    def download_file(self, storage, source, destination):
+    def download_file(self, storage, source, destination, force):
+
+        def __define_local_location(path, force):
+            parent_dir = os.path.dirname(path)
+            basename = os.path.basename(path)
+            if os.path.exists(path):
+                if not os.path.isdir(path):
+                    if not force:
+                        raise PipeOmicsException("File with path {} already exists!".format(path))
+                    else:
+                        return parent_dir, basename
+                return path, None
+            elif os.path.isdir(parent_dir):
+                return parent_dir, basename
+            raise PipeOmicsException("Path {} doesn't exists!".format(parent_dir))
 
         # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
         # this method will rename bam or cram if it was named with gz ending
@@ -161,7 +175,8 @@ class AWSOmicsOperation:
         # it when parsing omics readSet or reference url
         source = source.strip('/')
 
-        destination_dir, destination_file_name = define_local_location(destination)
+        destination_dir, destination_file_name = __define_local_location(destination, force)
+
 
         manager = TransferManager(
             self.get_omics(storage, storage.region_name, read=True, write=True),

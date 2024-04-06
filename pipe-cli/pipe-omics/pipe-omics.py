@@ -19,10 +19,12 @@ import os
 import traceback
 
 from src import cloud_pipeline_api
+from src.util.exception import PipeOmicsException
 from src.storage_operations import OmicsStorageCopyOperation, OmicsStoreListingOperation
 import sys
 
 _default_logging_level = 'ERROR'
+PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE = 15
 
 
 class CommandConfig:
@@ -45,9 +47,9 @@ class CommandConfig:
 
 
 def configure_logging(config: CommandConfig):
-    logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
-                        level=config.logging_level)
-    logging.getLogger('botocore').setLevel(logging.ERROR)
+    loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+    for logger in loggers:
+        logger.setLevel(config.logging_level)
 
 
 def perform_command(config: CommandConfig, group: str, command: str, parsed_args: dict):
@@ -70,8 +72,9 @@ if __name__ == '__main__':
                         help="pipe command to be processed. F.i. 'cp' or 'ls'")
     parser.add_argument("-i", "--raw-input", type=str, help="")
     parser.add_argument("-p", "--piped-output", action='store_true', default=False,
-                        help="By default program outputs progress on the same line, "
-                             "by moving carriage to the start of the line. If False, program")
+                        help="If not set program outputs progress on the same line, "
+                             "by moving carriage to the start of the line. "
+                             "If set, will outputs progress on a new line.")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")
 
@@ -82,6 +85,12 @@ if __name__ == '__main__':
     try:
         parsed_args = json.loads(args.raw_input)
         perform_command(config, args.group, args.command, parsed_args)
+    except PipeOmicsException as poe:
+        # For such exception we would like to simply print its message,
+        # meaning that it handels users mistakes, f.i. specifying a path that already exists
+        sys.stderr.write(getattr(poe, 'message', str(poe)))
+        sys.exit(PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE)
     except Exception as e:
-        print(e.message)
+        sys.stderr.write('Unhandled error')
+        traceback.print_exc()
         sys.exit(1)

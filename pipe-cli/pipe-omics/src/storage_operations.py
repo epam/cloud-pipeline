@@ -17,6 +17,7 @@ import os.path
 import jsonpickle
 
 from .aws import AWSOmicsOperation, AWSOmicsFile
+from .util.exception import PipeOmicsException
 from .util.omics_utils import OmicsUrl
 
 S3_SCHEMA = "s3://"
@@ -84,21 +85,22 @@ class OmicsStorageCopyOptions:
     @staticmethod
     def from_raw_input(args):
         if "recursive" in args and bool(args["recursive"]):
-            raise ValueError(
+            raise PipeOmicsException(
                 "'recursive' is not supported for Omics Store!"
             )
 
         if "source" not in args or "destination" not in args:
-            raise ValueError(
+            raise PipeOmicsException(
                 "'source', 'destination' should be provided to register Omics file!"
             )
 
         source = args["source"]
         destination = args["destination"]
+        force = args.get("force", False)
         mode = OmicsStorageCopyOptions.__define_mode(source, destination)
         if mode == OmicsStorageCopyOptions.MODE_UPLOAD or mode == OmicsStorageCopyOptions.MODE_IMPORT:
             if "additional_options" not in args:
-                raise ValueError(
+                raise PipeOmicsException(
                     "'additional_options' with values: "
                     "[name=<>,subject_id=<>,sample_id=<>,file_type=<>,description=<optional>,"
                     "generated_from=<optional>,reference=<optional>] should be provided to register Omics file!"
@@ -121,14 +123,15 @@ class OmicsStorageCopyOptions:
             return OmicsStorageDownloadOptions(
                 source=source,
                 destination=destination,
-                mode=mode
+                mode=mode,
+                force=force
             )
 
     @classmethod
     def __define_mode(cls, source, destination):
         if OMICS_SCHEMA in source:
             if S3_SCHEMA in destination:
-                raise ValueError("Export omics job functionality is not supported.")
+                raise PipeOmicsException("Export omics job functionality is not supported.")
             return OmicsStorageCopyOptions.MODE_DOWNLOAD
 
         if OMICS_SCHEMA in destination:
@@ -145,16 +148,16 @@ class OmicsStorageCopyOptions:
             if result in ["FASTQ", "BAM", "UBAM", "CRAM"]:
                 return result
             else:
-                raise ValueError("file_type could be one of 'FASTQ', 'BAM', 'UBAM', 'CRAM'")
+                raise PipeOmicsException("file_type could be one of 'FASTQ', 'BAM', 'UBAM', 'CRAM'")
 
         if not additional_options_string:
-            raise ValueError("Additional options should be provided to register file in Omics store!")
+            raise PipeOmicsException("Additional options should be provided to register file in Omics store!")
 
         additional_options = dict([p.split("=") for p in additional_options_string.split(",")])
 
         file_type_str = additional_options.get("file_type", "")
         if not file_type_str:
-            raise ValueError("file_type should be specified")
+            raise PipeOmicsException("file_type should be specified in additional options")
 
         return (additional_options.get("name", None),
                 additional_options.get("description", None),
@@ -181,8 +184,9 @@ class OmicsStorageUploadOptions(OmicsStorageCopyOptions):
 
 class OmicsStorageDownloadOptions(OmicsStorageCopyOptions):
 
-    def __init__(self, mode, source, destination):
+    def __init__(self, mode, source, destination, force=False):
         OmicsStorageCopyOptions.__init__(self, mode, source, destination)
+        self.force = force
 
 
 class OmicsStorageOperation:
@@ -202,7 +206,9 @@ class OmicsStorageCopyOperation(OmicsStorageOperation):
     def __copy(self, options: OmicsStorageCopyOptions):
         storage = self._load_storage(options)
         if options.mode == OmicsStorageCopyOptions.MODE_DOWNLOAD:
-            AWSOmicsOperation(self.operation_config).download_file(storage, options.source, options.destination)
+            AWSOmicsOperation(self.operation_config).download_file(
+                storage, options.source, options.destination, options.force
+            )
         elif options.mode == OmicsStorageCopyOptions.MODE_UPLOAD or options.mode == OmicsStorageCopyOptions.MODE_IMPORT:
             sources = self._prepare_sources(options.source)
             if options.mode == OmicsStorageCopyOptions.MODE_UPLOAD:
