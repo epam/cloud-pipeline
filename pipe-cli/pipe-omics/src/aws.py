@@ -16,7 +16,6 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
-from omics.common.omics_file_types import ReadSetFileName, ReadSetFileType
 from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
@@ -79,8 +78,8 @@ class AWSOmicsFile:
 
 class AWSOmicsOperation:
 
-    def __init__(self, api):
-        self.api = api
+    def __init__(self, operation_config):
+        self.operation_config = operation_config
 
     def get_file_metadata(self, storage, file_id):
         omics = self.get_omics(storage, storage.region_name, read=True)
@@ -151,13 +150,20 @@ class AWSOmicsOperation:
             subscribers = [
                 ProgressBarSubscriber(
                     file_metadata.sizes[source_file_name],
-                    "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name)
+                    "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name),
+                    self.operation_config.piped_stdout
                 )
             ]
             manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id, omics_file.file_name,
                                            client_fileobj=destination_file_name, subscribers=subscribers)
         else:
-            subscribers = [ProgressBarSubscriber(file_metadata.size, "readSet/{}".format(omics_file.resource_id))]
+            subscribers = [
+                ProgressBarSubscriber(
+                    file_metadata.size,
+                    "readSet/{}".format(omics_file.resource_id),
+                    self.operation_config.piped_stdout
+                )
+            ]
             manager.download_read_set(storage.cloud_store_id, omics_file.resource_id, subscribers=subscribers)
 
     def download_reference(self, storage, source, destination):
@@ -190,7 +196,7 @@ class AWSOmicsOperation:
 
     def __assumed_session(self, storage, list, read, write):
         def __refresh():
-            credentials = self.api.get_temporary_credentials(storage, list, read, write)
+            credentials = self.operation_config.api.get_temporary_credentials(storage, list, read, write)
             return dict(
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,
