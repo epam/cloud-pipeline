@@ -11,6 +11,8 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.utilities.extension.ext_handler import ExtensionHandler, ExtensionApplicationRule
 from src.utilities.printing.storage import print_storage_listing
 
+PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE = 15
+
 
 class OmicsFileOperationHandler(ExtensionHandler):
 
@@ -33,7 +35,8 @@ class OmicsFileOperationHandler(ExtensionHandler):
         self._process_output(process, quiet, arguments, cmd_args)
         return_code = process.wait()
         if return_code != 0 and not quiet:
-            click.echo("There was a problem of executing the command '{}'".format(cmd_args), file=sys.stderr)
+            if return_code != PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE:
+                click.echo("There was a problem of executing the command '{}'".format(cmd_args), file=sys.stderr)
             for stderr_line in iter(process.stderr.readline, ""):
                 click.echo(stderr_line, file=sys.stderr)
             process.stderr.close()
@@ -48,6 +51,7 @@ class OmicsFileOperationHandler(ExtensionHandler):
         if "API_TOKEN" not in envs:
             envs["API_TOKEN"] = pipe_config.get_token()
         envs["PYTHONUNBUFFERED"] = "1"
+        envs["PYTHONWARNINGS"] = "ignore"
         return envs
 
 
