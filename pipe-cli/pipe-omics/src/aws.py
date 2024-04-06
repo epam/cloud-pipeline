@@ -93,14 +93,14 @@ class AWSOmicsOperation:
     def list_files(self, storage, token, page_size, show_all):
 
         # Helper method to get one page with AWS SDK
-        def _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size):
+        def _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size):
             if token is not None:
                 req_kwars["nextToken"] = token
             if page_size is not None and page_size > 0:
                 req_kwars["maxResults"] = page_size
             try:
                 response = aws_omics_method(**req_kwars)
-                return response.get("nextToken", None), [object_mapping(e) for e in response["readSets"]]
+                return response.get("nextToken", None), [object_mapping(e) for e in response.get(object_field, [])]
             except Exception as e:
                 raise RuntimeError("Something went wrong during the request to AWS.", e)
 
@@ -110,23 +110,27 @@ class AWSOmicsOperation:
             aws_omics_method = omics.list_references
             req_kwars = {'referenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_ref_response
+            object_field = 'references'
         elif storage.type == OmicsStoreType.OMICS_SEQ:
             aws_omics_method = omics.list_read_sets
             req_kwars = {'sequenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_seq_response
+            object_field = 'readSets'
         else:
             raise RuntimeError("Unexpected storage type: " + storage.type)
 
         # Perform listing
         result = []
         if show_all:
-            next_token, page = _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size)
+            next_token, page = _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size)
             result.extend(page)
             while next_token is not None:
-                next_token, page = _get_page(aws_omics_method, req_kwars, object_mapping, next_token, page_size)
+                next_token, page = _get_page(
+                    aws_omics_method, req_kwars, object_field, object_mapping, next_token, page_size
+                )
                 result.extend(page)
         else:
-            _, result = _get_page(aws_omics_method, req_kwars, object_mapping, token, page_size)
+            _, result = _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size)
         return result
 
     def download_file(self, storage, source, destination):
@@ -139,6 +143,7 @@ class AWSOmicsOperation:
         omics_file = OmicsUriParser(source).parse()
         destination_dir, destination_file_name = parse_local_path(destination)
         file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
+
         manager = TransferManager(
             self.get_omics(storage, storage.region_name, read=True, write=True),
             config=TransferConfig(directory=destination_dir)
@@ -174,7 +179,11 @@ class AWSOmicsOperation:
             self.get_omics(storage, storage.region_name, read=True, write=True),
             config=TransferConfig(directory=destination_dir)
         )
-        subscribers = [ProgressBarSubscriber(file_metadata.size, "reference/{}".format(file_metadata.id))]
+        subscribers = [
+            ProgressBarSubscriber(
+                file_metadata.size, "reference/{}".format(file_metadata.id), self.operation_config.piped_stdout
+            )
+        ]
         if source.endswith(reference.file_name.lower()):
             manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name,
                                             client_fileobj=destination_file_name, subscribers=subscribers)
