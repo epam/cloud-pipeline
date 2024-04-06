@@ -10,11 +10,11 @@ class ExtensionApplicationRule:
         self.rule_type = rule_type
         self.value = value
 
-    def test(self, key, value):
+    def test(self, param, param_value):
         if self.rule_type == ExtensionApplicationRule.EQUALS:
-            return self.key == key and value == self.value
+            return self.key == param and param_value and param_value == self.value
         elif self.rule_type == ExtensionApplicationRule.REGEXP:
-            return self.key == key and re.match(self.value, value)
+            return self.key == param and param_value and re.match(self.value, param_value)
 
 
 class ExtensionHandler:
