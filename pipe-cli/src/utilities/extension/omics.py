@@ -20,7 +20,7 @@ class OmicsFileOperationHandler(ExtensionHandler):
     def _apply(self, arguments):
         pipe_config = Config.instance()
         pipe_omics_bin_path = os.path.join(pipe_config.build_inner_module_path('pipe-omics'), 'pipe-omics')
-        cmd_args = [pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments)]
+        cmd_args = [pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments), '-p']
         process = subprocess.Popen(
             cmd_args,
             stdout=subprocess.PIPE,
@@ -62,9 +62,11 @@ class OmicsCopyFileHandler(OmicsFileOperationHandler):
     def _process_output(self, process, quiet, arguments, cmd):
         if not quiet:
             for stdout_line in iter(process.stdout.readline, ""):
-                if "uploaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
+                if "uploaded!" in stdout_line or "downloaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
                     click.echo("\n" + stdout_line)
                 else:
+                    # prints line and returns carriage to the start of the line
+                    # in order to correctly show the progressBar in the terminal
                     click.echo(stdout_line.strip() + '\r', nl=False)
         else:
             dev_null = open(os.devnull, 'w')

@@ -37,17 +37,9 @@ python3.10 -m pip install -r \${PIPE_OMICS_SOURCES_DIR}/requirements.txt
 cd \$PIPE_OMICS_SOURCES_DIR && \
 pyinstaller \
   --paths "\${PIPE_OMICS_SOURCES_DIR}" \
-  --hidden-import=UserList \
-  --hidden-import=UserString \
-  --hidden-import=commands \
-  --hidden-import=ConfigParser \
-  --hidden-import=UserDict \
   --hidden-import=itertools \
   --hidden-import=collections \
-  --hidden-import=future.backports.misc \
-  --hidden-import=commands \
   --hidden-import=base64 \
-  --hidden-import=__builtin__ \
   --hidden-import=math \
   --hidden-import=reprlib \
   --hidden-import=functools \
