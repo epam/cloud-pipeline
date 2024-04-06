@@ -83,6 +83,5 @@ if __name__ == '__main__':
         parsed_args = json.loads(args.raw_input)
         perform_command(config, args.group, args.command, parsed_args)
     except Exception as e:
-        logging.exception('Unhandled error')
-        traceback.print_exc()
+        print(e.message)
         sys.exit(1)

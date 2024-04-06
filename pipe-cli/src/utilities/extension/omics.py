@@ -20,7 +20,9 @@ class OmicsFileOperationHandler(ExtensionHandler):
     def _apply(self, arguments):
         pipe_config = Config.instance()
         pipe_omics_bin_path = os.path.join(pipe_config.build_inner_module_path('pipe-omics'), 'pipe-omics')
-        cmd_args = [pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments), '-p']
+        cmd_args = [
+            pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments), '-p'
+        ]
         process = subprocess.Popen(
             cmd_args,
             stdout=subprocess.PIPE,
@@ -45,6 +47,7 @@ class OmicsFileOperationHandler(ExtensionHandler):
             envs["API"] = pipe_config.api
         if "API_TOKEN" not in envs:
             envs["API_TOKEN"] = pipe_config.get_token()
+        envs["PYTHONUNBUFFERED"] = "1"
         return envs
 
 

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os.path
 import re
 
 from boto3 import Session
@@ -27,10 +28,11 @@ from .util.progress_utils import ProgressBarSubscriber, FinalEventSubscriber
 
 class AWSOmicsFileDownloadRequest:
 
-    def __init__(self, omics_store_id, omics_resource_id, omics_file_name, local_file_name, size):
+    def __init__(self, omics_store_id, omics_resource_id, omics_file_name, destination_dir, local_file_name, size):
         self.omics_store_id = omics_store_id
         self.omics_resource_id = omics_resource_id
         self.omics_file_name = omics_file_name
+        self.destination_dir = destination_dir
         self.local_file_name = local_file_name
         self.size = size
 
@@ -145,6 +147,16 @@ class AWSOmicsOperation:
         return result
 
     def download_file(self, storage, source, destination):
+
+        # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
+        # this method will rename bam or cram if it was named with gz ending
+        def __rename_file_if_needed(download_request: AWSOmicsFileDownloadRequest):
+            downloaded_file = os.path.join(download_request.destination_dir, download_request.local_file_name) + ".gz"
+            if os.path.exists(downloaded_file):
+                if downloaded_file.endswith("bam.gz") or downloaded_file.endswith("cram.gz"):
+                    # remove last 3 character from the file name
+                    os.rename(downloaded_file, downloaded_file[:-3])
+
         # Remove tailing slash if any, because OmicsUriParser doesn't expect
         # it when parsing omics readSet or reference url
         source = source.strip('/')
@@ -156,7 +168,7 @@ class AWSOmicsOperation:
             config=TransferConfig(directory=destination_dir)
         )
 
-        download_requests = self.__fetch_files_to_download(storage, source, destination_file_name)
+        download_requests = self.__fetch_files_to_download(storage, source, destination_dir, destination_file_name)
 
         for download_request in download_requests:
             subscribers = [
@@ -179,6 +191,8 @@ class AWSOmicsOperation:
                     download_request.omics_file_name,
                     client_fileobj=download_request.local_file_name, subscribers=subscribers
                 )
+
+            __rename_file_if_needed(download_request)
 
     def upload_file(self, storage, sources, name, file_type, subject_id, sample_id,
                     description=None, generated_from=None, reference_arn=None):
@@ -216,7 +230,7 @@ class AWSOmicsOperation:
         return Session(botocore_session=s)
 
     # Defines which files and under which names should be downloaded
-    def __fetch_files_to_download(self, storage, source, destination_file_name):
+    def __fetch_files_to_download(self, storage, source, destination_dir, destination_file_name):
 
         def __get_file_name_suffix(omics_file_name, omics_resource_type):
             if omics_resource_type == "FASTQ":
@@ -226,7 +240,7 @@ class AWSOmicsOperation:
 
         def __get_file_ext(omics_file_name, omics_resource_type):
             if omics_resource_type == "FASTQ":
-                return "fastq.gz"
+                return "fastq"
             elif omics_resource_type == "BAM" or omics_resource_type == "UBAM":
                 if omics_file_name == "index":
                     return "bam.bai"
@@ -241,7 +255,7 @@ class AWSOmicsOperation:
                 if omics_file_name == "index":
                     return "fasta.fai"
                 else:
-                    return "fai"
+                    return "fasta"
             else:
                 raise ValueError(
                     "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
@@ -272,6 +286,7 @@ class AWSOmicsOperation:
                     storage.cloud_store_id,
                     file_metadata.id,
                     omics_file_name,
+                    destination_dir,
                     local_file_name,
                     file_metadata.sizes[omics_file_name]
                 )
@@ -289,6 +304,7 @@ class AWSOmicsOperation:
                         storage.cloud_store_id,
                         file_metadata.id,
                         omics_file_name,
+                        destination_dir,
                         local_file_name,
                         file_metadata.sizes[omics_file_name]
                     )
