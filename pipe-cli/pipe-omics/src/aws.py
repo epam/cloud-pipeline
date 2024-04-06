@@ -253,7 +253,12 @@ class AWSOmicsOperation:
         # If original url have source[1|2]|index - will download only specific file, else - the whole set
         if re.search(".*/(index|source|source1|source2)", source):
             omics_file_name = omics_file.file_name.lower()
-
+            if omics_file_name not in file_metadata.files:
+                raise ValueError(
+                    "Can't find '{}' file in AWS Omics {} with id: {} object".format(
+                        omics_file_name, omics_file.resource_type, omics_file.resource_id
+                    )
+                )
             local_file_name = destination_file_name
             if not local_file_name:
                 local_file_name = "{}{}.{}".format(

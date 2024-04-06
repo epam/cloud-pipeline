@@ -16,7 +16,6 @@ import os.path
 
 import jsonpickle
 
-from .cloud_pipeline_api import CloudPipelineClient
 from .aws import AWSOmicsOperation, AWSOmicsFile
 from .util.omics_utils import OmicsUrl
 
