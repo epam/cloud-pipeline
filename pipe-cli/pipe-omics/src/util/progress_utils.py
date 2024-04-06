@@ -71,7 +71,7 @@ class ProgressBarSubscriber(OmicsTransferSubscriber):
         )
 
     def on_done(self, future, **kwargs):
-        print("File {} uploaded!".format(future.meta.call_args.fileobj))
+        print("\nFile {} uploaded!".format(future.meta.call_args.fileobj))
 
 
 class FinalEventSubscriber(OmicsTransferSubscriber):
