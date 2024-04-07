@@ -40,7 +40,23 @@ public abstract class AbstractPipeCliDataUploader extends AbstractDataUploader {
         final PipelineCLI pipelineCLI =
                 pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
         pipelineCLI.uploadData(source.getPath(), destination.getPath(), included, username,
-                deleteSource);
+                deleteSource, false, null, null);
+    }
+
+    @Override
+    public void upload(final StorageItem source,
+                       final StorageItem destination,
+                       final List<String> included,
+                       final String username,
+                       final boolean deleteSource,
+                       final boolean logEnabled,
+                       final String pipeCmd,
+                       final String pipeCmdSuffix) {
+        final PipelineCredentials credentials = PipelineCredentials.from(destination.getCredentials());
+        final PipelineCLI pipelineCLI =
+                pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
+        pipelineCLI.uploadData(source.getPath(), destination.getPath(), included, username,
+                deleteSource, logEnabled, pipeCmd, pipeCmdSuffix);
     }
 
     @Override
@@ -53,6 +69,22 @@ public abstract class AbstractPipeCliDataUploader extends AbstractDataUploader {
         final PipelineCLI pipelineCLI =
                 pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
         pipelineCLI.downloadData(source.getPath(), destination.getPath(), included, username,
-                deleteSource);
+                deleteSource, false, null, null);
+    }
+
+    @Override
+    public void download(final StorageItem source,
+                         final StorageItem destination,
+                         final List<String> included,
+                         final String username,
+                         final boolean deleteSource,
+                         final boolean logEnabled,
+                         final String pipeCmd,
+                         final String pipeCmdSuffix) {
+        final PipelineCredentials credentials = PipelineCredentials.from(source.getCredentials());
+        final PipelineCLI pipelineCLI =
+                pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
+        pipelineCLI.downloadData(source.getPath(), destination.getPath(), included, username,
+                deleteSource, logEnabled, pipeCmd, pipeCmdSuffix);
     }
 }

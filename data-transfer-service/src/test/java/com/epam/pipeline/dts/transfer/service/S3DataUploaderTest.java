@@ -64,35 +64,35 @@ public class S3DataUploaderTest extends AbstractTransferTest {
     void transferShouldFailIfSourceStorageTypeIsUnsupported() {
         final TransferTask transferTask = taskOf(gsItem(), nonExistingLocalItem());
 
-        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask));
+        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask, false, null, null));
     }
 
     @Test
     void transferShouldFailIfDestinationStorageTypeIsUnsupported() {
         final TransferTask transferTask = taskOf(nonExistingLocalItem(), gsItem());
 
-        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask));
+        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask, false, "", ""));
     }
 
     @Test
     void transferShouldNotFailIfLocalDestinationFileDoesNotExist() {
         final TransferTask transferTask = taskOf(s3Item(), nonExistingLocalItem());
 
-        assertDoesNotThrow(() -> dataUploader.transfer(transferTask));
+        assertDoesNotThrow(() -> dataUploader.transfer(transferTask, false, null, null));
     }
 
     @Test
     void transferShouldFailIfS3SourcePathDoesNotStartWithS3Prefix() {
         final TransferTask transferTask = taskOf(invalidS3Item(), nonExistingLocalItem());
 
-        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask));
+        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask, false, "", ""));
     }
 
     @Test
     void transferShouldFailIfS3DestinationPathDoesNotStartWithS3Prefix() {
         final TransferTask transferTask = taskOf(nonExistingLocalItem(), invalidS3Item());
 
-        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask));
+        assertThrows(RuntimeException.class, () -> dataUploader.transfer(transferTask, false, null, null));
     }
 
     @Test
@@ -100,9 +100,10 @@ public class S3DataUploaderTest extends AbstractTransferTest {
         final StorageItem source = existingLocalItem();
         final StorageItem destination = s3Item();
 
-        dataUploader.transfer(taskOf(source, destination));
+        dataUploader.transfer(taskOf(source, destination), false, null, null);
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(),
+                isNull(), eq(false), eq(false), isNull(), isNull());
     }
 
     @Test
@@ -110,9 +111,10 @@ public class S3DataUploaderTest extends AbstractTransferTest {
         final StorageItem source = s3Item();
         final StorageItem destination = nonExistingLocalItem();
 
-        dataUploader.transfer(taskOf(source, destination));
+        dataUploader.transfer(taskOf(source, destination), false, null, null);
 
-        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
+        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any(),
+                isNull(), eq(false), eq(false), isNull(), isNull());
     }
 
     @Test
@@ -136,7 +138,8 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(),
+                isNull(), eq(false), eq(false), isNull(), isNull());
     }
 
     @Test
@@ -152,10 +155,10 @@ public class S3DataUploaderTest extends AbstractTransferTest {
             .user(username)
             .build();
 
-        dataUploader.transfer(transferTask);
+        dataUploader.transfer(transferTask, false, null, null);
 
         verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), eq(included), eq(username),
-                                       eq(false));
+                                       eq(false), eq(false), isNull(), isNull());
     }
 
     private StorageItem existingLocalItem() {

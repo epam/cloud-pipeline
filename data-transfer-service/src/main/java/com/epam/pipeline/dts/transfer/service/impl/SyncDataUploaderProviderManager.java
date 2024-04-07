@@ -35,11 +35,13 @@ public class SyncDataUploaderProviderManager implements DataUploaderProviderMana
 
     @Override
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public void transferData(final TransferTask transferTask) {
+    public void transferData(final TransferTask transferTask, boolean logEnabled,
+                             String pipeCmd, String pipeCmdSuffix) {
         try {
-            dataUploaderProvider.getStorageUploader(transferTask).transfer(transferTask);
+            dataUploaderProvider.getStorageUploader(transferTask).transfer(transferTask, logEnabled,
+                    pipeCmd, pipeCmdSuffix);
             log.info(String.format("File has been successfully transferred from %s to %s.",
-                                   transferTask.getSource().getPath(), transferTask.getDestination().getPath()));
+                    transferTask.getSource().getPath(), transferTask.getDestination().getPath()));
             taskService.updateStatus(transferTask.getId(), TaskStatus.SUCCESS);
         } catch (Exception e) {
             taskService.updateStatus(transferTask.getId(), TaskStatus.FAILURE, e.getMessage());
