@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import base64
 import ctypes
 import logging
 import os
@@ -55,7 +56,7 @@ from pipefuse.memwrite import MemoryBufferingWriteFileSystemClient
 from pipefuse.cache import ListingCache, ThreadSafeListingCache, \
     CachingListingFileSystemClient
 from pipefuse.fslock import get_lock
-from pipefuse.fuseutils import MB, GB, MINUTE, HOUR
+from pipefuse.fuseutils import MB, GB, MINUTE, HOUR, bytes_to_str, str_to_bytes
 from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.path import PathExpandingStorageFileSystemClient
 from pipefuse.pipefs import PipeFS, RestrictingOperationsFS, ResilientFS
@@ -85,7 +86,13 @@ _xattrs_operations = ['setxattr', 'getxattr', 'listxattr', 'removexattr']
 _xattrs_include_prefix = 'user'
 
 
-def start(mountpoint, webdav, bucket,
+def start(mountpoint,
+          webdav,
+          webdav_compatibility_mode,
+          webdav_auth_anonymous,
+          webdav_auth_basic, webdav_auth_basic_username, webdav_auth_basic_password,
+          webdav_auth_bearer, webdav_auth_bearer_cookie, webdav_auth_bearer_token,
+          bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
           read_disk_buffer_path, read_disk_buffer_read_ahead_size, read_disk_buffer_ttl, read_disk_buffer_ttl_delay,
           write_buffer_size, trunc_buffer_size, chunk_size,
@@ -125,7 +132,25 @@ def start(mountpoint, webdav, bucket,
     if webdav:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        client = WebDavClient(webdav_url=webdav, bearer=bearer)
+
+        logging.info('Using WebDav compatibility mode {}...'.format(webdav_compatibility_mode))
+        webdav_cookies = {}
+        webdav_headers = {}
+        if webdav_auth_anonymous:
+            logging.info('Using WebDav anonymous auth...')
+        elif webdav_auth_basic:
+            logging.info('Using WebDav basic auth...')
+            webdav_auth_basic_token = bytes_to_str(base64.b64encode(str_to_bytes(
+                '{}:{}'.format(webdav_auth_basic_username or 'user', webdav_auth_basic_password or bearer))))
+            webdav_headers['Authorization'] = 'Basic {}'.format(webdav_auth_basic_token)
+        elif webdav_auth_bearer:
+            logging.info('Using WebDav bearer auth...')
+            webdav_headers['Authorization'] = 'Bearer {}'.format(webdav_auth_bearer_token or bearer)
+        elif webdav_auth_bearer_cookie:
+            logging.info('Using WebDav bearer cookie auth...')
+            webdav_cookies['bearer'] = webdav_auth_bearer_token or bearer
+        client = WebDavClient(webdav_url=webdav, webdav_cookies=webdav_cookies, webdav_headers=webdav_headers,
+                              webdav_compatibility_mode=webdav_compatibility_mode)
         client = ResilientWebDavFileSystemClient(client)
         if fix_permissions:
             client = PermissionAwareWebDavFileSystemClient(client, webdav, bearer)
@@ -359,6 +384,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--mountpoint", type=str, required=True, help="Mount folder")
     parser.add_argument("-w", "--webdav", type=str, required=False, help="Webdav link")
+    parser.add_argument("--webdav-compatibility-mode", type=str, default='apache',
+                        help="Specifies WebDav compatibility mode")
+    parser.add_argument("--webdav-auth-anonymous", default=False, action='store_true',
+                        help="Enables WebDav anonymous auth")
+    parser.add_argument("--webdav-auth-basic", default=False, action='store_true',
+                        help="Enables WebDav basic auth")
+    parser.add_argument("--webdav-auth-basic-username", type=str, default=None,
+                        help="Specifies WebDav basic auth username")
+    parser.add_argument("--webdav-auth-basic-password", type=str, default=None,
+                        help="Specifies WebDav basic auth password")
+    parser.add_argument("--webdav-auth-bearer", default=False, action='store_true',
+                        help="Enables WebDav bearer auth")
+    parser.add_argument("--webdav-auth-bearer-cookie", default=True, action='store_true',
+                        help="Enables WebDav bearer cookie auth")
+    parser.add_argument("--webdav-auth-bearer-token", type=str, default=None,
+                        help="Specifies WebDav bearer auth token")
     parser.add_argument("-b", "--bucket", type=str, required=False, help="Bucket name")
     parser.add_argument("-rb", "--read-buffer-size", type=int, required=False, default=40 * MB,
                         help="Read buffer size for a single file")
@@ -455,7 +496,17 @@ if __name__ == '__main__':
         logging.info('Packaged installation found. Either packaged or host libfuse will be used.')
 
     try:
-        start(args.mountpoint, webdav=args.webdav, bucket=args.bucket,
+        start(args.mountpoint,
+              webdav=args.webdav,
+              webdav_compatibility_mode=args.webdav_compatibility_mode,
+              webdav_auth_anonymous=args.webdav_auth_anonymous,
+              webdav_auth_basic=args.webdav_auth_basic,
+              webdav_auth_basic_username=args.webdav_auth_basic_username,
+              webdav_auth_basic_password=args.webdav_auth_basic_password,
+              webdav_auth_bearer=args.webdav_auth_bearer,
+              webdav_auth_bearer_cookie=args.webdav_auth_bearer_cookie,
+              webdav_auth_bearer_token=args.webdav_auth_bearer_token,
+              bucket=args.bucket,
               read_buffer_size=args.read_buffer_size,
               read_ahead_min_size=args.read_ahead_min_size, read_ahead_max_size=args.read_ahead_max_size,
               read_ahead_size_multiplier=args.read_ahead_size_multiplier,
