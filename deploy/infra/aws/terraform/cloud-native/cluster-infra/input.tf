@@ -26,8 +26,7 @@ variable "subnet_ids" {
 variable "cp_api_access_prefix_lists" {
   default     = []
   type        = list(string)
-  description = "Prefix Lists to which access to Cloud Pipeline API will be granted."
-
+  description = "Prefix Lists to which access to Cloud Pipeline API will be granted"
 }
 
 variable "iam_role_permissions_boundary_arn" {
@@ -105,7 +104,7 @@ variable "deploy_filesystem_type" {
   default     = "efs"
   description = "Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created."
   validation {
-    condition     = contains(["efs", "fsx", null], var.deploy_filesystem_type)
+    condition     = contains(["efs", "fsx"], var.deploy_filesystem_type)
     error_message = "The value of the deploy_filesystem_type variable can be only efs or fsx or null. Please check that variable is set correctly."
   }
 }
@@ -208,23 +207,23 @@ variable "rds_root_password" {
 }
 
 variable "cloud_pipeline_db_configuration" {
-  type = list(object({
-    username = string
-    password = string
-    database = string
+  type =  map(object({
+      username = string
+      password = string
+      database = string
   }))
-  default = [
-    {
+  default = {
+    pipeline = {
       username = "pipeline"
       password = "pipeline"
       database = "pipeline"
-    },
-    {
+    }
+    clair = {
       username = "clair"
       password = "clair"
       database = "clair"
     }
-  ]
+  }
   description = "Username with password and database, which will be created by Postgres provider. Username will be owner of the database."
 }
 
@@ -232,4 +231,60 @@ variable "rds_db_port" {
   type        = number
   default     = 5432
   description = "The port on which the RDS instance accepts connections"
+}
+
+###################################################################
+# Cloud-pipeline deployment script specific variables
+# Such variable doesn't effect infrastructure,
+# but define how Cloud-Pipeline will be deployed on top of this infrastructure
+###################################################################
+
+variable "deployment_id" {
+  type        = string
+  description = "Deployment Name"
+}
+
+variable "elb_public_subnet" {
+  type        = string
+  description = "Public subnet id to deploy user-facing AWS Elastic Load Balancer."
+}
+
+variable "eipalloc" {
+  type        = string
+  description = "Allocation ID of the pre-created Elastic IP. Will be used to assign to the user-facing ELB."
+}
+
+variable "ui_deployment_name" {
+  type        = string
+  description = "Cloud-Pipeline name that will be used in several Cloud-Pipeline UI elements. F.i. browser tab name."
+}
+
+variable "cp_api_srv_host" {
+  type        = string
+  description = "API SRV service domain name address"
+}
+variable "cp_idp_host" {
+  type        = string
+  description = "Cloud-Pipeline Self hosted IDP service domain name address"
+}
+
+variable "cp_docker_host" {
+  type        = string
+  description = "Docker Registry service domain name address"
+}
+
+variable "cp_edge_host" {
+  type        = string
+  description = "EDGE service domain name address"
+}
+
+variable "cp_gitlab_host" {
+  type        = string
+  description = "GITLAB service domain name address"
+}
+
+variable "srv_saml_user_attr" {
+  type = string
+  description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
+  default = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
 }

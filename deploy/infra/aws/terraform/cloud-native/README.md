@@ -6,14 +6,14 @@ This document provides a guidance how to deploy infrastructure using terraform a
 The process of the deployment can be performed with the following steps:
 
 - [Cloud-pipeline based on AWS EKS Deployment step-by-step guide](#cloud-pipeline-based-on-aws-eks-deployment-step-by-step-guide)
-    - [Overview](#overview)
-    - [Resources deployment using Terraform](#resources-deployment-using-terraform)
-        - [Prerequisites](#prerequisites)
-        - [Jump-server deployment](#jump-server-deployment)
-            - [Outputs table of `jump-server` module](#outputs-table-of-jump-server-module)
-        - [Cluster-infrastructure deployment](#cluster-infrastructure-deployment)
-            - [Outputs table of `cluster-infrastructure` module](#outputs-table-of-cluster-infrastructure-module)
-    - [Cloud-pipeline deployment](#cloud-pipeline-deployment)
+  - [Overview](#overview)
+  - [Resources deployment using Terraform](#resources-deployment-using-terraform)
+    - [Prerequisites](#prerequisites)
+    - [Jump-server deployment](#jump-server-deployment)
+      - [Outputs table of `jump-server` module](#outputs-table-of-jump-server-module)
+    - [Cluster-infrastructure deployment](#cluster-infrastructure-deployment)
+      - [Outputs table of `cluster-infrastructure` module](#outputs-table-of-cluster-infrastructure-module)
+  - [Cloud-pipeline deployment](#cloud-pipeline-deployment)
 
 > This guide assumes that you store your terraform root modules in a private git repository and able to clone it from
 > remote instance.
@@ -609,9 +609,10 @@ ssh_key_name = "CP_PREF_CLUSTER_SSH_KEY_NAME=xxxxxxxxxxxxxxx-key"
 
 1. Download latest pipectl binary file.
 2. Mount created file system into instance.
-    - For EFS (https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html):
+    - For EFS run commands (https://docs.aws.amazon.com/efs/latest/ug/mounting-fs-mount-cmd-dns-name.html):
     ````
-    sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-xxxxxxxxxxx.efs.<region>.amazonaws.com:/  /opt
+    fsid=$(terraform output -raw efs_filesystem_id)
+    sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $fsid.efs.<region>.amazonaws.com:/  /opt
     ````
     - For FSx for Lustre (https://docs.aws.amazon.com/fsx/latest/LustreGuide/mounting-ec2-instance.html):
     ````
