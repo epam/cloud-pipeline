@@ -13,6 +13,7 @@
 # limitations under the License.
 import os.path
 import re
+import sys
 
 from boto3 import Session
 from botocore.config import Config
@@ -214,7 +215,8 @@ class AWSOmicsOperation:
         if storage.type == OmicsStoreType.OMICS_REF:
             raise RuntimeError("Direct upload to Omics Reference store isn't supported!")
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
-        print("Omics {} file(s) {}: upload started! Please wait...".format(file_type, sources))
+        sys.stdout.write("Omics {} file(s) {}: upload started! Please wait...\n".format(file_type, sources))
+        sys.stdout.flush()
         subscribers = [FinalEventSubscriber()]
         manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,
                                 sample_id, reference_arn, generated_from, description, subscribers=subscribers)

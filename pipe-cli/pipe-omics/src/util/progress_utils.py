@@ -1,4 +1,5 @@
 import shutil
+import sys
 
 from omics.transfer import OmicsTransferSubscriber
 
@@ -51,12 +52,18 @@ class ProgressBar:
         filled_length = int(self.length * self.progress // self.total)
         bar = self.fill * filled_length + '-' * (self.length - filled_length)
         if self.piped_stdout:
-            print(f'{self.prefix} |{bar}| {percent}% {self.suffix}')
+            sys.stdout.write(f'{self.prefix} |{bar}| {percent}% {self.suffix}\n')
         else:
-            print(f'\r{self.prefix} |{bar}| {percent}% {self.suffix}', end=self.printEnd)
+            sys.stdout.write(f'\r{self.prefix} |{bar}| {percent}% {self.suffix}')
             # Print New Line on Complete
             if self.progress == self.total:
-                print()
+                sys.stdout.write("\n")
+        # Doing this because of this issue: https://github.com/pyinstaller/pyinstaller/issues/4908
+        # in some cases PyInstaller throws some strange output to the console when pipe executes pipe-omics and
+        # reporting its progress back to the pipe stdout.
+        # This flash fixes the problem.
+        sys.stdout.flush()
+        sys.stderr.flush()
 
 
 class ProgressBarSubscriber(OmicsTransferSubscriber):
