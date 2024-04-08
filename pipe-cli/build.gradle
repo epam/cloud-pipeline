@@ -50,6 +50,34 @@ task buildLinux(type: Exec, dependsOn: ':pipe-cli:test') {
     }
 }
 
+task buildLinuxPy39(type: Exec) {
+    group = 'build'
+    doFirst {
+        setCLIVersion()
+    }
+
+    environment "_BUILD_DOCKER_IMAGE": "quay.io/lifescience/cloud-pipeline:python3.9-centos7"
+    environment "_BUILD_SCRIPT_NAME": "$project.rootDir/pipe-cli/build_linux_py39.sh"
+
+    environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
+    environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
+    environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
+
+    commandLine "bash", "$project.rootDir/pipe-cli/build_docker.sh"
+    doLast {
+        cleanCLIVersion()
+        delete("$project.rootDir/api/src/main/resources/static/pipe")
+        copy {
+            from("$project.rootDir/pipe-cli/dist/dist-file/pipe")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+        copy {
+            from("$project.rootDir/pipe-cli/dist/dist-folder/pipe.tar.gz")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+    }
+}
+
 task buildWin(type: Exec, dependsOn: ':pipe-cli:test') {
     group = 'build'
     doFirst {
