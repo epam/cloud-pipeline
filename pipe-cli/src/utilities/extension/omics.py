@@ -50,8 +50,6 @@ class OmicsFileOperationHandler(ExtensionHandler):
             envs["API"] = pipe_config.api
         if "API_TOKEN" not in envs:
             envs["API_TOKEN"] = pipe_config.get_token()
-        envs["PYTHONUNBUFFERED"] = "1"
-        envs["PYTHONWARNINGS"] = "ignore"
         return envs
 
 
