@@ -168,7 +168,7 @@ class AWSOmicsOperation:
         def __rename_file_if_needed(download_request: AWSOmicsFileDownloadRequest):
             downloaded_file = os.path.join(download_request.destination_dir, download_request.local_file_name) + ".gz"
             if os.path.exists(downloaded_file):
-                if downloaded_file.endswith("bam.gz") or downloaded_file.endswith("cram.gz"):
+                if downloaded_file.endswith("bam.gz") or downloaded_file.endswith("cram.gz") or downloaded_file.endswith(".gz.gz"):
                     # remove last 3 character from the file name
                     os.rename(downloaded_file, downloaded_file[:-3])
 

@@ -87,8 +87,8 @@ if __name__ == '__main__':
         perform_command(config, args.group, args.command, parsed_args)
     except PipeOmicsException as poe:
         # For such exception we would like to simply print its message,
-        # meaning that it handels users mistakes, f.i. specifying a path that already exists
-        sys.stderr.write(getattr(poe, 'message', str(poe)))
+        # meaning that it handles users mistakes, f.i. specifying a path that already exists, etc
+        sys.stderr.write(poe.message)
         sys.exit(PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE)
     except Exception as e:
         sys.stderr.write('Unhandled error')
