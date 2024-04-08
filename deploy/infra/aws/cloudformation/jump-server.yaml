@@ -286,7 +286,7 @@ Resources:
 
 
               module "cluster-infra" {
-                source                            = "git::https://github.com/oleksii-mart/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=tf_module_updates"
+                source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
                 project_name                      = "${ProjectName}"
                 env                               = "${Env}"
                 vpc_id                            = "${VpcId}"
