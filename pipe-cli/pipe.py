@@ -14,6 +14,7 @@
 
 import logging
 import os
+import platform
 import traceback
 
 import click
@@ -206,7 +207,7 @@ def resources_cleaning(func, ctx, *args, **kwargs):
     try:
         CleanOperationsManager().clean(quiet=ctx.params.get('quiet'))
     except Exception:
-        logging.warn('Temporary directories cleaning has failed: %s', traceback.format_exc())
+        logging.warning('Temporary directories cleaning has failed: %s', traceback.format_exc())
     ctx.invoke(func, *args, **kwargs)
 
 
@@ -228,13 +229,30 @@ def disabled_resources_cleaning(func, ctx, *args, **kwargs):
     return ctx.invoke(func, *args, **kwargs)
 
 
-def common_options(_func=None, skip_user=False, skip_clean=False):
+@click_decorator
+def enabled_python3_checking(func, ctx, *args, **kwargs):
+    ctx.params['python3'] = True
+    return ctx.invoke(func, *args, **kwargs)
+
+
+@click_decorator
+def python3_checking(func, ctx, *args, **kwargs):
+    python3 = ctx.params.get('python3') or False
+    if python3:
+        py_version, _, _ = platform.python_version_tuple()
+        if py_version == '2':
+            raise RuntimeError('Current pipe build does not support this command')
+    return ctx.invoke(func, *args, **kwargs)
+
+
+def common_options(_func=None, skip_user=False, skip_clean=False, require_python3=False):
     """
     Decorates a click command with common pipe cli options and decorators.
 
     :param _func: Decorating click command. Can be omitted.
     :param skip_user: Disables default user option configuration.
     :param skip_clean: Disables automated temporary resources cleanup.
+    :param require_python3: Requires python 3.
     :return:
     """
     def _decorator(func):
@@ -248,6 +266,7 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
         @stacktracing
         @console_logging
         @signals_handling
+        @python3_checking
         @frozen_locking
         @resources_cleaning
         @Config.validate_access_token(quiet_flag_property_name='quiet')
@@ -263,6 +282,10 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
             _wrapper = click.option('--noclean', required=False, is_flag=True,
                                     default=False,
                                     help=NO_CLEAN_OPTION_DESCRIPTION)(_wrapper)
+
+        if require_python3:
+            _wrapper = enabled_python3_checking(_wrapper)
+
         if not skip_user:
             _wrapper = click.option('-u', '--user', required=False,
                                     callback=(lambda ctx, param, value: None) if skip_user else set_user_token,
@@ -1473,6 +1496,119 @@ def umount_storage(mountpoint, quiet):
         - mountpoint - destination for unmount
     """
     DataStorageOperations.umount_storage(mountpoint, quiet=quiet)
+
+
+@storage.group('server')
+def storage_server():
+    """
+    Storage server operations
+    """
+    pass
+
+
+def storage_server_start_options(decorating_func):
+    @click.option('--path', required=True,
+                  help='Serving path')
+    @click.option('--host', required=False, default='0.0.0.0',
+                  help='Serving host')
+    @click.option('--port', required=False, default=80, type=int,
+                  help='Serving port')
+    @click.option('-ro', '--read-only', required=False, is_flag=True, default=False,
+                  help='Enables read only mode.')
+    @click.option('--auth-anonymous', required=False, is_flag=True, default=False,
+                  help='Enables anonymous auth')
+    @click.option('--auth-basic', required=False, is_flag=True, default=False,
+                  help='Enables basic auth')
+    @click.option('--auth-basic-username', required=False,
+                  help='Specifies basic auth username')
+    @click.option('--auth-basic-password', required=False,
+                  help='Specifies basic auth password')
+    @click.option("--auth-bearer", required=False, is_flag=True, default=False,
+                  help="Enables bearer auth")
+    @click.option('--auth-bearer-pub-key', required=False,
+                  help='Specifies bearer auth pub key')
+    @click.option('--timeout-start', required=False, type=int, default=5 * 60,
+                  help='Specifies a background process starting timeout in seconds.')
+    @click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+                  help='Enables foreground mode.')
+    @click.option('-l', '--log-file', required=False, help='Logging file in background mode.')
+    @click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+    @functools.wraps(decorating_func)
+    def _decorator_func(*args, **kwargs):
+        return decorating_func(*args, **kwargs)
+    return _decorator_func
+
+
+@storage_server.command(name='start')
+@storage_server_start_options
+@click.option('-u', '--user', required=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--noclean', required=False, is_flag=True, default=False, help=NO_CLEAN_OPTION_DESCRIPTION)
+@click.option('--debug', required=False, is_flag=True, default=False, help=DEBUG_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+def return_storage_server_start_args(*args, **kwargs):
+    return kwargs
+
+
+def parse_storage_server_start_args(args):
+    with return_storage_server_start_args.make_context('start', args,
+                                                       ignore_unknown_options=True,
+                                                       allow_extra_args=True,
+                                                       resilient_parsing=True) as ctx:
+        return return_storage_server_start_args.invoke(ctx)
+
+
+@storage_server.command(name='start')
+@storage_server_start_options
+@common_options(require_python3=True)
+def storage_server_start(path, host, port, read_only,
+                         auth_anonymous,
+                         auth_basic, auth_basic_username, auth_basic_password,
+                         auth_bearer, auth_bearer_pub_key,
+                         timeout_start, foreground, log_file, log_level):
+    """
+    Starts a storage server.
+    """
+    from src.utilities.storage_server_manager import StorageServerManager
+    StorageServerManager().start(path, host, port, read_only,
+                                 auth_anonymous,
+                                 auth_basic, auth_basic_username, auth_basic_password,
+                                 auth_bearer, auth_bearer_pub_key,
+                                 timeout_start, foreground, log_file, parse_storage_server_start_args)
+
+
+@storage_server.command(name='list')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@common_options(require_python3=True)
+def storage_server_list(log_level):
+    """
+    Lists all storage servers.
+    """
+    from src.utilities.storage_server_manager import StorageServerManager
+    StorageServerManager().list(parse_storage_server_start_args)
+
+
+@storage_server.command(name='stop')
+@click.option('--path', required=False,
+              help='Serving path')
+@click.option('--host', required=False, default='0.0.0.0',
+              help='Serving host')
+@click.option('--port', required=False, default=80, type=int,
+              help='Serving port')
+@click.option('--timeout-stop', required=False, type=int, default=60,
+              help='Specifies a background process stopping timeout in seconds.')
+@click.option('--force', required=False, is_flag=True, default=False,
+              help='Enables background processes forceful stopping.')
+@click.option('--ignore-owner', required=False, is_flag=True, default=False,
+              help='Enables other users background processes stopping.')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@common_options(require_python3=True)
+def storage_server_stop(path, host, port, timeout_stop, force, ignore_owner, log_level):
+    """
+    Stops a storage server.
+    """
+    from src.utilities.storage_server_manager import StorageServerManager
+    StorageServerManager().stop(path, host, port, timeout_stop, force, ignore_owner,
+                                parse_storage_server_start_args)
 
 
 @cli.command(name='view-acl')
