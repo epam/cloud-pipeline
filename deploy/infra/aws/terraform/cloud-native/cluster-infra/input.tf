@@ -234,7 +234,9 @@ variable "rds_db_port" {
 }
 
 ###################################################################
-#               Cloud-pipeline script deployment
+# Cloud-pipeline deployment script specific variables
+# Such variable doesn't effect infrastructure,
+# but define how Cloud-Pipeline will be deployed on top of this infrastructure
 ###################################################################
 
 variable "deployment_id" {
@@ -244,31 +246,31 @@ variable "deployment_id" {
 
 variable "elb_public_subnet" {
   type        = string
-  description = "Public subnet for Load Balancer"
+  description = "Public subnet id to deploy user-facing AWS Elastic Load Balancer."
 }
 
 variable "eipalloc" {
   type        = string
-  description = "Allocation ID of the created Elastic IP"
+  description = "Allocation ID of the pre-created Elastic IP. Will be used to assign to the user-facing ELB."
 }
 
 variable "ui_deployment_name" {
   type        = string
-  description = "Deployment Name that will be shown as the browser tab name"
+  description = "Cloud-Pipeline name that will be used in several Cloud-Pipeline UI elements. F.i. browser tab name."
 }
 
 variable "cp_api_srv_host" {
   type        = string
-  description = "API service domain name address"
+  description = "API SRV service domain name address"
 }
 variable "cp_idp_host" {
   type        = string
-  description = "IDP service domain name address"
+  description = "Cloud-Pipeline Self hosted IDP service domain name address"
 }
 
 variable "cp_docker_host" {
   type        = string
-  description = "Docker service domain name address"
+  description = "Docker Registry service domain name address"
 }
 
 variable "cp_edge_host" {
@@ -283,6 +285,6 @@ variable "cp_gitlab_host" {
 
 variable "srv_saml_user_attr" {
   type = string
-  description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for users own IDP service. Default for Azure idp"
+  description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
   default = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
 }
