@@ -56,7 +56,7 @@ export default class DataStorageNavigation extends React.Component {
   getRootPath = () => {
     if (this.props.storage) {
       if (this.isOmicsStore) {
-        return `${this.props.storage.pathMask.toLowerCase()}`;
+        return `${this.props.storage.pathMask}`;
       }
       return `${this.props.storage.type.toLowerCase()}://${this.props.storage.path}`;
     }
