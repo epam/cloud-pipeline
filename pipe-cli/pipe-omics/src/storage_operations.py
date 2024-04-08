@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os.path
+import sys
 
 import jsonpickle
 
@@ -85,8 +86,8 @@ class OmicsStorageCopyOptions:
     @staticmethod
     def from_raw_input(args):
         if "recursive" in args and bool(args["recursive"]):
-            raise PipeOmicsException(
-                "'recursive' is not supported for Omics Store!"
+            sys.stderr.write(
+                "'recursive' is not supported for Omics Store! Will ignore this flag!"
             )
 
         if "source" not in args or "destination" not in args:

@@ -149,7 +149,7 @@ class AWSOmicsOperation:
 
     def download_file(self, storage, source, destination, force):
 
-        def __define_local_location(path, force):
+        def __define_local_location(path, source, force):
             parent_dir = os.path.dirname(path)
             basename = os.path.basename(path)
             if os.path.exists(path):
@@ -161,28 +161,36 @@ class AWSOmicsOperation:
                 return path, None
             elif os.path.isdir(parent_dir):
                 return parent_dir, basename
-            raise PipeOmicsException("Path {} doesn't exists!".format(parent_dir))
+            else:
+                if force:
+                    # if local path doesn't exist and source is referring to the exact file
+                    # we assume that user specified local path also as a path to exact file local destination
+                    # e.g. basename is a file name
+                    if re.search(".*/(index|source|source1|source2)", source):
+                        return parent_dir, basename
+                    else:
+                        return path, None
+                raise PipeOmicsException("Path {} doesn't exists!".format(parent_dir))
 
         # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
-        # this method will rename bam or cram if it was named with gz ending
+        # this method will rename file back as it was configured by user or defined in this script
         def __rename_file_if_needed(download_request: AWSOmicsFileDownloadRequest):
             downloaded_file = os.path.join(download_request.destination_dir, download_request.local_file_name) + ".gz"
             if os.path.exists(downloaded_file):
-                if downloaded_file.endswith("bam.gz") or downloaded_file.endswith("cram.gz") or downloaded_file.endswith(".gz.gz"):
-                    # remove last 3 character from the file name
-                    os.rename(downloaded_file, downloaded_file[:-3])
+                # remove last 3 character from the file name
+                # because it was added by aws-omics-tools lib
+                os.rename(downloaded_file, downloaded_file[:-3])
 
         # Remove tailing slash if any, because OmicsUriParser doesn't expect
         # it when parsing omics readSet or reference url
         source = source.strip('/')
 
-        destination_dir, destination_file_name = __define_local_location(destination, force)
+        destination_dir, destination_file_name = __define_local_location(destination, source, force)
 
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
 
-        manager = TransferManager(
-            self.get_omics(storage, storage.region_name, read=True, write=True),
-            config=TransferConfig(directory=destination_dir)
-        )
+        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
 
         download_requests = self.__fetch_files_to_download(storage, source, destination_dir, destination_file_name)
 
@@ -190,22 +198,25 @@ class AWSOmicsOperation:
             subscribers = [
                 ProgressBarSubscriber(
                     download_request.size,
-                    "readSet/{}/{}".format(download_request.omics_resource_id, download_request.omics_file_name),
+                    "{}/{}".format(download_request.omics_resource_id, download_request.omics_file_name),
                     self.operation_config.piped_stdout
                 )
             ]
 
+            local_file_absolute_path = str(
+                os.path.join(download_request.destination_dir, download_request.local_file_name)
+            )
             if storage.type == OmicsStoreType.OMICS_SEQ:
                 manager.download_read_set_file(
                     download_request.omics_store_id, download_request.omics_resource_id,
                     download_request.omics_file_name,
-                    client_fileobj=download_request.local_file_name, subscribers=subscribers
+                    client_fileobj=local_file_absolute_path, subscribers=subscribers
                 )
             elif storage.type == OmicsStoreType.OMICS_REF:
                 manager.download_reference_file(
                     storage.cloud_store_id, download_request.omics_resource_id,
                     download_request.omics_file_name,
-                    client_fileobj=download_request.local_file_name, subscribers=subscribers
+                    client_fileobj=local_file_absolute_path, subscribers=subscribers
                 )
 
             __rename_file_if_needed(download_request)
@@ -257,7 +268,7 @@ class AWSOmicsOperation:
 
         def __get_file_ext(omics_file_name, omics_resource_type):
             if omics_resource_type == "FASTQ":
-                return "fastq"
+                return "fastq.gz"
             elif omics_resource_type == "BAM" or omics_resource_type == "UBAM":
                 if omics_file_name == "index":
                     return "bam.bai"
