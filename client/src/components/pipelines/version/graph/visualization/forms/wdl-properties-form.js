@@ -531,6 +531,7 @@ class WdlPropertiesForm extends React.Component {
     return this.renderInputProperty({
       title: executableType,
       placeholder: this.getDefaultPlaceholder('executable'),
+      property: 'executableName',
       setter: (entity, value) => {
         if (entity && entity.executable) {
           entity.executable.name = value;
