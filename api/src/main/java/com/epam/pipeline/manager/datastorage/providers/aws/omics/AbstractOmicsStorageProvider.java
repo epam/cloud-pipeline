@@ -38,6 +38,7 @@ public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage
     public static final String REFERENCE_STORE_ID = "referenceStoreId";
     public static final String SEQUENCE_STORE_ID = "sequenceStoreId";
 
+    public static final String FILE_NAME = "fileName";
     public static final String FILE_TYPE = "fileType";
     public static final String REFERENCE_FILE_TYPE = "REFERENCE";
 
@@ -265,10 +266,10 @@ public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage
     }
 
     protected DataStorageFile mapOmicsFileToDataStorageFile(final FileInformation fileInformation,
-                                                            final String path, final String source) {
+                                                            final String omicsFileId, final String source) {
         if (fileInformation != null) {
             final DataStorageFile file = new DataStorageFile();
-            file.setPath(FilenameUtils.concat(path, source));
+            file.setPath(FilenameUtils.concat(omicsFileId, source));
             file.setName(source);
             file.setSize(fileInformation.getContentLength());
             return file;

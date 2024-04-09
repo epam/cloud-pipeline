@@ -160,21 +160,22 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
                 Pair.create(refFile.getFiles().getSource(), SOURCE),
                 Pair.create(refFile.getFiles().getIndex(), INDEX)
         ).filter(fileInformation -> {
-            String fileSourceToList = fileIdAndSource.getValue();
-            if (fileSourceToList != null) {
-                return fileInformation.getValue().equals(fileSourceToList);
+            final String omicsFileSource = fileIdAndSource.getValue();
+            if (omicsFileSource != null) {
+                return fileInformation.getValue().equals(omicsFileSource);
             }
             return true;
         }).forEach(fileInformation ->
                 Optional.ofNullable(
                         mapOmicsFileToDataStorageFile(
-                                fileInformation.getKey(), path, fileInformation.getValue()
+                                fileInformation.getKey(), fileIdAndSource.getKey(), fileInformation.getValue()
                         )
                 ).ifPresent(file -> {
                     file.setChanged(S3Constants.getAwsDateFormat().format(refFile.getCreationTime()));
                     file.setLabels(new HashMap<String, String>() {
                         {
                             put(S3Helper.STORAGE_CLASS, refFile.getStatus());
+                            put(FILE_NAME, refFile.getName());
                             put(FILE_TYPE, REFERENCE_FILE_TYPE);
                         }
                     });
@@ -200,6 +201,7 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
                             file.setLabels(new HashMap<String, String>() {
                                 {
                                     put(S3Helper.STORAGE_CLASS, refItem.getStatus());
+                                    put(FILE_NAME, refItem.getName());
                                     put(FILE_TYPE, REFERENCE_FILE_TYPE);
                                 }
                             });

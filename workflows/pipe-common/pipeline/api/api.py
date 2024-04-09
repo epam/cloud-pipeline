@@ -1415,9 +1415,12 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to delete tool \n {}".format(e))
 
-    def load_datastorage_items(self, storage_id):
+    def load_datastorage_items(self, storage_id, path=None):
         try:
-            return self._request(endpoint=self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id), http_method="get")
+            endpoint = self.DATA_STORAGE_LIST_ITEMS_URL.format(id=storage_id)
+            if path:
+                endpoint + "?path={}".format(path)
+            return self._request(endpoint=endpoint, http_method="get")
         except Exception as e:
             raise RuntimeError("Failed to load datastorage items for storage id '{}'.".format(storage_id))
 

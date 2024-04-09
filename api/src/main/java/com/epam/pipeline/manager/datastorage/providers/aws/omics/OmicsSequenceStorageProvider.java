@@ -126,13 +126,14 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         }).forEach(fileInformation ->
                 Optional.ofNullable(
                         mapOmicsFileToDataStorageFile(
-                                fileInformation.getKey(), path, fileInformation.getValue()
+                                fileInformation.getKey(), fileIdAndSource.getKey(), fileInformation.getValue()
                         )
                 ).ifPresent(file -> {
                     file.setChanged(S3Constants.getAwsDateFormat().format(readSetFile.getCreationTime()));
                     file.setLabels(new HashMap<String, String>() {
                         {
                             put(S3Helper.STORAGE_CLASS, readSetFile.getStatus());
+                            put(FILE_NAME, readSetFile.getName());
                             put(FILE_TYPE, readSetFile.getFileType());
                             put(SUBJECT_ID, readSetFile.getSubjectId());
                             put(SAMPLE_ID, readSetFile.getSampleId());
@@ -159,6 +160,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
                             file.setLabels(new HashMap<String, String>() {
                                 {
                                     put(S3Helper.STORAGE_CLASS, readSet.getStatus());
+                                    put(FILE_NAME, readSet.getName());
                                     put(FILE_TYPE, readSet.getFileType());
                                     put(SUBJECT_ID, readSet.getSubjectId());
                                     put(SAMPLE_ID, readSet.getSampleId());
