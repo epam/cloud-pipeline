@@ -1566,7 +1566,58 @@ def storage_server_start(path, host, port, read_only,
                          auth_bearer, auth_bearer_pub_key,
                          timeout_start, foreground, log_file, log_level):
     """
-    Starts a storage server.
+    Establishes a storage server which exposes a local directory via HTTP endpoint.
+
+    Currently, a local directory is exposed using WebDAV server.
+
+    Examples:
+
+    I. Expose local directory (dir) with anonymous auth.
+
+        pipe storage server start --path dir --auth-anonymous
+
+    II. Expose local directory (dir) with basic auth (username:password).
+
+        pipe storage server start --path dir --auth-basic --auth-basic-username username --auth-basic-password password
+
+    III. Expose local directory (dir) with bearer auth (pub-key-str).
+
+        pipe storage server start --path dir --auth-bearer --auth-bearer-pub-key pub-key-str
+
+    IV. Expose local directory (dir) with anonymous auth on host (127.0.0.1) and port (8080).
+
+        pipe storage server start --path dir --auth-anonymous --host 127.0.0.1 --port 8080
+
+    V. Examples of local directory exposing and mounting with anonymous auth.
+
+    Expose local directory (dir) with anonymous auth on host (127.0.0.1) and port (8080).
+
+        pipe storage server start --path dir --auth-anonymous --host 127.0.0.1 --port 8080
+
+    Mount exposed directory to local directory (dir-mount) with anonymous auth.
+
+        pipe storage mount dir-mount -f -c "webdav=http://127.0.0.1:8080,webdav-auth-anonymous,webdav-compatibility-mode=wsgidav,write-buffer-size=107374182400"
+
+    VI. Examples of local directory exposing and mounting with basic auth.
+
+    Expose local directory (dir) with basic auth (username:password) on host (127.0.0.1) and port (8080).
+
+        pipe storage server start --path dir --auth-basic --auth-basic-username username --auth-basic-password password --host 127.0.0.1 --port 8080
+
+    Mount exposed directory to local directory (dir-mount) with basic auth.
+
+        pipe storage mount dir-mount -f -c "webdav=http://127.0.0.1:8080,webdav-auth-basic,webdav-auth-basic-username=username,webdav-auth-basic-password=password,webdav-compatibility-mode=wsgidav,write-buffer-size=107374182400"
+
+    VII. Examples of local directory exposing and mounting with bearer auth.
+
+    Expose local directory (dir) with bearer auth (pub-key-str) on host (127.0.0.1) and port (8080).
+
+        pipe storage server start --path dir --auth-bearer --auth-bearer-pub-key pub-key-str --host 127.0.0.1 --port 8080
+
+    Mount exposed directory to local directory (dir-mount) with bearer auth.
+
+        pipe storage mount dir-mount -f -c "webdav=http://127.0.0.1:8080,webdav-auth-bearer,webdav-compatibility-mode=wsgidav,write-buffer-size=107374182400"
+
     """
     from src.utilities.storage_server_manager import StorageServerManager
     StorageServerManager().start(path, host, port, read_only,
@@ -1582,6 +1633,12 @@ def storage_server_start(path, host, port, read_only,
 def storage_server_list(log_level):
     """
     Lists all storage servers.
+
+    Examples:
+
+    I. List all storage servers.
+
+        pipe storage server list
     """
     from src.utilities.storage_server_manager import StorageServerManager
     StorageServerManager().list(parse_storage_server_start_args)
@@ -1604,7 +1661,29 @@ def storage_server_list(log_level):
 @common_options(require_python3=True)
 def storage_server_stop(path, host, port, timeout_stop, force, ignore_owner, log_level):
     """
-    Stops a storage server.
+    Stops storage servers.
+
+    It allows to stop multiple storage server processes by either local directory path, host or path.
+
+    If the command is specified without arguments then all storage server processes will be stopped.
+
+    Examples:
+
+    I. Stop all active storage servers:
+
+        pipe storage server stop
+
+    II. Stop all storage servers for a single local directory (dir):
+
+        pipe storage server stop --path dir
+
+    III. Stop a single storage server which serves on host (127.0.0.1) and port (8080):
+
+        pipe storage server stop --host 127.0.0.1 --port 8080
+
+    IV. Stop a single storage server which serves local directory (dir) on host (127.0.0.1) and port (8080):
+
+        pipe storage server stop --path dir --host 127.0.0.1 --port 8080
     """
     from src.utilities.storage_server_manager import StorageServerManager
     StorageServerManager().stop(path, host, port, timeout_stop, force, ignore_owner,
