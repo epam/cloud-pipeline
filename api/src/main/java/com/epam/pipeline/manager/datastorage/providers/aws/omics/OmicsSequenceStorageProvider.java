@@ -37,9 +37,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -109,23 +109,39 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     DataStorageListing listOmicsFileSources(final AWSOmicsSequenceDataStorage dataStorage,
                                                       final String path) {
         final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
-        final GetReadSetMetadataResult seqStorageFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
+        final Pair<String, String> fileIdAndSource = OmicsHelper.parseFilePath(path);
+        final GetReadSetMetadataResult readSetFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
         final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
 
-        Arrays.asList(
-                Pair.create(seqStorageFile.getFiles().getSource1(), SOURCE_1),
-                Pair.create(seqStorageFile.getFiles().getSource2(), SOURCE_2),
-                Pair.create(seqStorageFile.getFiles().getIndex(), INDEX)
-        ).forEach(fileInformation ->
+        Stream.of(
+                Pair.create(readSetFile.getFiles().getSource1(), SOURCE_1),
+                Pair.create(readSetFile.getFiles().getSource2(), SOURCE_2),
+                Pair.create(readSetFile.getFiles().getIndex(), INDEX)
+        ).filter(fileInformation -> {
+            String fileSourceToList = fileIdAndSource.getValue();
+            if (fileSourceToList != null) {
+                return fileInformation.getValue().equals(fileSourceToList);
+            }
+            return true;
+        }).forEach(fileInformation ->
                 Optional.ofNullable(
                         mapOmicsFileToDataStorageFile(
                                 fileInformation.getKey(), path, fileInformation.getValue()
                         )
                 ).ifPresent(file -> {
-                    file.setChanged(S3Constants.getAwsDateFormat().format(seqStorageFile.getCreationTime()));
+                    file.setChanged(S3Constants.getAwsDateFormat().format(readSetFile.getCreationTime()));
+                    file.setLabels(new HashMap<String, String>() {
+                        {
+                            put(S3Helper.STORAGE_CLASS, readSetFile.getStatus());
+                            put(FILE_TYPE, readSetFile.getFileType());
+                            put(SUBJECT_ID, readSetFile.getSubjectId());
+                            put(SAMPLE_ID, readSetFile.getSampleId());
+                        }
+                    });
                     results.add(file);
                 }));
 
+        Assert.notEmpty(results, String.format("Path '%s' not found!", path));
         return new DataStorageListing(null, results);
     }
 
