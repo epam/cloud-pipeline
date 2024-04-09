@@ -31,9 +31,159 @@ function update_nameserver {
   fi
 }
 
-set -o xtrace
+function wait_device_uuid {
+    local device_name="$1"
+    local attempts="$2"
 
-yum install nc -y
+    export DEVICE_UUID=""
+    echo "Waiting for device uuid $device_name..."
+    for i in $(seq 1 "$attempts"); do
+        export DEVICE_UUID="$(lsblk -sdrpn -o NAME,UUID | awk -F'[ ]' '$1 ~ device_name { print $2 }' device_name="$device_name" | head -n 1)"
+        if [ "$DEVICE_UUID" ]; then
+            echo "Device uuid is ready $device_name ($DEVICE_UUID)"
+            return 0
+        fi
+        echo "Waiting for device uuid..."
+        sleep 1
+    done
+
+    echo "Device uuid is NOT ready after $attempts seconds"
+    return 1
+}
+
+function wait_device_part {
+    local device_prefix="$1"
+    local attempts="$2"
+
+    export DEVICE_NAME=""
+    echo "Waiting for device part $device_prefix..."
+    for i in $(seq 1 "$attempts"); do
+        export DEVICE_NAME="$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk -F'[ ]' '$1 ~ device_prefix && $2 == "part" && $3 == "" { print $1 }' device_prefix="$device_prefix" | head -n 1)"
+        if [ "$DEVICE_NAME" ]; then
+            echo "Device part is ready $DEVICE_NAME"
+            return 0
+        fi
+        echo "Waiting for device part..."
+        sleep 1
+    done
+
+    echo "Device part is NOT ready after $attempts seconds"
+    return 1
+}
+
+function setup_swap_device {
+    local swap_size="${1:-0}"
+    if [[ "${swap_size}" == "@"*"@" ]]; then
+        return
+    fi
+    local unmounted_drives=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
+    local drive_num=0
+    local swap_drive_name=""
+    for drive_name in $unmounted_drives
+    do
+        drive_num=$(( drive_num + 1 ))
+        drive_size_str=$(lsblk -sdrpn -o SIZE "${drive_name}")
+        if [[ "${drive_size_str: -1}" == "G" ]]; then
+            drive_size=${drive_size_str%"G"}
+            if (( swap_size == drive_size )); then
+                swap_drive_name="${drive_name}"
+            fi
+        fi
+    done
+    if [[ -z "${swap_drive_name}" ]]; then
+        echo "Block device matching swap size ${swap_size}G was not found. Swap device won't be configured."
+    elif (( drive_num < 2 )); then
+        echo "${drive_num} device found. Swap device won't be configured."
+    else
+        echo "Swap device ${swap_drive_name} will be configured"
+        mkswap "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to mkswap at $swap_drive_name"
+            return 1
+        fi
+        swapon "${swap_drive_name}"
+        if [[ $? -ne 0 ]]; then
+            echo "Unable to swapon at $swap_drive_name"
+            return 1
+        fi
+        wait_device_uuid "$swap_drive_name" 10
+        echo "UUID=$DEVICE_UUID none swap sw 0 0" >> /etc/fstab
+    fi
+}
+
+yum install btrfs-progs nc -y
+
+GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+export GLOBAL_DISTRIBUTION_URL
+
+_WO="--timeout=10 --waitretry=1 --tries=10"
+wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
+gzip -d /bin/nvme.gz && \
+chmod +x /bin/nvme
+
+swap_size="@swap_size@"
+setup_swap_device "${swap_size:-0}"
+
+FS_TYPE="@FS_TYPE@"
+
+_ds=()
+if [[ -x /bin/nvme ]]; then
+  _ds=($(nvme list | grep 'Instance Storage' | awk '{ print $1 }'))
+fi
+UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+_dsc=( $({ printf "%s\n" "${UNMOUNTED_DRIVES[@]}" | sort -u; printf "%s\n" "${_ds[@]}" "${_ds[@]}"; } | sort | uniq -u) )
+if [[ ${#_dsc[@]} > 0 ]]; then
+  UNMOUNTED_DRIVES=("${_dsc[@]}")
+fi
+if [[ ${#UNMOUNTED_DRIVES[@]} > 1 ]]; then
+  pvcreate ${UNMOUNTED_DRIVES[@]}
+  vgcreate nvmevg ${UNMOUNTED_DRIVES[@]}
+  lvcreate -l 100%FREE nvmevg -n nvmelv
+  DRIVE_NAME=/dev/nvmevg/nvmelv
+elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
+  DRIVE_NAME=${UNMOUNTED_DRIVES[0]}
+  PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
+  if [[ $PARTITION_RESULT == "" ]]; then
+      (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
+      wait_device_part "$DRIVE_NAME" 10
+      DRIVE_NAME="$DEVICE_NAME"
+  elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
+      echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
+      unset DRIVE_NAME
+  fi
+else
+  echo "No unmounted drives found. Root volume is used for the /ebs"
+fi
+
+MOUNT_POINT="/ebs"
+mkdir -p $MOUNT_POINT
+if [ "$DRIVE_NAME" ]; then
+  if [[ $FS_TYPE == "ext4" ]]; then
+      mkfs -t ext4 $DRIVE_NAME
+      mount $DRIVE_NAME $MOUNT_POINT
+      echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  else
+    mkfs.btrfs -f -d single $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+    echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+  fi
+fi
+mkdir -p $MOUNT_POINT/runs
+mkdir -p $MOUNT_POINT/reference
+rm -rf $MOUNT_POINT/lost+found
+
+ssh_node_port="@NODE_SSH_PORT@"
+
+if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
+  sed -i "/#Port/c\Port $ssh_node_port" /etc/ssh/sshd_config
+  systemctl restart sshd
+fi
+
+set -o xtrace
 
 mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
