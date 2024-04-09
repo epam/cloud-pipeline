@@ -470,9 +470,9 @@ class InputDataTask:
             relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
 
-            omics_store_parsed_path = re.search('^omics://(.*)/(\\d+/(source|source1|source2|index))$', path)
-            if omics_store_parsed_path:
-                local_path = self.calculate_omics_file_local_path(local_dir, omics_store_parsed_path, path)
+            omics_parsed_path = re.search('^(omics://(.*/(\\d+/(?:reference|readSet)))/(\\d+/(source|source1|source2|index)))$', path)
+            if omics_parsed_path:
+                local_path = self.calculate_omics_file_local_path(local_dir, omics_parsed_path)
             else:
                 local_path = self.join_paths(local_dir, relative_path)
 
@@ -481,7 +481,7 @@ class InputDataTask:
                     task_name=self.task_name)
         return LocalizedPath(path, path, local_path, path_type, suffix=path_suffix)
 
-    def calculate_omics_file_local_path(self, local_dir, omics_store_parsed_path, path):
+    def calculate_omics_file_local_path(self, local_dir, omics_parsed_path):
 
         def __get_file_name_suffix(omics_file_name, omics_resource_type):
             if omics_resource_type == "FASTQ":
@@ -512,24 +512,29 @@ class InputDataTask:
                     "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
                 )
 
-        storage_path_without_schema = omics_store_parsed_path.group(1)
-        relative_path = omics_store_parsed_path.group(2)
-        source_file_name = omics_store_parsed_path.group(3)
-        storage = self.api.find_datastorage(storage_path_without_schema)
+        path = omics_parsed_path.group(1)
+        storage_path = omics_parsed_path.group(2)
+        storage_postfix = omics_parsed_path.group(3)
+        omics_file_storage_relative_path = omics_parsed_path.group(4)
+        local_relative_path = "{}/{}".format(storage_postfix, omics_file_storage_relative_path)
+        source_file_name = omics_parsed_path.group(5)
+        storage = self.api.find_datastorage(storage_path)
         try:
-            listing = self.api.load_datastorage_items(storage.id, path=relative_path)
+            listing = self.api.load_datastorage_items(storage.id, path=omics_file_storage_relative_path)
             if listing and len(listing) > 0:
                 source_file = listing[0]
-                local_path = "{}{}.{}".format(
+                local_file_name = "{}/{}{}.{}".format(
+                    local_relative_path.replace("/{}".format(source_file_name), ''),
                     source_file["labels"]["fileName"],
                     __get_file_name_suffix(source_file_name, source_file["labels"]["fileType"]),
                     __get_file_ext(source_file_name, source_file["labels"]["fileType"])
                 )
+                local_path = self.join_paths(local_dir, local_file_name)
             else:
                 raise ValueError("Can't list datastorage in path: {}".format(path))
         except Exception as e:
             Logger.warn(e)
-            local_path = self.join_paths(local_dir, relative_path)
+            local_path = self.join_paths(local_dir, local_relative_path)
         return local_path
 
     def get_local_dir(self, type):

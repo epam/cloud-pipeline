@@ -329,7 +329,7 @@ class AWSOmicsOperation:
                 result.append(
                     AWSOmicsFileDownloadRequest(
                         storage.cloud_store_id,
-                        file_metadata.id,
+                        file_metadata.name,
                         omics_file_name,
                         destination_dir,
                         local_file_name,
