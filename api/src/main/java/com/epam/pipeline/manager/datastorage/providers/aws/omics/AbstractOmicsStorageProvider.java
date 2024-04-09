@@ -32,7 +32,8 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public abstract class AbstractOmicsStorageProvider<T extends AbstractDataStorage> implements StorageProvider<T> {
 
-    public static final Pattern AWS_OMICS_STORE_FILE_ID_PATTERN = Pattern.compile("^(((\\d+)/(source|source1|source2|index))|(\\d+))$");
+    public static final Pattern AWS_OMICS_STORE_FILE_ID_PATTERN =
+            Pattern.compile("^(((\\d+)/(source|source1|source2|index))|(\\d+))$");
 
     public static final String AWS_OMICS_STORE_PATH_TEMPLATE = "%s.storage.%s.amazonaws.com/%s";
     public static final String REFERENCE_STORE_ID = "referenceStoreId";
