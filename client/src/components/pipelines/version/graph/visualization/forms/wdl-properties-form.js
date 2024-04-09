@@ -411,6 +411,7 @@ class WdlPropertiesForm extends React.Component {
    * @property {string} [title]
    * @property {string} property
    * @property {string} [propertyAvailable=`${property}Available`]
+   * @property {string} [propertyEditable=`${property}Editable`]
    * @property {string} [placeholder]
    * @property {object} [data=this.state]
    * @property {function} [setter]
@@ -438,12 +439,14 @@ class WdlPropertiesForm extends React.Component {
       setter = defaultSetter,
       placeholder,
       propertyAvailable = `${property}Available`,
+      propertyEditable = `${property}Editable`,
       issues = []
     } = config;
     const onChange = (event) => setter(entity, event.target.value);
     const {
       [property]: value,
-      [propertyAvailable]: available
+      [propertyAvailable]: available,
+      [propertyEditable]: editable = true
     } = data || {};
     if (!available) {
       return;
@@ -470,7 +473,7 @@ class WdlPropertiesForm extends React.Component {
             )
           }
           <Input
-            disabled={disabled}
+            disabled={disabled || !editable}
             className={
               classNames(
                 styles.propertyValue,

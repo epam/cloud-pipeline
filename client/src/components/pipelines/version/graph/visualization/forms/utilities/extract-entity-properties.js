@@ -109,6 +109,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
   let nameAvailable = false;
   let aliasAvailable = false;
   let executableNameAvailable = false;
+  let executableNameEditable = false;
   let inputsAvailable = false;
   let declarationsAvailable = false;
   let outputsAvailable = false;
@@ -138,6 +139,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
       aliasAvailable = true;
       executableName = entity.executableName;
       executableNameAvailable = true;
+      executableNameEditable = true;
       executableType = getEntityType(entity.executable);
     }
     if (isCall(entity) || isTask(entity)) {
@@ -161,6 +163,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
         }));
         commandAvailable = true;
         commandEditable = !isPipelineTask && task.document === wdlDocument;
+        executableNameEditable = task.document === wdlDocument;
         command = taskCommand;
       }
     }
@@ -216,6 +219,7 @@ export default function extractEntityProperties (entity, wdlDocument) {
     aliasAvailable,
     executableName,
     executableNameAvailable,
+    executableNameEditable,
     executableType,
     inputs,
     inputsAvailable,
