@@ -19,7 +19,6 @@ from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
-from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
@@ -262,7 +261,7 @@ class AWSOmicsOperation:
 
         def __get_file_name_suffix(omics_file_name, omics_resource_type):
             if omics_resource_type == "FASTQ":
-                return "_1" if omics_file_name == "source1" else "_2"
+                return "_R1" if omics_file_name == "source1" else "_R2"
             else:
                 return ""
 
@@ -281,9 +280,9 @@ class AWSOmicsOperation:
                     return "cram"
             elif omics_resource_type == "REFERENCE":
                 if omics_file_name == "index":
-                    return "fasta.fai"
+                    return "fa.fai"
                 else:
-                    return "fasta"
+                    return "fa"
             else:
                 raise ValueError(
                     "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)

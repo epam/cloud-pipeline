@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.math3.util.Pair;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OmicsHelper {
     private static final Pattern AWS_OMICS_FILE_PATH_PATTERN =
-            Pattern.compile("^(((\\d+)/(source|source1|souce2|index))|(\\d+))$");
+            Pattern.compile("^(((\\d+)/(source|source1|source2|index))|(\\d+))$");
     private static final String PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE = "path should not be empty";
     private static final String PATH_SHOULD_BE_AS_MESSAGE =
             "path should be as: <fileId> or <fileId>/<source>";
@@ -271,8 +272,13 @@ public class OmicsHelper {
         );
     }
 
-    private static String parseFileId(String path) {
+    public static String parseFileId(final String path) {
+        return parseFilePath(path).getFirst();
+    }
+
+    public static Pair<String, String> parseFilePath(final String path) {
         final String omicsFileId;
+        final String omicsFileSource;
         if (StringUtils.isBlank(path)) {
             throw new DataStorageException(PATH_WITH_FILE_ID_SHOULD_NOT_BE_EMPTY_MESSAGE);
         } else {
@@ -281,8 +287,9 @@ public class OmicsHelper {
                 throw new DataStorageException(PATH_SHOULD_BE_AS_MESSAGE);
             }
             omicsFileId = Optional.ofNullable(pathMatcher.group(3)).orElse(pathMatcher.group(5));
+            omicsFileSource = pathMatcher.group(4);
         }
-        return omicsFileId;
+        return Pair.create(omicsFileId, omicsFileSource);
     }
 
     private String fetchAWSOmicsServiceRole(final AWSOmicsFileImportRequest importRequest) {

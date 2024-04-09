@@ -152,22 +152,37 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
     @Override
     DataStorageListing listOmicsFileSources(final AWSOmicsReferenceDataStorage dataStorage, final String path) {
         final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
-        final GetReferenceMetadataResult seqFile = omicsHelper.getOmicsRefStorageFile(dataStorage, path);
+        final Pair<String, String> fileIdAndSource = OmicsHelper.parseFilePath(path);
+        final GetReferenceMetadataResult refFile = omicsHelper.getOmicsRefStorageFile(dataStorage, path);
         final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
 
-        Arrays.asList(
-                Pair.create(seqFile.getFiles().getSource(), SOURCE),
-                Pair.create(seqFile.getFiles().getIndex(), INDEX)
-        ).forEach(fileInformation ->
+        Stream.of(
+                Pair.create(refFile.getFiles().getSource(), SOURCE),
+                Pair.create(refFile.getFiles().getIndex(), INDEX)
+        ).filter(fileInformation -> {
+            final String omicsFileSource = fileIdAndSource.getValue();
+            if (omicsFileSource != null) {
+                return fileInformation.getValue().equals(omicsFileSource);
+            }
+            return true;
+        }).forEach(fileInformation ->
                 Optional.ofNullable(
                         mapOmicsFileToDataStorageFile(
-                                fileInformation.getKey(), path, fileInformation.getValue()
+                                fileInformation.getKey(), fileIdAndSource.getKey(), fileInformation.getValue()
                         )
                 ).ifPresent(file -> {
-                    file.setChanged(S3Constants.getAwsDateFormat().format(seqFile.getCreationTime()));
+                    file.setChanged(S3Constants.getAwsDateFormat().format(refFile.getCreationTime()));
+                    file.setLabels(new HashMap<String, String>() {
+                        {
+                            put(S3Helper.STORAGE_CLASS, refFile.getStatus());
+                            put(FILE_NAME, refFile.getName());
+                            put(FILE_TYPE, REFERENCE_FILE_TYPE);
+                        }
+                    });
                     results.add(file);
                 }));
 
+        Assert.notEmpty(results, String.format("Path '%s' not found!", path));
         return new DataStorageListing(null, results);
     }
 
@@ -186,6 +201,7 @@ public class OmicsReferenceStorageProvider extends AbstractOmicsStorageProvider<
                             file.setLabels(new HashMap<String, String>() {
                                 {
                                     put(S3Helper.STORAGE_CLASS, refItem.getStatus());
+                                    put(FILE_NAME, refItem.getName());
                                     put(FILE_TYPE, REFERENCE_FILE_TYPE);
                                 }
                             });
