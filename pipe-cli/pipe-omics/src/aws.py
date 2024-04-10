@@ -322,14 +322,14 @@ class AWSOmicsOperation:
             result = []
             for omics_file_name, file in file_metadata.files.items():
                 local_file_name = "{}{}.{}".format(
-                    omics_file.resource_id,
+                    file_metadata.name,
                     __get_file_name_suffix(omics_file_name, file_metadata.type),
                     __get_file_ext(omics_file_name, file_metadata.type)
                 )
                 result.append(
                     AWSOmicsFileDownloadRequest(
                         storage.cloud_store_id,
-                        file_metadata.name,
+                        file_metadata.id,
                         omics_file_name,
                         destination_dir,
                         local_file_name,
