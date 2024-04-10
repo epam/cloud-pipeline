@@ -1,5 +1,11 @@
 #!/bin/bash
 
+launch_token="/etc/user_data_launched"
+if [[ -f "$launch_token" ]]; then exit 0; fi
+
+user_data_log="/var/log/user_data.log"
+exec > "$user_data_log" 2>&1
+
 function update_nameserver {
   local nameserver="$1"
   local ping_times="$2"
@@ -111,7 +117,7 @@ function setup_swap_device {
     fi
 }
 
-yum install btrfs-progs nc -y
+yum install btrfs-progs nc bc -y
 
 GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
@@ -183,6 +189,44 @@ if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
   systemctl restart sshd
 fi
 
+#######################################################
+# Configure containerd data-root and state locations
+#######################################################
+mkdir -p $MOUNT_POINT/containerd/state
+mkdir -p $MOUNT_POINT/containerd/data-root
+_CONTAINERD_CONFIG_PATH=$MOUNT_POINT/containerd/config.toml
+
+cat > $_CONTAINERD_CONFIG_PATH <<EOF
+version = 2
+root = "$MOUNT_POINT/containerd/data-root"
+state = "$MOUNT_POINT/containerd/state"
+imports = ["/etc/containerd/config.d/*.toml"]
+
+[grpc]
+address = "/run/containerd/containerd.sock"
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+default_runtime_name = "runc"
+discard_unpacked_layers = true
+
+[plugins."io.containerd.grpc.v1.cri"]
+sandbox_image = "602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/pause:3.5"
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+config_path = "/etc/containerd/certs.d:/etc/docker/certs.d"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+SystemdCgroup = true
+
+[plugins."io.containerd.grpc.v1.cri".cni]
+bin_dir = "/opt/cni/bin"
+conf_dir = "/etc/cni/net.d"
+
+EOF
+
 set -o xtrace
 
 mkdir -p /etc/docker/certs.d/
@@ -195,11 +239,12 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
     _CLOUD_INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep availabilityZone | cut -d\" -f4)
     _CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
+    _CLOUD_INSTANCE_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
     _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
     _CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
     _CLOUD_PROVIDER=AWS
-    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
+    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_HOSTNAME"
 
     useradd pipeline
     cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
@@ -296,7 +341,52 @@ _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=${SYSTEM_RESERVED_CPU},memory=${S
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
-/etc/eks/bootstrap.sh "@KUBE_CLUSTER_NAME@" --kubelet-extra-args "$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS"
+/etc/eks/bootstrap.sh "@KUBE_CLUSTER_NAME@" --containerd-config-file "$_CONTAINERD_CONFIG_PATH" --kubelet-extra-args "$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS"
 
-update_nameserver "$nameserver_post_val" "infinity" &
+update_nameserver "$nameserver_post_val" "infinity"
+
+if [[ $FS_TYPE == "btrfs" ]]; then
+  _API_URL="@API_URL@"
+  _API_TOKEN="@API_TOKEN@"
+  _MOUNT_POINT="/ebs"
+  _FS_AUTOSCALE_PRESENT=0
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  if [ -f "$_CURRENT_DIR/fsautoscale" ]; then
+    cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+    _FS_AUTOSCALE_PRESENT=1
+  else
+    _FS_AUTO_URL="$(dirname $_API_URL)/fsautoscale.sh"
+    echo "Cannot find $_CURRENT_DIR/fsautoscale, downloading from $_FS_AUTO_URL"
+    curl -skf "$_FS_AUTO_URL" > /usr/bin/fsautoscale
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading fsautoscale script"
+    else
+      _FS_AUTOSCALE_PRESENT=1
+    fi
+  fi
+  if [ $_FS_AUTOSCALE_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/fsautoscale
+cat >/etc/systemd/system/fsautoscale.service <<EOL
+[Unit]
+Description=Cloud Pipeline Filesystem Autoscaling Daemon
+Documentation=https://cloud-pipeline.com/
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+Environment="API_ARGS=--api-url $_API_URL --api-token $_API_TOKEN"
+Environment="NODE_ARGS=--node-name $_KUBE_NODE_NAME"
+Environment="MOUNT_POINT_ARGS=--mount-point $_MOUNT_POINT"
+ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    systemctl enable fsautoscale
+    systemctl start fsautoscale
+  fi
+fi
+
+touch "$launch_token"
 nc -l -k 8888 &
