@@ -183,6 +183,44 @@ if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
   systemctl restart sshd
 fi
 
+#######################################################
+# Configure containerd data-root and state locations
+#######################################################
+mkdir -p $MOUNT_POINT/containerd/state
+mkdir -p $MOUNT_POINT/containerd/data-root
+_CONTAINERD_CONFIG_PATH=$MOUNT_POINT/containerd/config.toml
+
+cat > $_CONTAINERD_CONFIG_PATH <<EOF
+version = 2
+root = "$MOUNT_POINT/containerd/data-root"
+state = "$MOUNT_POINT/containerd/state"
+imports = ["/etc/containerd/config.d/*.toml"]
+
+[grpc]
+address = "/run/containerd/containerd.sock"
+
+[plugins."io.containerd.grpc.v1.cri".containerd]
+default_runtime_name = "runc"
+discard_unpacked_layers = true
+
+[plugins."io.containerd.grpc.v1.cri"]
+sandbox_image = "602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/pause:3.5"
+
+[plugins."io.containerd.grpc.v1.cri".registry]
+config_path = "/etc/containerd/certs.d:/etc/docker/certs.d"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc]
+runtime_type = "io.containerd.runc.v2"
+
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options]
+SystemdCgroup = true
+
+[plugins."io.containerd.grpc.v1.cri".cni]
+bin_dir = "/opt/cni/bin"
+conf_dir = "/etc/cni/net.d"
+
+EOF
+
 set -o xtrace
 
 mkdir -p /etc/docker/certs.d/
@@ -296,7 +334,7 @@ _KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=${SYSTEM_RESERVED_CPU},memory=${S
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
-/etc/eks/bootstrap.sh "@KUBE_CLUSTER_NAME@" --kubelet-extra-args "$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS"
+/etc/eks/bootstrap.sh "@KUBE_CLUSTER_NAME@" --containerd-config-file "$_CONTAINERD_CONFIG_PATH" --kubelet-extra-args "$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS"
 
 update_nameserver "$nameserver_post_val" "infinity" &
 nc -l -k 8888 &
