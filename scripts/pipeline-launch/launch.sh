@@ -1912,7 +1912,11 @@ export CLOUD_PIPELINE_CLUSTER_CORES=$(($CLOUD_PIPELINE_NODE_CORES * $TOTAL_NODES
 
 # Check if this is a cluster master run 
 _SETUP_RESULT=0
-if [ "$cluster_role" = "master" ] && ([ ! -z "$node_count" ] && (( "$node_count" > 0 )) || [ "$CP_CAP_AUTOSCALE" = "true" ]);
+if [ "$cluster_role" = "master" ] \
+      && ([ ! -z "$node_count" ] \
+            && (( "$node_count" > 0 )) \
+            || [ "$CP_CAP_AUTOSCALE" = "true" ] \
+            || [ "$CP_CAP_FORCE_MASTER_FS_SETUP" = "true" ]);
 then
     setup_nfs_if_required
     mount_nfs_if_required "$RUN_ID"
