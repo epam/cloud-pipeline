@@ -410,6 +410,12 @@ public class InstanceOfferManager {
     private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
         try {
             final List<InstanceOffer> offers = retrievePriceList(region);
+            if (offers.isEmpty()) {
+                LOGGER.warn("Skipping instance offers update for region {} {} #{} " +
+                                "because no instance offers have been retrieved...",
+                        region.getProvider(), region.getRegionCode(), region.getId());
+                return offers;
+            }
             final List<InstanceOffer> filteredOffers = filterPriceList(region, offers);
             return replacePriceList(region, filteredOffers);
         } catch (RuntimeException e) {
