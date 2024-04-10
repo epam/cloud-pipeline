@@ -430,16 +430,20 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .ssh(shell -> shell
                             .waitUntilTextAppears(getLastRunId())
                             .execute("qsub -b y -pe local 32 sleep infinity")
-                            .assertNextStringIsVisibleAtFileUpload("100%", format("pipeline-%s", getLastRunId()))
+                            .assertNextStringIsVisible("Your job 1 (\"sleep\") has been submitted",
+                                    format("pipeline-%s", getLastRunId()))
                             .close());
             runsMenu()
                     .showLog(getLastRunId())
                     .waitForNestedRunsLink()
                     .clickOnNestedRunLink()
                     .instanceParameters(instance ->
-                            instance.ensure(NODE_IMAGE, text("r6i.8xlarge"))
+                            instance.ensure(TYPE, text("r6i.8xlarge"))
                     );
         } finally {
+            open(C.ROOT_ADDRESS);
+            logoutIfNeeded();
+            loginAs(admin);
             setUserSettings("");
         }
     }

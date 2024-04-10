@@ -109,6 +109,14 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageContainsStringsWithRegex(String command, String ... messages) {
+        String log = lastCommandResult(command);
+        Arrays.stream(messages)
+                .forEach(message ->
+                        assertTrue(Pattern.compile(message).matcher(log).find()));
+        return this;
+    }
+
     public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
         String results = lastCommandResult(command)
                 .replace(format("[root@pipeline-%s ~]#", runID), "");

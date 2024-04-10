@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Selenide.open;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
@@ -27,6 +28,7 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -232,6 +234,48 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
         } finally {
             logoutIfNeeded();
             loginAs(admin);
+        }
+    }
+
+    @Test
+    @TestCase(value = {"TC-PARAMETERS-4"})
+    public void nodeMemoryLimits() {
+        String command = "stress -m 1 --vm-bytes 7G --vm-hang 300";
+        String logMessage = "\\[WARN\\] Killed process \\d* \\(stress\\) " +
+                "total-vm:\\d*kB, anon-rss:\\d*kB, file-rss:\\d*kB, shmem-rss:\\d*kB";
+        String[] messages = {
+                "stress: FAIL: \\[\\d*\\] \\(\\d*\\) <-- worker \\d* got signal 9",
+                "stress: FAIL: \\[\\d*\\] \\(\\d*\\) failed run completed in \\d*s"};
+        try {
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .expandTab(ADVANCED_PANEL)
+                    .setTypeValue("c5.xlarge")
+                    .setPriceType(ON_DEMAND)
+                    .doNotMountStoragesSelect(true)
+                    .launchTool(this, Utils.nameWithoutGroup(tool))
+                    .showLog(getLastRunId())
+                    .waitForSshLink()
+                    .ssh(shell -> shell
+                            .waitUntilTextAppears(getLastRunId())
+                            .execute("yum install -y stress")
+                            .assertNextStringIsVisible("Complete!",
+                                    format("pipeline-%s", getLastRunId()))
+                            .execute(command)
+                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 3)
+                            .assertPageContainsStringsWithRegex(command, messages)
+                            .close());
+            final LogAO logAO = runsMenu()
+                    .showLog(getLastRunId())
+                    .shouldHaveRunningStatus()
+                    .clickTaskWithName("OOM Logs");
+            final Set<String> logMess = logAO.logMessages().collect(toSet());
+            assertTrue(logMess.stream()
+                    .anyMatch(Pattern.compile(logMessage)
+                            .asPredicate()));
+        } finally {
+            open(C.ROOT_ADDRESS);
         }
     }
 
