@@ -149,27 +149,29 @@ class AWSOmicsOperation:
     def download_file(self, storage, source, destination, force):
 
         def __define_local_location(path, source, force):
+            if os.path.exists(path) and not os.path.isdir(path) and not force:
+                raise PipeOmicsException("File with path {} already exists!".format(path))
+
             parent_dir = os.path.dirname(path)
             basename = os.path.basename(path)
-            if os.path.exists(path):
-                if not os.path.isdir(path):
-                    if not force:
-                        raise PipeOmicsException("File with path {} already exists!".format(path))
-                    else:
+            if re.search(".*/(index|source|source1|source2)", source):
+                if os.path.isdir(path):
+                    return path, None
+                elif os.path.exists(path):
+                    if force:
                         return parent_dir, basename
-                return path, None
-            elif os.path.isdir(parent_dir):
-                return parent_dir, basename
-            else:
-                if force:
+                    else:
+                        raise PipeOmicsException("File with path {} already exists!".format(path))
+                else:
                     # if local path doesn't exist and source is referring to the exact file
                     # we assume that user specified local path also as a path to exact file local destination
                     # e.g. basename is a file name
-                    if re.search(".*/(index|source|source1|source2)", source):
-                        return parent_dir, basename
-                    else:
-                        return path, None
-                raise PipeOmicsException("Path {} doesn't exists!".format(parent_dir))
+                    return parent_dir, basename
+            else:
+                # if we try to download the whole readSet/reference from AWS Omics - just return path as a location_dir
+                # no meter if it exists or not, if not - we will create it and download files to it, if already exists
+                # we will just put files there
+                return path, None
 
         # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
         # this method will rename file back as it was configured by user or defined in this script
@@ -303,7 +305,7 @@ class AWSOmicsOperation:
             local_file_name = destination_file_name
             if not local_file_name:
                 local_file_name = "{}{}.{}".format(
-                    omics_file.resource_id,
+                    file_metadata.name,
                     __get_file_name_suffix(omics_file_name, file_metadata.type),
                     __get_file_ext(omics_file_name, file_metadata.type)
                 )

@@ -68,7 +68,7 @@ class OmicsCopyFileHandler(OmicsFileOperationHandler):
         if not quiet:
             for stdout_line in iter(process.stdout.readline, ""):
                 if "uploaded!" in stdout_line or "downloaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
-                    click.echo("\n" + stdout_line)
+                    click.echo("\n" + stdout_line.strip())
                 else:
                     # prints line and returns carriage to the start of the line
                     # in order to correctly show the progressBar in the terminal
