@@ -25,7 +25,7 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
-if [ "$CP_OS" == "rocky" ]; then
+if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
     _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
 else
     _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
@@ -51,11 +51,18 @@ if [ $IS_RPM_BASED -eq 0 ]; then
     if util_version_compare "$CP_CAP_DIND_VERSION" "20.10.24" "<"; then
         _extra_packages="btrfs-progs"
     fi
-    yum install -y -q \
+    if [ "$CP_OS" == "rhel" ]; then
+       yum --nogpgcheck --repofrompath=centos,http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/ install -y -q \
                 e2fsprogs \
+                xfsprogs
+    else
+       yum install -y -q \
+                e2fsprogs \
+                xfsprogs
+    fi
+    yum install -y -q \
                 iptables \
                 iproute \
-                xfsprogs \
                 xz \
                 pigz \
                 kmod \
