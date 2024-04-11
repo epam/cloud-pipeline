@@ -149,11 +149,10 @@ class AWSOmicsOperation:
     def download_file(self, storage, source, destination, force):
 
         def __define_local_location(path, source, force):
-            if os.path.exists(path) and not os.path.isdir(path) and not force:
-                raise PipeOmicsException("File with path {} already exists!".format(path))
-
             parent_dir = os.path.dirname(path)
             basename = os.path.basename(path)
+
+            # source matches path to specific file in readSet/reference
             if re.search(".*/(index|source|source1|source2)", source):
                 if os.path.isdir(path):
                     return path, None
@@ -161,20 +160,31 @@ class AWSOmicsOperation:
                     if force:
                         return parent_dir, basename
                     else:
-                        raise PipeOmicsException("File with path {} already exists!".format(path))
+                        raise PipeOmicsException("File with path {} already exists! "
+                                                 "Specify --force/-f to overwrite the file.".format(path))
                 else:
                     # if local path doesn't exist and source is referring to the exact file
                     # we assume that user specified local path also as a path to exact file local destination
                     # e.g. basename is a file name
                     return parent_dir, basename
             else:
-                # if we try to download the whole readSet/reference from AWS Omics - just return path as a location_dir
-                # no meter if it exists or not, if not - we will create it and download files to it, if already exists
-                # we will just put files there
-                return path, None
+                # if we try to download the whole readSet/reference from AWS Omics - return path as a location_dir
+                # if path is a directory and force specified - download anyway
+                # if path is a file - throw an exception as it won't allow to create a directory
+                if os.path.exists(path):
+                    if not os.path.isdir(path):
+                        raise PipeOmicsException("File with path {} already exists!".format(path))
+
+                    if not force:
+                        raise PipeOmicsException("Directory with path {} already exists! "
+                                                 "Specify --force/-f to download files anyway.".format(path))
+                    else:
+                        return path, None
+                else:
+                    return path, None
 
         # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
-        # this method will rename file back as it was configured by user or defined in this script
+        # this method will rename file back as it was configured by user or defined in this code
         def __rename_file_if_needed(download_request: AWSOmicsFileDownloadRequest):
             downloaded_file = os.path.join(download_request.destination_dir, download_request.local_file_name) + ".gz"
             if os.path.exists(downloaded_file):
