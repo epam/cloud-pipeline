@@ -289,8 +289,11 @@ class AWSOmicsOperation:
                 raise ValueError(
                     "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
                 )
+        try:
+            omics_file = OmicsUriParser(source).parse()
+        except ValueError as e:
+            raise PipeOmicsException("Invalid AWS Omics URL format: '{}'".format(source))
 
-        omics_file = OmicsUriParser(source).parse()
         file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
 
         # If original url have source[1|2]|index - will download only specific file, else - the whole set
