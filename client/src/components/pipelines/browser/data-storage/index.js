@@ -2967,6 +2967,12 @@ export default class DataStorage extends React.Component {
       this.clearSelection();
     }
   };
+
+  componentWillReceiveProps (nextProps, nextState) {
+    if (nextProps.storageId !== this.props.storageId) {
+      this.setState({selectedFile: null});
+    }
+  }
 }
 
 export {STORAGE_CLASSES, isStandardClass};
