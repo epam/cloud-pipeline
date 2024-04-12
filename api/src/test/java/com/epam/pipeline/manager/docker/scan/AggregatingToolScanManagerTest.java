@@ -20,7 +20,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.preference.PreferenceDao;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolScanStatus;
@@ -90,8 +89,6 @@ public class AggregatingToolScanManagerTest {
     public static final String DIGEST_1 = "digest1";
     public static final String DIGEST_2 = "digest2";
     public static final String DIGEST_3 = "digest3";
-    private static final String TEST_LABEL_NAME = "label-name";
-    private static final String TEST_LABEL_VALUE = "label-value";
     private static final int ERROR_CODE = 500;
 
     @InjectMocks

@@ -156,7 +156,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
             .thenReturn(new ToolVersionScanResult(LATEST_VERSION, new ToolOSVersion("test", "0.1"),
                     Collections.singletonList(vulnerability),
                     Collections.singletonList(dependency),
-                    ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST));
+                    ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST, null, null));
 
         doNothing().when(toolVersionManager).updateOrCreateToolVersion(Mockito.anyLong(), Mockito.anyString(),
                 Mockito.anyString(), Mockito.any(DockerRegistry.class), Mockito.any(DockerClient.class));
