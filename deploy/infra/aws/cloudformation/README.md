@@ -49,14 +49,23 @@ Credentials should be given for this deployment stack to initiate the creation o
 There are two ways to provide such credentials:
 
 1. If you have Administrator role in AWS account or role that Allowed to created resources: EC2 instance, IAM
-   Roles/Policies, EKS cluster, security groups, cloudwatch logs, s3 buckets, efs/fsx luste file systems, kms keys, rds
-   etc. you can use this credentials:
+   Roles/Policies, EKS cluster, security groups, cloudwatch logs, S3 buckets, EFS/FSX for Luste file systems, KMS keys, RDS
+   etc. you can use these credentials:
 
 - Put your credentials of temporary credentials into the AWS secret:
     - Create aws secretsmanager secret using AWS console or this aws cli command(make sure you have installed aws cli):
-   ```
-   aws secretsmanager create-secret --name <secrets-name>  --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' --region <region-id>
-   ```
+    ```
+    aws secretsmanager create-secret --name <secrets-name> \
+      --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' \
+      --region <region-id>
+    ```
+    - If you need to update the secret value with a new credentials (f.i. when you are using temporary credentials and decide to destroy the infrastructure. See [destroy infrastructure](#destroy-cloud-pipeline-resources)):
+    ```
+    aws secretsmanager put-secret-value \
+      --secret-id <secrets-name> \
+      --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' \
+      --region <region-id>
+    ```
     - Remember the secret name, you will need this value during further deployment.
       (To set this secret name as stack parameter `AWSCredentialSecretId`. For more information you can
       look [deploy parameters](#stack-parameters-description))
@@ -353,13 +362,18 @@ https://<service\>.<user-domain-name\>/
 
 ### Destroy Cloud-Pipeline resources
 
-To delete all the resources of the Cloud Pipeline along with the infrastructure, follow these steps:
+To delete all resources of the Cloud Pipeline along with the infrastructure, follow these steps:
 
-1. If you use AWS Secret as [Credentials to create Infrastructure Resources](#credentials-to-create-infrastructure-resources), you need to first update your credentials token in your AWS Secret before proceeding with the next steps.
+1. If you use AWS Secret to store **temporary** credentials as described in [Credentials to create Infrastructure Resources](#credentials-to-create-infrastructure-resources), you need to first update your credentials token in your AWS Secret before proceeding with the next steps.
 2. Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.
-3. After logging in, switch the user to root by running the command `sudo su`.
+    ```
+    aws ssm start-session --target <instance-id> --region <deployment-region>
+    ```
+3. After a login, switch the user to root by running the command `sudo su`.
 4. Next, navigate to the home root directory by entering `cd ~/deployment-eks`.
-5. Execute the deletion script by running ./delete_all_cp_infra.sh. The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. Confirm if you are sure about the deletion.
-6. Once the script finishes running and all resources are deleted, you can now delete the CloudFormation stack.
+5. Execute the deletion script by running `./delete_all_cp_infra.sh`. <br>
+   The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. <br>
+   Confirm if you are sure about the deletion.
+6. Once the script finished and all resources are deleted, you can now delete the CloudFormation stack.
 
 Please note that these actions will delete all your resources in the Cloud Pipeline. Be sure to back up any necessary data before starting the deletion process.

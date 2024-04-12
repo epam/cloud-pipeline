@@ -427,7 +427,7 @@ Resources:
                   --output text))
               fi
               while true; do
-                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources?" yn
+                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources? [y/N]" yn
                   case \$yn in
                       Yes|yes|Y|y ) export APPROVE="TRUE"; break;;
                       No|no|N|n ) exit;;
