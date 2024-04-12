@@ -72,6 +72,76 @@ rm -f $_BUILD_SCRIPT_NAME
 
 
 #######################################
+# Step 1: Build pipe-omics with python3.10
+#######################################
+CP_PYINSTALL_WIN64_PY310_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:pyinstaller-win64-py310"
+docker pull $CP_PYINSTALL_WIN64_PY310_DOCKER
+if [ $? -ne 0 ]; then
+    echo "Unable to pull $CP_PYINSTALL_WIN64_PY310_DOCKER image, it will be rebuilt"
+    docker build docker/win64-py310 -t $CP_PYINSTALL_WIN64_PY310_DOCKER
+fi
+
+_BUILD_SCRIPT_NAME=/tmp/build_pytinstaller_win64_py310_$(date +%s).sh
+
+cat > $_BUILD_SCRIPT_NAME <<EOL
+
+version_file="/pipe-cli/src/version.py"
+sed -i '/__component_version__/d' \$version_file
+echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
+
+cat > /tmp/pipe-win-version-info.txt <<< "\$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
+pip install --upgrade 'setuptools<=45.1.0' && \
+pip install -r /pipe-cli/pipe-omics/requirements.txt && \
+pip install pywin32==302 && \
+cd /pipe-cli/pipe-omics && \
+pyinstaller \
+  --paths "/pipe-cli/pipe-omics" \
+  --hidden-import=itertools \
+  --hidden-import=collections \
+  --hidden-import=base64 \
+  --hidden-import=math \
+  --hidden-import=reprlib \
+  --hidden-import=functools \
+  --hidden-import=re \
+  --hidden-import=subprocess \
+  --version-file /tmp/pipe-win-version-info.txt \
+  -y \
+  --clean \
+  -p /tmp/pipe-omics/lib \
+  --distpath /tmp/pipe-omics/dist \
+  /pipe-cli/pipe-omics/pipe-omics.py
+
+chmod +x /tmp/pipe-omics/dist/pipe-omics
+cp -r /tmp/pipe-omics/dist/pipe-omics /pipe-cli/pipe-omics/dist
+EOL
+
+cd $PIPE_CLI_SOURCES_DIR
+PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
+
+docker run -i --rm \
+           -v $PIPE_CLI_SOURCES_DIR:/pipe-cli \
+           -v $PIPE_CLI_WIN_DIST_DIR:/pipe-cli/dist/win64 \
+           -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
+           -e PIPE_CLI_MAJOR_VERSION=$PIPE_CLI_MAJOR_VERSION \
+           -e PIPE_CLI_MINOR_VERSION=$PIPE_CLI_MINOR_VERSION \
+           -e PIPE_CLI_PATCH_VERSION=$PIPE_CLI_PATCH_VERSION \
+           -e PIPE_CLI_BUILD_VERSION=$(cut -d. -f1 <<< "$PIPE_CLI_BUILD_VERSION") \
+           -e PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
+           $CP_PYINSTALL_WIN64_PY310_DOCKER \
+           bash $_BUILD_SCRIPT_NAME
+
+_distr_path_pipe_omics="${PIPE_CLI_SOURCES_DIR}/pipe-omics/dist"
+if [ ! -f "$_distr_path_pipe_omics" ] && [ ! -d "$_distr_path_pipe_omics" ] ; then
+    echo "[ERROR] 'pipe-omics/dist' cannot be found at ${_distr_path_pipe_omics}." \
+         "Which means there were errors during compilation, please see any output above." \
+         "Will not proceed with the mount/pipe compilation."
+    exit 1
+fi
+
+rm -f $_BUILD_SCRIPT_NAME
+
+#######################################
 # Step 2: pipe CLI
 #######################################
 
@@ -151,6 +221,7 @@ pyinstaller --add-data "/pipe-cli/res/effective_tld_names.dat.txt;tld/res/" \
             pipe.py \
             --add-data "/pipe-cli/ntlmaps;ntlmaps" \
             --add-data "/tmp/mount/dist/pipe-fuse;mount" \
+            --add-data "/pipe-cli/pipe-omics/dist;pipe-omics" \
             --version-file /tmp/pipe-win-version-info.txt \
             --icon /pipe-cli/res/cloud-pipeline.ico \
             --name pipe-cli && \
