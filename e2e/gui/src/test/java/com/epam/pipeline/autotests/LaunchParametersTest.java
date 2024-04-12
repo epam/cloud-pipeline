@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import static com.codeborne.selenide.Condition.text;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
-import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
@@ -43,7 +42,6 @@ import java.util.stream.Stream;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -420,6 +418,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .expandTab(ADVANCED_PANEL)
                     .setTypeValue("r6i.xlarge")
                     .setPriceType(ON_DEMAND)
+                    .doNotMountStoragesSelect(true)
                     .enableClusterLaunch()
                     .clusterSettingsForm("Auto-scaled cluster")
                     .enableHybridClusterSelect()

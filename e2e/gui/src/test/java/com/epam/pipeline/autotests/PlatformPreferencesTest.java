@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -273,7 +273,7 @@ public class PlatformPreferencesTest extends AbstractSeveralPipelineRunningTest 
             final Set<String> logMess = logAO.logMessages().collect(toSet());
             assertTrue(logMess.stream()
                     .anyMatch(Pattern.compile(logMessage)
-                            .asPredicate()));
+                            .asPredicate()), format("Message '%s' isn't found", logMessage));
         } finally {
             open(C.ROOT_ADDRESS);
         }
