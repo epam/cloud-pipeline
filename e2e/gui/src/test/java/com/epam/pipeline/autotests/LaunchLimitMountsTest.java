@@ -76,7 +76,6 @@ public class LaunchLimitMountsTest
     private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String testSensitiveTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
-    private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
     private String sensitiveStorageID = "";
     private String testRunID = "";
