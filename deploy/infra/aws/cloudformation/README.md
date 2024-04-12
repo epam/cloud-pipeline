@@ -9,20 +9,21 @@ Pipeline on top of it.
 Follow the outlined steps below to execute the deployment process: <br>
 
 - [Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide](#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide)
-    - [Overview](#overview)
-        - [Prerequisites](#prerequisites)
-            - [Create VPC](#create-vpc)
-            - [Create AWS Elastic IP](#create-aws-elastic-ip)
-            - [Grant Permission to Create Infrastructure Resources](#grant-permission-to-create-infrastructure-resources)
-            - [Create DNS records](#create-dns-records)
-            - [(Optional) Add authority signed certificates for services](#optional-add-authority-signed-certificates-for-services)
-            - [Optional: Integrate with an Identity Provider (IdP)](#optional-integrate-with-an-identity-provider-idp)
-            - [(Optional) Create a Zip File with Additional Assets](#optional-create-a-zip-file-with-additional-assets)
-        - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
-            - [Stack Parameters Description](#stack-parameters-description)
-            - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
-            - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
-        - [Review Deployment Logs](#review-deployment-logs)
+  - [Overview](#overview)
+    - [Prerequisites](#prerequisites)
+      - [AWS VPC](#aws-vpc)
+      - [AWS Elastic IP](#aws-elastic-ip)
+      - [Credentials to Create Infrastructure Resources](#credentials-to-create-infrastructure-resources)
+      - [Create DNS records](#create-dns-records)
+      - [Add authority signed certificates for services](#add-authority-signed-certificates-for-services)
+      - [Integrate with an Identity Provider (IdP)](#integrate-with-an-identity-provider-idp)
+      - [Create a Zip File with Additional Assets](#create-a-zip-file-with-additional-assets)
+    - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
+      - [Stack Parameters Description](#stack-parameters-description)
+      - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
+      - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
+    - [Review Deployment Logs](#review-deployment-logs)
+    - [Destroy Cloud-Pipeline resources](#destroy-cloud-pipeline-resources)
 
 ### Prerequisites
 
@@ -349,3 +350,16 @@ To review the deployment process logs, follow these steps:
 
 Wait approximately 40-50 minutes until all resources and services are deployed. Then, verify the deployment by visiting
 https://<service\>.<user-domain-name\>/
+
+### Destroy Cloud-Pipeline resources
+
+To delete all the resources of the Cloud Pipeline along with the infrastructure, follow these steps:
+
+1. If you use AWS Secret as [Credentials to create Infrastructure Resources](#credentials-to-create-infrastructure-resources), you need to first update your credentials token in your AWS Secret before proceeding with the next steps.
+2. Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.
+3. After logging in, switch the user to root by running the command `sudo su`.
+4. Next, navigate to the home root directory by entering `cd ~/deployment-eks`.
+5. Execute the deletion script by running ./delete_all_cp_infra.sh. The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. Confirm if you are sure about the deletion.
+6. Once the script finishes running and all resources are deleted, you can now delete the CloudFormation stack.
+
+Please note that these actions will delete all your resources in the Cloud Pipeline. Be sure to back up any necessary data before starting the deletion process.
