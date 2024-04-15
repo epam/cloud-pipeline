@@ -338,8 +338,76 @@ function upgrade_installed_packages {
       return $?
 }
 
-# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
-function configure_package_manager {
+function configure_package_manager_pip {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
+function run_pre_common_commands {
+      preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
+      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      if [ -z "$linux_commands" ]; then
+        echo "Additional commands for Linux distribution were not found."
+        return
+      fi
+      os_commands=$(echo "$linux_commands" | jq -r ".$CP_OS" | grep -v "^null$")
+      if [ -z "$os_commands" ]; then
+        echo "Additional commands for $CP_OS were not found."
+        return
+      fi
+      os_ver_commands=$(echo "$os_commands" | jq -r ".[\"$CP_VER\"]" | grep -v "^null$")
+      os_default_commands=$(echo "$os_commands" | jq -r ".default" | grep -v "^null$")
+      if [ -z "$os_ver_commands" ] && [ -z "$os_default_commands" ] ; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      if [ "$os_ver_commands" ] && [ "$os_default_commands" ]; then
+        commands=$( echo "$os_default_commands" "$os_ver_commands" | jq -s '.[0] * .[1]' | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      elif [ "$os_ver_commands" ]; then
+        commands=$( echo "$os_ver_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      else
+        commands=$( echo "$os_default_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      fi
+      declare -a command_list="($commands)"
+      if [ ${#command_list[@]} -eq 0 ]; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      echo "${#command_list[@]} additional commands were found for $CP_OS:$CP_VER"
+      SUCCESS_COMMANDS_NUM=0
+      for command in "${command_list[@]}"; do
+        eval "$command"
+        PRE_COMMAND_RESULT=$?
+        if [ "$PRE_COMMAND_RESULT" -ne 0 ]; then
+          echo "[WARN] '$command' command done with exit code $PRE_COMMAND_RESULT, review any issues above."
+        else
+          SUCCESS_COMMANDS_NUM=$((SUCCESS_COMMANDS_NUM+1))
+        fi
+      done
+      echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
+}
+
+# This function define the distribution name and version
+function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
       CP_OS_FAMILY=
@@ -388,6 +456,8 @@ function configure_package_manager {
 
 }
 
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -429,10 +499,8 @@ function configure_package_manager {
                         fi
                   done
             fi
-            # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+
+            configure_package_manager_pip
       fi
 
 }
@@ -686,6 +754,12 @@ echo "-"
 if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
+
+# Define the name and version of the distribution
+define_distro_name_and_version
+
+# Invoke any additional commands for the distribution
+run_pre_common_commands
 
 # Perform any distro/version specific package manage configuration
 configure_package_manager
