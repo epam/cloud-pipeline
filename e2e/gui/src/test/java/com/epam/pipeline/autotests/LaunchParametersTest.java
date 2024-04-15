@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,11 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.text;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -27,6 +31,7 @@ import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -37,7 +42,6 @@ import java.util.stream.Stream;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -399,6 +403,50 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                         getLastRunId(), valueOf(TEST_TERMINATE_RUN_TIMEOUT))));
     }
 
+    @Test
+    @TestCase(value = {"3433"})
+    public void allowToUseR6iInstanceFamilyInSGEhybridAutoscaling() {
+        try {
+            logoutIfNeeded();
+            loginAs(admin);
+            setUserSettings("*");
+            logoutIfNeeded();
+            loginAs(user);
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .expandTab(ADVANCED_PANEL)
+                    .setTypeValue("r6i.xlarge")
+                    .setPriceType(ON_DEMAND)
+                    .doNotMountStoragesSelect(true)
+                    .enableClusterLaunch()
+                    .clusterSettingsForm("Auto-scaled cluster")
+                    .enableHybridClusterSelect()
+                    .ok()
+                    .launchTool(this, Utils.nameWithoutGroup(tool))
+                    .showLog(getLastRunId())
+                    .waitForSshLink()
+                    .ssh(shell -> shell
+                            .waitUntilTextAppears(getLastRunId())
+                            .execute("qsub -b y -pe local 32 sleep infinity")
+                            .assertNextStringIsVisible("Your job 1 (\"sleep\") has been submitted",
+                                    format("pipeline-%s", getLastRunId()))
+                            .close());
+            runsMenu()
+                    .showLog(getLastRunId())
+                    .waitForNestedRunsLink()
+                    .clickOnNestedRunLink()
+                    .instanceParameters(instance ->
+                            instance.ensure(TYPE, text("r6i.8xlarge"))
+                    );
+        } finally {
+            open(C.ROOT_ADDRESS);
+            logoutIfNeeded();
+            loginAs(admin);
+            setUserSettings("");
+        }
+    }
+
     private String editLaunchSystemParameters() {
         final String launchSystemParameters = navigationMenu()
                 .settings()
@@ -420,5 +468,17 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .updateCodeText(LAUNCH_PARAMETERS_PREFERENCE, systemParametersToString, true)
                 .saveIfNeeded();
         return launchSystemParameters;
+    }
+
+    private void setUserSettings(String mask) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(user.login)
+                .edit()
+                .addAllowedLaunchOptions("Allowed instance types mask", mask)
+                .addAllowedLaunchOptions("Allowed tool instance types mask", mask)
+                .ok();
     }
 }
