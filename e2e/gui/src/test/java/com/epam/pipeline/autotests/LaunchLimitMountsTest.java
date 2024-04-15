@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,13 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.ConfigurationProfile;
+import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
+import static com.epam.pipeline.autotests.utils.Json.transferringJsonToObject;
+import com.epam.pipeline.autotests.utils.Parameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
+import static com.epam.pipeline.autotests.utils.Utils.removeStorages;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -44,7 +49,6 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
@@ -55,17 +59,23 @@ import static java.util.stream.Collectors.toSet;
 public class LaunchLimitMountsTest
         extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
+
+    private static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage3 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage4 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storage5 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String storage6 = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String pipeline1 = "launchLimitMountsPipeline" + Utils.randomSuffix();
     private String storageSensitive = "launchLimitMountsStorage" + Utils.randomSuffix();
+    private String testFile = "test_file1.txt";
+    private String testFileContent = "test file1";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String testSensitiveTool = format("%s/%s", anotherGroup, C.TEST_DOCKER_IMAGE);
-    private final String mountDataStoragesTask = "MountDataStorages";
     private String storageID = "";
     private String sensitiveStorageID = "";
     private String testRunID = "";
@@ -110,12 +120,8 @@ public class LaunchLimitMountsTest
         open(C.ROOT_ADDRESS);
         logoutIfNeeded();
         loginAs(admin);
-        library()
-                .removeStorage(storage1)
-                .removeStorage(storage2)
-                .removeStorage(storageSensitive)
-                .removeStorage(storage3)
-                .removeStorage(storage4);
+        removeStorages(this, storage1, storage2, storageSensitive, storage3, storage4, storage5, storage6);
+        library().removePipeline(pipeline1);
         tools()
                 .performWithin(registry, anotherGroup, testSensitiveTool, tool ->
                         tool.settings()
@@ -161,7 +167,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
                 .waitForSshLink()
                 .clickMountBuckets()
                 .ensure(log(), containsMessages(
@@ -306,7 +312,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage3), exist)
                 .openStorageFromLimitMountsParameter(storage3)
                 .validateHeader(storage3);
     }
@@ -371,7 +377,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, "None"), exist)
                 .waitForSshLink()
                 .clickMountBuckets()
                 .ensure(log(), containsMessages(
@@ -382,6 +388,46 @@ public class LaunchLimitMountsTest
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());
+    }
+
+    @Test(priority = 4)
+    @TestCase(value = {"TC-PARAMETERS-5"})
+    public void linkStorageWithTheirURLsAndNotOnlyWithTheirIDs() {
+        library()
+                .createStorage(storage5)
+                .selectStorage(storage5)
+                .createFileWithContent(testFile, testFileContent);
+        String storage5ID = Utils.entityIDfromURL();
+        library()
+                .createStorage(storage6)
+                .selectStorage(storage6)
+                .createFileWithContent(testFile, testFileContent);
+        String[] logMessages = {
+                format("Run is launched with mount limits (%s,%s) Only 2 storages will be mounted",
+                        storage5ID, storage6.toLowerCase()),
+                mountStorageMessage(storage5),
+                mountStorageMessage(storage6)
+        };
+
+        library()
+                .createPipeline(pipeline1)
+                .clickOnDraftVersion(pipeline1)
+                .codeTab()
+                .clickOnFile("config.json")
+                .editFile(transferringJsonToObject(profiles -> {
+                    final ConfigurationProfile profile = selectProfileWithName("default", profiles);
+                    profile.configuration.parameters.put(CP_CAP_LIMIT_MOUNTS,
+                            Parameter.optional("string", format("%s,%s", storage5ID, storage6.toLowerCase())));
+                    return profiles;
+                }))
+                .saveAndCommitWithMessage("test: Add instance image")
+                .runPipeline()
+                .launch(this)
+                .showLog(getLastRunId())
+                .expandTab(PARAMETERS)
+                .checkMountLimitsParameter(storage5, storage6)
+                .clickMountBuckets()
+                .ensure(log(), containsMessages(logMessages));
     }
 
     private String mountStorageMessage(String storage) {
