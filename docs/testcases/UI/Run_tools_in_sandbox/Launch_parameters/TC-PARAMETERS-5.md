@@ -18,7 +18,7 @@ Test verifies that it's possible to limits number of S3 buckets mounted to an in
 | 4 | Click the **CODE** tab | |
 | 5 | Click the `config.json` file | |
 | 6 | Click the **EDIT** button | |
-| 7 | Insert the following code into the `parameters` section: <br> `"CP_CAP_LIMIT_MOUNTS" : {` <br> `"value" : "<test_storage1_id>,<test_storage2_name>",` <br> `"type" : "string",` <br> `"required" : false` <br> `}` <br> where `<test_storage1_id>` - `test_storage1` id ,`<test_storage2_name>` - `test_storage1` name | |
+| 7 | Insert the following code into the `parameters` section: <br> `"CP_CAP_LIMIT_MOUNTS" : {` <br> `"value" : "<test_storage1_id>,<test_storage2_name>",` <br> `"type" : "string",` <br> `"required" : false` <br> `}` <br> where `<test_storage1_id>` - `test_storage1` id ,`<test_storage2_name>` - `test_storage2` name | |
 | 8 | Click the **SAVE** button | |
 | 9 | Specify the commit message, commit changes | |
 | 10 | Click the **RUN** button | |
