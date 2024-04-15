@@ -37,7 +37,10 @@ class OmicsFileOperationHandler(ExtensionHandler):
         if return_code != 0 and not quiet:
             if return_code != PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE:
                 click.echo("There was a problem of executing the command '{}'".format(cmd_args), file=sys.stderr)
-            for stderr_line in iter(process.stderr.readline, ""):
+            while True:
+                stderr_line = process.stderr.readline()
+                if not stderr_line:
+                    break
                 click.echo(stderr_line, file=sys.stderr)
             process.stderr.close()
 
@@ -66,9 +69,14 @@ class OmicsCopyFileHandler(OmicsFileOperationHandler):
 
     def _process_output(self, process, quiet, arguments, cmd):
         if not quiet:
-            for stdout_line in iter(process.stdout.readline, ""):
+            while True:
+                stdout_line = process.stdout.readline()
+                if not stdout_line:
+                    break
+                if not isinstance(stdout_line, str):
+                    stdout_line = stdout_line.decode("utf-8")
                 if "uploaded!" in stdout_line or "downloaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
-                    click.echo("\n" + stdout_line.strip())
+                    click.echo('\n' + stdout_line.strip())
                 else:
                     # prints line and returns carriage to the start of the line
                     # in order to correctly show the progressBar in the terminal
@@ -95,7 +103,7 @@ class OmicsListFilesHandler(OmicsFileOperationHandler):
         else:
             fields = []
 
-        output = "".join(process.stdout.readlines())
+        output = "".join([o if isinstance(o, str) else o.decode("utf-8") for o in process.stdout.readlines()])
         if output:
             listing = json.loads(output)
             items = [self.__get_file_object(item) for item in listing]
