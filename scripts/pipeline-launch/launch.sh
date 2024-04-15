@@ -755,6 +755,9 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
+
 # Define the name and version of the distribution
 define_distro_name_and_version
 
