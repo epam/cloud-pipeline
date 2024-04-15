@@ -418,6 +418,12 @@ export default class JobList extends React.Component {
     }
   }
 
+  componentWillReceiveProps (nextProps) {
+    if (nextProps.updateJobsSearch) {
+      this.setJobList();
+    }
+  }
+
   componentWillUnmount () {
     this.setState({pending: false});
   }

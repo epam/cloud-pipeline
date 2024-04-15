@@ -245,6 +245,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     metadataRenderFn: PropTypes.func,
     showImportedJobs: PropTypes.bool,
     showMetadata: PropTypes.bool,
+    updateJobsSearch: PropTypes.bool,
     jobStorageId: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.number
@@ -1634,6 +1635,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
   renderImportedJobs = () => {
     return <JobList
       storageId={this.props.jobStorageId}
+      updateJobsSearch={this.props.updateJobsSearch}
     />;
   }
 
