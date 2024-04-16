@@ -85,3 +85,4 @@ RUN yum install -y gridengine \
                 gridengine-guiinst \
                 gridengine-qmaster \
                 gridengine-qmon
+ENV CP_CAP_SGE_PREINSTALLED=true
