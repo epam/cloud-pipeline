@@ -77,7 +77,7 @@ ENV CP_CAP_MODULE_PREINSTALLED=true
 ENV MODULES_INSTALL_DIR=/usr/local
 
 # GridEngine
-yum install -y gridengine \
+RUN yum install -y gridengine \
                 gridengine-debuginfo \
                 gridengine-devel \
                 gridengine-drmaa4ruby \
