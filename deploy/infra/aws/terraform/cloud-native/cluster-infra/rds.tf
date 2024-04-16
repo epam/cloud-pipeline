@@ -7,13 +7,12 @@ module "cp_rds" {
 
   create_db_instance        = var.deploy_rds
   create_db_option_group    = false
-  create_db_parameter_group = false
   skip_final_snapshot       = true
-
 
   # All available versions: https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html#PostgreSQL.Concepts
   engine         = "postgres"
   engine_version = "12.18"
+  family         = "postgres12" # DB parameter group
   instance_class = var.rds_instance_type
 
 
@@ -27,6 +26,13 @@ module "cp_rds" {
   password                    = var.rds_root_password != null ? var.rds_root_password : try(random_password.rds_default_db_password[0].result, null)
   manage_master_user_password = false
   port                        = var.rds_db_port
+
+  parameters = [
+    {
+      name  = "rds.force_ssl"
+      value = 1
+    }
+  ]
 
 
   tags = local.tags
