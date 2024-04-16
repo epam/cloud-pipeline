@@ -474,7 +474,7 @@ function configure_package_manager {
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
