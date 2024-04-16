@@ -128,7 +128,7 @@ As a result of the requests, the following information shall be provided:
 
 Once all additional certificates (and optional metadata) are ready, you should create a zip archive with a specific
 structure. <br>
-To do this you can create bash script by creating new file create_zip.sh with content:
+To do this you can create bash script by creating new file `create_assets_zip.sh` with content:
 
 ```
 #!/bin/bash
@@ -158,7 +158,7 @@ if [ -z $_SSO_METADATA ] && [ -z $_SSO_CERT ]; then
    cp $_SSO_CERT $_TMP_ASSETS_LOCATION/api/pki/idp-public-cert.pem
    
 fi 
- 
+
 zip -r $_TMP_ASSETS_LOCATION/cp-assets.zip $_TMP_ASSETS_LOCATION/common $_TMP_ASSETS_LOCATION/api
 echo $(realpath $_TMP_ASSETS_LOCATION/cp-assets.zip)
 ```
@@ -166,7 +166,7 @@ echo $(realpath $_TMP_ASSETS_LOCATION/cp-assets.zip)
 Run script with your parameters, for example:
 
 ```
-bash create_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
+bash create_assets_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
 ```
 
 > Optional: <br>
@@ -220,15 +220,15 @@ the AWS console, or the AWS Command Line Interface (CLI).
 #### Deploy Cloud Pipeline using AWS Console
 
 1. Go to the CloudFormation service in the AWS Console and select the "create stack" option.
-   ![create_stack](./images/create_stack.jpg)
+   ![create_stack](./docs/images/create_stack.jpg)
 2. In the "Prerequisite - Prepare template" section, choose "Use an existing template".
-   ![prepare_tempalte](./images/prepare_template.jpg)
+   ![prepare_template](./docs/images/prepare_template.jpg)
 3. Choose your 'jump-server.yaml' file under "Specify a template" and click "Next".
 4. On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next
    page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.
-   ![stack_details](./images/stack_details.jpg)
+   ![stack_details](./docs/images/stack_details.jpg)
 5. Click "Submit" to start stack creation.
-   ![submit](./images/submit.jpg)
+   ![submit](./docs/images/submit.jpg)
 
 Follow the [Stack Parameters Description](#stack-parameters-description) section for a detailed explanation of each
 parameter.
