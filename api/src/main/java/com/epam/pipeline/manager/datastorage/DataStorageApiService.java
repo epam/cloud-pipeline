@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.PathDescription;
@@ -122,12 +123,28 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
     }
 
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing filterDataStorageItems(final Long id, final String path, final boolean showVersion,
+                                                     final boolean showArchived,
+                                                     final DataStorageListingFilter filter) {
+        return dataStorageManager.filterDataStorageItems(id, path, showVersion, showArchived, filter);
+    }
+
     @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
             + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
     public DataStorageListing getDataStorageItemsOwner(final Long id, final String path,
                                                        final Boolean showVersion, final Integer pageSize,
                                                        final String marker, final boolean showArchived) {
         return dataStorageManager.getDataStorageItems(id, path, showVersion, pageSize, marker, showArchived);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_OWNER + AclExpressions.AND
+            + AclExpressions.STORAGE_SHOW_ARCHIVED_PERMISSIONS)
+    public DataStorageListing filterDataStorageItemsOwner(final Long id, final String path, final boolean showVersion,
+                                                          final boolean showArchived,
+                                                          final DataStorageListingFilter filter) {
+        return dataStorageManager.filterDataStorageItems(id, path, showVersion, showArchived, filter);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)

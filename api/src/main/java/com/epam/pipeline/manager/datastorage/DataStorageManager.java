@@ -41,6 +41,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -536,6 +537,16 @@ public class DataStorageManager implements SecuredEntityManager {
                     restoredListing);
         }
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    public DataStorageListing filterDataStorageItems(final Long storageId, final String path,
+                                                     final boolean showVersion, final boolean showArchived,
+                                                     final DataStorageListingFilter filter) {
+        final int limit = preferenceManager.getPreference(SystemPreferences.STORAGE_LS_FILTER_ITEMS_LIMIT);
+        final DataStorageListing listing = getDataStorageItems(storageId, path, showVersion, limit, null,
+                showArchived);
+        listing.setResults(DataStorageListingFilterUtils.filterStorageItems(listing.getResults(), filter));
+        return listing;
     }
 
     public void restoreVersion(Long id, String path, String version) throws DataStorageException {
