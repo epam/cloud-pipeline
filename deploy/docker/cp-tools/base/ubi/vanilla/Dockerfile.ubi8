@@ -56,3 +56,22 @@ RUN cd /tmp && \
     yum install -y lustre-client/*.rpm && \
     (package-cleanup --cleandupes -y || true) && \
     rm -rf lustre-client*
+
+# Environment modules
+RUN echo "[cloud-pipeline]" > /etc/yum.repos.d/cloud-pipeline.repo ; \
+    echo "name=Cloud Pipeline Packages Cache" >> /etc/yum.repos.d/cloud-pipeline.repo ; \
+    echo "baseurl=https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/rocky/8.9/" >> /etc/yum.repos.d/cloud-pipeline.repo ; \
+    echo "enabled=1" >> /etc/yum.repos.d/cloud-pipeline.repo ; \
+    echo "gpgcheck=0" >> /etc/yum.repos.d/cloud-pipeline.repo ; \
+    echo "priority=1" >> /etc/yum.repos.d/cloud-pipeline.repo
+RUN yum install -y lua  lua-devel lua-filesystem lua-json lua-lpeg lua-posix tcl-devel less gcc procps
+RUN mkdir -p /tmp/modules-tmp && \
+    cd /tmp/modules-tmp && \
+    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lmod/sources/Lmod-8.3.tar.gz" -O modules.tar.gz  && \
+    tar -zxf modules.tar.gz && \
+    cd Lmod* && \
+    ./configure --prefix=/usr/local && \
+    make -j $(nproc) && \
+    make install
+ENV CP_CAP_MODULE_PREINSTALLED=true
+ENV MODULES_INSTALL_DIR=/usr/local
