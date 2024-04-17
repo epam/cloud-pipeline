@@ -56,7 +56,7 @@ public abstract class AbstractDataStorageFactory {
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
         storage.setSensitive(vo.isSensitive());
-        storage.setMountDisabled(BooleanUtils.isTrue(vo.getMountDisabled()));
+        storage.setMountDisabled(storage.isMountDisabled() || BooleanUtils.isTrue(vo.getMountDisabled()));
         storage.setToolsToMount(vo.getToolsToMount());
         return storage;
     }
@@ -119,6 +119,7 @@ public abstract class AbstractDataStorageFactory {
                     omicsRefStore.setKmsKeyArn(kmsKey);
                     omicsRefStore.setRegionId(regionId);
                     omicsRefStore.setTempCredentialsRole(tempRole);
+                    omicsRefStore.setMountDisabled(true);
                     omicsRefStore.setUseAssumedCredentials(useAssumedCreds);
                     resultStorage = omicsRefStore;
                     break;
@@ -127,6 +128,7 @@ public abstract class AbstractDataStorageFactory {
                     omicsSeqStore.setKmsKeyArn(kmsKey);
                     omicsSeqStore.setRegionId(regionId);
                     omicsSeqStore.setTempCredentialsRole(tempRole);
+                    omicsSeqStore.setMountDisabled(true);
                     omicsSeqStore.setUseAssumedCredentials(useAssumedCreds);
                     resultStorage = omicsSeqStore;
                     break;
