@@ -99,7 +99,7 @@ class GridEngineJobState:
 class GridEngineJob:
 
     def __init__(self, id, root_id, name, user, state, datetime, hosts=None,
-                 cpu=0, gpu=0, mem=0, requests=None,
+                 cpu=0, gpu=0, mem=0, exc=0, requests=None,
                  pe='local'):
         self.id = id
         self.root_id = root_id
@@ -111,6 +111,7 @@ class GridEngineJob:
         self.cpu = cpu
         self.gpu = gpu
         self.mem = mem
+        self.exc = exc
         self.requests = requests or {}
         self.pe = pe
 

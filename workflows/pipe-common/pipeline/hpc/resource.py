@@ -35,29 +35,33 @@ def _and(left_func, right_func):
 
 class ComputeResource:
 
-    def __init__(self, cpu=0, gpu=0, mem=0, owner=None):
+    def __init__(self, cpu=0, gpu=0, mem=0, exc=0, owner=None):
         """
         Common compute resource.
         """
         self.cpu = cpu
         self.gpu = gpu
         self.mem = mem
+        self.exc = exc
         self.owner = owner
 
     def add(self, other):
         return self.__class__(cpu=self.cpu + other.cpu,
                               gpu=self.gpu + other.gpu,
                               mem=self.mem + other.mem,
+                              exc=self.exc + other.exc,
                               owner=self.owner or other.owner)
 
     def subtract(self, other):
         return (self.__class__(cpu=max(0, self.cpu - other.cpu),
                                gpu=max(0, self.gpu - other.gpu),
                                mem=max(0, self.mem - other.mem),
+                               exc=max(0, self.exc - other.exc),
                                owner=self.owner or other.owner),
                 other.__class__(cpu=max(0, other.cpu - self.cpu),
                                 gpu=max(0, other.gpu - self.gpu),
                                 mem=max(0, other.mem - self.mem),
+                                exc=max(0, other.exc - self.exc),
                                 owner=self.owner or other.owner))
 
     def sub(self, other):
@@ -68,18 +72,19 @@ class ComputeResource:
             return self.__class__(cpu=self.cpu * other,
                                   gpu=self.gpu * other,
                                   mem=self.mem * other,
+                                  exc=self.exc * other,
                                   owner=self.owner)
         else:
             raise ArithmeticError('Compute resource can be multiplied to integer values only')
 
     def gt(self, other):
-        return self.cpu > other.cpu or self.gpu > other.gpu or self.mem > other.mem
+        return self.cpu > other.cpu or self.gpu > other.gpu or self.mem > other.mem or self.exc > other.exc
 
     def eq(self, other):
         return self.__dict__ == other.__dict__
 
     def bool(self):
-        return self.cpu + self.gpu + self.mem > 0
+        return self.cpu + self.gpu + self.mem + self.exc > 0
 
     def __repr__(self):
         return str(self.__dict__)
@@ -124,7 +129,7 @@ class ResourceSupply(ComputeResource):
 
     @classmethod
     def of(cls, instance):
-        return ResourceSupply(cpu=instance.cpu, gpu=instance.gpu, mem=instance.mem)
+        return ResourceSupply(cpu=instance.cpu, gpu=instance.gpu, mem=instance.mem, exc=1)
 
 
 class CustomComputeResource:
