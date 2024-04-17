@@ -970,6 +970,9 @@ public class DataStorageManager implements SecuredEntityManager {
         switch (storage.getStorage().getType().getServiceType()) {
             case OBJECT_STORAGE:
                 return isObjectStorageMountAllowed(storage, region, regions);
+            case AWS_OMICS_SEQ:
+            case AWS_OMICS_REF:
+                return false;
             case FILE_SHARE:
             default:
                 return isFileStorageMountAllowed(storage, region, regions);

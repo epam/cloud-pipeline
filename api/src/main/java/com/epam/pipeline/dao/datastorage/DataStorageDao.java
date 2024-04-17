@@ -19,6 +19,7 @@ package com.epam.pipeline.dao.datastorage;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.datastorage.*;
+import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -541,15 +542,18 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
             params.addValue(MOUNT_DISABLED.name(), dataStorage.isMountDisabled());
 
-            if (dataStorage instanceof S3bucketDataStorage) {
-                S3bucketDataStorage bucket = ((S3bucketDataStorage) dataStorage);
-                String cidrsStr = bucket.getAllowedCidrs() != null ?
-                                  bucket.getAllowedCidrs().stream().collect(Collectors.joining(",")) : null;
-                params.addValue(ALLOWED_CIDRS.name(), cidrsStr);
-                params.addValue(REGION_ID.name(), bucket.getRegionId());
-                params.addValue(S3_KMS_KEY_ARN.name(), bucket.getKmsKeyArn());
-                params.addValue(S3_TEMP_CREDS_ROLE.name(), bucket.getTempCredentialsRole());
-                params.addValue(S3_USE_ASSUMED_CREDS.name(), bucket.isUseAssumedCredentials());
+            if (dataStorage instanceof AbstractAWSDataStorage) {
+                AbstractAWSDataStorage awsStorage = ((AbstractAWSDataStorage) dataStorage);
+                params.addValue(REGION_ID.name(), awsStorage.getRegionId());
+                params.addValue(S3_KMS_KEY_ARN.name(), awsStorage.getKmsKeyArn());
+                params.addValue(S3_TEMP_CREDS_ROLE.name(), awsStorage.getTempCredentialsRole());
+                params.addValue(S3_USE_ASSUMED_CREDS.name(), awsStorage.isUseAssumedCredentials());
+                if (dataStorage instanceof S3bucketDataStorage) {
+                    S3bucketDataStorage s3Bucket = ((S3bucketDataStorage) dataStorage);
+                    String cidrsStr = s3Bucket.getAllowedCidrs() != null ?
+                            s3Bucket.getAllowedCidrs().stream().collect(Collectors.joining(",")) : null;
+                    params.addValue(ALLOWED_CIDRS.name(), cidrsStr);
+                }
             } else if (dataStorage instanceof AzureBlobStorage) {
                 AzureBlobStorage blob = ((AzureBlobStorage) dataStorage);
                 params.addValue(REGION_ID.name(), blob.getRegionId());
