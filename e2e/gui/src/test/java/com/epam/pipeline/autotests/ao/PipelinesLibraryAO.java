@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,6 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
             return $(treeItem).find(switcher).has(cssClass("ant-tree-switcher_open"));
         }
     };
-
 
     /**
      * Checks if tree item is selected.
@@ -285,7 +284,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         return this;
     }
 
-    public PipelinesLibraryAO waitUntilPipelineVersionsOpened (String item) {
+    public PipelinesLibraryAO waitUntilPipelineVersionsOpened(String item) {
         $(treeItem(item)).find(".ant-tree-child-tree").has(cssClass("ant-tree-child-tree-open"));
         return this;
     };
