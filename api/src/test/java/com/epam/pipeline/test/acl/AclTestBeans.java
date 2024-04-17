@@ -63,6 +63,7 @@ import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
+import com.epam.pipeline.manager.datastorage.omics.AWSOmicsStoreManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagProviderManager;
@@ -593,6 +594,9 @@ public class AclTestBeans {
 
     @MockBean
     protected InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected AWSOmicsStoreManager omicsStoreManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {
