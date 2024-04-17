@@ -512,8 +512,9 @@ class GridEngineAutoscaler:
                     resource_demands = list(self.demand_selector.select(waiting_jobs))
                     resource_demand = functools.reduce(operator.add, resource_demands, IntegralDemand())
                     Logger.info('Waiting jobs require: '
-                                '{cpu} cpu, {gpu} gpu, {mem} mem.'
-                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem))
+                                '{cpu} cpu, {gpu} gpu, {mem} mem, {exc} exc.'
+                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu, mem=resource_demand.mem,
+                                        exc=resource_demand.exc))
                     remaining_additional_hosts = self.max_additional_hosts - len(additional_hosts)
                     self.scale_up(resource_demands, remaining_additional_hosts)
                 else:

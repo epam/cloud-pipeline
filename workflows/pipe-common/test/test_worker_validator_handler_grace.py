@@ -41,7 +41,7 @@ invalid_timeout = 30
 
 clock = Mock()
 inner = Mock()
-worker_validator_handler = GracePeriodWorkerValidatorHandler(inner=inner, grace_period=invalid_timeout, clock=clock)
+handler = GracePeriodWorkerValidatorHandler(inner=inner, grace_period=invalid_timeout, clock=clock)
 
 
 def setup_function():
@@ -51,30 +51,30 @@ def setup_function():
 def test_valid_job():
     inner.is_valid = MagicMock(return_value=True)
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
 
 def test_invalid_job():
     inner.is_valid = MagicMock(return_value=False)
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
 
 def test_invalid_job_inside_grace_period():
     inner.is_valid = MagicMock(return_value=False)
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
     clock.now = MagicMock(return_value=now + datetime.timedelta(seconds=invalid_timeout - 1))
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
 
 def test_invalid_job_outside_grace_period():
     inner.is_valid = MagicMock(return_value=False)
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
     clock.now = MagicMock(return_value=now + datetime.timedelta(seconds=invalid_timeout + 1))
 
-    assert not worker_validator_handler.is_valid(HOST)
+    assert not handler.is_valid(HOST)
