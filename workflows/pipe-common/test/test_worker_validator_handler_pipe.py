@@ -37,27 +37,25 @@ HOST = 'HOST'
 
 now = datetime.datetime(2018, 12, 21, 11, 10, 00)
 
-invalid_timeout = 30
-
 
 api = Mock()
 common_utils = Mock()
-worker_validator_handler = CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils)
+handler = CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils)
 
 
 def test_run_status_running():
     api.load_run = MagicMock(return_value={'status': 'RUNNING'})
 
-    assert worker_validator_handler.is_valid(HOST)
+    assert handler.is_valid(HOST)
 
 
 def test_run_status_failure():
     api.load_run = MagicMock(return_value={'status': 'FAILURE'})
 
-    assert not worker_validator_handler.is_valid(HOST)
+    assert not handler.is_valid(HOST)
 
 
 def test_run_status_stopped():
     api.load_run = MagicMock(return_value={'status': 'STOPPED'})
 
-    assert not worker_validator_handler.is_valid(HOST)
+    assert not handler.is_valid(HOST)
