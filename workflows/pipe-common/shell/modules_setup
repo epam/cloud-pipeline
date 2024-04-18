@@ -114,8 +114,12 @@ if [ "$CP_CAP_MODULES_TYPE" == "tcl" ]; then
 elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     if [ "$CP_CAP_MODULE_PREINSTALLED" != "true" ]; then
         if [[ "$IS_RPM_BASED" = 0 ]]; then
-            yum install -y -q lua lua-bitop lua-devel lua-filesystem \
-            lua-json lua-lpeg lua-posix lua-term tcl4 tcl-devel less gcc
+            if [ "$CP_OS" == "centos" ]; then
+              _rpm_lmod_extra_pkgs="lua-bitop lua-term tcl4"
+            fi
+            yum install -y -q lua lua-devel lua-filesystem \
+                              lua-json lua-lpeg lua-posix tcl-devel \
+                              less gcc $_rpm_lmod_extra_pkgs
             _MODULES_INSTALL_RESULT=$?
         else
             apt install make tcl-dev rsync lua5.2 lua-bitop lua-filesystem lua-json lua-lpeg lua-posix lua-term less gcc  -y
