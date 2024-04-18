@@ -30,7 +30,7 @@ module "cp_rds" {
   parameters = [
     {
       name  = "rds.force_ssl"
-      value = 1
+      value = var.rds_force_ssl
     }
   ]
 

@@ -207,10 +207,10 @@ variable "rds_root_password" {
 }
 
 variable "cloud_pipeline_db_configuration" {
-  type =  map(object({
-      username = string
-      password = string
-      database = string
+  type = map(object({
+    username = string
+    password = string
+    database = string
   }))
   default = {
     pipeline = {
@@ -231,6 +231,12 @@ variable "rds_db_port" {
   type        = number
   default     = 5432
   description = "The port on which the RDS instance accepts connections"
+}
+
+variable "rds_force_ssl" {
+  type        = number
+  default     = 1
+  description = "Forces clients to connect to the RDS with SSL."
 }
 
 ###################################################################
@@ -284,7 +290,7 @@ variable "cp_gitlab_host" {
 }
 
 variable "srv_saml_user_attr" {
-  type = string
+  type        = string
   description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
-  default = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
+  default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
 }
