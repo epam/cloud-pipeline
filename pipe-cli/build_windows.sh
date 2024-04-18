@@ -104,6 +104,8 @@ pyinstaller \
   --hidden-import=functools \
   --hidden-import=re \
   --hidden-import=subprocess \
+  --hidden-import=charset_normalizer.md__mypyc \
+  --hidden-import=chardet \
   --version-file /tmp/pipe-win-version-info.txt \
   -y \
   --clean \
