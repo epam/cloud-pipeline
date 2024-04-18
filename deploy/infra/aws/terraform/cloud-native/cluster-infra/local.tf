@@ -133,7 +133,7 @@ locals {
     "-s cp-clair",
     "-env CP_CLAIR_DATABASE_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env CP_CLAIR_DATABASE_PASSWORD=\"${local.clair_db_pass}\"",
-    "-env CP_CLAIR_DATABASE_SSL_MODE=\"${var.deploy_rds && var.rds_force_ssl == 1 ? "enabled" : "disabled"}\"",
+    "-env CP_CLAIR_DATABASE_SSL_MODE=\"${var.deploy_rds && var.rds_force_ssl == 1 ? "require" : "disable"}\"",
     "-s cp-docker-comp",
     "-env CP_DOCKER_COMP_WORKING_DIR=\"/cloud-pipeline/docker-comp/wd\"",
     "-s cp-search",
