@@ -34,6 +34,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,10 +163,18 @@ public class ReassignHandler {
         final RunInstance reassignedInstance = StringUtils.isBlank(instance.getNodeId()) ?
                 cloudFacade.describeInstance(runId, instance) : instance;
         pipelineRunManager.updateRunInstance(runId, reassignedInstance);
-        final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
-                runId);
+        final List<InstanceDisk> disks = getDisks(runId, reassignedInstance);
         autoscalerService.adjustRunPrices(runId, disks);
         reassignedNodes.add(previousNodeId);
         return true;
+    }
+
+    private List<InstanceDisk> getDisks(final Long runId, final RunInstance reassignedInstance) {
+        try {
+            return cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(), runId);
+        } catch (Exception e) {
+            log.error("Failed to get disk information for run id {}", runId);
+            return Collections.emptyList();
+        }
     }
 }
