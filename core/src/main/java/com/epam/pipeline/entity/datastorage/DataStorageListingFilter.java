@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.service;
+package com.epam.pipeline.entity.datastorage;
 
-import com.epam.pipeline.dts.transfer.model.TransferTask;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public interface DataUploaderProviderManager {
+import java.util.Date;
 
-    void transferData(TransferTask transferTask, boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
+@Data
+@NoArgsConstructor
+public class DataStorageListingFilter {
+
+    private Date dateBefore;
+    private Date dateAfter;
+    private Long sizeGreaterThan;
+    private Long sizeLessThan;
+    private String nameFilter;
 }

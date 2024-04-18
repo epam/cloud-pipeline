@@ -251,6 +251,8 @@ public class SystemPreferences {
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
             new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_LS_FILTER_ITEMS_LIMIT = new IntPreference(
+            "storage.listing.filter.items.limit", 500, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
             new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
                     isNullOrGreaterThan(0));

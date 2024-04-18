@@ -221,6 +221,26 @@ public class DataStorageController extends AbstractRestController {
         }
     }
 
+    @PostMapping(value = "/datastorage/{id}/list/filter")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns filtered data storage's items.",
+            notes = "Returns filtered data storage's items",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<DataStorageListing> filterDataStorageItems(
+            @PathVariable(value = ID) final Long id,
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestParam(defaultValue = FALSE) final boolean showVersion,
+            @RequestParam(defaultValue = FALSE) final boolean showArchived,
+            @RequestBody final DataStorageListingFilter filter) {
+        return Result.success(showVersion
+                ? dataStorageApiService.filterDataStorageItemsOwner(id, path, showVersion, showArchived, filter)
+                : dataStorageApiService.filterDataStorageItems(id, path, showVersion, showArchived, filter));
+    }
+
     @RequestMapping(value = "/datastorage/{id}/list/page", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(

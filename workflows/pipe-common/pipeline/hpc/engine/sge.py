@@ -12,6 +12,7 @@ from pipeline.hpc.engine.gridengine import GridEngine, GridEngineJobState, GridE
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.resource import IntegralDemand, ResourceSupply, FractionalDemand, CustomResourceSupply, \
     CustomResourceDemand
+from pipeline.hpc.valid import WorkerValidatorHandler
 
 
 class SunGridEngine(GridEngine):
@@ -22,7 +23,7 @@ class SunGridEngine(GridEngine):
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
     _QSTAT = 'qstat -u "*" -r -f -xml'
-    _QHOST = 'qhost -q -xml'
+    _QHOST_RESOURCES = 'qhost -q -F -xml'
     _QHOST_GLOBAL_RESOURCES = 'qhost -h "*" -F -xml'
     _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
@@ -30,7 +31,6 @@ class SunGridEngine(GridEngine):
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
-    _BAD_HOST_STATES = ['u', 'E', 'd']
 
     def __init__(self, cmd_executor, queue, hostlist, queue_default):
         self.cmd_executor = cmd_executor
@@ -41,6 +41,7 @@ class SunGridEngine(GridEngine):
         # todo: Move to script init function
         self.gpu_resource_name = os.getenv('CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU', 'gpus')
         self.mem_resource_name = os.getenv('CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM', 'ram')
+        self.exc_resource_name = os.getenv('CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE', 'exclusive')
         self.job_state_to_codes = {
             GridEngineJobState.RUNNING: ['r', 't', 'Rr', 'Rt'],
             GridEngineJobState.PENDING: ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw'],
@@ -99,6 +100,7 @@ class SunGridEngine(GridEngine):
             job_cpu = int(requested_pe.text if requested_pe is not None else '1')
             job_gpu = 0
             job_mem = 0
+            job_exc = 0
             job_requests = {}
             hard_requests = job_list.findall('hard_request')
             for hard_request in hard_requests:
@@ -110,7 +112,8 @@ class SunGridEngine(GridEngine):
                     except ValueError:
                         Logger.warn('Job #{job_id} by {job_user} has invalid requirement: {name}={value}'
                                     .format(job_id=root_job_id, job_user=job_user,
-                                            name='gpu', value=job_gpu_raw))
+                                            name='gpu', value=job_gpu_raw),
+                                    trace=True)
                 elif hard_request_name == self.mem_resource_name:
                     job_mem_raw = hard_request.text or '0G'
                     try:
@@ -119,6 +122,15 @@ class SunGridEngine(GridEngine):
                         Logger.warn('Job #{job_id} by {job_user} has invalid requirement: {name}={value}'
                                     .format(job_id=root_job_id, job_user=job_user,
                                             name='mem', value=job_mem_raw),
+                                    trace=True)
+                elif hard_request_name == self.exc_resource_name:
+                    job_exc_raw = hard_request.text or 'false'
+                    try:
+                        job_exc = int(self._parse_bool(job_exc_raw))
+                    except Exception:
+                        Logger.warn('Job #{job_id} by {job_user} has invalid requirement: {name}={value}'
+                                    .format(job_id=root_job_id, job_user=job_user,
+                                            name='exc', value=job_exc_raw),
                                     trace=True)
                 elif hard_request_name:
                     job_request_name = hard_request_name
@@ -147,10 +159,23 @@ class SunGridEngine(GridEngine):
                         cpu=job_cpu,
                         gpu=job_gpu,
                         mem=job_mem,
+                        exc=job_exc,
                         requests=job_requests,
                         pe=job_pe
                     )
         return jobs.values()
+
+    def _parse_int(self, value):
+        return int(float(value))
+
+    def _parse_bool(self, bool_request):
+        if not bool_request:
+            return False
+        if bool_request.strip().lower() in ['true', 'yes', 'on']:
+            return True
+        if bool_request.strip().lower() in ['false', 'no', 'off']:
+            return False
+        raise ValueError()
 
     def _parse_date(self, date):
         return datetime.strptime(date, SunGridEngine._QSTAT_DATETIME_FORMAT)
@@ -179,10 +204,10 @@ class SunGridEngine(GridEngine):
             'K': 1024, 'M': 1024 ** 2, 'G': 1024 ** 3
         }
         if mem_request[-1] in modifiers:
-            number = int(mem_request[:-1])
+            number = self._parse_int(mem_request[:-1])
             modifier = modifiers[mem_request[-1]]
         else:
-            number = int(mem_request)
+            number = self._parse_int(mem_request)
             modifier = 1
         size_in_bytes = number * modifier
         size_in_gibibytes = int(math.ceil(size_in_bytes / modifiers['G']))
@@ -222,17 +247,45 @@ class SunGridEngine(GridEngine):
                 yield resource_name, resource_value
 
     def get_host_supplies(self):
-        output = self.cmd_executor.execute(SunGridEngine._QHOST)
+        output = self.cmd_executor.execute(SunGridEngine._QHOST_RESOURCES)
         root = ElementTree.fromstring(output)
         for host in root.findall('host'):
+            host_name = host.get('name', '').strip()
+            host_gpu = 0
+            host_mem = 0
+            host_exc = 0
+            for host_resource in host.findall('resourcevalue'):
+                host_resource_name = host_resource.get('name', '').strip()
+                if host_resource_name == self.gpu_resource_name:
+                    host_gpu_raw = host_resource.text or '0'
+                    try:
+                        host_gpu = self._parse_int(host_gpu_raw)
+                    except ValueError:
+                        Logger.warn('Host {host_name} has invalid resource: {name}={value}'
+                                    .format(host_name=host_name, name='gpu', value=host_gpu_raw),
+                                    trace=True)
+                elif host_resource_name == self.mem_resource_name:
+                    host_mem_raw = host_resource.text or '0G'
+                    try:
+                        host_mem = self._parse_mem(host_mem_raw)
+                    except Exception:
+                        Logger.warn('Host {host_name} has invalid resource: {name}={value}'
+                                    .format(host_name=host_name, name='mem', value=host_mem_raw),
+                                    trace=True)
+                elif host_resource_name == self.exc_resource_name:
+                    host_exc_raw = host_resource.text or '0'
+                    try:
+                        host_exc = self._parse_int(host_exc_raw)
+                    except Exception:
+                        Logger.warn('Host {host_name} has invalid resource: {name}={value}'
+                                    .format(host_name=host_name, name='exc', value=host_exc_raw),
+                                    trace=True)
             for queue in host.findall('queue[@name=\'%s\']' % self.queue):
-                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
-                if any(host_state in self._BAD_HOST_STATES for host_state in host_states):
-                    continue
                 host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
                 host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
                 host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
-                yield ResourceSupply(cpu=host_slots) - ResourceSupply(cpu=host_used + host_resv)
+                yield (ResourceSupply(cpu=host_slots, gpu=host_gpu, mem=host_mem, exc=host_exc)
+                       - ResourceSupply(cpu=host_used + host_resv))
 
     def get_host_supply(self, host):
         for line in self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_EXECUTION_HOST % host):
@@ -280,30 +333,6 @@ class SunGridEngine(GridEngine):
             skip_on_failure=skip_on_failure
         )
 
-    def is_valid(self, host):
-        try:
-            self.cmd_executor.execute_to_lines(SunGridEngine._SHOW_EXECUTION_HOST % host)
-            output = self.cmd_executor.execute(SunGridEngine._QHOST)
-            root = ElementTree.fromstring(output)
-            for host_object in root.findall('host[@name=\'%s\']' % host):
-                for queue in host_object.findall('queue[@name=\'%s\']' % self.queue):
-                    host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
-                    for host_state in host_states:
-                        if host_state in self._BAD_HOST_STATES:
-                            Logger.warn('Execution host %s GE state is %s which makes host invalid.'
-                                        % (host, host_state),
-                                        crucial=True)
-                            return False
-                    if host_states:
-                        Logger.warn('Execution host %s GE state is not empty but is considered valid: %s.'
-                                    % (host, host_states),
-                                    crucial=True)
-            return True
-        except RuntimeError as e:
-            Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e),
-                        crucial=True, trace=True)
-            return False
-
     def kill_jobs(self, jobs, force=False):
         job_ids = [str(job.id) for job in jobs]
         self.cmd_executor.execute((SunGridEngine._FORCE_KILL_JOBS if force else SunGridEngine._KILL_JOBS) % ' '.join(job_ids))
@@ -321,10 +350,10 @@ class SunGridEngineDefaultDemandSelector(GridEngineDemandSelector):
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.grid_engine.get_pe_allocation_rule(job.pe)
             if allocation_rule in AllocationRule.fractional_rules():
-                initial_demand = FractionalDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+                initial_demand = FractionalDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, exc=job.exc, owner=job.user)
                 remaining_demand, remaining_supply = initial_demand.subtract(initial_supply)
             else:
-                initial_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, owner=job.user)
+                initial_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, exc=job.exc, owner=job.user)
                 remaining_demand, remaining_supply = initial_demand, initial_supply
             if not remaining_demand:
                 Logger.warn('Ignoring job #{job_id} {job_name} by {job_user} because '
@@ -342,7 +371,7 @@ class SunGridEngineDefaultDemandSelector(GridEngineDemandSelector):
                          .format(name=key,
                                  demand=getattr(demand, key),
                                  supply=getattr(supply, key))
-                         for key in ['cpu', 'gpu', 'mem'])
+                         for key in ['cpu', 'gpu', 'mem', 'exc'])
 
 
 class SunGridEngineCustomDemandSelector(GridEngineDemandSelector):
@@ -378,6 +407,66 @@ class SunGridEngineCustomDemandSelector(GridEngineDemandSelector):
                          for key in custom_demand.values.keys())
 
 
+class SunGridEngineHostWorkerValidatorHandler(WorkerValidatorHandler):
+
+    def __init__(self, cmd_executor):
+        self._cmd_executor = cmd_executor
+        self._cmd = 'qconf -se %s'
+
+    def is_valid(self, host):
+        try:
+            self._cmd_executor.execute(self._cmd % host)
+            return True
+        except RuntimeError as e:
+            if 'not an execution host' in str(e):
+                Logger.warn('Execution host {host} not found in GE which makes host unavailable'
+                            .format(host=host),
+                            crucial=True, trace=True)
+                return False
+            if 'can\'t resolve hostname' in str(e):
+                Logger.warn('Execution host {host} not found in GE (DNS) which makes host unavailable'
+                            .format(host=host),
+                            crucial=True, trace=True)
+                return False
+            Logger.warn('Execution host {host} not found in GE but it is considered available'
+                        .format(host=host),
+                        crucial=True, trace=True)
+            return True
+
+
+class SunGridEngineStateWorkerValidatorHandler(WorkerValidatorHandler):
+
+    def __init__(self, cmd_executor, queue):
+        self._cmd_executor = cmd_executor
+        self._queue = queue
+        self._cmd = 'qhost -q -xml'
+        self._host_bad_states = ['u', 'E', 'd']
+
+    def is_valid(self, host):
+        try:
+            output = self._cmd_executor.execute(self._cmd)
+            root = ElementTree.fromstring(output)
+            for host_object in root.findall('host[@name=\'%s\']' % host):
+                for queue in host_object.findall('queue[@name=\'%s\']' % self._queue):
+                    host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                    for host_state in host_states:
+                        if host_state in self._host_bad_states:
+                            Logger.warn('Execution host {host} GE state is {host_state} which makes host unavailable'
+                                        .format(host=host, host_state=host_state),
+                                        crucial=True)
+                            return False
+                    if host_states:
+                        Logger.warn('Execution host {host} GE state is {host_state} but it is considered available'
+                                    .format(host=host, host_state=', '.join(host_states)),
+                                    crucial=True)
+            return True
+        except RuntimeError:
+            Logger.warn('Execution host {host} GE state not found which makes host unavailable'
+                        .format(host=host),
+                        crucial=True, trace=True)
+            return False
+
+
 class SunGridEngineJobValidator(GridEngineJobValidator):
 
     def __init__(self, grid_engine, instance_max_supply, cluster_max_supply):
@@ -391,18 +480,20 @@ class SunGridEngineJobValidator(GridEngineJobValidator):
         for job in jobs:
             allocation_rule = allocation_rules[job.pe] = allocation_rules.get(job.pe) \
                                                          or self.grid_engine.get_pe_allocation_rule(job.pe)
-            job_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem)
+            job_demand = IntegralDemand(cpu=job.cpu, gpu=job.gpu, mem=job.mem, exc=job.exc)
             if allocation_rule in AllocationRule.fractional_rules():
                 if job_demand > self.cluster_max_supply:
                     Logger.warn('Invalid job #{job_id} {job_name} by {job_user} requires resources '
                                 'which cannot be satisfied by the cluster: '
                                 '{job_cpu}/{available_cpu} cpu, '
                                 '{job_gpu}/{available_gpu} gpu, '
-                                '{job_mem}/{available_mem} mem.'
+                                '{job_mem}/{available_mem} mem, '
+                                '{job_exc}/{available_exc} exc.'
                                 .format(job_id=job.id, job_name=job.name, job_user=job.user,
                                         job_cpu=job.cpu, available_cpu=self.cluster_max_supply.cpu,
                                         job_gpu=job.gpu, available_gpu=self.cluster_max_supply.gpu,
-                                        job_mem=job.mem, available_mem=self.cluster_max_supply.mem),
+                                        job_mem=job.mem, available_mem=self.cluster_max_supply.mem,
+                                        job_exc=job.exc, available_exc=self.cluster_max_supply.exc),
                                 crucial=True)
                     invalid_jobs.append(job)
                     continue
@@ -412,11 +503,13 @@ class SunGridEngineJobValidator(GridEngineJobValidator):
                                 'which cannot be satisfied by the biggest instance in cluster: '
                                 '{job_cpu}/{available_cpu} cpu, '
                                 '{job_gpu}/{available_gpu} gpu, '
-                                '{job_mem}/{available_mem} mem.'
+                                '{job_mem}/{available_mem} mem, '
+                                '{job_exc}/{available_exc} exc.'
                                 .format(job_id=job.id, job_name=job.name, job_user=job.user,
                                         job_cpu=job.cpu, available_cpu=self.instance_max_supply.cpu,
                                         job_gpu=job.gpu, available_gpu=self.instance_max_supply.gpu,
-                                        job_mem=job.mem, available_mem=self.instance_max_supply.mem),
+                                        job_mem=job.mem, available_mem=self.instance_max_supply.mem,
+                                        job_exc=job.exc, available_exc=self.instance_max_supply.exc),
                                 crucial=True)
                     invalid_jobs.append(job)
                     continue

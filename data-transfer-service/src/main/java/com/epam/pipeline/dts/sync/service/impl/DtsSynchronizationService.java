@@ -285,7 +285,10 @@ public class DtsSynchronizationService {
             transferDestination.setCredentials(getPipeCredentialsAsString());
             return transferService.runTransferTask(transferSource, transferDestination,
                     Collections.emptyList(),
-                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()));
+                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()),
+                    preferenceService.isLogEnabled(),
+                    preferenceService.getPipeCmd(),
+                    preferenceService.getPipeCmdSuffix());
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {
