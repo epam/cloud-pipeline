@@ -96,7 +96,8 @@ Parameters:
     Default: "https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/0.19/pipectl.0.19.0.16389.5fff985ffe38543c923b442f001f39a7c2ce18ab"  
   
 Conditions:
-  IsSecretNotEntered: !Equals [!Ref AWSCredentialSecretId, ""]
+    IsSecretNotEntered: !Equals [!Ref AWSCredentialSecretId, ""]
+    IsBoundaryNotEntered: !Equals [!Ref IAMrolePermissionsBoundaryArn, AWS::NoValue]
 
 Resources:
 
@@ -126,7 +127,7 @@ Resources:
       Properties:
         RoleName: !Sub "${ProjectName}-${Env}-JumpServer-role"
         Path: /
-        PermissionsBoundary: !Ref IAMrolePermissionsBoundaryArn
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMrolePermissionsBoundaryArn ]
         AssumeRolePolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -166,7 +167,7 @@ Resources:
       Properties:
         RoleName: !Sub "${ProjectName}-${Env}-tf-deploy-infra-role"
         Path: /
-        PermissionsBoundary: !Ref IAMrolePermissionsBoundaryArn
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMrolePermissionsBoundaryArn ]
         MaxSessionDuration: 7200
         AssumeRolePolicyDocument:
           Version: 2012-10-17
@@ -196,6 +197,7 @@ Resources:
   
     JumpBoxInstance:
       Type: AWS::EC2::Instance
+      DependsOn: TerraformS3Bucket
       Properties:
         IamInstanceProfile: !Ref JumpServerInstanceProfile
         ImageId: !Ref AmiId
@@ -348,7 +350,7 @@ Resources:
               
               export CP_SECRET=${AWSCredentialSecretId}
               if [ -n "$CP_SECRET"  ]; then
-                 creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region eu-west-1)
+                 creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                  eval $creds
               else   
                  export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
@@ -408,6 +410,45 @@ Resources:
               chmod +x pipectl
               terraform output -raw cp_pipectl_script > deploycp.sh && chmod +x deploycp.sh
               ./deploycp.sh > pipectl.log
+
+              cat << EOF > delete_all_cp_infra.sh
+              #!/bin/bash
+              echo "-----------SET ACCESS TO AWS-----------------" 
+              export CP_SECRET=${AWSCredentialSecretId}
+              if [ -n "$CP_SECRET"  ]; then
+                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+                  eval $creds
+              else   
+                  export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                  $(aws sts assume-role \
+                  --role-arn arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-${Env}-tf-deploy-infra-role \
+                  --role-session-name TFDeploy \
+                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                  --output text))
+              fi
+              while true; do
+                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources? [y/N]" yn
+                  case \$yn in
+                      Yes|yes|Y|y ) export APPROVE="TRUE"; break;;
+                      No|no|N|n ) exit;;
+                      * ) echo "Please answer Yes or No.";;
+                  esac
+              done
+
+              if [ "\$APPROVE" == "TRUE" ]; then
+                 echo "-----------START DESTROYING RESOURCES!-------------------"
+                 kubectl delete service ingress
+
+                 terraform destroy --auto-approve
+
+                 aws s3 rm s3://${TFstateBucketName} --recursive
+                 echo "-----------INFRASTRUCTURE RESOURSES DESTROYED!-------------------"
+                 echo "-----------NOW YOU CAN DELETE CLOUDFORMATION STACK!-------------------"
+              else echo "-----------DELETION ABORTED!-------------------"
+              fi
+              EOF
+
+              chmod +x delete_all_cp_infra.sh
 
               
         Tags:

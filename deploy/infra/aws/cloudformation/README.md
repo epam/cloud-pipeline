@@ -9,20 +9,21 @@ Pipeline on top of it.
 Follow the outlined steps below to execute the deployment process: <br>
 
 - [Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide](#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide)
-    - [Overview](#overview)
-        - [Prerequisites](#prerequisites)
-            - [Create VPC](#create-vpc)
-            - [Create AWS Elastic IP](#create-aws-elastic-ip)
-            - [Grant Permission to Create Infrastructure Resources](#grant-permission-to-create-infrastructure-resources)
-            - [Create DNS records](#create-dns-records)
-            - [(Optional) Add authority signed certificates for services](#optional-add-authority-signed-certificates-for-services)
-            - [Optional: Integrate with an Identity Provider (IdP)](#optional-integrate-with-an-identity-provider-idp)
-            - [(Optional) Create a Zip File with Additional Assets](#optional-create-a-zip-file-with-additional-assets)
-        - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
-            - [Stack Parameters Description](#stack-parameters-description)
-            - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
-            - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
-        - [Review Deployment Logs](#review-deployment-logs)
+  - [Overview](#overview)
+    - [Prerequisites](#prerequisites)
+      - [AWS VPC](#aws-vpc)
+      - [AWS Elastic IP](#aws-elastic-ip)
+      - [Credentials to Create Infrastructure Resources](#credentials-to-create-infrastructure-resources)
+      - [Create DNS records](#create-dns-records)
+      - [Add authority signed certificates for services](#add-authority-signed-certificates-for-services)
+      - [Integrate with an Identity Provider (IdP)](#integrate-with-an-identity-provider-idp)
+      - [Create a Zip File with Additional Assets](#create-a-zip-file-with-additional-assets)
+    - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
+      - [Stack Parameters Description](#stack-parameters-description)
+      - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
+      - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
+    - [Review Deployment Logs](#review-deployment-logs)
+    - [Destroy Cloud-Pipeline resources](#destroy-cloud-pipeline-resources)
 
 ### Prerequisites
 
@@ -48,14 +49,23 @@ Credentials should be given for this deployment stack to initiate the creation o
 There are two ways to provide such credentials:
 
 1. If you have Administrator role in AWS account or role that Allowed to created resources: EC2 instance, IAM
-   Roles/Policies, EKS cluster, security groups, cloudwatch logs, s3 buckets, efs/fsx luste file systems, kms keys, rds
-   etc. you can use this credentials:
+   Roles/Policies, EKS cluster, security groups, cloudwatch logs, S3 buckets, EFS/FSX for Luste file systems, KMS keys, RDS
+   etc. you can use these credentials:
 
 - Put your credentials of temporary credentials into the AWS secret:
     - Create aws secretsmanager secret using AWS console or this aws cli command(make sure you have installed aws cli):
-   ```
-   aws secretsmanager create-secret --name <secrets-name>  --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' --region <region-id>
-   ```
+    ```
+    aws secretsmanager create-secret --name <secrets-name> \
+      --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' \
+      --region <region-id>
+    ```
+    - If you need to update the secret value with a new credentials (f.i. when you are using temporary credentials and decide to destroy the infrastructure. See [destroy infrastructure](#destroy-cloud-pipeline-resources)):
+    ```
+    aws secretsmanager put-secret-value \
+      --secret-id <secrets-name> \
+      --secret-string 'export AWS_ACCESS_KEY_ID="<key-id>" export AWS_SECRET_ACCESS_KEY="<secret acess key>" export AWS_SESSION_TOKEN="<session token>"' \
+      --region <region-id>
+    ```
     - Remember the secret name, you will need this value during further deployment.
       (To set this secret name as stack parameter `AWSCredentialSecretId`. For more information you can
       look [deploy parameters](#stack-parameters-description))
@@ -118,45 +128,11 @@ As a result of the requests, the following information shall be provided:
 
 Once all additional certificates (and optional metadata) are ready, you should create a zip archive with a specific
 structure. <br>
-To do this you can create bash script by creating new file create_zip.sh with content:
+
+To do this you can run script `create_assets_zip.sh` with your parameters, for example:
 
 ```
-#!/bin/bash
- 
-_SSL_CERT=$1
-_SSL_KEY=$2
-_SSO_METADATA=$3
-_SSO_CERT=$4
- 
-_TMP_ASSETS_LOCATION="/tmp/cp-assets-$RANDOM"
-
-# Create folder structure for certificates using commands
-mkdir -p $_TMP_ASSETS_LOCATION/common/pki $_TMP_ASSETS_LOCATION/api/pki $_TMP_ASSETS_LOCATION/api/sso
- 
-# Move your certificates to common/pki directory, for example using command:
-if [ -f $_SSL_CERT ] && [ -f $_SSL_KEY ]; then
-   cp $_SSL_CERT $_TMP_ASSETS_LOCATION/common/pki/ca-public-cert.pem
-   cp $_SSL_KEY $_TMP_ASSETS_LOCATION/common/pki/ca-private-key.pem
-   else
-   echo "Certificate and key not provided nothing will be copied to common/pki"
-fi
-
-if [ -z $_SSO_METADATA ] && [ -z $_SSO_CERT ]; then
-   echo "Metadata and sso certificate for Identity provider settings not set, nothing will be copied to api directory"
-   else
-   cp $_SSO_METADATA $_TMP_ASSETS_LOCATION/api/sso/cp-api-srv-fed-meta.xml
-   cp $_SSO_CERT $_TMP_ASSETS_LOCATION/api/pki/idp-public-cert.pem
-   
-fi 
- 
-zip -r $_TMP_ASSETS_LOCATION/cp-assets.zip $_TMP_ASSETS_LOCATION/common $_TMP_ASSETS_LOCATION/api
-echo $(realpath $_TMP_ASSETS_LOCATION/cp-assets.zip)
-```
-
-Run script with your parameters, for example:
-
-```
-bash create_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
+bash create_assets_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
 ```
 
 > Optional: <br>
@@ -210,15 +186,15 @@ the AWS console, or the AWS Command Line Interface (CLI).
 #### Deploy Cloud Pipeline using AWS Console
 
 1. Go to the CloudFormation service in the AWS Console and select the "create stack" option.
-   ![create_stack](./images/create_stack.jpg)
+   ![create_stack](./docs/images/create_stack.jpg)
 2. In the "Prerequisite - Prepare template" section, choose "Use an existing template".
-   ![prepare_tempalte](./images/prepare_template.jpg)
+   ![prepare_template](./docs/images/prepare_template.jpg)
 3. Choose your 'jump-server.yaml' file under "Specify a template" and click "Next".
 4. On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next
    page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.
-   ![stack_details](./images/stack_details.jpg)
+   ![stack_details](./docs/images/stack_details.jpg)
 5. Click "Submit" to start stack creation.
-   ![submit](./images/submit.jpg)
+   ![submit](./docs/images/submit.jpg)
 
 Follow the [Stack Parameters Description](#stack-parameters-description) section for a detailed explanation of each
 parameter.
@@ -349,3 +325,21 @@ To review the deployment process logs, follow these steps:
 
 Wait approximately 40-50 minutes until all resources and services are deployed. Then, verify the deployment by visiting
 https://<service\>.<user-domain-name\>/
+
+### Destroy Cloud-Pipeline resources
+
+To delete all resources of the Cloud Pipeline along with the infrastructure, follow these steps:
+
+1. If you use AWS Secret to store **temporary** credentials as described in [Credentials to create Infrastructure Resources](#credentials-to-create-infrastructure-resources), you need to first update your credentials token in your AWS Secret before proceeding with the next steps.
+2. Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.
+    ```
+    aws ssm start-session --target <instance-id> --region <deployment-region>
+    ```
+3. After a login, switch the user to root by running the command `sudo su`.
+4. Next, navigate to the home root directory by entering `cd ~/deployment-eks`.
+5. Execute the deletion script by running `./delete_all_cp_infra.sh`. <br>
+   The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. <br>
+   Confirm if you are sure about the deletion.
+6. Once the script finished and all resources are deleted, you can now delete the CloudFormation stack.
+
+Please note that these actions will delete all your resources in the Cloud Pipeline. Be sure to back up any necessary data before starting the deletion process.
