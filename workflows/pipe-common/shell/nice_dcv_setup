@@ -107,7 +107,7 @@ function install_dcv {
   fi
 
   cd ..
-  rm -rf "${_NICE_DCV_DISTRIBUTION}*"
+  rm -rf "${_NICE_DCV_DISTRIBUTION}"*
   pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
 }
 
