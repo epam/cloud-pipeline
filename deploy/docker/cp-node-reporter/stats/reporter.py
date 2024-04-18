@@ -23,7 +23,7 @@ from abc import abstractmethod, ABC
 from collections import namedtuple
 from enum import Enum, auto
 from logging.handlers import TimedRotatingFileHandler
-
+import subprocess
 import psutil
 from flask import Flask
 
@@ -144,6 +144,25 @@ class JsonStatsViewer(StatsViewer):
         return host_view
 
 
+class GPUStatProcessor:
+
+    def __init__(self, metrics):
+        self.metrics = metrics
+        self.header = metrics.split(',')
+
+    def get_stat(self):
+        process = subprocess.Popen(['nvidia-smi', f'--query-gpu={self.metrics}', '--format=csv,noheader,nounits'],
+                                   stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        stdout = process.stdout
+        stderr = process.stderr
+        exit_code = process.wait()
+        if exit_code != 0:
+            raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
+        for stdout_line in stdout.readlines():
+            result_metrics = str(stdout_line).split(', ')
+            yield {self.header[i].replace('.', '_'): str(result_metrics[i]).strip() for i in range(len(self.header))}
+
+
 logging_format = os.getenv('CP_LOGGING_FORMAT', default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 logging_level = os.getenv('CP_LOGGING_LEVEL', default='DEBUG')
 logging_file = os.getenv('CP_LOGGING_FILE', default='stats.log')
@@ -172,6 +191,11 @@ collector = StatsCollector(resolvers=[
     ProcOpenFilesResolver(include=procs_include)])
 viewer = JsonStatsViewer(host=host)
 
+gpu_metrics = os.getenv(
+    'CP_NODE_REPORTER_GPU_STATS_METRIX',
+    'name,index,utilization.gpu,utilization.memory')
+gpu_processor = GPUStatProcessor(gpu_metrics)
+
 logging.info('Initializing...')
 app = Flask(__name__)
 
@@ -181,3 +205,8 @@ def get_stats():
     stats = collector.collect()
     view = viewer.view(stats)
     return json.dumps(view, indent=4)
+
+
+@app.route('/gpus')
+def get_gpus():
+    return json.dumps([o for o in gpu_processor.get_stat()], indent=1)
