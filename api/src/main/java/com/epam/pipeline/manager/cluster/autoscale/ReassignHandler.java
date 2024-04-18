@@ -44,6 +44,7 @@ import java.util.function.BiFunction;
 
 @Component
 @Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class ReassignHandler {
 
     private final AutoscalerService autoscalerService;
