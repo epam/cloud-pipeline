@@ -294,6 +294,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 RunInstance instance = cloudFacade.describeInstance(longId, requiredInstance.getInstance());
                 if (instance != null && instance.getNodeId() != null) {
                     log.debug("Found {} instance for run ID {}.", instance.getNodeId(), runId);
+                    unLabelPendingRun(run);
                     createNodeForRun(tasks, runId, requiredInstance);
                     return;
                 }
@@ -305,6 +306,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.debug("Found {} free nodes.", freeNodes.size());
                 if (reassignHandler.tryReassignNode(client, scheduledRuns, reassignedNodes, runId,
                         longId, requiredInstance, freeNodes)) {
+                    unLabelPendingRun(run);
                     return;
                 }
                 if (!hasClusterCapacity(client)) {
