@@ -104,7 +104,7 @@ locals {
     "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",
-    "-env PGS_CONNECT_PARAMS=\"${var.deploy_rds && var.rds_force_ssl == 1 ? "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory" : ""}\"",
+    "-env PSG_CONNECT_PARAMS=\"${var.deploy_rds && var.rds_force_ssl == 1 ? "?ssl=true&sslfactory=org.postgresql.ssl.NonValidatingFactory" : ""}\"",
     "-s cp-api-srv",
     "-env CP_API_SRV_EXTERNAL_PORT=443",
     "-env CP_API_SRV_INTERNAL_PORT=443",
