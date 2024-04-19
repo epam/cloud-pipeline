@@ -3020,6 +3020,11 @@ export default class DataStorage extends React.Component {
       if (!this.isOmicsStore && prevStorageId !== this.props.storageId) {
         this.setState({importedJobs: false});
       }
+  }
+
+  componentWillReceiveProps (nextProps, nextState) {
+    if (nextProps.storageId !== this.props.storageId) {
+      this.setState({selectedFile: null});
     }
   }
 }

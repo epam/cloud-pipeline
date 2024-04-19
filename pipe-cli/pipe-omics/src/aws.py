@@ -11,17 +11,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os.path
+import re
+import sys
 
 from boto3 import Session
 from botocore.config import Config
 from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
-from omics.transfer.config import TransferConfig
 from omics.uriparse.uri_parse import OmicsUriParser
 from omics.transfer.manager import TransferManager
 from .cloud_pipeline_api import OmicsStoreType
-from .util.fs_utils import parse_local_path
+from .util.exception import PipeOmicsException
 from .util.progress_utils import ProgressBarSubscriber, FinalEventSubscriber
+
+
+class AWSOmicsFileDownloadRequest:
+
+    def __init__(self, omics_store_id, omics_resource_id, omics_file_name, destination_dir, local_file_name, size):
+        self.omics_store_id = omics_store_id
+        self.omics_resource_id = omics_resource_id
+        self.omics_file_name = omics_file_name
+        self.destination_dir = destination_dir
+        self.local_file_name = local_file_name
+        self.size = size
 
 
 class AWSOmicsFile:
@@ -36,7 +49,7 @@ class AWSOmicsFile:
         self.sizes = {}
         self.modified = None
         self.raw = None
-        self.files = []
+        self.files = {}
 
     @classmethod
     def from_aws_omics_ref_response(cls, response):
@@ -61,7 +74,7 @@ class AWSOmicsFile:
         file.description = response.get("description", None)
         file.modified = response.get("updateTime", response["creationTime"])
         file.raw = response
-        file.files = response.get("files", [])
+        file.files = response.get("files", {})
         return file
 
     @classmethod
@@ -78,8 +91,8 @@ class AWSOmicsFile:
 
 class AWSOmicsOperation:
 
-    def __init__(self, api):
-        self.api = api
+    def __init__(self, operation_config):
+        self.operation_config = operation_config
 
     def get_file_metadata(self, storage, file_id):
         omics = self.get_omics(storage, storage.region_name, read=True)
@@ -93,15 +106,14 @@ class AWSOmicsOperation:
     def list_files(self, storage, token, page_size, show_all):
 
         # Helper method to get one page with AWS SDK
-        def _get_page(store_id, aws_omics_method, object_mapping, token, page_size):
-            req_kwars = {'sequenceStoreId': store_id}
+        def _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size):
             if token is not None:
                 req_kwars["nextToken"] = token
             if page_size is not None and page_size > 0:
                 req_kwars["maxResults"] = page_size
             try:
                 response = aws_omics_method(**req_kwars)
-                return response.get("nextToken", None), [object_mapping(e) for e in response["readSets"]]
+                return response.get("nextToken", None), [object_mapping(e) for e in response.get(object_field, [])]
             except Exception as e:
                 raise RuntimeError("Something went wrong during the request to AWS.", e)
 
@@ -109,76 +121,124 @@ class AWSOmicsOperation:
         omics = self.get_omics(storage, storage.region_name, list=True)
         if storage.type == OmicsStoreType.OMICS_REF:
             aws_omics_method = omics.list_references
+            req_kwars = {'referenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_ref_response
+            object_field = 'references'
         elif storage.type == OmicsStoreType.OMICS_SEQ:
             aws_omics_method = omics.list_read_sets
+            req_kwars = {'sequenceStoreId': storage.cloud_store_id}
             object_mapping = AWSOmicsFile.from_aws_omics_seq_response
+            object_field = 'readSets'
         else:
             raise RuntimeError("Unexpected storage type: " + storage.type)
 
         # Perform listing
         result = []
         if show_all:
-            next_token, page = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
+            next_token, page = _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size)
             result.extend(page)
             while next_token is not None:
-                next_token, page = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, next_token, page_size)
+                next_token, page = _get_page(
+                    aws_omics_method, req_kwars, object_field, object_mapping, next_token, page_size
+                )
                 result.extend(page)
         else:
-            _, result = _get_page(storage.cloud_store_id, aws_omics_method, object_mapping, token, page_size)
+            _, result = _get_page(aws_omics_method, req_kwars, object_field, object_mapping, token, page_size)
         return result
 
-    def download_file(self, storage, source, destination):
-        if storage.type == OmicsStoreType.OMICS_SEQ:
-            self.download_read_set(storage, source, destination)
-        elif storage.type == OmicsStoreType.OMICS_REF:
-            self.download_reference(storage, source, destination)
+    def download_file(self, storage, source, destination, force):
 
-    def download_read_set(self, storage, source, destination):
-        omics_file = OmicsUriParser(source).parse()
-        destination_dir, destination_file_name = parse_local_path(destination)
-        file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
-        manager = TransferManager(
-            self.get_omics(storage, storage.region_name, read=True, write=True),
-            config=TransferConfig(directory=destination_dir)
-        )
+        def __define_local_location(path, source, force):
+            parent_dir = os.path.dirname(path)
+            basename = os.path.basename(path)
 
-        # If original url have source[1|2] - will dowload only specific source, else - the whole file
-        source_file_name = omics_file.file_name.lower()
-        if source.endswith(source_file_name):
+            # source matches path to specific file in readSet/reference
+            if re.search(".*/(index|source|source1|source2)", source):
+                if os.path.isdir(path):
+                    return path, None
+                elif os.path.exists(path):
+                    if force:
+                        return parent_dir, basename
+                    else:
+                        raise PipeOmicsException("File with path {} already exists! "
+                                                 "Specify --force/-f to overwrite the file.".format(path))
+                else:
+                    # if local path doesn't exist and source is referring to the exact file
+                    # we assume that user specified local path also as a path to exact file local destination
+                    # e.g. basename is a file name
+                    return parent_dir, basename
+            else:
+                # if we try to download the whole readSet/reference from AWS Omics - return path as a location_dir
+                # if path is a directory and force specified - download anyway
+                # if path is a file - throw an exception as it won't allow to create a directory
+                if os.path.exists(path):
+                    if not os.path.isdir(path):
+                        raise PipeOmicsException("File with path {} already exists!".format(path))
+
+                    if not force:
+                        raise PipeOmicsException("Directory with path {} already exists! "
+                                                 "Specify --force/-f to download files anyway.".format(path))
+                    else:
+                        return path, None
+                else:
+                    return path, None
+
+        # omics tools adds gz even to bam or cram files (it just checked if a file is gziped or not)
+        # this method will rename file back as it was configured by user or defined in this code
+        def __rename_file_if_needed(download_request: AWSOmicsFileDownloadRequest):
+            downloaded_file = os.path.join(download_request.destination_dir, download_request.local_file_name) + ".gz"
+            if os.path.exists(downloaded_file):
+                # remove last 3 character from the file name
+                # because it was added by aws-omics-tools lib
+                os.rename(downloaded_file, downloaded_file[:-3])
+
+        # Remove tailing slash if any, because OmicsUriParser doesn't expect
+        # it when parsing omics readSet or reference url
+        source = source.strip('/')
+
+        destination_dir, destination_file_name = __define_local_location(destination, source, force)
+
+        if not os.path.exists(destination_dir):
+            os.makedirs(destination_dir)
+
+        manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
+
+        download_requests = self.__fetch_files_to_download(storage, source, destination_dir, destination_file_name)
+
+        for download_request in download_requests:
             subscribers = [
                 ProgressBarSubscriber(
-                    file_metadata.sizes[source_file_name],
-                    "readSet/{}/{}".format(omics_file.resource_id, omics_file.file_name)
+                    download_request.size,
+                    "{}/{}".format(download_request.omics_resource_id, download_request.omics_file_name),
+                    self.operation_config.piped_stdout
                 )
             ]
-            manager.download_read_set_file(storage.cloud_store_id, omics_file.resource_id, omics_file.file_name,
-                                           client_fileobj=destination_file_name, subscribers=subscribers)
-        else:
-            subscribers = [ProgressBarSubscriber(file_metadata.size, "readSet/{}".format(omics_file.resource_id))]
-            manager.download_read_set(storage.cloud_store_id, omics_file.resource_id, subscribers=subscribers)
 
-    def download_reference(self, storage, source, destination):
-        reference = OmicsUriParser(source).parse()
-        destination_dir, destination_file_name = parse_local_path(destination)
-        file_metadata = self.get_file_metadata(storage, reference.resource_id)
-        manager = TransferManager(
-            self.get_omics(storage, storage.region_name, read=True, write=True),
-            config=TransferConfig(directory=destination_dir)
-        )
-        subscribers = [ProgressBarSubscriber(file_metadata.size, "reference/{}".format(file_metadata.id))]
-        if source.endswith(reference.file_name.lower()):
-            manager.download_reference_file(storage.cloud_store_id, reference.resource_id, reference.file_name,
-                                            client_fileobj=destination_file_name, subscribers=subscribers)
-        else:
-            manager.download_reference(storage.cloud_store_id, reference.resource_id, subscribers=subscribers)
+            local_file_absolute_path = str(
+                os.path.join(download_request.destination_dir, download_request.local_file_name)
+            )
+            if storage.type == OmicsStoreType.OMICS_SEQ:
+                manager.download_read_set_file(
+                    download_request.omics_store_id, download_request.omics_resource_id,
+                    download_request.omics_file_name,
+                    client_fileobj=local_file_absolute_path, subscribers=subscribers
+                )
+            elif storage.type == OmicsStoreType.OMICS_REF:
+                manager.download_reference_file(
+                    storage.cloud_store_id, download_request.omics_resource_id,
+                    download_request.omics_file_name,
+                    client_fileobj=local_file_absolute_path, subscribers=subscribers
+                )
+
+            __rename_file_if_needed(download_request)
 
     def upload_file(self, storage, sources, name, file_type, subject_id, sample_id,
                     description=None, generated_from=None, reference_arn=None):
         if storage.type == OmicsStoreType.OMICS_REF:
             raise RuntimeError("Direct upload to Omics Reference store isn't supported!")
         manager = TransferManager(self.get_omics(storage, storage.region_name, read=True, write=True))
-        print("Omics {} file(s) {}: upload started! Please wait...".format(file_type, sources))
+        sys.stdout.write("Omics {} file(s) {}: upload started! Please wait...\n".format(file_type, sources))
+        sys.stdout.flush()
         subscribers = [FinalEventSubscriber()]
         manager.upload_read_set(sources, storage.cloud_store_id, file_type, name, subject_id,
                                 sample_id, reference_arn, generated_from, description, subscribers=subscribers)
@@ -188,7 +248,7 @@ class AWSOmicsOperation:
 
     def __assumed_session(self, storage, list, read, write):
         def __refresh():
-            credentials = self.api.get_temporary_credentials(storage, list, read, write)
+            credentials = self.operation_config.api.get_temporary_credentials(storage, list, read, write)
             return dict(
                 access_key=credentials.access_key_id,
                 secret_key=credentials.secret_key,
@@ -207,3 +267,89 @@ class AWSOmicsOperation:
         s = get_session()
         s._credentials = session_credentials
         return Session(botocore_session=s)
+
+    # Defines which files and under which names should be downloaded
+    def __fetch_files_to_download(self, storage, source, destination_dir, destination_file_name):
+
+        def __get_file_name_suffix(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "_R1" if omics_file_name == "source1" else "_R2"
+            else:
+                return ""
+
+        def __get_file_ext(omics_file_name, omics_resource_type):
+            if omics_resource_type == "FASTQ":
+                return "fastq.gz"
+            elif omics_resource_type == "BAM" or omics_resource_type == "UBAM":
+                if omics_file_name == "index":
+                    return "bam.bai"
+                else:
+                    return "bam"
+            elif omics_resource_type == "CRAM":
+                if omics_file_name == "index":
+                    return "cram.crai"
+                else:
+                    return "cram"
+            elif omics_resource_type == "REFERENCE":
+                if omics_file_name == "index":
+                    return "fa.fai"
+                else:
+                    return "fa"
+            else:
+                raise ValueError(
+                    "Wrong resouce type: {}, supported in FASTQ, BAM, UBAM, CRAM, REFERENCE".format(omics_resource_type)
+                )
+        try:
+            omics_file = OmicsUriParser(source).parse()
+        except ValueError as e:
+            raise PipeOmicsException("Invalid AWS Omics URL format: '{}'".format(source))
+
+        file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
+
+        # If original url have source[1|2]|index - will download only specific file, else - the whole set
+        if re.search(".*/(index|source|source1|source2)", source):
+            omics_file_name = omics_file.file_name.lower()
+            if omics_file_name not in file_metadata.files:
+                raise ValueError(
+                    "Can't find '{}' file in AWS Omics {} with id: {} object".format(
+                        omics_file_name, omics_file.resource_type, omics_file.resource_id
+                    )
+                )
+            local_file_name = destination_file_name
+            if not local_file_name:
+                local_file_name = "{}{}.{}".format(
+                    file_metadata.name,
+                    __get_file_name_suffix(omics_file_name, file_metadata.type),
+                    __get_file_ext(omics_file_name, file_metadata.type)
+                )
+
+            return [
+                AWSOmicsFileDownloadRequest(
+                    storage.cloud_store_id,
+                    file_metadata.id,
+                    omics_file_name,
+                    destination_dir,
+                    local_file_name,
+                    file_metadata.sizes[omics_file_name]
+                )
+            ]
+        else:
+            result = []
+            for omics_file_name, file in file_metadata.files.items():
+                local_file_name = "{}{}.{}".format(
+                    file_metadata.name,
+                    __get_file_name_suffix(omics_file_name, file_metadata.type),
+                    __get_file_ext(omics_file_name, file_metadata.type)
+                )
+                result.append(
+                    AWSOmicsFileDownloadRequest(
+                        storage.cloud_store_id,
+                        file_metadata.id,
+                        omics_file_name,
+                        destination_dir,
+                        local_file_name,
+                        file_metadata.sizes[omics_file_name]
+                    )
+                )
+            return result
+

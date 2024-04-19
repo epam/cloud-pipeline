@@ -11,6 +11,8 @@ from src.model.data_storage_item_model import DataStorageItemModel, DataStorageI
 from src.utilities.extension.ext_handler import ExtensionHandler, ExtensionApplicationRule
 from src.utilities.printing.storage import print_storage_listing
 
+PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE = 15
+
 
 class OmicsFileOperationHandler(ExtensionHandler):
 
@@ -20,17 +22,29 @@ class OmicsFileOperationHandler(ExtensionHandler):
     def _apply(self, arguments):
         pipe_config = Config.instance()
         pipe_omics_bin_path = os.path.join(pipe_config.build_inner_module_path('pipe-omics'), 'pipe-omics')
-        cmd_args = [pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments)]
+        cmd_args = [
+            pipe_omics_bin_path, '-g', self.command_group, '-c', self.command, '-i', json.dumps(arguments), '-p'
+        ]
         process = subprocess.Popen(
             cmd_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            universal_newlines=True,
             env=self._configure_envs(pipe_config)
         )
-        self._process_output(process, arguments, cmd_args)
+        quiet = arguments.get("quiet", False)
+        self._process_output(process, quiet, arguments, cmd_args)
+        return_code = process.wait()
+        if return_code != 0 and not quiet:
+            if return_code != PIPE_OMICS_JUST_PRINT_MESSAGE_ERROR_CODE:
+                click.echo("There was a problem of executing the command '{}'".format(cmd_args), file=sys.stderr)
+            while True:
+                stderr_line = process.stderr.readline()
+                if not stderr_line:
+                    break
+                click.echo(stderr_line, file=sys.stderr)
+            process.stderr.close()
 
-    def _process_output(self, process, arguments, cmd):
+    def _process_output(self, process, quiet, arguments, cmd):
         pass
 
     def _configure_envs(self, pipe_config):
@@ -53,19 +67,24 @@ class OmicsCopyFileHandler(OmicsFileOperationHandler):
             ]
         )
 
-    def _process_output(self, process, arguments, cmd):
-        for stdout_line in iter(process.stdout.readline, ""):
-            if "uploaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
-                click.echo(stdout_line)
-            else:
-                click.echo(stdout_line.strip() + '\r', nl=False)
+    def _process_output(self, process, quiet, arguments, cmd):
+        if not quiet:
+            while True:
+                stdout_line = process.stdout.readline()
+                if not stdout_line:
+                    break
+                if not isinstance(stdout_line, str):
+                    stdout_line = stdout_line.decode("utf-8")
+                if "uploaded!" in stdout_line or "downloaded!" in stdout_line or "started!" in stdout_line or "initiated!" in stdout_line:
+                    click.echo('\n' + stdout_line.strip())
+                else:
+                    # prints line and returns carriage to the start of the line
+                    # in order to correctly show the progressBar in the terminal
+                    click.echo(stdout_line.strip() + '\r', nl=False)
+        else:
+            dev_null = open(os.devnull, 'w')
+            dev_null.writelines(process.stdout.readlines())
         process.stdout.close()
-        return_code = process.wait()
-        if return_code != 0:
-            click.echo("There was a problem of executing the command '{}'".format(cmd), file=sys.stderr)
-            for stderr_line in iter(process.stderr.readline, ""):
-                click.echo(stderr_line, file=sys.stderr)
-            process.stderr.close()
 
 
 class OmicsListFilesHandler(OmicsFileOperationHandler):
@@ -76,7 +95,7 @@ class OmicsListFilesHandler(OmicsFileOperationHandler):
             [ExtensionApplicationRule("path", "omics://.*", ExtensionApplicationRule.REGEXP)]
         )
 
-    def _process_output(self, process, arguments, cmd):
+    def _process_output(self, process, quiet, arguments, cmd):
         show_details = arguments.get('show_details', False)
 
         if show_details:
@@ -84,17 +103,11 @@ class OmicsListFilesHandler(OmicsFileOperationHandler):
         else:
             fields = []
 
-        output = "".join(process.stdout.readlines())
+        output = "".join([o if isinstance(o, str) else o.decode("utf-8") for o in process.stdout.readlines()])
         if output:
             listing = json.loads(output)
             items = [self.__get_file_object(item) for item in listing]
             print_storage_listing(fields, items, None, show_details, False, False)
-        return_code = process.wait()
-        if return_code != 0:
-            click.echo("There was a problem of executing the command '{}'".format(cmd), file=sys.stderr)
-            for stderr_line in iter(process.stderr.readline, ""):
-                click.echo(stderr_line, file=sys.stderr)
-            process.stderr.close()
 
     def __get_file_object(self, file):
         item = DataStorageItemModel()

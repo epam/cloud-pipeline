@@ -17,7 +17,7 @@ import re
 
 class OmicsUrl:
 
-    PATH_PATTERN = r"(\w+)://((\d+)\.storage\.([\w-]+)\.amazonaws\.com/(\d+)/(readSet|reference))(?:/(\d+))?(?:/(.*))?"
+    PATH_PATTERN = r"(\w+)://((\d+)\.storage\.([\w-]+)\.amazonaws\.com/(\d+)/(readSet|reference))(?:/(\d+))?(?:/(.*)?)?"
     STORAGE_PATH_PATTERN = r"\d+\.storage\.([\w-]+)\.amazonaws\.com/(\d+)/(?:readSet|reference)(?:/)?"
 
     @classmethod
