@@ -103,6 +103,7 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
+import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
@@ -175,7 +176,8 @@ export default class DataStorage extends React.Component {
     previewAvailable: false,
     previewPending: false,
     restorePending: false,
-    omicsDialogVisible: false
+    omicsDialogVisible: false,
+    importedJobs: false
   };
 
   @observable storage = new DataStorageListing({
@@ -190,6 +192,13 @@ export default class DataStorage extends React.Component {
         this.storage.readAllowed;
     }
     return !!this.state.metadata;
+  }
+
+  get showJobs () {
+    if (this.state.importedJobs) {
+      return this.storage.info && this.storage.readAllowed;
+    }
+    return this.state.importedJobs;
   }
 
   get region () {
@@ -528,6 +537,14 @@ export default class DataStorage extends React.Component {
       this.closeOmicsDialog();
       this.storage.refreshStorageInfo();
       this.props.folders.invalidateFolder(parentFolderId);
+      this.setState({
+        importedJobs: true,
+        updateJobsSearch: true
+      }, () => {
+        this.setState({
+          updateJobsSearch: false
+        });
+      });
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!parentFolderId);
       }
@@ -1724,6 +1741,11 @@ export default class DataStorage extends React.Component {
   didSelectDataStorageItem = (item) => {
     if (item.type.toLowerCase() === 'folder') {
       this.navigate(this.props.storageId, item.path, {clearPathMarkers: false});
+      if (this.state.metadata) {
+        this.setState({
+          importedJobs: this.isOmicsStore
+        });
+      }
       return;
     }
     if (item.type.toLowerCase() === 'file' && !item.deleteMarker) {
@@ -1733,7 +1755,8 @@ export default class DataStorage extends React.Component {
         .toLowerCase();
       this.setState({
         selectedFile: item,
-        metadata: true
+        metadata: true,
+        importedJobs: this.isOmicsStore
       }, () => {
         switch (extension) {
           case 'vsi':
@@ -2384,10 +2407,19 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onToggleJobs = () => {
+    this.setState({
+      importedJobs: !this.showJobs
+    });
+  };
+
   onPanelClose = (key) => {
     switch (key) {
       case METADATA_PANEL_KEY:
-        this.setState({metadata: false});
+        this.setState({
+          metadata: false,
+          importedJobs: false
+        });
         break;
     }
   };
@@ -2398,6 +2430,12 @@ export default class DataStorage extends React.Component {
       title: 'Show attributes',
       checked: this.showMetadata,
       available: true
+    };
+    const jobAction = {
+      key: 'jobs',
+      title: 'Show jobs',
+      checked: this.showJobs,
+      available: this.isOmicsStore
     };
     const archivedFilesAction = {
       key: 'archive',
@@ -2418,6 +2456,7 @@ export default class DataStorage extends React.Component {
       }
       switch (action.key) {
         case 'attributes': this.onToggleMetadata(); break;
+        case 'jobs': this.onToggleJobs(); break;
         case 'archive': this.showArchivedFilesChanged(!this.showArchives); break;
         case 'version': this.showFilesVersionsChanged(!this.showVersions); break;
         default:
@@ -2431,6 +2470,7 @@ export default class DataStorage extends React.Component {
       }
     };
     appendAction(metadataAction);
+    appendAction(jobAction);
     appendAction(archivedFilesAction);
     appendAction(versionsAction);
     if (actions.length === 0) {
@@ -2657,7 +2697,7 @@ export default class DataStorage extends React.Component {
             />
           </div>
           {
-            this.showMetadata &&
+            (this.showMetadata || this.showJobs) &&
             <Metadata
               pending={this.state.previewPending}
               key={METADATA_PANEL_KEY}
@@ -2736,6 +2776,15 @@ export default class DataStorage extends React.Component {
                 storageMask: mask,
                 storageId: Number(this.props.storageId)
               }}
+              jobList={
+                this.isOmicsStore && this.state.importedJobs ? (
+                  <JobList
+                    storageId={this.props.storageId}
+                    updateJobsSearch={this.state.updateJobsSearch}
+                  />
+                ) : null
+              }
+              showMetadata={this.showMetadata}
             />
           }
         </ContentMetadataPanel>
@@ -2946,11 +2995,15 @@ export default class DataStorage extends React.Component {
       this.openPreviewModal(file);
     }
     this.updateStorageIfRequired();
+    if (!this.isOmicsStore) {
+      this.closeImportedJobsIfRequired();
+    }
   }
 
   componentDidUpdate (prevProps) {
     this.clearSelectedItemsIfRequired();
     this.updateStorageIfRequired();
+    this.closeImportedJobsIfRequired(prevProps.storageId);
   }
 
   updateStorageIfRequired = () => {
@@ -2971,6 +3024,14 @@ export default class DataStorage extends React.Component {
   componentWillReceiveProps (nextProps, nextState) {
     if (nextProps.storageId !== this.props.storageId) {
       this.setState({selectedFile: null});
+    }
+  }
+
+  closeImportedJobsIfRequired = (prevStorageId) => {
+    if (this.state.importedJobs) {
+      if (!this.isOmicsStore && prevStorageId !== this.props.storageId) {
+        this.setState({importedJobs: false});
+      }
     }
   }
 }
