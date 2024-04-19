@@ -103,6 +103,7 @@ import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
+import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
@@ -2775,10 +2776,15 @@ export default class DataStorage extends React.Component {
                 storageMask: mask,
                 storageId: Number(this.props.storageId)
               }}
-              showImportedJobs={this.isOmicsStore && this.state.importedJobs}
+              jobList={
+                this.isOmicsStore && this.state.importedJobs ? (
+                  <JobList
+                    storageId={this.props.storageId}
+                    updateJobsSearch={this.state.updateJobsSearch}
+                  />
+                ) : null
+              }
               showMetadata={this.showMetadata}
-              jobStorageId={this.props.storageId}
-              updateJobsSearch={this.state.updateJobsSearch}
             />
           }
         </ContentMetadataPanel>

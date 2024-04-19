@@ -26,9 +26,9 @@ import {
   Button,
   Icon
 } from 'antd';
-import LoadingView from '../../../special/LoadingView';
-import OmicsJobsImport from '../../../../models/dataStorage/OmicsJobsImport';
-import displayDate from '../../../../utils/displayDate';
+import LoadingView from '../../../../special/LoadingView';
+import OmicsJobsImport from '../../../../../models/dataStorage/OmicsJobsImport';
+import displayDate from '../../../../../utils/displayDate';
 import styles from './imported-jobs.css';
 
 const PAGE_SIZE = 10;
