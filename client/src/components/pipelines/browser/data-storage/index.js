@@ -537,7 +537,12 @@ export default class DataStorage extends React.Component {
       this.storage.refreshStorageInfo();
       this.props.folders.invalidateFolder(parentFolderId);
       this.setState({
-        importedJobs: true
+        importedJobs: true,
+        updateJobsSearch: true
+      }, () => {
+        this.setState({
+          updateJobsSearch: false
+        });
       });
       if (this.props.onReloadTree) {
         this.props.onReloadTree(!parentFolderId);
@@ -2773,6 +2778,7 @@ export default class DataStorage extends React.Component {
               showImportedJobs={this.isOmicsStore && this.state.importedJobs}
               showMetadata={this.showMetadata}
               jobStorageId={this.props.storageId}
+              updateJobsSearch={this.state.updateJobsSearch}
             />
           }
         </ContentMetadataPanel>
