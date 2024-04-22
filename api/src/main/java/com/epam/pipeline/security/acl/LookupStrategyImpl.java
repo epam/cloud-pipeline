@@ -62,6 +62,9 @@ public class LookupStrategyImpl implements LookupStrategy {
 
     private static final String STUB = "Stub only";
 
+    public static final String START_WHERE_CLAUSE = "where ( ";
+    public static final String END_WHERE_CLAUSE = ") ";
+
     public static final String DEFAULT_SELECT_CLAUSE = "select acl_object_identity.object_id_identity, "
             + "acl_entry.ace_order,  "
             + "acl_object_identity.id as acl_id, "
@@ -81,14 +84,14 @@ public class LookupStrategyImpl implements LookupStrategy {
             + "left join acl_sid acli_sid on acli_sid.id = acl_object_identity.owner_sid "
             + "left join acl_class on acl_class.id = acl_object_identity.object_id_class   "
             + "left join acl_entry on acl_object_identity.id = acl_entry.acl_object_identity "
-            + "left join acl_sid on acl_entry.sid = acl_sid.id  " + "where ( ";
+            + "left join acl_sid on acl_entry.sid = acl_sid.id ";
 
     private static final String DEFAULT_LOOKUP_KEYS_WHERE_CLAUSE = "(acl_object_identity.id = ?)";
 
     private static final String DEFAULT_LOOKUP_IDENTITIES_WHERE_CLAUSE =
             "(acl_object_identity.object_id_identity = ? and acl_class.class = ?)";
 
-    public static final String DEFAULT_ORDER_BY_CLAUSE = ") order by acl_object_identity.object_id_identity"
+    public static final String DEFAULT_ORDER_BY_CLAUSE = "order by acl_object_identity.object_id_identity"
             + " asc, acl_entry.ace_order asc";
     private static final int BATCH_SIZE = 50;
 
@@ -171,9 +174,9 @@ public class LookupStrategyImpl implements LookupStrategy {
 
         final String endSql = orderByClause;
 
-        StringBuilder sqlStringBldr = new StringBuilder(startSql.length()
-                + endSql.length() + requiredRepetitions * (repeatingSql.length() + 4));
-        sqlStringBldr.append(startSql);
+        StringBuilder sqlStringBldr = new StringBuilder(startSql.length() + START_WHERE_CLAUSE.length() +
+                END_WHERE_CLAUSE.length() + endSql.length() + requiredRepetitions * (repeatingSql.length() + 4));
+        sqlStringBldr.append(startSql).append(START_WHERE_CLAUSE);
 
         for (int i = 1; i <= requiredRepetitions; i++) {
             sqlStringBldr.append(repeatingSql);
@@ -183,7 +186,7 @@ public class LookupStrategyImpl implements LookupStrategy {
             }
         }
 
-        sqlStringBldr.append(endSql);
+        sqlStringBldr.append(END_WHERE_CLAUSE).append(endSql);
 
         return sqlStringBldr.toString();
     }
@@ -335,6 +338,28 @@ public class LookupStrategyImpl implements LookupStrategy {
         }
 
         return result;
+    }
+
+    /**
+     * This method simply loads all ACLs from DB without any clause WHERE, etc.
+     * Useful to reload ACL cache fast in batch mode, instead of doing it one by one.
+     * */
+    Map<ObjectIdentity, Acl> lookupObjectIdentities() {
+        final Map<Serializable, Acl> acls = new HashMap<>();
+
+        jdbcTemplate.query(selectClause + orderByClause, new LookupStrategyImpl.ProcessResultSet(acls, null));
+
+        Map<ObjectIdentity, Acl> resultMap = new HashMap<>();
+        for (Acl inputAcl : acls.values()) {
+            Assert.isInstanceOf(AclImpl.class, inputAcl,
+                    "Map should have contained an AclImpl");
+            Assert.isInstanceOf(Long.class, ((AclImpl) inputAcl).getId(),
+                    "Acl.getId() must be Long");
+
+            Acl result = convert(acls, (Long) ((AclImpl) inputAcl).getId());
+            resultMap.put(result.getObjectIdentity(), result);
+        }
+        return resultMap;
     }
 
     /**
