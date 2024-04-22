@@ -46,9 +46,62 @@ RUN curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pi
 
 RUN pip install -I setuptools
 
-# Install desktop environment and Xfce4
-RUN dnf install -y --allowerasing coreutils && \
-    yum groupinstall -y "Server with GUI"
+# Install desktop environment
+RUN dnf install -y --allowerasing coreutils
+
+RUN yum -y install epel-release && \
+    yum -y install git \
+                    wget \
+                     unzip \
+                     glibc-static \
+                     vim \
+                     Lmod \
+                     nfs-utils \
+                     bash-completion \
+                     mc &&  \
+                    yum clean all
+RUN yum -y install librdmacm  \
+                    emacs &&  \
+                    yum clean all
+RUN yum -y install glx-utils  \
+                    mesa-dri-drivers  \
+                    xorg-x11-server-Xorg  \
+                    xorg-x11-utils  \
+                    xorg-x11-xauth  \
+                    xorg-x11-xinit  \
+                    xorg*fonts*  \
+                    xterm libXvMC  \
+                    mesa-libxatracker  \
+                    freeglut  \
+                    gnome-desktop3  \
+                    gnome-terminal  \
+                    gnome-system-monitor \
+                     nautilus  \
+                    evince  \
+                    gnome-color-manager  \
+                    gnome-font-viewer  \
+                    gnome-shell  \
+                    gnome-calculator  \
+                    gedit  \
+                    gdm  \
+                    metacity  \
+                    gnome-session  \
+                    gnome-classic-session \
+                     gnome-session-xsession  \
+                    gnu-free-fonts-common  \
+                    gnu-free-mono-fonts  \
+                    gnu-free-sans-fonts  \
+                    gnu-free-serif-fonts  \
+                    desktop-backgrounds-gnome &&  \
+                    yum -y groupinstall "Xfce"
+RUN pip2 install PyJWT==1.7.1
+RUN yum install -y mesa-libGLU \
+                    xcb-util-wm \
+                     xcb-util-image \
+                     xcb-util-keysyms \
+                     xcb-util-renderutil \
+                     libXScrnSaver
+
 RUN yum groupinstall -y "Xfce" && \
     yum groupinstall -y "Fonts" && \
     yum erase -y *power* *screensaver* && \
