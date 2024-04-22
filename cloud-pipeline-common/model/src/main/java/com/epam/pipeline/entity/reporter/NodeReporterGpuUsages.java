@@ -22,6 +22,6 @@ import lombok.Value;
 public class NodeReporterGpuUsages {
     String name;
     Integer index;
-    Integer utilizationMemory;
-    Integer utilizationGpu;
+    Double utilizationMemory;
+    Double utilizationGpu;
 }
