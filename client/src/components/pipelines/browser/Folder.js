@@ -772,6 +772,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     let payload;
     if (this.state.createOmicsStoreFlag) {
       payload = {
+        parentFolderId: this._currentFolder.folder.id,
         name: name,
         description: storage.description,
         regionId: (storage.serviceType === ServiceTypes.omicsRef ||
