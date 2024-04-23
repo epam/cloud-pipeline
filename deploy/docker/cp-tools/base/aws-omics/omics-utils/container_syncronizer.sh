@@ -104,13 +104,22 @@ if [ -n "$IMAGE_BUILD_CONFIG" ]; then
     readarray -t images < <(jq -r --compact-output '.manifest[] | to_entries | map(.value) | join(",")' "${IMAGE_BUILD_CONFIG}")
     for build_dir_and_image_name in "${images[@]}"; do
         _IMAGE_BUILD_DIR=$(echo "$build_dir_and_image_name" | cut -d, -f1)
-        _IMAGE_NAME=$(echo "$build_dir_and_image_name" | cut -d, -f2)
+        _IMAGE_NAME="$PRIVATE_ECR/$(echo "$build_dir_and_image_name" | cut -d, -f2)"
         echo "Image will be built from : ${_IMAGE_BUILD_DIR}, and pushed to ${_IMAGE_NAME}."
-        docker build -t "$PRIVATE_ECR/$_IMAGE_NAME" "$_IMAGE_BUILD_DIR"
+        docker build -t "$_IMAGE_NAME" "$_IMAGE_BUILD_DIR" &> "$_build_image_log"
         if [ $? -ne 0 ]; then
             echo "There was a problem with build process for image $_IMAGE_NAME ..."
             cat "$_build_image_log"
             exit 1
+        else
+           echo "Successfully built image $_IMAGE_NAME ..."
+        fi
+
+        _ECR_REPO_NAME=$(echo "${_IMAGE_NAME#"${PRIVATE_ECR}/"}" | cut -d: -f1)
+        aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_build_image_log"
+        if [ $? -ne 0 ]; then
+            echo "There was a problem with creating ECR repo for ${_ECR_REPO_NAME}. Continue with pushing ..."
+            cat "$_build_image_log"
         fi
 
         docker push "$_IMAGE_NAME"  &> "$_build_image_log"
@@ -118,9 +127,10 @@ if [ -n "$IMAGE_BUILD_CONFIG" ]; then
             echo "There was a problem with pushing image to $_IMAGE_NAME ..."
             cat "$_build_image_log"
             exit 1
+        else
+           echo "Successfully pushed image $_IMAGE_NAME ..."
         fi
     done
 else
     echo "Image build config wasn't set. Nothing to build/push."
 fi
-
