@@ -22,11 +22,9 @@ import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.MutableAcl;
 import org.springframework.security.acls.model.ObjectIdentity;
-import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
-@Service
 @Slf4j
 @EnableScheduling
 public class AclRefreshService {
