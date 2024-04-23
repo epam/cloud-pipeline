@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os.path
+import platform
 import re
 import sys
 
@@ -265,6 +266,10 @@ class AWSOmicsOperation:
                 method='sts-assume-role')
 
         s = get_session()
+        # hack to work on windows machine, we pre-built hte pyinstaller bundle with data folder from botocore
+        # included in 'botocore-data' folder and here add additional place for botocore to look in
+        if platform.system() == 'Windows':
+            s.get_component('data_loader').search_paths.append('botocore-data')
         s._credentials = session_credentials
         return Session(botocore_session=s)
 
