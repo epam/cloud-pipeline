@@ -15,10 +15,9 @@ CP_GIT_CLONE_URL="$CP_GIT_CLONE_URL"
 PIPELINE_VERSION="$PIPELINE_VERSION"
 CP_CMD="$CP_CMD"
 
-cat /proc/1/environ | tr '\0' '\n' | awk '{ print "export " \$1 }' > /opt/cp_env.tmp
-chmod +x /opt/cp_env.tmp
-source /opt/cp_env.tmp
-rm -rf /opt/cp_env.tmp
+# Inherit environment variables from the PID 1 process
+# So that the SystemD option get a correct environment
+while IFS= read -rd '' var; do declare +x "$var"; done </proc/1/environ
 
 set -o pipefail
 
