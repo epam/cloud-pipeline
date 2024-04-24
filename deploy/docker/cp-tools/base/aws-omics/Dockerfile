@@ -15,19 +15,20 @@
 ARG BASE_IMAGE=library/centos:7.7.1908
 FROM ${BASE_IMAGE}
 
-RUN yum install -y git wget curl
+RUN yum install -y git wget curl zip unzip gettext openssh-server
 
 RUN cd /opt && curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && \
-    sudo ./aws/install && \
+    ./aws/install && \
     rm -rf awscliv2.zip && \
     cd -
 
-COPY omics-utils /opt/
+COPY omics-utils /opt/omics/utils
 
 RUN cd /tmp && \
     git clone https://github.com/aws-samples/amazon-omics-tutorials && \
-    mv amazon-omics-tutorials/utils/scripts/* /opt/omics-utils/ && \
+    mkdir -p /opt/omics/amazon && \
+    mv amazon-omics-tutorials/utils/scripts/* /opt/omics/amazon && \
     rm -rf amazon-omics-tutorials && \
     cd -
 
