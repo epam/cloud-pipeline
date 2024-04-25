@@ -1132,6 +1132,9 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-q', '--quiet', is_flag=True, help='Quiet mode')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
@@ -1183,9 +1186,9 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
-def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, verify_destination):
+def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, sync_newer,
+                      tags, file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_empty_files, on_failures, verify_destination):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1215,7 +1218,8 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-                             clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
+                             clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination)
 
 
 @storage.command('cp')
@@ -1278,12 +1282,15 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips all failures.')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                       symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, skip_existing, verify_destination):
+                      on_failures, skip_existing, sync_newer, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1325,7 +1332,8 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-                             clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
+                             clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination)
 
 
 @storage.command('du')

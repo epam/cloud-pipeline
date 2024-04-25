@@ -148,6 +148,16 @@ class StorageItemManager(object):
         except ClientError:
             return None
 
+    def get_s3_file_modification_datetime(self, bucket, key):
+        try:
+            client = self._get_client()
+            item = client.head_object(Bucket=bucket, Key=key)
+            if 'DeleteMarker' in item:
+                return None
+            return item.get('LastModified', None)
+        except ClientError:
+            return None
+
     def get_s3_file_version(self, bucket, key):
         try:
             client = self._get_client()
@@ -164,6 +174,10 @@ class StorageItemManager(object):
     @staticmethod
     def get_local_file_size(path):
         return StorageOperations.get_local_file_size(path)
+
+    @staticmethod
+    def get_local_modification_datetime(path):
+        return StorageOperations.get_local_file_modification_datetime(path)
 
     def get_transfer_config(self, io_threads):
         transfer_config = TransferConfig()
@@ -190,6 +204,9 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_local_file_size(destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return self.get_local_modification_datetime(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
@@ -226,6 +243,9 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return 0
 
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return None
+
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
         source_key = self.get_source_key(source_wrapper, path)
@@ -256,6 +276,9 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
@@ -303,6 +326,9 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
@@ -345,6 +371,9 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path
@@ -1011,7 +1040,7 @@ class S3BucketOperations(object):
                     name = cls.get_item_name(file['Key'], prefix=prefix)
                     if name.endswith(delimiter):
                         continue
-                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
+                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'], file['LastModified'])
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):

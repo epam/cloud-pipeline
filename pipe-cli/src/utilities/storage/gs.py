@@ -717,6 +717,9 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_path):
         return destination_wrapper.get_list_manager().get_file_size(destination_path)
 
+    def get_destination_modification_datetime(self, destination_wrapper, destination_path):
+        return destination_wrapper.get_list_manager().get_file_modification_datetime(destination_path)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
@@ -781,6 +784,9 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
@@ -857,6 +863,9 @@ class GsDownloadStreamManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return 0
 
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return None
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
@@ -903,6 +912,9 @@ class GsUploadManager(GsManager, AbstractTransferManager):
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_modification_datetime(destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
@@ -988,6 +1000,9 @@ class GSUploadStreamManager(GsManager, AbstractTransferManager):
 
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
+
+    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_modification_datetime(destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path

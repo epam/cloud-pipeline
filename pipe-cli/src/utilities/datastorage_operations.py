@@ -67,7 +67,7 @@ class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
            io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, verify_destination=False):
+           clean=False, skip_existing=False, sync_newer=False, verify_destination=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -104,6 +104,9 @@ class DataStorageOperations(object):
             sys.exit(1)
         if file_list and source_type in [WrapperType.STREAM]:
             click.echo('Option --file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if skip_existing and sync_newer and source_type in [WrapperType.STREAM, WrapperType.HTTP, WrapperType.FTP]:
+            click.echo('Option --sync-newer is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
         if file_list and source_wrapper.is_file():
             click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
@@ -148,7 +151,7 @@ class DataStorageOperations(object):
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                      include, exclude, force, quiet, skip_existing, verify_destination,
+                                      include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
@@ -159,7 +162,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                      include, exclude, force, quiet, skip_existing, verify_destination,
+                      include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                       unsafe_chars, unsafe_chars_replacement, empty_files):
         logging.debug(u'Preprocessing paths...')
         filtered_items = []
@@ -220,8 +223,12 @@ class DataStorageOperations(object):
                 continue
             if skip_existing:
                 source_key = manager.get_source_key(source_wrapper, full_path)
-                need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
-                                                              destination_size, quiet)
+                destination_modification_datetime = None if not sync_newer else \
+                    manager.get_destination_modification_datetime(destination_wrapper, destination_key)
+                source_modification_datetime = None if not sync_newer or len(item) < 4 else item[4]
+                need_to_overwrite = not manager.skip_existing(source_key, source_size, source_modification_datetime,
+                                                              destination_key, destination_size,
+                                                              destination_modification_datetime, quiet)
                 if need_to_overwrite and not force:
                     cls._force_required()
                 if need_to_overwrite:
