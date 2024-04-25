@@ -20,7 +20,12 @@ function parse_options {
             shift # past value
             ;;
             --public_registry_properties)
-            export _PRIVATE_REGISTRY_NAMING_PROPERTIES=$2
+            export PRIVATE_REGISTRY_NAMING_PROPERTIES=$2
+            shift # past argument
+            shift # past value
+            ;;
+            --workflow_source)
+            export WORKFLOW_SOURCE_DIR=$2
             shift # past argument
             shift # past value
             ;;
@@ -31,11 +36,16 @@ function parse_options {
 parse_options "$@"
 
 export _RESYNC_IMAGES=${RESYNC_IMAGES:-true}
-export GET_PRIVATE_IMAGE_NAME_SCRIPT=${GET_PRIVATE_IMAGE_NAME_SCRIPT:-/opt/omics/utils/get_private_image_name.py}
-export PRIVATE_REGISTRY_NAMING_PROPERTIES="${_PRIVATE_REGISTRY_NAMING_PROPERTIES:-/opt/omics/utils/public_registry_properties.json}"
+export GET_PRIVATE_IMAGE_NAME_SCRIPT=/opt/omics/utils/get_private_image_name.py
+export PRIVATE_REGISTRY_NAMING_PROPERTIES="${PRIVATE_REGISTRY_NAMING_PROPERTIES:-/opt/omics/utils/public_registry_properties.json}"
 if [ ! -f "$PRIVATE_REGISTRY_NAMING_PROPERTIES" ]; then
     echo "Can't find a file: ${PRIVATE_REGISTRY_NAMING_PROPERTIES}. Please --public_registry_properties with an existing config or left unchanged to use default value: /opt/omics-utils/public_registry_properties.json"
     exit 1
+fi
+
+if [ -n "$WORKFLOW_SOURCE_DIR" ]; then
+    IMAGE_PULL_CONFIG="${IMAGE_PULL_CONFIG:-$WORKFLOW_SOURCE_DIR/container_image_manifest.json}"
+    IMAGE_BUILD_CONFIG="${IMAGE_BUILD_CONFIG:-$WORKFLOW_SOURCE_DIR/container_build_manifest.json}"
 fi
 
 _sync_image_log=$(mktemp)
