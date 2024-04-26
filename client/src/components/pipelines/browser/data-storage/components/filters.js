@@ -52,7 +52,7 @@ class SizeFilter extends React.Component {
     return (
       <div className={styles.sizeFilter}>
         <div className={styles.inputContainer}>
-          <span>More than</span>
+          <span style={{minWidth: 55}}>More than</span>
           <InputNumber
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeGreaterThan]}
@@ -63,7 +63,7 @@ class SizeFilter extends React.Component {
           <span>Kb</span>
         </div>
         <div className={styles.inputContainer}>
-          <span>Less than</span>
+          <span style={{minWidth: 55}}>Less than</span>
           <InputNumber
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeLessThan]}
