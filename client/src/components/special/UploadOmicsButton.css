@@ -22,3 +22,24 @@
 .omics-upload-form-item {
   margin-bottom: 5px;
 }
+
+.source-info {
+  margin-left: 10px;
+}
+
+.delete-source {
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+.delete-source {
+  margin-left: 10px;
+  cursor: pointer;
+  color: #59595984;
+}
+
+.delete-source:hover {
+  margin-left: 10px;
+  cursor: pointer;
+  color: #595959;
+}

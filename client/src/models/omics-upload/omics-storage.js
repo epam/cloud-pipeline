@@ -36,22 +36,26 @@ const MAX_FILE_SIZE_TB = 5;
 const KiB = 1024;
 const MiB = 1024 * KiB;
 
-const MIN_PART_SIZE = 100 * MiB;
-const MIN_FILE_SIZE_DESCRIPTION = displaySize(MIN_PART_SIZE, false);
+const MAX_PART_SIZE = 100 * MiB;
 
 const MAX_FILE_SIZE = MAX_FILE_SIZE_TB * TB;
 const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
 
-export {MIN_PART_SIZE, MIN_FILE_SIZE_DESCRIPTION, MAX_FILE_SIZE, MAX_FILE_SIZE_DESCRIPTION};
-
 const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
+const UPLOAD_PART_MAX_ATTEMPTS = 5;
+
+const SOURCE1 = 'SOURCE1';
+const SOURCE2 = 'SOURCE2';
+
+export {MAX_FILE_SIZE_DESCRIPTION, SOURCE1, SOURCE2};
 
 class OmicsStorage {
   _omics;
   _credentials;
   regionName;
   _storage;
-  @observable uploadPercentage = 0;
+  @observable uploadPercentageSource1 = 0;
+  @observable uploadPercentageSource2 = 0;
   @observable uploadError = null;
 
   get omics () {
@@ -159,12 +163,8 @@ class OmicsStorage {
   getParts = (file, partCounts) => {
     const parts = [];
     for (let partNumber = 1; partNumber <= partCounts; partNumber++) {
-      const start = (partNumber - 1) * MIN_PART_SIZE;
-      let end = start + MIN_PART_SIZE;
-      const penultimate = partNumber === (partCounts - 1);
-      if (penultimate && (file.size - end) < MIN_PART_SIZE) {
-        end = file.size;
-      }
+      const start = (partNumber - 1) * MAX_PART_SIZE;
+      let end = Math.min(start + MAX_PART_SIZE, file.size);
       parts.push({
         filePart: file.slice(start, end),
         partNumber,
@@ -174,58 +174,78 @@ class OmicsStorage {
     return parts;
   }
 
-  uploadFile = async (file) => {
+  uploadFile = async (file, source) => {
     if (this.uploadId) {
-      const partCounts = Math.ceil(file.size / MIN_PART_SIZE);
+      const partCounts = Math.ceil(file.size / MAX_PART_SIZE);
       const parts = this.getParts(file, partCounts);
       for (let i = 0; i < parts.length; i++) {
-        const uploaded = await this.uploadPart(parts[i]);
+        const uploaded = await this.uploadPart(parts[i], source, 1);
         if (uploaded) {
-          this.uploadPercentage = (parts[i].partNumber * 100) / partCounts;
+          let percentage = (parts[i].partNumber * 100) / partCounts;
+          if (source === SOURCE1) {
+            this.uploadPercentageSource1 = percentage;
+          }
+          if (source === SOURCE2) {
+            this.uploadPercentageSource2 = percentage;
+          }
+        } else {
+          return false;
         }
       }
-      this.listParts = await this.getListParts();
-      if (this.listParts && this.listParts.length) {
-        this.uploadPercentage = 100;
-        await this.completeUpload();
+      this.listParts = await this.getListParts(source);
+      if (this.listParts && this.listParts.length && this.listParts.length === partCounts) {
+        if (source === SOURCE1) {
+          this.uploadPercentageSource1 = 100;
+        }
+        if (source === SOURCE2) {
+          this.uploadPercentageSource2 = 100;
+        }
+        return true;
       } else {
-        await this.abortUpload();
+        return false;
       }
     }
   }
 
-  uploadPart = async (part) => {
+  uploadPart = async (part, source, attempt) => {
     try {
-      const input = {
-        sequenceStoreId: this.sequenceStoreId,
-        uploadId: this.uploadId,
-        partSource: 'SOURCE1',
-        partNumber: part.partNumber,
-        payload: part.filePart
-      };
-      const command = new UploadReadSetPartCommand(input);
-      const response = await this._omics.send(command);
-      return response.checksum;
+      if (attempt <= UPLOAD_PART_MAX_ATTEMPTS) {
+        const input = {
+          sequenceStoreId: this.sequenceStoreId,
+          uploadId: this.uploadId,
+          partSource: source,
+          partNumber: part.partNumber,
+          payload: part.filePart
+        };
+        const command = new UploadReadSetPartCommand(input);
+        const response = await this._omics.send(command);
+        console.log(response)
+        return response.checksum;
+      }
     } catch (err) {
+      console.log(err)
       this.uploadError = err;
-      await this.abortUpload();
-      return null;
+      if (attempt < (UPLOAD_PART_MAX_ATTEMPTS - 1)) {
+        await this.uploadPart(part, source, attempt + 1);
+      } else {
+        return null;
+      }
     }
   }
 
-  getListParts = async () => {
+  getListParts = async (source) => {
     try {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
         uploadId: this.uploadId,
-        partSource: 'SOURCE1'
+        partSource: source
       };
       const command = new ListReadSetUploadPartsCommand(input);
       const response = await this._omics.send(command);
       return response.parts;
     } catch (err) {
       this.uploadError = err;
-      await this.abortUpload();
+      return false;
     }
   }
 
@@ -243,9 +263,10 @@ class OmicsStorage {
       const command = new CompleteMultipartReadSetUploadCommand(input);
       const response = await this._omics.send(command);
       this.readSetId = response.readSetId;
+      return true;
     } catch (err) {
       this.uploadError = err;
-      await this.abortUpload();
+      return false;
     }
   }
 
