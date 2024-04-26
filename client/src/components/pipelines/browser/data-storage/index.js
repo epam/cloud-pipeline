@@ -101,6 +101,7 @@ import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import styles from '../Browser.css';
+import {SizeFilter, DateFilter, FilterWrapper, FILTER_FIELDS} from './components/filters';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -177,6 +178,7 @@ export default class DataStorage extends React.Component {
   });
 
   @observable generateDownloadUrls;
+  @observable filterDropdownVisible;
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -1476,9 +1478,24 @@ export default class DataStorage extends React.Component {
         </RestoreStatusIcon>
       );
     };
+    const filteredStatus = (keys = []) => {
+      const filtered = keys.some(key => !!this.storage.currentFilter?.[key]);
+      return {
+        filtered,
+        filteredValue: filtered ? ['filtered'] : null
+      };
+    };
+    const applyFilters = async () => {
+      this.storage.applyFilters();
+      this.filterDropdownVisible = undefined;
+    };
+    const clearFilter = keys => () => {
+      this.storage.resetCurrentFilterField(keys);
+      this.filterDropdownVisible = undefined;
+      this.storage.applyFilters();
+    };
     const selectionColumn = {
       key: 'selection',
-      title: '',
       className: (this.showVersions || hasVersions)
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
@@ -1593,6 +1610,25 @@ export default class DataStorage extends React.Component {
         }
         return text;
       },
+      filterDropdown: (
+        <FilterWrapper
+          onOk={applyFilters}
+          onCancel={clearFilter([FILTER_FIELDS.name])}
+        >
+          <Input
+            placeholder="File name"
+            value={this.storage.currentFilter?.[FILTER_FIELDS.name]}
+            onChange={(e) => this.storage.changeFilters(FILTER_FIELDS.name, e.target.value)}
+            onPressEnter={this.storage.applyFilters}
+          />
+        </FilterWrapper>
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'name',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'name' : undefined;
+        this.storage.resetCurrentFilter(true, true);
+      },
+      ...filteredStatus([FILTER_FIELDS.name]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const sizeColumn = {
@@ -1601,6 +1637,23 @@ export default class DataStorage extends React.Component {
       title: 'Size',
       className: styles.sizeCell,
       render: size => displaySize(size),
+      filterDropdown: (
+        <FilterWrapper
+          onOk={applyFilters}
+          onCancel={clearFilter([
+            FILTER_FIELDS.sizeGreaterThan,
+            FILTER_FIELDS.sizeLessThan
+          ])}
+        >
+          <SizeFilter storage={this.storage} />
+        </FilterWrapper>
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'size',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'size' : undefined;
+        this.storage.resetCurrentFilter(true, true);
+      },
+      ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const changedColumn = {
@@ -1609,6 +1662,23 @@ export default class DataStorage extends React.Component {
       title: 'Date changed',
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
+      filterDropdown: (
+        <FilterWrapper
+          onOk={applyFilters}
+          onCancel={clearFilter([
+            FILTER_FIELDS.dateAfter,
+            FILTER_FIELDS.dateBefore
+          ])}
+        >
+          <DateFilter storage={this.storage} />
+        </FilterWrapper>
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'date',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'date' : undefined;
+        this.storage.resetCurrentFilter(true, true);
+      },
+      ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const labelsColumn = {
@@ -1627,6 +1697,19 @@ export default class DataStorage extends React.Component {
     const actionsColumn = {
       key: 'actions',
       className: styles.itemActions,
+      title: (
+        <div>
+          {this.storage.resultsFiltered ? (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => this.storage.resetCurrentFilter()}
+            >
+              Reset filters
+            </Button>
+          ) : null}
+        </div>
+      ),
       render: this.actionsRenderer
     };
 
@@ -2534,6 +2617,12 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
+            {this.storage.resultsFilteredAndTruncated ? (
+              <Alert
+                message={`Not all files to be shown. Please try to making filters more restrictive`}
+                type="info"
+              />
+            ) : null}
             {
               this.renderContent()
             }

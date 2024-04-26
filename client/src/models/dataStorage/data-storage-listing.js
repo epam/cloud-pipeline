@@ -19,6 +19,7 @@ import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
 import authenticatedUserInfo from '../user/WhoAmI';
 import DataStorageRequest from './DataStoragePage';
+import DataStorageFilter from './DataStorageFilter';
 import roleModel from '../../utils/roleModel';
 import MetadataLoad from '../metadata/MetadataLoad';
 
@@ -269,6 +270,15 @@ class DataStorageListing {
   @observable downloadEnabled = false;
 
   /**
+   * Filters info. Each folder has its own filter object.
+   * Request results may be truncated.
+   */
+  @observable filters = [];
+  @observable initialFilter = {};
+  @observable resultsTruncated = false;
+  @observable filtersApplied = false;
+
+  /**
    * @param {DataStoragePagesOptions} options
    */
   constructor (options = {}) {
@@ -363,6 +373,31 @@ class DataStorageListing {
     };
   }
 
+  @computed
+  get currentFilter () {
+    return this.filters.find(f => f.path === this.path);
+  }
+
+  @computed
+  get filtersEmpty () {
+    if (!this.currentFilter) {
+      return true;
+    }
+    const {path, ...filter} = this.currentFilter;
+    return filter && Object.values(filter)
+      .every(value => value === undefined);
+  }
+
+  @computed
+  get resultsFiltered () {
+    return this.filtersApplied && !this.filtersEmpty;
+  }
+
+  @computed
+  get resultsFilteredAndTruncated () {
+    return this.resultsFiltered && this.resultsTruncated;
+  }
+
   _increaseUniqueToken = () => {
     this.token = (this.token || 0) + 1;
     return this.token;
@@ -398,18 +433,42 @@ class DataStorageListing {
     const pathChanged = this.setPath(path);
     const showVersionsChanged = this.setShowVersions(showVersions);
     const showArchivesChanged = this.setShowArchives(showArchives);
+    if (storageChanged) {
+      this.destroyFilters();
+    }
     if (
       storageChanged ||
       pathChanged ||
       showVersionsChanged ||
       showArchivesChanged
     ) {
-      (this.fetchCurrentPage)();
+      (this.initializeFilters)();
+      this.filtersEmpty
+        ? (this.fetchCurrentPage)()
+        : (this.applyFilters)();
     }
     return storageChanged ||
     pathChanged ||
     showVersionsChanged ||
     showArchivesChanged;
+  };
+
+  @action
+  initializeFilters = () => {
+    const filter = this.filters.find(f => f.path === this.path);
+    const blankFilter = {
+      path: this.path,
+      name: undefined,
+      sizeGreaterThan: undefined,
+      sizeLessThan: undefined,
+      dateFilterType: undefined,
+      dateAfter: undefined,
+      dateBefore: undefined
+    };
+    if (!filter) {
+      this.filters.push(blankFilter);
+    }
+    this.initialFilter = filter || blankFilter;
   };
 
   @action
@@ -532,6 +591,117 @@ class DataStorageListing {
   };
 
   @action
+  resetCurrentFilterField = (keys = [], silent = false) => {
+    const filter = this.filters.find(f => f.path === this.path);
+    keys.forEach(key => {
+      if (key && filter && key in filter) {
+        filter[key] = undefined;
+      }
+    });
+    if (!silent) {
+      this.applyFilters();
+    }
+  };
+
+  @action
+  resetCurrentFilter = (resetToInitialValues = false, silent = false) => {
+    if (!this.currentFilter) {
+      return;
+    }
+    const {path, ...restFilter} = this.currentFilter;
+    Object.keys(restFilter).forEach(key => {
+      const value = resetToInitialValues
+        ? this.initialFilter[key]
+        : undefined;
+      this.changeFilters(key, value);
+    });
+    if (!silent) {
+      this.refreshCurrentPath(true);
+    }
+  };
+
+  @action
+  destroyFilters = () => {
+    this.filters = [];
+    this.initialFilter = {};
+    this.resultsTruncated = false;
+    this.filtersApplied = false;
+  };
+
+  @action
+  changeFilters = (key, value) => {
+    const filter = this.filters.find(f => f.path === this.path);
+    if (!filter) {
+      this.filters.push({
+        path: this.path,
+        [key]: value
+      });
+      return;
+    }
+    filter[key] = value;
+  };
+
+  @action
+  applyFilters = async () => {
+    const kbToBytes = kb => kb * 1024;
+    const pathCorrected = correctPath(
+      this.path,
+      {
+        leadingSlash: false,
+        trailingSlash: false,
+        undefinedAsEmpty: true
+      }
+    );
+    try {
+      this.initialFilter = {...(this.currentFilter || {})};
+      const request = new DataStorageFilter(
+        this.storageId,
+        pathCorrected ? decodeURIComponent(pathCorrected) : undefined
+      );
+      const payload = {
+        ...(this.currentFilter.name ? {nameFilter: this.currentFilter.name} : {}),
+        ...(this.currentFilter.sizeGreaterThan
+          ? {sizeGreaterThan: kbToBytes(this.currentFilter.sizeGreaterThan)}
+          : {}),
+        ...(this.currentFilter.sizeLessThan
+          ? {sizeLessThan: kbToBytes(this.currentFilter.sizeLessThan)}
+          : {}),
+        ...(this.currentFilter.dateAfter
+          ? {dateAfter: this.currentFilter.dateAfter}
+          : {}),
+        ...(this.currentFilter.dateBefore
+          ? {dateBefore: this.currentFilter.dateBefore}
+          : {})
+      };
+      if (!Object.keys(payload).length) {
+        return this.refreshCurrentPath(true);
+      }
+      await request.send(payload);
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      if (!request.loaded) {
+        throw new Error('Error loading page');
+      }
+      const {results = [], nextPageMarker} = request.value || {};
+      this.resultsTruncated = !!nextPageMarker;
+      this.filtersApplied = true;
+      this.pageElements = results;
+      this.pageLoaded = true;
+      this.pagePath = pathCorrected;
+    } catch (error) {
+      this.pageElements = [];
+      this.pageError = error.message;
+      this.pageLoaded = false;
+      this.pagePath = pathCorrected;
+    } finally {
+      this.pagePending = false;
+      this.pageLoaded = !this.pageError;
+      this.filtersApplied = true;
+    }
+  };
+
+  @action
   fetchCurrentPage = async () => {
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
@@ -575,6 +745,7 @@ class DataStorageListing {
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
         this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
+        this.filtersApplied = false;
       });
     } catch (error) {
       submitChanges(() => {
@@ -587,6 +758,7 @@ class DataStorageListing {
       submitChanges(() => {
         this.pagePending = false;
         this.pageLoaded = !this.pageError;
+        this.filtersApplied = false;
       });
     }
   };
