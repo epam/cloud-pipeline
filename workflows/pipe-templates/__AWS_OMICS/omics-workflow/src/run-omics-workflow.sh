@@ -59,8 +59,6 @@ function obtain_private_ecr_uri_run_from_region() {
     if [ "${_CP_PRIVATE_ECR}" == "empty" ]; then
       pipe_log_fail "Couldn't get AWS Private ECR information from Cloud Region with id ${CLOUD_REGION_ID}" $_TASK_NAME
       exit 1
-    else
-      pipe_log_info "AWS Private ECR for Omics workflow is configured by region setting as: ${_CP_PRIVATE_ECR}" $_TASK_NAME
     fi
     echo "${_CP_PRIVATE_ECR}"
 }
@@ -73,7 +71,7 @@ function sync_images_in_private_ecr() {
         exit 1
     fi
     pipe_exec \
-      "bash /opt/omics/utils/container_syncronizer.sh --ecr $(obtain_private_ecr_uri_run_from_region) --workflow_source $SCRIPTS_DIR/src" \
+      "bash /opt/omics/utils/container_syncronizer.sh --ecr ${CP_PRIVATE_ECR} --workflow_source $SCRIPTS_DIR/src" \
       "AWSOmicsECRSyncImages"
 
     if [ $? -ne 0 ]; then
@@ -85,36 +83,42 @@ function sync_images_in_private_ecr() {
 }
 
 function prepare_workflow_parameters() {
-   pipe_log_info "Preparing parameters-template.json and parameters.json for a workflow, based on pipeline run parameters." $_TASK_NAME
-   _PARAMS_TO_EXCLUDE="engine,output_path"
-   PARAM_TYPE_SUFFIX="_PARAM_TYPE"
-   _PARAMETERS_TEMPLATE="\"ecr_registry\": { \"description\": \"Private ECR Registry\" }"
-   _PARAMETERS="\"ecr_registry\": \"${CP_PRIVATE_ECR}\""
-   while IFS= read -r line; do
-       PARAM_TYPE_NAME=$(awk -F "=" '{print $1}' <<< $line)
-       PARAM_NAME=${PARAM_TYPE_NAME%$PARAM_TYPE_SUFFIX}
-       if [[ *"$PARAM_NAME"* ~= "$_PARAMS_TO_EXCLUDE" ]] || [[ "CP_"* ~= "$PARAM_NAME" ]]; then
+    _PARAMS_TO_EXCLUDE="engine,output_path,RESYNC_IMAGES"
+    PARAM_TYPE_SUFFIX="_PARAM_TYPE"
+    while IFS= read -r line; do
+        PARAM_TYPE_NAME=$(awk -F "=" '{print $1}' <<< $line)
+        PARAM_NAME=${PARAM_TYPE_NAME%$PARAM_TYPE_SUFFIX}
+        if echo ",$_PARAMS_TO_EXCLUDE," | grep ",$PARAM_NAME," &> /dev/null || [[ "$PARAM_NAME" =~ "CP_"* ]]; then
            pipe_log_info "Skipping parameter $PARAM_NAME, it won't be added to omics workflow parameters configuration." $_TASK_NAME
            continue
-       fi
-       _PARAMETERS_TEMPLATE="${_PARAMETERS_TEMPLATE}, \"$PARAM_NAME\": { \"description\": \"$PARAM_NAME\" }"
-       _PARAMETERS="${_PARAMETERS}, \"$PARAM_NAME\": \"${!PARAM_NAME}\""
-   done <<< "$(env | grep ${PARAM_TYPE_SUFFIX})"
+        fi
 
-   echo "{ ${_PARAMETERS_TEMPLATE} }" | jq > $1
-   echo "{ ${_PARAMETERS} }" | jq > $2
+        if [ -z "$_PARAMETERS_TEMPLATE" ]; then
+           _PARAMETERS_TEMPLATE="\"$PARAM_NAME\": { \"description\": \"value of $PARAM_NAME\" }"
+        else
+           _PARAMETERS_TEMPLATE="${_PARAMETERS_TEMPLATE}, \"$PARAM_NAME\": { \"description\": \"$PARAM_NAME\" }"
+        fi
+
+        if [ -z "$_PARAMETERS" ]; then
+           _PARAMETERS="\"$PARAM_NAME\": \"${!PARAM_NAME}\""
+        else
+           _PARAMETERS="${_PARAMETERS}, \"$PARAM_NAME\": \"${!PARAM_NAME}\""
+        fi
+    done <<< "$(env | grep ${PARAM_TYPE_SUFFIX})"
+
+    echo "{ ${_PARAMETERS_TEMPLATE} }" | jq > $1
+    echo "{ ${_PARAMETERS} }" | jq > $2
 }
 
 function package_omics_workflow() {
-    pipe_log_info "Packaging workflow in a zip distribution." $_TASK_NAME
     _WORKFLOW_DEFINITION_ZIP="/tmp/$2.zip"
     if [ -d "$1" ]; then
-        cd "$1" &&  zip -9 -r "$_WORKFLOW_DEFINITION_ZIP" . &> /dev/null && cd -
+        cd "$1" &&  zip -9 -r "$_WORKFLOW_DEFINITION_ZIP" . &> /dev/null && cd - &> /dev/null
     else
         pipe_log_fail "Couldn't find workflow directory by path $1"
         exit 1
     fi
-    echo $_WORKFLOW_DEFINITION_ZIP
+    export WORKFLOW_DEFINITION_ZIP=$_WORKFLOW_DEFINITION_ZIP
 }
 
 function run_omics_workflow() {
@@ -123,7 +127,6 @@ function run_omics_workflow() {
     _workflow_parameters_template="$3"
     _workflow_parameters="$4"
 
-    pipe_log_info "Registering workflow." $_TASK_NAME
     _workflow_id=$(aws omics create-workflow \
         --engine $engine --name "$_workflow_name"  --definition-zip "fileb://$_workflow_zip" \
         --parameter-template "file://$_workflow_parameters_template" \
@@ -133,8 +136,7 @@ function run_omics_workflow() {
         exit 1
     fi
 
-    pipe_log_info "Waiting for the workflow to be available." $_TASK_NAME
-    aws omics wait workflow-active --id "${workflow_id}"
+    aws omics wait workflow-active --id "${_workflow_id}"
     if [ $? -ne 0 ]; then
         pipe_log_fail "There was a problem during awaiting HealthOmics Workflow to be available." $_TASK_NAME
         exit 1
@@ -149,7 +151,7 @@ function run_omics_workflow() {
         --parameters "file://$_workflow_parameters" \
         --query 'id' --output text)
 
-    echo "$_workflow_run_id"
+    export WORKFLOW_RUN_ID="$_workflow_run_id"
 }
 
 function watch_and_log_omics_workflow_run() {
@@ -157,27 +159,32 @@ function watch_and_log_omics_workflow_run() {
     _WORKFLOW_NAME=$2
     _WORKFLOW_RUN_STATUS="RUNNING"
     while [ $_WORKFLOW_RUN_STATUS != "COMPLETED" ] || [ $_WORKFLOW_RUN_STATUS != "FAILED" ] || [ $_WORKFLOW_RUN_STATUS != "CANCELLED" ]; do
-        _WORKFLOW_RUN_STATUS=$(aws omics list-run --id "${_WORKFLOW_RUN_ID}" --query 'status' --output text)
+        _WORKFLOW_RUN_STATUS=$(aws omics get-run --id "${_WORKFLOW_RUN_ID}" --query 'status' --output text)
         pipe_log_info "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
+        sleep 60
     done
-        pipe_log_success "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
+    pipe_log_success "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
 }
 
 export _TASK_NAME="AWSOmicsWorkflow"
 WORKFLOW_NAME="CPOmicsWorkflow-${RUN_ID}"
+WORKFLOW_PARAMETERS_TEMPLATE="$SCRIPTS_DIR/src/parameters_template.json"
+WORKFLOW_PARAMETERS="$SCRIPTS_DIR/src/parameters.json"
 
 pipe_log_info "Start of the workflow: $WORKFLOW_NAME" "$_TASK_NAME"
 preflight_checks
 
 assume_omics_service_role
+export CP_PRIVATE_ECR=$(obtain_private_ecr_uri_run_from_region)
 sync_images_in_private_ecr
 
-WORKFLOW_PARAMETERS_TEMPLATE="$SCRIPTS_DIR/src/parameters_template.json"
-WORKFLOW_PARAMETERS="$SCRIPTS_DIR/src/parameters.json"
-
-WORKFLOW_DEFINITION_ZIP=$(package_omics_workflow "SCRIPTS_DIR/src/workflow" "WORKFLOW_NAME")
+pipe_log_info "Packaging workflow in a zip distribution." $_TASK_NAME
+package_omics_workflow "$SCRIPTS_DIR/src/workflow" "$WORKFLOW_NAME"
+pipe_log_info "Preparing parameters-template.json and parameters.json for a workflow, based on pipeline run parameters." $_TASK_NAME
 prepare_workflow_parameters "$WORKFLOW_PARAMETERS_TEMPLATE" "$WORKFLOW_PARAMETERS"
-WORKFLOW_RUN_ID=$(run_omics_workflow "$WORKFLOW_NAME" "$WORKFLOW_DEFINITION_ZIP" "$WORKFLOW_PARAMETERS_TEMPLATE" "$WORKFLOW_PARAMETERS")
+pipe_log_info "Registering workflow and running omics workflow." $_TASK_NAME
+run_omics_workflow "$WORKFLOW_NAME" "$WORKFLOW_DEFINITION_ZIP" "$WORKFLOW_PARAMETERS_TEMPLATE" "$WORKFLOW_PARAMETERS"
+
 watch_and_log_omics_workflow_run "$WORKFLOW_RUN_ID" "$WORKFLOW_NAME"
 
 pipe_log_success "Successfully run workflow $WORKFLOW_NAME, workflow_run_id: $WORKFLOW_RUN_ID" "$_TASK_NAME"

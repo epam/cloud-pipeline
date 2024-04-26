@@ -65,7 +65,28 @@ else
     fi
 fi
 
-if [ -n "$IMAGE_PULL_CONFIG" ]; then
+_ECR_REPO_POLICY_DOC=/tmp/ecr_policy.json
+cat > $_ECR_REPO_POLICY_DOC <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "omics workflow",
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "omics.amazonaws.com"
+            },
+            "Action": [
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "ecr:BatchCheckLayerAvailability"
+            ]
+        }
+    ]
+}
+EOF
+
+if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
     echo "Image pull config was set as: ${IMAGE_PULL_CONFIG}. Will pull -> push images..."
     _pull_image_log=$(mktemp)
     readarray -t images < <(jq -r --compact-output '.manifest[]' "${IMAGE_PULL_CONFIG}")
@@ -101,7 +122,8 @@ if [ -n "$IMAGE_PULL_CONFIG" ]; then
             fi
 
             docker tag "$image" "$private_image"
-            docker push "$private_image" &> "$_pull_image_log"
+            docker push "$private_image" &> "$_pull_image_log" && \
+            aws ecr set-repository-policy --repository-name "$_ECR_REPO_NAME" --policy-text "file://$_ECR_REPO_POLICY_DOC" &> /dev/null
             if [ $? -ne 0 ]; then
                 echo "There was a problem with pushing image $image to $private_image ..."
                 cat "$_pull_image_log"
@@ -116,7 +138,7 @@ else
 fi
 
 
-if [ -n "$IMAGE_BUILD_CONFIG" ]; then
+if [ -n "$IMAGE_BUILD_CONFIG" ] && [ -f "$IMAGE_BUILD_CONFIG" ]; then
     echo "Image build config was set as:${IMAGE_BUILD_CONFIG}. Will build -> push images..."
 
     _build_image_log=$(mktemp)
@@ -147,7 +169,8 @@ if [ -n "$IMAGE_BUILD_CONFIG" ]; then
                echo "Successfully built image $_IMAGE_NAME ..."
             fi
 
-            docker push "$_IMAGE_NAME"  &> "$_build_image_log"
+            docker push "$_IMAGE_NAME"  &> "$_build_image_log" && \
+            aws ecr set-repository-policy --repository-name "$_ECR_REPO_NAME" --policy-text "file://$_ECR_REPO_POLICY_DOC" &> /dev/null
             if [ $? -ne 0 ]; then
                 echo "There was a problem with pushing image to $_IMAGE_NAME ..."
                 cat "$_build_image_log"
