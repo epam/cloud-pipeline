@@ -2994,10 +2994,10 @@ export default class DataStorage extends React.Component {
       };
       this.openPreviewModal(file);
     }
-    this.updateStorageIfRequired();
     if (!this.isOmicsStore) {
       this.closeImportedJobsIfRequired();
     }
+    this.updateStorageIfRequired();
   }
 
   componentDidUpdate (prevProps) {
