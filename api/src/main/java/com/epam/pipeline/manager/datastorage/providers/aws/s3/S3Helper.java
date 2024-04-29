@@ -83,6 +83,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.entity.datastorage.access.DataAccessType;
 import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
@@ -1201,7 +1202,7 @@ public class S3Helper {
         return client.getObjectMetadata(new GetObjectMetadataRequest(bucket, path, version));
     }
 
-    private void verifyArchiveState(final ObjectMetadata objectHead) {
+    void verifyArchiveState(final ObjectMetadata objectHead) {
         final String storageClass = objectHead.getStorageClass();
         if (StringUtils.isNullOrEmpty(storageClass)) {
             return;
@@ -1213,8 +1214,13 @@ public class S3Helper {
                     MessageConstants.ERROR_DATASTORAGE_INTELLIGENT_TIERING_ARCHIVE_ACCESS));
         }
 
-        if (GLACIER_STORAGE_CLASS.equals(storageClass) || DEEP_ARCHIVE_STORAGE_CLASS.equals(storageClass)) {
-            throw new DataStorageException(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ARCHIVE_ACCESS));
+        final boolean restoreIsActive = objectHead.getRestoreExpirationTime() != null
+                && objectHead.getRestoreExpirationTime().after(DateUtils.now());
+        if ((GLACIER_STORAGE_CLASS.equals(storageClass) || DEEP_ARCHIVE_STORAGE_CLASS.equals(storageClass))
+                && !restoreIsActive) {
+            throw new DataStorageException(
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ARCHIVE_ACCESS)
+            );
         }
     }
 
