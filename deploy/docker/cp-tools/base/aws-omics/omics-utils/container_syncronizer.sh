@@ -65,6 +65,12 @@ else
     fi
 fi
 
+_EXISTING_ECR_REPOS=$(aws ecr describe-repositories | jq -r --compact-output  '.repositories | map(.repositoryName) | join("|")')
+if [ $? -ne 0 ]; then
+    echo "Can't fetch list of existing ECR Repositories. Exiting."
+    exit 1
+fi
+
 _ECR_REPO_POLICY_DOC=/tmp/ecr_policy.json
 cat > $_ECR_REPO_POLICY_DOC <<EOF
 {
@@ -103,8 +109,8 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
         fi
 
         _ECR_REPO_NAME=$(echo "${private_image#"${PRIVATE_ECR}/"}" | cut -d: -f1)
-        _ECR_REPO_TAG=$(echo "${_ECR_REPO_NAME}" | grep ":"  &> /dev/null && echo "${_ECR_REPO_NAME}" | cut -d: -f2 || echo latest)
-        if ! aws ecr describe-images --repository-name="$_ECR_REPO_NAME" --region "$aws_region" &> /dev/null; then
+        _ECR_REPO_TAG=$(echo "${private_image}" | grep ":"  &> /dev/null && echo "${private_image}" | cut -d: -f2 || echo latest)
+        if ! echo "|${_EXISTING_ECR_REPOS}|" | grep "|${_ECR_REPO_NAME}|"  &> /dev/null; then
             if aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
                 echo "There was a problem with creating ECR repo for ${_ECR_REPO_NAME} ..."
                 cat "$_pull_image_log"
@@ -150,7 +156,7 @@ if [ -n "$IMAGE_BUILD_CONFIG" ] && [ -f "$IMAGE_BUILD_CONFIG" ]; then
 
         _ECR_REPO_NAME=$(echo "${_IMAGE_NAME#"${PRIVATE_ECR}/"}" | cut -d: -f1)
         _ECR_REPO_TAG=$(echo "${_IMAGE_NAME}" | grep ":"  &> /dev/null && echo "${_IMAGE_NAME}" | cut -d: -f2 || echo latest)
-        if ! aws ecr describe-images --repository-name="$_ECR_REPO_NAME" --region "$aws_region" &> /dev/null; then
+        if ! echo "|${_EXISTING_ECR_REPOS}|" | grep "|${_ECR_REPO_NAME}|"  &> /dev/null; then
             if aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
                 echo "There was a problem with creating ECR repo for ${_ECR_REPO_NAME} ..."
                 cat "$_pull_image_log"

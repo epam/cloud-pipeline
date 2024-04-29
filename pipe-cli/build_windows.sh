@@ -96,8 +96,6 @@ pip install pywin32==302 && \
 cd /pipe-cli/pipe-omics && \
 pyinstaller \
   --paths "/pipe-cli/pipe-omics" \
-  --hidden-import=boto3 \
-  --hidden-import=botocore \
   --hidden-import=itertools \
   --hidden-import=collections \
   --hidden-import=base64 \

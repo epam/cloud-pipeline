@@ -123,9 +123,9 @@ function package_omics_workflow() {
 function cleanup_omics_workflow() {
     pipe_log_info "Removing HealthOmics Workflow on cleanup." $_TASK_NAME
     assume_omics_service_role
-    aws omics delete-workflow --id $WORKFLOW_RUN_ID
+    aws omics delete-workflow --id $WORKFLOW_ID
     if [ $? -ne 0 ]; then
-        pipe_log_fail "There was a problem during cleanup of HealthOmics Workflow, id: $WORKFLOW_RUN_ID." $_TASK_NAME
+        pipe_log_fail "There was a problem during cleanup of HealthOmics Workflow, id: $WORKFLOW_ID." $_TASK_NAME
     fi
 }
 
@@ -161,7 +161,7 @@ function run_omics_workflow() {
         --parameters "file://$_workflow_parameters" \
         --query 'id' --output text)
     pipe_log_info "Workflow run with id: $_workflow_run_id started." $_TASK_NAME
-
+    export WORKFLOW_ID="$_workflow_id"
     export WORKFLOW_RUN_ID="$_workflow_run_id"
 }
 
@@ -171,9 +171,7 @@ function watch_and_log_omics_workflow_run() {
     _WORKFLOW_RUN_STATUS="RUNNING"
     _WAITING_TIME=0
     while [ "$_WORKFLOW_RUN_STATUS" != "COMPLETED" ] && [ "$_WORKFLOW_RUN_STATUS" != "FAILED" ] && [ "$_WORKFLOW_RUN_STATUS" != "CANCELLED" ]; do
-        _WORKFLOW_RUN_STATUS=$(aws omics get-run --id "${_WORKFLOW_RUN_ID}" --query 'status' --output text)
-        _TASK_STATUS=$(aws omics list-run-tasks --id ${_WORKFLOW_RUN_ID})
-        pipe_log_info "Workflow run status: ${_WORKFLOW_RUN_STATUS}. Tasks (running / total): $(echo $_TASK_STATUS | grep -oE 'STARTING|RUNNING' | wc -l) / $(echo $_TASK_STATUS | grep -o "status" | wc -l)" $_WORKFLOW_NAME
+
         sleep 300
         _WAITING_TIME=$((_WAITING_TIME + 300))
         if [ $_WAITING_TIME -gt $TIME_TO_UPDATE_CREDS ]; then
@@ -181,8 +179,14 @@ function watch_and_log_omics_workflow_run() {
             pipe_log_info "Updating AWS temporary credentials..." "$_TASK_NAME"
             assume_omics_service_role
         fi
+
+        _WORKFLOW_RUN_STATUS=$(aws omics get-run --id "${_WORKFLOW_RUN_ID}" --query 'status' --output text)
+        _TASK_STATUS=$(aws omics list-run-tasks --id ${_WORKFLOW_RUN_ID})
+        _TOTAL_TASKS=$(echo $_TASK_STATUS | grep -o "status" | wc -l)
+        _RUNNING_TASKS=$(echo $_TASK_STATUS | grep -oE 'STARTING|RUNNING' | wc -l)
+        pipe_log_info "Workflow run status: ${_WORKFLOW_RUN_STATUS}. Tasks (completed / total): $((_TOTAL_TASKS - _RUNNING_TASKS)) / ${_TOTAL_TASKS}" $_WORKFLOW_NAME
     done
-    if [ $_WORKFLOW_RUN_STATUS == "FAILED" ] && [ $_WORKFLOW_RUN_STATUS == "CANCELLED" ]; then
+    if [ "$_WORKFLOW_RUN_STATUS" == "FAILED" ] && [ "$_WORKFLOW_RUN_STATUS" == "CANCELLED" ]; then
         pipe_log_fail "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
         exit 1
     fi
