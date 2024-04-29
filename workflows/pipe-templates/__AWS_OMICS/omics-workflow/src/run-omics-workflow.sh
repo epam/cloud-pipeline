@@ -72,6 +72,7 @@ function obtain_private_ecr_uri_run_from_region() {
 
 
 function sync_images_in_private_ecr() {
+    _ECR_SYNC_TASK_NAME="AWSOmicsECRSyncImages"
     pipe_log_info "Synchronizing docker images in private ECR repo." $_TASK_NAME
     if [ ! -f /opt/omics/utils/container_syncronizer.sh ]; then
         pipe_log_fail "Script /opt/omics/utils/container_syncronizer.sh wasn't found. Are you using library/aws-omics docker image?" $_TASK_NAME
@@ -79,13 +80,14 @@ function sync_images_in_private_ecr() {
     fi
     pipe_exec \
       "bash /opt/omics/utils/container_syncronizer.sh --ecr ${CP_PRIVATE_ECR} --workflow_source $SCRIPTS_DIR/src" \
-      "AWSOmicsECRSyncImages"
+      "${_ECR_SYNC_TASK_NAME}"
 
     if [ $? -ne 0 ]; then
         pipe_log_fail "There was a problem during Synchronization docker images in private ECR." $_TASK_NAME
         exit 1
     else
-      pipe_log_info "Successfully synchronized docker images in private ECR repo." $_TASK_NAME
+      pipe_log_success "Successfully synchronized docker images in private ECR repo." "${_ECR_SYNC_TASK_NAME}"
+      pipe_log_info "Successfully synchronized docker images in private ECR repo." "${$_TASK_NAME}"
     fi
 }
 
@@ -184,13 +186,13 @@ function watch_and_log_omics_workflow_run() {
         _TASK_STATUS=$(aws omics list-run-tasks --id ${_WORKFLOW_RUN_ID})
         _TOTAL_TASKS=$(echo $_TASK_STATUS | grep -o "status" | wc -l)
         _RUNNING_TASKS=$(echo $_TASK_STATUS | grep -oE 'STARTING|RUNNING' | wc -l)
-        pipe_log_info "Workflow run status: ${_WORKFLOW_RUN_STATUS}. Tasks (completed / total): $((_TOTAL_TASKS - _RUNNING_TASKS)) / ${_TOTAL_TASKS}" $_WORKFLOW_NAME
+        pipe_log_info "Workflow run status: ${_WORKFLOW_RUN_STATUS}. Tasks (completed / total): $((_TOTAL_TASKS - _RUNNING_TASKS)) / ${_TOTAL_TASKS}" "$_TASK_NAME"
     done
     if [ "$_WORKFLOW_RUN_STATUS" == "FAILED" ] && [ "$_WORKFLOW_RUN_STATUS" == "CANCELLED" ]; then
-        pipe_log_fail "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
+        pipe_log_fail "Workflow run status: $_WORKFLOW_RUN_STATUS" "$_TASK_NAME"
         exit 1
     fi
-    pipe_log_success "Workflow run status: $_WORKFLOW_RUN_STATUS" $_WORKFLOW_NAME
+    pipe_log_success "Workflow run status: $_WORKFLOW_RUN_STATUS" "$_TASK_NAME"
 }
 
 export _TASK_NAME="AWSOmicsWorkflow"
