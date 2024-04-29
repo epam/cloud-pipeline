@@ -30,7 +30,7 @@ const mbToBytes = mb => {
   if (isNaN(mb)) {
     return;
   }
-  return Math.round(parseInt(mb) * (1024 ** 2));
+  return Math.round(mb * (1024 ** 2));
 };
 
 /**
