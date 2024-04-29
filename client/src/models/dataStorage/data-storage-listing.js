@@ -609,6 +609,9 @@ class DataStorageListing {
       return;
     }
     const {path, ...restFilter} = this.currentFilter;
+    if (!resetToInitialValues) {
+      this.initialFilter = {};
+    }
     Object.keys(restFilter).forEach(key => {
       const value = resetToInitialValues
         ? this.initialFilter[key]

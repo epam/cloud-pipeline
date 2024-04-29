@@ -40,3 +40,15 @@
   flex-wrap: nowrap;
   align-items: center;
 }
+
+.date-filter {
+  display: flex;
+  flex-direction: column;
+}
+
+.date-filter .date-picker-container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-bottom: 5px;
+}

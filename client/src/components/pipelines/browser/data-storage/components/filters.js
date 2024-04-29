@@ -15,14 +15,14 @@
  */
 
 import React from 'react';
-import {observer, Observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {computed} from 'mobx';
 import {
   Radio,
-  InputNumber
+  InputNumber,
+  DatePicker
 } from 'antd';
-import DayPicker from 'react-day-picker';
 import styles from './filters.css';
 
 const FILTER_FIELDS = {
@@ -33,6 +33,18 @@ const FILTER_FIELDS = {
   dateBefore: 'dateBefore',
   dateFilterType: 'dateFilterType'
 };
+
+const PREDEFINED_DATE_FILTERS = [{
+  title: 'Last week',
+  key: 'lastWeek',
+  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days'),
+  dateBefore: undefined
+}, {
+  title: 'Last month',
+  key: 'lastMonth',
+  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month'),
+  dateBefore: undefined
+}];
 
 @observer
 class SizeFilter extends React.Component {
@@ -77,18 +89,6 @@ class SizeFilter extends React.Component {
     );
   }
 }
-
-const PREDEFINED_DATE_FILTERS = [{
-  title: 'Last week',
-  key: 'lastWeek',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days'),
-  dateBefore: undefined
-}, {
-  title: 'Last month',
-  key: 'lastMonth',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month'),
-  dateBefore: undefined
-}];
 
 @observer
 class DateFilter extends React.Component {
@@ -144,30 +144,34 @@ class DateFilter extends React.Component {
     this.storage.changeFilters(FILTER_FIELDS.dateBefore, momentDate);
   };
 
-  mapDateString = (date) => date ? moment(date).toDate() : undefined;
-
   renderPicker = () => {
-    const filterType = this.filter[FILTER_FIELDS.dateFilterType] || '';
-    const [type, pickerType] = filterType.split('|');
-    if (type !== 'picker') {
+    const mapDateString = (date) => date ? moment(date) : undefined;
+    const filterType = this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker';
+    if (filterType !== 'datePicker') {
       return null;
     }
-    if (pickerType === 'after' || pickerType === 'before') {
-      return (
-        <DayPicker
-          className="cp-runs-day-picker"
-          style={{marginBottom: 5}}
-          onDayClick={pickerType === 'after'
-            ? this.onChangeDateAfter
-            : this.onChangeDateBefore
-          }
-          selectedDays={pickerType === 'after'
-            ? this.mapDateString(this.filter[FILTER_FIELDS.dateAfter])
-            : this.mapDateString(this.filter[FILTER_FIELDS.dateBefore])
-          }
-        />
-      );
-    }
+    const dateBefore = mapDateString(this.filter[FILTER_FIELDS.dateBefore]);
+    const dateAfter = mapDateString(this.filter[FILTER_FIELDS.dateAfter]);
+    return (
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        <div className={styles.datePickerContainer}>
+          <span style={{minWidth: '80px'}}>Date before: </span>
+          <DatePicker
+            getCalendarContainer={node => node.parentNode}
+            onChange={this.onChangeDateBefore}
+            value={dateBefore}
+          />
+        </div>
+        <div className={styles.datePickerContainer}>
+          <span style={{minWidth: '80px'}}>Date after: </span>
+          <DatePicker
+            getCalendarContainer={node => node.parentNode}
+            onChange={this.onChangeDateAfter}
+            value={dateAfter}
+          />
+        </div>
+      </div>
+    );
   };
 
   render () {
@@ -175,20 +179,17 @@ class DateFilter extends React.Component {
       return null;
     }
     return (
-      <div>
+      <div className={styles.dateFilter}>
         <Radio.Group
           onChange={this.onChangeRadio}
-          value={this.filter[FILTER_FIELDS.dateFilterType]}
+          value={this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker'}
           style={{display: 'flex', flexDirection: 'column', gap: '3px'}}
         >
           {this.predefinedDateFilters.map(filter => (
             <Radio key={filter.key} value={filter.key}>{filter.title}</Radio>
           ))}
-          <Radio key="picker|before" value="picker|before">
-            Date before
-          </Radio>
-          <Radio key="picker|after" value="picker|after">
-            Date after
+          <Radio key="datePicker" value="datePicker">
+            Custom
           </Radio>
         </Radio.Group>
         {this.renderPicker()}
@@ -202,9 +203,7 @@ function FilterWrapper ({onOk, onCancel, children}) {
   const handleCancel = () => onCancel && onCancel();
   return (
     <div className={styles.filterWrapperContainer}>
-      <Observer>
-        {() => children}
-      </Observer>
+      {children}
       <div className={styles.filterWrapperControls}>
         <a onClick={handleOk}>OK</a>
         <a onClick={handleCancel}>Clear</a>

@@ -86,6 +86,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../../special/metadata/special/request-dav-access';
 import StorageSize from '../../../special/storage-size';
+import highlightText from '../../../special/highlightText';
 import {extractFileShareMountList} from '../forms/DataStoragePathInput';
 import SharedItemInfo from '../forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../../special/sample-sheet/utilities';
@@ -1605,10 +1606,14 @@ export default class DataStorage extends React.Component {
       title: 'Name',
       className: styles.nameCell,
       render: (text, item) => {
+        const search = this.storage.initialFilter?.[FILTER_FIELDS.name];
+        const highlightedText = this.storage.filtersApplied && search
+          ? highlightText(text, search)
+          : text;
         if (item.latest) {
-          return `${text} (latest)`;
+          return `${highlightedText} (latest)`;
         }
-        return text;
+        return highlightedText;
       },
       filterDropdown: (
         <FilterWrapper
