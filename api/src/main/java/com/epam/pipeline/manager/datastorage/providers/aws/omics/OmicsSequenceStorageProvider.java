@@ -60,6 +60,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     public static final String READ_SET_STORE_PATH_SUFFIX = "/readSet";
     public static final String SUBJECT_ID = "SubjectId";
     public static final String SAMPLE_ID = "SampleId";
+    public static final String UPLOAD_FAILED_STATUS = "UPLOAD_FAILED";
 
     public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
                                         final CloudRegionManager cloudRegionManager,
@@ -112,6 +113,13 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         final Pair<String, String> fileIdAndSource = OmicsHelper.parseFilePath(path);
         final GetReadSetMetadataResult readSetFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
         final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
+
+        if (readSetFile.getStatus().equals(UPLOAD_FAILED_STATUS)) {
+            throw new DataStorageException(String.format(
+                    "Can't list ReadSet object with status %s. Status reason: %s",
+                    UPLOAD_FAILED_STATUS, readSetFile.getStatusMessage())
+            );
+        }
 
         Stream.of(
                 Pair.create(readSetFile.getFiles().getSource1(), SOURCE_1),

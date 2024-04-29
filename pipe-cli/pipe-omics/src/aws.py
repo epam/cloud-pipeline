@@ -26,6 +26,8 @@ from .cloud_pipeline_api import OmicsStoreType
 from .util.exception import PipeOmicsException
 from .util.progress_utils import ProgressBarSubscriber, FinalEventSubscriber
 
+UPLOAD_FAILED = "UPLOAD_FAILED"
+
 
 class AWSOmicsFileDownloadRequest:
 
@@ -45,6 +47,7 @@ class AWSOmicsFile:
         self.id = None
         self.type = None
         self.status = None
+        self.status_message = None
         self.description = None
         self.size = None
         self.sizes = {}
@@ -72,6 +75,7 @@ class AWSOmicsFile:
         file.name = response["name"]
         file.id = response["id"]
         file.status = response["status"]
+        file.status_message = response.get("statusMessage", "")
         file.description = response.get("description", None)
         file.modified = response.get("updateTime", response["creationTime"])
         file.raw = response
@@ -269,7 +273,9 @@ class AWSOmicsOperation:
         # hack to work on windows machine, we pre-built hte pyinstaller bundle with data folder from botocore
         # included in 'botocore-data' folder and here add additional place for botocore to look in
         if platform.system() == 'Windows':
-            s.get_component('data_loader').search_paths.append('botocore-data')
+            s.get_component('data_loader').search_paths.append(
+                os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'botocore-data')
+            )
         s._credentials = session_credentials
         return Session(botocore_session=s)
 
@@ -310,6 +316,11 @@ class AWSOmicsOperation:
             raise PipeOmicsException("Invalid AWS Omics URL format: '{}'".format(source))
 
         file_metadata = self.get_file_metadata(storage, omics_file.resource_id)
+
+        if file_metadata.status == UPLOAD_FAILED:
+            raise PipeOmicsException(
+                "Omics file status: '{}', message: {}".format(UPLOAD_FAILED, file_metadata.status_message)
+            )
 
         # If original url have source[1|2]|index - will download only specific file, else - the whole set
         if re.search(".*/(index|source|source1|source2)", source):
