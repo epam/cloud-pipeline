@@ -13,11 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function msg() {
+    echo "[$(date "+%F %H:%M:%S")] $1"
+}
+
 function envsubst_inplace() {
-  local _source="$1"
-  local _template="$_source.template"
-  cp "$_source" "$_template"
-  envsubst < "$_template" > "$_source"
+    local _source="$1"
+    local _template="$_source.template"
+    cp "$_source" "$_template"
+    envsubst < "$_template" > "$_source"
 }
 
 if [ "$CP_CLOUD_PLATFORM" == 'aws' ]; then
@@ -30,38 +34,119 @@ elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
 fi
 
+if [[ -z "$ES_NODE_NAME" ]]; then
+    msg "Using Elasticsearch single node deployment..."
+
+    export ES_LOG_DIR="/var/log/elasticsearch"
+    export ES_DATA_DIR="/usr/share/elasticsearch/data"
+
+    cat <<EOF >/usr/share/elasticsearch/config/elasticsearch.yml
+cluster.name: "docker-cluster"
+network.host: 0.0.0.0
+
+path.logs: "$ES_LOG_DIR"
+path.data: "/usr/share/elasticsearch/data"
+path.repo: ["/usr/share/elasticsearch/backup"]
+EOF
+else
+    msg "Using Elasticsearch cluster deployment..."
+
+    export CP_SEARCH_ELK_INTERNAL_HOST="${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}"
+    export CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT="${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}"
+    export ES_LOG_DIR="/var/log/elasticsearch/$ES_NODE_NAME"
+    export ES_DATA_DIR="/usr/share/elasticsearch/data/$ES_NODE_NAME"
+    if [[ "$ES_NODE_NAME" == *-0 ]]; then
+      msg "Configuring master/data/ingest node..."
+      export ES_MASTER_NODE="true"
+      export ES_DATA_NODE="true"
+      export ES_INGEST_NODE="true"
+    else
+      msg "Configuring data/ingest node..."
+      export ES_MASTER_NODE="false"
+      export ES_DATA_NODE="true"
+      export ES_INGEST_NODE="true"
+    fi
+
+    cat <<EOF >/usr/share/elasticsearch/config/elasticsearch.yml
+cluster.name: "search-elk-cluster"
+network.host: 0.0.0.0
+node.name: "$ES_NODE_NAME"
+
+discovery.zen.minimum_master_nodes: 1
+discovery.zen.ping.unicast.hosts: "$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT"
+
+node.master: "$ES_MASTER_NODE"
+node.data: "$ES_DATA_NODE"
+node.ingest: "$ES_INGEST_NODE"
+
+path.logs: "$ES_LOG_DIR"
+path.data: "/usr/share/elasticsearch/data/$ES_NODE_NAME"
+path.repo: ["/usr/share/elasticsearch/backup"]
+EOF
+fi
+
 # Configure ES Java heap size
 _HEAP_SIZE="${CP_SEARCH_ELK_HEAP_SIZE:-4g}"
 sed -i "s/Xms1g/Xms$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 sed -i "s/Xmx1g/Xmx$_HEAP_SIZE/g" /usr/share/elasticsearch/config/jvm.options
 
-chown -R elasticsearch:root /usr/share/elasticsearch/data
-ulimit -n ${CP_SEARCH_ELK_ULIMIT:-65536} && sysctl -w vm.max_map_count=262144 && /usr/local/bin/docker-entrypoint.sh &
+if [ ! -d "$ES_DATA_DIR" ]; then
+    mkdir -p "$ES_DATA_DIR"
+fi
 
-CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-600}"
+if [ ! -d "$ES_LOG_DIR" ]; then
+    mkdir -p "$ES_LOG_DIR"
+fi
+
+if [ ! -f "$ES_LOG_DIR/runtime.log" ]; then
+    touch "$ES_LOG_DIR/runtime.log"
+fi
+
+msg "Applying permissions..."
+chown    elasticsearch:root /usr/share/elasticsearch/data
+chown    elasticsearch:root "$ES_DATA_DIR"
+chown    elasticsearch:root /usr/share/elasticsearch/backup
+chown    elasticsearch:root /var/log/elasticsearch
+chown    elasticsearch:root "$ES_LOG_DIR"
+chown    elasticsearch:root "$ES_LOG_DIR/runtime.log"
+
+msg "Launching ElasticSearch..."
+ulimit -n ${CP_SEARCH_ELK_ULIMIT:-65536} \
+  && sysctl -w vm.max_map_count=262144 \
+  && /usr/local/bin/docker-entrypoint.sh >"$ES_LOG_DIR/runtime.log" 2>&1 &
+
+msg "Waiting for ElasticSearch..."
+CP_SEARCH_ELK_INIT_ATTEMPTS="${CP_SEARCH_ELK_INIT_ATTEMPTS:-60}"
 not_initialized=true
 try_count=0
 while [ $not_initialized ] && [ $try_count -lt $CP_SEARCH_ELK_INIT_ATTEMPTS ]; do
-    echo "Tring to curl health endpoint of Elastic..."
     _elk_health_status=$(curl -s http://localhost:9200/_cluster/health?pretty | jq -r '.status')
     if [ "$_elk_health_status" == "green" ] || [ "$_elk_health_status" == "yellow" ]; then
       unset not_initialized
     fi
     if [ $not_initialized ]; then
-      echo "...Failed."
+      msg "NOT READY ($_elk_health_status)."
     else
-      echo "...Success."
+      msg "READY ($_elk_health_status)."
     fi
     # increment attempts only if java is not running
     if [ ! "$(ps -A | grep 'java')" ]; then
       try_count=$(( $try_count + 1 ))
     fi
-    sleep 1
+    sleep 10
 done
 
 if [ $not_initialized ]; then
-    echo "Failed to start up Elasticsearch server. Exiting..."
+    msg "Failed to start up ElasticSearch server. Exiting..."
     exit 1
+fi
+
+if [[ -z "$ES_NODE_NAME" ]] || [[ "$ES_NODE_NAME" == *-0 ]]; then
+    msg "Proceeding with ElasticSearch additional configuration..."
+else
+    msg "Idling..."
+    exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+    exit $!
 fi
 
 export CP_SECURITY_LOGS_ELASTIC_PREFIX="${CP_SECURITY_LOGS_ELASTIC_PREFIX:-security_log}"
@@ -87,10 +172,10 @@ INDEX="{
 
 status_code=$(curl --write-out %{http_code} --silent --output /dev/null localhost:9200/${CP_SECURITY_LOGS_ELASTIC_PREFIX})
 if [[ "$status_code" == 404 ]] ; then
-  echo "Creating security log index"
+  msg "Creating security log index"
   curl -H 'Content-Type: application/json' -XPUT localhost:9200/%3C${CP_SECURITY_LOGS_ELASTIC_PREFIX}-%7Bnow%2Fm%7Byyyy.MM.dd%7D%7D-000001%3E -d "$INDEX"
 else
-  echo "Security log index already exists"
+  msg "Security log index already exists"
 fi
 
 for _pipeline_path in /etc/search-elk/pipelines/*.json; do
@@ -141,4 +226,6 @@ crontab /etc/cron.d/curator-cron
 
 crond
 
-wait
+msg "Idling..."
+exec /bin/bash -c "trap : TERM INT; sleep infinity & wait"
+exit $!
