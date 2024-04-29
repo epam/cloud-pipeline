@@ -57,3 +57,8 @@
   cursor: pointer;
   color: #595959;
 }
+
+.source-validation-error {
+  color: #f04134;
+  line-height: 10px;
+}

@@ -88,6 +88,20 @@ const FileTypes = {
   FASTQ: 'FASTQ'
 };
 
+const ExtensionPattern = {
+  [FileTypes.BAM]: /\.bam$/,
+  [FileTypes.CRAM]: /\.cram$/,
+  [FileTypes.UBAM]: /\.bam$/,
+  [FileTypes.FASTQ]: /[\.fastq\.gz|\.fq\.gz]$/
+};
+
+const FileExtension = {
+  [FileTypes.BAM]: 'bam',
+  [FileTypes.CRAM]: 'cram',
+  [FileTypes.UBAM]: 'bam',
+  [FileTypes.FASTQ]: 'fastq.gz, fq.gz'
+};
+
 const FILE_REMOVED_STATUS = 'removed';
 
 const getReferenceArn = (path) => {
@@ -126,6 +140,10 @@ export class UploadOmicsButton extends React.Component {
     percentage: {
       source1: 0,
       source2: 0
+    },
+    validationError: {
+      source1: null,
+      source2: null
     }
   };
 
@@ -156,6 +174,9 @@ export class UploadOmicsButton extends React.Component {
   get requiredFields () {
     if (this.isReferenceRequired) {
       return [...CommonRequiredFields, Fields.reference];
+    }
+    if (this.isFASTQ) {
+      return [...CommonRequiredFields, Fields.source2];
     }
     return CommonRequiredFields;
   }
@@ -218,6 +239,10 @@ export class UploadOmicsButton extends React.Component {
       percentage: {
         source1: 0,
         source2: 0
+      },
+      validationError: {
+        source1: null,
+        source2: null
       }
     }, async () => {
       this.props.form.resetFields();
@@ -337,6 +362,7 @@ export class UploadOmicsButton extends React.Component {
       if (!this.props.form.getFieldValue(Fields.reference)) {
         this.props.form.resetFields([Fields.reference]);
       }
+      this.validateFiles();
       this.props.form.validateFields([Fields.reference]);
     });
   }
@@ -388,6 +414,73 @@ export class UploadOmicsButton extends React.Component {
     );
   }
 
+  validateFiles = () => {
+    const sources = ['source1', 'source2'];
+    const files = [
+      this.state.uploadingFiles[sources[0]],
+      this.state.uploadingFiles[sources[1]]
+    ];
+    if (files && files.length) {
+      for (let i = 0; i < files.length; i++) {
+        this.validateSourceExtension(
+          sources[i],
+          {file: files[i]},
+          () => {}
+        );
+      }
+    }
+  }
+
+  validateSourceExtension = (field, value, callback = () => {}) => {
+    const isSource1 = field === Fields.source1;
+    if (!value || !value.file) {
+      if (isSource1) {
+        const error = `${FieldLabel[field]} is required`;
+        const {validationError} = this.state;
+        validationError[field] = error;
+        this.setState({
+          [FieldValid[field]]: false,
+          validationError
+        });
+        // eslint-disable-next-line standard/no-callback-literal
+        callback(error);
+      } else {
+        const {validationError} = this.state;
+        validationError[field] = null;
+        this.setState({
+          [FieldValid[field]]: true,
+          validationError
+        });
+        callback();
+      }
+    } else {
+      if (this.state.fileType) {
+        const file = value.file;
+        const valid = ExtensionPattern[this.state.fileType].test(file.name);
+        if (!valid) {
+          const error = `ReadSet with Type ${this.state.fileType} 
+            suppots file extentions [${FileExtension[this.state.fileType]}] only`;
+          const {validationError} = this.state;
+          validationError[field] = error;
+          this.setState({
+            [FieldValid[field]]: false,
+            validationError
+          });
+          // eslint-disable-next-line standard/no-callback-literal
+          callback(error);
+        } else {
+          const {validationError} = this.state;
+          validationError[field] = null;
+          this.setState({
+            [FieldValid[field]]: true,
+            validationError
+          });
+          callback();
+        }
+      }
+    }
+  };
+
   renderSourceInput = (field) => {
     const {getFieldDecorator} = this.props.form;
     const isSource1 = field === Fields.source1;
@@ -404,12 +497,12 @@ export class UploadOmicsButton extends React.Component {
 
     const handleChangedSource = (info, field) => {
       const {file} = info;
-      const sourceValid = file && (!file.status || file.status !== FILE_REMOVED_STATUS);
-      info.fileList = sourceValid ? [file] : [];
+      const notRemoved = file &&
+        (!file.status || file.status !== FILE_REMOVED_STATUS);
+      info.fileList = notRemoved ? [file] : [];
       const {uploadingFiles} = this.state;
       uploadingFiles[field] = file;
       this.setState({
-        [FieldValid[field]]: sourceValid,
         uploadingFiles
       }, () => {
         this.props.form.setFieldsValue({[Fields[field]]: file.name});
@@ -437,6 +530,7 @@ export class UploadOmicsButton extends React.Component {
           [FieldValid[Fields.source2]]: false,
           uploadingFiles
         }, () => {
+          this.validateSourceExtension(field);
           this.props.form.resetFields([Fields.source1, Fields.source2]);
         });
       } else {
@@ -446,6 +540,7 @@ export class UploadOmicsButton extends React.Component {
           [FieldValid[field]]: false,
           uploadingFiles
         }, () => {
+          this.validateSourceExtension(field);
           this.props.form.resetFields([Fields[field]]);
         });
       }
@@ -471,7 +566,12 @@ export class UploadOmicsButton extends React.Component {
         label={label}>
         {getFieldDecorator(field, {
           initialValue: undefined,
-          rules: [{required: isSource1}]
+          rules: [{
+            required: isSource1,
+            validator: (rule, value, callback) => (
+              this.validateSourceExtension(field, value, callback)
+            )
+          }]
         })(
           <Upload
             showUploadList={false}
@@ -507,6 +607,12 @@ export class UploadOmicsButton extends React.Component {
                   </span>
                 </Tooltip>
               </span>
+            }
+            {
+              !this.state[FieldValid[field]] && this.state.validationError[field] &&
+              <div className={styles.sourceValidationError}>
+                {this.state.validationError[field]}
+              </div>
             }
           </Upload>
         )}
