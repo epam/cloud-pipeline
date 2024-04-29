@@ -646,7 +646,7 @@ class DataStorageListing {
 
   @action
   applyFilters = async () => {
-    const kbToBytes = kb => kb * 1024;
+    const mbToBytes = mb => mb * (1024 ** 2);
     const pathCorrected = correctPath(
       this.path,
       {
@@ -664,10 +664,10 @@ class DataStorageListing {
       const payload = {
         ...(this.currentFilter.name ? {nameFilter: this.currentFilter.name} : {}),
         ...(this.currentFilter.sizeGreaterThan
-          ? {sizeGreaterThan: kbToBytes(this.currentFilter.sizeGreaterThan)}
+          ? {sizeGreaterThan: mbToBytes(this.currentFilter.sizeGreaterThan)}
           : {}),
         ...(this.currentFilter.sizeLessThan
-          ? {sizeLessThan: kbToBytes(this.currentFilter.sizeLessThan)}
+          ? {sizeLessThan: mbToBytes(this.currentFilter.sizeLessThan)}
           : {}),
         ...(this.currentFilter.dateAfter
           ? {dateAfter: this.currentFilter.dateAfter}

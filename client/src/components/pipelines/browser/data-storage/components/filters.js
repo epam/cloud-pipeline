@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {computed} from 'mobx';
@@ -48,6 +49,11 @@ const PREDEFINED_DATE_FILTERS = [{
 
 @observer
 class SizeFilter extends React.Component {
+  static propTypes = {
+    storage: PropTypes.object,
+    onEnter: PropTypes.func
+  };
+
   @computed
   get storage () {
     return this.props.storage;
@@ -57,22 +63,28 @@ class SizeFilter extends React.Component {
     this.storage.changeFilters(key, value);
   };
 
+  onKeyDown = (e) => {
+    const {onEnter} = this.props;
+    if (e.key.toLowerCase() === 'enter') {
+      onEnter && onEnter();
+    }
+  };
+
   render () {
     if (!this.storage) {
       return null;
     }
     return (
-      <div className={styles.sizeFilter}>
+      <div className={styles.sizeFilter} onKeyDown={this.onKeyDown}>
         <div className={styles.inputContainer}>
           <span style={{minWidth: 55}}>More than</span>
           <InputNumber
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeGreaterThan]}
             onChange={this.onChangeFilter(FILTER_FIELDS.sizeGreaterThan)}
-            onPressEnter={this.storage.applyFilters}
             style={{flex: '1 0', margin: '0 5px'}}
           />
-          <span>Kb</span>
+          <span>Mb</span>
         </div>
         <div className={styles.inputContainer}>
           <span style={{minWidth: 55}}>Less than</span>
@@ -80,10 +92,10 @@ class SizeFilter extends React.Component {
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeLessThan]}
             onChange={this.onChangeFilter(FILTER_FIELDS.sizeLessThan)}
-            onPressEnter={this.storage.fetchFilters}
             style={{flex: '1 0', margin: '0 5px'}}
+            onPressEnter={this.onPressEnter}
           />
-          <span>Kb</span>
+          <span>Mb</span>
         </div>
       </div>
     );
@@ -92,6 +104,10 @@ class SizeFilter extends React.Component {
 
 @observer
 class DateFilter extends React.Component {
+  static propTypes = {
+    storage: PropTypes.object
+  };
+
   @computed
   get storage () {
     return this.props.storage;
@@ -211,5 +227,10 @@ function FilterWrapper ({onOk, onCancel, children}) {
     </div>
   );
 }
+
+FilterWrapper.propTypes = {
+  onOk: PropTypes.func,
+  onCancel: PropTypes.func
+};
 
 export {SizeFilter, DateFilter, FilterWrapper, FILTER_FIELDS};

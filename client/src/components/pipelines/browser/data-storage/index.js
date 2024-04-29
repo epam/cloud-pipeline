@@ -1624,7 +1624,7 @@ export default class DataStorage extends React.Component {
             placeholder="File name"
             value={this.storage.currentFilter?.[FILTER_FIELDS.name]}
             onChange={(e) => this.storage.changeFilters(FILTER_FIELDS.name, e.target.value)}
-            onPressEnter={this.storage.applyFilters}
+            onPressEnter={applyFilters}
           />
         </FilterWrapper>
       ),
@@ -1650,7 +1650,7 @@ export default class DataStorage extends React.Component {
             FILTER_FIELDS.sizeLessThan
           ])}
         >
-          <SizeFilter storage={this.storage} />
+          <SizeFilter storage={this.storage} onEnter={applyFilters} />
         </FilterWrapper>
       ),
       filterDropdownVisible: this.filterDropdownVisible === 'size',
@@ -2622,9 +2622,11 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
-            {this.storage.resultsFilteredAndTruncated ? (
+            {!this.storage.resultsFilteredAndTruncated ? (
               <Alert
-                message={`Not all files to be shown. Please try to making filters more restrictive`}
+                style={{marginBottom: 3}}
+                message={`Current folder contains too many objects.
+                Filtered data does not include all of them.`}
                 type="info"
               />
             ) : null}
