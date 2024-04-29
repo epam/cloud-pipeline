@@ -111,9 +111,10 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
         _ECR_REPO_NAME=$(echo "${private_image#"${PRIVATE_ECR}/"}" | cut -d: -f1)
         _ECR_REPO_TAG=$(echo "${private_image}" | grep ":"  &> /dev/null && echo "${private_image}" | cut -d: -f2 || echo latest)
         if ! echo "|${_EXISTING_ECR_REPOS}|" | grep "|${_ECR_REPO_NAME}|"  &> /dev/null; then
-            if aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
+            if ! aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
                 echo "There was a problem with creating ECR repo for ${_ECR_REPO_NAME} ..."
                 cat "$_pull_image_log"
+                exit 1
             else
                 echo "Private ECR repo: $_ECR_REPO_NAME was created."
             fi
@@ -157,9 +158,10 @@ if [ -n "$IMAGE_BUILD_CONFIG" ] && [ -f "$IMAGE_BUILD_CONFIG" ]; then
         _ECR_REPO_NAME=$(echo "${_IMAGE_NAME#"${PRIVATE_ECR}/"}" | cut -d: -f1)
         _ECR_REPO_TAG=$(echo "${_IMAGE_NAME}" | grep ":"  &> /dev/null && echo "${_IMAGE_NAME}" | cut -d: -f2 || echo latest)
         if ! echo "|${_EXISTING_ECR_REPOS}|" | grep "|${_ECR_REPO_NAME}|"  &> /dev/null; then
-            if aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
+            if ! aws ecr create-repository --region "$aws_region" --repository-name "$_ECR_REPO_NAME" &> "$_pull_image_log"; then
                 echo "There was a problem with creating ECR repo for ${_ECR_REPO_NAME} ..."
                 cat "$_pull_image_log"
+                exit 1
             else
                 echo "Private ECR repo: $_ECR_REPO_NAME was created."
             fi
