@@ -44,10 +44,7 @@ const MAX_FILE_SIZE_DESCRIPTION = displaySize(MAX_FILE_SIZE, false);
 const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
 const UPLOAD_PART_MAX_ATTEMPTS = 5;
 
-const SOURCE1 = 'SOURCE1';
-const SOURCE2 = 'SOURCE2';
-
-export {MAX_FILE_SIZE_DESCRIPTION, SOURCE1, SOURCE2};
+export {MAX_FILE_SIZE_DESCRIPTION};
 
 class OmicsStorage {
   _omics;
@@ -55,6 +52,7 @@ class OmicsStorage {
   regionName;
   _storage;
   listParts = [];
+  aborted = false;
 
   @observable uploadError = null;
 
@@ -110,7 +108,7 @@ class OmicsStorage {
     const credentials = await this.getCredentials()
       .then(cred => cred)
       .catch(err => {
-        this.uploadError = err;
+        this.uploadError = err.message;
         return undefined;
       });
     if (!this._credentials) {
@@ -146,6 +144,7 @@ class OmicsStorage {
   @action
   createUpload = async (params) => {
     if (!this._omics) return;
+    this.aborted = false;
     try {
       const command = new CreateMultipartReadSetUploadCommand(params);
       const response = await this._omics.send(command);
@@ -157,7 +156,7 @@ class OmicsStorage {
     } catch (err) {
       this.uploadId = undefined;
       this.sequenceStoreId = undefined;
-      this.uploadError = err;
+      this.uploadError = err.message;
       return false;
     }
   }
@@ -176,33 +175,19 @@ class OmicsStorage {
     return parts;
   }
 
-  uploadFile = async (file, source, updatePercentage) => {
+  uploadFile = async (file, source) => {
     if (this.uploadId) {
       const partCounts = Math.ceil(file.size / MAX_PART_SIZE);
       const parts = this.getParts(file, partCounts);
       for (let i = 0; i < parts.length; i++) {
         const uploaded = await this.uploadPart(parts[i], source, 1);
-        if (uploaded) {
-          let percentage = (parts[i].partNumber * 100) / partCounts;
-          if (source === SOURCE1) {
-            updatePercentage(SOURCE1.toLowerCase(), Math.round(percentage));
-          }
-          if (source === SOURCE2) {
-            updatePercentage(SOURCE2.toLowerCase(), percentage);
-          }
-        } else {
+        if (!uploaded || this.aborted) {
           return false;
         }
       }
       const list = await this.getListParts(source);
       if (list && list.length && list.length === partCounts) {
         this.listParts = [...this.listParts, ...list];
-        if (source === SOURCE1) {
-          updatePercentage(SOURCE1.toLowerCase(), 100);
-        }
-        if (source === SOURCE2) {
-          updatePercentage(SOURCE2.toLowerCase(), 100);
-        }
         return true;
       } else {
         return false;
@@ -212,6 +197,7 @@ class OmicsStorage {
 
   @action
   uploadPart = async (part, source, attempt) => {
+    if (this.aborted) return;
     try {
       if (attempt <= UPLOAD_PART_MAX_ATTEMPTS) {
         const input = {
@@ -226,7 +212,7 @@ class OmicsStorage {
         return response.checksum;
       }
     } catch (err) {
-      this.uploadError = err;
+      this.uploadError = err.message;
       if (attempt < (UPLOAD_PART_MAX_ATTEMPTS - 1)) {
         await this.uploadPart(part, source, attempt + 1);
       } else {
@@ -237,6 +223,7 @@ class OmicsStorage {
 
   @action
   getListParts = async (source) => {
+    if (this.aborted) return;
     try {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
@@ -247,13 +234,14 @@ class OmicsStorage {
       const response = await this._omics.send(command);
       return response.parts;
     } catch (err) {
-      this.uploadError = err;
+      this.uploadError = err.message;
       return false;
     }
   }
 
   @action
   completeUpload = async () => {
+    if (this.aborted) return;
     try {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
@@ -269,13 +257,14 @@ class OmicsStorage {
       this.readSetId = response.readSetId;
       return true;
     } catch (err) {
-      this.uploadError = err;
+      this.uploadError = err.message;
       return false;
     }
   }
 
   @action
   abortUpload = async () => {
+    if (this.aborted) return;
     try {
       const input = {
         sequenceStoreId: this.sequenceStoreId,
@@ -283,9 +272,10 @@ class OmicsStorage {
       };
       const command = new AbortMultipartReadSetUploadCommand(input);
       await this._omics.send(command);
+      this.aborted = true;
       return true;
     } catch (err) {
-      this.uploadError = err;
+      this.uploadError = err.message;
       return false;
     }
   }

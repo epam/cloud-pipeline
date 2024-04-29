@@ -32,30 +32,22 @@
   cursor: pointer;
 }
 
-.delete-source {
+.clear-source {
   margin-left: 10px;
   cursor: pointer;
   color: #59595984;
 }
 
-.delete-source:hover {
+.clear-source:hover {
   margin-left: 10px;
   cursor: pointer;
   color: #595959;
 }
 
-.progress-col {
-  display: flex;
-}
-
-.upload-progress {
-  display: inline;
-}
-
 .cancel-source {
-  margin-right: 5px;
+  margin-left: 10px;
   cursor: pointer;
-  color: #595959;
+  color: #f04134;
 }
 
 .source-validation-error {

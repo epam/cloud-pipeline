@@ -25,17 +25,14 @@ import {
   Form,
   Select,
   Input,
-  Progress,
-  Col,
   Tooltip,
-  message
+  message,
 } from 'antd';
+import classNames from 'classnames';
 import dataStorageRestrictedAccessCheck from '../../utils/data-storage-restricted-access';
 import BucketBrowser from '../pipelines/launch/dialogs/BucketBrowser';
 import OmicsStorage, {
-  MAX_FILE_SIZE_DESCRIPTION,
-  SOURCE1,
-  SOURCE2
+  MAX_FILE_SIZE_DESCRIPTION
 } from '../../models/omics-upload/omics-storage';
 import styles from './UploadOmicsButton.css';
 
@@ -104,6 +101,9 @@ const FileExtension = {
 
 const FILE_REMOVED_STATUS = 'removed';
 
+const SOURCE1 = 'SOURCE1';
+const SOURCE2 = 'SOURCE2';
+
 const getReferenceArn = (path) => {
   const [omics, empty, parts, referenceStoreId, reference, referenceId] = path.split('/');
   const [accountId, storage, region] = parts.split('.');
@@ -137,10 +137,6 @@ export class UploadOmicsButton extends React.Component {
       source2: null
     },
     referenceBrowserVisible: false,
-    percentage: {
-      source1: 0,
-      source2: 0
-    },
     validationError: {
       source1: null,
       source2: null
@@ -236,10 +232,6 @@ export class UploadOmicsButton extends React.Component {
         source2: null
       },
       referenceBrowserVisible: false,
-      percentage: {
-        source1: 0,
-        source2: 0
-      },
       validationError: {
         source1: null,
         source2: null
@@ -320,25 +312,12 @@ export class UploadOmicsButton extends React.Component {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const source = i === 0 ? SOURCE1 : SOURCE2;
-      const updatePercentage = (source, percent) => {
-        const {percentage} = this.state;
-        percentage[source] = percent;
-        this.setState({percentage});
-      };
-      const uploadedFile = await this.omicsStorage.uploadFile(
-        file,
-        source,
-        updatePercentage.bind(this)
-      );
+      const uploadedFile = await this.omicsStorage.uploadFile(file, source);
       completed.push(uploadedFile);
     }
     const success = completed.every(c => c);
     if (success) {
-      try {
-        await this.omicsStorage.completeUpload();
-      } catch (err) {
-        await this.abortUpload();
-      }
+      await this.omicsStorage.completeUpload();
     } else {
       await this.abortUpload();
     }
@@ -431,9 +410,10 @@ export class UploadOmicsButton extends React.Component {
     }
   }
 
-  validateSourceExtension = (field, value, callback = () => {}) => {
+  validateSourceExtension = (field, value = '', callback = () => {}) => {
     const isSource1 = field === Fields.source1;
-    if (!value || !value.file) {
+    const isString = typeof value === 'string';
+    if ((!value && isString) || (value && !isString && !value.file)) {
       if (isSource1) {
         const error = `${FieldLabel[field]} is required`;
         const {validationError} = this.state;
@@ -455,8 +435,8 @@ export class UploadOmicsButton extends React.Component {
       }
     } else {
       if (this.state.fileType) {
-        const file = value.file;
-        const valid = ExtensionPattern[this.state.fileType].test(file.name);
+        const fileName = value.file ? value.file.name : (isString ? value : '');
+        const valid = ExtensionPattern[this.state.fileType].test(fileName);
         if (!valid) {
           const error = `ReadSet with Type ${this.state.fileType} 
             suppots file extentions [${FileExtension[this.state.fileType]}] only`;
@@ -516,11 +496,19 @@ export class UploadOmicsButton extends React.Component {
       }
     };
 
-    const onRemoveSource = (event) => {
+    const onRemoveSource = async (event) => {
+      preventEvent(event);
       if (this.state.uploading) {
+        await this.abortUpload()
+          .then(res => {
+            if (res) {
+              this.setState({
+                uploading: false
+              });
+            }
+          });
         return;
       }
-      preventEvent(event);
       if (isSource1) {
         const {uploadingFiles} = this.state;
         uploadingFiles[Fields.source1] = null;
@@ -542,19 +530,6 @@ export class UploadOmicsButton extends React.Component {
         }, () => {
           this.validateSourceExtension(field);
           this.props.form.resetFields([Fields[field]]);
-        });
-      }
-    };
-
-    const onCancelSource = async () => {
-      const aborted = await this.abortUpload();
-      if (aborted) {
-        this.setState({
-          uploading: false,
-          percentage: {
-            source1: 0,
-            source2: 0
-          }
         });
       }
     };
@@ -597,11 +572,16 @@ export class UploadOmicsButton extends React.Component {
                   {this.state.uploadingFiles[field].name}
                 </span>
                 <Tooltip
-                  title="Delete source file"
+                  title={this.state.uploading ? 'Cancel upload' : 'Clear source file'}
                   trigger="hover"
                 >
                   <span
-                    className={styles.deleteSource}
+                    className={
+                      classNames({
+                        [styles.clearSource]: !this.state.uploading,
+                        [styles.cancelSource]: this.state.uploading
+                      })
+                    }
                     onClick={onRemoveSource}>
                     <Icon type="close" />
                   </span>
@@ -616,27 +596,6 @@ export class UploadOmicsButton extends React.Component {
             }
           </Upload>
         )}
-        {this.state.uploading && this.state.uploadingFiles[field] &&
-          <Row type="flex" style={{width: '100%'}}>
-            <Col span={24} className={styles.progressCol}>
-              <Tooltip
-                title="Cancel uploading"
-                trigger="hover"
-              >
-                <span
-                  className={styles.cancelSource}
-                  onClick={onCancelSource}>
-                  <Icon type="close" />
-                </span>
-              </Tooltip>
-              <Progress
-                className={styles.uploadProgress}
-                strokeWidth={3}
-                key="file-progress"
-                percent={this.state.percentage[field]} />
-            </Col>
-          </Row>
-        }
       </Form.Item>
     );
   }
@@ -670,7 +629,11 @@ export class UploadOmicsButton extends React.Component {
             disabled={this.isUploadButtonDisabled}
             onClick={this.handleSubmit}
           >
-            Upload
+            {
+              this.state.uploading
+                ? <Icon type="loading" />
+                : 'Upload'
+            }
           </Button>
         </Row>
       );
