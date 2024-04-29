@@ -34,27 +34,33 @@ elif [ "$CP_CLOUD_PLATFORM" == 'az' ]; then
     ES_JAVA_OPTS=""; echo "$CP_AZURE_STORAGE_KEY" | bin/elasticsearch-keystore add azure.client.default.key -f
 fi
 
+export ES_LOG_ROOT_DIR="${ES_LOG_ROOT_DIR:-/var/log/elasticsearch}"
+export ES_DATA_ROOT_DIR="${ES_DATA_ROOT_DIR:-/usr/share/elasticsearch/data}"
+export ES_BACKUP_DIR="${ES_BACKUP_DIR:-/usr/share/elasticsearch/backup}"
+
+export CP_SEARCH_ELK_INTERNAL_HOST="${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}"
+export CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT="${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}"
+
 if [[ -z "$ES_NODE_NAME" ]]; then
     msg "Using Elasticsearch single node deployment..."
 
-    export ES_LOG_DIR="/var/log/elasticsearch"
-    export ES_DATA_DIR="/usr/share/elasticsearch/data"
+    export ES_LOG_DIR="$ES_LOG_ROOT_DIR"
+    export ES_DATA_DIR="$ES_DATA_ROOT_DIR"
 
     cat <<EOF >/usr/share/elasticsearch/config/elasticsearch.yml
 cluster.name: "docker-cluster"
 network.host: 0.0.0.0
 
 path.logs: "$ES_LOG_DIR"
-path.data: "/usr/share/elasticsearch/data"
-path.repo: ["/usr/share/elasticsearch/backup"]
+path.data: "$ES_DATA_DIR"
+path.repo: ["$ES_BACKUP_DIR"]
 EOF
 else
     msg "Using Elasticsearch cluster deployment..."
 
-    export CP_SEARCH_ELK_INTERNAL_HOST="${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}"
-    export CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT="${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}"
-    export ES_LOG_DIR="/var/log/elasticsearch/$ES_NODE_NAME"
-    export ES_DATA_DIR="/usr/share/elasticsearch/data/$ES_NODE_NAME"
+    export ES_LOG_DIR="$ES_LOG_ROOT_DIR/$ES_NODE_NAME"
+    export ES_DATA_DIR="$ES_DATA_ROOT_DIR/$ES_NODE_NAME"
+
     if [[ "$ES_NODE_NAME" == *-0 ]]; then
       msg "Configuring master/data/ingest node..."
       export ES_MASTER_NODE="true"
@@ -80,8 +86,8 @@ node.data: "$ES_DATA_NODE"
 node.ingest: "$ES_INGEST_NODE"
 
 path.logs: "$ES_LOG_DIR"
-path.data: "/usr/share/elasticsearch/data/$ES_NODE_NAME"
-path.repo: ["/usr/share/elasticsearch/backup"]
+path.data: "$ES_DATA_DIR"
+path.repo: ["$ES_BACKUP_DIR"]
 EOF
 fi
 
@@ -103,11 +109,9 @@ if [ ! -f "$ES_LOG_DIR/runtime.log" ]; then
 fi
 
 msg "Applying permissions..."
-chown    elasticsearch:root /usr/share/elasticsearch/data
-chown    elasticsearch:root "$ES_DATA_DIR"
-chown    elasticsearch:root /usr/share/elasticsearch/backup
-chown    elasticsearch:root /var/log/elasticsearch
-chown    elasticsearch:root "$ES_LOG_DIR"
+chown    elasticsearch:root "$ES_DATA_ROOT_DIR" "$ES_DATA_DIR"
+chown    elasticsearch:root "$ES_BACKUP_DIR"
+chown    elasticsearch:root "$ES_LOG_ROOT_DIR" "$ES_LOG_DIR"
 chown    elasticsearch:root "$ES_LOG_DIR/runtime.log"
 
 msg "Launching ElasticSearch..."
