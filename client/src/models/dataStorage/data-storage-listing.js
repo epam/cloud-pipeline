@@ -390,7 +390,7 @@ class DataStorageListing {
     if (!this.currentFilter) {
       return true;
     }
-    const {path, ...filter} = this.currentFilter;
+    const {path, ...filter} = this.currentFilter || {};
     return filter && Object.values(filter)
       .every(value => value === undefined);
   }
@@ -668,11 +668,11 @@ class DataStorageListing {
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined
       );
       let payload = {
-        nameFilter: this.currentFilter.name,
-        sizeGreaterThan: mbToBytes(this.currentFilter.sizeGreaterThan),
-        sizeLessThan: mbToBytes(this.currentFilter.sizeLessThan),
-        dateAfter: this.currentFilter.dateAfter,
-        dateBefore: this.currentFilter.dateBefore
+        nameFilter: this.currentFilter?.name,
+        sizeGreaterThan: mbToBytes(this.currentFilter?.sizeGreaterThan),
+        sizeLessThan: mbToBytes(this.currentFilter?.sizeLessThan),
+        dateAfter: this.currentFilter?.dateAfter,
+        dateBefore: this.currentFilter?.dateBefore
       };
       payload = Object.fromEntries(Object.entries(payload)
         .filter(([_, value]) => value !== undefined)

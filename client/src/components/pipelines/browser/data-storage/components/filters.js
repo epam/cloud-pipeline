@@ -151,19 +151,19 @@ class DateFilter extends React.Component {
     }
   };
 
-  onChangeDateAfter = (date) => {
+  onChangeFrom = (date) => {
     let dateString;
     if (date) {
-      dateString = moment(date).endOf('d')
+      dateString = moment(date).startOf('d')
         .format('YYYY-MM-DD HH:mm:ss.SSS');
     }
     this.storage.changeFilters(FILTER_FIELDS.dateAfter, dateString);
   };
 
-  onChangeDateBefore = (date) => {
+  onChangeTo = (date) => {
     let dateString;
     if (date) {
-      dateString = moment(date).startOf('d')
+      dateString = moment(date).endOf('d')
         .format('YYYY-MM-DD HH:mm:ss.SSS');
     }
     this.storage.changeFilters(FILTER_FIELDS.dateBefore, dateString);
@@ -188,26 +188,26 @@ class DateFilter extends React.Component {
     if (filterType !== 'datePicker') {
       return null;
     }
-    const dateBefore = mapDateString(this.filter[FILTER_FIELDS.dateBefore]);
-    const dateAfter = mapDateString(this.filter[FILTER_FIELDS.dateAfter]);
+    const to = mapDateString(this.filter[FILTER_FIELDS.dateBefore]);
+    const from = mapDateString(this.filter[FILTER_FIELDS.dateAfter]);
     return (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div className={styles.datePickerContainer}>
-          <span style={{minWidth: '80px'}}>Date before: </span>
+          <span style={{minWidth: '40px'}}>From: </span>
           <DatePicker
             getCalendarContainer={node => node.parentNode}
-            onChange={this.onChangeDateBefore}
-            value={dateBefore}
+            onChange={this.onChangeFrom}
+            value={from}
             onOpenChange={this.onOpenChange}
           />
         </div>
         <div className={styles.datePickerContainer}>
-          <span style={{minWidth: '80px'}}>Date after: </span>
+          <span style={{minWidth: '40px'}}>To: </span>
           <DatePicker
             getCalendarContainer={node => node.parentNode}
-            onChange={this.onChangeDateAfter}
+            onChange={this.onChangeTo}
             onOpenChange={this.onOpenChange}
-            value={dateAfter}
+            value={to}
           />
         </div>
       </div>
