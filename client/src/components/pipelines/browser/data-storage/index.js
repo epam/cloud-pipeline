@@ -1600,6 +1600,7 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
+    const nameSubmitDisabled = (this.storage.currentFilter?.name || '').length < 3;
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
@@ -1617,14 +1618,23 @@ export default class DataStorage extends React.Component {
       },
       filterDropdown: (
         <FilterWrapper
-          onOk={applyFilters}
+          onOk={() => {
+            if (!nameSubmitDisabled) {
+              applyFilters();
+            }
+          }}
+          okDisabled={nameSubmitDisabled}
           onCancel={clearFilter([FILTER_FIELDS.name])}
         >
           <Input
             placeholder="File name"
             value={this.storage.currentFilter?.[FILTER_FIELDS.name]}
             onChange={(e) => this.storage.changeFilters(FILTER_FIELDS.name, e.target.value)}
-            onPressEnter={applyFilters}
+            onPressEnter={() => {
+              if (!nameSubmitDisabled) {
+                applyFilters();
+              }
+            }}
           />
         </FilterWrapper>
       ),

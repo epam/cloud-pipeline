@@ -240,14 +240,20 @@ class DateFilter extends React.Component {
   }
 }
 
-function FilterWrapper ({onOk, onCancel, children}) {
-  const handleOk = () => onOk && onOk();
+function FilterWrapper ({onOk, onCancel, okDisabled, children}) {
+  const handleOk = () => !okDisabled && onOk && onOk();
   const handleCancel = () => onCancel && onCancel();
   return (
     <div className={styles.filterWrapperContainer}>
       {children}
       <div className={styles.filterWrapperControls}>
-        <a onClick={handleOk}>OK</a>
+        <a
+          disabled={okDisabled}
+          className={okDisabled ? 'cp-disabled' : null}
+          onClick={handleOk}
+        >
+          OK
+        </a>
         <a onClick={handleCancel}>Clear</a>
       </div>
     </div>
@@ -256,7 +262,8 @@ function FilterWrapper ({onOk, onCancel, children}) {
 
 FilterWrapper.propTypes = {
   onOk: PropTypes.func,
-  onCancel: PropTypes.func
+  onCancel: PropTypes.func,
+  okDisabled: PropTypes.bool
 };
 
 export {SizeFilter, DateFilter, FilterWrapper, FILTER_FIELDS};
