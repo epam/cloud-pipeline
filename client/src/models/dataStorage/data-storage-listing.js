@@ -26,6 +26,13 @@ import MetadataLoad from '../metadata/MetadataLoad';
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
 
+const mbToBytes = mb => {
+  if (isNaN(mb)) {
+    return;
+  }
+  return Math.round(parseInt(mb) * (1024 ** 2));
+};
+
 /**
  * Returns true if user is allowed to download from storage according to the
  * `download.enabled` attribute value
@@ -646,7 +653,6 @@ class DataStorageListing {
 
   @action
   applyFilters = async () => {
-    const mbToBytes = mb => mb * (1024 ** 2);
     const pathCorrected = correctPath(
       this.path,
       {
@@ -661,21 +667,16 @@ class DataStorageListing {
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined
       );
-      const payload = {
-        ...(this.currentFilter.name ? {nameFilter: this.currentFilter.name} : {}),
-        ...(this.currentFilter.sizeGreaterThan
-          ? {sizeGreaterThan: mbToBytes(this.currentFilter.sizeGreaterThan)}
-          : {}),
-        ...(this.currentFilter.sizeLessThan
-          ? {sizeLessThan: mbToBytes(this.currentFilter.sizeLessThan)}
-          : {}),
-        ...(this.currentFilter.dateAfter
-          ? {dateAfter: this.currentFilter.dateAfter}
-          : {}),
-        ...(this.currentFilter.dateBefore
-          ? {dateBefore: this.currentFilter.dateBefore}
-          : {})
+      let payload = {
+        ameFilter: this.currentFilter.name,
+        sizeGreaterThan: mbToBytes(this.currentFilter.sizeGreaterThan),
+        sizeLessThan: mbToBytes(this.currentFilter.sizeLessThan),
+        dateAfter: this.currentFilter.dateAfter,
+        dateBefore: this.currentFilter.dateBefore
       };
+      payload = Object.fromEntries(Object.entries(payload)
+        .filter(([_, value]) => value !== undefined)
+      );
       if (!Object.keys(payload).length) {
         return this.refreshCurrentPath(true);
       }
