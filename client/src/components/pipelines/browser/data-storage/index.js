@@ -1703,7 +1703,7 @@ export default class DataStorage extends React.Component {
       key: 'actions',
       className: styles.itemActions,
       title: (
-        <div>
+        <div style={{display: 'flex', justifyContent: 'flex-end'}}>
           {this.storage.resultsFiltered ? (
             <Button
               size="small"
