@@ -228,7 +228,7 @@ class DataStorageOperations(object):
                 source_modification_datetime = None if not sync_newer or len(item) < 4 else item[4]
                 need_to_overwrite = not manager.skip_existing(source_key, source_size, source_modification_datetime,
                                                               destination_key, destination_size,
-                                                              destination_modification_datetime, quiet)
+                                                              destination_modification_datetime, sync_newer, quiet)
                 if need_to_overwrite and not force:
                     cls._force_required()
                 if need_to_overwrite:

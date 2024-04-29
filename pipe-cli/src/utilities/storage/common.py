@@ -294,15 +294,14 @@ class AbstractTransferManager:
 
     @staticmethod
     def skip_existing(source_key, source_size, source_modification_datetime, destination_key, destination_size,
-                      destination_modification_datetime, quiet):
-        if destination_size is not None \
-                and destination_size == source_size \
-                and destination_modification_datetime is not None \
-                and source_modification_datetime is not None \
-                and source_modification_datetime < destination_modification_datetime:
-            if not quiet:
-                click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-            return True
+                      destination_modification_datetime, sync_newer, quiet):
+        if destination_size is not None and destination_size == source_size:
+            if not sync_newer or sync_newer and (destination_modification_datetime is not None
+                                                 and source_modification_datetime is not None
+                                                 and source_modification_datetime < destination_modification_datetime):
+                if not quiet:
+                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
+                return True
         return False
 
     @staticmethod
