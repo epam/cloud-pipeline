@@ -216,15 +216,18 @@ class DataStorageOperations(object):
                 continue
 
             destination_key = manager.get_destination_key(destination_wrapper, relative_path)
-            destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+            if skip_existing and sync_newer:
+                destination_size, destination_modification_datetime = \
+                    manager.get_destination_object_head(destination_wrapper, destination_key)
+            else:
+                destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+                destination_modification_datetime = None
             destination_is_empty = destination_size is None
             if destination_is_empty:
                 filtered_items.append(item)
                 continue
             if skip_existing:
                 source_key = manager.get_source_key(source_wrapper, full_path)
-                destination_modification_datetime = None if not sync_newer else \
-                    manager.get_destination_modification_datetime(destination_wrapper, destination_key)
                 source_modification_datetime = None if not sync_newer or len(item) < 4 else item[4]
                 need_to_overwrite = not manager.skip_existing(source_key, source_size, source_modification_datetime,
                                                               destination_key, destination_size,

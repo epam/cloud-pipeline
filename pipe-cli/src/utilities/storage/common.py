@@ -262,12 +262,14 @@ class AbstractTransferManager:
     def get_destination_size(self, destination_wrapper, destination_key):
         pass
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
+    def get_destination_object_head(self, destination_wrapper, destination_key):
         """
-        Returns destination file last modification datetime in UTC format
+        Returns:
+        - destination file size
+        - destination file last modification datetime in UTC format
 
         """
-        return None
+        return None, None
 
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
@@ -394,12 +396,12 @@ class AbstractListingManager:
                 return item.size
         return None
 
-    def get_file_modification_datetime(self, relative_path):
+    def get_file_object_head(self, relative_path):
         items = self.list_items(relative_path, show_all=True, recursive=True)
         for item in items:
             if item.name == relative_path:
-                return StorageOperations.get_item_modification_datetime_utc(item)
-        return None
+                return item.size, StorageOperations.get_item_modification_datetime_utc(item)
+        return None, None
 
 
 class AbstractDeleteManager:

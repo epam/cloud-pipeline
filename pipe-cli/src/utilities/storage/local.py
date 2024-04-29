@@ -42,8 +42,9 @@ class TransferFromHttpOrFtpToLocal(AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return StorageOperations.get_local_file_modification_datetime(destination_key)
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path

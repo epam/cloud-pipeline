@@ -148,15 +148,15 @@ class StorageItemManager(object):
         except ClientError:
             return None
 
-    def get_s3_file_modification_datetime(self, bucket, key):
+    def get_s3_file_object_head(self, bucket, key):
         try:
             client = self._get_client()
             item = client.head_object(Bucket=bucket, Key=key)
             if 'DeleteMarker' in item:
-                return None
-            return item.get('LastModified', None)
+                return None, None
+            return int(item['ContentLength']), item.get('LastModified', None)
         except ClientError:
-            return None
+            return None, None
 
     def get_s3_file_version(self, bucket, key):
         try:
@@ -205,8 +205,9 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_local_file_size(destination_key)
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return self.get_local_modification_datetime(destination_key)
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
@@ -243,8 +244,8 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return 0
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return None
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return None, 0
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
@@ -277,8 +278,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
@@ -326,8 +327,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
@@ -372,8 +373,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
-    def get_destination_modification_datetime(self, destination_wrapper, destination_key):
-        return self.get_s3_file_modification_datetime(destination_wrapper.bucket.path, destination_key)
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
 
     def get_source_key(self, source_wrapper, source_path):
         return source_path
