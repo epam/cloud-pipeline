@@ -478,7 +478,7 @@ class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
         return True
 
     def get_items(self, quiet=False):
-        return [(FILE, self.path, self.path, 0)]
+        return [(FILE, self.path, self.path, 0, None)]
 
     def delete_item(self, relative_path):
         pass
@@ -523,7 +523,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
                 return []
-            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path))]
+            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path),
+                     StorageOperations.get_local_file_modification_datetime(self.path))]
 
         return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
                                 root=True, quiet=quiet)
@@ -732,7 +733,7 @@ class FtpSourceWrapper(DataStorageWrapper):
         if len(remote_files) == 1:
             self.ftp.voidcmd('TYPE I')  # change ftp connection to binary mode to get file size
             files.append((FILE, "%s://%s%s" % (self.scheme, self.host, path),
-                          self._get_relative_path(path).strip("/"), self.ftp.size(path)))
+                          self._get_relative_path(path).strip("/"), self.ftp.size(path), None))
         else:
             for file_path in remote_files:
                 self._get_files(files, file_path)
@@ -796,7 +797,7 @@ class HttpSourceWrapper(DataStorageWrapper):
             head = self._head(path)
             content_length = head.headers.get('Content-Length')
             files.append((FILE, str(path), self._get_relative_path(path).strip("/"),
-                          content_length if content_length is None else int(content_length)))
+                          content_length if content_length is None else int(content_length), None))
         else:
             response = self._get(path)
             soup = BeautifulSoup(response.content, "html.parser", parse_only=SoupStrainer('a'))
