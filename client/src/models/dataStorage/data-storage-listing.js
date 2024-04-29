@@ -278,10 +278,17 @@ class DataStorageListing {
   @observable downloadEnabled = false;
 
   /**
-   * Filters info. Each folder has its own filter object.
+   * Filters info.
    * Request results may be truncated.
    */
-  @observable filters = [];
+  @observable filters = {
+    name: undefined,
+    sizeGreaterThan: undefined,
+    sizeLessThan: undefined,
+    dateFilterType: undefined,
+    dateAfter: undefined,
+    dateBefore: undefined
+  };
   @observable initialFilter = {};
   @observable resultsTruncated = false;
   @observable filtersApplied = false;
@@ -383,7 +390,7 @@ class DataStorageListing {
 
   @computed
   get currentFilter () {
-    return this.filters.find(f => f.path === this.path);
+    return this.filters;
   }
 
   @computed
@@ -391,8 +398,7 @@ class DataStorageListing {
     if (!this.currentFilter) {
       return true;
     }
-    const {path, ...filter} = this.currentFilter || {};
-    return filter && Object.values(filter)
+    return Object.values(this.currentFilter)
       .every(value => value === undefined);
   }
 
@@ -441,9 +447,6 @@ class DataStorageListing {
     const pathChanged = this.setPath(path);
     const showVersionsChanged = this.setShowVersions(showVersions);
     const showArchivesChanged = this.setShowArchives(showArchives);
-    if (storageChanged) {
-      this.destroyFilters();
-    }
     if (
       storageChanged ||
       pathChanged ||
@@ -463,9 +466,7 @@ class DataStorageListing {
 
   @action
   initializeFilters = () => {
-    const filter = this.filters.find(f => f.path === this.path);
-    const blankFilter = {
-      path: this.path,
+    this.filters = {
       name: undefined,
       sizeGreaterThan: undefined,
       sizeLessThan: undefined,
@@ -473,10 +474,7 @@ class DataStorageListing {
       dateAfter: undefined,
       dateBefore: undefined
     };
-    if (!filter) {
-      this.filters.push(blankFilter);
-    }
-    this.initialFilter = filter || blankFilter;
+    this.initialFilter = {...this.currentFilter};
   };
 
   @action
@@ -600,10 +598,9 @@ class DataStorageListing {
 
   @action
   resetCurrentFilterField = (keys = [], silent = false) => {
-    const filter = this.filters.find(f => f.path === this.path);
     keys.forEach(key => {
-      if (key && filter && key in filter) {
-        filter[key] = undefined;
+      if (key && this.currentFilter && key in this.currentFilter) {
+        this.currentFilter[key] = undefined;
       }
     });
     if (!silent) {
@@ -616,11 +613,10 @@ class DataStorageListing {
     if (!this.currentFilter) {
       return;
     }
-    const {path, ...restFilter} = this.currentFilter;
     if (!resetToInitialValues) {
       this.initialFilter = {};
     }
-    Object.keys(restFilter).forEach(key => {
+    Object.keys(this.currentFilter).forEach(key => {
       const value = resetToInitialValues
         ? this.initialFilter[key]
         : undefined;
@@ -632,24 +628,10 @@ class DataStorageListing {
   };
 
   @action
-  destroyFilters = () => {
-    this.filters = [];
-    this.initialFilter = {};
-    this.resultsTruncated = false;
-    this.filtersApplied = false;
-  };
-
-  @action
   changeFilters = (key, value) => {
-    const filter = this.filters.find(f => f.path === this.path);
-    if (!filter) {
-      this.filters.push({
-        path: this.path,
-        [key]: value
-      });
-      return;
+    if (this.currentFilter) {
+      this.currentFilter[key] = value;
     }
-    filter[key] = value;
   };
 
   @action
