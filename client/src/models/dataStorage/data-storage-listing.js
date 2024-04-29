@@ -15,6 +15,7 @@
  */
 
 import {action, computed, observable} from 'mobx';
+import moment from 'moment-timezone';
 import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
 import authenticatedUserInfo from '../user/WhoAmI';
@@ -661,6 +662,9 @@ class DataStorageListing {
         undefinedAsEmpty: true
       }
     );
+    const formatToUTCString = date => date
+      ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
+      : undefined;
     try {
       this.initialFilter = {...(this.currentFilter || {})};
       const request = new DataStorageFilter(
@@ -671,8 +675,8 @@ class DataStorageListing {
         nameFilter: this.currentFilter?.name,
         sizeGreaterThan: mbToBytes(this.currentFilter?.sizeGreaterThan),
         sizeLessThan: mbToBytes(this.currentFilter?.sizeLessThan),
-        dateAfter: this.currentFilter?.dateAfter,
-        dateBefore: this.currentFilter?.dateBefore
+        dateAfter: formatToUTCString(this.currentFilter?.dateAfter),
+        dateBefore: formatToUTCString(this.currentFilter?.dateBefore)
       };
       payload = Object.fromEntries(Object.entries(payload)
         .filter(([_, value]) => value !== undefined)

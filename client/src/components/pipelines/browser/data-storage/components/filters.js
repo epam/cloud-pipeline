@@ -77,7 +77,7 @@ class SizeFilter extends React.Component {
     return (
       <div className={styles.sizeFilter} onKeyDown={this.onKeyDown}>
         <div className={styles.inputContainer}>
-          <span style={{minWidth: 55}}>More than</span>
+          <span style={{minWidth: 35}}>From:</span>
           <InputNumber
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeGreaterThan]}
@@ -87,7 +87,7 @@ class SizeFilter extends React.Component {
           <span>Mb</span>
         </div>
         <div className={styles.inputContainer}>
-          <span style={{minWidth: 55}}>Less than</span>
+          <span style={{minWidth: 35}}>To:</span>
           <InputNumber
             placeholder="File size"
             value={this.storage.currentFilter?.[FILTER_FIELDS.sizeLessThan]}
@@ -125,8 +125,8 @@ class DateFilter extends React.Component {
     return PREDEFINED_DATE_FILTERS.map((filter) => ({
       title: filter.title,
       key: filter.key,
-      dateAfter: filter.dateAfter ? filter.dateAfter() : undefined,
-      dateBefore: filter.dateBefore ? filter.dateBefore() : undefined
+      dateAfter: filter.dateAfter ? filter.dateAfter(moment()) : undefined,
+      dateBefore: filter.dateBefore ? filter.dateBefore(moment()) : undefined
     }));
   }
 
@@ -146,16 +146,15 @@ class DateFilter extends React.Component {
       const dateBefore = predefinedFilter.dateBefore
         ? predefinedFilter.dateBefore(currentDate)
         : undefined;
-      dateAfter && this.onChangeDateAfter(dateAfter);
-      dateBefore && this.onChangeDateBefore(dateBefore);
+      dateAfter && this.onChangeFrom(dateAfter);
+      dateBefore && this.onChangeTo(dateBefore);
     }
   };
 
   onChangeFrom = (date) => {
     let dateString;
     if (date) {
-      dateString = moment(date).startOf('d')
-        .format('YYYY-MM-DD HH:mm:ss.SSS');
+      dateString = moment(date).startOf('d');
     }
     this.storage.changeFilters(FILTER_FIELDS.dateAfter, dateString);
   };
@@ -163,8 +162,7 @@ class DateFilter extends React.Component {
   onChangeTo = (date) => {
     let dateString;
     if (date) {
-      dateString = moment(date).endOf('d')
-        .format('YYYY-MM-DD HH:mm:ss.SSS');
+      dateString = moment(date).endOf('d');
     }
     this.storage.changeFilters(FILTER_FIELDS.dateBefore, dateString);
   };
@@ -183,13 +181,10 @@ class DateFilter extends React.Component {
   };
 
   renderPicker = () => {
-    const mapDateString = (date) => date ? moment(date) : undefined;
     const filterType = this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker';
     if (filterType !== 'datePicker') {
       return null;
     }
-    const to = mapDateString(this.filter[FILTER_FIELDS.dateBefore]);
-    const from = mapDateString(this.filter[FILTER_FIELDS.dateAfter]);
     return (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div className={styles.datePickerContainer}>
@@ -197,7 +192,7 @@ class DateFilter extends React.Component {
           <DatePicker
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeFrom}
-            value={from}
+            value={this.filter[FILTER_FIELDS.dateAfter]}
             onOpenChange={this.onOpenChange}
           />
         </div>
@@ -207,7 +202,7 @@ class DateFilter extends React.Component {
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeTo}
             onOpenChange={this.onOpenChange}
-            value={to}
+            value={this.filter[FILTER_FIELDS.dateBefore]}
           />
         </div>
       </div>
