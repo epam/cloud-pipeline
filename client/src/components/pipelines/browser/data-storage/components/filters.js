@@ -139,7 +139,7 @@ class DateFilter extends React.Component {
       true
     );
     if (predefinedFilter) {
-      const currentDate = moment.utc();
+      const currentDate = moment();
       const dateAfter = predefinedFilter.dateAfter
         ? predefinedFilter.dateAfter(currentDate)
         : undefined;
