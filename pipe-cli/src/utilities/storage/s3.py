@@ -245,7 +245,7 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         return 0
 
     def get_destination_object_head(self, destination_wrapper, destination_key):
-        return None, 0
+        return 0, None
 
     def transfer(self, source_wrapper, destination_wrapper, path=None,
                  relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
