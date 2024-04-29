@@ -1675,7 +1675,7 @@ export default class DataStorage extends React.Component {
             FILTER_FIELDS.dateBefore
           ])}
         >
-          <DateFilter storage={this.storage} />
+          <DateFilter storage={this.storage} onEnter={applyFilters} />
         </FilterWrapper>
       ),
       filterDropdownVisible: this.filterDropdownVisible === 'date',

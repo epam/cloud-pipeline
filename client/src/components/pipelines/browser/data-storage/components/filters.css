@@ -44,6 +44,7 @@
 .date-filter {
   display: flex;
   flex-direction: column;
+  outline: none;
 }
 
 .date-filter .date-picker-container {

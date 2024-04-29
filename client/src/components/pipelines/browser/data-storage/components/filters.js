@@ -105,8 +105,11 @@ class SizeFilter extends React.Component {
 @observer
 class DateFilter extends React.Component {
   static propTypes = {
-    storage: PropTypes.object
+    storage: PropTypes.object,
+    onEnter: PropTypes.func
   };
+
+  containerRef;
 
   @computed
   get storage () {
@@ -149,15 +152,34 @@ class DateFilter extends React.Component {
   };
 
   onChangeDateAfter = (date) => {
-    const momentDate = moment(date).endOf('d')
-      .format('YYYY-MM-DD HH:mm:ss.SSS');
-    this.storage.changeFilters(FILTER_FIELDS.dateAfter, momentDate);
+    let dateString;
+    if (date) {
+      dateString = moment(date).endOf('d')
+        .format('YYYY-MM-DD HH:mm:ss.SSS');
+    }
+    this.storage.changeFilters(FILTER_FIELDS.dateAfter, dateString);
   };
 
   onChangeDateBefore = (date) => {
-    const momentDate = moment(date).startOf('d')
-      .format('YYYY-MM-DD HH:mm:ss.SSS');
-    this.storage.changeFilters(FILTER_FIELDS.dateBefore, momentDate);
+    let dateString;
+    if (date) {
+      dateString = moment(date).startOf('d')
+        .format('YYYY-MM-DD HH:mm:ss.SSS');
+    }
+    this.storage.changeFilters(FILTER_FIELDS.dateBefore, dateString);
+  };
+
+  onKeyDown = event => {
+    const {onEnter} = this.props;
+    if (event.key.toLowerCase() === 'enter') {
+      onEnter && onEnter();
+    }
+  }
+
+  onOpenChange = (visible) => {
+    if (!visible) {
+      this.containerRef && this.containerRef.focus();
+    }
   };
 
   renderPicker = () => {
@@ -176,6 +198,7 @@ class DateFilter extends React.Component {
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeDateBefore}
             value={dateBefore}
+            onOpenChange={this.onOpenChange}
           />
         </div>
         <div className={styles.datePickerContainer}>
@@ -183,6 +206,7 @@ class DateFilter extends React.Component {
           <DatePicker
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeDateAfter}
+            onOpenChange={this.onOpenChange}
             value={dateAfter}
           />
         </div>
@@ -195,7 +219,14 @@ class DateFilter extends React.Component {
       return null;
     }
     return (
-      <div className={styles.dateFilter}>
+      <div
+        ref={(el) => {
+          this.containerRef = el;
+        }}
+        onKeyDown={this.onKeyDown}
+        className={styles.dateFilter}
+        tabIndex={-1}
+      >
         <Radio.Group
           onChange={this.onChangeRadio}
           value={this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker'}
