@@ -1,0 +1,37 @@
+[ {
+  "name" : "default",
+  "default" : true,
+  "description" : "Initial default configuration",
+  "configuration" : {
+    "main_file" : "run-omics-workflow.sh",
+    "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "instance_disk" : "100",
+    "docker_image" : "library/aws-omics:latest",
+    "language" : "bash",
+    "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/run-omics-workflow.sh",
+    "parameters" : {
+      "engine" : {
+        "type" : "string",
+        "value" : "NEXTFLOW",
+        "required" : true,
+        "no_override" : false
+      },
+      "output_path" : {
+        "type" : "path",
+        "required" : true,
+        "no_override" : false
+      },
+      "RESYNC_IMAGES" : {
+        "type" : "boolean",
+        "value" : true,
+        "required" : true,
+        "no_override" : false
+      },
+      "CP_CAP_DIND_CONTAINER" : {
+        "value" : "true",
+        "type" : "boolean",
+        "required" : false
+      }
+    }
+  }
+}]

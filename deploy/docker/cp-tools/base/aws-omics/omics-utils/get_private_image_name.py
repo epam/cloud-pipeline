@@ -16,11 +16,12 @@ if __name__ == '__main__':
     images_config = args.images_config
     with open(images_config, "r") as images_config_file:
         image_config_json = json.load(images_config_file)
-    default_image_settings = {
-        "namespace": "dockerhub"
-    }
-    if "" in image_config_json:
-        default_image_settings = image_config_json[""]
+
+    default_image_settings = image_config_json.pop("")
+    if not default_image_settings:
+        default_image_settings = {
+            "namespace": "dockerhub"
+        }
 
     effective_image_name = "{}/{}".format(default_image_settings["namespace"], public_image)
     for registry, settings in image_config_json.items():

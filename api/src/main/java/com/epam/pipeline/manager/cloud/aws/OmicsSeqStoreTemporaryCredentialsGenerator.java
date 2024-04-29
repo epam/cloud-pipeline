@@ -38,6 +38,7 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
     private static final String GET_READSET_ACTION = "omics:GetReadSet*";
     private static final String LIST_READSET_ACTION = "omics:ListReadSet*";
     private static final String START_READSET_ACTION = "omics:StartReadSet*";
+    private static final String ABORT_READSET_ACTION = "omics:Abort*ReadSet*";
     private static final String CREATE_READSET_ACTION = "omics:Create*ReadSet*";
     private static final String UPLOAD_READSET_ACTION = "omics:UploadReadSet*";
     private static final String DELETE_OBJECT_ACTION = "omics:*DeleteReadSet*";
@@ -79,6 +80,7 @@ public class OmicsSeqStoreTemporaryCredentialsGenerator
         if (action.isWrite()) {
             actions.add(START_READSET_ACTION);
             actions.add(CREATE_READSET_ACTION);
+            actions.add(ABORT_READSET_ACTION);
             actions.add(UPLOAD_READSET_ACTION);
             actions.add(DELETE_OBJECT_ACTION);
             actions.add(COMPLETE_READSET_ACTION);
