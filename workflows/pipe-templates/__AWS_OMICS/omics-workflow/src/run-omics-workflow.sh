@@ -87,7 +87,7 @@ function sync_images_in_private_ecr() {
         exit 1
     else
       pipe_log_success "Successfully synchronized docker images in private ECR repo." "${_ECR_SYNC_TASK_NAME}"
-      pipe_log_info "Successfully synchronized docker images in private ECR repo." "${$_TASK_NAME}"
+      pipe_log_info "Successfully synchronized docker images in private ECR repo." "${_TASK_NAME}"
     fi
 }
 
