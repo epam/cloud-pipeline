@@ -668,7 +668,7 @@ class DataStorageListing {
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined
       );
       let payload = {
-        ameFilter: this.currentFilter.name,
+        nameFilter: this.currentFilter.name,
         sizeGreaterThan: mbToBytes(this.currentFilter.sizeGreaterThan),
         sizeLessThan: mbToBytes(this.currentFilter.sizeLessThan),
         dateAfter: this.currentFilter.dateAfter,
