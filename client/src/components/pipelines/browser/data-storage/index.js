@@ -2622,7 +2622,7 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
-            {!this.storage.resultsFilteredAndTruncated ? (
+            {this.storage.resultsFilteredAndTruncated ? (
               <Alert
                 style={{marginBottom: 3}}
                 message={`Current folder contains too many objects.
