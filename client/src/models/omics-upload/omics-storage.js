@@ -22,7 +22,7 @@ import {
   CompleteMultipartReadSetUploadCommand,
   AbortMultipartReadSetUploadCommand
 } from '@aws-sdk/client-omics';
-import {observable} from 'mobx';
+import {observable, action} from 'mobx';
 import fetchTempCredentials from '../s3-upload/fetch-temp-credentials';
 import Credentials from '../s3-upload/credentials';
 import displaySize from '../../utils/displaySize';
@@ -54,8 +54,8 @@ class OmicsStorage {
   _credentials;
   regionName;
   _storage;
-  @observable uploadPercentageSource1 = 0;
-  @observable uploadPercentageSource2 = 0;
+  listParts = [];
+
   @observable uploadError = null;
 
   get omics () {
@@ -105,6 +105,7 @@ class OmicsStorage {
     }
   }
 
+  @action
   async setCredentials () {
     const credentials = await this.getCredentials()
       .then(cred => cred)
@@ -142,6 +143,7 @@ class OmicsStorage {
     return false;
   }
 
+  @action
   createUpload = async (params) => {
     if (!this._omics) return;
     try {
@@ -174,7 +176,7 @@ class OmicsStorage {
     return parts;
   }
 
-  uploadFile = async (file, source) => {
+  uploadFile = async (file, source, updatePercentage) => {
     if (this.uploadId) {
       const partCounts = Math.ceil(file.size / MAX_PART_SIZE);
       const parts = this.getParts(file, partCounts);
@@ -183,22 +185,23 @@ class OmicsStorage {
         if (uploaded) {
           let percentage = (parts[i].partNumber * 100) / partCounts;
           if (source === SOURCE1) {
-            this.uploadPercentageSource1 = percentage;
+            updatePercentage(SOURCE1.toLowerCase(), Math.round(percentage));
           }
           if (source === SOURCE2) {
-            this.uploadPercentageSource2 = percentage;
+            updatePercentage(SOURCE2.toLowerCase(), percentage);
           }
         } else {
           return false;
         }
       }
-      this.listParts = await this.getListParts(source);
-      if (this.listParts && this.listParts.length && this.listParts.length === partCounts) {
+      const list = await this.getListParts(source);
+      if (list && list.length && list.length === partCounts) {
+        this.listParts = [...this.listParts, ...list];
         if (source === SOURCE1) {
-          this.uploadPercentageSource1 = 100;
+          updatePercentage(SOURCE1.toLowerCase(), 100);
         }
         if (source === SOURCE2) {
-          this.uploadPercentageSource2 = 100;
+          updatePercentage(SOURCE2.toLowerCase(), 100);
         }
         return true;
       } else {
@@ -207,6 +210,7 @@ class OmicsStorage {
     }
   }
 
+  @action
   uploadPart = async (part, source, attempt) => {
     try {
       if (attempt <= UPLOAD_PART_MAX_ATTEMPTS) {
@@ -219,11 +223,9 @@ class OmicsStorage {
         };
         const command = new UploadReadSetPartCommand(input);
         const response = await this._omics.send(command);
-        console.log(response)
         return response.checksum;
       }
     } catch (err) {
-      console.log(err)
       this.uploadError = err;
       if (attempt < (UPLOAD_PART_MAX_ATTEMPTS - 1)) {
         await this.uploadPart(part, source, attempt + 1);
@@ -233,6 +235,7 @@ class OmicsStorage {
     }
   }
 
+  @action
   getListParts = async (source) => {
     try {
       const input = {
@@ -249,6 +252,7 @@ class OmicsStorage {
     }
   }
 
+  @action
   completeUpload = async () => {
     try {
       const input = {
@@ -270,6 +274,7 @@ class OmicsStorage {
     }
   }
 
+  @action
   abortUpload = async () => {
     try {
       const input = {
@@ -278,8 +283,10 @@ class OmicsStorage {
       };
       const command = new AbortMultipartReadSetUploadCommand(input);
       await this._omics.send(command);
+      return true;
     } catch (err) {
       this.uploadError = err;
+      return false;
     }
   }
 }

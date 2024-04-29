@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
 import {
   Row,
   Upload,
@@ -89,11 +88,6 @@ const FileTypes = {
   FASTQ: 'FASTQ'
 };
 
-const StateName = {
-  [Fields.source1]: 'uploadingFile1',
-  [Fields.source2]: 'uploadingFile2'
-};
-
 const FILE_REMOVED_STATUS = 'removed';
 
 const getReferenceArn = (path) => {
@@ -124,9 +118,15 @@ export class UploadOmicsButton extends React.Component {
     nameValid: false,
     sampleIdValid: false,
     subjectIdValid: false,
-    uploadingFile1: null,
-    uploadingFile2: null,
-    referenceBrowserVisible: false
+    uploadingFiles: {
+      source1: null,
+      source2: null
+    },
+    referenceBrowserVisible: false,
+    percentage: {
+      source1: 0,
+      source2: 0
+    }
   };
 
   formItemLayout = {
@@ -167,19 +167,6 @@ export class UploadOmicsButton extends React.Component {
     });
   }
 
-  @computed
-  get uploadPercentageSource1 () {
-    const p = (this.omicsStorage || {}).uploadPercentageSource1;
-    if (this.omicsStorage) console.log(this.omicsStorage, this.omicsStorage.uploadPercentageSource1);
-    return p;
-  }
-  @computed
-  get uploadPercentageSource2 () {
-    const p = (this.omicsStorage || {}).uploadPercentageSource2;
-    console.log(p);
-    return p;
-  }
-
   componentDidMount () {
     this.checkRestrictedAccess();
   }
@@ -197,6 +184,11 @@ export class UploadOmicsButton extends React.Component {
     if (storageChanged(this.props.storageInfo, prevProps.storageInfo)) {
       this.checkRestrictedAccess();
     }
+    const {uploadError} = this.omicsStorage || {};
+    if (uploadError) {
+      message.error(uploadError, 5);
+      this.omicsStorage.uploadError = null;
+    }
   }
 
   showUploadMenu = (file) => {
@@ -205,10 +197,8 @@ export class UploadOmicsButton extends React.Component {
 
   hideUploadMenu = async () => {
     if (this.state.uploading) {
-      await this.omicsStorage.abortUpload();
+      await this.abortUpload();
     }
-    // this.onRemoveSource(undefined, 'source1');
-    // this.onRemoveSource(undefined, 'source2');
     this.setState({
       uploadMenuVisible: false,
       uploading: false,
@@ -220,9 +210,15 @@ export class UploadOmicsButton extends React.Component {
       nameValid: false,
       sampleIdValid: false,
       subjectIdValid: false,
-      uploadingFile1: null,
-      uploadingFile2: null,
-      referenceBrowserVisible: false
+      uploadingFiles: {
+        source1: null,
+        source2: null
+      },
+      referenceBrowserVisible: false,
+      percentage: {
+        source1: 0,
+        source2: 0
+      }
     }, async () => {
       this.props.form.resetFields();
       if (this.props.onRefresh) {
@@ -291,32 +287,49 @@ export class UploadOmicsButton extends React.Component {
   }
 
   uploadFiles = async () => {
-    const files = [this.state.uploadingFile1, this.state.uploadingFile2];
+    const files = [
+      this.state.uploadingFiles.source1,
+      this.state.uploadingFiles.source2
+    ].filter(f => f);
     const completed = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const source = i === 0 ? SOURCE1 : SOURCE2;
-      completed.push(await this.omicsStorage.uploadFile(file, source));
+      const updatePercentage = (source, percent) => {
+        const {percentage} = this.state;
+        percentage[source] = percent;
+        this.setState({percentage});
+      };
+      const uploadedFile = await this.omicsStorage.uploadFile(
+        file,
+        source,
+        updatePercentage.bind(this)
+      );
+      completed.push(uploadedFile);
     }
     const success = completed.every(c => c);
     if (success) {
-      console.log('success')
       try {
         await this.omicsStorage.completeUpload();
       } catch (err) {
-        await this.omicsStorage.abortUpload();
+        await this.abortUpload();
       }
     } else {
-      console.log('fail')
-      await this.omicsStorage.abortUpload();
+      await this.abortUpload();
     }
   }
 
+  abortUpload = async () => {
+    await this.omicsStorage.abortUpload();
+  }
+
   handleChangeFileType = (type) => {
+    const {uploadingFiles} = this.state;
+    uploadingFiles[Fields.source2] = null;
     this.setState({
       fileType: type,
       [FieldValid[Fields.source2]]: false,
-      [StateName[Fields.source2]]: null
+      uploadingFiles
     }, () => {
       if (this.props.form.getFieldValue(Fields.source2)) {
         this.props.form.resetFields([Fields.source2]);
@@ -378,7 +391,6 @@ export class UploadOmicsButton extends React.Component {
   renderSourceInput = (field) => {
     const {getFieldDecorator} = this.props.form;
     const isSource1 = field === Fields.source1;
-    const stateField = StateName[field];
     const label = (isSource1 && this.isFASTQ &&
       this.props.form.getFieldValue([Fields.source1]))
       ? `${FieldLabel[field]} 1` : FieldLabel[field];
@@ -394,12 +406,13 @@ export class UploadOmicsButton extends React.Component {
       const {file} = info;
       const sourceValid = file && (!file.status || file.status !== FILE_REMOVED_STATUS);
       info.fileList = sourceValid ? [file] : [];
+      const {uploadingFiles} = this.state;
+      uploadingFiles[field] = file;
       this.setState({
         [FieldValid[field]]: sourceValid,
-        [stateField]: file
+        uploadingFiles
       }, () => {
         this.props.form.setFieldsValue({[Fields[field]]: file.name});
-      //   this.props.form.validateFields([Fields[field]]);
       });
     };
 
@@ -416,20 +429,37 @@ export class UploadOmicsButton extends React.Component {
       }
       preventEvent(event);
       if (isSource1) {
+        const {uploadingFiles} = this.state;
+        uploadingFiles[Fields.source1] = null;
+        uploadingFiles[Fields.source2] = null;
         this.setState({
           [FieldValid[Fields.source1]]: false,
           [FieldValid[Fields.source2]]: false,
-          [StateName[Fields.source1]]: null,
-          [StateName[Fields.source2]]: null
+          uploadingFiles
         }, () => {
           this.props.form.resetFields([Fields.source1, Fields.source2]);
         });
       } else {
+        const {uploadingFiles} = this.state;
+        uploadingFiles[field] = null;
         this.setState({
           [FieldValid[field]]: false,
-          [stateField]: null
+          uploadingFiles
         }, () => {
           this.props.form.resetFields([Fields[field]]);
+        });
+      }
+    };
+
+    const onCancelSource = async () => {
+      const aborted = await this.abortUpload();
+      if (aborted) {
+        this.setState({
+          uploading: false,
+          percentage: {
+            source1: 0,
+            source2: 0
+          }
         });
       }
     };
@@ -461,27 +491,43 @@ export class UploadOmicsButton extends React.Component {
               </Button>
             </Tooltip>
             {
-              this.state[stateField] &&
+              this.state.uploadingFiles[field] &&
               <span className={styles.sourceInfo}>
                 <span onClick={preventEvent}>
-                  {this.state[stateField].name}
+                  {this.state.uploadingFiles[field].name}
                 </span>
-                <span
-                  className={styles.deleteSource}
-                  onClick={onRemoveSource}>
-                  <Icon type="close" />
-                </span>
+                <Tooltip
+                  title="Delete source file"
+                  trigger="hover"
+                >
+                  <span
+                    className={styles.deleteSource}
+                    onClick={onRemoveSource}>
+                    <Icon type="close" />
+                  </span>
+                </Tooltip>
               </span>
             }
           </Upload>
         )}
-        {this.state.uploading &&
+        {this.state.uploading && this.state.uploadingFiles[field] &&
           <Row type="flex" style={{width: '100%'}}>
-            <Col span={22} offset={2}>
+            <Col span={24} className={styles.progressCol}>
+              <Tooltip
+                title="Cancel uploading"
+                trigger="hover"
+              >
+                <span
+                  className={styles.cancelSource}
+                  onClick={onCancelSource}>
+                  <Icon type="close" />
+                </span>
+              </Tooltip>
               <Progress
+                className={styles.uploadProgress}
                 strokeWidth={3}
                 key="file-progress"
-                percent={this.uploadPercentageSource1} />
+                percent={this.state.percentage[field]} />
             </Col>
           </Row>
         }
@@ -552,6 +598,7 @@ export class UploadOmicsButton extends React.Component {
           title="Upload file to AWS Omics store"
           visible={this.state.uploadMenuVisible}
           onCancel={this.hideUploadMenu}
+          closable={false}
         >
           <Form>
             <Form.Item

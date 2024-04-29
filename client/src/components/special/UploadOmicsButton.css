@@ -43,3 +43,17 @@
   cursor: pointer;
   color: #595959;
 }
+
+.progress-col {
+  display: flex;
+}
+
+.upload-progress {
+  display: inline;
+}
+
+.cancel-source {
+  margin-right: 5px;
+  cursor: pointer;
+  color: #595959;
+}
