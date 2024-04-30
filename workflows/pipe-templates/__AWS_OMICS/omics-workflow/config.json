@@ -10,20 +10,14 @@
     "language" : "bash",
     "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/run-omics-workflow.sh",
     "parameters" : {
-      "engine" : {
-        "type" : "string",
-        "value" : "NEXTFLOW",
-        "required" : true,
-        "no_override" : false
-      },
-      "output_path" : {
-        "type" : "path",
-        "required" : true,
-        "no_override" : false
-      },
       "RESYNC_IMAGES" : {
         "type" : "boolean",
         "value" : true,
+        "required" : true,
+        "no_override" : false
+      },
+      "OUTPUT_DIR" : {
+        "type" : "path",
         "required" : true,
         "no_override" : false
       },
