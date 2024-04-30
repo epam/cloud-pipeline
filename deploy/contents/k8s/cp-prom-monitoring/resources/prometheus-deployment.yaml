@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: default
+  labels:
+    app: prometheus-server
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      containers:
+      - name: prometheus
+        image: quay.io/prometheus/prometheus:v2.51.2
+        imagePullPolicy: IfNotPresent
+        args:
+          - '--storage.tsdb.retention.time=${CP_PROMETHEUS_DATA_RETENTION}'
+          - '--storage.tsdb.path=/opt/prometheus'
+          - '--config.file=/etc/prometheus/prometheus.yml'
+        command:
+        - /bin/prometheus
+        ports:
+        - name: web
+          containerPort: 9090
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/prometheus
+        - name: data
+          mountPath: /opt/prometheus
+      initContainers:
+      - name: prometheus-data-permission-setup
+        image: busybox
+        command: ["/bin/chown","-R","65534:65534","/opt/prometheus"]
+        volumeMounts:
+        - name: data
+          mountPath: /opt/prometheus      
+      restartPolicy: Always
+      securityContext: {} 
+      terminationGracePeriodSeconds: 30
+      serviceAccountName: prometheus
+      volumes:
+      - name: config-volume
+        configMap:
+          name: prometheus-config
+      - name: data
+        hostPath:
+          path: /opt/prometheus
