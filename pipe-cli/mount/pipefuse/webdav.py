@@ -79,8 +79,8 @@ class PermissionService(object):
                 else:
                     logging.error(response_data.get('payload'))
                     return
-            except Exception as e:
-                logging.error(str(e.message))
+            except Exception:
+                logging.error('Failed to set permissions for %s' % path, exc_info=True)
         logging.error('Failed to set permissions for %s in %d attempts' % (path, self._attempts))
 
 
