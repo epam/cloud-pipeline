@@ -15,15 +15,24 @@
  */
 
 import {action, computed, observable} from 'mobx';
+import moment from 'moment-timezone';
 import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
 import authenticatedUserInfo from '../user/WhoAmI';
 import DataStorageRequest from './DataStoragePage';
+import DataStorageFilter from './DataStorageFilter';
 import roleModel from '../../utils/roleModel';
 import MetadataLoad from '../metadata/MetadataLoad';
 
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
+
+const mbToBytes = mb => {
+  if (isNaN(mb)) {
+    return;
+  }
+  return Math.round(mb * (1024 ** 2));
+};
 
 /**
  * Returns true if user is allowed to download from storage according to the
@@ -269,6 +278,21 @@ class DataStorageListing {
   @observable downloadEnabled = false;
 
   /**
+   * Filters info.
+   * Request results may be truncated.
+   */
+  @observable filters = {
+    name: undefined,
+    sizeGreaterThan: undefined,
+    sizeLessThan: undefined,
+    dateFilterType: undefined,
+    dateAfter: undefined,
+    dateBefore: undefined
+  };
+  @observable resultsTruncated = false;
+  @observable filtersApplied = false;
+
+  /**
    * @param {DataStoragePagesOptions} options
    */
   constructor (options = {}) {
@@ -363,6 +387,30 @@ class DataStorageListing {
     };
   }
 
+  @computed
+  get currentFilter () {
+    return this.filters;
+  }
+
+  @computed
+  get filtersEmpty () {
+    if (!this.currentFilter) {
+      return true;
+    }
+    return Object.values(this.currentFilter)
+      .every(value => value === undefined);
+  }
+
+  @computed
+  get resultsFiltered () {
+    return this.filtersApplied && !this.filtersEmpty;
+  }
+
+  @computed
+  get resultsFilteredAndTruncated () {
+    return this.resultsFiltered && this.resultsTruncated;
+  }
+
   _increaseUniqueToken = () => {
     this.token = (this.token || 0) + 1;
     return this.token;
@@ -385,6 +433,21 @@ class DataStorageListing {
   @action
   clearMarkers = () => {
     this.markers = resetMarkersForPath();
+  };
+
+  @action
+  resetFilter = (silent = true) => {
+    this.filters = {
+      name: undefined,
+      sizeGreaterThan: undefined,
+      sizeLessThan: undefined,
+      dateFilterType: undefined,
+      dateAfter: undefined,
+      dateBefore: undefined
+    };
+    if (!silent) {
+      this.refreshCurrentPath(true);
+    }
   };
 
   @action
@@ -532,6 +595,80 @@ class DataStorageListing {
   };
 
   @action
+  changeFilterField = (key, value, applyChanges = true) => {
+    this.currentFilter[key] = value;
+    if (applyChanges) {
+      this.applyFilters();
+    }
+  };
+
+  @action
+  changeFilter = (newFilterObj = {}, applyChanges = true) => {
+    Object.keys(newFilterObj).forEach(key => {
+      this.changeFilterField(key, newFilterObj[key], false);
+    });
+    if (applyChanges) {
+      this.applyFilters();
+    }
+  };
+
+  @action
+  applyFilters = async () => {
+    const pathCorrected = correctPath(
+      this.path,
+      {
+        leadingSlash: false,
+        trailingSlash: false,
+        undefinedAsEmpty: true
+      }
+    );
+    const formatToUTCString = date => date
+      ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
+      : undefined;
+    try {
+      const request = new DataStorageFilter(
+        this.storageId,
+        pathCorrected ? decodeURIComponent(pathCorrected) : undefined
+      );
+      let payload = {
+        nameFilter: this.currentFilter?.name,
+        sizeGreaterThan: mbToBytes(this.currentFilter?.sizeGreaterThan),
+        sizeLessThan: mbToBytes(this.currentFilter?.sizeLessThan),
+        dateAfter: formatToUTCString(this.currentFilter?.dateAfter),
+        dateBefore: formatToUTCString(this.currentFilter?.dateBefore)
+      };
+      payload = Object.fromEntries(Object.entries(payload)
+        .filter(([_, value]) => value !== undefined)
+      );
+      if (!Object.keys(payload).length) {
+        return this.refreshCurrentPath(true);
+      }
+      await request.send(payload);
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      if (!request.loaded) {
+        throw new Error('Error loading page');
+      }
+      const {results = [], nextPageMarker} = request.value || {};
+      this.resultsTruncated = !!nextPageMarker;
+      this.filtersApplied = true;
+      this.pageElements = results;
+      this.pageLoaded = true;
+      this.pagePath = pathCorrected;
+    } catch (error) {
+      this.pageElements = [];
+      this.pageError = error.message;
+      this.pageLoaded = false;
+      this.pagePath = pathCorrected;
+    } finally {
+      this.pagePending = false;
+      this.pageLoaded = !this.pageError;
+      this.filtersApplied = true;
+    }
+  };
+
+  @action
   fetchCurrentPage = async () => {
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
@@ -575,6 +712,7 @@ class DataStorageListing {
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
         this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
+        this.filtersApplied = false;
       });
     } catch (error) {
       submitChanges(() => {
@@ -587,6 +725,7 @@ class DataStorageListing {
       submitChanges(() => {
         this.pagePending = false;
         this.pageLoaded = !this.pageError;
+        this.filtersApplied = false;
       });
     }
   };
