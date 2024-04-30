@@ -274,7 +274,7 @@ class AWSOmicsOperation:
         # included in 'botocore-data' folder and here add additional place for botocore to look in
         if platform.system() == 'Windows':
             s.get_component('data_loader').search_paths.append(
-                os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'botocore-data')
+                os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'botocore', 'data')
             )
         s._credentials = session_credentials
         return Session(botocore_session=s)
