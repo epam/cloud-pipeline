@@ -28,12 +28,12 @@ const FILTER_FIELDS = {
 const PREDEFINED_DATE_FILTERS = [{
   title: 'Last week',
   key: 'lastWeek',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days'),
+  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days').startOf('day'),
   dateBefore: undefined
 }, {
   title: 'Last month',
   key: 'lastMonth',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month'),
+  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month').endOf('day'),
   dateBefore: undefined
 }];
 
