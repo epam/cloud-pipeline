@@ -153,6 +153,7 @@ def start(mountpoint,
                               webdav_compatibility_mode=webdav_compatibility_mode)
         client = ResilientWebDavFileSystemClient(client)
         if fix_permissions:
+            logging.info('Using WebDav permission awareness...')
             client = PermissionAwareWebDavFileSystemClient(client, webdav, bearer)
     else:
         if not api:
@@ -469,8 +470,11 @@ if __name__ == '__main__':
                         help="Data access audit buffer time to live, seconds.")
     parser.add_argument("--audit-buffer-size", type=int, required=False, default=100,
                         help="Number of entries in data access audit buffer.")
-    parser.add_argument("-f", "--fix-permissions", default=False, action='store_true',
-                        help="With this flag enabled, permissions for the uploaded files will be overriden."
+    parser.add_argument("--fix-permissions", default=False, action='store_true',
+                        help="With this flag enabled, permissions for the uploaded files will be overridden."
+                             "Applied only to WebDav mounts.")
+    parser.add_argument("--no-fix-permissions", dest='fix_permissions', action='store_false',
+                        help="With this flag enabled, permissions for the uploaded files will not be overridden."
                              "Applied only to WebDav mounts.")
 
     args = parser.parse_args()
