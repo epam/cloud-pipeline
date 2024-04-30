@@ -1647,9 +1647,9 @@ def storage_server_list(log_level):
 @storage_server.command(name='stop')
 @click.option('--path', required=False,
               help='Serving path')
-@click.option('--host', required=False, default='0.0.0.0',
+@click.option('--host', required=False, default=None,
               help='Serving host')
-@click.option('--port', required=False, default=80, type=int,
+@click.option('--port', required=False, default=0, type=int,
               help='Serving port')
 @click.option('--timeout-stop', required=False, type=int, default=60,
               help='Specifies a background process stopping timeout in seconds.')
