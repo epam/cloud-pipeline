@@ -31,7 +31,6 @@ from requests import cookies
 
 from pipefuse import fuseutils
 from pipefuse.chain import ChainingService
-from pipefuse.fuseutils import str_to_bytes, bytes_to_str
 from pipefuse.fsclient import File, FileSystemClient, \
     ForbiddenOperationException, NotFoundOperationException, InvalidOperationException
 
@@ -264,7 +263,7 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
         headers = {}
         if self.webdav_compatibility_mode == 'apache':
             headers.update({'Content-Range': 'bytes %d-%d/*' % (offset, end)})
-        self._send('PUT', remote_path, (200, 201, 204), data=bytes_to_str(data), headers=headers)
+        self._send('PUT', remote_path, (200, 201, 204), data=bytes(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}
