@@ -245,11 +245,12 @@ class SizeFilter extends React.Component {
 class DateFilter extends React.Component {
   static propTypes = {
     storage: PropTypes.object,
-    hideFilterDropdown: PropTypes.func
+    hideFilterDropdown: PropTypes.func,
+    visible: PropTypes.bool
   };
 
   state = {
-    dateFilterType: 'datePicker',
+    [FILTER_FIELDS.dateFilterType]: 'datePicker',
     [FILTER_FIELDS.dateAfter]: undefined,
     [FILTER_FIELDS.dateBefore]: undefined
   }
@@ -284,9 +285,11 @@ class DateFilter extends React.Component {
     if (!this.storage?.currentFilter) {
       return;
     }
+    const dateFilterType = this.storage.currentFilter[FILTER_FIELDS.dateFilterType] || 'datePicker';
     const from = this.storage.currentFilter[FILTER_FIELDS.dateAfter];
     const to = this.storage.currentFilter[FILTER_FIELDS.dateBefore];
     this.setState({
+      [FILTER_FIELDS.dateFilterType]: dateFilterType,
       [FILTER_FIELDS.dateAfter]: from,
       [FILTER_FIELDS.dateBefore]: to
     });
@@ -294,9 +297,11 @@ class DateFilter extends React.Component {
 
   onApplyFilter = () => {
     const {hideFilterDropdown} = this.props;
+    const dateFilterType = this.state[FILTER_FIELDS.dateFilterType];
     const from = this.state[FILTER_FIELDS.dateAfter];
     const to = this.state[FILTER_FIELDS.dateBefore];
     this.storage.changeFilter({
+      [FILTER_FIELDS.dateFilterType]: dateFilterType,
       [FILTER_FIELDS.dateAfter]: from,
       [FILTER_FIELDS.dateBefore]: to
     });
@@ -306,6 +311,7 @@ class DateFilter extends React.Component {
   onClearFilter = () => {
     const {hideFilterDropdown} = this.props;
     this.storage.changeFilter({
+      [FILTER_FIELDS.dateFilterType]: 'datePicker',
       [FILTER_FIELDS.dateAfter]: undefined,
       [FILTER_FIELDS.dateBefore]: undefined
     });
