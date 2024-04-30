@@ -15,7 +15,7 @@ function preflight_checks() {
 
    which aws &> /dev/null
    if [ $? -ne 0 ]; then
-       pipe_log_fail "Can't find aws utility. Are you using library/aws-omics docker image?" "${_TASK_NAME}"
+       pipe_log_fail "Can't find aws utility. Are you using library/aws-omics-workflow docker image?" "${_TASK_NAME}"
        exit 1
    fi
 }
