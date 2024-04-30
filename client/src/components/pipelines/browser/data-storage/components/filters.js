@@ -22,51 +22,184 @@ import {computed} from 'mobx';
 import {
   Radio,
   InputNumber,
-  DatePicker
+  DatePicker,
+  Input
 } from 'antd';
+import {FILTER_FIELDS, PREDEFINED_DATE_FILTERS} from './filter-config';
 import styles from './filters.css';
 
-const FILTER_FIELDS = {
-  name: 'name',
-  sizeGreaterThan: 'sizeGreaterThan',
-  sizeLessThan: 'sizeLessThan',
-  dateAfter: 'dateAfter',
-  dateBefore: 'dateBefore',
-  dateFilterType: 'dateFilterType'
-};
-
-const PREDEFINED_DATE_FILTERS = [{
-  title: 'Last week',
-  key: 'lastWeek',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(7, 'days'),
-  dateBefore: undefined
-}, {
-  title: 'Last month',
-  key: 'lastMonth',
-  dateAfter: (currentDate) => currentDate && moment(currentDate).subtract(1, 'month'),
-  dateBefore: undefined
-}];
-
 @observer
-class SizeFilter extends React.Component {
+class InputFilter extends React.Component {
   static propTypes = {
     storage: PropTypes.object,
-    onEnter: PropTypes.func
+    hideFilterDropdown: PropTypes.func,
+    visible: PropTypes.bool,
+    label: PropTypes.string,
+    labelStyle: PropTypes.object,
+    placeholder: PropTypes.string
   };
+
+  state = {
+    value: undefined
+  }
+
+  componentDidMount () {
+    this.rebuildState();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (this.props.storage !== prevProps.storage || (this.props.visible && !prevProps.visible)) {
+      this.rebuildState();
+    }
+  }
 
   @computed
   get storage () {
     return this.props.storage;
   }
 
-  onChangeFilter = key => value => {
-    this.storage.changeFilters(key, value);
+  get filterKeyIsValid () {
+    const {filterKey} = this.props;
+    return filterKey && FILTER_FIELDS[filterKey];
+  }
+
+  get submitDisabled () {
+    const {submitDisabled} = this.props;
+    if (submitDisabled && typeof submitDisabled === 'function') {
+      return submitDisabled(this.state.value);
+    }
+    return false;
+  }
+
+  rebuildState = () => {
+    const {filterKey} = this.props;
+    if (this.filterKeyIsValid && this.storage?.currentFilter) {
+      this.setState({value: this.storage.currentFilter[filterKey]});
+    }
+  };
+
+  onChangeFilterState = event => {
+    this.setState({value: event.target.value});
+  };
+
+  onApplyFilter = () => {
+    const {hideFilterDropdown, filterKey} = this.props;
+    if (!this.filterKeyIsValid || this.submitDisabled) {
+      return;
+    }
+    this.storage.changeFilterField(
+      FILTER_FIELDS[filterKey],
+      this.state.value
+    );
+    hideFilterDropdown && hideFilterDropdown();
+  };
+
+  onClearFilter = () => {
+    const {hideFilterDropdown, filterKey} = this.props;
+    if (!this.filterKeyIsValid) {
+      return;
+    }
+    this.storage.changeFilter({
+      [FILTER_FIELDS[filterKey]]: undefined
+    });
+    hideFilterDropdown && hideFilterDropdown();
+  };
+
+  render () {
+    const {
+      label,
+      labelStyle,
+      placeholder
+    } = this.props;
+    return (
+      <div
+        className={styles.filterWrapper}
+      >
+        <div className={styles.inputContainer}>
+          <span style={labelStyle}>{label}</span>
+          <Input
+            placeholder={placeholder}
+            value={this.state.value}
+            onChange={this.onChangeFilterState}
+            onPressEnter={this.onApplyFilter}
+          />
+        </div>
+        <FilterFooter
+          onOk={this.onApplyFilter}
+          onClear={this.onClearFilter}
+          okDisabled={this.submitDisabled}
+        />
+      </div>
+    );
+  }
+}
+@observer
+class SizeFilter extends React.Component {
+  static propTypes = {
+    storage: PropTypes.object,
+    hideFilterDropdown: PropTypes.func,
+    visible: PropTypes.bool
+  };
+
+  state = {
+    [FILTER_FIELDS.sizeGreaterThan]: undefined,
+    [FILTER_FIELDS.sizeLessThan]: undefined
+  }
+
+  componentDidMount () {
+    this.rebuildState();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (this.props.storage !== prevProps.storage || (this.props.visible && !prevProps.visible)) {
+      this.rebuildState();
+    }
+  }
+
+  @computed
+  get storage () {
+    return this.props.storage;
+  }
+
+  rebuildState = () => {
+    if (!this.storage?.currentFilter) {
+      return;
+    }
+    const from = this.storage.currentFilter[FILTER_FIELDS.sizeGreaterThan];
+    const to = this.storage.currentFilter[FILTER_FIELDS.sizeLessThan];
+    this.setState({
+      [FILTER_FIELDS.sizeGreaterThan]: from,
+      [FILTER_FIELDS.sizeLessThan]: to
+    });
+  };
+
+  onChangeFilterState = key => value => {
+    this.setState({[key]: value});
+  };
+
+  onApplyFilter = () => {
+    const {hideFilterDropdown} = this.props;
+    const from = this.state[FILTER_FIELDS.sizeGreaterThan];
+    const to = this.state[FILTER_FIELDS.sizeLessThan];
+    this.storage.changeFilter({
+      [FILTER_FIELDS.sizeGreaterThan]: from,
+      [FILTER_FIELDS.sizeLessThan]: to
+    });
+    hideFilterDropdown && hideFilterDropdown();
+  };
+
+  onClearFilter = () => {
+    const {hideFilterDropdown} = this.props;
+    this.storage.changeFilter({
+      [FILTER_FIELDS.sizeGreaterThan]: undefined,
+      [FILTER_FIELDS.sizeLessThan]: undefined
+    });
+    hideFilterDropdown && hideFilterDropdown();
   };
 
   onKeyDown = (e) => {
-    const {onEnter} = this.props;
     if (e.key.toLowerCase() === 'enter') {
-      onEnter && onEnter();
+      this.onApplyFilter();
     }
   };
 
@@ -75,13 +208,16 @@ class SizeFilter extends React.Component {
       return null;
     }
     return (
-      <div className={styles.sizeFilter} onKeyDown={this.onKeyDown}>
+      <div
+        className={styles.filterWrapper}
+        onKeyDown={this.onKeyDown}
+      >
         <div className={styles.inputContainer}>
           <span style={{minWidth: 35}}>From:</span>
           <InputNumber
             placeholder="File size"
-            value={this.storage.currentFilter?.[FILTER_FIELDS.sizeGreaterThan]}
-            onChange={this.onChangeFilter(FILTER_FIELDS.sizeGreaterThan)}
+            value={this.state[FILTER_FIELDS.sizeGreaterThan]}
+            onChange={this.onChangeFilterState(FILTER_FIELDS.sizeGreaterThan)}
             style={{flex: '1 0', margin: '0 5px'}}
           />
           <span>Mb</span>
@@ -90,13 +226,16 @@ class SizeFilter extends React.Component {
           <span style={{minWidth: 35}}>To:</span>
           <InputNumber
             placeholder="File size"
-            value={this.storage.currentFilter?.[FILTER_FIELDS.sizeLessThan]}
-            onChange={this.onChangeFilter(FILTER_FIELDS.sizeLessThan)}
+            value={this.state[FILTER_FIELDS.sizeLessThan]}
+            onChange={this.onChangeFilterState(FILTER_FIELDS.sizeLessThan)}
             style={{flex: '1 0', margin: '0 5px'}}
-            onPressEnter={this.onPressEnter}
           />
           <span>Mb</span>
         </div>
+        <FilterFooter
+          onOk={this.onApplyFilter}
+          onClear={this.onClearFilter}
+        />
       </div>
     );
   }
@@ -106,49 +245,89 @@ class SizeFilter extends React.Component {
 class DateFilter extends React.Component {
   static propTypes = {
     storage: PropTypes.object,
-    onEnter: PropTypes.func
+    hideFilterDropdown: PropTypes.func
   };
 
+  state = {
+    dateFilterType: 'datePicker',
+    [FILTER_FIELDS.dateAfter]: undefined,
+    [FILTER_FIELDS.dateBefore]: undefined
+  }
+
   containerRef;
+
+  componentDidMount () {
+    this.rebuildState();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (this.props.storage !== prevProps.storage || (this.props.visible && !prevProps.visible)) {
+      this.rebuildState();
+    }
+  }
 
   @computed
   get storage () {
     return this.props.storage;
   }
 
-  @computed
-  get filter () {
-    return this.storage.currentFilter || {};
-  }
-
   get predefinedDateFilters () {
     return PREDEFINED_DATE_FILTERS.map((filter) => ({
       title: filter.title,
       key: filter.key,
-      dateAfter: filter.dateAfter ? filter.dateAfter(moment()) : undefined,
-      dateBefore: filter.dateBefore ? filter.dateBefore(moment()) : undefined
+      dateAfter: filter.dateAfter || undefined,
+      dateBefore: filter.dateBefore || undefined
     }));
   }
 
-  onChangeRadio = (event) => {
-    this.storage.changeFilters(FILTER_FIELDS.dateFilterType, event.target.value);
-    const [type] = event.target.value.split('|');
-    const predefinedFilter = PREDEFINED_DATE_FILTERS.find(({key}) => key === type);
-    this.storage.resetCurrentFilterField(
-      [FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore],
-      true
-    );
-    if (predefinedFilter) {
-      const currentDate = moment();
-      const dateAfter = predefinedFilter.dateAfter
-        ? predefinedFilter.dateAfter(currentDate)
-        : undefined;
-      const dateBefore = predefinedFilter.dateBefore
-        ? predefinedFilter.dateBefore(currentDate)
-        : undefined;
-      dateAfter && this.onChangeFrom(dateAfter);
-      dateBefore && this.onChangeTo(dateBefore);
+  rebuildState = () => {
+    if (!this.storage?.currentFilter) {
+      return;
     }
+    const from = this.storage.currentFilter[FILTER_FIELDS.dateAfter];
+    const to = this.storage.currentFilter[FILTER_FIELDS.dateBefore];
+    this.setState({
+      [FILTER_FIELDS.dateAfter]: from,
+      [FILTER_FIELDS.dateBefore]: to
+    });
+  };
+
+  onApplyFilter = () => {
+    const {hideFilterDropdown} = this.props;
+    const from = this.state[FILTER_FIELDS.dateAfter];
+    const to = this.state[FILTER_FIELDS.dateBefore];
+    this.storage.changeFilter({
+      [FILTER_FIELDS.dateAfter]: from,
+      [FILTER_FIELDS.dateBefore]: to
+    });
+    hideFilterDropdown && hideFilterDropdown();
+  };
+
+  onClearFilter = () => {
+    const {hideFilterDropdown} = this.props;
+    this.storage.changeFilter({
+      [FILTER_FIELDS.dateAfter]: undefined,
+      [FILTER_FIELDS.dateBefore]: undefined
+    });
+    hideFilterDropdown && hideFilterDropdown();
+  };
+
+  onChangeRadio = (event) => {
+    this.setState({dateFilterType: event.target.value}, () => {
+      const type = event.target.value;
+      const predefined = PREDEFINED_DATE_FILTERS.find(({key}) => key === type);
+      const currentDate = moment();
+      const from = typeof predefined?.dateAfter === 'function'
+        ? predefined.dateAfter(currentDate)
+        : undefined;
+      const to = typeof predefined?.dateBefore === 'function'
+        ? predefined.dateBefore(currentDate)
+        : undefined;
+      this.setState({
+        [FILTER_FIELDS.dateAfter]: from,
+        [FILTER_FIELDS.dateBefore]: to
+      });
+    });
   };
 
   onChangeFrom = (date) => {
@@ -156,7 +335,7 @@ class DateFilter extends React.Component {
     if (date) {
       dateString = moment(date).startOf('d');
     }
-    this.storage.changeFilters(FILTER_FIELDS.dateAfter, dateString);
+    this.setState({[FILTER_FIELDS.dateAfter]: dateString});
   };
 
   onChangeTo = (date) => {
@@ -164,13 +343,12 @@ class DateFilter extends React.Component {
     if (date) {
       dateString = moment(date).endOf('d');
     }
-    this.storage.changeFilters(FILTER_FIELDS.dateBefore, dateString);
+    this.setState({[FILTER_FIELDS.dateBefore]: dateString});
   };
 
   onKeyDown = event => {
-    const {onEnter} = this.props;
     if (event.key.toLowerCase() === 'enter') {
-      onEnter && onEnter();
+      this.onApplyFilter();
     }
   }
 
@@ -181,8 +359,8 @@ class DateFilter extends React.Component {
   };
 
   renderPicker = () => {
-    const filterType = this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker';
-    if (filterType !== 'datePicker') {
+    const {dateFilterType} = this.state;
+    if (dateFilterType !== 'datePicker') {
       return null;
     }
     return (
@@ -192,7 +370,7 @@ class DateFilter extends React.Component {
           <DatePicker
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeFrom}
-            value={this.filter[FILTER_FIELDS.dateAfter]}
+            value={this.state[FILTER_FIELDS.dateAfter]}
             onOpenChange={this.onOpenChange}
           />
         </div>
@@ -202,7 +380,7 @@ class DateFilter extends React.Component {
             getCalendarContainer={node => node.parentNode}
             onChange={this.onChangeTo}
             onOpenChange={this.onOpenChange}
-            value={this.filter[FILTER_FIELDS.dateBefore]}
+            value={this.state[FILTER_FIELDS.dateBefore]}
           />
         </div>
       </div>
@@ -219,12 +397,12 @@ class DateFilter extends React.Component {
           this.containerRef = el;
         }}
         onKeyDown={this.onKeyDown}
-        className={styles.dateFilter}
+        className={styles.filterWrapper}
         tabIndex={-1}
       >
         <Radio.Group
           onChange={this.onChangeRadio}
-          value={this.filter[FILTER_FIELDS.dateFilterType] || 'datePicker'}
+          value={this.state.dateFilterType}
           style={{display: 'flex', flexDirection: 'column', gap: '3px'}}
         >
           {this.predefinedDateFilters.map(filter => (
@@ -235,35 +413,36 @@ class DateFilter extends React.Component {
           </Radio>
         </Radio.Group>
         {this.renderPicker()}
+        <FilterFooter
+          onOk={this.onApplyFilter}
+          onClear={this.onClearFilter}
+        />
       </div>
     );
   }
 }
 
-function FilterWrapper ({onOk, onCancel, okDisabled, children}) {
+function FilterFooter ({onOk, onClear, okDisabled}) {
   const handleOk = () => !okDisabled && onOk && onOk();
-  const handleCancel = () => onCancel && onCancel();
+  const handleClear = () => onClear && onClear();
   return (
-    <div className={styles.filterWrapperContainer}>
-      {children}
-      <div className={styles.filterWrapperControls}>
-        <a
-          disabled={okDisabled}
-          className={okDisabled ? 'cp-disabled' : null}
-          onClick={handleOk}
-        >
-          OK
-        </a>
-        <a onClick={handleCancel}>Clear</a>
-      </div>
+    <div className={styles.filterWrapperControls}>
+      <a
+        disabled={okDisabled}
+        className={okDisabled ? 'cp-disabled' : null}
+        onClick={handleOk}
+      >
+        OK
+      </a>
+      <a onClick={handleClear}>Clear</a>
     </div>
   );
 }
 
-FilterWrapper.propTypes = {
+FilterFooter.propTypes = {
   onOk: PropTypes.func,
-  onCancel: PropTypes.func,
+  onClear: PropTypes.func,
   okDisabled: PropTypes.bool
 };
 
-export {SizeFilter, DateFilter, FilterWrapper, FILTER_FIELDS};
+export {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS};

@@ -102,7 +102,7 @@ import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import styles from '../Browser.css';
-import {SizeFilter, DateFilter, FilterWrapper, FILTER_FIELDS} from './components/filters';
+import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -1486,14 +1486,8 @@ export default class DataStorage extends React.Component {
         filteredValue: filtered ? ['filtered'] : null
       };
     };
-    const applyFilters = async () => {
-      this.storage.applyFilters();
+    const hideFilterDropdown = () => {
       this.filterDropdownVisible = undefined;
-    };
-    const clearFilter = keys => () => {
-      this.storage.resetCurrentFilterField(keys);
-      this.filterDropdownVisible = undefined;
-      this.storage.applyFilters();
     };
     const selectionColumn = {
       key: 'selection',
@@ -1600,14 +1594,13 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
-    const nameSubmitDisabled = (this.storage.currentFilter?.name || '').length < 3;
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
       title: 'Name',
       className: styles.nameCell,
       render: (text, item) => {
-        const search = this.storage.initialFilter?.[FILTER_FIELDS.name];
+        const search = this.storage.currentFilter[FILTER_FIELDS.name];
         const highlightedText = this.storage.filtersApplied && search
           ? highlightText(text, search)
           : text;
@@ -1617,31 +1610,18 @@ export default class DataStorage extends React.Component {
         return highlightedText;
       },
       filterDropdown: (
-        <FilterWrapper
-          onOk={() => {
-            if (!nameSubmitDisabled) {
-              applyFilters();
-            }
-          }}
-          okDisabled={nameSubmitDisabled}
-          onCancel={clearFilter([FILTER_FIELDS.name])}
-        >
-          <Input
-            placeholder="File name"
-            value={this.storage.currentFilter?.[FILTER_FIELDS.name]}
-            onChange={(e) => this.storage.changeFilters(FILTER_FIELDS.name, e.target.value)}
-            onPressEnter={() => {
-              if (!nameSubmitDisabled) {
-                applyFilters();
-              }
-            }}
-          />
-        </FilterWrapper>
+        <InputFilter
+          filterKey={FILTER_FIELDS.name}
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'name'}
+          placeholder="File name"
+          submitDisabled={value => (value || '').length < 3}
+        />
       ),
       filterDropdownVisible: this.filterDropdownVisible === 'name',
       onFilterDropdownVisibleChange: (visible) => {
         this.filterDropdownVisible = visible ? 'name' : undefined;
-        this.storage.resetCurrentFilter(true, true);
       },
       ...filteredStatus([FILTER_FIELDS.name]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
@@ -1653,20 +1633,15 @@ export default class DataStorage extends React.Component {
       className: styles.sizeCell,
       render: size => displaySize(size),
       filterDropdown: (
-        <FilterWrapper
-          onOk={applyFilters}
-          onCancel={clearFilter([
-            FILTER_FIELDS.sizeGreaterThan,
-            FILTER_FIELDS.sizeLessThan
-          ])}
-        >
-          <SizeFilter storage={this.storage} onEnter={applyFilters} />
-        </FilterWrapper>
+        <SizeFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'size'}
+        />
       ),
       filterDropdownVisible: this.filterDropdownVisible === 'size',
       onFilterDropdownVisibleChange: (visible) => {
         this.filterDropdownVisible = visible ? 'size' : undefined;
-        this.storage.resetCurrentFilter(true, true);
       },
       ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
@@ -1678,20 +1653,15 @@ export default class DataStorage extends React.Component {
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
       filterDropdown: (
-        <FilterWrapper
-          onOk={applyFilters}
-          onCancel={clearFilter([
-            FILTER_FIELDS.dateAfter,
-            FILTER_FIELDS.dateBefore
-          ])}
-        >
-          <DateFilter storage={this.storage} onEnter={applyFilters} />
-        </FilterWrapper>
+        <DateFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'date'}
+        />
       ),
       filterDropdownVisible: this.filterDropdownVisible === 'date',
       onFilterDropdownVisibleChange: (visible) => {
         this.filterDropdownVisible = visible ? 'date' : undefined;
-        this.storage.resetCurrentFilter(true, true);
       },
       ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
@@ -1718,7 +1688,7 @@ export default class DataStorage extends React.Component {
             <Button
               size="small"
               type="primary"
-              onClick={() => this.storage.resetCurrentFilter()}
+              onClick={() => this.storage.resetFilter(false)}
             >
               Reset filters
             </Button>
@@ -2939,12 +2909,15 @@ export default class DataStorage extends React.Component {
   }
 
   updateStorageIfRequired = () => {
-    this.storage.initialize(
+    const changed = this.storage.initialize(
       this.props.storageId,
       this.props.path,
       this.props.showVersions,
       this.props.showArchives
     );
+    if (changed) {
+      this.storage.resetFilter();
+    }
   };
 
   clearSelectedItemsIfRequired = () => {

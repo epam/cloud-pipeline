@@ -289,7 +289,6 @@ class DataStorageListing {
     dateAfter: undefined,
     dateBefore: undefined
   };
-  @observable initialFilter = {};
   @observable resultsTruncated = false;
   @observable filtersApplied = false;
 
@@ -437,6 +436,21 @@ class DataStorageListing {
   };
 
   @action
+  resetFilter = (silent = true) => {
+    this.filters = {
+      name: undefined,
+      sizeGreaterThan: undefined,
+      sizeLessThan: undefined,
+      dateFilterType: undefined,
+      dateAfter: undefined,
+      dateBefore: undefined
+    };
+    if (!silent) {
+      this.refreshCurrentPath(true);
+    }
+  };
+
+  @action
   initialize = (
     storageId,
     path,
@@ -453,28 +467,12 @@ class DataStorageListing {
       showVersionsChanged ||
       showArchivesChanged
     ) {
-      (this.initializeFilters)();
-      this.filtersEmpty
-        ? (this.fetchCurrentPage)()
-        : (this.applyFilters)();
+      (this.fetchCurrentPage)();
     }
     return storageChanged ||
     pathChanged ||
     showVersionsChanged ||
     showArchivesChanged;
-  };
-
-  @action
-  initializeFilters = () => {
-    this.filters = {
-      name: undefined,
-      sizeGreaterThan: undefined,
-      sizeLessThan: undefined,
-      dateFilterType: undefined,
-      dateAfter: undefined,
-      dateBefore: undefined
-    };
-    this.initialFilter = {...this.currentFilter};
   };
 
   @action
@@ -597,40 +595,20 @@ class DataStorageListing {
   };
 
   @action
-  resetCurrentFilterField = (keys = [], silent = false) => {
-    keys.forEach(key => {
-      if (key && this.currentFilter && key in this.currentFilter) {
-        this.currentFilter[key] = undefined;
-      }
-    });
-    if (!silent) {
+  changeFilterField = (key, value, applyChanges = true) => {
+    this.currentFilter[key] = value;
+    if (applyChanges) {
       this.applyFilters();
     }
   };
 
   @action
-  resetCurrentFilter = (resetToInitialValues = false, silent = false) => {
-    if (!this.currentFilter) {
-      return;
-    }
-    if (!resetToInitialValues) {
-      this.initialFilter = {};
-    }
-    Object.keys(this.currentFilter).forEach(key => {
-      const value = resetToInitialValues
-        ? this.initialFilter[key]
-        : undefined;
-      this.changeFilters(key, value);
+  changeFilter = (newFilterObj = {}, applyChanges = true) => {
+    Object.keys(newFilterObj).forEach(key => {
+      this.changeFilterField(key, newFilterObj[key], false);
     });
-    if (!silent) {
-      this.refreshCurrentPath(true);
-    }
-  };
-
-  @action
-  changeFilters = (key, value) => {
-    if (this.currentFilter) {
-      this.currentFilter[key] = value;
+    if (applyChanges) {
+      this.applyFilters();
     }
   };
 
@@ -648,7 +626,6 @@ class DataStorageListing {
       ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
       : undefined;
     try {
-      this.initialFilter = {...(this.currentFilter || {})};
       const request = new DataStorageFilter(
         this.storageId,
         pathCorrected ? decodeURIComponent(pathCorrected) : undefined

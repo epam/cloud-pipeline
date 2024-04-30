@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-.filter-wrapper-container {
+.filter-wrapper {
   display: flex;
   flex-direction: column;
   padding: 5px;
-
+  outline: none;
 }
 
 .filter-wrapper-controls {
@@ -29,25 +29,14 @@
   min-width: 180px;
 }
 
-.size-filter {
-  display: flex;
-  flex-direction: column;
-}
-
-.size-filter .input-container {
+.input-container {
   margin-bottom: 5px;
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
 }
 
-.date-filter {
-  display: flex;
-  flex-direction: column;
-  outline: none;
-}
-
-.date-filter .date-picker-container {
+.date-picker-container {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
