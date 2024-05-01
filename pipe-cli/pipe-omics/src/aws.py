@@ -276,6 +276,9 @@ class AWSOmicsOperation:
             s.get_component('data_loader').search_paths.append(
                 os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), 'botocore', 'data')
             )
+            os.environ['REQUESTS_CA_BUNDLE'] = os.path.join(
+                os.path.dirname(os.path.realpath(sys.argv[0])), 'botocore', 'cacert.pem'
+            )
         s._credentials = session_credentials
         return Session(botocore_session=s)
 
