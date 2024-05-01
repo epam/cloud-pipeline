@@ -34,7 +34,7 @@ from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCom
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.storage.common import TransferResult
+from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.user_operations_manager import UserOperationsManager
@@ -228,7 +228,9 @@ class DataStorageOperations(object):
                 continue
             if skip_existing:
                 source_key = manager.get_source_key(source_wrapper, full_path)
-                source_modification_datetime = None if not sync_newer or len(item) < 4 else item[4]
+                source_modification_datetime = item[4] if sync_newer and len(item) >= 5 else None
+                if sync_newer and source_modification_datetime is None and source_wrapper.is_local():
+                    source_modification_datetime = StorageOperations.get_local_file_modification_datetime(source_key)
                 need_to_overwrite = not manager.skip_existing(source_key, source_size, source_modification_datetime,
                                                               destination_key, destination_size,
                                                               destination_modification_datetime, sync_newer, quiet)

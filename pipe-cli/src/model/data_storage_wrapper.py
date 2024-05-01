@@ -523,8 +523,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
                 return []
-            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path),
-                     StorageOperations.get_local_file_modification_datetime(self.path))]
+            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path), None)]
 
         return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
                                 root=True, quiet=quiet)
@@ -603,7 +602,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
 
         if os.path.isfile(to_string(absolute_path)):
             logging.debug(u'Collected file {}.'.format(safe_absolute_path))
-            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
+            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path)), None))
         elif os.path.isdir(to_string(absolute_path)):
             self._list_items(absolute_path, relative_path, result, visited_symlinks, root=False, quiet=quiet)
 
