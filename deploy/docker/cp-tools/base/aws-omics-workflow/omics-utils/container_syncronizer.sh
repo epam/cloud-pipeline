@@ -44,8 +44,8 @@ if [ ! -f "$PRIVATE_REGISTRY_NAMING_PROPERTIES" ]; then
 fi
 
 if [ -n "$WORKFLOW_SOURCE_DIR" ]; then
-    IMAGE_PULL_CONFIG="${IMAGE_PULL_CONFIG:-$WORKFLOW_SOURCE_DIR/container_image_manifest.json}"
-    IMAGE_BUILD_CONFIG="${IMAGE_BUILD_CONFIG:-$WORKFLOW_SOURCE_DIR/container_build_manifest.json}"
+    IMAGE_PULL_CONFIG="${IMAGE_PULL_CONFIG:-$WORKFLOW_SOURCE_DIR/workflow/container_image_manifest.json}"
+    IMAGE_BUILD_CONFIG="${IMAGE_BUILD_CONFIG:-$WORKFLOW_SOURCE_DIR/workflow/container_build_manifest.json}"
 fi
 
 _sync_image_log=$(mktemp)
@@ -99,7 +99,7 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
     for image in "${images[@]}"; do
         echo "Image $image will pulled -> pushed..."
 
-        private_image=$(python "$GET_PRIVATE_IMAGE_NAME_SCRIPT" --image "$image" --ecr "$PRIVATE_ECR" --images-config "${PRIVATE_REGISTRY_NAMING_PROPERTIES}" 2> "$_pull_image_log")
+        private_image=$(python3 "$GET_PRIVATE_IMAGE_NAME_SCRIPT" --image "$image" --ecr "$PRIVATE_ECR" --images-config "${PRIVATE_REGISTRY_NAMING_PROPERTIES}" 2> "$_pull_image_log")
         if [ $? -ne 0 ]; then
             echo "There was a problem with configuring private image name for $image ..."
             cat "$_pull_image_log"
