@@ -109,6 +109,7 @@ pyinstaller \
   --hidden-import=charset_normalizer.md__mypyc \
   --hidden-import=chardet \
   --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/data;botocore/data" \
+  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/cacert.pem;botocore/cacert.pem" \
   --version-file /tmp/pipe-win-version-info.txt \
   -y \
   --clean \

@@ -6,6 +6,21 @@ function preflight_checks() {
        exit 1
    fi
 
+   if [ "$CP_CAP_DIND_CONTAINER" != "true" ]; then
+       pipe_log_fail "DinD capability isn' set. Please configure it for the pipeline." "${_TASK_NAME}"
+       exit 1
+   fi
+
+   if [ ! -d "$SCRIPTS_DIR/src/workflow" ]; then
+       pipe_log_fail "There is no workflow folder in $SCRIPTS_DIR/src." "${_TASK_NAME}"
+       exit 1
+   fi
+
+   if [ ! -f "$SCRIPTS_DIR/src/workflow/nextflow.config" ]; then
+       pipe_log_fail "There is no main nextflow.config file in $SCRIPTS_DIR/src/workflow/" "${_TASK_NAME}"
+       exit 1
+  fi
+
    if [[ ! "${OUTPUT_DIR}" =~ "s3://"* ]]; then
        pipe_log_fail "Please specify pipeline parameter 'OUTPUT_DIR' as an s3 path: s3://<bucket-name>/bucket-prefix/" "${_TASK_NAME}"
        exit 1
@@ -18,6 +33,38 @@ function preflight_checks() {
        pipe_log_fail "Can't find aws utility. Are you using library/aws-omics-workflow docker image?" "${_TASK_NAME}"
        exit 1
    fi
+}
+
+function prepare_workflow_project() {
+  _WORKFLOW_DIR="$SCRIPTS_DIR/src/workflow"
+
+  if ! cat "$_WORKFLOW_DIR/nextflow.config" | grep -E "includeConfig.*omics.config" &> /dev/null ; then
+      pipe_log_warn "Can't find an includeConfig statement for any omics.config. Assuming there is no omics configuration. Will try to auto-configure." "${_TASK_NAME}"
+
+      cd $_WORKFLOW_DIR
+      _NEXTFLOW_OMICS_CONFIG_PATH=conf/omics.config
+      _IMAGE_PULL_MANIFAST_FILE=container_image_manifest.json
+
+      rm -rf $_NEXTFLOW_OMICS_CONFIG_PATH $_IMAGE_PULL_MANIFAST_FILE && \
+      mkdir -p "$(dirname $_NEXTFLOW_OMICS_CONFIG_PATH)"
+
+      python3 /opt/omics/amazon/inspect_nf.py . \
+              -n /opt/omics/utils/public_registry_properties.json \
+              --output-config-file "$_NEXTFLOW_OMICS_CONFIG_PATH" \
+              --output-manifest-file "$_IMAGE_PULL_MANIFAST_FILE" \
+              --region "${CLOUD_REGION}"
+
+      if [ $? -ne 0 ] || [ ! -f $_NEXTFLOW_OMICS_CONFIG_PATH ]; then
+          pipe_log_fail "Command inspect_nf.py failed! Can't create omics.config file with. Exiting" "${_TASK_NAME}"
+          exit 1
+      fi
+      pipe_log_info "Successfully generated $_NEXTFLOW_OMICS_CONFIG_PATH and $_IMAGE_PULL_MANIFAST_FILE in $_WORKFLOW_DIR" "${_TASK_NAME}"
+      echo "includeConfig '$_NEXTFLOW_OMICS_CONFIG_PATH'" >> "$SCRIPTS_DIR/src/workflow/nextflow.config"
+      pipe_log_info "Updated $SCRIPTS_DIR/src/workflow/nextflow.config" "${_TASK_NAME}"
+      cd - &> /dev/null
+  else
+      pipe_log_info "Found an includeConfig statement for an omics.config. Assuming that omics configuration already provided." "${_TASK_NAME}"
+  fi
 }
 
 function call_api() {
@@ -230,6 +277,9 @@ preflight_checks
 
 obtain_omics_service_role
 assume_omics_service_role
+
+prepare_workflow_project
+
 obtain_private_ecr_uri_run_from_region
 sync_images_in_private_ecr
 
