@@ -120,7 +120,7 @@ resource "aws_iam_policy" "kms_data_access" {
   tags = local.tags
 }
 
-resource "aws_iam_policy" "cp_ecr_omics_access" {
+resource "aws_iam_policy" "cp_ecr_access" {
   name        = "${local.resource_name_prefix}ECROmicsAccessPolicy"
   description = "Permissions for access ECR for Omics in ${local.resource_name_prefix}"
   count       = var.enable_aws_omics_integration ? 1 : 0
@@ -130,15 +130,58 @@ resource "aws_iam_policy" "cp_ecr_omics_access" {
     Version   = "2012-10-17"
     Statement = [
       {
-        "Sid" : "OmicsECRAllow",
-        Action : [
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:BatchGetImage",
+        "Effect": "Allow",
+        "Action": [
+          "ecr:DescribeRegistry",
+          "ecr:DescribePullThroughCacheRules",
+          "ecr:DescribeRepositoryCreationTemplate",
+          "ecr:GetRegistryPolicy",
+          "ecr:GetAuthorizationToken",
+          "ecr:GetRegistryScanningConfiguration",
+          "ecr:ValidatePullThroughCacheRule",
+          "ecr:CreateRepository",
+          "ecr:CreateRepositoryCreationTemplate",
+          "ecr:PutRegistryPolicy",
+          "ecr:PutReplicationConfiguration",
+          "ecr:PutRegistryScanningConfiguration",
+          "ecr:BatchImportUpstreamImage",
+          "ecr:UpdatePullThroughCacheRule"
+        ],
+        "Resource": "*"
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "ecr:DescribeImageReplicationStatus",
+          "ecr:DescribeRepositories",
+          "ecr:DescribeImageScanFindings",
+          "ecr:DescribeImages",
+          "ecr:ListImages",
+          "ecr:ListTagsForResource",
+          "ecr:GetLifecyclePolicy",
+          "ecr:GetLifecyclePolicyPreview",
           "ecr:GetDownloadUrlForLayer",
-          "ecr:GetAuthorizationToken"
+          "ecr:GetRepositoryPolicy",
+          "ecr:BatchGetImage",
+          "ecr:BatchGetRepositoryScanningConfiguration",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:StartImageScan",
+          "ecr:StartLifecyclePolicyPreview",
+          "ecr:PutImageTagMutability",
+          "ecr:PutLifecyclePolicy",
+          "ecr:PutImageScanningConfiguration",
+          "ecr:PutImage",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:InitiateLayerUpload",
+          "ecr:TagResource",
+          "ecr:UntagResource",
+          "ecr:ReplicateImage",
+          "ecr:SetRepositoryPolicy"
+        ],
+        "Resource": [
+          "arn:aws:ecr:*:${data.aws_caller_identity.current.account_id}:repository/*"
         ]
-        Effect : "Allow"
-        Resource : aws_ecr_repository.cp_omics_ecr[0].arn
       }
     ]
   })
@@ -670,7 +713,7 @@ module "fsx_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_fsx_lustre_csi_policy = true
-  role_policy_arns             = {
+  role_policy_arns = {
     fsx_policy = data.aws_iam_policy.AmazonFSxFullAccess.arn
     ksm_allow  = aws_iam_policy.kms_data_access.arn
   }
@@ -695,7 +738,7 @@ module "efs_csi_irsa" {
   policy_name_prefix            = local.resource_name_prefix
 
   attach_efs_csi_policy = true
-  role_policy_arns      = {
+  role_policy_arns = {
     efs_policy = data.aws_iam_policy.AmazonElasticFileSystemFullAccess.arn
     ksm_allow  = aws_iam_policy.kms_data_access.arn
   }
@@ -730,9 +773,9 @@ module "cp_irsa" {
       policy    = aws_iam_policy.cp_main_service.arn
       kms_allow = aws_iam_policy.kms_data_access.arn
     },
-    var.enable_aws_omics_integration ? {
+      var.enable_aws_omics_integration ? {
       aws_omics = aws_iam_policy.cp_omics_service_role_access[0].arn
-    }: {}
+    } : {}
   )
 
   oidc_providers = {
@@ -800,7 +843,8 @@ resource "aws_iam_role" "cp_omics_service" {
       {
         "Effect" : "Allow",
         "Principal" : {
-          "Service" : "omics.amazonaws.com"
+          "Service" : "omics.amazonaws.com",
+          "AWS" : aws_iam_role.eks_cp_worker_node_execution.arn
         },
         "Action" : "sts:AssumeRole"
       }
@@ -831,24 +875,45 @@ resource "aws_iam_policy" "cp_omics_service" {
         ]
       },
       {
-        "Effect": "Allow",
-        "Action": [
+        "Effect" : "Allow",
+        "Action" : [
           "logs:DescribeLogStreams",
           "logs:CreateLogStream",
-          "logs:CreateLogGroup"
+          "logs:PutLogEvents",
+          "logs:GetLogEvents"
         ],
-        "Resource": [
-          "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
+        "Resource" : [
+          "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:log-stream:*"
         ]
       },
       {
         "Effect" : "Allow",
         "Action" : [
-          "omics:*"
+          "logs:CreateLogGroup"
         ],
         "Resource" : [
+          "arn:aws:logs:*:${data.aws_caller_identity.current.account_id}:log-group:/aws/omics/WorkflowLog:*"
+        ]
+      },
+      {
+        "Action" : [
+          "omics:*"
+        ],
+        "Effect" : "Allow",
+        "Resource" : [
           "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:referenceStore/*",
-          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:sequenceStore/*"
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:sequenceStore/*",
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:workflow/*",
+          "arn:aws:omics:*:${data.aws_caller_identity.current.account_id}:run/*"
+        ]
+      },
+      {
+        "Action" : [
+          "iam:PassRole"
+        ],
+        "Effect" : "Allow",
+        "Resource" : [
+          aws_iam_role.cp_omics_service[0].arn
         ]
       }
     ]
@@ -868,12 +933,11 @@ resource "aws_iam_role_policy_attachment" "cp_omics_service_kms_access" {
   policy_arn = aws_iam_policy.kms_data_access.arn
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cp_worker_node_ecr_omics_access" {
+resource "aws_iam_role_policy_attachment" "cp_omics_service_ecr_access" {
   count      = var.enable_aws_omics_integration ? 1 : 0
-  role       = aws_iam_role.eks_cp_worker_node_execution.name
-  policy_arn = aws_iam_policy.cp_ecr_omics_access[0].arn
+  role       = aws_iam_role.cp_omics_service[0].name
+  policy_arn = aws_iam_policy.cp_ecr_access[0].arn
 }
-
 
 /*
 ===============================================================================
