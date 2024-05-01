@@ -72,6 +72,7 @@ pyinstaller \
     -y \
     --clean \
     --distpath /tmp/mount/dist \
+    --add-data "${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen:libfuse" \
     ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
 chmod +x /tmp/mount/dist/pipe-fuse/pipe-fuse
