@@ -108,11 +108,10 @@ pyinstaller \
   --hidden-import=subprocess \
   --hidden-import=charset_normalizer.md__mypyc \
   --hidden-import=chardet \
-  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore;botocore" \
+  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/data;botocore/data" \
   --version-file /tmp/pipe-win-version-info.txt \
   -y \
   --clean \
-  -p /tmp/pipe-omics/lib \
   --distpath /tmp/pipe-omics/dist \
   /pipe-cli/pipe-omics/pipe-omics.py
 
