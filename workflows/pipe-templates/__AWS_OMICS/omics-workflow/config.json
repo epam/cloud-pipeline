@@ -7,7 +7,7 @@
     "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "100",
     "docker_image" : "library/aws-omics-workflow:latest",
-    "language" : "bash",
+    "language" : "aws-omics-workflow",
     "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/run-omics-workflow.sh",
     "parameters" : {
       "RESYNC_IMAGES" : {

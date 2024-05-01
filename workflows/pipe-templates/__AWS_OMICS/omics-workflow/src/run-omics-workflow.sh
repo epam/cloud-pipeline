@@ -176,6 +176,21 @@ function run_omics_workflow() {
     export WORKFLOW_RUN_ID="$_workflow_run_id"
 }
 
+function fail_run() {
+    _workflow_run_id=$1
+    _workflow_status=$2
+    _log_limit=500
+    if [ "$_workflow_status" == "FAILED" ]; then
+        for task_id in $(aws omics list-run-tasks --id $_workflow_run_id | jq '.items[] | select(.status == "FAILED") | .taskId' -r); do
+            _workflow_task_name=$(aws omics get-run-task --id $_workflow_run_id --task-id $task_id | jq -r ".name" | sed "s| |_|g")
+            pipe_log_info "---- Only last 500 log messages are printed out ----" "$_workflow_task_name"
+            pipe_exec "aws logs get-log-events --log-group-name /aws/omics/WorkflowLog --log-stream-name run/${_workflow_run_id}/task/${task_id} --limit ${_log_limit} --no-start-from-head --output text | grep EVENTS" "$_workflow_task_name"
+            pipe_log_fail "AWS Omics Workflow task failed." "$_workflow_task_name"
+        done
+    fi
+    pipe_log_fail "Workflow run finished with status: $_WORKFLOW_RUN_STATUS" "${_TASK_NAME}"
+}
+
 function watch_and_log_omics_workflow_run() {
     _WORKFLOW_RUN_ID=$1
     _WORKFLOW_RUN_STATUS="RUNNING"
@@ -196,8 +211,8 @@ function watch_and_log_omics_workflow_run() {
         _RUNNING_TASKS=$(echo $_TASK_STATUS | grep -oE 'STARTING|RUNNING' | wc -l)
         pipe_log_info "Workflow run status: ${_WORKFLOW_RUN_STATUS}. Tasks (completed / total): $((_TOTAL_TASKS - _RUNNING_TASKS)) / ${_TOTAL_TASKS}" "${_TASK_NAME}"
     done
-    if [ "$_WORKFLOW_RUN_STATUS" == "FAILED" ] && [ "$_WORKFLOW_RUN_STATUS" == "CANCELLED" ]; then
-        pipe_log_fail "Workflow run status: $_WORKFLOW_RUN_STATUS" "${_TASK_NAME}"
+    if [ "$_WORKFLOW_RUN_STATUS" == "FAILED" ] || [ "$_WORKFLOW_RUN_STATUS" == "CANCELLED" ]; then
+        fail_run "$_WORKFLOW_RUN_ID" "$_WORKFLOW_RUN_STATUS"
         exit 1
     fi
     pipe_log_success "Workflow run status: $_WORKFLOW_RUN_STATUS" "${_TASK_NAME}"
