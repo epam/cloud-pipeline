@@ -363,6 +363,8 @@ class AbstractListingManager:
         """
         Returns all files under the given relative path in forms of tuples with the following structure:
         ('File', full_path, relative_path, size, modification_date)
+        where <modification_date> - a file last modification datetime in UTC format or None if not applicable
+        NOTE: shall be calculated for cloud sources only
 
         :param relative_path: Path to a folder or a file.
         :return: Generator of file tuples.
