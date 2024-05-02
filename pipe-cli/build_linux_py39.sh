@@ -44,6 +44,7 @@ python -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 ###
 # Build pipe fuse
 ###
+cp ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.2.9.2 ${PIPE_MOUNT_SOURCES_DIR}/libfuse/libfuse.so.frozen
 python -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 pyinstaller \
