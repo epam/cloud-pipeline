@@ -19,34 +19,6 @@ module "kms" {
         "Resource" : "*"
       },
       {
-        "Sid" : "Allow access for Key Administrators",
-        "Effect" : "Allow",
-        "Principal" : {
-          "AWS" : [
-            "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/aws-service-role/spot.amazonaws.com/AWSServiceRoleForEC2Spot",
-            module.cp_irsa.iam_role_arn,
-            aws_iam_role.eks_cp_system_node_execution.arn
-          ]
-        },
-        "Action" : [
-          "kms:Create*",
-          "kms:Describe*",
-          "kms:Enable*",
-          "kms:List*",
-          "kms:Put*",
-          "kms:Update*",
-          "kms:Revoke*",
-          "kms:Disable*",
-          "kms:Get*",
-          "kms:Delete*",
-          "kms:TagResource",
-          "kms:UntagResource",
-          "kms:ScheduleKeyDeletion",
-          "kms:CancelKeyDeletion"
-        ],
-        "Resource" : "*"
-      },
-      {
         "Sid" : "Allow use of the key",
         "Effect" : "Allow",
         "Principal" : {
@@ -55,7 +27,8 @@ module "kms" {
             module.cp_irsa.iam_role_arn,
             aws_iam_role.eks_cp_system_node_execution.arn,
             aws_iam_role.eks_cp_worker_node_execution.arn
-          ]
+          ],
+          "Service": "omics.amazonaws.com"
         },
         "Action" : [
           "kms:Encrypt",
@@ -65,20 +38,6 @@ module "kms" {
           "kms:DescribeKey"
         ],
         "Resource" : "*"
-      },
-      {
-        "Effect": "Allow",
-        "Principal": {
-          "Service": "omics.amazonaws.com"
-        },
-        "Action": [
-          "kms:Decrypt",
-          "kms:DescribeKey",
-          "kms:Encrypt",
-          "kms:GenerateDataKey*",
-          "kms:ReEncrypt*"
-        ],
-        "Resource": "*"
       },
       {
         "Sid" : "Allow attachment of persistent resources",
