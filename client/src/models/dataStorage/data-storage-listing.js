@@ -628,7 +628,9 @@ class DataStorageListing {
     try {
       const request = new DataStorageFilter(
         this.storageId,
-        pathCorrected ? decodeURIComponent(pathCorrected) : undefined
+        pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
+        this.showVersions,
+        this.showArchives
       );
       let payload = {
         nameFilter: this.currentFilter?.name,
