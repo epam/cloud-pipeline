@@ -1605,7 +1605,7 @@ export default class DataStorage extends React.Component {
           ? highlightText(text, search)
           : text;
         if (item.latest) {
-          return `${highlightedText} (latest)`;
+          return <span>{highlightedText} (latest)</span>;
         }
         return highlightedText;
       },
