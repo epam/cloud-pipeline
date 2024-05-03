@@ -36,7 +36,7 @@ function parse_options {
 parse_options "$@"
 
 export _RESYNC_IMAGES=${RESYNC_IMAGES:-true}
-export GET_PRIVATE_IMAGE_NAME_SCRIPT=/opt/omics/utils/get_private_image_name.py
+export GET_PRIVATE_IMAGE_NAME_SCRIPT=/opt/omics/utils/get_private_ecr_image_name.py
 export PRIVATE_REGISTRY_NAMING_PROPERTIES="${PRIVATE_REGISTRY_NAMING_PROPERTIES:-/opt/omics/utils/public_registry_properties.json}"
 if [ ! -f "$PRIVATE_REGISTRY_NAMING_PROPERTIES" ]; then
     echo "Can't find a file: ${PRIVATE_REGISTRY_NAMING_PROPERTIES}. Please --public_registry_properties with an existing config or left unchanged to use default value: /opt/omics-utils/public_registry_properties.json"
@@ -97,7 +97,7 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
     _pull_image_log=$(mktemp)
     readarray -t images < <(jq -r --compact-output '.manifest[]' "${IMAGE_PULL_CONFIG}")
     for image in "${images[@]}"; do
-        echo "Image $image will pulled -> pushed..."
+        echo "Processing image $image."
 
         private_image=$(python3 "$GET_PRIVATE_IMAGE_NAME_SCRIPT" --image "$image" --ecr "$PRIVATE_ECR" --images-config "${PRIVATE_REGISTRY_NAMING_PROPERTIES}" 2> "$_pull_image_log")
         if [ $? -ne 0 ]; then
@@ -118,6 +118,8 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
             else
                 echo "Private ECR repo: $_ECR_REPO_NAME was created."
             fi
+        else
+            echo "Private ECR repo: $_ECR_REPO_NAME already exists"
         fi
 
         if ! aws ecr describe-images --repository-name="$_ECR_REPO_NAME" --image-ids=imageTag="$_ECR_REPO_TAG" --region "$aws_region" &> /dev/null || [ "$_RESYNC_IMAGES" == "true" ]; then
@@ -138,6 +140,8 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
             else
                 echo "Image $private_image pushed to the Private ECR repo."
             fi
+        else
+            echo "Image tag: $_ECR_REPO_TAG already exists in repo: $_ECR_REPO_NAME"
         fi
     done
 else
@@ -165,6 +169,8 @@ if [ -n "$IMAGE_BUILD_CONFIG" ] && [ -f "$IMAGE_BUILD_CONFIG" ]; then
             else
                 echo "Private ECR repo: $_ECR_REPO_NAME was created."
             fi
+        else
+            echo "Private ECR repo: $_ECR_REPO_NAME already exists"
         fi
 
         if ! aws ecr describe-images --repository-name="$_ECR_REPO_NAME" --image-ids=imageTag="$_ECR_REPO_TAG" --region "$aws_region" &> /dev/null || [ "$_RESYNC_IMAGES" == "true" ]; then
@@ -186,6 +192,8 @@ if [ -n "$IMAGE_BUILD_CONFIG" ] && [ -f "$IMAGE_BUILD_CONFIG" ]; then
             else
                echo "Successfully pushed image $_IMAGE_NAME ..."
             fi
+        else
+            echo "Image tag: $_ECR_REPO_TAG already exists in repo: $_ECR_REPO_NAME"
         fi
     done
 else
