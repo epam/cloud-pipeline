@@ -1185,10 +1185,13 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    '[skip] skips empty files transferring.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, type=click.Choice(['crc32', 'sha256']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: crc32, sha256')
 @common_options
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, sync_newer,
                       tags, file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
-                      on_empty_files, on_failures, verify_destination):
+                      on_empty_files, on_failures, verify_destination, checksum_algorithm):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1219,7 +1222,7 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                              symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
-                             verify_destination=verify_destination)
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm)
 
 
 @storage.command('cp')
@@ -1287,10 +1290,13 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                                                  'combination with -s (--skip-existing) option')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, type=click.Choice(['crc32', 'sha256']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: crc32, sha256')
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                       symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, skip_existing, sync_newer, verify_destination):
+                      on_failures, skip_existing, sync_newer, verify_destination, checksum_algorithm):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1333,7 +1339,7 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
                              clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
-                             verify_destination=verify_destination)
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm)
 
 
 @storage.command('du')

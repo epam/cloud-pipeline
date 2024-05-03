@@ -21,6 +21,7 @@ from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleMana
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
+from src.utilities.storage.s3_checksum import ChecksumProcessor
 
 import collections
 import os
@@ -63,15 +64,77 @@ class UploadedObjectsContainer:
 
 
 uploaded_objects_container = UploadedObjectsContainer()
+checksum_processor = ChecksumProcessor()
+
+
+def _create_multipart_upload_task_main(self, client, bucket, key, extra_args):
+    if checksum_processor.enabled:
+        def _add_header(request, *args, **kwargs):
+            checksum_processor.remove_checksum_algorithm_header(request)
+            checksum_processor.add_checksum_algorithm_header(request)
+
+        client.meta.events.register_first('before-sign.s3.CreateMultipartUpload', _add_header)
+
+    response = client.create_multipart_upload(
+        Bucket=bucket, Key=key, **extra_args)
+    upload_id = response['UploadId']
+
+    # Add a cleanup if the multipart upload fails at any point.
+    self._transfer_coordinator.add_failure_cleanup(
+        client.abort_multipart_upload, Bucket=bucket, Key=key,
+        UploadId=upload_id
+    )
+    return upload_id
+
+
+def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_number, extra_args):
+    if checksum_processor.enabled:
+        def _add_header(request, *args, **kwargs):
+            checksum_processor.remove_checksum_header(request)
+            checksum_value = checksum_processor.calculate_checksum(request.body)
+            request.body.seek(0)
+            checksum_processor.add_checksum_header(request, checksum_value)
+
+        client.meta.events.register_first('before-sign.s3.UploadPart', _add_header)
+
+    with fileobj as body:
+        response = client.upload_part(
+            Bucket=bucket, Key=key,
+            UploadId=upload_id, PartNumber=part_number,
+            Body=body, **extra_args)
+
+    result = {'PartNumber': part_number, 'ETag': response['ETag']}
+    if checksum_processor.enabled:
+        result.update({checksum_processor.boto_field:
+                       response['ResponseMetadata']['HTTPHeaders'][checksum_processor.checksum_header]})
+    return result
 
 
 def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
+    if checksum_processor.enabled:
+        def _add_header(request, *args, **kwargs):
+            checksum_processor.remove_checksum_header(request)
+            checksum_value = checksum_processor.calculate_checksum(request.body)
+            request.body.seek(0)
+            checksum_processor.add_checksum_header(request, checksum_value)
+
+        client.meta.events.register_first('before-sign.s3.PutObject', _add_header)
+
     with fileobj as body:
         output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
         uploaded_objects_container.add(bucket, key, output.get('VersionId'))
 
 
 def _complete_multipart_upload_task_main(self, client, bucket, key, upload_id, parts, extra_args):
+    if checksum_processor.enabled:
+        def _add_header(request, *args, **kwargs):
+            checksum_value = checksum_processor.calculate_checksum_of_checksums(request.body)
+            checksum_processor.remove_checksum_header(request)
+            checksum_processor.add_checksum_header(request, checksum_value)
+
+        client.meta.events.register_first('before-sign.s3.CompleteMultipartUpload', _add_header)
+        checksum_processor.add_checksum_shape_to_model(client)
+
     output = client.complete_multipart_upload(
         Bucket=bucket, Key=key, UploadId=upload_id,
         MultipartUpload={'Parts': parts},
@@ -92,6 +155,8 @@ def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, c
 # This monkey patching allows to aggregate uploaded object versions
 # and use them later on without any extra requests being performed.
 upload.PutObjectTask._main = _put_object_task_main
+upload.UploadPartTask._main = _upload_part_task_main
+tasks.CreateMultipartUploadTask._main = _create_multipart_upload_task_main
 tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
 copies.CopyObjectTask._main = _copy_object_task_main
 
@@ -209,8 +274,8 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         return self.get_local_file_size(destination_key), \
             StorageOperations.get_local_file_modification_datetime(destination_key)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -247,8 +312,8 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_object_head(self, destination_wrapper, destination_key):
         return 0, None
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -287,8 +352,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         else:
             return source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -304,6 +369,8 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         else:
             progress_callback = None
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
+        if checksum_algorithm:
+            checksum_processor.init(checksum_algorithm)
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
                                 Config=transfer_config,
@@ -333,8 +400,8 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -379,8 +446,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
@@ -572,7 +639,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         pages = paginator.paginate(**operation_parameters)
         restore_items = []
         for page in pages:
-            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include, prefix,
+            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include,
+                                               prefix,
                                                versions=True)
             restore_items, flushing_items = S3BucketOperations.split_by_aws_limit(restore_items)
             if flushing_items:

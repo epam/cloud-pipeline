@@ -63,11 +63,14 @@ class EmptyFilesValues(object):
     SKIP = 'skip'
 
 
+ALLOWED_CHECKSUM_ALGORITHMS = ['sha256', 'crc32']
+
+
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
            io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, sync_newer=False, verify_destination=False):
+           clean=False, skip_existing=False, sync_newer=False, verify_destination=False, checksum_algorithm=None):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -128,6 +131,13 @@ class DataStorageOperations(object):
                        '--verify-destination (-vd) flag to enable existence check for each destination path.',
                        err=True)
             sys.exit(1)
+        if checksum_algorithm and source_type not in [WrapperType.LOCAL]:
+            click.echo('Option --checksum-algorithm is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if checksum_algorithm and destination_type not in [WrapperType.S3]:
+            click.echo('Option --checksum-algorithm is not supported for {} destinations.'
+                       .format(source_type), err=True)
+            sys.exit(1)
 
         # append slashes to path to correctly determine file/folder type
         if not source_wrapper.is_file():
@@ -158,7 +168,8 @@ class DataStorageOperations(object):
                                              audit_ctx, clean, quiet, tags, io_threads, on_failures)
         else:
             cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                audit_ctx, clean, quiet, tags, io_threads, on_failures)
+                                audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                checksum_algorithm=checksum_algorithm)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -646,7 +657,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper,
-                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None):
+                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None, checksum_algorithm=None):
         with audit_ctx:
             transfer_results = []
             fail_after_exception = None
@@ -655,7 +666,7 @@ class DataStorageOperations(object):
                                                                             source_wrapper, destination_wrapper,
                                                                             transfer_results,
                                                                             clean, quiet, tags, io_threads,
-                                                                            on_failures, lock)
+                                                                            on_failures, lock, checksum_algorithm)
             if not destination_wrapper.is_local():
                 cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                             transfer_results, clean=clean, flush_size=1)
@@ -664,7 +675,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
-                       clean, quiet, tags, io_threads, on_failures, lock):
+                       clean, quiet, tags, io_threads, on_failures, lock, checksum_algorithm=None):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
@@ -672,7 +683,8 @@ class DataStorageOperations(object):
         try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock)
+                                               tags=tags, io_threads=io_threads, lock=lock,
+                                               checksum_algorithm=checksum_algorithm)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
