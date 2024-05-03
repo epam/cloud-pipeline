@@ -710,6 +710,9 @@ class DataStorageListing {
     if (!keepCurrentPage) {
       this.clearMarkersForCurrentPath();
     }
+    if (!this.filtersEmpty) {
+      this.resetFilter();
+    }
     return this.fetchCurrentPage();
   }
 }
