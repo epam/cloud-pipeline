@@ -17,6 +17,7 @@ function execute_workflow() {
 
   if [ $? -ne 0 ]; then
       pipe_log_fail "There were problems with running HealthOmics workflow: $WORKFLOW_NAME. Please, check logs for errors." "${TASK_NAME}"
+      exit 1
   else
       pipe_log_success "Successfully run workflow $WORKFLOW_NAME" "${TASK_NAME}"
   fi
