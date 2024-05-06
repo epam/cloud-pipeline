@@ -526,7 +526,7 @@ export default class DataStorage extends React.Component {
         {...job}
       ]
     };
-    const hide = message.loading('Importing omics job...');
+    const hide = message.loading('Importing AWS HealthOmics job...');
     const request = new OmicsStoreImport(this.props.storageId);
     await request.send(payload);
     if (request.error) {

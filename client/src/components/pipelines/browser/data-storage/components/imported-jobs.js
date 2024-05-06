@@ -148,7 +148,7 @@ export default class JobList extends React.Component {
       return;
     }
     return new Promise(resolve => {
-      const hide = message.loading('Getting omics jobs list...');
+      const hide = message.loading('Getting AWS HealthOmics jobs list...');
       const request = new OmicsJobsImport(this.props.storageId, this.pageSize, this.currentPage);
       const payload = this.getPayload();
       request.send(payload)
