@@ -6,13 +6,13 @@
     "main_file" : "run-omics-workflow.sh",
     "instance_size" : "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
     "instance_disk" : "100",
-    "docker_image" : "library/aws-omics-workflow:latest",
+    "docker_image" : "library/aws-healthomics-workflow:latest",
     "language" : "aws-omics-workflow",
     "cmd_template" : "bash ${CP_DOLLAR}SCRIPTS_DIR/src/run-omics-workflow.sh",
     "parameters" : {
       "RESYNC_IMAGES" : {
         "type" : "boolean",
-        "value" : true,
+        "value" : false,
         "required" : true,
         "no_override" : false
       },
@@ -24,7 +24,8 @@
       "CP_CAP_DIND_CONTAINER" : {
         "value" : "true",
         "type" : "boolean",
-        "required" : false
+        "no_override" : true,
+        "required" : true
       }
     }
   }

@@ -1,0 +1,6 @@
+{
+    "short_description": "Tool to run Nextflow pipelines on AWS HealthOmics Workflow",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "100",
+    "default_command": "sleep infinity"
+}
