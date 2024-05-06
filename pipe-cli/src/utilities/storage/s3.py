@@ -67,36 +67,7 @@ uploaded_objects_container = UploadedObjectsContainer()
 checksum_processor = ChecksumProcessor()
 
 
-def _create_multipart_upload_task_main(self, client, bucket, key, extra_args):
-    if checksum_processor.enabled:
-        def _add_header(request, *args, **kwargs):
-            checksum_processor.remove_checksum_algorithm_header(request)
-            checksum_processor.add_checksum_algorithm_header(request)
-
-        client.meta.events.register_first('before-sign.s3.CreateMultipartUpload', _add_header)
-
-    response = client.create_multipart_upload(
-        Bucket=bucket, Key=key, **extra_args)
-    upload_id = response['UploadId']
-
-    # Add a cleanup if the multipart upload fails at any point.
-    self._transfer_coordinator.add_failure_cleanup(
-        client.abort_multipart_upload, Bucket=bucket, Key=key,
-        UploadId=upload_id
-    )
-    return upload_id
-
-
 def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_number, extra_args):
-    if checksum_processor.enabled:
-        def _add_header(request, *args, **kwargs):
-            checksum_processor.remove_checksum_header(request)
-            checksum_value = checksum_processor.calculate_checksum(request.body)
-            request.body.seek(0)
-            checksum_processor.add_checksum_header(request, checksum_value)
-
-        client.meta.events.register_first('before-sign.s3.UploadPart', _add_header)
-
     with fileobj as body:
         response = client.upload_part(
             Bucket=bucket, Key=key,
@@ -111,30 +82,12 @@ def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_n
 
 
 def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
-    if checksum_processor.enabled:
-        def _add_header(request, *args, **kwargs):
-            checksum_processor.remove_checksum_header(request)
-            checksum_value = checksum_processor.calculate_checksum(request.body)
-            request.body.seek(0)
-            checksum_processor.add_checksum_header(request, checksum_value)
-
-        client.meta.events.register_first('before-sign.s3.PutObject', _add_header)
-
     with fileobj as body:
         output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
         uploaded_objects_container.add(bucket, key, output.get('VersionId'))
 
 
 def _complete_multipart_upload_task_main(self, client, bucket, key, upload_id, parts, extra_args):
-    if checksum_processor.enabled:
-        def _add_header(request, *args, **kwargs):
-            checksum_value = checksum_processor.calculate_checksum_of_checksums(request.body)
-            checksum_processor.remove_checksum_header(request)
-            checksum_processor.add_checksum_header(request, checksum_value)
-
-        client.meta.events.register_first('before-sign.s3.CompleteMultipartUpload', _add_header)
-        checksum_processor.add_checksum_shape_to_model(client)
-
     output = client.complete_multipart_upload(
         Bucket=bucket, Key=key, UploadId=upload_id,
         MultipartUpload={'Parts': parts},
@@ -156,7 +109,6 @@ def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, c
 # and use them later on without any extra requests being performed.
 upload.PutObjectTask._main = _put_object_task_main
 upload.UploadPartTask._main = _upload_part_task_main
-tasks.CreateMultipartUploadTask._main = _create_multipart_upload_task_main
 tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
 copies.CopyObjectTask._main = _copy_object_task_main
 
@@ -371,6 +323,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         if checksum_algorithm:
             checksum_processor.init(checksum_algorithm)
+            checksum_processor.prepare_boto_client(self.s3.meta.client)
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
                                 Config=transfer_config,

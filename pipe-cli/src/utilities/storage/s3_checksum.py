@@ -22,6 +22,9 @@ import xml.etree.ElementTree as ET
 
 
 class ChecksumProcessor:
+    """
+    This class provides methods to force old versions of botocore library to support additional checksum calculation.
+    """
 
     def __init__(self):
         self.algorithm = None
@@ -41,6 +44,29 @@ class ChecksumProcessor:
             self.calculator = SHA256ChecksumCalculator()
         else:
             raise NotImplementedError("Checksum algorithm '%s' is not supported yet" % algorithm)
+
+    def prepare_boto_client(self, client):
+        def _add_checksum_algorithm_header(request, *args, **kwargs):
+            self.remove_checksum_algorithm_header(request)
+            self.add_checksum_algorithm_header(request)
+
+        def _add_put_object_header(request, *args, **kwargs):
+            self.remove_checksum_header(request)
+            checksum_value = self.calculate_checksum(request.body)
+            request.body.seek(0)
+            self.add_checksum_header(request, checksum_value)
+
+        def _add_checksum_of_checksums_header(request, *args, **kwargs):
+            checksum_value = self.calculate_checksum_of_checksums(request.body)
+            self.remove_checksum_header(request)
+            self.add_checksum_header(request, checksum_value)
+
+        client.meta.events.register_first('before-sign.s3.CreateMultipartUpload', _add_checksum_algorithm_header)
+        client.meta.events.register_first('before-sign.s3.UploadPart', _add_put_object_header)
+        client.meta.events.register_first('before-sign.s3.PutObject', _add_put_object_header)
+        client.meta.events.register_first('before-sign.s3.CompleteMultipartUpload', _add_checksum_of_checksums_header)
+
+        self.add_checksum_shape_to_model(client)
 
     def add_checksum_algorithm_header(self, request):
         request.headers.add_header('x-amz-checksum-algorithm', self.algorithm)
