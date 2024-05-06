@@ -2466,7 +2466,7 @@ export default class DataStorage extends React.Component {
     };
     const jobAction = {
       key: 'jobs',
-      title: 'Show jobs',
+      title: 'Show import jobs',
       checked: this.showJobs,
       available: this.isOmicsStore
     };
