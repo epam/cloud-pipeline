@@ -664,7 +664,7 @@ export class UploadOmicsButton extends React.Component {
         </Button>
         <Modal
           footer={this.getFooter()}
-          title="Upload file to AWS Omics store"
+          title="Upload file to AWS HealthOmics Store"
           visible={this.state.uploadMenuVisible}
           onCancel={this.hideUploadMenu}
           closable={false}
