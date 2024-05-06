@@ -1,5 +1,3 @@
 # AWS HealthOmics Workflow 
 
-AWS HealthOmics Workflow docs: https://docs.aws.amazon.com/omics/latest/dev/workflows.html
-
-# How to use this image
+With HealthOmics Workflows, you can process and analyze your genomics data with pipelines (described in Nextflow) that you create yourself.

@@ -155,6 +155,8 @@ class AWSOmicsOperation:
 
         def __define_local_location(path, source, force):
             parent_dir = os.path.dirname(path)
+            if not parent_dir:
+                parent_dir = "."
             basename = os.path.basename(path)
 
             # source matches path to specific file in readSet/reference
