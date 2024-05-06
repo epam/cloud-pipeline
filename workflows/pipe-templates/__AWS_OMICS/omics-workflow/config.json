@@ -12,7 +12,7 @@
     "parameters" : {
       "RESYNC_IMAGES" : {
         "type" : "boolean",
-        "value" : true,
+        "value" : false,
         "required" : true,
         "no_override" : false
       },
@@ -24,7 +24,8 @@
       "CP_CAP_DIND_CONTAINER" : {
         "value" : "true",
         "type" : "boolean",
-        "required" : false
+        "no_override" : true,
+        "required" : true
       }
     }
   }

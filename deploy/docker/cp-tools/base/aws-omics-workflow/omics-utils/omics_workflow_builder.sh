@@ -247,8 +247,15 @@ function run_omics_workflow() {
     local _workflow_id
     local _workflow_run_id
 
+    local _workflow_definition_uri="${OUTPUT_DIR}/${_workflow_name}.zip"
+    aws s3 cp "$_workflow_zip" "$_workflow_definition_uri"
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "There was a problem during HealthOmics Workflow definition zip upload process." "${LOG_TASK_NAME}"
+        exit 1
+    fi
+
     _workflow_id=$(aws omics create-workflow \
-                            --engine "${ENGINE}" --name "$_workflow_name"  --definition-zip "fileb://$_workflow_zip" \
+                            --engine "${ENGINE}" --name "$_workflow_name"  --definition-uri "$_workflow_definition_uri" \
                             --parameter-template "file://$_workflow_parameters_template" \
                             --query 'id' --output text)
     if [ $? -ne 0 ]; then
