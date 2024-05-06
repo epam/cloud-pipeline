@@ -2,7 +2,7 @@
 
 function verify_environment() {
    if [ ! -f /opt/omics/utils/omics_workflow_builder.sh ]; then
-        pipe_log_fail "Omcis Worklow helper script /opt/omics/utils/omics_workflow_builder.sh wasn't found. Are you using library/aws-omics-workflow docker image?" "${LOG_TASK_NAME}"
+        pipe_log_fail "Omcis Worklow helper script /opt/omics/utils/omics_workflow_builder.sh wasn't found. Are you using library/aws-healthomics-workflow docker image?" "${LOG_TASK_NAME}"
         exit 1
     fi
 }
