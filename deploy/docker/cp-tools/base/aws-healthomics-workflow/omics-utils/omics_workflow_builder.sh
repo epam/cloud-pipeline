@@ -231,11 +231,11 @@ function package_omics_workflow() {
 }
 
 function cleanup_omics_workflow() {
-    pipe_log_info "Removing HealthOmics Workflow on cleanup." "${LOG_TASK_NAME}"
+    pipe_log_info "Removing AWS HealthOmics Workflow on cleanup." "${LOG_TASK_NAME}"
     assume_omics_service_role
     aws omics delete-workflow --id "$WORKFLOW_ID"
     if [ $? -ne 0 ]; then
-        pipe_log_fail "There was a problem during cleanup of HealthOmics Workflow, id: $WORKFLOW_ID." "${LOG_TASK_NAME}"
+        pipe_log_fail "There was a problem during cleanup of AWS HealthOmics Workflow, id: $WORKFLOW_ID." "${LOG_TASK_NAME}"
     fi
 }
 
@@ -247,27 +247,32 @@ function run_omics_workflow() {
     local _workflow_id
     local _workflow_run_id
 
+    local _run_workflow_log=$(mktemp)
+
     local _workflow_definition_uri="${OUTPUT_DIR}/${_workflow_name}.zip"
     aws s3 cp "$_workflow_zip" "$_workflow_definition_uri"
     if [ $? -ne 0 ]; then
-        pipe_log_fail "There was a problem during HealthOmics Workflow definition zip upload process." "${LOG_TASK_NAME}"
+        pipe_log_fail "There was a problem during AWS HealthOmics Workflow definition zip upload process." "${LOG_TASK_NAME}"
         exit 1
     fi
 
     _workflow_id=$(aws omics create-workflow \
                             --engine "${ENGINE}" --name "$_workflow_name"  --definition-uri "$_workflow_definition_uri" \
                             --parameter-template "file://$_workflow_parameters_template" \
-                            --query 'id' --output text)
+                            --query 'id' --output text 2> "$_run_workflow_log")
     if [ $? -ne 0 ]; then
-        pipe_log_fail "There was a problem during HealthOmics Workflow registration." "${LOG_TASK_NAME}"
+        pipe_exec "cat $_run_workflow_log" "${LOG_TASK_NAME}"
+        pipe_log_fail "There was a problem during AWS HealthOmics Workflow registration." "${LOG_TASK_NAME}"
         exit 1
     else
+        export WORKFLOW_ID="$_workflow_id"
         trap cleanup_omics_workflow EXIT
     fi
 
-    aws omics wait workflow-active --id "${_workflow_id}"
+    aws omics wait workflow-active --id "${_workflow_id}" 2> "$_run_workflow_log"
     if [ $? -ne 0 ]; then
-        pipe_log_fail "There was a problem during awaiting HealthOmics Workflow to be available." "${LOG_TASK_NAME}"
+        pipe_exec "cat $_run_workflow_log" "${LOG_TASK_NAME}"
+        pipe_log_fail "There was a problem during awaiting AWS HealthOmics Workflow to be available." "${LOG_TASK_NAME}"
         exit 1
     fi
 
@@ -278,9 +283,13 @@ function run_omics_workflow() {
                                 --name "$_workflow_name" \
                                 --output-uri "${OUTPUT_DIR}" \
                                 --parameters "file://$_workflow_parameters" \
-                                --query 'id' --output text)
+                                --query 'id' --output text 2> "$_run_workflow_log" )
+    if [ $? -ne 0 ] || [ -z "$_workflow_run_id" ]; then
+        pipe_exec "cat $_run_workflow_log" "${LOG_TASK_NAME}"
+        pipe_log_fail "There was a problem during AWS HealthOmics Workflow start process." "${LOG_TASK_NAME}"
+        exit 1
+    fi
     pipe_log_info "Workflow run with id: $_workflow_run_id started." "${LOG_TASK_NAME}"
-    export WORKFLOW_ID="$_workflow_id"
     export WORKFLOW_RUN_ID="$_workflow_run_id"
 }
 
