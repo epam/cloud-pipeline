@@ -63,9 +63,6 @@ class EmptyFilesValues(object):
     SKIP = 'skip'
 
 
-ALLOWED_CHECKSUM_ALGORITHMS = ['sha256', 'crc32']
-
-
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
@@ -165,7 +162,7 @@ class DataStorageOperations(object):
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             audit_ctx, clean, quiet, tags, io_threads, on_failures)
+                                             audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm)
         else:
             cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
                                 audit_ctx, clean, quiet, tags, io_threads, on_failures,
@@ -631,7 +628,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -650,14 +647,15 @@ class DataStorageOperations(object):
                                                     tags,
                                                     io_threads,
                                                     on_failures,
-                                                    lock))
+                                                    lock,
+                                                    checksum_algorithm))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper,
-                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None, checksum_algorithm=None):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
+                        io_threads, on_failures, lock=None, checksum_algorithm=None):
         with audit_ctx:
             transfer_results = []
             fail_after_exception = None
