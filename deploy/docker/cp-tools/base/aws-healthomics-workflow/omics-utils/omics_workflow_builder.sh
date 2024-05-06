@@ -293,10 +293,22 @@ function fail_run() {
         for _task_id in $(aws omics list-run-tasks --id "$_workflow_run_id" | jq '.items[] | select(.status == "FAILED") | .taskId' -r); do
             local _workflow_task_name
             _workflow_task_name=$(aws omics get-run-task --id "$_workflow_run_id" --task-id "$_task_id" | jq -r ".name" | sed "s| |_|g")
-            pipe_log_info "---- Only last 500 log messages are printed out ----" "$_workflow_task_name"
-            pipe_exec "aws logs get-log-events --log-group-name /aws/omics/WorkflowLog --log-stream-name run/${_workflow_run_id}/task/${_task_id} --limit ${_log_limit} --no-start-from-head --output text | grep EVENTS" "$_workflow_task_name"
+
+            # If there is a log stream in CloudWatch - print logs
+            if aws logs describe-log-streams --log-group-name /aws/omics/WorkflowLog --log-stream-name "run/${_workflow_run_id}/task/${_task_id}" &> /dev/null; then
+                pipe_log_warn "---- Only last 500 log messages are printed out ----" "$_workflow_task_name"
+                pipe_exec "aws logs get-log-events --log-group-name /aws/omics/WorkflowLog --log-stream-name run/${_workflow_run_id}/task/${_task_id} --limit ${_log_limit} --no-start-from-head --output text | grep EVENTS" "$_workflow_task_name"
+            else
+                pipe_log_warn "There is no log stream for task id: ${_task_id} name: $_workflow_task_name" "$_workflow_task_name"
+            fi
             pipe_log_fail "AWS Omics Workflow task failed." "$_workflow_task_name"
         done
+    fi
+
+    # If there is a log stream in CloudWatch - print logs
+    if aws logs describe-log-streams --log-group-name /aws/omics/WorkflowLog --log-stream-name "run/${_workflow_run_id}/engine" &> /dev/null; then
+        pipe_log_warn "---- Only last 500 log messages are printed out ----" "${LOG_TASK_NAME}"
+        pipe_exec "aws logs get-log-events --log-group-name /aws/omics/WorkflowLog --log-stream-name run/${_workflow_run_id}/engine --limit ${_log_limit} --no-start-from-head --output text | grep EVENTS" "${LOG_TASK_NAME}"
     fi
     pipe_log_fail "Workflow run: ${_workflow_run_id} finished with status: $_workflow_status" "${LOG_TASK_NAME}"
 }
