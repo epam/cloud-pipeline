@@ -103,8 +103,8 @@ class ChecksumProcessor:
         decoded_parts = None
         root = ET.fromstring(mpu_parts_xml_string)
         for part in root.findall('{http://s3.amazonaws.com/doc/2006-03-01/}Part'):
-            checksum_crc32 = part.find('{http://s3.amazonaws.com/doc/2006-03-01/}%s' % field).text
-            decoded_checksum = base64.b64decode(checksum_crc32)
+            checksum_value = part.find('{http://s3.amazonaws.com/doc/2006-03-01/}%s' % field).text
+            decoded_checksum = base64.b64decode(checksum_value)
             if decoded_parts:
                 decoded_parts = decoded_parts + decoded_checksum
             else:
