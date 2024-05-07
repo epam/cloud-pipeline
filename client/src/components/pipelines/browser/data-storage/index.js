@@ -72,6 +72,7 @@ import RestoreStatusIcon, {STATUS} from '../forms/life-cycle-rules/components/re
 import PreviewModal from '../../../search/preview/preview-modal';
 import {getPreviewConfiguration} from '../../../search/preview/vsi-preview';
 import UploadButton from '../../../special/UploadButton';
+import {UploadOmicsButton} from '../../../special/UploadOmicsButton';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
 import parseQueryParameters from '../../../../utils/queryParameters';
@@ -2353,6 +2354,16 @@ export default class DataStorage extends React.Component {
                       ? this.props.authenticatedUserInfo.value.userName
                       : undefined
                   }
+                />
+              )
+            }
+            {
+              this.storage.writeAllowed &&
+              this.isSequenceStorage && (
+                <UploadOmicsButton
+                  storageInfo={this.storage.info}
+                  region={this.regionName}
+                  onRefresh={() => this.refreshList()}
                 />
               )
             }

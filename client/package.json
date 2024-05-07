@@ -3,6 +3,7 @@
   "version": "0.15.0",
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-omics": "^3.556.0",
     "ansi_up": "^2.0.2",
     "antd": "2.13.14",
     "aws-sdk": "^2.770.0",
