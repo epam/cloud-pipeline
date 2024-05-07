@@ -447,14 +447,14 @@ export class DataStorageEditDialog extends React.Component {
             ? (this.isNfsMount
               ? 'Edit FS mount'
               : (this.omicsStore
-                ? 'Edit omics store'
+                ? 'Edit AWS HealthOmics Store'
                 : 'Edit object storage'))
             : (this.isNfsMount
               ? 'Create FS mount'
               : (this.props.addExistingStorageFlag
                 ? 'Add existing object storage'
                 : (this.omicsStore
-                  ? 'Create omics store'
+                  ? 'Create AWS HealthOmics Store'
                   : 'Create object storage')))
         }
         onCancel={this.props.onCancel}
@@ -519,7 +519,7 @@ export class DataStorageEditDialog extends React.Component {
                   <Form.Item
                     className={styles.dataStorageFormItem}
                     {...this.formItemLayout}
-                    label="Omics service type">
+                    label="Service type">
                     {getFieldDecorator('omicsType', {
                       initialValue: this.props.dataStorage && this.props.dataStorage.type
                         ? this.props.dataStorage.type

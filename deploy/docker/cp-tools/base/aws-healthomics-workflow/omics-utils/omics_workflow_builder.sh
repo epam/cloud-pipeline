@@ -319,6 +319,7 @@ function fail_run() {
         pipe_log_warn "---- Only last 500 log messages are printed out ----" "${LOG_TASK_NAME}"
         pipe_exec "aws logs get-log-events --log-group-name /aws/omics/WorkflowLog --log-stream-name run/${_workflow_run_id}/engine --limit ${_log_limit} --no-start-from-head --output text | grep EVENTS" "${LOG_TASK_NAME}"
     fi
+    
     pipe_log_fail "Workflow run: ${_workflow_run_id} finished with status: $_workflow_status" "${LOG_TASK_NAME}"
 }
 
