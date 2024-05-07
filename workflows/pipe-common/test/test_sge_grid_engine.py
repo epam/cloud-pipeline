@@ -27,9 +27,15 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%
 QUEUE = 'main.q'
 HOSTLIST = '@allhosts'
 QUEUE_DEFAULT = True
+gpu_resource_name = 'gpus'
+mem_resource_name = 'ram'
+exc_resource_name = 'exclusive'
 
 executor = Mock()
-grid_engine = SunGridEngine(cmd_executor=executor, queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT)
+grid_engine = SunGridEngine(cmd_executor=executor, queue=QUEUE, hostlist=HOSTLIST, queue_default=QUEUE_DEFAULT,
+                            gpu_resource_name=gpu_resource_name,
+                            mem_resource_name=mem_resource_name,
+                            exc_resource_name=exc_resource_name)
 
 
 def setup_function():
@@ -267,7 +273,7 @@ def test_get_global_supplies():
 
     supply = supplies[0]
 
-    assert supply == CustomResourceSupply(values={'A': 1, 'B': 2, 'C': 3})
+    assert supply == CustomResourceSupply(values={'A': '1.000000', 'B': '2.000000', 'C': '3.000000'})
 
 
 def test_kill_jobs():

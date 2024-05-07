@@ -29,12 +29,12 @@ from pipeline.hpc.autoscaler import \
     DoNothingAutoscalingDaemon, DoNothingScaleUpHandler, DoNothingScaleDownHandler
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
-from pipeline.hpc.engine.gridengine import GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineType, DoNothingGridEngineJobProcessor
 from pipeline.hpc.engine.kube import KubeGridEngine, KubeJobValidator, KubeDefaultDemandSelector, KubeLaunchAdapter, \
     KubeResourceParser, get_kube_client
 from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDefaultDemandSelector, SunGridEngineJobValidator, \
     SunGridEngineHostWorkerValidatorHandler, SunGridEngineStateWorkerValidatorHandler, \
-    SunGridEngineCustomDemandSelector, SunGridEngineLaunchAdapter
+    SunGridEngineGlobalDemandSelector, SunGridEngineLaunchAdapter, SunGridEngineCustomRequestsPurgeJobProcessor
 from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, \
     SlurmLaunchAdapter
 from pipeline.hpc.event import GridEngineEventManager
@@ -279,12 +279,16 @@ def get_daemon():
     event_ttl = params.autoscaling_advanced.event_ttl.get()
 
     custom_requirements = params.autoscaling_advanced.custom_requirements.get()
+    custom_requirements_purge = params.autoscaling_advanced.custom_requirements_purge.get()
 
     queue_static = params.queue.queue_static.get()
     queue_default = params.queue.queue_default.get()
     queue_hostlist_name = params.queue.hostlist_name.get()
     queue_reserved_cpu = params.queue.hosts_free_cores.get()
     queue_master_cpu = params.queue.master_cores.get() or static_instance_cpus
+    queue_gpu_resource_name = params.queue.gpu_resource_name.get()
+    queue_mem_resource_name = params.queue.mem_resource_name.get()
+    queue_exc_resource_name = params.queue.exc_resource_name.get()
 
     host_storage_file = os.path.join(cluster_work_dir, '.autoscaler.%s.storage' % queue_name)
     host_storage_static_file = os.path.join(cluster_work_dir, '.autoscaler.%s.static.storage' % queue_name)
@@ -441,6 +445,7 @@ def get_daemon():
 
     if grid_engine_type == GridEngineType.SLURM:
         grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
+        job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                           cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
@@ -449,19 +454,32 @@ def get_daemon():
         kube_client = get_kube_client()
         resource_parser = KubeResourceParser()
         grid_engine = KubeGridEngine(kube=kube_client, resource_parser=resource_parser, owner=cluster_owner)
+        job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = KubeJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                          cluster_max_supply=cluster_supply)
         demand_selector = KubeDefaultDemandSelector(grid_engine=grid_engine)
         launch_adapter = KubeLaunchAdapter()
     else:
         grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
-                                    queue_default=queue_default)
+                                    queue_default=queue_default,
+                                    gpu_resource_name=queue_gpu_resource_name,
+                                    mem_resource_name=queue_mem_resource_name,
+                                    exc_resource_name=queue_exc_resource_name)
+        if custom_requirements_purge:
+            job_preprocessor = SunGridEngineCustomRequestsPurgeJobProcessor(
+                cmd_executor=cmd_executor,
+                gpu_resource_name=queue_gpu_resource_name,
+                mem_resource_name=queue_mem_resource_name,
+                exc_resource_name=queue_exc_resource_name,
+                dry_run=dry_run)
+        else:
+            job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
                                                   instance_max_supply=biggest_instance_supply,
                                                   cluster_max_supply=cluster_supply)
         demand_selector = SunGridEngineDefaultDemandSelector(grid_engine=grid_engine)
         if custom_requirements:
-            demand_selector = SunGridEngineCustomDemandSelector(inner=demand_selector, grid_engine=grid_engine)
+            demand_selector = SunGridEngineGlobalDemandSelector(inner=demand_selector, grid_engine=grid_engine)
         launch_adapter = SunGridEngineLaunchAdapter(queue=queue_name, hostlist=queue_hostlist_name)
 
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
@@ -565,7 +583,9 @@ def get_daemon():
                                                     grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                     handlers=worker_validator_handlers,
                                                     common_utils=common_utils, dry_run=dry_run)
-    autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
+    autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
+                                      job_preprocessor=job_preprocessor,
+                                      job_validator=job_validator,
                                       demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,
                                       scale_up_orchestrator=scale_up_orchestrator,
