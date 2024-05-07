@@ -1629,7 +1629,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                   id="create-omics-store-button"
                   className="create-omics-store-button"
                   key={`${storageKey}_${omicsStoreKey}`}>
-                  Create Omics store
+                  Create AWS HealthOmics Store
                 </MenuItem>
               )
             }
