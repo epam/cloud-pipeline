@@ -122,7 +122,8 @@ export default class JobList extends React.Component {
 
   setDefaultFilter = () => {
     this.onFiltersChange({
-      timestampFrom: moment.utc().add(-1, 'h').format(DATE_FORMAT)
+      timestampFrom: moment.utc().add(-1, 'd').format(DATE_FORMAT),
+      status: 'IN_PROGRESS'
     });
   };
 
