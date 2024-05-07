@@ -67,6 +67,7 @@ class OmicsStorageObject:
             omics_file.size,
             labels={
                 "status": omics_file.status,
+                "name": omics_file.name,
                 "type": omics_file.type
             }
         )
