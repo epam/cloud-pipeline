@@ -68,6 +68,9 @@ checksum_processor = ChecksumProcessor()
 
 
 def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_number, extra_args):
+    if checksum_processor.enabled:
+        extra_args['ContentMD5'] = ''
+
     with fileobj as body:
         response = client.upload_part(
             Bucket=bucket, Key=key,
@@ -75,13 +78,16 @@ def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_n
             Body=body, **extra_args)
 
     result = {'PartNumber': part_number, 'ETag': response['ETag']}
-    if checksum_processor.enabled:
+    if checksum_processor.enabled and not checksum_processor.skip:
         result.update({checksum_processor.boto_field:
                        response['ResponseMetadata']['HTTPHeaders'][checksum_processor.checksum_header]})
     return result
 
 
 def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
+    if checksum_processor.enabled:
+        extra_args['ContentMD5'] = ''
+
     with fileobj as body:
         output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
         uploaded_objects_container.add(bucket, key, output.get('VersionId'))
@@ -227,7 +233,7 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
             StorageOperations.get_local_file_modification_datetime(destination_key)
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm=None):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -265,7 +271,7 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
         return 0, None
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm=None):
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -305,7 +311,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -322,7 +328,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
             progress_callback = None
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         if checksum_algorithm:
-            checksum_processor.init(checksum_algorithm)
+            checksum_processor.init(checksum_algorithm, checksum_skip)
             checksum_processor.prepare_boto_client(self.s3.meta.client)
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
@@ -354,7 +360,7 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -400,7 +406,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region

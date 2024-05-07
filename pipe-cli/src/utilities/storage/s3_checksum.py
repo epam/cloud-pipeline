@@ -32,10 +32,17 @@ class ChecksumProcessor:
         self.calculator = None
         self.checksum_header = None
         self.boto_field = None
+        self.skip = False
 
-    def init(self, algorithm):
-        self.algorithm = algorithm.lower()
+    def init(self, algorithm, skip_checksum=False):
+        if skip_checksum:
+            self.enabled = True
+            self.skip = True
+            return
+        if not algorithm or algorithm.lower() == 'md5':
+            return
         self.enabled = True
+        self.algorithm = algorithm.lower()
         self.checksum_header = 'x-amz-checksum-%s' % self.algorithm
         self.boto_field = 'Checksum%s' % algorithm.upper()
         if self.algorithm == 'crc32':
@@ -46,6 +53,9 @@ class ChecksumProcessor:
             raise NotImplementedError("Checksum algorithm '%s' is not supported yet" % algorithm)
 
     def prepare_boto_client(self, client):
+        if not self.enabled:
+            return
+
         def _add_checksum_algorithm_header(request, *args, **kwargs):
             self.remove_checksum_algorithm_header(request)
             self.add_checksum_algorithm_header(request)
@@ -60,6 +70,15 @@ class ChecksumProcessor:
             checksum_value = self.calculate_checksum_of_checksums(request.body)
             self.remove_checksum_header(request)
             self.add_checksum_header(request, checksum_value)
+
+        def _remove_md5_checksum_header(request, *args, **kwargs):
+            self.remove_md5_checksum_header(request)
+
+        client.meta.events.register_first('before-sign.s3.UploadPart', _remove_md5_checksum_header)
+        client.meta.events.register_first('before-sign.s3.PutObject', _remove_md5_checksum_header)
+
+        if self.skip:
+            return
 
         client.meta.events.register_first('before-sign.s3.CreateMultipartUpload', _add_checksum_algorithm_header)
         client.meta.events.register_first('before-sign.s3.UploadPart', _add_put_object_header)
@@ -79,6 +98,9 @@ class ChecksumProcessor:
 
     def remove_checksum_header(self, request):
         self.remove_header(request, self.checksum_header)
+
+    def remove_md5_checksum_header(self, request):
+        self.remove_header(request, 'content-md5')
 
     def calculate_checksum(self, chunk):
         return self.calculator.calculate_checksum(chunk.read())
