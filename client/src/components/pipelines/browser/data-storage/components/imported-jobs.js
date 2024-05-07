@@ -149,7 +149,7 @@ export default class JobList extends React.Component {
       return;
     }
     return new Promise(resolve => {
-      const hide = message.loading('Getting omics jobs list...');
+      const hide = message.loading('Getting AWS HealthOmics Import jobs...');
       const request = new OmicsJobsImport(this.props.storageId, this.pageSize, this.currentPage);
       const payload = this.getPayload();
       request.send(payload)
@@ -159,7 +159,7 @@ export default class JobList extends React.Component {
             return resolve(request.value);
           } else {
             hide();
-            throw new Error(request.error || 'Error getting imported jobs');
+            throw new Error(request.error || 'Error getting AWS HealthOmics Import jobs');
           }
         })
         .catch(e => {

@@ -72,6 +72,7 @@ import RestoreStatusIcon, {STATUS} from '../forms/life-cycle-rules/components/re
 import PreviewModal from '../../../search/preview/preview-modal';
 import {getPreviewConfiguration} from '../../../search/preview/vsi-preview';
 import UploadButton from '../../../special/UploadButton';
+import {UploadOmicsButton} from '../../../special/UploadOmicsButton';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import EmbeddedMiew from '../../../applications/miew/EmbeddedMiew';
 import parseQueryParameters from '../../../../utils/queryParameters';
@@ -534,14 +535,11 @@ export default class DataStorage extends React.Component {
         {...job}
       ]
     };
-    const hide = message.loading('Importing omics job...');
     const request = new OmicsStoreImport(this.props.storageId);
     await request.send(payload);
     if (request.error) {
-      hide();
       message.error(request.error, 5);
     } else {
-      hide();
       this.closeOmicsDialog();
       this.storage.refreshStorageInfo();
       this.props.folders.invalidateFolder(parentFolderId);
@@ -2394,6 +2392,16 @@ export default class DataStorage extends React.Component {
             }
             {
               this.storage.writeAllowed &&
+              this.isSequenceStorage && (
+                <UploadOmicsButton
+                  storageInfo={this.storage.info}
+                  region={this.regionName}
+                  onRefresh={() => this.refreshList()}
+                />
+              )
+            }
+            {
+              this.storage.writeAllowed &&
               this.isOmicsStore &&
               this.isOmicsFolder && (
                 <Button
@@ -3027,10 +3035,10 @@ export default class DataStorage extends React.Component {
       };
       this.openPreviewModal(file);
     }
-    this.updateStorageIfRequired();
     if (!this.isOmicsStore) {
       this.closeImportedJobsIfRequired();
     }
+    this.updateStorageIfRequired();
   }
 
   componentDidUpdate (prevProps) {

@@ -2105,7 +2105,7 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
-              label="AWS Omics Service role"
+              label="AWS HealthOmics Service role"
               {...this.formItemLayout}
               className={this.getFieldClassName('omicsServiceRole', 'edit-region-omicsServiceRole-container')}
             >
@@ -2118,7 +2118,7 @@ class AWSRegionForm extends React.Component {
               )}
             </Form.Item>
             <Form.Item
-              label="AWS Omics ECR Url"
+              label="AWS HealthOmics ECR Url"
               {...this.formItemLayout}
               className={this.getFieldClassName('omicsEcrUrl', 'edit-region-omicsEcrUrl-container')}
             >

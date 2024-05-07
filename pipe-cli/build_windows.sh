@@ -96,9 +96,9 @@ pip install pywin32==302 && \
 cd /pipe-cli/pipe-omics && \
 pyinstaller \
   --paths "/pipe-cli/pipe-omics" \
+  --hidden-import=itertools \
   --hidden-import=boto3 \
   --hidden-import=botocore \
-  --hidden-import=itertools \
   --hidden-import=collections \
   --hidden-import=base64 \
   --hidden-import=math \
@@ -108,11 +108,11 @@ pyinstaller \
   --hidden-import=subprocess \
   --hidden-import=charset_normalizer.md__mypyc \
   --hidden-import=chardet \
-  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/data;botocore-data" \
+  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/data;botocore/data" \
+  --add-data "/wine/drive_c/Python310/Lib/site-packages/botocore/cacert.pem;botocore" \
   --version-file /tmp/pipe-win-version-info.txt \
   -y \
   --clean \
-  -p /tmp/pipe-omics/lib \
   --distpath /tmp/pipe-omics/dist \
   /pipe-cli/pipe-omics/pipe-omics.py
 
