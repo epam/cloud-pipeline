@@ -438,7 +438,7 @@ class GridEngineScaleDownOrchestrator:
 
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, job_validator, demand_selector,
+    def __init__(self, grid_engine, job_preprocessor, job_validator, demand_selector,
                  cmd_executor, scale_up_orchestrator, scale_down_orchestrator, host_storage,
                  static_host_storage, scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30,
                  clock=Clock()):
@@ -452,6 +452,7 @@ class GridEngineAutoscaler:
         and there were no new jobs for the given time interval.
 
         :param grid_engine: Grid engine.
+        :param job_preprocessor: Job preprocessor.
         :param job_validator: Job validator.
         :param demand_selector: Demand selector.
         :param cmd_executor: Cmd executor.
@@ -468,8 +469,9 @@ class GridEngineAutoscaler:
         :param idle_timeout: Maximum number of seconds a host could wait for a new job before getting scaled-down.
         """
         self.grid_engine = grid_engine
-        self.demand_selector = demand_selector
+        self.job_preprocessor = job_preprocessor
         self.job_validator = job_validator
+        self.demand_selector = demand_selector
         self.executor = cmd_executor
         self.scale_up_orchestrator = scale_up_orchestrator
         self.scale_down_orchestrator = scale_down_orchestrator
@@ -545,8 +547,10 @@ class GridEngineAutoscaler:
         Logger.info('Done: Scaling.')
 
     def _get_valid_jobs(self, jobs):
-        Logger.info('Validating %s jobs...' % len(jobs))
-        valid_jobs, invalid_jobs = self.job_validator.validate(jobs)
+        Logger.info('Preprocessing %s jobs...' % len(jobs))
+        relevant_jobs, _ = self.job_preprocessor.process(jobs)
+        Logger.info('Validating %s jobs...' % len(relevant_jobs))
+        valid_jobs, invalid_jobs = self.job_validator.validate(relevant_jobs)
         if invalid_jobs:
             Logger.warn('The following jobs cannot be satisfied with the requested resources '
                         'and therefore will be killed: #{}'

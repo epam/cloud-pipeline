@@ -256,6 +256,9 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.custom_requirements = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS', type=PARAM_BOOL, default=True,
             help='Enables custom requirements processing.')
+        self.custom_requirements_purge = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS_PURGE', type=PARAM_BOOL, default=False,
+            help='Enables custom requirements purge.')
         self.grid_engine = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_GRID_ENGINE', type=PARAM_STR, default=None,
             help='Specifies grid engine type.\n'
@@ -295,6 +298,15 @@ class GridEngineQueueParameters(GridEngineParametersGroup):
         self.master_cores = GridEngineParameter(
             name='CP_CAP_SGE_MASTER_CORES', type=PARAM_INT, default=None,
             help='Specifies a number of available cores on a cluster manager.')
+        self.gpu_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU', type=PARAM_STR, default='gpus',
+            help='Specifies gpu resource name.')
+        self.mem_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM', type=PARAM_STR, default='ram',
+            help='Specifies ram resource name.')
+        self.exc_resource_name = GridEngineParameter(
+            name='CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE', type=PARAM_STR, default='exclusive',
+            help='Specifies exclusive resource name.')
         self.sge_grid_engine = GridEngineParameter(
             name='CP_CAP_SGE', type=PARAM_BOOL, default=False,
             help='Enables SGE grid engine.')

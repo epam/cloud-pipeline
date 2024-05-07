@@ -204,6 +204,19 @@ class GridEngineJobValidator:
         pass
 
 
+class GridEngineJobProcessor:
+
+    def process(self, jobs):
+        pass
+
+
+class DoNothingGridEngineJobProcessor(GridEngineJobProcessor):
+
+    def process(self, jobs):
+        relevant_jobs, irrelevant_jobs = jobs, []
+        return relevant_jobs, irrelevant_jobs
+
+
 class GridEngineLaunchAdapter:
 
     def get_worker_init_task_name(self):
