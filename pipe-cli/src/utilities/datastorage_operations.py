@@ -129,11 +129,19 @@ class DataStorageOperations(object):
                        '--verify-destination (-vd) flag to enable existence check for each destination path.',
                        err=True)
             sys.exit(1)
-        if checksum_algorithm and source_type not in [WrapperType.LOCAL]:
-            click.echo('Option --checksum-algorithm is not supported for {} sources.'.format(source_type), err=True)
+        if not checksum_algorithm == 'md5' and source_type not in [WrapperType.LOCAL]:
+            click.echo('Checksum algorithm {} is not supported for {} sources.'
+                       .format(checksum_algorithm, source_type), err=True)
             sys.exit(1)
-        if checksum_algorithm and destination_type not in [WrapperType.S3]:
-            click.echo('Option --checksum-algorithm is not supported for {} destinations.'
+        if not checksum_algorithm == 'md5' and destination_type not in [WrapperType.S3]:
+            click.echo('Checksum algorithm {} is not supported for {} destinations.'
+                       .format(checksum_algorithm, source_type), err=True)
+            sys.exit(1)
+        if checksum_skip and source_type not in [WrapperType.LOCAL]:
+            click.echo('Option --checksum-skip is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if checksum_skip and destination_type not in [WrapperType.S3]:
+            click.echo('Option --checksum-skip is not supported for {} destinations.'
                        .format(source_type), err=True)
             sys.exit(1)
 
