@@ -84,6 +84,7 @@ task buildMac(type: Exec, dependsOn: ':pipe-cli:test') {
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
+    environment "PIPE_OMICS_SOURCES_DIR": "$project.rootDir/pipe-cli/pipe-omics"
     environment "PYINSTALLER_PATH": "/tmp/pyinstaller"
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_mac.sh"
@@ -109,7 +110,6 @@ task buildMacPy39(type: Exec) {
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
-    environment "PIPE_OMICS_SOURCES_DIR": "$project.rootDir/pipe-cli/pipe-omics"
     environment "PYINSTALLER_PATH": "/tmp/pyinstaller"
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_mac_py39.sh"
