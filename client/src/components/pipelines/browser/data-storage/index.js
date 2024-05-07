@@ -103,13 +103,15 @@ import LabelsRenderer from './components/labels-renderer';
 import StoragePagination from './components/storage-pagination';
 import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
+import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
-  intelligentTiering: 'INTELLIGENT_TIERING'
+  intelligentTiering: 'INTELLIGENT_TIERING',
+  active: 'ACTIVE'
 };
 
 const standardClasses = [
@@ -117,8 +119,14 @@ const standardClasses = [
   STORAGE_CLASSES.intelligentTiering
 ];
 
+const activeClass = [STORAGE_CLASSES.active];
+
 const isStandardClass = (storageClass) =>
   standardClasses.includes((storageClass || '').toUpperCase());
+
+const isActiveClass = (storageClass) => (
+  activeClass.includes((storageClass || '').toUpperCase())
+);
 
 const SUBMITTED_STATUS = 'SUBMITTED';
 
@@ -635,14 +643,27 @@ export default class DataStorage extends React.Component {
     items.push(...elements.map(i => {
       const restored = (this.getRestoredStatus(i) || {}).status === STATUS.SUCCEEDED;
       const archived = i.labels && !isStandardClass(i.labels['StorageClass']);
-      return {
-        key: `${i.type}_${i.path}`,
-        ...i,
-        downloadable: i.type.toLowerCase() === 'file' &&
+      const active = i.labels && isActiveClass(i.labels['StorageClass']);
+      const type = i.type.toLowerCase();
+      const isDownloadable = !this.isOmicsStore
+        ? (
+          type === 'file' &&
           !i.deleteMarker &&
           !sensitive &&
           (!archived || restored) &&
-          downloadable,
+          downloadable
+        )
+        : (
+          (type === 'file' || type === 'folder') &&
+          !i.deleteMarker &&
+          !sensitive &&
+          (active || restored) &&
+          downloadable
+        );
+      return {
+        key: `${i.type}_${i.path}`,
+        ...i,
+        downloadable: isDownloadable,
         editable: writeAllowed && !i.deleteMarker,
         shareAvailable: !i.deleteMarker && this.sharingEnabled,
         deletable: writeAllowed,
@@ -1243,28 +1264,40 @@ export default class DataStorage extends React.Component {
           }} />
       );
     };
-    if (item.downloadable && !this.isOmicsStore) {
-      actions.push((
-        <OpenInToolAction
-          key="open-in-tool"
-          file={item.path}
-          storageId={this.props.storageId}
-          className="cp-button"
-          style={{
-            display: 'flex',
-            textDecoration: 'none',
-            alignItems: 'center'
-          }}
-        />
-      ));
-      actions.push(
-        <DownloadFileButton
-          key={`download-${item.path}`}
-          storageId={this.props.storageId}
-          path={item.path}
-          version={item.version}
-        />
-      );
+    if (item.downloadable) {
+      if (!this.isOmicsStore) {
+        actions.push((
+          <OpenInToolAction
+            key="open-in-tool"
+            file={item.path}
+            storageId={this.props.storageId}
+            className="cp-button"
+            style={{
+              display: 'flex',
+              textDecoration: 'none',
+              alignItems: 'center'
+            }}
+          />
+        ));
+        actions.push(
+          <DownloadFileButton
+            key={`download-${item.path}`}
+            storageId={this.props.storageId}
+            path={item.path}
+            version={item.version}
+          />
+        );
+      } else {
+        actions.push(
+          <DownloadOmicsButton
+            key={`download-${item.path}`}
+            storageInfo={this.storage.info}
+            region={this.regionName}
+            itemPath={item.path}
+            itemType={item.type}
+          />
+        );
+      }
     }
     if (
       (item.isVersion
@@ -2441,7 +2474,7 @@ export default class DataStorage extends React.Component {
     };
     const jobAction = {
       key: 'jobs',
-      title: 'Show jobs',
+      title: 'Show import jobs',
       checked: this.showJobs,
       available: this.isOmicsStore
     };
