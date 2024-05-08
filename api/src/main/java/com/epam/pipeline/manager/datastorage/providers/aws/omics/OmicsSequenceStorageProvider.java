@@ -17,11 +17,14 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.omics;
 
 import com.amazonaws.services.omics.model.CreateSequenceStoreResult;
+import com.amazonaws.services.omics.model.FileInformation;
 import com.amazonaws.services.omics.model.GetReadSetMetadataResult;
 import com.amazonaws.services.omics.model.ListReadSetsResult;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
+import com.epam.pipeline.entity.datastorage.ContentDisposition;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
@@ -29,6 +32,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
+import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
+import com.epam.pipeline.manager.datastorage.providers.aws.s3.RegionAwareS3Helper;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -39,6 +45,7 @@ import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -47,11 +54,13 @@ import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage.*;
+import static com.epam.pipeline.manager.datastorage.providers.aws.omics.OmicsHelper.parseFilePath;
 
 @Service
 @Slf4j
@@ -62,10 +71,16 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     public static final String SAMPLE_ID = "SampleId";
     public static final String UPLOAD_FAILED_STATUS = "UPLOAD_FAILED";
 
-    public OmicsSequenceStorageProvider(final MessageHelper messageHelper,
+    public static final Pattern AWS_S3_FILE_PATH_TEMPLATE = Pattern.compile("^s3://([^/]+)/(.+)$");
+
+    private final StorageEventCollector omicsS3Events;
+
+    public OmicsSequenceStorageProvider(final StorageEventCollector omicsS3Events,
+                                        final MessageHelper messageHelper,
                                         final CloudRegionManager cloudRegionManager,
                                         final AuthManager authManager) {
         super(messageHelper, cloudRegionManager, authManager);
+        this.omicsS3Events = omicsS3Events;
     }
 
     @Override
@@ -110,7 +125,7 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
     DataStorageListing listOmicsFileSources(final AWSOmicsSequenceDataStorage dataStorage,
                                                       final String path) {
         final OmicsHelper omicsHelper = getOmicsHelper(dataStorage);
-        final Pair<String, String> fileIdAndSource = OmicsHelper.parseFilePath(path);
+        final Pair<String, String> fileIdAndSource = parseFilePath(path);
         final GetReadSetMetadataResult readSetFile = omicsHelper.getOmicsSeqStorageFile(dataStorage, path);
         final ArrayList<AbstractDataStorageItem> results = new ArrayList<>();
 
@@ -216,5 +231,59 @@ public class OmicsSequenceStorageProvider extends AbstractOmicsStorageProvider<A
         }
         pathDescription.setCompleted(true);
         return pathDescription;
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateDownloadURL(final AWSOmicsSequenceDataStorage dataStorage,
+                                                          final String path, final String version,
+                                                          final ContentDisposition contentDisposition) {
+        final Pair<String, String> bucketAndPath = getS3SourceFileLocation(dataStorage, path);
+        final AwsRegion region = cloudRegionManager.getAwsRegion(dataStorage);
+        final RegionAwareS3Helper s3Helper = new RegionAwareS3Helper(
+                omicsS3Events, messageHelper, region, cloudRegionManager.loadCredentials(region)
+        );
+        return s3Helper.generateDownloadURL(
+                bucketAndPath.getFirst(), bucketAndPath.getSecond(), null, contentDisposition
+        );
+    }
+
+    @Override
+    public DataStorageDownloadFileUrl generateUrl(final AWSOmicsSequenceDataStorage dataStorage, final String path,
+                                                  final List<String> permissions, final Duration duration) {
+        return generateDownloadURL(dataStorage, path, null, null);
+    }
+
+    private Pair<String, String> getS3SourceFileLocation(final AWSOmicsSequenceDataStorage dataStorage,
+                                                         final String path) {
+        final Pair<String, String> fileIdAndSource = parseFilePath(path);
+        Assert.notNull(
+                fileIdAndSource.getSecond(),
+                String.format("Can't define S3 readSet file location. " +
+                        "No source/source1/source2/index in readSet file path: %s.", path
+                )
+        );
+
+        return Optional.ofNullable(
+                getOmicsHelper(dataStorage).getOmicsSeqStorageFile(dataStorage, path)
+        ).map(readSeqMetadata -> {
+            final FileInformation sourceFile;
+            if (fileIdAndSource.getSecond().equals(SOURCE_1)) {
+                sourceFile = readSeqMetadata.getFiles().getSource1();
+            } else if (fileIdAndSource.getSecond().equals(SOURCE_2)) {
+                sourceFile = readSeqMetadata.getFiles().getSource2();
+            } else {
+                sourceFile = readSeqMetadata.getFiles().getIndex();
+            }
+
+            final String s3Uri = sourceFile.getS3Access().getS3Uri();
+            final Matcher s3ObjectPathMatcher = AWS_S3_FILE_PATH_TEMPLATE.matcher(s3Uri);
+            if (s3ObjectPathMatcher.find()) {
+                return Pair.create(s3ObjectPathMatcher.group(1), s3ObjectPathMatcher.group(2));
+            } else {
+                throw new DataStorageException(String.format(
+                        "Can't parse s3 path: '%s', to get bucket name and path.", s3Uri)
+                );
+            }
+        }).orElseThrow(() -> new DataStorageException("Can't get S3 location for ReadSet source!"));
     }
 }
