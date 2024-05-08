@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
 
     private static final String TYPE = "security";
     private static final String USER_NAME = "TEST_SYSTEM_USER_NAME";
+    private static final String USER = "User";
     private final String pipeline = "SystemLogging" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
@@ -146,7 +147,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
-                        .filterByField("User", admin.login)
+                        .filterByField(USER, admin.login)
                         .validateRow(format("Authentication failed! User %s is blocked!",
                                 userWithoutCompletedRuns.login), admin.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
@@ -154,7 +155,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 return;
             }
             systemLogsAO
-                    .filterByField("User", userWithoutCompletedRuns.login)
+                    .filterByField(USER, userWithoutCompletedRuns.login)
                     .validateRow(format("Authentication failed! User %s is blocked!", userWithoutCompletedRuns.login),
                             admin.login, TYPE);
         } finally {
@@ -189,7 +190,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByField("User", admin.login)
+                .filterByField(USER, admin.login)
                 .pressEnter()
                 .filterByMessage("Blocking status=false");
 
@@ -218,7 +219,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByField("User", admin.login)
+                .filterByField(USER, admin.login)
                 .filterByMessage(format("id=%s", userId))
                 .validateRow(format("Assing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE)
                 .validateRow(format("Unassing role. RoleId=[0-9]+ UserIds=%s", userId), admin.login.toUpperCase(), TYPE);
@@ -244,7 +245,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByField("User", admin.login)
+                .filterByField(USER, admin.login)
                 .filterByMessage("Granting permissions")
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
                                 "\\(mask: 0\\). Sid: name=%s isPrincipal=true.*", pipeline, userWithoutCompletedRuns.login),
@@ -285,7 +286,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .settings()
                 .switchToSystemManagement()
                 .switchToSystemLogs()
-                .filterByField("User", user.login.toUpperCase())
+                .filterByField(USER, user.login.toUpperCase())
                 .filterByField("Service", "edge")
                 .validateRow(format(
                         ".*\\[SECURITY\\] Application: /pipeline-%s-%s-0/; User: %s; Status: Successfully authenticated",
@@ -328,13 +329,13 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 ? systemLogsAO.getInfoRow(
                         format("Successful impersonation action: %s, user: %s", action, account.login.toUpperCase()), account.login.toUpperCase(),
                         TYPE)
-                : systemLogsAO.filterByField("User", account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
+                : systemLogsAO.filterByField(USER, account.login.toUpperCase()).getInfoRow(message, account.login, TYPE);
     }
 
     private void clearFiltersIfNeeded(final SystemLogsAO systemLogsAO) {
         if (impersonateMode()) {
             return;
         }
-        systemLogsAO.clearFiltersBy("User");
+        systemLogsAO.clearFiltersBy(USER);
     }
 }

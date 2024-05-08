@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ import static java.util.stream.Collectors.toSet;
 public class LaunchLimitMountsTest
         extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
+
+    private static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private String storage1 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage2 = "launchLimitMountsStorage" + Utils.randomSuffix();
     private String storage3 = "launchLimitMountsStorage" + Utils.randomSuffix();
@@ -161,7 +163,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(testRunID = getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage1), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage1), exist)
                 .waitForSshLink()
                 .clickMountBuckets()
                 .ensure(log(), containsMessages(
@@ -193,7 +195,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensureParameterIsNotPresent("CP_CAP_LIMIT_MOUNTS")
+                .ensureParameterIsNotPresent(CP_CAP_LIMIT_MOUNTS)
                 .waitForSshLink()
                 .clickMountBuckets()
                 .logMessages()
@@ -308,7 +310,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", storage3), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, storage3), exist)
                 .openStorageFromLimitMountsParameter(storage3)
                 .validateHeader(storage3);
     }
@@ -373,7 +375,7 @@ public class LaunchLimitMountsTest
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("CP_CAP_LIMIT_MOUNTS", "None"), exist)
+                .ensure(configurationParameter(CP_CAP_LIMIT_MOUNTS, "None"), exist)
                 .waitForSshLink()
                 .clickMountBuckets()
                 .ensure(log(), containsMessages(
