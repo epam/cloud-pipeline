@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
@@ -42,7 +43,6 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.NAT_GATEWAY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
@@ -133,26 +133,24 @@ public class SystemManagementAO extends SettingsPageAO {
             return this;
         }
 
-        public SystemLogsAO filterBySelectedValues(String filterName, List<String> list) {
-            if (!list.isEmpty()) {
-                context().find(combobox(filterName)).shouldBe(visible).click();
-                for (String value : list) {
-                    String value1 =
-                            (value.contains(" ")) ? value.substring(0, value.indexOf(" ")) : value;
-                    $(comboboxDropdown())
-                            .find(withText(value1))
-                            .shouldBe(visible).click();
-                }
-                click(byText(filterName));
+        public SystemLogsAO filterBySelectedValues(final String filterName, final List<String> list) {
+            if (list.isEmpty()) {
+                return this;
             }
+            context().find(combobox(filterName)).shouldBe(visible).click();
+            list.stream()
+                    .map(value -> value.contains(" ") ? value.substring(0, value.indexOf(" ")) : value)
+                    .forEach(value -> $(comboboxDropdown()).find(withText(value)).shouldBe(visible).click());
+            click(byText(filterName));
             return this;
         }
 
         public SystemLogsAO filterByMessage(final String message) {
-            if(!message.equals("")) {
-                setValue(inputOf(filterBy("Message")), message);
-                pressEnter();
+            if (StringUtils.isBlank(message)) {
+                return this;
             }
+            setValue(inputOf(filterBy("Message")), message);
+            pressEnter();
             return this;
         }
 
