@@ -926,11 +926,14 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('--status', required=False, default='STOPPED',
+              type=click.Choice(['FAILURE', 'STOPPED', 'SUCCESS']),
+              help='Which status to use when stopping [FAILURE/STOPPED/SUCCESS]')
 @common_options
-def stop(run_id, yes):
+def stop(run_id, yes, status):
     """Stops a running pipeline
     """
-    PipelineRunOperations.stop(run_id, yes)
+    PipelineRunOperations.stop(run_id, yes, status)
 
 
 @cli.command(name='pause')
