@@ -555,7 +555,7 @@ class SunGridEngineCustomRequestsPurgeJobProcessor(GridEngineJobProcessor):
                                         self._mem_resource_name,
                                         self._exc_resource_name]
         self._dry_run = dry_run
-        self._cmd = 'qalter {job_id} -l {job_requests}'
+        self._cmd = 'qalter {job_id} -l "{job_requests}"'
 
     def process(self, jobs):
         relevant_jobs, irrelevant_jobs = [], []
