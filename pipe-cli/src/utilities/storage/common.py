@@ -273,7 +273,8 @@ class AbstractTransferManager:
 
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5',
+                 checksum_skip=False):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -291,6 +292,8 @@ class AbstractTransferManager:
         :param io_threads: Number of threads to be used for a single file io operations.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
+        :param checksum_algorithm: The name of the algorithm to create checksums for objects
+        :param checksum_skip: Enables ability to skip objects integrity checks
         """
         pass
 
