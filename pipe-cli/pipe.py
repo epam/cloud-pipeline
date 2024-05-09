@@ -56,7 +56,7 @@ from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
-PROFILING_PATH_TEMPLATE = 'pipe-profiling-{date}.dump'
+DEFAULT_PROFILING_PATH = 'pipe-profiling-{date}.dump'
 DEFAULT_LOGGING_LEVEL = logging.ERROR
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 LOGGING_LEVEL_OPTION_DESCRIPTION = 'Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. ' \
@@ -174,12 +174,11 @@ def profiling(func, ctx, *args, **kwargs):
     Enables profiling in a decorating click command.
     """
     profiling = (os.getenv('CP_PROFILING', 'false').lower().strip() == 'true') or ctx.params.get('profiling') or False
-    profiling_path = os.getenv('CP_PROFILING_PATH') \
-                     or ctx.params.get('profiling_path') \
-                     or PROFILING_PATH_TEMPLATE.format(date=datetime.now(tz=tzlocal()).strftime('%Y-%m-%d-%H-%M-%S'))
     if not profiling:
         return ctx.invoke(func, *args, **kwargs)
     logging.debug('Initiating profiling...')
+    profiling_path = os.getenv('CP_PROFILING_PATH') or ctx.params.get('profiling_path') or DEFAULT_PROFILING_PATH
+    profiling_path = profiling_path.format(date=datetime.now(tz=tzlocal()).strftime('%Y-%m-%d-%H-%M-%S'))
     import cProfile, pstats
     pf = cProfile.Profile()
     try:
@@ -325,6 +324,7 @@ def cli():
       CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
       CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
       CP_TRACE=[True|False]                  Enables verbose errors.
+      CP_PROFILING=[True|False]              Enables profiling.
     """
     pass
 
@@ -1854,6 +1854,7 @@ def start_tunnel_options(decorating_func):
 @click.option('--noclean', required=False, is_flag=True, default=False, help=NO_CLEAN_OPTION_DESCRIPTION)
 @click.option('--debug', required=False, is_flag=True, default=False, help=DEBUG_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('--profiling', required=False, is_flag=True, default=False, help=PROFILING_OPTION_DESCRIPTION)
 def return_tunnel_args(*args, **kwargs):
     return kwargs
 
