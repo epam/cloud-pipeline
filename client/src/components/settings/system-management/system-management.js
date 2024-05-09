@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {Modal} from 'antd';
 
 import roleModel from '../../../utils/roleModel';

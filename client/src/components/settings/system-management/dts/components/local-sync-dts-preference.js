@@ -16,7 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Input, Icon} from 'antd';
+import {Button, Input, InputNumber, Icon, Select} from 'antd';
+import {EVERY_UNITS} from '../utils';
 import styles from './local-sync-dts-preference.css';
 
 const columns = [{
@@ -24,13 +25,13 @@ const columns = [{
   dataIndex: 'cron',
   key: 'cron'
 }, {
-  title: 'Destination',
-  dataIndex: 'destination',
-  key: 'destination'
-}, {
   title: 'Source',
   dataIndex: 'source',
   key: 'source'
+}, {
+  title: 'Destination',
+  dataIndex: 'destination',
+  key: 'destination'
 }, {
   key: 'controls-column'
 }];
@@ -42,7 +43,10 @@ class LocalSyncDtsPreference extends React.Component {
       onChange(preference, {
         ...preference,
         value: [...(preference.value || []), {
-          cron: '',
+          cron: `0 0 0 1/1 * ? *`,
+          every: EVERY_UNITS.days,
+          everyValue: 1,
+          scheduleType: 'every',
           destination: '',
           source: ''
         }]
@@ -62,19 +66,149 @@ class LocalSyncDtsPreference extends React.Component {
     }
   };
 
-  onChangeSchedule = (field, index) => (event) => {
+  onChangeSchedule = (field, index, value) => {
     const {onChange, preference} = this.props;
     const schedules = [...(preference.value || [])];
     if (schedules[index]) {
       schedules[index] = {
         ...schedules[index],
-        [field]: event.target.value
+        [field]: value
       };
       onChange && onChange(preference, {
         ...preference,
         value: schedules
       });
     }
+  };
+
+  onChangeCronField = (field, index, value) => {
+    const {onChange, preference} = this.props;
+    const schedules = [...(preference.value || [])];
+    const correctCron = (schedule) => {
+      if (field === 'cron') {
+        return schedule;
+      }
+      let cronString = '';
+      if (schedule.every === EVERY_UNITS.days) {
+        const value = schedule.everyValue > 31
+          ? 31
+          : schedule.everyValue;
+        cronString = `0 0 0 1/${value || 1} * ? *`;
+      }
+      if (schedule.every === EVERY_UNITS.hours) {
+        const value = schedule.everyValue > 23
+          ? 23
+          : schedule.everyValue;
+        cronString = `0 0 0/${value || 1} 1/1 * ? *`;
+      }
+      if (schedule.every === EVERY_UNITS.minutes) {
+        const value = schedule.everyValue > 59
+          ? 59
+          : schedule.everyValue;
+        cronString = `0 0/${value || 1} * 1/1 * ? *`;
+      }
+      if (field === 'scheduleType') {
+        return {
+          ...schedule,
+          cron: value === 'custom' ? '' : '0 0 0 1/1 * ? *',
+          everyValue: value === 'custom' ? undefined : 1,
+          every: value === 'custom' ? undefined : EVERY_UNITS.days
+        };
+      }
+      return {
+        ...schedule,
+        cron: cronString
+      };
+    };
+    if (schedules[index]) {
+      schedules[index] = correctCron({
+        ...schedules[index],
+        [field]: value
+      });
+      onChange && onChange(preference, {
+        ...preference,
+        value: schedules
+      });
+    }
+  };
+
+  renderScheduleInput = (schedule, dataIndex, scheduleIdx) => {
+    if (dataIndex === 'cron') {
+      return (
+        <div style={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          gap: 4,
+          marginRight: 10
+        }}>
+          <Select
+            onChange={value => this.onChangeCronField(
+              'scheduleType',
+              scheduleIdx,
+              value
+            )}
+            value={schedule.scheduleType}
+            size="small"
+            style={{minWidth: 75}}
+          >
+            <Select.Option value="every">Every</Select.Option>
+            <Select.Option value="custom">Custom</Select.Option>
+          </Select>
+          {schedule.scheduleType === 'every' ? (
+            <div style={{display: 'flex', flexWrap: 'nowrap', gap: 4, width: '100%'}}>
+              <InputNumber
+                style={{flex: 1}}
+                value={schedule.everyValue}
+                onChange={value => this.onChangeCronField(
+                  'everyValue',
+                  scheduleIdx,
+                  value
+                )}
+                size="small"
+              />
+              <Select
+                onChange={value => this.onChangeCronField(
+                  'every',
+                  scheduleIdx,
+                  value
+                )}
+                value={schedule.every}
+                size="small"
+                style={{minWidth: 75}}
+              >
+                {Object.keys(EVERY_UNITS).map(unit => (
+                  <Select.Option key={unit} value={unit}>
+                    {`${unit[0].toUpperCase()}${unit.substring(1)}`}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          ) : (
+            <Input
+              size="small"
+              style={{flex: 1}}
+              onChange={event => this.onChangeSchedule(
+                dataIndex,
+                scheduleIdx,
+                event.target.value
+              )}
+              value={schedule[dataIndex] || ''}
+            />
+          )}
+        </div>
+      );
+    }
+    return (
+      <Input
+        size="small"
+        onChange={event => this.onChangeSchedule(
+          dataIndex,
+          scheduleIdx,
+          event.target.value
+        )}
+        value={schedule[dataIndex] || ''}
+      />
+    );
   };
 
   renderScheduleRow = (schedule, scheduleIdx) => {
@@ -91,11 +225,7 @@ class LocalSyncDtsPreference extends React.Component {
                 <Icon type="delete" />
               </Button>
             ) : (
-              <Input
-                size="small"
-                onChange={this.onChangeSchedule(dataIndex, scheduleIdx)}
-                value={schedule[dataIndex] || ''}
-              />
+              this.renderScheduleInput(schedule, dataIndex, scheduleIdx)
             )}
           </td>
         ))}
@@ -108,6 +238,15 @@ class LocalSyncDtsPreference extends React.Component {
     if (!preference) {
       return null;
     }
+    const colStyles = {
+      cron: {
+        width: '33%',
+        maxWidth: '300px'
+      },
+      'controls-column': {
+        width: '10px'
+      }
+    };
     return (
       <div className={className} style={{margin: '10px 0px'}}>
         <b style={{marginLeft: 2}}>{preference.key}</b>
@@ -118,7 +257,8 @@ class LocalSyncDtsPreference extends React.Component {
                 {columns.map(({title, key}) => (
                   <th
                     style={{
-                      width: key === 'controls-column' ? '10px' : 'auto', textAlign: 'center'
+                      textAlign: 'center',
+                      ...(colStyles[key] || {})
                     }}
                     key={key}
                   >

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
-import {Modal, message, Button, Icon} from 'antd';
+import {Alert, Modal, message, Button, Icon, Select} from 'antd';
 import classNames from 'classnames';
 import displayDate from '../../../../utils/displayDate';
 import SubSettings from '../../sub-settings';
@@ -26,8 +26,14 @@ import DtsInfo from './dts-info';
 import DTSPreferencesUpdate from '../../../../models/dts/DTSPreferencesUpdate';
 import DTSPreferencesDelete from '../../../../models/dts/DTSPreferencesDelete';
 import CreateDtsModal from './components/create-dts-modal';
-import styles from './dts.css';
 import DTSDelete from '../../../../models/dts/DTSDelete';
+import styles from './dts.css';
+
+const STATUS_FILTERS = {
+  all: 'all',
+  online: 'online',
+  offline: 'offline'
+};
 
 @inject('dtsList')
 @observer
@@ -36,7 +42,8 @@ class DtsManagement extends React.Component {
     pending: false,
     refreshToken: 0,
     modified: false,
-    showCreateDtsModal: false
+    showCreateDtsModal: false,
+    statusFilter: STATUS_FILTERS.all
   }
 
   @computed
@@ -48,13 +55,23 @@ class DtsManagement extends React.Component {
     return [];
   }
 
+  @computed
+  get filteredDtsList () {
+    const {statusFilter} = this.state;
+    if (statusFilter === STATUS_FILTERS.all) {
+      return this.dtsList;
+    }
+    return this.dtsList.filter(dts => (dts.status || '')
+      .toLowerCase() === statusFilter.toLowerCase());
+  }
+
   componentDidMount () {
     this.dtsListFetch();
   }
 
   dtsListFetch = () => {
     const {dtsList} = this.props;
-    if (!this.pending)  {
+    if (!this.pending) {
       dtsList.fetch();
     }
   };
@@ -157,7 +174,7 @@ class DtsManagement extends React.Component {
             ? 'cp-status-online'
             : 'cp-status-offline'
           }
-      />
+        />
       </svg>
     );
     return (
@@ -196,12 +213,15 @@ class DtsManagement extends React.Component {
 
   closeCreateDtsModal = () => this.setState({showCreateDtsModal: false});
 
+  onChangeStatusFilter = (value) => this.setState({statusFilter: value});
+
   render () {
     const {
       refreshToken,
-      showCreateDtsModal
+      showCreateDtsModal,
+      statusFilter
     } = this.state;
-    const sections = this.dtsList.map((dts) => ({
+    const sections = this.filteredDtsList.map((dts) => ({
       key: dts.id,
       title: this.renderDtsCard(dts),
       name: dts.name,
@@ -218,34 +238,69 @@ class DtsManagement extends React.Component {
           />
         );
       }}));
+    const emptySectionPlaceholder = [{
+      key: 'empty',
+      title: (
+        <div style={{
+          padding: 10,
+          fontWeight: 'normal',
+          textAlign: 'center'
+        }}>
+          No data
+        </div>),
+      name: 'empty',
+      render: () => (
+        <Alert
+          message="DTS not found."
+          type="info"
+        />)
+    }];
+    const searchControlsRenderer = () => (
+      <Select
+        value={statusFilter}
+        style={{width: 70, marginLeft: 5}}
+        onChange={this.onChangeStatusFilter}
+      >
+        {Object.keys(STATUS_FILTERS).map(filter => (
+          <Select.Option key={filter} value={filter}>
+            {`${filter[0].toUpperCase()}${filter.substring(1)}`}
+          </Select.Option>
+        ))}
+      </Select>
+    );
+    const beforeListRenderer = () => (
+      <div className={styles.dtsListControlsRow}>
+        <Button
+          size="small"
+          type="primary"
+          style={{flexGrow: 1, marginBottom: 5}}
+          onClick={this.openCreateDtsModal}
+        >
+          Create DTS
+        </Button>
+        <Button
+          size="small"
+          disabled={this.pending}
+          onClick={this.dtsListFetch}
+        >
+          <Icon type="reload" />
+        </Button>
+      </div>
+    );
     return (
       <div style={{height: '100%'}}>
         <SubSettings
-          beforeListRowRenderer={() => (
-            <div className={styles.dtsListControlsRow}>
-              <Button
-                size="small"
-                type="primary"
-                style={{flexGrow: 1, marginBottom: 5}}
-                onClick={this.openCreateDtsModal}
-              >
-                Create DTS
-              </Button>
-              <Button
-                size="small"
-                disabled={this.pending}
-                onClick={this.dtsListFetch}
-              >
-                <Icon type="reload" />
-              </Button>
-            </div>
-          )}
+          searchControlsRenderer={searchControlsRenderer}
+          beforeListRowRenderer={beforeListRenderer}
           className={styles.container}
           sectionsListClassName={styles.sectionList}
-          sections={sections}
+          sections={sections.length ? sections : emptySectionPlaceholder}
+          sectionListDisabled={sections.length === 0}
           showSectionsSearch
           sectionsSearchPlaceholder="Filter dts"
           canNavigate={this.confirmNavigation}
+          searchFilters={STATUS_FILTERS}
+          activeFilter={statusFilter}
         />
         <CreateDtsModal
           visible={showCreateDtsModal}

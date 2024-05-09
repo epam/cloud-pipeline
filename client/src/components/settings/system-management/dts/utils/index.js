@@ -14,9 +14,42 @@
  *  limitations under the License.
  */
 
-import compareArrays from '../../../../../utils/compareArrays';
+import {CronConvert} from '../../../../runs/run-scheduling/cron-convert';
 
 const S3_LOGS_SOURCE = 'c:\\Program Files\\CloudPipeline\\DTS\\logs';
+
+const EVERY_UNITS = {
+  days: 'days',
+  hours: 'hours',
+  minutes: 'minutes'
+};
+
+const parseCronString = (cronString) => {
+  const parts = CronConvert._getCronParts(cronString);
+  if (!parts) {
+    return null;
+  }
+  const {dayOfMonth, hours, minutes} = parts;
+  let every;
+  let value;
+  if (minutes.includes('/')) {
+    every = EVERY_UNITS.minutes;
+    value = minutes.split('/')[1];
+  } else if (hours.includes('/')) {
+    every = EVERY_UNITS.hours;
+    value = hours.split('/')[1];
+  } else if (dayOfMonth.includes('/')) {
+    every = EVERY_UNITS.days;
+    value = dayOfMonth.split('/')[1];
+  }
+  if (!every) {
+    return null;
+  }
+  return {
+    every,
+    value
+  };
+};
 
 const MAPPERS = {
   'dts.local.sync.rules': (value) => {
@@ -24,6 +57,15 @@ const MAPPERS = {
     if (typeof value === 'string') {
       try {
         parsed = JSON.parse(value);
+        parsed = parsed.map(schedule => {
+          const cronInfo = parseCronString(schedule.cron) || {};
+          return {
+            ...schedule,
+            scheduleType: cronInfo.every ? 'every' : 'custom',
+            every: cronInfo.every,
+            everyValue: cronInfo.value
+          };
+        });
       } catch (e) {
         console.error(e);
       }
@@ -37,7 +79,11 @@ const UNMAPPERS = {
     let stringified = '';
     if (Array.isArray(value)) {
       try {
-        stringified = JSON.stringify(value);
+        stringified = JSON.stringify(value.map((v) => ({
+          source: v.source,
+          cron: v.cron,
+          destination: v.destination
+        })));
       } catch (e) {
         console.error(e);
       }
@@ -51,10 +97,11 @@ const COMPARATORS = {
     if (initial.value.length !== preference.value.length) {
       return true;
     }
-    return initial.value.some((initial, index) => {
-      const arrA = Object.values(initial);
-      const arrB = Object.values(preference.value[index]);
-      return !compareArrays(arrA, arrB);
+    return initial.value.some((initialObj, index) => {
+      const currentObj = preference.value[index];
+      return initialObj.source !== currentObj.source ||
+        initialObj.cron !== currentObj.cron ||
+        initialObj.destination !== currentObj.destination;
     });
   }
 };
@@ -65,13 +112,11 @@ function mapPreferences (preferences) {
     if (mapFn) {
       return {
         ...entry,
-        value: mapFn(entry.value),
-        modified: false
+        value: mapFn(entry.value)
       };
     }
     return {
-      ...entry,
-      modified: false
+      ...entry
     };
   });
 }
@@ -140,5 +185,6 @@ export {
   getErrorPreferences,
   getModifiedPreferences,
   mapPreferences,
-  unMapPreferences
+  unMapPreferences,
+  EVERY_UNITS
 };
