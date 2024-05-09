@@ -361,6 +361,26 @@ const refreshAuthenticationInfo = async ({props}) => {
   }
 };
 
+function wrapUserIs (role) {
+  return (user) => userHasRole(user, role);
+}
+
+const userIs = {
+  archiveReader: wrapUserIs('ROLE_STORAGE_ARCHIVE_READER'),
+  archiveManager: wrapUserIs('ROLE_STORAGE_ARCHIVE_MANAGER'),
+  storageAdmin: wrapUserIs('ROLE_STORAGE_ADMIN'),
+  dtsManager: wrapUserIs('ROLE_DTS_MANAGER'),
+  pipeline: wrapUserIs('ROLE_PIPELINE_MANAGER'),
+  versionedStorage: wrapUserIs('ROLE_VERSIONED_STORAGE_MANAGER'),
+  folder: wrapUserIs('ROLE_FOLDER_MANAGER'),
+  configuration: wrapUserIs('ROLE_CONFIGURATION_MANAGER'),
+  storage: wrapUserIs('ROLE_STORAGE_MANAGER'),
+  storageTag: wrapUserIs('ROLE_STORAGE_TAG_MANAGER'),
+  toolGroup: wrapUserIs('ROLE_TOOL_GROUP_MANAGER'),
+  entities: wrapUserIs('ROLE_ENTITIES_MANAGER'),
+  billing: wrapUserIs('ROLE_BILLING_MANAGER')
+};
+
 const manager = {
   archiveReader: management('ROLE_STORAGE_ARCHIVE_READER'),
   archiveManager: management('ROLE_STORAGE_ARCHIVE_MANAGER'),
@@ -405,6 +425,7 @@ export default {
   collapseMask,
   manager,
   isManager,
+  userIs,
   hasRole,
   userHasRole,
   authenticationInfo,

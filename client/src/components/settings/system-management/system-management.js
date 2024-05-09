@@ -46,6 +46,16 @@ export default class SystemManagement extends React.Component {
   }
 
   @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo &&
+      authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  @computed
   get dtsAllowed () {
     const {authenticatedUserInfo} = this.props;
     if (authenticatedUserInfo &&
@@ -114,22 +124,24 @@ export default class SystemManagement extends React.Component {
     return (
       <SubSettings
         sections={[
-          {
-            key: 'logs',
-            title: 'LOGS',
-            default: true,
-            render: () => (<SystemLogs />)
-          },
-          {
-            key: 'nat',
-            title: 'NAT GATEWAY',
-            render: () => (<NATGateway handleModified={this.handleModified} />)
-          },
-          {
-            key: 'jobs',
-            title: 'SYSTEM JOBS',
-            render: () => (<SystemJobs router={this.props.router} />)
-          },
+          ...(this.isAdmin ? [
+            {
+              key: 'logs',
+              title: 'LOGS',
+              default: true,
+              render: () => (<SystemLogs />)
+            },
+            {
+              key: 'nat',
+              title: 'NAT GATEWAY',
+              render: () => (<NATGateway handleModified={this.handleModified} />)
+            },
+            {
+              key: 'jobs',
+              title: 'SYSTEM JOBS',
+              render: () => (<SystemJobs router={this.props.router} />)
+            }
+          ] : []),
           this.dtsAllowed ? (
             {
               key: 'dts',
