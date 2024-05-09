@@ -238,7 +238,7 @@ resource "aws_iam_policy" "cp_main_service" {
           "s3:ListAllMyBuckets"
         ],
         "Resource" : [
-          "arn:aws:s3:::*"
+          "*"
         ]
       },
       {
@@ -421,7 +421,7 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
           "s3:GetObjectAcl"
         ],
         "Resource" : [
-          "arn:aws:s3:::*"
+          "*"
         ]
       },
       {
@@ -871,7 +871,7 @@ resource "aws_iam_policy" "cp_omics_service" {
           "s3:GetBucketLocation"
         ],
         "Resource" : [
-          "arn:aws:s3:::*"
+          "*"
         ]
       },
       {
