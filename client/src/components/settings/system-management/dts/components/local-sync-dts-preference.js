@@ -90,13 +90,22 @@ class LocalSyncDtsPreference extends React.Component {
       }
       let cronString = '';
       if (schedule.every === EVERY_UNITS.days) {
-        cronString = `0 0 0 1/${schedule.everyValue || 1} * ? *`;
+        const value = schedule.everyValue > 31
+          ? 31
+          : schedule.everyValue;
+        cronString = `0 0 0 1/${value || 1} * ? *`;
       }
       if (schedule.every === EVERY_UNITS.hours) {
-        cronString = `0 0 0/${schedule.everyValue || 1} 1/1 * ? *`;
+        const value = schedule.everyValue > 23
+          ? 23
+          : schedule.everyValue;
+        cronString = `0 0 0/${value || 1} 1/1 * ? *`;
       }
       if (schedule.every === EVERY_UNITS.minutes) {
-        cronString = `0 0/${schedule.everyValue || 1} * 1/1 * ? *`;
+        const value = schedule.everyValue > 59
+          ? 59
+          : schedule.everyValue;
+        cronString = `0 0/${value || 1} * 1/1 * ? *`;
       }
       if (field === 'scheduleType') {
         return {
