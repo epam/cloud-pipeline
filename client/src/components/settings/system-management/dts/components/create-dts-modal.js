@@ -46,7 +46,7 @@ export default class CreateDtsModal extends React.Component {
       schedulable: true,
       prefixes: '',
       errors: {}
-    }, this.validate)
+    }, this.validate);
   };
 
   onOk = async () => {
@@ -75,7 +75,7 @@ export default class CreateDtsModal extends React.Component {
       url: url.trim() ? undefined : 'Field is required',
       name: name.trim() ? undefined : 'Field is required',
       prefixes: prefixes.trim() ? undefined : 'Field is required'
-    }
+    };
   };
 
   @computed
@@ -97,7 +97,7 @@ export default class CreateDtsModal extends React.Component {
     this.setState({[key]: event.target.checked}, this.validate);
   };
 
-  renderFormItem = ({key, label= '', type = 'input'}) => {
+  renderFormItem = ({key, label = '', type = 'input'}) => {
     if (!key) {
       return null;
     }
@@ -114,7 +114,7 @@ export default class CreateDtsModal extends React.Component {
           <Checkbox checked={this.state[key]} onChange={this.onChangeCheckboxItem(key)} />
         </div>
       )
-    }
+    };
     const renderFn = renderers[type] || renderers.input;
     const error = this.errors[key];
     return (
@@ -128,7 +128,7 @@ export default class CreateDtsModal extends React.Component {
           {this.errors[key] || ''} &nbsp;
         </div>
       </div>
-    )
+    );
   };
 
   render () {
@@ -136,7 +136,7 @@ export default class CreateDtsModal extends React.Component {
     if (!visible) {
       return null;
     }
-    return(
+    return (
       <Modal
         title="Create DTS"
         visible={visible}
@@ -163,11 +163,11 @@ export default class CreateDtsModal extends React.Component {
         {this.renderFormItem({key: 'prefixes', label: 'Prefixes:'})}
         {this.renderFormItem({key: 'schedulable', label: 'Schedulable:', type: 'checkbox'})}
       </Modal>
-    )
+    );
   }
 }
 
 CreateDtsModal.propTypes = {
   visible: PropTypes.bool,
-  onClose: PropTypes.func,
+  onClose: PropTypes.func
 };

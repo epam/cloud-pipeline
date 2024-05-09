@@ -163,7 +163,7 @@ class DtsLogs extends React.Component {
       );
     }
     return (
-      <Spin spinning={pending}>
+      <Spin wrapperClassName={styles.spin} spinning={pending}>
         <div className={styles.logsContainer}>
           <div className={styles.controls}>
             {this.downloadAvailable ? (
