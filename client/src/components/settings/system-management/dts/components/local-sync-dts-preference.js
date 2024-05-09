@@ -135,7 +135,12 @@ class LocalSyncDtsPreference extends React.Component {
   renderScheduleInput = (schedule, dataIndex, scheduleIdx) => {
     if (dataIndex === 'cron') {
       return (
-        <div style={{display: 'flex', flexWrap: 'nowrap', gap: 4}}>
+        <div style={{
+          display: 'flex',
+          flexWrap: 'nowrap',
+          gap: 4,
+          marginRight: 10
+        }}>
           <Select
             onChange={value => this.onChangeCronField(
               'scheduleType',
@@ -152,6 +157,7 @@ class LocalSyncDtsPreference extends React.Component {
           {schedule.scheduleType === 'every' ? (
             <div style={{display: 'flex', flexWrap: 'nowrap', gap: 4, width: '100%'}}>
               <InputNumber
+                style={{flex: 1}}
                 value={schedule.everyValue}
                 onChange={value => this.onChangeCronField(
                   'everyValue',
@@ -180,6 +186,7 @@ class LocalSyncDtsPreference extends React.Component {
           ) : (
             <Input
               size="small"
+              style={{flex: 1}}
               onChange={event => this.onChangeSchedule(
                 dataIndex,
                 scheduleIdx,
@@ -231,10 +238,14 @@ class LocalSyncDtsPreference extends React.Component {
     if (!preference) {
       return null;
     }
-    const colWidths = {
-      cron: '240px',
-      'controls-column': '10px',
-      divider: '2px'
+    const colStyles = {
+      cron: {
+        width: '33%',
+        maxWidth: '300px'
+      },
+      'controls-column': {
+        width: '10px'
+      }
     };
     return (
       <div className={className} style={{margin: '10px 0px'}}>
@@ -246,8 +257,8 @@ class LocalSyncDtsPreference extends React.Component {
                 {columns.map(({title, key}) => (
                   <th
                     style={{
-                      width: colWidths[key] || 'auto',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      ...(colStyles[key] || {})
                     }}
                     key={key}
                   >
