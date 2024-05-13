@@ -105,6 +105,7 @@ import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import DownloadOmicsButton from './components/download-omics-button';
 import handleDownloadItems from '../../../special/download-storage-items';
+import handleDownloadOmicsItems from '../../../special/download-omics-storage-items';
 import JobList from './components/imported-jobs';
 import styles from '../Browser.css';
 
@@ -444,14 +445,18 @@ export default class DataStorage extends React.Component {
       : this.storage.writeAllowed;
   }
 
-  get isOmicsStore () {
+  get isReferenceStorage () {
     const {type} = this.storage.info || {};
-    return type === ServiceTypes.omicsSeq || type === ServiceTypes.omicsRef;
+    return type === ServiceTypes.omicsRef;
   }
 
   get isSequenceStorage () {
     const {type} = this.storage.info || {};
     return type === ServiceTypes.omicsSeq;
+  }
+
+  get isOmicsStore () {
+    return this.isSequenceStorage || this.isReferenceStorage;
   }
 
   get isOmicsFolder () {
@@ -1287,14 +1292,13 @@ export default class DataStorage extends React.Component {
             version={item.version}
           />
         );
-      } else {
+      } else if (this.isSequenceStorage) {
         actions.push(
           <DownloadOmicsButton
             key={`download-${item.path}`}
             storageInfo={this.storage.info}
             region={this.regionName}
-            itemPath={item.path}
-            itemType={item.type}
+            item={item}
           />
         );
       }
@@ -1355,13 +1359,23 @@ export default class DataStorage extends React.Component {
 
   fileIsSelected = (item) => {
     return !!this.state.selectedItems
-      .find(s => s.name === item.name && s.type === item.type);
+      .find(s => {
+        if (this.isOmicsStore) {
+          return (s.path === item.path && s.type === item.type);
+        }
+        return (s.name === item.name && s.type === item.type);
+      });
   };
 
   selectFile = (item) => () => {
     const selectedItems = this.state.selectedItems;
     const selectedItem = this.state.selectedItems
-      .find(s => s.name === item.name && s.type === item.type);
+      .find(s => {
+        if (this.isOmicsStore) {
+          return (s.path === item.path && s.type === item.type);
+        }
+        return (s.name === item.name && s.type === item.type);
+      });
     if (selectedItem) {
       const index = selectedItems.indexOf(selectedItem);
       selectedItems.splice(index, 1);
@@ -1610,7 +1624,7 @@ export default class DataStorage extends React.Component {
       render: (item) => {
         if (item.selectable &&
           (item.downloadable || item.editable || item.shareAvailable) &&
-          (!this.isOmicsStore || this.isOmicsFolder)) {
+          (!this.isOmicsStore || this.isSequenceStorage)) {
           return (
             <Checkbox
               checked={this.fileIsSelected(item)}
@@ -2056,6 +2070,22 @@ export default class DataStorage extends React.Component {
         path: o.path,
         name: o.name
       }));
+    const omicsItemsForDownload = selectedItems
+      .filter(o => o.downloadable && this.isSequenceStorage)
+      .map(o => ({
+        storageId,
+        path: o.path,
+        name: o.name,
+        type: o.type,
+        labels: {
+          fileName: o.labels.fileName,
+          fileType: o.labels.fileType
+        }
+      }));
+    const omicsDownloadConfig = {
+      region: this.regionName,
+      storageInfo: this.storage.info
+    };
     const Keys = {
       clear: 'clear',
       restore: 'restore',
@@ -2063,7 +2093,8 @@ export default class DataStorage extends React.Component {
       generateUrl: 'generate-url',
       removeAll: 'remove-all',
       download: 'download',
-      restoreOmics: 'restoreOmics'
+      restoreOmics: 'restoreOmics',
+      downloadOmics: 'downloadOmics'
     };
     const clearAction = {
       key: Keys.clear,
@@ -2074,7 +2105,14 @@ export default class DataStorage extends React.Component {
       key: Keys.download,
       title: 'Download',
       icon: 'download',
-      available: !this.isOmicsStore && itemsAvailableForDownload.length > 0
+      available: itemsAvailableForDownload.length > 0 && !this.isOmicsStore
+    };
+    const downloadOmicsAction = {
+      key: Keys.downloadOmics,
+      title: 'Download',
+      icon: 'download',
+      available: this.isOmicsStore && omicsItemsForDownload.length > 0 &&
+        this.isSequenceStorage
     };
     const restoreAction = {
       key: Keys.restore,
@@ -2117,13 +2155,15 @@ export default class DataStorage extends React.Component {
       key: Keys.generateUrl,
       title: 'Generate URL',
       available: this.bulkDownloadEnabled &&
-        this.storageAllowSignedUrls,
+        this.storageAllowSignedUrls &&
+        (!this.isOmicsStore || (this.isSequenceStorage && !this.isOmicsFolder)),
       icon: 'link'
     };
     const removeAllAction = {
       key: Keys.removeAll,
       title: 'Remove',
-      available: this.removeAllSelectedItemsEnabled,
+      available: this.removeAllSelectedItemsEnabled &&
+        (!this.isOmicsStore || (this.isSequenceStorage && this.isOmicsFolder)),
       className: 'cp-danger',
       icon: 'delete'
     };
@@ -2147,6 +2187,7 @@ export default class DataStorage extends React.Component {
     appendAction(restoreOmicsAction);
     appendAction(generateURLAction);
     appendAction(downloadAction);
+    appendAction(downloadOmicsAction);
     appendDivider();
     appendAction(clearAction);
     appendDivider();
@@ -2182,6 +2223,9 @@ export default class DataStorage extends React.Component {
           break;
         case Keys.download:
           handleDownloadItems(preferences, itemsAvailableForDownload);
+          break;
+        case Keys.downloadOmics:
+          handleDownloadOmicsItems(preferences, omicsItemsForDownload, omicsDownloadConfig);
           break;
         default:
           break;
@@ -2309,7 +2353,7 @@ export default class DataStorage extends React.Component {
           justify="space-between">
           <div>
             {
-              (!this.isOmicsStore || this.isOmicsFolder) && (
+              (!this.isOmicsStore || this.isSequenceStorage) && (
                 <Button
                   id="select-all-button"
                   size="small" onClick={() => this.selectAll(undefined)}
@@ -2320,7 +2364,7 @@ export default class DataStorage extends React.Component {
               )
             }
             {
-              (!this.isOmicsStore || this.isOmicsFolder) && (
+              (!this.isOmicsStore || this.isSequenceStorage) && (
                 this.renderSelectionActionsButton()
               )
             }
