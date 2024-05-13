@@ -74,9 +74,18 @@ locals {
     "-env CP_API_SRV_SAML_USER_ATTRIBUTES=\"${var.srv_saml_user_attr}\""
   ]
 
+  cp_edge_elb_sgs = join(
+    ",",
+    concat(
+      var.external_access_security_group_ids,
+      # Get https access sg if was configured or empty list
+      try([module.https_access_sg[0].security_group_id], []),
+      [module.internal_cluster_access_sg.security_group_id]
+    )
+  )
+
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
-    "-d \"library/centos:7\"",
     "-dt aws-native",
     "-jc",
     "-env CP_MAIN_SERVICE_ROLE=\"${module.cp_irsa.iam_role_arn}\"",
@@ -100,7 +109,7 @@ locals {
     "-env CP_EDGE_AWS_ELB_SCHEME=\"internet-facing\"",
     "-env CP_EDGE_AWS_ELB_SUBNETS=\"${var.elb_public_subnet}\"",
     "-env CP_EDGE_AWS_ELB_EIPALLOCS=\"${var.eipalloc}\"",
-    "-env CP_EDGE_AWS_ELB_SG=\"${module.https_access_sg.security_group_id},${module.internal_cluster_access_sg.security_group_id}\"",
+    "-env CP_EDGE_AWS_ELB_SG=\"${local.cp_edge_elb_sgs}\"",
     "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",

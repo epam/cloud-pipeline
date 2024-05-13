@@ -11,6 +11,7 @@ module "internal_cluster_access_sg" {
 }
 
 module "https_access_sg" {
+  count = length(var.cp_api_access_prefix_lists) > 0 ? 1 : 0
   source                  = "terraform-aws-modules/security-group/aws"
   version                 = "5.1.0"
   vpc_id                  = data.aws_vpc.this.id
