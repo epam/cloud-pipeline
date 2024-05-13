@@ -77,7 +77,7 @@ Here we describe the process of how to reuse existing workflow with AWS HealthOm
 
 > Here we will use [nf-core/rnaseq v3.11.1](https://github.com/nf-core/rnaseq/tree/3.11.1) 
 
-1. Navigate to the `src/workflow` directory of your pipeline repository:
+1. Navigate to the `src/workflow` directory of your pipeline repository: <br>
    ![rnaseq_ingest_1.png](img/rnaseq_ingest_1.png)
 
 2. remove dummy sample pipeline files:
@@ -123,6 +123,10 @@ Here we describe the process of how to reuse existing workflow with AWS HealthOm
 7. Navigate to the Cloud-Pipeline UI -> Pipeline view and check that `nf-core/rnaseq` workflow is in the `workflow` directory.
    ![rnaseq_ingest_8.png](img/rnaseq_ingest_8.png)
 
+> During each new run of the pipeline, Cloud-Pipeline will check if there is an inclusion of omics.conf file in nextflow.config file, which means that this pipeline is preconfigured for omics workflow. <br>
+>  - If configuration is there Cloud-Pipeline will simply pack the code and register as AWS HealthOmics Workflow, <br>
+>  - Otherwise, it will try to configure it by inspecting the code with help of [inspect_nf.py](https://raw.githubusercontent.com/aws-samples/amazon-omics-tutorials/main/utils/scripts/inspect_nf.py) and prepare necessary configs files.
+
 ### Provide parameter values to the workflow during pipeline execution
 
 > Most of the workflows will expect some input parameters to be provided on startup, so we need some mechanism to provide these parameters to the underlying workflow during Cloud-Pipeline pipeline execution. <br>
@@ -151,6 +155,11 @@ For this `nf-core/rnaseq` pipeline we specify the next parameters:
    ![provide_params_7.png](img/provide_params_7.png):
 
 ### Running the pipeline with a workflow
+
+> Test data location: https://github.com/nf-core/test-datasets branch `rnaseq`
+>  - fasta: https://raw.githubusercontent.com/nf-core/test-datasets/rnaseq/reference/genome.fasta
+>  - samplesheet: https://raw.githubusercontent.com/nf-core/test-datasets/rnaseq/samplesheet/samplesheet.csv
+>  - fastqs: https://github.com/nf-core/test-datasets/tree/rnaseq/testdata/GSE110004
 
 1. From the pipeline view click RUN button:
    ![run_pipeline_1.png](img/run_pipeline_1.png) <br>
