@@ -145,10 +145,10 @@ variable "fsx_per_unit_storage_throughput" {
   description = "Describes the amount of read and write throughput for each 1 tebibyte of storage, in MB/s/TiB, required for the PERSISTENT_1 and PERSISTENT_2 deployment_type"
 }
 
-variable "additional_security_group_ids" {
+variable "external_access_security_group_ids" {
   type        = list(string)
   default     = []
-  description = "List of SG's IDs to attach to EKS cluster."
+  description = "List of SG's IDs to attach to Cloud-Pipeline's ELB. Could be useful f.i., to provide access to the system."
 }
 
 variable "create_ssh_rsa_key_pair" {

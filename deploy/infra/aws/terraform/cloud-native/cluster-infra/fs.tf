@@ -74,8 +74,6 @@ resource "aws_fsx_lustre_file_system" "fsx" {
   deployment_type             = var.fsx_deployment_type
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
   kms_key_id                  = module.kms.key_arn
-  security_group_ids          = concat([
-    module.internal_cluster_access_sg.security_group_id
-  ], var.additional_security_group_ids)
+  security_group_ids          = [module.internal_cluster_access_sg.security_group_id]
   tags = local.tags
 }

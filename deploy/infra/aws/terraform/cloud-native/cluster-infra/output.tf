@@ -43,11 +43,6 @@ output "cp_aws_omics_service_role" {
   value       = try(aws_iam_role.cp_omics_service[0].arn, null)
 }
 
-output "cp_aws_omics_ecr" {
-  description = "ECR for AWS Omics service Cloud-Pipeline integration"
-  value       = try(aws_ecr_repository.cp_omics_ecr[0].repository_url, null)
-}
-
 output "cluster_cp_main_execution_role" {
   description = "Permissions for Cloud-Pipeline in cluster"
   value       = module.cp_irsa.iam_role_arn
@@ -130,7 +125,7 @@ output "eks_cluster_primary_security_group_id" {
 
 output "https_access_security_group" {
   description = "Security group that used by load balancer with https public access"
-  value       = try(module.https_access_sg.security_group_id, null)
+  value       = try(module.https_access_sg[0].security_group_id, null)
 }
 
 output "cp_deploy_script" {
