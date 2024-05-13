@@ -20,6 +20,7 @@
     - [6.1.1. Building WDL pipeline with graphical PipelineBuilder](06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md)
     - [6.2. Launch a pipeline](06_Manage_Pipeline/6.2._Launch_a_pipeline.md)
     - [6.3. Delete and unregister pipeline](06_Manage_Pipeline/6.3._Delete_a_pipeline.md)
+    - [6.4. Work with AWS HealthOmics Workflow](06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md)
 - [7. Manage Detached configuration](07_Manage_Detached_configuration/7._Manage_Detached_configuration.md)
     - [7.1. Create and customize Detached configuration](07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md)
     - [7.2. Launch Detached Configuration](07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration.md)
