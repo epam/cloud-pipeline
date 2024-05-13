@@ -549,7 +549,6 @@ public class DataStorageManager implements SecuredEntityManager {
         return listing;
     }
 
-    @Transactional
     public void restoreVersion(Long id, String path, String version) throws DataStorageException {
         Assert.notNull(path, "Path is required to restore file version");
         Assert.notNull(version, "Version is required to restore file version");
