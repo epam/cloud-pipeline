@@ -93,8 +93,7 @@ Parameters:
   PipectlUrl:
     Type: String
     Description: Link to the latest pipectl binary file that will be user to deploy Cloud Pipeline
-    Default: "https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/0.19/pipectl.0.19.0.16479.0c5a427b73c97ec10b5e66c3aac4f33b81635d6e"  
-  
+
 Conditions:
     IsSecretNotEntered: !Equals [!Ref AWSCredentialSecretId, ""]
     IsBoundaryNotEntered: !Equals [!Ref IAMrolePermissionsBoundaryArn, AWS::NoValue]
