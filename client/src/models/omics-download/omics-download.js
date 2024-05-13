@@ -14,24 +14,15 @@
  *  limitations under the License.
  */
 
-import {
-  OmicsClient,
-  GetReferenceMetadataCommand,
-  GetReadSetMetadataCommand,
-  GetReferenceCommand,
-  GetReadSetCommand
-} from '@aws-sdk/client-omics';
-import {observable, action} from 'mobx';
+import {OmicsClient, GetReadSetMetadataCommand} from '@aws-sdk/client-omics';
 import fetchTempCredentials from '../s3-upload/fetch-temp-credentials';
 import Credentials from '../s3-upload/credentials';
 
 const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
 
-const REFERENCE = 'REFERENCE';
-
-const ServiceTypes = {
-  omicsRef: 'AWS_OMICS_REF',
-  omicsSeq: 'AWS_OMICS_SEQ'
+export const ItemType = {
+  FILE: 'File',
+  FOLDER: 'Folder'
 };
 
 class OmicsStorage {
@@ -40,9 +31,7 @@ class OmicsStorage {
   regionName;
   _storage;
   readSetId;
-  storeId;
-
-  @observable downloadError = null;
+  sequenceStoreId;
 
   get omics () {
     return this._omics;
@@ -52,7 +41,7 @@ class OmicsStorage {
     this.regionName = config.region;
     this._storage = config.storage;
     this.readSetId = config.readSetId;
-    this.storeId = config.storeId;
+    this.sequenceStoreId = config.sequenceStoreId;
   }
 
   async createClient () {
@@ -93,7 +82,6 @@ class OmicsStorage {
     }
   }
 
-  @action
   async setCredentials () {
     const credentials = await this.getCredentials()
       .then(cred => cred)
@@ -131,44 +119,48 @@ class OmicsStorage {
     return false;
   }
 
-  @action
-  async downloadFiles (storeType, source) {
-    if (!this.omics || !this.readSetId || !this.storeId) return;
+  async getFilesMetadata (files) {
+    if (!this.omics || !this.readSetId || !this.sequenceStoreId) return;
     try {
-      let filesInfo;
-      if (storeType === ServiceTypes.omicsSeq) {
-        filesInfo = await this.getReadSetMetadata();
-      } else if (storeType === ServiceTypes.omicsRef) {
-        filesInfo = await this.getReferenceMetadata();
-      }
+      const filesInfo = await this.getReadSetMetadata();
       if (filesInfo) {
-        const files = [];
-        const filesArray = Object.entries(filesInfo.files);
-        for (let i = 0; i < filesArray.length; i++) {
-          const [fileSource, fileData] = filesArray[i];
-          if (!source || fileSource === source) {
-            const fileBlob = await this.getAllParts(storeType, fileSource, fileData);
-            files.push({
+        const metadata = [];
+        const filesSources = Object.keys(filesInfo.files);
+        for (const file of files) {
+          const source = file.sourceName;
+          if (!source) {
+            for (const fileSource of filesSources) {
+              metadata.push({
+                path: file.path,
+                itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${fileSource}`,
+                name: filesInfo.fileName,
+                type: filesInfo.fileType,
+                fileSource: fileSource
+              });
+            }
+          } else if (filesSources.includes(source)) {
+            metadata.push({
+              path: file.path,
+              itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${source}`,
               name: filesInfo.fileName,
               type: filesInfo.fileType,
-              blob: fileBlob,
-              fileSource: fileSource
+              fileSource: source
             });
           }
         }
-        return files;
+        return metadata;
       }
+      return [];
     } catch (err) {
-      this.downloadError = err.message;
+      return err;
     }
   }
 
-  @action
   async getReadSetMetadata () {
     try {
       const input = {
         id: this.readSetId,
-        sequenceStoreId: this.storeId
+        sequenceStoreId: this.sequenceStoreId
       };
       const command = new GetReadSetMetadataCommand(input);
       const response = await this._omics.send(command);
@@ -182,92 +174,7 @@ class OmicsStorage {
       }
       return false;
     } catch (err) {
-      this.downloadError = err.message;
-    }
-  }
-
-  @action
-  async getReferenceMetadata () {
-    try {
-      const input = {
-        id: this.readSetId,
-        referenceStoreId: this.storeId
-      };
-      const command = new GetReferenceMetadataCommand(input);
-      const response = await this._omics.send(command);
-      if (response) {
-        const filesInfo = {
-          files: response.files,
-          fileType: REFERENCE,
-          fileName: response.name
-        };
-        return filesInfo;
-      }
-      return false;
-    } catch (err) {
-      this.downloadError = err.message;
-    }
-  }
-
-  async getAllParts (storeType, source, info) {
-    const readableStreams = [];
-    for (let i = 1; i <= info.totalParts; i++) {
-      let readableStream;
-      if (storeType === ServiceTypes.omicsSeq) {
-        readableStream = await this.getReadSet(source, i);
-      } else if (storeType === ServiceTypes.omicsRef) {
-        readableStream = await this.getReference(source, i);
-      }
-      readableStreams.push(readableStream);
-    }
-    const blobs = [];
-    for (const readableStream of readableStreams) {
-      const chunks = [];
-      const reader = readableStream.getReader();
-      const readChunk = async () => {
-        const {value, done} = await reader.read();
-        if (!done) {
-          chunks.push(value);
-          await readChunk();
-        }
-      };
-      await readChunk();
-      blobs.push(new Blob(chunks));
-    }
-    return new Blob(blobs, {type: 'application/octet-stream'});
-  }
-
-  @action
-  async getReference (fileName, partNumber) {
-    try {
-      const input = {
-        id: this.readSetId,
-        referenceStoreId: this.storeId,
-        file: fileName.toUpperCase(),
-        partNumber: Number(partNumber)
-      };
-      const command = new GetReferenceCommand(input);
-      const response = await this._omics.send(command);
-      return response.payload;
-    } catch (err) {
-      this.downloadError = err.message;
-    }
-  }
-
-  @action
-  async getReadSet (fileName, partNumber) {
-    try {
-      const input = {
-        id: this.readSetId,
-        sequenceStoreId: this.storeId,
-        file: fileName.toUpperCase(),
-        partNumber: Number(partNumber)
-      };
-      const command = new GetReadSetCommand(input);
-      const response = await this._omics.send(command);
-      return response.payload;
-    } catch (err) {
-      this.downloadError = err.message;
+      return err;
     }
   }
 }

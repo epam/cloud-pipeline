@@ -17,57 +17,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {Icon, Button, message} from 'antd';
-import OmicsStorage from '../../../../../models/omics-download/omics-download';
+import {Icon, Button} from 'antd';
+import {downloadStorageItems} from '../../../../special/download-omics-storage-items';
 
-const ServiceTypes = {
-  omicsRef: 'AWS_OMICS_REF',
-  omicsSeq: 'AWS_OMICS_SEQ'
-};
-
-const FILE = 'File';
-
-const FILE_TYPE = {
-  BAM: 'BAM',
-  UBAM: 'UBAM',
-  CRAM: 'CRAM',
-  FASTQ: 'FASTQ',
-  REFERENCE: 'REFERENCE'
-};
-
-const FILE_SOURCE = {
-  SOURCE1: 'source1',
-  SOURCE2: 'source2',
-  INDEX: 'index',
-  SOURCE: 'source'
-};
-
-const TYPE_EXTENSION = {
-  [FILE_TYPE.BAM]: {
-    [FILE_SOURCE.SOURCE1]: '.bam',
-    [FILE_SOURCE.INDEX]: '.bam.bai'
-  },
-  [FILE_TYPE.UBAM]: {
-    [FILE_SOURCE.SOURCE1]: '.bam',
-    [FILE_SOURCE.INDEX]: '.bam.bai'
-  },
-  [FILE_TYPE.CRAM]: {
-    [FILE_SOURCE.SOURCE1]: '.cram',
-    [FILE_SOURCE.INDEX]: '.cram.crai'
-  },
-  [FILE_TYPE.FASTQ]: {
-    [FILE_SOURCE.SOURCE1]: '_1.fastq.gz',
-    [FILE_SOURCE.SOURCE2]: '_2.fastq.gz'
-  },
-  [FILE_TYPE.REFERENCE]: {
-    [FILE_SOURCE.SOURCE]: '.fasta',
-    [FILE_SOURCE.INDEX]: '.fasta.fai'
-  }
-};
-
-@inject('preferences')
-@observer
 export default class DownloadOmicsButton extends React.Component {
 
   static propTypes = {
@@ -75,52 +27,19 @@ export default class DownloadOmicsButton extends React.Component {
     style: PropTypes.object,
     storageInfo: PropTypes.object,
     region: PropTypes.string,
-    itemPath: PropTypes.string,
-    itemType: PropTypes.string
+    item: PropTypes.object
   };
 
   state = {
     pending: false
   };
 
-  get readSetId () {
-    if (this.props.itemType === FILE) {
-      return this.props.itemPath.split('/')[0];
-    }
-    return this.props.itemPath;
+  get item () {
+    return this.props.item;
   }
 
-  get sourceName () {
-    if (this.props.itemType === FILE) {
-      return this.props.itemPath.split('/')[1];
-    }
-    return undefined;
-  }
-
-  get storageType () {
-    return (this.props.storageInfo || {}).type;
-  }
-
-  get storeId () {
-    if (this.storageType === ServiceTypes.omicsSeq) {
-      return this.props.storageInfo.cloudStorageId;
-    } else {
-      const path = this.props.storageInfo.path;
-      const storeId = path.split('/')[1];
-      return storeId;
-    }
-  }
-
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    const {downloadError} = this.omicsStorage || {};
-    if (downloadError) {
-      message.error(downloadError, 5);
-      this.omicsStorage.downloadError = null;
-    }
-  }
-
-  getFileName = (file) => {
-    return `${file.name}${TYPE_EXTENSION[file.type][file.fileSource]}`;
+  get storageId () {
+    return (this.props.storageInfo || {}).id;
   }
 
   handleClick = (event) => {
@@ -131,45 +50,27 @@ export default class DownloadOmicsButton extends React.Component {
     this.setState({
       pending: true
     }, async () => {
-      this.createDownload();
+      await this.downloadOmicsItems();
+      this.setState({pending: false});
     });
   };
 
-  createDownload = async () => {
-    const clientCreated = await this.createOmicClient();
-    if (clientCreated) {
-      const files = await this.omicsStorage.downloadFiles(this.storageType, this.sourceName);
-      for (const file of files) {
-        const url = URL.createObjectURL(file.blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = this.getFileName(file);
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          document.body.removeChild(link);
-        }, 0);
+  downloadOmicsItems = async () => {
+    const items = [{
+      storageId: this.props.storageInfo.id,
+      path: this.item.path,
+      name: this.item.name,
+      type: this.item.type,
+      labels: {
+        fileName: this.item.labels.fileName,
+        fileType: this.item.labels.fileType
       }
-      this.setState({
-        pending: false
-      });
-    }
-  }
-
-  createOmicClient = async () => {
+    }];
     const config = {
       region: this.props.region,
-      storage: this.props.storageInfo,
-      readSetId: this.readSetId,
-      storeId: this.storeId
+      storageInfo: this.props.storageInfo
     };
-    try {
-      this.omicsStorage = new OmicsStorage(config);
-      return await this.omicsStorage.createClient();
-    } catch (err) {
-      return false;
-    }
+    await downloadStorageItems(items, config);
   }
 
   render () {
