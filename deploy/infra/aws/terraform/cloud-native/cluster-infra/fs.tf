@@ -10,8 +10,7 @@ module "cp_system_efs" {
 
   performance_mode = var.efs_performance_mode
   throughput_mode  = var.efs_throughput_mode
-  provisioned_throughput_in_mibps = var.efs_throughput_mode == "provisioned" ? var.efs_provisioned_throughput_in_mibps :
-    null
+  provisioned_throughput_in_mibps = var.efs_throughput_mode == "provisioned" ? var.efs_provisioned_throughput_in_mibps : null
 
   # File system policy
   attach_policy = true
