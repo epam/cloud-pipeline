@@ -10,40 +10,49 @@ module "cp_system_efs" {
 
   performance_mode = var.efs_performance_mode
   throughput_mode  = var.efs_throughput_mode
-  provisioned_throughput_in_mibps = var.efs_throughput_mode == "provisioned" ? var.efs_provisioned_throughput_in_mibps : null
+  provisioned_throughput_in_mibps = var.efs_throughput_mode == "provisioned" ? var.efs_provisioned_throughput_in_mibps :
+    null
 
   # File system policy
   attach_policy = true
   policy_statements = [
     {
-      effect : "Allow",
-      principals : {
-        type : "AWS",
-        identifiers : ["*"]
-      },
-      actions : [
+      effect     = "Allow",
+      principals = [
+        {
+          type        = "AWS",
+          identifiers = ["*"]
+        }
+      ],
+      actions = [
         "elasticfilesystem:ClientRootAccess",
         "elasticfilesystem:ClientWrite",
         "elasticfilesystem:ClientMount"
       ],
-      condition : {
-        test : "Bool",
-        variable : "elasticfilesystem:AccessedViaMountTarget",
-        values : ["true"]
-      }
+      condition = [
+        {
+          test     = "Bool",
+          variable = "elasticfilesystem:AccessedViaMountTarget",
+          values   = ["true"]
+        }
+      ]
     },
     {
-      effect : "Deny",
-      principals : {
-        type : "AWS",
-        identifiers : ["*"]
-      },
-      actions : ["*"],
-      condition : {
-        test : "Bool",
-        variable : "aws:SecureTransport",
-        values : ["false"]
-      }
+      effect     = "Deny",
+      principals = [
+        {
+          type        = "AWS",
+          identifiers = ["*"]
+        }
+      ],
+      actions   = ["*"],
+      condition = [
+        {
+          test     = "Bool",
+          variable = "aws:SecureTransport",
+          values   = ["false"]
+        }
+      ]
     }
   ]
 
@@ -74,5 +83,5 @@ resource "aws_fsx_lustre_file_system" "fsx" {
   per_unit_storage_throughput = var.fsx_per_unit_storage_throughput
   kms_key_id                  = module.kms.key_arn
   security_group_ids          = [module.internal_cluster_access_sg.security_group_id]
-  tags = local.tags
+  tags                        = local.tags
 }
