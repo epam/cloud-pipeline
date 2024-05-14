@@ -2076,11 +2076,7 @@ export default class DataStorage extends React.Component {
         storageId,
         path: o.path,
         name: o.name,
-        type: o.type,
-        labels: {
-          fileName: o.labels.fileName,
-          fileType: o.labels.fileType
-        }
+        type: o.type
       }));
     const omicsDownloadConfig = {
       region: this.regionName,

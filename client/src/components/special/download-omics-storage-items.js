@@ -26,44 +26,6 @@ import GenerateDownloadUrls from '../../models/dataStorage/GenerateDownloadUrls'
 import auditStorageAccessManager from '../../utils/audit-storage-access';
 import OmicsStorage, {ItemType} from '../../models/omics-download/omics-download';
 
-const FILE_TYPE = {
-  BAM: 'BAM',
-  UBAM: 'UBAM',
-  CRAM: 'CRAM',
-  FASTQ: 'FASTQ',
-  REFERENCE: 'REFERENCE'
-};
-
-const FILE_SOURCE = {
-  SOURCE1: 'source1',
-  SOURCE2: 'source2',
-  INDEX: 'index',
-  SOURCE: 'source'
-};
-
-const TYPE_EXTENSION = {
-  [FILE_TYPE.BAM]: {
-    [FILE_SOURCE.SOURCE1]: '.bam',
-    [FILE_SOURCE.INDEX]: '.bam.bai'
-  },
-  [FILE_TYPE.UBAM]: {
-    [FILE_SOURCE.SOURCE1]: '.bam',
-    [FILE_SOURCE.INDEX]: '.bam.bai'
-  },
-  [FILE_TYPE.CRAM]: {
-    [FILE_SOURCE.SOURCE1]: '.cram',
-    [FILE_SOURCE.INDEX]: '.cram.crai'
-  },
-  [FILE_TYPE.FASTQ]: {
-    [FILE_SOURCE.SOURCE1]: '_1.fastq.gz',
-    [FILE_SOURCE.SOURCE2]: '_2.fastq.gz'
-  },
-  [FILE_TYPE.REFERENCE]: {
-    [FILE_SOURCE.SOURCE]: '.fasta',
-    [FILE_SOURCE.INDEX]: '.fasta.fai'
-  }
-};
-
 export class OmicsMetadata {
   constructor (config, items) {
     this.region = config.region;
@@ -141,24 +103,9 @@ async function getStorageFiles (items, config) {
     return files;
   } else {
     return items.map(item => ({
-      fileSource: item.name,
       itemPath: item.path,
-      name: item.labels.fileName,
-      path: item.path,
-      type: item.labels.fileType
+      path: item.path
     }));
-  }
-}
-
-async function downloadFiles (files) {
-  for (const file of files) {
-    const a = document.createElement('a');
-    a.href = file.url;
-    a.download = file.name;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   }
 }
 
@@ -175,8 +122,15 @@ export async function downloadStorageItems (items, config) {
       files: await getStorageFiles(items, config)
     };
     const links = await getItemsLinks(storageInfo);
-    await downloadFiles(links);
-    await sendReport(storageInfo);
+    for (const link of links) {
+      window.open(link, '_blank');
+    }
+    auditStorageAccessManager.reportReadAccess(...storageInfo.files
+      .map(file => ({
+        storageId: storageInfo.storageId,
+        path: file.path,
+        reportStorageType: 'S3'
+      })));
   } catch (error) {
     message.error(error.message, 5);
   }
@@ -211,15 +165,6 @@ export default async function handleDownloadOmicsItems (preferences, items = [],
   }
 }
 
-export async function sendReport (storageInfo) {
-  auditStorageAccessManager.reportReadAccess(...storageInfo.files
-    .map(file => ({
-      storageId: storageInfo.storageId,
-      path: file.path,
-      reportStorageType: 'S3'
-    })));
-}
-
 /**
  * @param {StorageItem} storage
  * @returns {Promise<{name: string, url: string}[]>}
@@ -229,22 +174,14 @@ async function getItemsLinks (storage) {
   if (items.length === 0) {
     return Promise.resolve([]);
   }
-  const getFileName = (file) => {
-    return `${file.name}${TYPE_EXTENSION[file.type][file.fileSource]}`;
-  };
 
-  const links = [];
-  for (const item of items) {
-    const request = new GenerateDownloadUrls(storageId);
-    await request.send({paths: [item.itemPath]});
-    if (request.error) {
-      message.error(request.error, 5);
-      return;
-    }
-    links.push(...(request.value || []).map(o => ({
-      url: o.url,
-      name: getFileName(item)
-    })));
+  const request = new GenerateDownloadUrls(storageId);
+  await request.send({
+    paths: items.map(item => item.itemPath)
+  });
+  if (request.error) {
+    message.error(request.error, 5);
+    return;
   }
-  return links;
+  return (request.value || []).map(o => o.url);
 }

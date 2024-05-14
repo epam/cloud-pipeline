@@ -125,26 +125,20 @@ class OmicsStorage {
       const filesInfo = await this.getReadSetMetadata();
       if (filesInfo) {
         const metadata = [];
-        const filesSources = Object.keys(filesInfo.files);
+        const filesSources = Object.keys(filesInfo);
         for (const file of files) {
           const source = file.sourceName;
           if (!source) {
             for (const fileSource of filesSources) {
               metadata.push({
                 path: file.path,
-                itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${fileSource}`,
-                name: filesInfo.fileName,
-                type: filesInfo.fileType,
-                fileSource: fileSource
+                itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${fileSource}`
               });
             }
           } else if (filesSources.includes(source)) {
             metadata.push({
               path: file.path,
-              itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${source}`,
-              name: filesInfo.fileName,
-              type: filesInfo.fileType,
-              fileSource: source
+              itemPath: file.type === ItemType.FILE ? file.path : `${file.path}/${source}`
             });
           }
         }
@@ -165,11 +159,7 @@ class OmicsStorage {
       const command = new GetReadSetMetadataCommand(input);
       const response = await this._omics.send(command);
       if (response) {
-        const filesInfo = {
-          files: response.files,
-          fileType: response.fileType,
-          fileName: response.name
-        };
+        const filesInfo = response.files;
         return filesInfo;
       }
       return false;
