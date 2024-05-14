@@ -104,7 +104,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         get(SAVE).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
-        context().waitUntil(not(exist), DEFAULT_TIMEOUT);
+        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
         sleep(1000, MILLISECONDS);
 
         return this;
