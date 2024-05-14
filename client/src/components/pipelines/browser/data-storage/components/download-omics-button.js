@@ -60,11 +60,7 @@ export default class DownloadOmicsButton extends React.Component {
       storageId: this.props.storageInfo.id,
       path: this.item.path,
       name: this.item.name,
-      type: this.item.type,
-      labels: {
-        fileName: this.item.labels.fileName,
-        fileType: this.item.labels.fileType
-      }
+      type: this.item.type
     }];
     const config = {
       region: this.props.region,
