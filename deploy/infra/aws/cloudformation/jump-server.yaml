@@ -366,7 +366,8 @@ Resources:
               export CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
               fs_mount=$(terraform output -raw filesystem_mount)
               if [ "$CP_FILE_SYSTEM" == "efs" ]; then
-                 sudo mount -t nfs -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $fs_mount  /opt 
+                 sudo yum install amazon-efs-utils -y 
+                 sudo mount -t efs -o tls $fs_mount  /opt 
               else 
                  sudo amazon-linux-extras install -y lustre
                  sudo mount -t lustre -o relatime,flock $fs_mount /opt 
@@ -415,10 +416,10 @@ Resources:
               echo "-----------SET ACCESS TO AWS-----------------" 
               export CP_SECRET=${AWSCredentialSecretId}
               if [ -n "$CP_SECRET"  ]; then
-                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
-                  eval $creds
+                  creds=\$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+                  eval \$creds
               else   
-                  export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                  export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
                   $(aws sts assume-role \
                   --role-arn arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-${Env}-tf-deploy-infra-role \
                   --role-session-name TFDeploy \
