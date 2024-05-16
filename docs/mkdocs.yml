@@ -40,6 +40,7 @@ nav:
     - 6.1.1. Building WDL Pipeline with graphical PipelineBuilder: 'manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder.md'
     - 6.2. Launch a Pipeline: 'manual/06_Manage_Pipeline/6.2._Launch_a_pipeline.md'
     - 6.3. Delete and unregister Pipeline: 'manual/06_Manage_Pipeline/6.3._Delete_a_pipeline.md'
+    - 6.4. Work with AWS HealthOmics Workflow: 'manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow.md'
   - 7. Manage Detached configuration:
     - 7.0. Overview: 'manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration.md'
     - 7.1. Create and customize Detached configuration: 'manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration.md'
@@ -61,6 +62,7 @@ nav:
     - 8.11. Sensitive storages: 'manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md'
     - 8.12. Cloud Data application: 'manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md'
     - 8.13. Versioned storages: 'manual/08_Manage_Data_Storage/8.13._Versioned_storages.md'
+    - 8.14. Omics storages: 'manual/08_Manage_Data_Storage/8.14._Omics_storages.md'
   - 9. Manage cluster nodes:
     - 9.0. Cluster nodes: 'manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md'
     - 9.1. Hot node pools: 'manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md'
