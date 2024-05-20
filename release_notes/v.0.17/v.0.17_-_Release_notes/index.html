@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>v.0.17 - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "v.0.17";
+        var mkdocs_page_input_path = "release_notes/v.0.17/v.0.17_-_Release_notes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">v.0.17</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#billing-reports-enhancements">Billing reports enhancements</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#access-to-billing-reports-for-non-admin-users">Access to Billing reports for non-admin users</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#storage-data-consumption">Storage data consumption</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#regionprovider-filter">Region/Provider filter</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#custom-date-range-for-the-report">Custom date range for the report</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#spendings-for-old-versions-of-object-storages">Spendings for old versions of object storages</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#spendings-for-object-storages-archive-layers">Spendings for object storages' archive layers</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#spendings-in-runs-cost-layers">Spendings in runs cost layers</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#displaying-different-users-attributes-in-the-billing-reports">Displaying different user's attributes in the Billing reports</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#export-reports-in-csv-from-any-billing-page">Export reports in CSV from any Billing page</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#breakdown-the-billing-reports-by-month">Breakdown the billing reports by month</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#billing-general-export-broken-by-the-user">"Billing General" export broken by the user</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#system-dictionaries">System dictionaries</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cloud-data-application">Cloud Data application</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sending-of-email-notifications-enhancements">Sending of email notifications enhancements</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#additional-options-for-idlehigh-consumed-runs-notifications">Additional options for IDLE/HIGH-CONSUMED runs notifications</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#notifications-for-long-paused-runs">Notifications for long paused runs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#resend-setting-for-idle-runs">"Resend" setting for IDLE runs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#allow-to-exclude-certain-node-type-from-the-specific-notifications">Allow to exclude certain node type from the specific notifications</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#push-notifications">Push notifications</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#allowed-price-types-for-a-cluster-master-node">Allowed price types for a cluster master node</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#user-management-enhancements">User management enhancements</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#allowed-instance-count">Allowed instance count</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#export-custom-users-attributes">Export custom user's attributes</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#user-management-and-export-in-read-only-mode">User management and export in read-only mode</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#batch-users-import">Batch users import</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#import-users-via-gui">Import users via GUI</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#import-users-via-cli">Import users via CLI</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#user-states">User states</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#usage-report">Usage report</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#gui-impersonation">GUI impersonation</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#all-pipelines-and-all-storages-repositories">"All pipelines" and "All storages" repositories</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sensitive-storages">Sensitive storages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#versioned-storages">Versioned storages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#displaying-of-the-cp_cap_limit_mounts-in-a-user-friendly-manner">Displaying of the CP_CAP_LIMIT_MOUNTS in a user-friendly manner</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#allow-to-create-run-without-mounts">Allow to create run without mounts</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#warning-in-case-of-a-risk-of-oom-due-to-the-number-of-the-object-storage-mounts">Warning in case of a risk of OOM due to the number of the object storage mounts</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#hot-node-pools">Hot node pools</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#fs-quotas">FS quotas</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#export-cluster-utilization-via-pipe">Export cluster utilization via pipe</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pauseresume-runs-via-pipe">Pause/resume runs via pipe</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#home-storage-for-each-user">Home storage for each user</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ssh-tunnel-to-the-running-compute-instance">SSH tunnel to the running compute instance</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#updates-of-metadata-object">Updates of Metadata object</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#controls-placement-reorganization">Controls placement reorganization</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ability-to-show-only-selected-instances">Ability to show only selected instances</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#improvements-in-the-search-over-the-metadata">Improvements in the search over the metadata</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ability-to-filter-instances">Ability to filter instances</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#displaying-of-the-creation-date-info">Displaying of the creation date info</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sorting-by-several-columns">Sorting by several columns</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#autofill">Autofill</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#entity-id-autogeneration">Entity ID autogeneration</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ability-to-add-sampleset-item-via-gui">Ability to add SampleSet item via GUI</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#preselect-instances-for-a-rerun">Preselect instances for a rerun</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-node-images">Custom node images</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#launch-a-tool-with-hosted-applications">Launch a tool with "hosted" applications</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-global-search-with-faceted-filters">Advanced global search with faceted filters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#disable-hyper-threading">Disable Hyper-Threading</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#saving-of-interim-data-for-jobs-stopped-by-a-timeout">Saving of interim data for jobs stopped by a timeout</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#resolve-variables-for-a-rerun">Resolve variables for a rerun</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#nat-gateway">NAT gateway</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#custom-run-capabilities">Custom Run capabilities</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#storage-lifecycle-management">Storage lifecycle management</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#image-history">Image history</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#environments-synchronization-via-pipectl">Environments synchronization via pipectl</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#data-access-audit">Data access audit</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#system-jobs">System Jobs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cluster-run-usage">Cluster run usage</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#cluster-run-estimation-price">Cluster run estimation price</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#terminal-view">Terminal view</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#aws-seamless-authentication">AWS: seamless authentication</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions using pipe storage cp/mv commands</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipe-storage-ls-works-incorrectly-with-the-option-page">pipe storage ls works incorrectly with the option --page</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket">AWS deployment: unable to list more than 1000 files in the S3 bucket</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#size-of-tool-version-created-from-original-tool-without-any-changes-is-a-lot-larger-than-original-one">Size of tool version created from original tool without any changes is a lot larger than original one</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipe-storage-cp-fails-in-windows-for-the-gcs-with-sslv3-error">pipe storage cp fails in Windows for the GCS with sslv3 error</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#shared-endpoint-for-anonymous-users-is-being-opened-from-the-second-time">Shared endpoint for anonymous users is being opened from the second time</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#attempt-to-view-permissions-on-a-pipeline-via-the-pipe-view-pipes-throws-an-error">Attempt to view permissions on a pipeline via the pipe view-pipes throws an error</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scale-down-cold-sge-autoscaling-cluster">Scale down "cold" SGE autoscaling cluster</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#launch-command-functionality-issues">"Launch Command" functionality issues</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#inner-data-storages-navigation-bar-fails-to-navigate">Inner data storages navigation bar fails to navigate</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline">Region is being set incorrectly when trying to rerun pipeline</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk">PAUSE and COMMIT operations fail for the jobs with an autoscaled disk</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#broken-layouts">Broken layouts</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>Release notes &raquo;</li>
+      <li>v.0.17</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cloud-pipeline-v017-release-notes">Cloud Pipeline v.0.17 - Release notes</h1>
+<ul>
+<li><a href="#billing-reports-enhancements">Billing reports enhancements</a></li>
+<li><a href="#system-dictionaries">System dictionaries</a></li>
+<li><a href="#cloud-data-application">Cloud Data application</a></li>
+<li><a href="#sending-of-email-notifications-enhancements">Sending of email notifications enhancements</a></li>
+<li><a href="#allowed-price-types-for-a-cluster-master-node">Allowed price types for a cluster master node</a></li>
+<li><a href="#max-data-series-at-the-resource-monitoring-dashboard">"Max" data series in the resources Monitoring</a></li>
+<li><a href="#user-management-enhancements">User management enhancements</a><ul>
+<li><a href="#allowed-instance-count">Allowed instance count</a></li>
+<li><a href="#export-custom-users-attributes">Export custom user's attributes</a></li>
+<li><a href="#user-management-and-export-in-read-only-mode">User management and export in read-only mode</a></li>
+<li><a href="#batch-users-import">Batch users import</a></li>
+<li><a href="#user-states">User states</a></li>
+<li><a href="#usage-report">Usage report</a></li>
+<li><a href="#gui-impersonation">GUI impersonation</a></li>
+</ul>
+</li>
+<li><a href="#all-pipelines-and-all-storages-repositories">"All pipelines" and "All storages" repositories</a></li>
+<li><a href="#sensitive-storages">Sensitive storages</a></li>
+<li><a href="#versioned-storages">Versioned storages</a></li>
+<li><a href="#updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</a></li>
+<li><a href="#hot-node-pools">Hot node pools</a></li>
+<li><a href="#fs-quotas">FS quotas</a></li>
+<li><a href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a></li>
+<li><a href="#export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></a></li>
+<li><a href="#pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></a></li>
+<li><a href="#home-storage-for-each-user">Home storage for each user</a></li>
+<li><a href="#ssh-tunnel-to-the-running-compute-instance">SSH tunnel to the running compute instance</a></li>
+<li><a href="#updates-of-metadata-object">Updates of Metadata object</a></li>
+<li><a href="#custom-node-images">Custom node images</a></li>
+<li><a href="#launch-a-tool-with-hosted-applications">Launch a tool with "hosted" applications</a></li>
+<li><a href="#advanced-global-search-with-faceted-filters">Advanced global search with faceted filters</a></li>
+<li><a href="#explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</a></li>
+<li><a href="#disable-hyper-threading">Disable Hyper-Threading</a></li>
+<li><a href="#saving-of-interim-data-for-jobs-stopped-by-a-timeout">Saving of interim data for jobs stopped by a timeout</a></li>
+<li><a href="#resolve-variables-for-a-rerun">Resolve variables for a rerun</a></li>
+<li><a href="#nat-gateway">NAT gateway</a></li>
+<li><a href="#custom-run-capabilities">Custom Run capabilities</a></li>
+<li><a href="#storage-lifecycle-management">Storage lifecycle management</a></li>
+<li><a href="#image-history">Image history</a></li>
+<li><a href="#environments-synchronization-via-pipectl">Environments synchronization via <code>pipectl</code></a></li>
+<li><a href="#data-access-audit">Data access audit</a></li>
+<li><a href="#system-jobs">System Jobs</a></li>
+<li><a href="#cluster-run-usage">Cluster run usage</a></li>
+<li><a href="#cluster-run-estimation-price">Cluster run estimation price</a></li>
+<li><a href="#terminal-view">Terminal view</a></li>
+<li><a href="#aws-seamless-authentication">AWS: seamless authentication</a></li>
+<li><a href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions</a></li>
+<li><a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of regions for launched jobs in case of insufficient capacity</a></li>
+</ul>
+<hr />
+<ul>
+<li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</a></li>
+<li><a href="#pipe-storage-ls-works-incorrectly-with-the-option-page"><code>pipe storage ls</code> works incorrectly with the option <code>--page</code></a></li>
+<li><a href="#aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket">AWS deployment: unable to list more than 1000 files in the S3 bucket</a></li>
+<li><a href="#size-of-tool-version-created-from-original-tool-without-any-changes-is-a-lot-larger-than-original-one">Size of tool version created from original tool without any changes is a lot larger than original one</a></li>
+<li><a href="#pipe-storage-cp-fails-in-windows-for-the-gcs-with-sslv3-error"><code>pipe storage cp</code> fails in Windows for the GCS</a></li>
+<li><a href="#shared-endpoint-for-anonymous-users-is-being-opened-from-the-second-time">Shared endpoint for <code>anonymous</code> users is being opened from the second time</a></li>
+<li><a href="#attempt-to-view-permissions-on-a-pipeline-via-the-pipe-view-pipes-throws-an-error">Attempt to view permissions on a pipeline via the <code>pipe view-pipes</code> throws an error</a></li>
+<li><a href="#scale-down-cold-sge-autoscaling-cluster">Scale down "cold" SGE autoscaling cluster</a></li>
+<li><a href="#launch-command-functionality-issues">"Launch Command" functionality issues</a></li>
+<li><a href="#inner-data-storages-navigation-bar-fails-to-navigate">Inner data storages navigation bar fails to navigate</a></li>
+<li><a href="#region-is-being-set-incorrectly-when-trying-to-rerun-pipeline">Region is being set incorrectly when trying to rerun pipeline</a></li>
+<li><a href="#pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk"><code>PAUSE</code> and <code>COMMIT</code> operations fail for the jobs with an autoscaled disk</a></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="billing-reports-enhancements">Billing reports enhancements</h2>
+<p>In the previous version, the <strong>Billing reports</strong> functionality was introduced (see details <a href="../../../manual/Appendix_D/Appendix_D._Costs_management/#billing-reports">here</a>).<br />
+In <strong><code>v0.17</code></strong>, several useful features for the <strong>Billing reports</strong> were implemented.</p>
+<h3 id="access-to-billing-reports-for-non-admin-users">Access to Billing reports for non-admin users</h3>
+<p>Previously, only admins had access to the <strong>Billing reports</strong> Dashboard and can view Platform's spendings data.<br />
+In some cases, it is convenient that non-admin users also have the access to specific cost reports info.</p>
+<p>In the current version, such ability was implemented - in two ways:</p>
+<ul>
+<li>a new role was added into the predefined roles list - <strong><code>ROLE_BILLING_MANAGER</code></strong>. If that role is assigned to the user - for him/her the <strong>Billing reports</strong> Dashboard becomes available. And all possible filters, charts and their types, discounts configuration, export feature and etc. become available too. So, users who are granted this role are able to view the whole <strong>Billing reports</strong> info of the platform (as if they were admins).<ul>
+<li><strong><em>Note</em></strong>: this behavior is enabled by the new system preference <strong><code>billing.reports.enabled.admins</code></strong>. It allows to configure <strong>Billing reports</strong> visibility for admins and billing managers. Default value is <em>true</em>.</li>
+</ul>
+</li>
+<li>base access to the <strong>Billing reports</strong> for "general" users that allows to view some information - about users' own spendings:<ul>
+<li>this behavior is enabled by the new system preference <strong><code>billing.reports.enabled</code></strong>. If this preference is set, all "general" users can access personal billing information - runs/storages where the user is an owner. Also "general" users can use filters, change chart types, make reports export.</li>
+<li>the following restrictions are set for "general" users when "base" billing access is enabled:<ul>
+<li>all showing charts are being displayed only spendings of the current user</li>
+<li>there isn't an ability to configure discounts, the button "Configure discounts" is disabled</li>
+<li>"Billing centers (TOP 10)" chart isn't displayed</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>For example, the view of the <strong>Billing reports</strong> Dashboard for the "general" user when the system preference <code>billing.reports.enabled</code> is enabled:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_01.png" /></p>
+<h3 id="storage-data-consumption">Storage data consumption</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed to show only costs for the data storages.<br />
+But it would be convenient to understand what is the total consumption of the data usage (volume of storages usage in GB) across all operational groups or individual by specific user.</p>
+<p>Currently, this ability is implemented.</p>
+<p>In all "Storages" reports, for the <strong>TOP 10 Storages...</strong> chart, the <strong>Volume</strong> in GB for each storage is displayed in the table, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_02.png" /></p>
+<p>Additionally for each storage, its Billing Center is displayed (if it's defined) and the storage Type (<code>S3</code>/<code>GS</code>/<code>NFS</code>/<code>LustreFS</code>/etc.).</p>
+<p>There are two <strong>Volume</strong> values displaying for each storage:</p>
+<ul>
+<li><strong><code>Avg. Vol.</code></strong> is the <em>average</em> storage volume, in GB. It means that the exact volumes for each day of the selected report period were brought and then the average value was calculated</li>
+<li><strong><code>Cur. Vol.</code></strong> is the <em>current</em> storage volume, in GB. This volume is a real volume for a current moment/last day of the given period</li>
+</ul>
+<p>The user can switch the view of the <strong>TOP 10 Storages...</strong> charts by a new control - <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_03.png" /><br />
+By default, <strong>Costs</strong> displaying is selected. When <strong>Volume</strong> displaying is being selected, "average" volumes of the corresponding storages (in GB) will be displayed in the chart:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_04.png" /></p>
+<p>These new columns (<em>Average Volume</em>, <em>Current Volume</em>, <em>Billing Center</em>, <em>Type</em>) also are being exported in tables reports.</p>
+<h3 id="regionprovider-filter">Region/Provider filter</h3>
+<p>Previously, <strong>Billing reports</strong> allowed displaying the different Cloud Providers' instance types and their usage. But there was no way to get the overall <em>per-Cloud</em> or <em>per-Region</em> information.</p>
+<p>In <strong><code>v0.17</code></strong>, these abilities were implemented. Now the user can use the following filters:</p>
+<ul>
+<li>specific Cloud Provider(s) (<em>for multi-Provider deployments</em>)</li>
+<li>specific Region(s) of the specific Cloud Provider</li>
+</ul>
+<p>They all can be specified via the "<strong>Regions/Providers</strong>" dropdown list in the top of any <strong>Billing reports</strong> page, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_05.png" /></p>
+<h3 id="custom-date-range-for-the-report">Custom date range for the report</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed to configure date range on the <strong>Billing reports</strong> dashboard for different periods (<em>year</em>, <em>quarter</em>, <em>month(s)</em>), but the minimum period for any report was only <em>month</em>.<br />
+Sometimes, it is needed to view cost utilization for a specific period in days.</p>
+<p>In <strong><code>v0.17</code></strong>, it was implemented - the user can view <strong>Billing reports</strong> with manually configured period accurate to the day:</p>
+<ul>
+<li>Select the "Custom" period and click the "Calendar" control:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_06.png" /></li>
+<li>Select "From" and "To" dates, confirm the selection:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_07.png" /></li>
+<li>Reports (charts and tables) will be rebuilt for the configured custom date range:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_08.png" /></li>
+</ul>
+<h3 id="spendings-for-old-versions-of-object-storages">Spendings for old versions of object storages</h3>
+<p>As object storages supports versioning, it is convenient to view spendings for the old (previous) versions of the storage data. Old versions include all non-last (previous) versions of the versioning object storage.<br />
+From the current version, the <strong>Object storages</strong> report supports the displaying of the corresponding related information.</p>
+<p>At the summary chart, new dashed lines of the same colors (as for current and previous periods) appeared - these lines show summary spendings on the data usage for all <em>old versions</em> of object storages:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_14.png" /></p>
+<p>On all other object storage charts, bars are presented as stacks of <em>current version</em> spendings / <em>old versions</em> spendings. <em>Current version</em> spendings are shown with solid filling, <em>old versions</em> spendings are shown without filling, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_15.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_16.png" /></p>
+<p>Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format <code>total spendings/usage for all versions</code> / <code>spendings/usage for old versions only</code>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_21.png" /><br />
+    Breakdown by versions is shown in the CSV report export as well.</p>
+<h3 id="spendings-for-object-storages-archive-layers">Spendings for object storages' archive layers</h3>
+<p>As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.<br />
+From the current version, the <strong>Object storages</strong> report supports the displaying of the corresponding related information.<br />
+This information is shown on the separate chart - bar chart with division to different tiers (archive types). This chart does not contain any information for <em>previous</em> period. Only layers used for data storing in the <em>current</em> period according to selected filters are shown. Up to 4 layers can be here: <code>Standard</code>, <code>Glacier</code>, <code>Glacier IR</code>, <code>Deep Archive</code>.<br />
+Example:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_17.png" /></p>
+<p>Object storage layers chart can show the information as storages usage costs - in <code>$</code> or as average storages volumes - in <code>Gb</code>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_18.png" /></p>
+<p>If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_19.png" /><br />
+Breakdown by archive layers is shown in the CSV report export as well.</p>
+<p>User can select one of the object storage layers - by click it on this new chart.<br />
+In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.<br />
+Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.<br />
+For example, <code>Glasier IR</code> was selected:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_20.png" /></p>
+<h3 id="spendings-in-runs-cost-layers">Spendings in runs cost layers</h3>
+<p>From the current version, the <strong>Compute instances</strong> report (and sub-reports - for CPU/GPU) supports the displaying of the runs cost division into layers:</p>
+<ul>
+<li><code>Compute</code> - cost of compute instances used in runs</li>
+<li><code>Disk</code> - cost of EBS drives connected to runs during their performing</li>
+</ul>
+<p>This information is shown on the new <strong><em>Cost details</em></strong> chart - bar chart with division to these layers. This chart does not contain any information for <em>previous</em> period - only cost of runs' layers in the <em>current</em> period according to selected filters are shown.</p>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_22.png" /></p>
+<p>Additionally, information about cost division are shown in details tables under charts <strong><em>Instance types</em></strong>, <strong><em>Pipelines</em></strong>, <strong><em>Tools</em></strong> - as separate columns, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_23.png" /></p>
+<p>User can select one of the runs cost layers - by click it in the <strong><em>Cost details</em></strong> chart.<br />
+In this case:</p>
+<ul>
+<li>summary runs cost chart will be updated - only summary spendings, that correspond to the selected layer (<code>Compute</code> or <code>Disk</code>), will be shown</li>
+<li>charts <strong><em>Instance types</em></strong>, <strong><em>Pipelines</em></strong>, <strong><em>Tools</em></strong> will be updated - only spendings, that correspond to the selected layer (<code>Compute</code> or <code>Disk</code>), will be shown</li>
+<li>data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer</li>
+</ul>
+<p>For example, if the <code>Compute</code> layer of the runs cost is selected:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_24.png" /></p>
+<h3 id="displaying-different-users-attributes-in-the-billing-reports">Displaying different user's attributes in the Billing reports</h3>
+<p>Previously, in all the <strong>Billing reports</strong>, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.</p>
+<p>In the current version, this ability is implemented.<br />
+A new System Preference is introduced: <strong><code>billing.reports.user.name.attribute</code></strong><br />
+It defines which user's attribute shall be used to display the users in the <strong>Billing reports</strong>. If it is set, specified attribute will be used in all billing charts, tables, export reports.</p>
+<p>Possible values for described preference: <em><code>userName</code></em>, <em><code>FirstName</code></em>, <em><code>LastName</code></em>, etc.</p>
+<h3 id="export-reports-in-csv-from-any-billing-page">Export reports in <code>CSV</code> from any Billing page</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed to export the <strong>Billing reports</strong> data into the <code>CSV</code> format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as <code>PNG</code> image format only.</p>
+<p>Currently, <code>CSV</code> export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):</p>
+<ul>
+<li>reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)</li>
+<li>for the reports, which contain more than one table - all the tables are exported one after another</li>
+<li>export in <code>CSV</code> from the "General" page remains the same</li>
+</ul>
+<p>Example of an export from the "CPU" page:</p>
+<ul>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_10.png" /></li>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_09.png" /></li>
+</ul>
+<h3 id="breakdown-the-billing-reports-by-month">Breakdown the billing reports by month</h3>
+<p><strong>Cloud Pipeline</strong> allows exporting billing reports in the <code>CSV</code>. Previously, the values were shown as aggregates for the <em>whole</em> selected period. In some cases, it is more convenient to change this view to a breakdown by month.</p>
+<p>In the current version, this ability is implemented.<br />
+Now, if any period - longer than a month is selected (including a <code>custom</code> period), the <code>CSV</code>-report contains an aggregate for each month of that period.<br />
+The whole period summary is being included as well (as previously).</p>
+<p>Example of the report for a custom period:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_11.png" /></p>
+<h3 id="billing-general-export-broken-by-the-user">"Billing General" export broken by the user</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> could export the "General" billing report split by the "Cost Center". For some use cases, needs to have this report broken by the user as well.</p>
+<p>Now, this ability is implemented.<br />
+User can specify which dimension to use for the export:</p>
+<ul>
+<li>by <strong>Cost Center</strong> - in this case, the "General" billing report will be split by the "Cost Center" (as it was previosly)</li>
+<li>by <strong>User</strong> - in this case, export will be in the same format as for the "Cost Center", but split the values by the user (using <a href="#displaying-different-users-attributes-in-the-billing-reports"><code>billing.reports.user.name.attribute</code></a> to display the username)</li>
+</ul>
+<p>Format of the report is being selected before the export:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_12.png" /></p>
+<p>Example of the report broken by the user:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_BillingEnhancements_13.png" /></p>
+<h2 id="system-dictionaries">System dictionaries</h2>
+<p>Often admins have to set attributes (metadata) for "general" users manually. In case, when such metadata keys aren't different for each user and has certain amount of values, it is convenient to select these values from the predefined values list, not to specify them manually each time.</p>
+<p>In the current version, the ability to create <strong>System Dictionaries</strong> was implemented.
+Each <strong>dictionary</strong> is the categorical attribute. I.e. it is attribute which values are predefined.<br />
+Each <strong>dictionary</strong> has its name and values, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemDictionaries_01.png" /></p>
+<p>If the dictionary exists in the system, then admins can use it when specifying attributes for any Platform object (<strong><code>Pipeline</code></strong>, <strong><code>Folder</code></strong>, <strong><code>Storage</code></strong>, <strong><code>Project</code></strong>, <strong><code>Tool</code></strong>), and also for <strong><code>User</code></strong>, <strong><code>Group</code></strong> or <strong><code>Role</code></strong>. In this case, it is enough to specify only the dictionary name as the attribute key, the list of dictionary values will appear automatically in the value field:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemDictionaries_02.png" /></p>
+<p>Also, the different dictionaries may be connected (linked). I.e. admins can create two dictionaries, which values are mapped <code>1-1</code> or <code>1-many</code>, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemDictionaries_03.png" /></p>
+<p>In the GUI, such connection is being handled in the following way:</p>
+<ol>
+<li>Admin specifies the links between the dictionaries items (e.g. for the example above <em><code>ProjectID</code>:<code>BRCA1</code></em> -&gt; <em><code>DataStorage</code>:<code>&lt;path&gt;</code></em>).</li>
+<li>Links have the "autofill" attribute. If the admin selects the source key (<em><code>ProjectID</code>:<code>BRCA1</code></em>) as attribute key for any object - the destination key will be specified automatically (<em><code>DataStorage</code></em> will be added with the <em><code>&lt;path&gt;</code></em> selection):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemDictionaries_04.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemDictionaries_05.png" /></li>
+</ol>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-dictionaries">here</a>.</p>
+<h2 id="cloud-data-application">Cloud Data application</h2>
+<p>Previously, there were several ways to manage data between local workstation and Cloud data storages, including CLI, GUI, mounting data storages as a network drives, and others.  </p>
+<p>In the current version, a new Platform capability was implemented that provides a simple and convenient way to manage files, copy/move them between Cloud data storage and local workstation or even FTP-server.<br />
+This introduces via the new separate application that can be downloaded from the Cloud Pipeline Platform and launched at the local machine - <strong>Cloud Data</strong> application.</p>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_01.png" /></p>
+<p>Cloud Data application allows you manage files/folders as in a file commander.<br />
+Main application form contains two panels (left and right).<br />
+In each panel, one of the following sources can be opened: <strong>local workstation</strong> / <strong>FTP server</strong> / <strong>Cloud data</strong> (datastorages).</p>
+<ul>
+<li>the <strong><em>local</em></strong> content shows files and folders of the local workstation (by default, <em>home</em> user's directory). Navigation between and inside folders is available:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_02.png" /></li>
+<li>the <strong><em>Cloud data</em></strong> content includes:<ul>
+<li>all FS mounts from the Cloud Pipeline environment - to which current user has permissions.<br />
+  They are shown as simple folders</li>
+<li>those object storages from the Cloud Pipeline environment - to which current user has permissions and "File system access" was requested.<br />
+  They are shown with storage icon</li>
+<li>Navigation between and inside folders/storages is available<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_03.png" /></li>
+</ul>
+</li>
+<li>the <strong><em>ftp</em></strong> content shows files and folders of the FTP/SFTP server. Navigation between and inside folders is available:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_04.png" /></li>
+</ul>
+<p>The base scenario of the application usage:</p>
+<ol>
+<li>User selects desired source and destination in panels, e.g. FTP server and object datastorage correspondingly:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_05.png" /></li>
+<li>Users selects desired files/folders in the source and clicks the data management button in the source panel - according to the action user wants to perform, e.g. to copy a file:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_06.png" /></li>
+<li>Action will be performed, content of the panels will be updated:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CloudDataApp_07.png" /></li>
+</ol>
+<p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">here</a>.</p>
+<h2 id="sending-of-email-notifications-enhancements">Sending of email notifications enhancements</h2>
+<p>Several additions and updates were implemented in the current version for the System Email notifications.<br />
+You can view the general mechanism of the <strong>Cloud PIpeline</strong> email notifications sending described <a href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/#configure-automatic-email-notifications-on-users-runs">here</a>.</p>
+<h3 id="additional-options-for-idlehigh-consumed-runs-notifications">Additional options for <code>IDLE</code>/<code>HIGH-CONSUMED</code> runs notifications</h3>
+<p>Previously, to customize a platform behavior with respect to <strong><em>idle</em></strong> or <strong><em>high-consumed</em></strong> runs, admin had to set a number of settings in two different system forms - <strong>Preferences</strong> and <strong>Email Notifications</strong>. It was inconvenient and could confused users.<br />
+It would be nice to duplicate input fields for some preferences into the <strong>Email Notifications</strong> section - for faster and more convenient input of their values, and to avoid possible confusion and mistakes.</p>
+<p>In the current version, it was implemented. Now:</p>
+<ol>
+<li>For <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> notification type settings, the following input fields were added:<ul>
+<li>"<em>Threshold of disk consume (%)</em>" that duplicates <strong><code>system.disk.consume.threshold</code></strong> preference value</li>
+<li>"<em>Threshold of memory consume (%)</em>" that duplicates <strong><code>system.memory.consume.threshold</code></strong> preference value<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_01.png" /><br />
+Saving of the listed values changes at the <strong>Email Notifications</strong> form will automatically change the corresponding values in the <strong>Preferences</strong>, and vice versa.</li>
+</ul>
+</li>
+<li>For <strong><code>IDLE_RUN</code></strong>, <strong><code>IDLE_RUN_PAUSED</code></strong>, <strong><code>IDLE_RUN_STOPPED</code></strong> notification types settings, the following input fields were added:<ul>
+<li>"<em>Max duration of idle (min)</em>" that duplicates <strong><code>system.max.idle.timeout.minutes</code></strong> preference value</li>
+<li>"<em>Action delay (min)</em>" that duplicates <strong><code>system.idle.action.timeout.minutes</code></strong> preference value</li>
+<li>"<em>CPU idle threshold (%)</em>" that duplicates <strong><code>system.idle.cpu.threshold</code></strong> preference value</li>
+<li>"<em>Action</em>" that should duplicates <strong><code>system.idle.action</code></strong> preference value<br />
+These 4 fields are united into a single section for all <strong><em>idle</em></strong> notification types - you may configure these fields from any <strong><em>idle</em></strong> notification settings tab.<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_02.png" /><br />
+Saving of the listed values changes at the <strong>Email Notifications</strong> form will automatically change the corresponding values in the <strong>Preferences</strong>, and vice versa.</li>
+</ul>
+</li>
+</ol>
+<p>For all these fields, help tooltips were added to clarify their destination, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_03.png" /></p>
+<h3 id="notifications-for-long-paused-runs">Notifications for long paused runs</h3>
+<p>In <strong><code>v0.17</code></strong>, new email notification types were added:</p>
+<ol>
+<li><strong><code>LONG_PAUSED</code></strong> - the notification that is being sent when the run is in the <strong><em>PAUSED</em></strong> state for a long time.<br />
+    This new notification type has the following additional configurable parameters:<ul>
+<li><em>Threshold (sec)</em> - it is a time interval of the run <strong><em>PAUSED</em></strong> state after which the notification will be sent</li>
+<li><em>Resend delay (sec)</em> - it is a delay after which the notification will be sent again, if the run is still in the <strong><em>PAUSED</em></strong> state<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_04.png" /></li>
+</ul>
+</li>
+<li><strong><code>LONG_PAUSED_STOPPED</code></strong> - the notification that is being sent when the run that has been in the <code>PAUSED</code> state for a long time, has been stopped by the system.<br />
+    This new notification type has the following additional configurable parameter:<ul>
+<li><em>Threshold (sec)</em> - it is a time interval of the run <strong><em>PAUSED</em></strong> state after which the notification will be sent and the run will be terminated<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_05.png" /></li>
+</ul>
+</li>
+</ol>
+<p>There is a common setting for the both described notification types - <em>Action</em>. This setting could be only <code>NOTIFY</code> or <code>STOP</code>. It defines the system behavior with the long paused runs:</p>
+<ul>
+<li>if the <em>Action</em> is <code>NOTIFY</code> - for the appropriate run, the notification <strong><code>LONG_PAUSED</code></strong> will being sent according to its settings</li>
+<li>if the <em>Action</em> is <code>STOP</code> - for the appropriate run, the notification <strong><code>LONG_PAUSED_STOPPED</code></strong> will be sent once and the run will be terminated</li>
+</ul>
+<p>Action type also can be configured via the Systemp preference <strong><code>system.long.paused.action</code></strong>. Saving of the <em>Action</em> setting value changes at the <strong>Email Notifications</strong> form will automatically change the corresponding value in the <strong>Preferences</strong>, and vice versa.</p>
+<h3 id="resend-setting-for-idle-runs">"Resend" setting for <code>IDLE</code> runs</h3>
+<p>Previously, <strong><code>IDLE_RUN</code></strong> notifications were sent only once and then configured action had being performed.<br />
+In the current version, the ability to resend this notifications was implemented.<br />
+It could be configured via the corresponding field at the <strong><code>IDLE_RUN</code></strong> notification type form:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_06.png" /><br />
+If the <em>Resend delay</em> is specified and the <em>Action</em> for the <strong><em>idle</em></strong> runs is set as <code>NOTIFY</code>, then the <strong><code>IDLE_RUN</code></strong> notification will being resent every appropriate time interval.</p>
+<h3 id="allow-to-exclude-certain-node-type-from-the-specific-notifications">Allow to exclude certain node type from the specific notifications</h3>
+<p>For quite small/cheap nodes, the users may not want to receive the following email notifications for the run:</p>
+<ul>
+<li><strong><code>IDLE_RUN</code></strong></li>
+<li><strong><code>LONG_PAUSED</code></strong></li>
+<li><strong><code>LONG_RUNNING</code></strong></li>
+</ul>
+<p>So, a new System preference <strong><code>system.notifications.exclude.instance.types</code></strong> was implemented to control that behavior.<br />
+If the node type is specified in this preference, listed above notifications will not be submitted to the jobs, that use this node type.<br />
+This preference allows a comma-separated list of the node types and wildcards, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_07.png" /></p>
+<h3 id="push-notifications">Push notifications</h3>
+<p>Previously, Cloud Pipeline platform sent notifications to users via email only. For many cases it would be useful to show such notifications in the GUI as well. In the current version, such ability was implemented.</p>
+<p>Now, all email notifications, that are sending by the platform, are also duplicated as push notifications. This allows to view notifications right in the Cloud Pipeline GUI.<br />
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recepients list, frequency and trigger of sending, etc.</p>
+<p>Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients. Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_PushNotifications_01.png" /></p>
+<p>Click it to view the whole notification - it will be opened in a pop-up:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_PushNotifications_02.png" /></p>
+<p>Additionally, a new section appeared in the main menu - <strong>Notifications</strong>.<br />
+It allows to view all push notifications/emails sent to the current user, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_PushNotifications_03.png" /></p>
+<p>User can switch notifications lists - to display only new "unread" notifications or only "read" ones.<br />
+To view the notification full details, user can click it - notification will be opened in a pop-up:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_PushNotifications_04.png" /></p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/#push-notifications">here</a>.</p>
+<h2 id="allowed-price-types-for-a-cluster-master-node">Allowed price types for a cluster master node</h2>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed the user to choose whether the cluster master node be a <code>spot</code> or <code>on-demand</code> instance.<br />
+While spots are acceptable for the worker nodes, as they can be recreated in failure cases - master node failure will terminate the whole cluster.<br />
+To make things easy for the end-users, an optional restriction on the specific price types usage for the master nodes was implemented.</p>
+<p>There is a new string system preference - <strong><code>cluster.allowed.price.types.master</code></strong> - that force the clusters' master node price type.</p>
+<p><strong>Default value</strong>: "spot,on_demand" - so, both types are accessible for the user when he/she wants to launch a cluster.</p>
+<p><strong>Possible values</strong>: "spot", "on_demand" or both together comma-separated.</p>
+<p>Specified value for that preference defines which price type(s) will be shown in the drop-down, when the cluster run is being configured. For example:</p>
+<ul>
+<li>set in the Preferences:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ForcedMasterType_1.png" /></li>
+<li>once the user selects any <em>cluster</em> configuration in the "Exec environment" section - available price types becomes equal to the set value:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ForcedMasterType_2.png" /></li>
+</ul>
+<p><strong><em>Note</em></strong>: <strong><code>cluster.allowed.price.types.master</code></strong> preference doesn't apply on the price types for single-node jobs</p>
+<h2 id="max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</h2>
+<p>Previously, <strong>Cloud Pipeline</strong> displayed the resources utilization as an average value. This could hide some spikes (which resulted in job failure), when reviewing at a high zoom-level (e.g. several days).</p>
+<p>In the current version, to the "CPU Usage" and the "Memory Usage" charts additional data-series ("lines") were added, which are calculated as a <code>max</code> function in each moment.<br />
+Existing lines are kept as well, but were renamed to <code>average</code>.</p>
+<p>For example:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ResourceMonitoring_1.png" /></p>
+<p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">here</a>.</p>
+<h2 id="user-management-enhancements">User management enhancements</h2>
+<h3 id="allowed-instance-count">Allowed instance count</h3>
+<p>Sometimes users' scripts may spawn hundreds of machines without a real need.<br />
+This could lead to different bugs on the Platform.</p>
+<p>To prevent such situation, a new setting - <strong>Allowed instance max count</strong> - was added to the user's options. It allows to restrict the number of instances a user can run at the same time:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AllowedInstanceCount_1.png" /></p>
+<p>Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch only 5 jobs at a maximum. This includes worker nodes of the clusters.  </p>
+<p>If the user tries to launch a job, but it exceeds a current limit (e.g. limit is 5 and user starts a new instance which is going to be a 6th job), GUI will warn the user before submitting a job:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AllowedInstanceCount_2.png" /><br />
+And if the user confirms a run operation - it will be rejected:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AllowedInstanceCount_3.png" />  </p>
+<p>Even if the user will try to start a new job via <code>pipe</code> CLI - it will be rejected as well, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AllowedInstanceCount_4.png" /></p>
+<p>Such restrictions could be set not only for a user, but on another levels too (in descending order of priority):  </p>
+<ul>
+<li><strong>User-level</strong> - i.e. specified for a user. This overrides any other limit for a particular user. See details <a href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/#allowed-instance-count">here</a>.</li>
+<li><strong>User group level</strong> - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. This level is configured via the <strong>Allowed instance max count</strong> setting for a group/role. See details <a href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/#allowed-instance-count">here</a>.</li>
+<li>globally via the system preference <strong><code>launch.max.runs.user.global</code></strong> - it can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum.</li>
+</ul>
+<p>Additionally, a new command was added to <code>pipe</code> CLI that allows to show the count of instances running by the user at the moment, and also all possible restrictions to the allowed count of instances to launch - <code>pipe users instances</code>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AllowedInstanceCount_5.png" /><br />
+See details <a href="../../../manual/14_CLI/14.9._User_management_via_CLI/#instances-usage">here</a>.</p>
+<h3 id="export-custom-users-attributes">Export custom user's attributes</h3>
+<p>Previously, user's metadata attributes couldn't be exported in an automatic way.</p>
+<p>In the current version, such feature is implemented.<br />
+Now, before the users export, there is the ability to select which user's metadata attributes shall be exported. Previous export settings remain the same.</p>
+<ul>
+<li>Click the "<strong>Export users</strong>" button at the <strong>USER MANAGEMENT</strong> tab of the <strong>System Settings</strong>. Select the "Custom configuration":<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CustomUserExport_1.png" /></li>
+<li>In the export pop-up, select additional metadata keys you wish to export with general user's info:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CustomUserExport_2.png" /></li>
+<li>Exported metadata will be included into the export file as separate columns, e.g. (part of the output):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CustomUserExport_3.png" /></li>
+</ul>
+<p>For more details about users export see <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#export-users">here</a>.</p>
+<h3 id="user-management-and-export-in-read-only-mode">User management and export in read-only mode</h3>
+<p>Previously, only admins had access to the users info/metadata.
+In the current version, a new "built-in" role <strong><em>ROLE_USER_READER</em></strong> was added.<br />
+This role allows:</p>
+<ul>
+<li>read-only access to the <code>API</code> endpoints, responsible for the users, groups, roles information</li>
+<li>in the <code>GUI</code>, users with this role can:<ul>
+<li>get "general" user/groups information in read-only mode - name/email/etc. - <strong>without</strong> users' metadata</li>
+<li>get access to the user management tab in read-only mode - <strong>without</strong> users' metadata and launch options</li>
+<li>export users list - <strong>including</strong> users' metadata</li>
+</ul>
+</li>
+</ul>
+<p>For more details about user roles see <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#roles">here</a>.</p>
+<h3 id="batch-users-import">Batch users import</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.</p>
+<p>To address this, a new feature was implemented in the current version - now, admins can import users from a <code>CSV</code> file using GUI and CLI.</p>
+<p><code>CSV</code> format of the file for the batch import:</p>
+<pre><code class="language-csv">UserName,Groups,&lt;AttributeItem1&gt;,&lt;AttributeItem2&gt;,&lt;AttributeItemN&gt;
+&lt;user1&gt;,&lt;group1&gt;,&lt;Value1&gt;,&lt;Value2&gt;,&lt;ValueN&gt;
+&lt;user2&gt;,&lt;group2&gt;|&lt;group3&gt;,&lt;Value3&gt;,&lt;Value4&gt;,&lt;ValueN&gt;
+&lt;user3&gt;,,&lt;Value3&gt;,&lt;Value4&gt;,&lt;ValueN&gt;
+&lt;user4&gt;,&lt;group4&gt;,,,
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><strong>UserName</strong> - contains the user name</li>
+<li><strong>Groups</strong> - contains the "permission" groups, which shall be assigned to the user</li>
+<li><strong><code>&lt;AttributeItem1&gt;</code></strong>, <strong><code>&lt;AttributeItem2&gt;</code></strong> ... <strong><code>&lt;AttributeItemN&gt;</code></strong> - set of optional columns, which correspond to the user attributes (they could be existing or new)</li>
+</ul>
+<p>The import process takes a number of inputs:</p>
+<ul>
+<li><code>CSV</code> file</li>
+<li><em>Users/Groups/Attributes creation options</em>, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:<ul>
+<li>"<code>create-user</code>"</li>
+<li>"<code>create-group</code>"</li>
+<li>"<code>create-&lt;ATTRIBUTE_ITEM_NAME&gt;</code>"</li>
+</ul>
+</li>
+</ul>
+<h4 id="import-users-via-gui">Import users via GUI</h4>
+<p>Import users from a <code>CSV</code> file via GUI can be performed at the <strong>USER MANAGEMENT</strong> section of the <strong>System Settings</strong>.</p>
+<ol>
+<li>Click the "<strong>Import users</strong>" button:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UserImport_1.png" /></li>
+<li>Select a <code>CSV</code> file for the import. The GUI will show the creation options selection, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UserImport_2.png" /></li>
+<li>After the options are selected, click the <strong>IMPORT</strong> button, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UserImport_3.png" /></li>
+<li>Once the import is done - you can review the import results:  <ul>
+<li>Users and groups have been created</li>
+<li>Users were assigned to the specified groups</li>
+<li>Attributes were assigned to the users as well</li>
+</ul>
+</li>
+</ol>
+<p>For more details and examples see <a href="../../../manual/12_Manage_Settings/12.3._Create_a_new_user/#users-batch-import">here</a>.</p>
+<h4 id="import-users-via-cli">Import users via CLI</h4>
+<p>Also in the current version, a new <code>pipe</code> command was implemented to import users from a <code>CSV</code> file via CLI:</p>
+<pre><code class="language-bash">pipe users import [OPTIONS] FILE_PATH
+</code></pre>
+<p>Where <strong>FILE_PATH</strong> - defines a path to the <code>CSV</code> file with users list</p>
+<p>Possible options:</p>
+<ul>
+<li><strong><code>-cu</code></strong> / <strong><code>--create-user</code></strong> - allows the creation of new users</li>
+<li><strong><code>-cg</code></strong> / <strong><code>--create-group</code></strong> - allows the creation of new groups</li>
+<li><strong><code>-cm</code></strong> / <strong><code>--create-metadata</code> <code>&lt;KEY&gt;</code></strong> - allows the creation of a new metadata with specified key</li>
+</ul>
+<p>Results of the command execution are similar to the users import operation via GUI.</p>
+<p>For more details and examples see <a href="../../../manual/14_CLI/14.9._User_management_via_CLI/#batch-import">here</a>.</p>
+<h3 id="user-states">User states</h3>
+<p>Previously, admins could monitor Platform usage, for example, by list of <strong>ACTIVE RUNS</strong> or via <strong>CLUSTER STATE</strong> pages.<br />
+But for some cases, it can be useful to know which users do utilize the Platform in the current moment.</p>
+<p>In the current version, the displaying of user states in the "User management" system tab was implemented - now, that state is shown as an circle icon near the user name:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UserStates_1.png" /></p>
+<p>Possible states:</p>
+<ul>
+<li><em>Online</em> (green circle) - for users who are logged in and use the Platform in the moment</li>
+<li><em>Offline</em> (blank white circle) - for users who are not logged in at the moment/do not use the Platform for some time</li>
+</ul>
+<p>By hover over the <em>Offline</em> icons - admin can know when the specific user has utilized the Platform the last time, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UserStates_2.png" /></p>
+<h3 id="usage-report">Usage report</h3>
+<p>It is convenient to have the ability to view Platform statistics of users activity.<br />
+E.g. when creating different schedulers or node pools and info about number of online users can be helpful.</p>
+<p>For that, the <strong>Usage report</strong> subtab, showing the Platform's statistics of users activity, was added to the "User Management" system tab.<br />
+At this subtab, the summary info about total count of Platform users that were online at different time moments during the certain period is displayed in a chart form:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_UsageReport_1.png" /></p>
+<p>User can configure the showing chart by the following ways:</p>
+<ul>
+<li>select the type of period of view - day (<em>by default</em>) or month</li>
+<li>select to display data for a specific day/month from the calendar</li>
+<li>restrict the displayed data for specific user(s) or user group(s)/role(s) only</li>
+</ul>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#usage-report">here</a>.</p>
+<h3 id="gui-impersonation">GUI impersonation</h3>
+<p>While performing administrating, it is common to help users resolve issues, which can't be reproduced from the administrative accounts.<br />
+This requires to perform operations on the users' behalf.  </p>
+<p>To assist with such tasks, <strong>Cloud Pipeline</strong> offers "Impersonation" feature. It allows admins to login as a selected user into the <strong>Cloud Pipeline</strong> GUI and have the same permissions/level of access as the user.</p>
+<p>To start the impersonation, admin shall:</p>
+<ul>
+<li>Open the <strong>Users</strong> subtab of the "User Management" section of the system-level settings</li>
+<li>Load the user profile on whom behalf you are going to impersonate and click the <strong>Impersonate</strong> button in the top-right corner, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_Impersonation_1.png" /></li>
+<li>Platform GUI will be reloaded using the selected user:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_Impersonation_2.png" /></li>
+</ul>
+<p>While in the "Impersonation" mode, the following changes happen to the GUI:</p>
+<ul>
+<li>Main menu turns orange, indicating that the impersonation mode is <em>ON</em></li>
+<li><strong>Logout</strong> button is being changed to the <strong>Stop impersonation</strong> button</li>
+</ul>
+<p>To stop the "Impersonation" mode, user shall click the <strong>Stop impersonation</strong> button.</p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/#gui-impersonation">here</a>.</p>
+<h2 id="all-pipelines-and-all-storages-repositories">"All pipelines" and "All storages" repositories</h2>
+<p>There are several ways for users to find the appropriate storage/pipeline object in the <strong>Cloud Pipeline Platform</strong> - manually via the <strong>Library</strong>, using the <strong>Search</strong> ability or via the corresponding panels of the main Dashboard.</p>
+<p>It would be convenient to get all lists of the storages/pipelines accessible to the user in one place with short info about each object and easy access to it.<br />
+In the current version, such ability was implemented:</p>
+<ul>
+<li>there are two new controls displaying at the <strong>Library</strong> page, above the library-tree - separate "repositories" for storages and pipelines:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_Repositories_01.png" /></li>
+<li>each "repository" displays the full list of the corresponding objects accessible by the current user, e.g. for pipelines:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_Repositories_02.png" /></li>
+<li>for each object in the "repository" are displayed:<ul>
+<li>object name</li>
+<li>object description (if it is available)</li>
+<li><code>OWNER</code> user name</li>
+<li><em>additionally</em> for pipelines, the <strong>Run</strong> button - if the pipeline is available for execute for the user</li>
+<li><em>additionally</em> for storages, <strong>Cloud Region</strong>/<strong>Provider</strong> icons for multi-provider deployments</li>
+</ul>
+</li>
+<li>if the user clicks any object in the list - its regular page is being opened</li>
+<li>for each "repository", there is a search field for the quick search over objects list</li>
+</ul>
+<h2 id="sensitive-storages">Sensitive storages</h2>
+<p>Previously, Cloud Pipeline platform allows performing upload/download operations for any authorized data storage.<br />
+But certain storages may contain sensitive data, which shall not be copied anywhere outside that storage.</p>
+<p>For storing such data, special "sensitive" storages are implemented.<br />
+Sensitive data from that storages can be used for calculations or different other jobs, but this data cannot be copy/download to another regular storage/local machine/via the Internet etc.<br />
+Viewing of the sensitive data is also partially restricted.</p>
+<p>Sensitive storage is being created similar to general object storage, user only should tick the corresponding checkbox:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SensitiveStorages_1.png" /></p>
+<p>Via the GUI, the sensitive storage looks similar to the regular object storage, but there are some differences (even for admin/storage <strong><em>OWNER</em></strong>):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SensitiveStorages_2.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SensitiveStorages_3.png" />  </p>
+<p>I.e. files/folders in the sensitive storage can be created/renamed/removed but can't be downloaded/viewed or edited by any user.</p>
+<p>Sensitive storages can be mounted to the run. In this case, the run will become <em>sensitive</em> too.<br />
+In sensitive runs, all storages selected for the mounting including sensitive are being mounted in <strong>readonly</strong> mode to exclude any copy/move operations between storages.</p>
+<p>Files from the sensitive storages can be viewed <strong><em>inside</em></strong> the sensitive run and also copied into the inner instance disk, but not to any other storage:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SensitiveStorages_4.png" /></p>
+<p>Files from the sensitive storages can't be viewed <strong><em>outside</em></strong> the sensitive run or copied/moved anywhere (for example, when using not the web-terminal version of <code>pipe</code> SSH):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SensitiveStorages_5.png" /></p>
+<p>For more details and restrictions that are imposed by using of sensitive storages see <a href="../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">here</a>.</p>
+<h2 id="versioned-storages">Versioned storages</h2>
+<p>In some cases, users want to have a full-fledged system of the revision control of their stored data - to view revisions, history of changes, diffs between revisions.<br />
+So far, for separate storages types (e.g. <code>AWS</code> s3 buckets), there is the ability to enable the versioning option. But it is not enough. Such versioning allows to manage the versions of the certain file, not the revisions of the full storage, which revision can contain changes of several files or folders.<br />
+For the needs of full version control of the storing data, there was implemented a special storage type - <strong>Versioned storage</strong>.</p>
+<p>These storages are GitLab repositories under the hood, all changes performed in their data are versioned. Users can view the history of changes, diffs, etc.  </p>
+<p>Versioned storages are created via the special menu:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_01.png" /></p>
+<p>The view of the versioned storage is similar to regular data storage with some differences:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_02.png" /></p>
+<p>For each file/folder in the storage, additional info is displayed:</p>
+<ul>
+<li><em>Revision</em> - latest revision (SHA-1 hash of the latest commit) touched that file/folder</li>
+<li><em>Date changed</em> - date and time of the latest commit touched that file/folder</li>
+<li><em>Author</em> - user name who performed the latest commit touched that file/folder</li>
+<li><em>Message</em> - message of the latest commit touched that file/folder</li>
+</ul>
+<p>Moreover, there are extra controls for this storage type:</p>
+<ul>
+<li><strong>RUN</strong> button - allows to run the tool with cloning of the opened versioned storage into the instance</li>
+<li><strong>Generate report</strong> button - allows to configure and then download the report of the storage usage (commit history, diffs, etc.) as the Microsoft Word document (<code>docx</code> format)</li>
+<li><strong>Show history</strong> button - allows to open the panel with commit history info of the current versioned storage or selected folder</li>
+</ul>
+<p>Each change in a such storage - is a commit by the fact, therefore each change has its related comment message - explicit or automatic created:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_03.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_04.png" /></p>
+<p>One of the important advantages of versioned storages in condition with regular object storages - ability to view commit history and all changes that were performed with the data in details.<br />
+Users can view the commit history of the file in the versioned storage - i.e. history of all commits that touched this file, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_05.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_06.png" /></p>
+<p>Using the commit history of the file, users can:</p>
+<ul>
+<li>revert the content of the file to the selected commit</li>
+<li>view/download revert version of the file corresponding to the specific commit</li>
+<li>view diffs between the content of the specific file in the selected commit and in the previous commit, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_07.png" /></li>
+</ul>
+<p>Besides that, users can view the commit history of the folder or the whole versioned storage - i.e. history of all changes touched files inside that folder or its subfolders, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_08.png" /><br />
+Using the commit history of the folder, users can view diffs between the content of the specific folder in the selected commit and in the previous commit.</p>
+<p>Versioned storages can be also mounted during the runs, data can be used for the computations and results can be comitted back to such storages - with all the benefits of a version control system.</p>
+<p>For that, new management controls were added to the menu of the active runs:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_09.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_10.png" /></p>
+<p>Via this controls, users can:</p>
+<ul>
+<li>clone the versioned storage(s) to the existing running instance</li>
+<li>check differences between cloned and current changed versions of the versioned storage</li>
+<li>save (commit) changes performed in the cloned version of the storage during the run</li>
+<li>checkout revision of the cloned storage in the run</li>
+<li>resolve conflicts appeared during the save or checkout operation</li>
+</ul>
+<p>The main scenario of using versioned storage during the run looks like:</p>
+<ul>
+<li>user clones selected versioned storage to the run:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_11.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_12.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_13.png" /></li>
+<li>cloned versioned storages are available inside the run by the path <code>/versioned-data/&lt;storage_name&gt;/</code>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_14.png" /></li>
+<li>user works with the data, performed changes can be viewed at any moment, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_15.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_16.png" /></li>
+<li>user saves performed changes (i.e. creates a new commit):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_17.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_18.png" /></li>
+<li>saved changes become available in the origin versioned storage:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_19.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_VersionedStorages_20.png" /></li>
+</ul>
+<p>For more details about versioned storages and operations with them see <a href="../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/#813-versioned-storages">here</a>.</p>
+<h2 id="updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</h2>
+<h3 id="displaying-of-the-cp_cap_limit_mounts-in-a-user-friendly-manner">Displaying of the <code>CP_CAP_LIMIT_MOUNTS</code> in a user-friendly manner</h3>
+<p>Previously, <strong>Cloud Pipeline</strong> displayed the run-enabled data storages (selected via <a href="../../v.0.15/v.0.15_-_Release_notes/#limit-mounted-storages">"Limit mounts"</a> feature before the launch) as a list of IDs at the <strong>Run logs</strong> page (as the <strong><code>CP_CAP_LIMIT_MOUNTS</code></strong> parameter).  </p>
+<p>In the current version, this viewing was changed to more "friendly" for users:</p>
+<ul>
+<li>The data storage names are being displayed instead of the IDs</li>
+<li>Showing names are hyperlinks, pointing to the data storage in the <strong>Cloud Pipeline</strong> GUI</li>
+<li>"Sensitive" storages are being highlighted appropriately</li>
+</ul>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_LimitMountsNames_1.png" /></p>
+<p>See details <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</p>
+<h3 id="allow-to-create-run-without-mounts">Allow to create run without mounts</h3>
+<p>Previously, users could select all/several storages (from the available scope) to be mounted during the run.<br />
+But in some cases, it might be needed to launch runs without mounts at all.<br />
+In the current version, such ability was implemented.</p>
+<p>For that, the separate checkbox was added to the "Limit mounts" settings section:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_LimitWithoutMounts_1.png" /></p>
+<p>If this checkbox is set - there are <strong><em>no storages</em></strong> will be mounted during the run initialization:</p>
+<ul>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_LimitWithoutMounts_2.png" /></li>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_LimitWithoutMounts_3.png" /></li>
+</ul>
+<p>The ability to set "Do not mount storages" is added to all forms where limit mounts can be configured.</p>
+<h3 id="warning-in-case-of-a-risk-of-oom-due-to-the-number-of-the-object-storage-mounts">Warning in case of a risk of <code>OOM</code> due to the number of the object storage mounts</h3>
+<p>If the user has 100+ object storages available - they all are mounted to the jobs, by default. When using rather small nodes - this leads to the <code>OOM</code> errors, as the 100+ mount processes may oversubscribe the memory.<br />
+Even if the memory consumption will be greatly optmized - the user may still face such issues, if the number of object storages grow.<br />
+So in the current version, a sort of hard-limit was implemented to warn the user if there is risk of <code>OOM</code>.</p>
+<p>A new <strong>System preference</strong> is introduced - <strong><code>storage.mounts.per.gb.ratio</code></strong> (<em>int</em>).<br />
+This preference allows to specify the "safe" number of storages per Gb of <code>RAM</code> (by default, it is <code>5</code> - i.e. "5 storages per each Gb of <code>RAM</code>").</p>
+<p>When launching a job - the user's available object storages count is being calculated and checked that this count does not exceed the selected instance type <code>RAM</code> multiplied by the <strong><code>storage.mounts.per.gb.ratio</code></strong>.<br />
+If it's exceeded - the user is being warned with the following wording and asked to reduce a number of mounts via the <strong>Limit mounts</strong> feature, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_LimitMountsWarn_1.png" /></p>
+<p><strong><em>Note</em></strong>:</p>
+<ul>
+<li>Warning does not prohibit the run launching, user can start it at his own discretion changing nothing.</li>
+<li>If the <strong><code>storage.mounts.per.gb.ratio</code></strong> is not set - no checks are being performed, no warning appears.</li>
+<li>Before the launch, only the <em>object storages</em> count is being calculated, <em>file mounts</em> do not introduce this limitation.</li>
+</ul>
+<h2 id="hot-node-pools">Hot node pools</h2>
+<p>For some jobs, a waiting for a node launch can be too long. It is convenient to have some scope of the running nodes in the background that will be always or on schedule be available.</p>
+<p>In the current version, the mechanism of "<strong>Hot node pools</strong>" was implemented. It allows controlling the number of persistent compute nodes (of the certain configuration) in the cluster during the certain schedule.<br />
+This is useful to speed up the compute instances creation process (as the nodes are already up and running).  </p>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HotNodePools_01.png" /></p>
+<p>Admins can create node pools:</p>
+<ul>
+<li>each pool contains <em>one or several identical nodes</em> - admin specifies the node configuration (instance type, disk, <strong>Cloud Region</strong>, etc.) and a corresponding number of such nodes. This count can be fixed or flexible ("autoscaled")</li>
+<li>each pool has <em>the schedule of these nodes creation/termination</em>. E.g. the majority of the new compute jobs are started during the workday, so no need to keep these persistent instances over the weekends. For the pool, several schedules can be specified</li>
+<li>for each pool can be configured additional filters - to restrict its usage by the specific users/groups or for the specific pipelines/tools etc.</li>
+</ul>
+<p>When the pool is created, corresponding nodes are being up (<em>according to pool's schedule(s)</em>) and waiting in the background:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HotNodePools_02.png" /></p>
+<p>If the user starts a job in this time (<em>pool's schedule(s)</em>) and the instance requested for a job matches to the pool's node - such running node from the pool is automatically being assigned to the job, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HotNodePools_03.png" /></p>
+<p><strong><em>Note</em></strong>: pools management is available only for admins. Usage of pool nodes is available for any user.</p>
+<p>For more details and examples see <a href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">here</a>.</p>
+<h2 id="fs-quotas">FS quotas</h2>
+<p>In some cases, users may store lots of extra files that are not needed more for them in FS storages.<br />
+Such amount of extra files may lead to unnecessary storage costs.<br />
+To prevent extra spending in this case, in the current version a new ability was implemented - FS quotas.</p>
+<p>There is a feature that allows admins to configure quota(s) to the FS storage volume that user can occupy.
+On exceeding such quota(s), different actions can be applied - e.g., just user notifying or fully read-only mode for the storage.</p>
+<p>This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.</p>
+<p>To configure notifications/quota settings for the storage, admin shall:</p>
+<ul>
+<li>click the <strong>Configure notifications</strong> hyperlink in the Attributes panel of the storage:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_01.png" /></li>
+<li>in the appeared pop-up, specify the username(s) or a groupname(s) in the <strong>Recipients</strong> input to choose who will get the FS quota notifications via emails and push notifications, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_02.png" /></li>
+<li>then click the <strong>Add notification</strong> to configure rules/thresholds:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_03.png" /></li>
+<li>Put a threshold in <code>Gb</code> or <code>%</code> of the total volume and choose which action shall be performed when that threshold is reached. The following actions can be taken by the platform:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_04.png" />  <ul>
+<li><em>Send email</em> - just notify the recipients that a quota has been reached (notification will be resent each hour)</li>
+<li><em>Disable mount</em> - used to let the users cleanup the data:  <ul>
+<li>GUI will still allow to perform the modification of this storage (<code>read-write</code> mode )</li>
+<li>In existing nodes (launched runs), FS storage mount will be switched to a <code>read-only</code> mode (if it was mounted previously)</li>
+<li>This FS storage will be mounted in a <code>read-only</code> mode to the new launched compute nodes</li>
+</ul>
+</li>
+<li><em>Make read-only</em> - used to stop any data activities from the users, only admins can cleanup the data per a request:  <ul>
+<li>GUI will show this FS storage in a <code>read-only</code> mode</li>
+<li>Existing nodes (launched runs) will turn this mounted FS storage in a <code>read-only</code> mode as well</li>
+<li>This FS storage will be mounted in a <code>read-only</code> mode to the new launched compute nodes</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>The notification/quota rules can be combined in any form. E.g., the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_05.png" /></li>
+</ul>
+<p>For example, if admin will configure notifications/quotas for the storage as described above:</p>
+<ul>
+<li>when user(s) will create/upload some files in the storage and summary FS size will exceed 5 Gb threshold - only notifications will be sent to recipients</li>
+<li>when user(s) will create/upload some more files in the storage and summary FS size will exceed 10 Gb threshold:  <ul>
+<li>for active jobs (that were already launched), filesystem mount becomes <code>read-only</code> and users will not be able to perform any modification</li>
+<li>for new jobs, filesystem will be mounted as <code>read-only</code><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_06.png" /></li>
+<li>in GUI:  <ul>
+<li>permissions will not be changed. Write operations can be performed, according to the permissions</li>
+<li>"<strong>Warning</strong>" icon will be displayed in the storage page. It will show <code>MOUNT DISABLED</code> state:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_07.png" /></li>
+<li>Storage size will be more than 10 Gb:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_08.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>when user(s) will create/upload some more files in the storage (e.g. via GUI) and summary FS size will exceed 20 Gb threshold:  <ul>
+<li>for active jobs (that were already launched), filesystem mount will remain <code>read-only</code> and users will not be able to perform any modification</li>
+<li>for new jobs, filesystem will be mounted as <code>read-only</code></li>
+<li>in GUI:  <ul>
+<li>storage will become <code>read-only</code>. User will not be able to perform any modification to the filesystem</li>
+<li>"Warning" icon will be still displayed. It will show <code>READ ONLY</code> state<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_09.png" /></li>
+<li>Storage size will be more than 20 Gb:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_FSquotas_10.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Please note, these restrictions will be applied to "general" users only.<br />
+Admins will not be affected by the restrictions. Even if the storage is in <code>read-only</code> state - they can perform <em>READ</em> and <em>WRITE</em> operations.</p>
+<p>For more details about FS quotas, their settings and options see <a href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/#fs-quotas">here</a>.</p>
+<h2 id="export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</h2>
+<p>Previously, users could export <strong>Cluster Node Monitor</strong> reports only in <strong><code>CSV</code></strong> format.</p>
+<p>From now, the ability to export these reports in <strong><code>XLSX</code></strong> format is implemented.<br />
+Users can choose the format of the report before the download:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_01.png" /></p>
+<p><strong>Excel</strong>-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.<br />
+Example of the <strong>Excel</strong>-report sheets:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_02.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_03.png" /></p>
+<p>For more details how to configure <strong>Cluster Node Monitor</strong> reports see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#export-utilization-data">here</a>.</p>
+<h2 id="export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></h2>
+<p>Also in the current version, the ability to export <strong>Cluster Node Monitor</strong> reports by <code>pipe</code> CLI is introduced.</p>
+<p>The command to download the node usage metrics:</p>
+<pre><code class="language-bash">pipe cluster monitor [OPTIONS]
+</code></pre>
+<p>The one of the below options should be specified:</p>
+<ul>
+<li><strong><code>-i</code></strong> / <strong><code>--instance-id</code></strong> <strong>{ID}</strong> - allows to specify the cloud instance ID. This option cannot be used in conjunction with the <strong><code>--run-id</code></strong> option</li>
+<li><strong><code>-r</code></strong> / <strong><code>--run-id</code></strong> <strong>{RUN_ID}</strong> - allows to specify the pipeline run ID. This option cannot be used in conjunction with the <strong><code>--instance-id</code></strong> option</li>
+</ul>
+<p>Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.</p>
+<p>For details and examples see <a href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/#export-cluster-utilization">here</a>.</p>
+<h2 id="pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></h2>
+<p>Previously, users could automate the pause and resume operation for the pipeline execution only via the API calls.<br />
+In the current version, <code>pipe pause</code> and <code>pipe resume</code> operations are exposed to the CLI.</p>
+<p>The command to pause a specific running pipeline:</p>
+<pre><code class="language-bash">pipe pause [OPTIONS] RUN_ID
+</code></pre>
+<p>Possible options:</p>
+<ul>
+<li><strong><code>--check-size</code></strong> - to check firstly if free disk space is enough for the commit operation</li>
+<li><strong><code>-s</code></strong> / <strong><code>--sync</code></strong> - to perform operation in a sync mode. This option blocks the terminal until the <strong><em>PAUSED</em></strong> status won't be returned for the pausing pipeline</li>
+</ul>
+<p>The command to resume a specific paused pipeline:</p>
+<pre><code class="language-bash">pipe resume [OPTIONS] RUN_ID
+</code></pre>
+<p>Possible option:</p>
+<ul>
+<li><strong><code>-s</code></strong> / <strong><code>--sync</code></strong> - to perform operation in a sync mode. This option blocks the terminal until the <strong><em>RUNNING</em></strong> status won't be returned for the resuming pipeline</li>
+</ul>
+<p>For details and examples see here - <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#pause-a-pipeline-execution">pause command</a> and <a href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/#resume-paused-pipeline-execution">resume command</a>.</p>
+<h2 id="home-storage-for-each-user">Home storage for each user</h2>
+<p>Typically each general user stores personal assets in the data storage, that is created for him/her by the Administrator.<br />
+This is treated as a "home" storage and is used a lot. But the creation of multiple users becomes a tedious task (create the user/create storage/grant permissions for the user).
+To facilitate this task, in the current version the ability (optionally) to create home storages for the newly created users in automatic mode was implemented.</p>
+<p>This behavior is controlled by the system preference <strong><code>storage.user.home.auto</code></strong> (<em>Boolean</em>, default value is <code>false</code>).<br />
+It controls whether the home storages shall be created automatically.<br />
+If it is set to <code>true</code> - new storage will be created for the user automatically simultaneously with the user creation. Also the just-created user is being granted <strong><em>OWNER</em></strong> permissions for the new storage.</p>
+<p>The "home" storage automatic creation is being driven by a template. The template is being described as <code>JSON</code> element in the other new system preference - <strong><code>storage.user.home.template</code></strong>.<br />
+In this preference for the template, being described:</p>
+<ul>
+<li>settings for the storage</li>
+<li>permissions on the storage</li>
+</ul>
+<p>Example of the configured preferences:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HomeStorage_01.png" /></p>
+<p>So, after the user creation, the new storage according to the settings in template is being created:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HomeStorage_02.png" /></p>
+<p>The newly created storage is being set as a "default" storage in the user's profile:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HomeStorage_03.png" /></p>
+<p>For more details and examples see <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#home-storage-for-each-user">here</a>.</p>
+<h2 id="ssh-tunnel-to-the-running-compute-instance">SSH tunnel to the running compute instance</h2>
+<p>In the current version, a new ability to access <strong>Cloud Pipeline</strong> run instances from local workstations is implemented.<br />
+Now, <strong>Cloud Pipeline</strong> run instance can be accessed via SSH directly using special <strong>network tunnels</strong>. Such tunnels can be established between a local <strong>Windows</strong> or <strong>Linux</strong> workstation and a <strong>Cloud Pipeline</strong> run.</p>
+<p><code>pipe</code> CLI provides a set of command to manage such network tunnels. <code>pipe</code> CLI automatically manages SSH keys and configures <strong>passwordless SSH access</strong>. As a result no manual SSH keys management is required to access <strong>Cloud Pipeline</strong> run from the local workstation.</p>
+<p>SSH tunnels to <strong>Cloud Pipeline</strong> runs can be used for interactive SSH sessions, files transferring and third-party applications which depends on SSH protocol.</p>
+<p>The command that runs ports tunnelling operations:</p>
+<pre><code class="language-bash">pipe tunnel COMMAND [ARGS]
+</code></pre>
+<p>Where <strong>COMMAND</strong> - one of the following commands:</p>
+<ul>
+<li><strong><code>start &lt;RUN_ID&gt;</code></strong> - establishes tunnel connection to specified run instance port and serves it as a local port</li>
+<li><strong><code>stop &lt;RUN_ID</code></strong> - stops background tunnel processes with specified run</li>
+</ul>
+<p>For the <code>start</code> command there are two <em>mandatory</em> options:</p>
+<ul>
+<li><strong><code>-lp</code></strong> / <strong><code>--local-port</code></strong> - specifies local port to establish connection from</li>
+<li><strong><code>-rp</code></strong> / <strong><code>--remote-port</code></strong> - specifies remote port to establish connection to</li>
+</ul>
+<p>Example of the command that establishes tunnel connection to the run:</p>
+<pre><code class="language-bash">pipe tunnel start 12345 -lp 4567 -rp 22 --ssh
+</code></pre>
+<p>Here: <code>12345</code> is the <em>Run ID</em>, <code>4567</code> is just a random free <em>local port</em> and <code>22</code> is the <strong>Cloud Pipeline</strong> run <em>SSH port</em>. Additional <code>--ssh</code> flag enables passwordless SSH access.</p>
+<p>For more details and examples see <a href="../../../manual/14_CLI/14.10._SSH_tunnel/">here</a>.</p>
+<h2 id="updates-of-metadata-object">Updates of Metadata object</h2>
+<p>In the current version, several enhancements were implemented for the Metadata objects displaying and working with:</p>
+<h3 id="controls-placement-reorganization">Controls placement reorganization</h3>
+<ul>
+<li>Several controls (for adding a new instance, upload and delete metadata, transfer to the cloud and showing attributes) were moved to <strong>Additional parameters</strong> control (gear icon):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_04.png" /><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/#additional-options">here</a>.</li>
+<li><strong>Bulk operation panel</strong> is hidden/disabled until at least one instance is selected in a table, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_05.png" /><br />
+    To manage selected items, click the <strong>V</strong> button next to the "<strong>Show only selected items</strong>" control to open the corresponding menu:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_06.png" /><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/#bulk-operation-panel">here</a>.</li>
+</ul>
+<h3 id="ability-to-show-only-selected-instances">Ability to show only selected instances</h3>
+<p>The ability is implemented to show separately only selected metadata instances. All unselected items will be hidden. For that: select items of interest (they can be at different pages too) and click the "<strong>Show only selected items</strong>" button at the <strong>Bulk operation</strong> panel, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_07.png" /><br />
+    For shown selected items, all functionality as for the general table is available except filtering.</p>
+<h3 id="improvements-in-the-search-over-the-metadata">Improvements in the search over the metadata</h3>
+<ul>
+<li>users can search over any attribute values (not only over <code>ID</code> as previously)</li>
+<li>the metadata search field supports multiple terms search - in this case, multiple terms for the search should be specified space separated, e.g. <code>sample1 sample2</code></li>
+<li>the metadata search field supports a <code>key:value</code> search, where <code>key</code> is an attribute name (column header) and <code>value</code> is a term that shall be searched in that attribute values, e.g. <code>ID:D703</code><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/#search-field">here</a>.</li>
+</ul>
+<h3 id="ability-to-filter-instances">Ability to filter instances</h3>
+<p>The ability is implemented to filter instances of an entity in a table. Now, user can click a special control in a header of the desired column and set one or several filters for the column values - to restrict the output table, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_08.png" /><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/#filter-instances">here</a>.</p>
+<h3 id="displaying-of-the-creation-date-info">Displaying of the creation date info</h3>
+<p>For all Metadata entities the "<strong>Created date</strong>" fields are displayed. This column appears and filled in automatically when the Metadata is uploaded or created manually, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_01.png" /></p>
+<h3 id="sorting-by-several-columns">Sorting by several columns</h3>
+<p>Ability to sort a list of entities by several columns is implemented. For that, a list is being sorted by one column, then user should click the second column he(she) wants to sort by, then the third, etc.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_09.png" /><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/#metadata-table-sorting">here</a>.</p>
+<h3 id="autofill">Autofill</h3>
+<p>An autofill feature for metadata cells was implemented. It allows to fill metadata instances with data that are based on data in other instances in the same column/row, e.g.:</p>
+<ul>
+<li>click the right-bottom corner of the cell you wish to copy and move the mouse holding the left button - vertically or horizontally, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_10.png" /></li>
+<li>once you will release the mouse button - selected cells will be autofilled by the value of the cell that you've dragged:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_11.png" /><br />
+    See details <a href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/#field-values-autofill">here</a>.</li>
+</ul>
+<h3 id="entity-id-autogeneration">Entity ID autogeneration</h3>
+<p>In some cases, it could be convenient not to specify entity ID during import. Therefore Metadata entities support IDs autogeneration (in the <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier"><code>UUID4</code></a> format). This works and for the import Metadata operation (for empty ID fields), and for the manual instance creation, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_02.png" /><br />
+    See after the creation:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_03.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: IDs still should be unique</p>
+</blockquote>
+<h3 id="ability-to-add-sampleset-item-via-gui">Ability to add SampleSet item via GUI</h3>
+<p>Now, users may create SampleSets or other "Container-like" entities from the GUI (previously it was possible via the <code>CSV</code> import only).<br />
+This feature could be useful, if the Samples were imported using the IDs autogeneration, as it could be complicated to grab those IDs and copy to the <code>CSV</code>.</p>
+<p>To create a new SampleSet:</p>
+<ul>
+<li>Click the <strong>+ Add instance</strong> button in the Metadata section and choose the <em>SampleSet</em> instance type:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_16.png" /></li>
+<li>Provide the information for the new SampleSet and click the <strong>Browse</strong> button to select a list of Samples, which will be associated with the creating SampleSet:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_17.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_18.png" /></li>
+<li>After creation, the new SampleSet will appear in the corresponding metadata class:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_19.png" /></li>
+</ul>
+<p>See details <a href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/#add-sampleset-item">here</a>.</p>
+<h3 id="preselect-instances-for-a-rerun">Preselect instances for a rerun</h3>
+<p>Additionally, if metadata instances were used for the run via the expansion expressions in the parameters - then for the rerun of such run, the ability to choose was implemented - to use the same resolved expressions values from the initial run or preselect another metadata instance(s) for a coming rerun, e.g.:  </p>
+<ul>
+<li>imagine, that some run was launched from the detached configuration. Moreover, one configuration parameter uses the expansion expression:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_12.png" /></li>
+<li>for the run, some instance was selected</li>
+<li>after the run is completed, user tries to rerun this run. The <strong>Launch</strong> form will appear. By default, parameters are substituted fully the same as they were in the initial run:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_13.png" /><br />
+    If click the <strong>Launch</strong> button in this case - during the rerun, all parameter(s) will use their resolved values from the initial run (previous behavior).</li>
+<li>but now, the ability to preselect another metadata instance for the re-launch is implemented. For that, user can click "<strong>v</strong>" button near the launch button and in the appeared list click "<strong>Select metadata entries and launch</strong>" item:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_14.png" /><br />
+    In this case, the pop-up will appear to select a metadata instance for which the rerun will be launched. And during the rerun, all parameter(s) that use expansion expression(s) will be resolved according to a new selected metadata instance(s):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_MetadataEnhancements_15.png" /></li>
+</ul>
+<p>See example <a href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/#preselect-metadata-instances-for-a-rerun">here</a>.</p>
+<h2 id="custom-node-images">Custom node images</h2>
+<p>Previously, Cloud Pipeline allowed to run instances only using some default predefined node images.<br />
+For example, some node image was used for all CPU instance types, another - for GPU ones.<br />
+Nevertheless there are cases than some of the tools or pipelines require special node images. For example, some tool may require specific <code>nvidia</code> driver version which default GPU node image doesn't have.</p>
+<p>In the current version, the ability to use a custom node image was implemented.<br />
+If a custom node image is specified for a pipeline, tool or just a single launch then cloud instance with the required node image will be used for their runs.</p>
+<p>In a pipeline config, a custom node is specified in format: <code>"instance_image": "&lt;custom_node_image&gt;"</code>.<br />
+For runs launched via <code>API</code>, a custom node is specified in format: <code>"instanceImage": "&lt;custom_node_image&gt;"</code>.<br />
+In both cases, <code>&lt;custom_node_image&gt;</code> is the name of the custom image.</p>
+<p>For example, to use a custom node for a pipeline:</p>
+<ul>
+<li>open pipeline's <strong>CODE</strong> tab</li>
+<li>open <code>config.json</code> file</li>
+<li>in the configuration, specify a custom node image:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CustomNode_01.png" /></li>
+<li>save changes</li>
+<li>when launching such pipeline, you can observe that specified image is used for a node:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_CustomNode_02.png" /></li>
+</ul>
+<p>See an example for a pipeline in details <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-configure-a-custom-node-image">here</a>.</p>
+<h2 id="launch-a-tool-with-hosted-applications">Launch a tool with "hosted" applications</h2>
+<p>"Long-running" Cloud Pipeline applications may occasionally failed.<br />
+And one of the main task caused this situation - saving the internal access to the services (e.g. if a database was hosted) as the IP and name (which match the pod) are being changed during the default run restarts.</p>
+<p>To resolve that, a special option to assign an internal DNS name to the run was implemented.</p>
+<p>Name of the service and a list of ports can be supplied by the user in the GUI, at the <strong>Launch</strong> form before the run:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_01.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_02.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_03.png" /></p>
+<p>Configured DNS service is shown at the <strong>Launch</strong> form:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_04.png" /></p>
+<p>And <a href="https://en.wikipedia.org/wiki/Fully_qualified_domain_name"><strong>FQDN</strong></a> of all configured services are shown during the run - at the <strong>Run logs</strong> page:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_05.png" /></p>
+<p>Checking that the run is launched with a "hosted" application:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_HostedApp_06.png" /></p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-hosted-applications">here</a>.</p>
+<h2 id="advanced-global-search-with-faceted-filters">Advanced global search with faceted filters</h2>
+<p>In <strong><code>v0.14</code></strong>, the <strong>Global search</strong> over the platform was <a href="../../v.0.14/v.0.14_-_Release_notes/#global-search">introduced</a>.<br />
+Now, in <strong><code>v0.17</code></strong>, the new version of the search was implemented - <strong>Advanced search</strong>.<br />
+<strong>Advanced search</strong> repeats the functionality of the <strong>Simple search</strong> but has some advanced capabilities.</p>
+<p>To open the <strong>Advanced search</strong> click the <strong>Search</strong> icon in the main menu:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_01.png" /></p>
+<blockquote>
+<p>Please note, the previous form of the global search is still available - by pressing "Ctrl+F". Currently, <strong>Advanced search</strong> is available for admins only</p>
+</blockquote>
+<p>To start searching, a query string shall be entered (search can be triggered by pressing the "Enter" button or by the correspoding <strong>Search</strong> button near the search bar), e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_02.png" /></p>
+<p>As in the previous form, you can:</p>
+<ul>
+<li>restrict search results selecting desired object types from all results scope (the corresponding panel with the object types selector is placed under the search bar):<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_03.png" /></li>
+<li>open the "Preview" pane for the certain result hovering mouse point over it and click the <strong>Info</strong> icon:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_04.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_13.png" /></li>
+<li>scroll search results to view more or use the paging control</li>
+</ul>
+<p>New features:</p>
+<ul>
+<li>"<strong>Faceted filters</strong>" panel at the left side of the search form.<br />
+    It allows to search objects by their attributes (tags). Operating principle is similar to the E-Commerce sites.<br />
+    Tags' keys and values displayed in this panel are loaded from separate <strong>System Dictionaries</strong> marked as filter sources.<br />
+    User can restrict (filter) search results - by checking/unchecking desired filters.<br />
+    In the search results, only objects were associated with the checked filter value (dictionary entry) will remain, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_05.png" />
+    <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_06.png" /><br />
+    I.e. only objects <strong>tagged</strong> by this dictionary entry remained in the search results.<br />
+    You can select several filters values from different facets. Each time, other filters will be updated, and also displayed search results will be changed according to the selected filters.<br />
+    You can hover over any displayed search result and click the <strong>Info</strong> icon to check that the object is really tagged by selected filters (attributes), e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_07.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_14.png" /><br />
+    More details - how to add dictionaries to the "Faceted filters" panel, how to configure filters and use them for the search - see <a href="../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">here</a>.</li>
+<li>Changeable view of the search results output:<br />
+    Results output in the <strong>Simple search</strong> has the view as simple list of the object names only.<br />
+    In the <strong>Advanced search</strong>, that output contains the additional info - according to the entity type of the certain result - it can be <code>OWNER</code>, <code>DESCRIPTION</code>, <code>DATE_CHANGED</code>, <code>PATH</code>, etc.<br />
+    Also user can switch between output view formats - <code>list</code> and <code>table</code> - by special control <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_08.png" />:  <ul>
+<li><code>list</code> view (<em>default</em>) - each result is presented by the "row" in the list, <em>additional</em> info is placed in line, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_09.png" /></li>
+<li><code>table</code> view - all results are presented by the single table, <em>additional</em> info is placed in columns, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_10.png" /><br />
+Also the <code>table</code> view can be customized by the admin user.<br />
+To the existing columns, user can add ones for the object attributes (tags) values, where the attribute <code>key</code> becomes the column header. If the object in results has the <code>value</code> for that attribute - it will be displayed in the corresponding column.<br />
+Customizing of additional attribute columns is being performed by the new system preference - <strong><code>search.elastic.index.metadata.fields</code></strong>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_11.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_AdvancedSearch_12.png" /><br />
+For more details about the view of the results output see <a href="../../../manual/19_Search/19._Global_search/#results-output-view">here</a>.</li>
+</ul>
+</li>
+</ul>
+<p>For more details about <strong>Advanced search</strong> see <a href="../../../manual/19_Search/19._Global_search/">here</a>.</p>
+<h2 id="explicitly-immutable-pipeline-parameters">Explicitly "immutable" pipeline parameters</h2>
+<p>Previously, if the pipeline parameter had a default value - it could not be changed in the detached configuration that used this pipeline.<br />
+In different cases, it might be convenient to provide the ability to specify the own parameter value before the configuration launch or vice versa - the ability to launch the configuration with only defaults parameter values.  </p>
+<p>In the current version, the special option was implemented that allows/denies the parameter value overriding for described cases - <code>no_override</code> (<em>boolean</em>). This option can be specified for the pipeline parameter via <code>config.json</code> file:</p>
+<ul>
+<li>if a pipeline parameter has a default value and <code>no_override</code> is <code>true</code> - the parameter field will be read-only in the detached configuration that uses this pipeline:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImmutableParameters_01.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImmutableParameters_02.png" /></li>
+<li>if a pipeline parameter has a default value and <code>no_override</code> is <code>false</code> or not set - the parameter field will be writable in the detached configuration that uses this pipeline:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImmutableParameters_03.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImmutableParameters_04.png" /></li>
+<li>if a pipeline parameter has no default value - <code>no_override</code> is ignored and the parameter field will be writable in the detached configuration that uses this pipeline</li>
+</ul>
+<h2 id="disable-hyper-threading">Disable Hyper-Threading</h2>
+<p><strong>Hyper-Threading technology</strong> makes a single physical processor appear as multiple logical processors. To do this, there is one copy of the architecture state for each logical processor, and the logical processors share a single set of physical execution resources.</p>
+<p>Hyper-Threading technology is enabled by default for all nodes in <strong>Cloud Pipeline</strong>.</p>
+<p>But not in all cases this technology is useful. In cases when threads are operating primarily on very close or relatively close instructions or data, the overall throughput occasionally decreases compared to non-interleaved, serial execution of the lines.<br />
+For example, at a high performance computing that relies heavily on floating point calculations, the two threads in each core share a single floating point unit (FPU) and are often blocked by one another. In such case Hyper-Threading technology only slows computations.</p>
+<p>In the current version, the ability to disable Hyper-Threading for a specific job was implemented.<br />
+So, this technology can be turned on or off, as is best for a particular application at the user's discretion.</p>
+<p>In Cloud Provider environment, each vCPU is a thread of a physical processor core. All cores of the instance has two threads. Disabling of Hyper-Threading disables the set of vCPUs that are relied to the second thread, set of first thread vCPUs stays enabled (see details for <code>AWS</code> <a href="https://aws.amazon.com/blogs/compute/disabling-intel-hyper-threading-technology-on-amazon-linux/">here</a>).</p>
+<p>To disable Hyper-Threading technology for a job:</p>
+<ul>
+<li>set the corresponding option in "<strong>Run capabilities</strong>" before the run:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_DisableHT_1.png" /></li>
+<li>check that Hyper-Threading was disabled via the following command after the run is launched:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_DisableHT_2.png" /><br />
+    Here you can check that only 1 thread per core is set, virtual CPUs 4-7 are offline. Only one thread is enabled (set of CPUs 0-3).</li>
+</ul>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/#disable-hyper-threading">here</a>.</p>
+<h2 id="saving-of-interim-data-for-jobs-stopped-by-a-timeout">Saving of interim data for jobs stopped by a timeout</h2>
+<p>Previously, if for a job a timeout was set and it has elapsed - the job was stopped and all the data was erased.<br />
+In the current version, the solution to extract the current data from the timed-out jobs was implemented.</p>
+<p>Now, if a job has timed out - it will not be stopped immediately.<br />
+Instead, the new <code>OutputData</code> task will be triggered.<br />
+During this task performing, all the contents of the <code>$ANALYSIS_DIR</code> directory will be copied to all <code>output</code> storages - in the same manner, as if the job has succeeded.</p>
+<p>This feature doesn't require additional actions from the user side. Only <code>$ANALYSIS_DIR</code> and <code>output</code> paths should be defined.</p>
+<p>Additionally, a new system parameter was added - <strong><code>CP_EXEC_TIMEOUT</code></strong>. This parameter allows to define a timeout period after which the job shall be stopped. The essence of the parameter is the same as the configured value in the "<strong>Timeout</strong>" field. If both values are specified - for a job, <code>CP_EXEC_TIMEOUT</code> value will be used:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_Timeout_01.png" /></p>
+<h2 id="resolve-variables-for-a-rerun">Resolve variables for a rerun</h2>
+<p>Previously, if the user launched some job containing environment variables in its parameters and then, after the job was completed, user tried to rerun that job - all environment variables from the job parameters had been resolving again during the new run.<br />
+But for some cases, it might be needed to use in the rerun all the same values of environment variables that were in the initial run.<br />
+In the current version, the ability to choose was implemented - for the rerun, to resolve such variables in a new run or use their initial values.</p>
+<p>For that, when user tries to rerun some completed run that used environment variables in its parameters - at the <strong>Launch</strong> form, the checkbox "<strong>Use resolved values</strong>" appears in the <strong><em>Parameters</em></strong> section, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ResolveVariablesRerun_1.png" /><br />
+    By default, this checkbox is disabled. In this case, all environment variables are shown as is and will be resolved only during the new (re-launched) run - with the values corresponding to this new run.</p>
+<p>If this checkbox is ticked, all environment variables will be resolved with the values of the initial run. Correspondingly, parameters that use environment variables will not be changed during the new launch, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ResolveVariablesRerun_2.png" /></p>
+<p>See example <a href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/#resolve-variables-for-a-rerun">here</a>.</p>
+<h2 id="nat-gateway">NAT gateway</h2>
+<p>Previously, if the <strong>Cloud Pipeline</strong> Platform was being deployed in some private subnet, it could be quite difficult for the admin to expose a network endpoint for some service to use in a Platform. This required manual execution of a number of tasks on the Platform Core instance and, accordingly, might lead to errors.<br />
+To resolve this, in the current version, the convenient way to manage network routes (creating/removing) from the GUI was implemented.</p>
+<p>For that, a new <strong>NAT gateway</strong> subtab was added to the <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-management"><strong>System Management</strong></a> section of the <strong>System Settings</strong>.<br />
+The <strong>NAT gateway</strong> subtab allows to configure network routes:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NatGateway_01.png" /></p>
+<p>To add a route, admin shall:</p>
+<ul>
+<li>click the <strong>ADD ROUTE</strong> button:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NatGateway_02.png" /></li>
+<li>in the appeared pop-up, specify details of an <em>external</em> resource: server name, IP (<em>if needs</em>), port(s) and comment to route (<em>optionally</em>), e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NatGateway_03.png" /></li>
+<li>just-added external server will appear in the list. Admin should click the <strong>SAVE</strong> button to confirm made changes:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NatGateway_04.png" /></li>
+<li>once the route creation will be done, the route details will appear in the <strong><em>INTERNAL CONFIG</em></strong> fields and near the route, the status will be shown as <em>ACTIVE</em>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NatGateway_05.png" /></li>
+</ul>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.14._NAT_gateway/">here</a>.</p>
+<h2 id="custom-run-capabilities">Custom Run capabilities</h2>
+<p>Previously, users might select only predefined "system" <strong>Run capabilities</strong> for a job.<br />
+In some cases or deployments, these capabilities may not be enough.<br />
+In the current version, the ability for admins to add custom <strong>Run capabilities</strong> was implemented. Use them for a job/tool run all users can.</p>
+<p>Managing of the custom capabilities is being performed via the new system preference <strong><code>launch.capabilities</code></strong>.<br />
+This preference contains an array of capability descriptions in <code>JSON</code>-format and has the following structure:</p>
+<pre><code class="language-json">{
+  &quot;&lt;capability_name_1&gt;&quot;: {
+    &quot;description&quot;: &quot;&lt;Description of the capability&gt;&quot;,
+    &quot;commands&quot;: [
+        &quot;&lt;command_1&gt;&quot;,
+        &quot;&lt;command_2&gt;&quot;,
+        ...
+    ],
+    &quot;params&quot;: {
+        &quot;&lt;parameter_1&gt;&quot;: &quot;&lt;value_1&gt;&quot;,
+        &quot;&lt;parameter_2&gt;&quot;: &quot;&lt;value_2&gt;&quot;,
+        ...
+    }
+  },
+  &quot;&lt;capability_name_2&quot;: {
+      ...
+  },
+  ...
+}
+</code></pre>
+<p>For example:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_RunCapabilities_1.png" /></p>
+<p>Saved capability then can be used for a job/tool:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_RunCapabilities_2.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_RunCapabilities_3.png" /></p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/#custom-capabilities">here</a>.</p>
+<h2 id="storage-lifecycle-management">Storage lifecycle management</h2>
+<p>Previously, users had the simplified opportunity to configure the lifecycle of data in storages - via specifying STS/LTS durations in the storage settings.<br />
+This way is rather primitive and does not allow to fine-tune data archiving/restoring.</p>
+<p>In the current version, the ability to configure datastorage lifecycle in details was implemented.<br />
+This new option allows to perform the automatical data transition from standard storage to different types of archival storages by occurance of a certain event and restore that data back as well if needed.<br />
+Previous functionality (STS/LTS durations) was excluded.<br />
+For the new one, an additional tab was included to the storage settings - <strong>Transition rules</strong>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_01.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_02.png" /></p>
+<p>New implemented functionality includes abilities:</p>
+<ul>
+<li>automatic data archiving/removing according to specified transition rule(s)</li>
+<li>restoring of previously archived data for the specified period</li>
+</ul>
+<p><em>Data archiving</em> is provided by configurable set of transition rules for each separate storage. Each rule defines which files, when (specific date or by the event) and where (different types of archive) shall be automatically transferred:</p>
+<ul>
+<li>firstly, user creates a rule for a storage - specifying the path and glob pattern for a file(s) name(s) which shall be transferred, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_03.png" /><br />
+    User can select to transfer files one-by-one or in bulk-mode by the first/last appeared file in a group.<br />
+    Also, an additional condition for the files transition can be configured.</li>
+<li>then user selects an archive class as the data destination. Here, several destinations can be added (for different dates), e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_04.png" /><br />
+<strong><em>Note</em></strong>: archive classes depend on the Cloud Provider</li>
+<li>then user defines the event by which the data shall be transferred - after certain period after the file(s) creation or at the specific date:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_05.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_06.png" /></li>
+<li>also, notifications can be configured for the rule events (optionally):  <ul>
+<li>recipients list</li>
+<li>notification title and text</li>
+<li>ability to specify a delay for data transition - user that receive such notification will have the ability to prolong (delay) transition for some period<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_07.png" /></li>
+</ul>
+</li>
+<li>created rule can be found in the <strong>Transition rules</strong> tab of the storage settings:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_08.png" /></li>
+<li>after the rule is created, it starts to work. If file matches the condition of any storage rule - it will be transferred to some archive or removed (if <code>Deletion</code> is set as data destination). Transferred file becomes disabled for changing/renaming from the GUI/CLI. At the GUI, near such file a label appears that corresponds to the transition destination, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_09.png" /></li>
+</ul>
+<p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/#archiving">here</a>.</p>
+<p><em>Data restoring</em> can be applied to previously archived files. Separate files or whole folders (with sub-folders) can be restored:</p>
+<ul>
+<li>user selects which files/folders shall be restored, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_10.png" /></li>
+<li>user defines the period for which files shall be restored and notification recipients list:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_11.png" /></li>
+<li>after the confirmation, the restore process begins - it is shown by the special status icon:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_12.png" /></li>
+<li>when file is restored - it is shown by the special status icon as well:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_StorageLifecycle_13.png" /></li>
+<li>once the restore period is over, files will be automatically transferred to the archive where they were before</li>
+</ul>
+<p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/#restoring">here</a>.</p>
+<h2 id="image-history">Image history</h2>
+<p><strong>Cloud Pipeline</strong> performs scanning of the Docker images on a regular basis. This is used to grab the information on:</p>
+<ul>
+<li>Available software packages</li>
+<li>Possible vulnerabilities of those packages</li>
+</ul>
+<p>The users may leverage this feature to choose which docker image to use, depending on the needs for a specific application.<br />
+But this list of the software packages may not show the full list of the applications as the scanning mechanism uses only the "well-known" filesystem locations to collect the applications/versions informations. Some of the apps, might be installed into any custom location and the scanner won't be able to find it.</p>
+<p>To fulfill this gap and to address some advanced cases, in the current version, a new feature was introduced: now it's possible to view the list of the "Docker layers" and corresponding commands, which were used to generate those layers.<br />
+It can be viewed via the specific tab in the tool version menu - <strong>Image history</strong>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImageHistory_1.png" /></p>
+<p>This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.</p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/#image-history">here</a>.</p>
+<h2 id="environments-synchronization-via-pipectl">Environments synchronization via <code>pipectl</code></h2>
+<p>In some cases, admins need to synchronize two different environments of the Cloud Pipeline.<br />
+New special routine in the <a href="https://github.com/epam/cloud-pipeline/tree/develop/deploy/README.md"><code>pipectl</code></a> utility is implemented for that - <code>pipectl sync</code>.</p>
+<p>It allows to synchronize from the source environment to the destination one the following objects:</p>
+<ul>
+<li>users / user groups / user roles</li>
+<li>docker registry / tool groups / tools</li>
+</ul>
+<p>Synchronization can be performed with or without synchronization of attributes (metadata) for the specified Platform objects.</p>
+<p>During the synchronization, changes are being performed only in the <strong><em>destination</em></strong> environment, the <strong><em>source</em></strong> environment remains the same.</p>
+<p>For details and examples see <a href="../../../installation/management/environments_sync/">here</a>.</p>
+<h2 id="data-access-audit">Data access audit</h2>
+<p>In the current version, <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-logs">System logs</a> were expanded - now, all actions related to any access to the data stored in the object storages are being logged.<br />
+This includes logging of operations <em>READ</em>/<em>WRITE</em>/<em>DELETE</em>, listing operation is not logged.</p>
+<p>For logs of data access events, a new item was added to the "<strong>Type</strong>" filter of the System logs - <code>audit</code> type:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_DataAudit_1.png" /></p>
+<p>By this type, the following data access operations are being logged:</p>
+<ul>
+<li>access to the Object storages data from the Platform GUI</li>
+<li>access to the Object storages data from the <code>pipe</code> CLI</li>
+<li>access to the mounted Object storages' data - both from GUI and CLI</li>
+</ul>
+<p>Examples of logs:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_DataAudit_2.png" /></p>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_DataAudit_3.png" /></p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.12._System_logs/#type-filter">here</a>.</p>
+<h2 id="system-jobs">System Jobs</h2>
+<p>Sometimes it's desirable for admin to get some statistics or system information about current Cloud Pipeline deployment state - for example, collect information about all storages that have specific size or list all unattached <code>EBS</code> volumes, or set some specific policy to all storages, etc.<br />
+For such purposes, specific scripts can be written and launched in some way. Number of these "admin" scripts can grow very quickly and it would be convenient to have some solution to create and run such scripts in a system, and also view results (logs) and store them.</p>
+<p>In the current version, a new solution was implemeted for "admin" scripts - <strong>System Jobs</strong>.<br />
+System jobs solution uses the existing Cloud-Pipeline infrastructure, to reduce number of preparation steps to be done to get desire output.  </p>
+<p>In a nutshell, the <strong>System Jobs</strong> solution includes the following:</p>
+<ul>
+<li>special prepared system pipeline, that contains system jobs scripts. Admin can add new scripts or edit/delete existing ones. Also, pipeline config contains:  <ul>
+<li><code>Kubernetes</code> service account to perform <code>kubectl</code> commands from such pipeline during the system job run</li>
+<li>special assign policy that allows to assign the pipeline to one of the running system node (<code>MASTER</code> node, for example). It is convenient as no additional instances (waiting or initializing ones) are required to perform a job</li>
+</ul>
+</li>
+<li>special prepared docker image that includes pre-installed packages such as system packages (<code>curl</code>, <code>nano</code>, <code>git</code>, etc.), <code>kubectl</code>, <code>pipe</code> CLI, Cloud CLI (<code>AWS</code>/<code>Azure</code>/<code>GCP</code>), <code>LustreFS</code> client</li>
+<li>separate <strong>System Jobs</strong> form that displays all available system job scripts, allows to run existing scripts and view results of their performing</li>
+</ul>
+<p>Userjourney looks like:</p>
+<ol>
+<li>Admin creates a new system job script and places it to the specific path inside the special system pipeline (<em>pipeline and path are defined by System Preferences</em>), e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_1.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_2.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_3.png" /></li>
+<li>Admin opens the <strong>System Jobs</strong> panel from the <strong>System Settings</strong>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_4.png" /><br />
+    Here, there is the whole list of stored system scripts and results of their runs.</li>
+<li>To run a script - admin selects any script and launch it:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_5.png" /></li>
+<li>When admin launches a system job - the system instance (<code>MASTER</code> instance, by default) is used for the job performing. At that system instance, the docker-container is launched from the special prepared docker-image for system jobs. In the launched docker-container, the system job script is being performed.</li>
+<li>At the <strong>System jobs</strong> form, states of the performing job are shown similar to the pipeline states, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_6.png" /></li>
+<li>Once the script is performed, the state will be changed to <strong>Success</strong>:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_7.png" /></li>
+<li>By the button <strong>LOG</strong>, the script performing output can be viewed:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_8.png" /></li>
+</ol>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.15._System_jobs/">here</a>.</p>
+<h2 id="cluster-run-usage">Cluster run usage</h2>
+<p>Previously, user can view the state of the cluster run (master and its nested runs) via the <strong>Run logs</strong> page of the cluster master node. But this information was actual only at the specific time moment.<br />
+It would be convenient to view how the cluster usage has been changing over the whole cluster run duration.<br />
+This is especially useful information for auto-scaled clusters, as the number of worker nodes in such clusters can vary greatly over time.</p>
+<p>In <strong><code>v0.17</code></strong>, such ability was added. User can view a specific cluster's usage over time - by click the corresponding hyperlink at the <strong>Run logs</strong> page of the cluster's master node:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterUsage_1.png" /><br />
+The chart pop-up will be opened, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterUsage_2.png" /></p>
+<p>The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.</p>
+<p>For more details see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#cluster-run-usage">here</a>.</p>
+<h2 id="cluster-run-estimation-price">Cluster run estimation price</h2>
+<p>Previously, <strong>Cloud Pipeline</strong> allowed to view a price estimation for the single instance jobs.<br />
+But the clusters did not provide such information (summary). Users could see a price only for a master node.</p>
+<p>Now, <strong>Cloud Pipeline</strong> offers a cost estimation, when any compute instances are running:</p>
+<ul>
+<li><strong>Standalone instance</strong> - reports it's own cost:<ul>
+<li>Dashboard:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_1.png" /></li>
+<li>Run's list:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_2.png" /></li>
+</ul>
+</li>
+<li><strong>Static cluster</strong> - reports the full cluster cost (summary for a master node and all workers), since it is started:  <ul>
+<li>Dashboard:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_3.png" /></li>
+<li>Run's list - master node's cost is reported in the brackets as well:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_4.png" /></li>
+</ul>
+</li>
+<li><strong>Autoscaled cluster</strong> - reports the costs, based on the workers lifetime (summary for a master node and all workers). As the workers may be created and terminated all the time - there costs are computed only for the <em>RUNNING</em> state:  <ul>
+<li>Dashboard:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_5.png" /></li>
+<li>Run's list - master node's cost is reported in the brackets as well:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ClusterEstimationPrice_6.png" /></li>
+</ul>
+</li>
+</ul>
+<h2 id="terminal-view">Terminal view</h2>
+<p>From the current version, users have the ability to configure the view of the SSH terminal session:</p>
+<ul>
+<li><em>Dark</em> (default)<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TerminalView_1.png" /></li>
+<li><em>Light</em><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TerminalView_2.png" /></li>
+</ul>
+<p>Required color schema can be configured in two ways:</p>
+<ul>
+<li><strong>Persistent</strong> - schema is being stored in the user profile and used any time SSH session is opened:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TerminalView_3.png" /></li>
+<li><strong>Temporary</strong> - schema is being used during a current SSH session only - toggling <em>Dark</em> &lt;-&gt; <em>Light</em> can be performed via the special control in the terminal frame:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TerminalView_4.png" /></li>
+</ul>
+<p>For details see <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#terminal-view">here</a>.</p>
+<h2 id="aws-seamless-authentication">AWS: seamless authentication</h2>
+<p>In some cases, users are faced with the following scenarios:</p>
+<ol>
+<li>Some jobs are running in the <strong>Cloud Pipeline</strong> and accessing data/services located in the external accounts (e.g. <code>Amazon S3</code>, <code>Amazon DynamoDB</code>). This requires the user to specify the authentication keys explicitly (either in the shell session or in the <code>R</code>/<code>Python</code> scripts). This is not user-friendly and not secure, if the users include the credentials into the scripts.</li>
+<li>There are also users who would like to leverage <code>R</code>/<code>Python</code> libraries, that have embedded <code>Amazon S3</code> support. Users have to download data locally first (via <code>pipe</code>) and then perform the processing.</li>
+</ol>
+<p>In the current version, a new mechanism of the seamless <code>AWS</code> authentication was implemented.<br />
+It allows users to execute any request to the <code>AWS</code> API, from inside the <strong>Cloud Pipeline</strong> environment, without an authentication request.  </p>
+<p>The following mechanism automates the <em>Cloud Provider</em> authentication for the user’s scripts:</p>
+<ul>
+<li>Administrator is able to configure the user’s access permissions in the <strong>Cloud Pipeline</strong> account of the <em>Cloud Provider</em> or provide credentials for the external <em>Cloud Provider</em> account</li>
+<li>All the requests to the <em>Cloud Provider</em> authentication are handled by the certain <strong>Cloud Pipeline</strong> service, which authenticates the user with the configured credentials</li>
+<li>Users are able to use the <em>Cloud Provider</em> API without the authentication request</li>
+</ul>
+<p>Administrator can create specific interfaces - <em>Cloud Credentials Profiles</em>, that contain the following fields:</p>
+<ul>
+<li><strong>Provider</strong> - to specify the <em>Cloud Provider</em></li>
+<li><strong>Name</strong> - to specify the profile name</li>
+<li><strong>Assumed Role</strong> - to specify the role received from the <em>Cloud Provider</em> that will be used for the authentication to the <em>Cloud Provider</em> API</li>
+<li><strong>Policy</strong> - to specify the <em>Cloud Provider</em> policy of the objects access</li>
+</ul>
+<p>It could be configured in <em>Cloud Provider</em> settings, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SeamlessAuthentication_01.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SeamlessAuthentication_02.png" />  </p>
+<p>Administrator can assign profiles to User/Role/Group entity.<br />
+For each entity many profiles can be assigned.<br />
+Also, from the profiles assigned to the certain User/Role/Group the one can be selected as <em>default</em>. If the <em>default</em> profile isn't selected - during the authentication operation there shall be selected the profile to use.</p>
+<p>It could be configured via the <em>User management</em> panel, e.g.:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SeamlessAuthentication_03.png" /></p>
+<p>Usage of the assigned profiles is being configured via the new Cloud Region option - "<strong>Mount Credentials Rule</strong>" with the following allowed values:</p>
+<ul>
+<li><strong>NONE</strong> - for runs in this region, credentials will not be configured</li>
+<li><strong>SAME CLOUD</strong> - for runs in this region, the set user credentials will be configured only allowed for the same <em>Cloud Provider</em></li>
+<li><strong>ALL</strong> - for runs in this region, the all user credentials will be configured</li>
+</ul>
+<p><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SeamlessAuthentication_04.png" /></p>
+<p>As example, if for the user such <code>AWS</code> credential profile is assigned and the mount rule is allowed - he/she can use <code>AWS</code> CLI directly to the bucket (defined and allowed by profile policy) without extra-authentication:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SeamlessAuthentication_05.png" /></p>
+<p>For details and example see <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#seamless-authentication-in-cloud-provider">here</a>.</p>
+<h2 id="aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions using <code>pipe storage cp</code>/<code>mv</code> commands</h2>
+<p>Previously, <code>pipe storage cp</code>/<code>pipe storage mv</code> commands allowed to transfer objects only within one <code>AWS</code> region.<br />
+In the current version, the ability to transfer objects between storages from different <code>AWS</code> regions is implemented.<br />
+The commands themselves remain the same.</p>
+<p>Example:</p>
+<ul>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TransferBetweenRegions_1.png" /></li>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TransferBetweenRegions_2.png" /></li>
+</ul>
+<h2 id="aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity</h2>
+<p>Previously, if user started an <code>AWS</code> job and there were not enough instances of specified type to launch that job in a region - it would fail.<br />
+In the current version, the ability to automatically relaunch such runs in other <code>AWS</code> region(s) was implemented.  </p>
+<p>For that functionality, a new setting was added to the Cloud Region configuration - "<strong>Run shift policy</strong>":<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ShiftingRegion_1.png" /></p>
+<p>If this setting is enabled for some <code>AWS region 1</code> and for some <code>AWS region 2</code> - then a job launched in the <code>AWS region 1</code> will automatically try to be relaunched in the <code>AWS region 2</code> in case when there are not enough instances of selected type in the <code>AWS region 1</code> (<code>InsufficientInstanceCapacity</code> error):</p>
+<ul>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ShiftingRegion_2.png" /></li>
+<li><img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ShiftingRegion_3.png" /></li>
+</ul>
+<p>Original job is being automatically stopped, new job with the same instance type as in the original run but in the <code>AWS region 2</code> will be launched.<br />
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are <code>AWS</code> regions in the Platform with the enabled option "<strong>Run shift policy</strong>".</p>
+<p>Feature is not available:</p>
+<ul>
+<li>for spot runs</li>
+<li>for runs that have any Cloud dependent parameter</li>
+<li>for worker or cluster runs</li>
+</ul>
+<p>More details see <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">here</a>.</p>
+<hr />
+<h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="unable-to-view-pipeline-sources-for-previous-draft-versions">Unable to view pipeline sources for previous draft versions</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1353">#1353</a></p>
+<p>Previously, Pipeline's "<strong>Documents</strong>" and "<strong>Code</strong>" tabs always showed content of the last "<em>draft</em>" version of pipeline, even if one of the previous versions was forcibly specified in the url.</p>
+<h3 id="pipe-storage-ls-works-incorrectly-with-the-option-page"><code>pipe storage ls</code> works incorrectly with the option <code>--page</code></h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1339">#1339</a></p>
+<p>Previously, the <code>pipe</code> CLI storage listing worked incorrectly with <code>--page</code> (<code>-p</code>) option with S3 provider. All items were displayed without pagination.</p>
+<h3 id="aws-deployment-unable-to-list-more-than-1000-files-in-the-s3-bucket">AWS deployment: unable to list more than 1000 files in the S3 bucket</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1312">#1312</a></p>
+<p>Previously, when <code>s3</code> bucket contained more than 1000 files - user could list all the files in the bucket via the GUI, but only first 1000 files via any <code>pipe</code> CLI capabilities (<code>pipe storage ls</code>, <code>pipe storage mount</code>, etc.).</p>
+<h3 id="size-of-tool-version-created-from-original-tool-without-any-changes-is-a-lot-larger-than-original-one">Size of tool version created from original tool without any changes is a lot larger than original one</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1270">#1270</a></p>
+<p>Previously, the size of the tool version that had created from the original tool without any changes or after resume operation for paused run - by <code>COMMIT</code> operation - was a lot larger than original version.</p>
+<h3 id="pipe-storage-cp-fails-in-windows-for-the-gcs-with-sslv3-error"><code>pipe storage cp</code> fails in Windows for the GCS with <code>sslv3</code> error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1268">#1268</a></p>
+<p>Previously, the <code>sslv3</code> issue happened when data to/from the GCS was copying using the Windows workstation.</p>
+<h3 id="shared-endpoint-for-anonymous-users-is-being-opened-from-the-second-time">Shared endpoint for <code>anonymous</code> users is being opened from the second time</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1265">#1265</a></p>
+<p>Previously, when <code>anonymous</code> user tried to open a hyperlink with the shared endpoint - he/she got the Platform's "Access denied" page.
+But if user tried to open the page in the second time - it was being opened correctly.</p>
+<h3 id="attempt-to-view-permissions-on-a-pipeline-via-the-pipe-view-pipes-throws-an-error">Attempt to view permissions on a pipeline via the <code>pipe view-pipes</code> throws an error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1216">#1216</a></p>
+<p>Previously, when trying to view permissions of a pipeline via the <code>pipe view-pipes -r</code> command - the command execution failed.</p>
+<h3 id="scale-down-cold-sge-autoscaling-cluster">Scale down "cold" SGE autoscaling cluster</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1123">#1123</a></p>
+<p>Previously, <code>SGE</code> autoscaling cluster didn't scale down until at least one running job appears in queue. Currently, <code>SGE</code> autoscaling cluster is being scaled down even if there weren't any running jobs yet.</p>
+<h3 id="launch-command-functionality-issues">"Launch Command" functionality issues</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1086">#1086</a>, <a href="https://github.com/epam/cloud-pipeline/issues/1090">#1090</a></p>
+<p>Previously, if a user specified the values of the parameters with "spaces" (e.g. selection of the input parameter value from the GUI bucket browser) - this broke the command format.<br />
+Also, the <strong>Launch Command</strong> generation function used single-quotes to wrap the <code>-cmd</code> value. This was causing to fail when running the generate commands from the Windows environment. As the Windows CMD shell can't resolve it correctly (the command value is still split by the space).</p>
+<h3 id="inner-data-storages-navigation-bar-fails-to-navigate">Inner data storages navigation bar fails to navigate</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1077">#1077</a></p>
+<p>Previously, navigation bar for so-called "inner" data storages produced <code>You cannot navigate to another storage</code> in case of any interaction with it.</p>
+<h3 id="region-is-being-set-incorrectly-when-trying-to-rerun-pipeline">Region is being set incorrectly when trying to rerun pipeline</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1066">#1066</a></p>
+<p>Previously, when tried to rerun any run - the default region was being set in the <strong>Cloud Region</strong> field. But the instance type wasn't being changed automatically and remained the same as was set before the run. This could lead to inconsistencies.</p>
+<h3 id="pause-and-commit-operations-fail-for-the-jobs-with-an-autoscaled-disk"><code>PAUSE</code> and <code>COMMIT</code> operations fail for the jobs with an autoscaled disk</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/998">#998</a></p>
+<p>Previously, <code>PAUSE</code> and <code>COMMIT</code> operations failed with the <code>NullPointerException</code> error for the jobs with an autoscaled disk.</p>
+<h3 id="broken-layouts">Broken layouts</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/1504">#1504</a>, <a href="https://github.com/epam/cloud-pipeline/issues/1505">#1505</a></p>
+<ul>
+<li>In <strong>Groups</strong>/<strong>Roles</strong> membership view, the vertical scrollbar was shown even if there was a plenty of space below the list. Currently, the list size is increased to the pop up size.</li>
+<li>At the <strong>Billing reports</strong> page, if the whole header menu didn't not fit the screen width - the "discounts" links overflew the regions selector. Currently, row breaks feature is implemeted for this page.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../v.0.16/v.0.16_-_Release_notes/" class="btn btn-neutral float-left" title="v.0.16"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../manual/Cloud_Pipeline_-_Manual/" class="btn btn-neutral float-right" title="Contents">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../v.0.16/v.0.16_-_Release_notes/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../../manual/Cloud_Pipeline_-_Manual/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

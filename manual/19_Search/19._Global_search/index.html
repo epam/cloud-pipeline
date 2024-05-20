@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>19. Global search - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "19. Global search";
+        var mkdocs_page_input_path = "manual/19_Search/19._Global_search.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">19. Global search</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#simple-search">Simple search</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#advanced-search">Advanced search</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#results-output-view">Results output view</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#list-view">List view</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#table-view">Table view</a>
+    </li>
+        </ul>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+      <li>19. Global search</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="global-search">Global Search</h1>
+<ul>
+<li><a href="#simple-search">Simple search</a></li>
+<li><a href="#advanced-search">Advanced search</a><ul>
+<li><a href="#results-output-view">Results output view</a><ul>
+<li><a href="#list-view">List view</a></li>
+<li><a href="#table-view">Table view</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>When the certain <strong>Cloud Pipeline</strong> deployment grows in terms of data and pipelines being added/implemented - it is crucial to be able to search for specific datasets or tools.<br />
+To find other data and objects, there are two types of the search - <strong>Simple</strong> and <strong>Advanced</strong>.</p>
+<h2 id="simple-search">Simple search</h2>
+<p>The following object types are being indexed and can be searched via <strong>Simple search</strong>:</p>
+<ul>
+<li>"<strong>FOLDERS</strong>" - the folders and metadata entities (in "Library")</li>
+<li>"<strong>PIPELINES</strong>" - the pipelines metadata, pipelines files (documents) and configurations</li>
+<li>"<strong>RUNS</strong>" - the job runs</li>
+<li>"<strong>TOOLS</strong>" - the docker registries, groups and tools</li>
+<li>"<strong>DATA</strong>" - the storages and their files (names only)</li>
+<li>"<strong>ISSUES</strong>" - the issues (discussions)</li>
+</ul>
+<p>User can open the <strong>Simple search</strong> form by pressing "Ctrl+F" being at any page of the Cloud Pipeline Web GUI (<em>excluding cases when the <strong>Run logs</strong> page or <strong>Advanced search</strong> page is open</em>):<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_01.png" /><br />
+<strong><em>Note</em></strong>: <strong>Simple search</strong> form will not be opened if any pop-up window is shown</p>
+<p>To start searching, a "google-like" query string shall be entered (search can be triggered by pressing "Enter" button or automatically if no new input is provided for 2 seconds):<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_02.png" /></p>
+<p>Special expressions in the query string are available as well (the rules for their assignment are described in pop-up window that appears when hovering over the <img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_03.png" /> icon):<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_04.png" /></p>
+<p>By default search will occur across all the available object types. If user would to limit search scope - appropriate section can be selected above the query input:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_05.png" /></p>
+<p>To get a brief information for the object found, you can hover an item with a mouse and a "Preview" pane will be shown to the right, e.g.:</p>
+<ul>
+<li>tool preview:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_06.png" /></li>
+<li>pipeline preview:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_07.png" /></li>
+</ul>
+<p>In the "Preview" window user can see:</p>
+<ul>
+<li>name of the found object</li>
+<li>block with indication and highlighting of the object's concrete part, where inputted word was found</li>
+<li>path to the object in library (<em>optionally</em>)</li>
+<li>description (<em>optionally</em>)</li>
+<li>preview of the found object (<em>if it's available</em>) or the link to download (<em>for files in storages</em>)</li>
+<li>other useful info like settings, <strong>OWNER</strong> name, attributes (tags), etc.</li>
+</ul>
+<p>To open found object, click it to navigate to its location within the <strong>Cloud Pipeline</strong>.</p>
+<h2 id="advanced-search">Advanced search</h2>
+<blockquote>
+<p>Currently, advanced search is available only for admins</p>
+</blockquote>
+<p>To open the <strong>Advanced search</strong> form, open the <strong>Simple search</strong> form (by pressing "Ctrl+F") and click the <strong>Advanced search</strong> button:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_08.png" /></p>
+<p><em>OR</em></p>
+<p>Click the <strong>Search</strong> icon in the main menu:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_09.png" /></p>
+<p><strong>Advanced search</strong> repeats the functionality of the <strong>Simple search</strong> but has some advanced capabilities.</p>
+<p>The structure of the <strong>Advanced search</strong> form:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_10.png" /></p>
+<p>This form contains:</p>
+<ul>
+<li>main search bar - to specify query string (search can be triggered by pressing "Enter" button or by the corresponding <strong>Search</strong> button near the search bar)</li>
+<li><strong>a</strong> - <em>similar to <strong>Simple search</strong></em> - panel to restrict object types among which the search should being performed. By default search will occur across all the available object types. If user would to restrict search scope - appropriate section can be selected, e.g.:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_11.png" /></li>
+<li><strong>b</strong> - control that allows to select the view type of the search results - <strong>list</strong> (by default) or <strong>table</strong>. See details below</li>
+<li><strong>c</strong> - faceted filters panel that allows to search objects by their attributes (tags). Operating principle of this search part is similar to the E-Commerce sites. Details about this panel and working with it see <a href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">here</a>. Example of the search using filters from this panel:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_12.png" /><br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_21.png" /></li>
+<li><strong>d</strong> - <em>similar to <strong>Simple search</strong></em> - search results. User can use mouse scroll for auto-paging</li>
+<li><em>similar to <strong>Simple search</strong></em> - to get a brief information for the object found, you can hover an item with a mouse and click the <strong>Info</strong> to view its "Preview" pane, e.g.:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_13.png" /><br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_22.png" /></li>
+</ul>
+<p>To clear all filters and remove restrictions click the corresponding button at the top of the "Faceted filters" panel:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_14.png" /></p>
+<h3 id="results-output-view">Results output view</h3>
+<p>Search results contain an array of objects (different <strong>Cloud Pipeline</strong> entities - <code>file</code>, <code>storage</code>, <code>run</code>, etc.).</p>
+<p>Results output in the <strong>Simple search</strong> has the view as simple list of the object names only.<br />
+In the <strong>Advanced search</strong>, that output contains the additional info - according to the entity type of the certain result.</p>
+<p>Info displayed in the search results:</p>
+<table>
+<thead>
+<tr>
+<th>Entity</th>
+<th>Required info</th>
+<th>Additional info</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Folder</strong></td>
+<td>NAME</td>
+<td>OWNER</td>
+</tr>
+<tr>
+<td><strong>Pipeline</strong></td>
+<td>NAME</td>
+<td>OWNER / DESCRIPTION</td>
+</tr>
+<tr>
+<td><strong>Document in the Pipeline</strong></td>
+<td>NAME</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Configuration</strong></td>
+<td>NAME</td>
+<td>OWNER / DESCRIPTION</td>
+</tr>
+<tr>
+<td><strong>Run</strong></td>
+<td>RUN_ID</td>
+<td>OWNER / DOCKER IMAGE or PIPELINE NAME / DATE_STARTED / DATE_COMPLETED</td>
+</tr>
+<tr>
+<td><strong>Storage</strong></td>
+<td>ALIAS_NAME</td>
+<td>OWNER / PATH / DESCRIPTION</td>
+</tr>
+<tr>
+<td><strong>Tool</strong></td>
+<td>NAME</td>
+<td>OWNER / DESCRIPTION</td>
+</tr>
+<tr>
+<td><strong>File</strong></td>
+<td>NAME</td>
+<td>OWNER / PATH / SIZE / DATE_CHANGED</td>
+</tr>
+<tr>
+<td><strong>Issue</strong></td>
+<td>TITLE</td>
+<td>OWNER / DESCRIPTION</td>
+</tr>
+</tbody>
+</table>
+<p>Objects in results can be shown in two formats:</p>
+<ul>
+<li><code>list</code> view - each result is presented by the "row" in the list, <em>additional</em> info is placed in line</li>
+<li><code>table</code> view - all results are presented by the single table, <em>additional</em> info is placed in columns</li>
+</ul>
+<p>User shall have the ability to switch between formats by the special control under the main search bar:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_15.png" /></p>
+<h4 id="list-view">List view</h4>
+<p>This view type is default.</p>
+<p>Example of the <code>list</code> view in search results:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_16.png" /></p>
+<p>Here:</p>
+<ul>
+<li>required info (object name and its type icon) is placed in the header of the result row</li>
+<li>additional info is placed in bottom line of the tile and colored in grey</li>
+<li>object owners are specified at the right side in each row</li>
+</ul>
+<h4 id="table-view">Table view</h4>
+<p>This view presents the table where all search results info (required and additional) is placed into corresponding columns.<br />
+The set of columns is defined by the object types of the search results according to the table above.</p>
+<p>Example of the <code>table</code> view in search results (with the same results as in example <a href="#list-view">above</a>):<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_17.png" /></p>
+<p>Also the <code>table</code> view can be customized by the admin user.<br />
+To the existing columns, user can add ones for the object attributes (tags) values, where the attribute <code>key</code> becomes the column header. If the object in results has the <code>value</code> for that attribute - it will be displayed in the corresponding column.</p>
+<p>To specify which attributes shall be added to the <code>table</code> view, there is the special system preference - <strong><code>search.elastic.index.metadata.fields</code></strong>.<br />
+In this preference, the additional attributes (tags) keys should be specified as the plain <code>JSON</code> string array: <code>["AttributeKey1", "AttributeKey2", ...]</code>.</p>
+<p>Example:</p>
+<ul>
+<li>specified additional attribute keys:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_18.png" />  </li>
+<li>when these keys are specified and saved, they will automatically appear as additional columns in the <code>table</code> view of the <strong>Advanced search</strong> results:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_19.png" /></li>
+<li>for the objects that have values for added attribute keys, they will be shown in the corresponding columns, e.g.:<br />
+<img alt="CP_GlobalSearch" src="../attachments/GlobalSearch_20.png" /></li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../18_Home_page/18._Home_page/" class="btn btn-neutral float-left" title="18. Home page"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/" class="btn btn-neutral float-right" title="Appendix A. Instance and Docker container lifecycles">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../18_Home_page/18._Home_page/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
