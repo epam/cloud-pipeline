@@ -17,16 +17,15 @@
 set -e 
 
 # Publish docs only if it is one of the allowed branches and it is a push (not PR)
-if [ "$TRAVIS_REPO_SLUG" != "epam/cloud-pipeline" ] || \
-    [ "$TRAVIS_BRANCH" != "develop" ] || \
-    [ "$TRAVIS_EVENT_TYPE" != "push" ]; then
+if [ "$APPVEYOR_REPO_NAME" != "epam/cloud-pipeline" ] || \
+    [ "$APPVEYOR_REPO_BRANCH" != "develop" ]; then
     echo "Skipping docs publishing, as a build is not triggered from the correct repo/branch via push"
     exit 0
 fi
 
 # Build docs - it will produce a tar.gz file in ./dist/
 echo "Building docs"
-./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release buildDoc --no-daemon
+./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} -Pprofile=release buildDoc --no-daemon
 mkdir -p $HOME/cloud-pipeline-docs
 tar -zxf dist/cloud-pipeline-docs.tar.gz -C $HOME/cloud-pipeline-docs
 
@@ -45,7 +44,7 @@ cp -Rf $HOME/cloud-pipeline-docs/* ./
 # Add files, commit and force push
 echo "Pushing gh-pages branch"
 git add -f .
-git commit -m "Docs update via Travis Build $TRAVIS_BUILD_NUMBER"
+git commit -m "Docs update via Travis Build $APPVEYOR_BUILD_NUMBER"
 git push -fq origin gh-pages > /dev/null
 
 echo "Done publishing docs"
