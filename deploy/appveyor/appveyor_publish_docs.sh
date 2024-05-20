@@ -18,7 +18,7 @@ set -e
 
 # Publish docs only if it is one of the allowed branches and it is a push (not PR)
 if [ "$APPVEYOR_REPO_NAME" != "epam/cloud-pipeline" ] || \
-    [ "$APPVEYOR_REPO_BRANCH" != "develop" ]; then
+    [ "$APPVEYOR_REPO_BRANCH" != "develop" ] && [ "$APPVEYOR_REPO_BRANCH" != "appveyor_build_docs" ]; then
     echo "Skipping docs publishing, as a build is not triggered from the correct repo/branch via push"
     exit 0
 fi
@@ -41,10 +41,13 @@ cd gh-pages
 find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' ! -name 'CNAME' -exec rm -rf {} +
 cp -Rf $HOME/cloud-pipeline-docs/* ./
 
-# Add files, commit and force push
-echo "Pushing gh-pages branch"
-git add -f .
-git commit -m "Docs update via Appveyor Build $APPVEYOR_BUILD_NUMBER"
-git push -fq origin gh-pages > /dev/null
+if [ "$APPVEYOR_REPO_NAME" != "epam/cloud-pipeline" ] || \
+    [ "$APPVEYOR_REPO_BRANCH" != "develop" ]; then
+    # Add files, commit and force push
+    echo "Pushing gh-pages branch"
+    git add -f .
+    git commit -m "Docs update via Appveyor Build $APPVEYOR_BUILD_NUMBER"
+    git push -fq origin gh-pages > /dev/null
 
-echo "Done publishing docs"
+    echo "Done publishing docs"
+fi
