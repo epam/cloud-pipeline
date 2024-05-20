@@ -20,6 +20,8 @@ environment:
     - job_name: Build_All
       job_depends_on: CLI_MacOS
       appveyor_build_worker_image: Ubuntu1604
+    - job_name: Publish_Docs
+      appveyor_build_worker_image: Ubuntu2204 
 for:
 
   -
@@ -41,4 +43,13 @@ for:
       sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
       sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
       sudo -E bash deploy/appveyor/appveyor_pack_dist.sh
+
+  -
+    matrix:
+      only:
+        - job_name: Publish_Docs
+
+    build_script:
+    - |-
+      sudo -E bash deploy/appveyor/appveyor_publish_docs.sh
 test: off
