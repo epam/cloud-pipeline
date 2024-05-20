@@ -36,18 +36,15 @@ git config --global user.name "Appveyor"
 
 # Clone gh-pages and replace with new docs
 echo "Preparing gh-pages branch"
-git clone --quiet --branch=gh-pages https://${GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
+git clone --quiet --branch=gh-pages https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
 cd gh-pages
 find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' ! -name 'CNAME' -exec rm -rf {} +
 cp -Rf $HOME/cloud-pipeline-docs/* ./
 
-if [ "$APPVEYOR_REPO_NAME" != "epam/cloud-pipeline" ] || \
-    [ "$APPVEYOR_REPO_BRANCH" != "develop" ]; then
-    # Add files, commit and force push
-    echo "Pushing gh-pages branch"
-    git add -f .
-    git commit -m "Docs update via Appveyor Build $APPVEYOR_BUILD_NUMBER"
-    git push -fq origin gh-pages > /dev/null
+# Add files, commit and force push
+echo "Pushing gh-pages branch"
+git add -f .
+git commit -m "Docs update via Appveyor Build $APPVEYOR_BUILD_NUMBER"
+git push -fq origin gh-pages > /dev/null
 
-    echo "Done publishing docs"
-fi
+echo "Done publishing docs"
