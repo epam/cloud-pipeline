@@ -5,6 +5,7 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
+    - appveyor_build_docs
 
 skip_tags: true
 max_jobs: 1
