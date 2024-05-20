@@ -52,6 +52,6 @@ for:
 
     build_script:
     - |-
-      pip install mkdocs --user
+      sudo pip install mkdocs
       sudo -E bash deploy/appveyor/appveyor_publish_docs.sh
 test: off
