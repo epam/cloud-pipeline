@@ -16,7 +16,7 @@ matrix:
 environment:
   matrix:
     - job_name: Publish_Docs
-      appveyor_build_worker_image: Ubuntu2204
+      appveyor_build_worker_image: Ubuntu1604
     - job_name: CLI_MacOS
       appveyor_build_worker_image: macos-catalina
     - job_name: Build_All
