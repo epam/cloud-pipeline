@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>6.0. Overview - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "6.0. Overview";
+        var mkdocs_page_input_path = "manual/06_Manage_Pipeline/6._Manage_Pipeline.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">6. Manage Pipeline</a>
+    <ul class="current">
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">6.0. Overview</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#pipeline-object-gui">Pipeline object GUI</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#details-view-pane">"Details" view pane</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#details-controls">"Details" controls</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipeline-versions-gui">Pipeline versions GUI</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#pipeline-controls">Pipeline controls</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipeline-version-tabs">Pipeline version tabs</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#documents">DOCUMENTS</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#code">CODE</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#configuration">CONFIGURATION</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#history">HISTORY</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#storage-rules">STORAGE RULES</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#graph">GRAPH</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#default-environment-variables">Default environment variables</a>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>6. Manage Pipeline &raquo;</li>
+      <li>6.0. Overview</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="6-manage-pipeline">6. Manage Pipeline</h1>
+<ul>
+<li><a href="#pipeline-object-gui">Pipeline object GUI</a><ul>
+<li><a href="#details-view-pane">"Details" view pane</a></li>
+<li><a href="#details-controls">"Details" controls</a></li>
+</ul>
+</li>
+<li><a href="#pipeline-versions-gui">Pipeline versions GUI</a><ul>
+<li><a href="#pipeline-controls">Pipeline controls</a><ul>
+<li><a href="#pipeline-launching-page">Pipeline launching page</a></li>
+</ul>
+</li>
+<li><a href="#pipeline-version-tabs">Pipeline version tabs</a><ul>
+<li><a href="#documents">DOCUMENTS</a></li>
+<li><a href="#code">CODE</a></li>
+<li><a href="#configuration">CONFIGURATION</a></li>
+<li><a href="#history">HISTORY</a></li>
+<li><a href="#storage-rules">STORAGE RULES</a></li>
+<li><a href="#graph">GRAPH</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#default-environment-variables">Default environment variables</a></li>
+</ul>
+<p><strong>Pipelines</strong> represent a sequence of tasks that are executed along with each other in order to process some data. They help to automate complex tasks that consist of many sub-tasks.</p>
+<p>This chapter describes <strong>Pipeline</strong> space GUI and the main working scenarios.</p>
+<h2 id="pipeline-object-gui">Pipeline object GUI</h2>
+<p>As far as the pipeline is one of <strong>CP</strong> objects which stored in "<strong>Library</strong>" space, the <strong>Pipeline</strong> workspace is separated into two panes:</p>
+<ol>
+<li><a href="../../03_Overview/3._Overview/#library"><strong>"Hierarchy" view</strong></a> pane</li>
+<li><a href="#details-view-pane"><strong>"Details" view</strong></a> pane.</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: also you can view general information and some details about the specific pipeline via CLI. See <a href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4 View pipeline definitions via CLI</a>.</p>
+</blockquote>
+<h3 id="details-view-pane">"Details" view pane</h3>
+<p>The "Details" view pane displays content of a selected object. In case of a pipeline, you will see:</p>
+<ul>
+<li>a list of pipeline versions with a description of last update and date of the last update;</li>
+<li>specific space's <a href="#details-controls">controls</a>.</li>
+</ul>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_01.png" /></p>
+<h3 id="details-controls">"Details" controls</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Displays icon</strong></td>
+<td>This icon includes: <ul><li>"<strong>Attributes</strong>" control (<strong>1</strong>) opens <strong>Attributes</strong> pane. Here you can see a list of "key=value" attributes of the pipeline. For more info see <a href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">here</a>.<br /><strong><em>Note</em></strong>: If the selected pipeline has any defined attribute, <strong>Attributes</strong> pane is shown by default.</li><li><strong>Issues</strong> shows/hides the issues of the current pipeline to discuss. To learn more see <a href="../../16_Issues/16._Issues/">here</a>.</li></ul></td>
+</tr>
+<tr>
+<td><strong>"Gear" icon</strong></td>
+<td>This control (<strong>2</strong>) allows to rename, change the description, delete and edit repository settings i.e. <strong>Repository address</strong> and <strong>Token</strong></td>
+</tr>
+<tr>
+<td><strong>Git repository</strong></td>
+<td>"<strong>Git repository</strong>" control (<strong>3</strong>) shows a git repository address where pipeline versions are stored, which could be copied and pasted into a browser address field:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_20.png" /><br />If for your purposes <code>ssh</code> protocol is required, you may click the <strong>HTTPS/SSH</strong> selector and choose the <strong>SSH</strong> item:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_21.png" /><br />In that case, you will get a reformatted SSH address:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_22.png" /><br />Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see <a href="../../12_Manage_Settings/12._Manage_Settings/#git-cli">here</a>.<br />To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission are also needed. For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
+</tr>
+<tr>
+<td><strong>Release</strong></td>
+<td>"<strong>Release</strong>" control (<strong>4</strong>) is used to tag a particular pipeline version with a name. A draft pipeline version has the control only. <br /><strong><em>Note</em></strong>: you can edit the last pipeline version only.</td>
+</tr>
+<tr>
+<td><strong>Run</strong></td>
+<td>Each pipeline version item of the selected pipeline's list has a "<strong>Run</strong>" control (<strong>5</strong>) to launch a pipeline version.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="pipeline-versions-gui">Pipeline versions GUI</h2>
+<p>Pipeline version interface displays full information about a pipeline version: supporting documentation, code files, and configurations, history of version runnings, etc.</p>
+<h3 id="pipeline-controls">Pipeline controls</h3>
+<p>The following buttons are available to manage this space.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Run</strong></td>
+<td>This button launch a pipeline version. When a user clicks the button, the <a href="#pipeline-launching-page">"Launch a pipeline"</a> page opens.</td>
+</tr>
+<tr>
+<td><strong>"Gear" icon</strong></td>
+<td>This control allows to rename, change the description, delete and edit repository settings i.e. <strong>Repository address</strong> and <strong>Token</strong>.</td>
+</tr>
+<tr>
+<td><strong>Git repository</strong></td>
+<td>Shows a git repository address where pipeline versions are stored, which could be copied and pasted in a browser line.<br />Also a user can work directly with git from the console on the running node. For more information, how to configure Git client to work with the Cloud Pipeline, see <a href="../../12_Manage_Settings/12._Manage_Settings/#git-cli">here</a>.<br />To clone a pipeline a user shall have <strong>READ</strong> permissions, to push <strong>WRITE</strong> permission is also needed. For more info see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="pipeline-launching-page">Pipeline launching page</h4>
+<p>"<strong>Launch a pipeline</strong>" page shows parameters of a default configuration the pipeline version. This page has the same view as a <a href="#configuration">"Configuration"</a> tab of a pipeline version. Here you can select any other configuration from the list and/or change parameters for this specific run (changes in configuration will be applied only to this specific run).</p>
+<h2 id="pipeline-version-tabs">Pipeline version tabs</h2>
+<p>Pipeline version space dramatically differs from the Pipeline space. You can open it: just click on it.<br />
+The whole information is organized into the following tabs in "Details" view pane.</p>
+<h3 id="documents">DOCUMENTS</h3>
+<p>The "Documents" tab contains documentation associated with the pipeline, e.g. README, pipeline description, etc. See an example <a href="../6.1._Create_and_configure_pipeline/#edit-documentation-optional">here</a>.<br />
+<strong><em>Note</em></strong>: <strong><code>README.md</code></strong> file is created automatically and contains default text which could be easily edited by a user.</p>
+<h4 id="documents-tab-controls">Documents tab controls</h4>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_02.png" /></p>
+<p>The following buttons are available to manage this section:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Upload</strong> (<strong>a</strong>)</td>
+<td>This control (<strong>a</strong>) allows to upload documentation files.</td>
+</tr>
+<tr>
+<td><strong>Delete</strong> (<strong>b</strong>)</td>
+<td>"Delete" control (<strong>b</strong>) helps to delete a file.</td>
+</tr>
+<tr>
+<td><strong>Rename</strong> (<strong>c</strong>)</td>
+<td>To rename a file a user shall use a "Rename" control (<strong>c</strong>).</td>
+</tr>
+<tr>
+<td><strong>Download</strong> (<strong>d</strong>)</td>
+<td>This control (<strong>d</strong>) allows downloading pipeline documentation file to your local machine.</td>
+</tr>
+<tr>
+<td><strong>Edit</strong> (<strong>e</strong>)</td>
+<td>"Edit" control (<strong>e</strong>) helps a user to edit any text files (e.g. README) here in a text editor using a <a href="https://en.wikipedia.org/wiki/Markdown">markdown language</a>. </td>
+</tr>
+</tbody>
+</table>
+<h3 id="code">CODE</h3>
+<p>This section contains a list of scripts to run a pipeline. Here you can create new files, folders and upload files here. Each script file could be edited (see details <a href="../6.1._Create_and_configure_pipeline/#edit-code-section">here</a>).<br />
+<strong><em>Note</em></strong>: .json configuration file can also be edited in the <strong>Configuration</strong> tab via GUI.</p>
+<h4 id="code-tab-controls">Code tab controls</h4>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_03.png" /></p>
+<p>The following controls are available:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Plus</strong> button (<strong>a</strong>)</td>
+<td>This control is to create a new folder in a pipeline version. The folder's name shall be specified.</td>
+</tr>
+<tr>
+<td><strong>+ New file</strong> (<strong>b</strong>)</td>
+<td>To create a new file in the current folder.</td>
+</tr>
+<tr>
+<td><strong>Upload</strong> (<strong>c</strong>)</td>
+<td>To upload files from your local file system to a pipeline version.</td>
+</tr>
+<tr>
+<td><strong>Rename</strong> (<strong>d</strong>)</td>
+<td>Each file or folder has a "Rename" control which allows renaming a file/folder.</td>
+</tr>
+<tr>
+<td><strong>Delete</strong> (<strong>e</strong>)</td>
+<td>Each file or folder has a "Delete" control which deletes a file/folder.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="the-list-of-system-files">The list of system files</h4>
+<p>All newly created pipelines have at least 2 starting files no matter what pipeline template you've chosen.<br />
+Only newly created <code>DEFAULT</code> pipeline has 1 starting file (<strong><code>config.json</code></strong>).</p>
+<h5 id="main_file">main_file</h5>
+<p>This file contains a pipeline scenario. By default, it is named after a pipeline, but this may be changed in the configuration file.<br />
+<strong><em>Note</em></strong>: the <strong>main_file</strong> is usually an entry point to start pipeline execution.<br />
+To create your own scenario the default template of the main file shall be edited (see details <a href="../6.1._Create_and_configure_pipeline/#edit-code-section">here</a>).</p>
+<p><strong><em>Example</em></strong>: below is the piece of the <strong>main_file</strong> of the Gromacs pipeline:<br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_04.png" /></p>
+<h5 id="configjson">config.json</h5>
+<p>This file contains pipeline execution parameters. You can not rename or delete it because of it's used in pipeline scripts and they will not work without it.<br />
+<strong><em>Note</em></strong>: it is advised that pipeline execution settings are modified via <a href="#configuration">CONFIGURATION tab</a> (e.g. if you want to change default settings for pipeline execution) or via <a href="../6.2._Launch_a_pipeline/">Launch pipeline page</a> (e.g. if you want to change pipeline settings for a current run). Manual <strong><code>config.json</code></strong> editing should be used only for advanced users (primarily developers) since json format is not validated in this case.<br />
+<strong><em>Note</em></strong>: all attributes from <strong><code>config.json</code></strong> are available as environment variables for pipeline execution.</p>
+<p>The <strong><code>config.json</code></strong> file for every pipeline template have the following settings:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>main_file</strong></td>
+<td>A name of the main file for that pipeline.</td>
+</tr>
+<tr>
+<td><strong>instance_size</strong></td>
+<td>Instance type in terms of the specific Cloud Provider that specifies an amount of RAM in Gb, CPU and GPU cores number (e.g. <code>m4.xlarge</code> for AWS EC2 instance).</td>
+</tr>
+<tr>
+<td><strong>instance_disk</strong></td>
+<td>An instance's disk size in Gb.</td>
+</tr>
+<tr>
+<td><strong>docker_image</strong></td>
+<td>A name of the Docker image that will be used in the current pipeline.</td>
+</tr>
+<tr>
+<td><strong>cmd_template</strong></td>
+<td>Command line template that will be executed at the running instance in the pipeline.<br /><br /><strong>cmd_template</strong> can use environment variables:<br />- to address the <strong>main_file</strong> parameter value, use the following construction - <strong>[main_file]</strong><br />- to address all other parameters, usual Linux environment variables style shall be used (e.g. <strong>$docker_image</strong>)</td>
+</tr>
+<tr>
+<td><strong>parameters</strong></td>
+<td>Pipeline execution parameters (e.g. path to the data storage with input data). A parameter has a name and set of attributes. There are possible keys for each parameter:<br />- <strong>"type"</strong> - key specifies a type for current parameter,<br />- <strong>"value"</strong> - key specifies default value for parameter,<br />- <strong>"required"</strong> - key specifies whether this parameter must be set (<em>"required": true</em>) or might not (<em>"required": false</em>)<br />- <strong>"no_override"</strong> - key specifies whether the parameter default value be immutable in the detached configuration that uses this pipeline:<br />&nbsp;&nbsp;&nbsp;&nbsp;- if a parameter has a default value and <strong>"no_override"</strong> is <code>true</code> - that parameter field will be read-only<br />&nbsp;&nbsp;&nbsp;&nbsp;- if a parameter has a default value and <strong>"no_override"</strong> is <code>false</code> or not set - that parameter field will be writable<br />&nbsp;&nbsp;&nbsp;&nbsp;- if a parameter has no default value - <strong>"no_override"</strong> option is ignored and that parameter field will be writable</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong>: <strong><code>config.json</code></strong> file of the <strong>Gromacs</strong> pipeline:<br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_05.png" /></p>
+<p><strong><em>Note</em></strong>: In addition to <strong>main_file</strong> and <strong><code>config.json</code></strong> you can add any number of files to the <strong>CODE</strong> section and combine it in one whole scenario.</p>
+<h3 id="configuration">CONFIGURATION</h3>
+<p>This section represents pipeline execution parameters which are set in <strong><code>config.json</code></strong> file. The parameters can be changed here and <strong><code>config.json</code></strong> file will be changed respectively. See how to edit configuration <a href="../6.1._Create_and_configure_pipeline/#edit-pipeline-configuration-optional">here</a>.</p>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_06.png" /></p>
+<p>A configuration specifies:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong>Name</strong></td>
+<td><strong>Pipeline</strong> and its <strong>configuration</strong> names.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Estimated price per hour</strong></td>
+<td>Control shows machine hours prices. If you navigate mouse to "info" icon, you'll see the maximum, minimum and average price for a particular pipeline version run as well as the price per hour.</td>
+</tr>
+<tr>
+<td><strong>Exec environment</strong></td>
+<td></td>
+<td>This section lists execution environment parameters.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Docker image</strong></td>
+<td>A name of a Docker image to use for a pipeline execution (e.g. "library/gromacs-gpu").</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Node type</strong></td>
+<td>An instance type in terms of the specific Cloud Provider: CPU, RAM, GPU (e.g. 2 CPU cores, 8 Gb RAM, 0 GPU cores).</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Disk</strong></td>
+<td>Size of a disk in gigabytes, that will be attached to the instance in Gb.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Configure cluster</strong> button</td>
+<td>On-click, pop-up window will be shown:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_07.png" /><br />Here you can configure cluster or auto-scaled cluster. Cluster is a collection of instances which are connected so that they can be used together on a task. In both cases, a number of additional worker nodes with some main node as cluster head are launching (total number of pipelines = "number of working nodes" + 1). See <a href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">v.0.14 - 7.2. Launch Detached Configuration</a> for details.<br /><br />In case of using <strong>cluster</strong>, an exact count of worker nodes is directly defined by the user before launching the task and could not changing during the run.<br /><br />In case of using <strong>auto-scaled cluster</strong>, a max count of worker nodes is defined by the user before launching the task but really used count of worker nodes can change during the run depending on the jobs queue load. See <a href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a> for details.<br /><br />For configure cluster:<ul><li>in opened window click <strong>Cluster</strong> button</li><li>specify a number of child nodes (workers' count)</li><li>if you want to use <strong>GridEngine</strong> server for the cluster, tick the <strong>Enable GridEngine</strong> checkbox. Setting of that checkbox automatically adds the <strong><code>CP_CAP_SGE</code></strong> system parameter with value <code>true</code>.<br /><strong><em>Note</em></strong>: you may set this and other system parameters manually - see the example of using system parameters <a href="../6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-system-parameter">here</a>.</li><li>if you want to use <strong>Apache Spark</strong> for the cluster, tick the <strong>Enable Apache Spark</strong> checkbox. Setting of that checkbox automatically adds the <strong><code>CP_CAP_SPARK</code></strong> system parameter with value <code>true</code>. See the example of using <strong>Apache Spark</strong> <a href="../../15_Interactive_services/15.4._Interactive_service_examples/#running-apache-spark-cluster-with-rstudio-web-gui">here</a>.</li><li>if you want to use <strong>Slurm</strong> for the cluster, tick the <strong>Enable Slurm</strong> checkbox. Setting of that checkbox automatically adds the <strong><code>CP_CAP_SLURM</code></strong> system parameter with value <code>true</code>. See the example of using <strong>Slurm</strong> <a href="../../15_Interactive_services/15.2._Using_Terminal_access/#example-using-of-slurm-for-the-cloud-pipelines-clusters">here</a>.</li><li>click <strong>OK</strong> button:</li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_08.png" /></ul><blockquote>When user selects <strong>Cluster</strong> option, information on total cluster resources is shown. Resources are calculated as <strong>(CPU/RAM/GPU)*(NUMBER_OF_WORKERS+1)</strong>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_09.png" /></blockquote><br />For configure <strong>auto-scaled cluster</strong>:<ul><li>in opened window click <strong>Auto-scaled cluster</strong> button</li><li>specify a number of child nodes (workers' count) in field <strong>Auto-scaled up to</strong> and click <strong>OK</strong> button:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_10.png" /><br /><strong><em>Note</em></strong>: that number is meaning total count of "auto-scaled" nodes - it is the max count of worker nodes that could be attached to the main node to work together as cluster. These nodes will be attached to the cluster only in case if some jobs are in waiting state longer than a specific time. Also these nodes will be dropped from the cluster in case when jobs queue is empty or all jobs are running and there are some idle nodes longer than a specific time.<br /><strong><em>Note</em></strong>: about timeout periods for scale-up and scale-down of auto-scaled cluster see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#grid-engine-autoscaling">here</a>.</li><li><strong><em>additionally</em></strong> you may enable <code>hybrid</code> mode for the auto-scaled cluster - it allows to scale-up the cluster (attach a worker node) with the instance type distinct of the master - worker is being picked up based on the amount of unsatisfied CPU requirements of all pending jobs. For that behavior, set the "<strong>Enable Hybrid cluster</strong>" checkbox. For more details see <a href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/#hybrid-cluster">here</a>.</li><li><strong><em>additionally</em></strong> you may specify a number of "persistent" child nodes (workers' count) - click <strong>Setup default child nodes count</strong>, input <strong>Default child nodes</strong> number and click <strong>Ok</strong> button:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_11.png" /><br /><ul><li>These default child nodes will be never "scaled-down" during the run regardless of jobs queue load. In the example above, total count of "auto-scaled" nodes - 3, and 1 of them is "persistent".<br /><strong><em>Note</em></strong>: total count of child nodes always must be greater than count of default ("persistent") child nodes.</li><li>if you don't want to use default ("persistent") child nodes in your auto-scaled cluster - click <strong>Reset</strong> button opposite the <strong>Default child nodes</strong> field.</li></ul></li><li><strong><em>additionally</em></strong> you may choose a price type for workers that will be attached during the run - via the "<strong>Workers price type</strong>" dropdown list - workers' price type can be automatically the same as the master node type (by default) or forcibly specified regardless on the master's type:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_34.png" /></li></ul><blockquote>When user selects <strong>Auto-scaled cluster</strong>, information on total cluster resources is shown as interval - from the "min" configuration to "max" configuration:<br />"min" configuration resources are calculated as <strong>(CPU/RAM/GPU)*(NUMBER_OF_DEFAULT_WORKERS+1)</strong><br />"max" configuration resources are calculated as <strong>(CPU/RAM/GPU)*(TOTAL_NUMBER_OF_WORKERS+1)</strong><br /><br />E.g. for auto-scaled cluster with 2 child nodes and without default ("persistent") child nodes <em>(NUMBER_OF_DEFAULT_WORKERS = 0; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_12.png" /><br /><br />E.g. for auto-scaled cluster with 2 child nodes and 1 default ("persistent") child node <em>(NUMBER_OF_DEFAULT_WORKERS = 1; TOTAL_NUMBER_OF_WORKERS = 2)</em>:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_13.png" /><br /><br /><strong><em>Note</em></strong>: in some specific configurations such as <strong><em>hybrid autoscaling clusters</em></strong> amount of resources can vary beyond the shown interval.</blockquote><strong><em>Note</em></strong>: if you don't want to use any cluster - click <strong>Single node</strong> button and then click <strong>OK</strong> button.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Cloud Region</strong></td>
+<td>A specific region for a compute node placement.<br />Please note, if a non-default region is selected - certain CP features may be unavailable:<br /><ul><li>FS mounts usage from the another region (e.g. "<em>EU West</em>" region cannot use FS mounts from the "<em>US East</em>"). Regular storages will be still available</li><li>If a specific tool, used for a run, requires an on-premise license server (e.g. monolix, matlab, schrodinger, etc.) - such instances shall be run in a region, that hosts those license servers.</li></ul><blockquote><strong><em>Note</em></strong>: if a specific platform deployment has a number of Cloud Providers registered (e.g. <code>AWS</code>+<code>Azure</code>, <code>GCP</code>+<code>Azure</code>) - in that control Cloud Provider auxiliary icons also will be displayed, e.g.:<br /><img alt="CP_ManagePipeline" src="../../07_Manage_Detached_configuration/attachments/Manage_Detached_Configuration_5.png" /><br />For a single-Provider deployments only Cloud Region icons are displayed.</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Run capabilities</strong></td>
+<td>Allows to launch a pipeline with a pre-configured additional software package(s), e.g. <strong><code>Docker-In-Docker</code></strong>, <strong><code>Singularity</code></strong> and others. For details see <a href="../../10_Manage_Tools/10.9._Run_capabilities/">here</a>.<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_35.png" /></td>
+</tr>
+<tr>
+<td><strong>Advanced</strong></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Price type</strong></td>
+<td>Choose Spot or On-demand type of instance. You can look information about price types hovering "Info" icon and based on it make your choice.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Timeout (min)</strong></td>
+<td>After this time pipeline will shut down (optional). Before the shut down, all the contents of the <code>$ANALYSIS_DIR</code> directory will be copied to <code>output</code> storages.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Limit mounts</strong></td>
+<td>Allow to specify storages that should be mounted. For details see <a href="../6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Cmd template</strong></td>
+<td>A shell command that will be executed to start a pipeline.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>"Start idle"</strong></td>
+<td>The flag sets <strong>cmd_template</strong> to <strong><code>sleep infinity</code></strong>. For more information about starting a job in this mode refer to <a href="../../15_Interactive_services/15._Interactive_services/">15. Interactive services</a>.</td>
+</tr>
+<tr>
+<td><strong>Parameters</strong></td>
+<td></td>
+<td>This section lists pipeline specific parameters that can be used during a pipeline run. Pipeline parameters can be assigned the following types: <ul><li><strong>String</strong> - generic scalar value (e.g. Sample name).</li><li><strong>Boolean</strong> - boolean value.</li><li><strong>Path</strong> - path in a data storage hierarchy.</li><li><strong>Input</strong> - path in a data storage hierarchy. During pipeline initialization, this path will be used to download input data on the calculation node for processing from a storage.</li><li><strong>Output</strong> - path in a data storage hierarchy. During pipeline finalization, this path will be used to upload resulting data to a storage.</li><li><strong>Common</strong> - path in a data storage hierarchy. Similar to "Input" type, but this data will not be erased from a calculation node, when a pipeline is finished (this is useful for reference data, as it can be reused by further pipeline runs that share the same reference).</li></ul><strong><em>Note</em></strong>: You can use <strong>Project</strong> attribute values as parameters for the <strong>Run</strong>: <ol><li>Click an empty parameter value field.</li><li>Enter "<strong>project.</strong>"</li><li>In the drop-down list select the Project attribute value:<br /><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_14.png" /></li></ol></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Add parameter</strong></td>
+<td>This control helps to add an additional parameter to a configuration.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="configuration-tab-controls">Configuration tab controls</h4>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Add</strong></td>
+<td>To create a customized configuration for the pipeline, click the <strong>+ ADD</strong> button in the upper-right corner of the screen. For more details see <a href="../6.1._Create_and_configure_pipeline/#example-add-pipeline-configuration">here</a>.</td>
+</tr>
+<tr>
+<td><strong>Save</strong></td>
+<td>This button saves changes in a configuration.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="history">HISTORY</h3>
+<p>This section contains information about all the current pipeline version's runs. Runs info is organized into a table with the following columns:</p>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_15.png" /></p>
+<ul>
+<li><strong>Run</strong> - each record of that column contains two rows: in upper - run name that consists of pipeline name and run id, in bottom - Cloud Region.<blockquote>
+<p><strong><em>Note</em></strong>: if a specific platform deployment has a number of Cloud Providers registered (e.g. <code>AWS</code>+<code>Azure</code>, <code>GCP</code>+<code>Azure</code>) - corresponding text information also has a Provider name, e.g.:<br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_33.png" /></p>
+</blockquote>
+</li>
+<li><strong>Parent-run</strong> - id of the run that executed current run (this field is non-empty only for runs that are executed by other runs).</li>
+<li><strong>Pipeline</strong> - each record of that column contains two rows: in upper - pipeline name, in bottom - pipeline version.</li>
+<li><strong>Docker image</strong> - base docker image name.</li>
+<li><strong>Started</strong> - time pipeline started running.</li>
+<li><strong>Completed</strong> - time pipeline finished execution.</li>
+<li><strong>Elapsed</strong> - each record of that column contains two rows: in upper - pipeline running time, in bottom - run's estimated price, which is calculated based on the run duration, region and instance type.</li>
+<li><strong>Owner</strong> - user who launched run.</li>
+</ul>
+<p>You can filter runs by clicking the <strong>filter icon</strong>. By using the <strong>filter control</strong> you can choose whether display runs for current pipeline version or display runs for all pipeline versions.</p>
+<h4 id="history-tab-controls">History tab controls</h4>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PAUSE (a)</strong></td>
+<td>To pause running pipeline press this control. This control is available only for on-demand instances.</td>
+</tr>
+<tr>
+<td><strong>STOP (b)</strong></td>
+<td>To stop running pipeline press this control.</td>
+</tr>
+<tr>
+<td><strong>LOG (c)</strong></td>
+<td>"Log" control opens detailed information about the run. You'll be redirected to "<strong>Runs</strong>" space (see <a href="../../11_Manage_Runs/11._Manage_Runs/">11. Manage Runs</a>).</td>
+</tr>
+<tr>
+<td><strong>RESUME (d)</strong></td>
+<td>To resume pausing pipeline press this control. This control is available only for on-demand instances.</td>
+</tr>
+<tr>
+<td><strong>TERMINATE (e)</strong></td>
+<td>To terminate node without waiting of the pipeline resuming. This control is available only for on-demand instances, which were paused.</td>
+</tr>
+<tr>
+<td><strong>RERUN (f)</strong></td>
+<td>This control reruns completed pipeline's runs.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="pipeline-runs-states">Pipeline run's states</h4>
+<p>Icons at the left represent the current state of the pipeline runs:  </p>
+<ul>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_28.png" /> - <strong>Queued</strong> state ("sandglass" icon) - a run is waiting in the queue for the available compute node.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_29.png" /> - <strong>Initializing</strong> state ("rotating" icon) - a run is being initialized.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_23.png" /> - <strong>Pulling</strong> state ("download" icon) - now pipeline <strong>Docker image</strong> is downloaded to the node.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_24.png" /> - <strong>Running</strong> state ("play" icon) - a pipeline is running. The node is appearing and pipeline input data is being downloaded to the node before the "<strong>InitializeEnvironment</strong>" service task appears.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_30.png" /> - <strong>Paused</strong> state ("pause" icon) - a run is paused. At this moment compute node is already stopped but keeps it's state. Such run may be resumed.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_25.png" /> - <strong>Success</strong> state ("OK" icon) - successful pipeline execution.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_26.png" /> - <strong>Failed</strong> state ("caution" icon) - unsuccessful pipeline execution.</li>
+<li><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_27.png" /> - <strong>Stopped</strong> state ("clock" icon) - a pipeline manually stopped.</li>
+</ul>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_16.png" /></p>
+<p>Also, help tooltips are provided when hovering a run state icon, e.g.:<br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_32.png" /><br />
+<img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_31.png" /></p>
+<h3 id="storage-rules">STORAGE RULES</h3>
+<p>This section displays a list of rules used to upload data to the output data storage, once pipeline finished. It helps to store only data you need and minimize the amount of interim data in data storages.</p>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_17.png" /></p>
+<p>Info is organized into a table with the following columns:</p>
+<ul>
+<li><strong>Mask</strong> column contains a relative path from the $ANALYSIS_DIR folder (see <a href="#default-environment-variables">Default environment variables</a> section below for more information). Mask uses bash syntax to specify the data that you want to upload from the $ANALYSIS_DIR. Data from the specified path will be uploaded to the bucket from the pipeline node.<br />
+<strong><em>Note</em></strong>: by default whole $ANALYSIS_DIR folder is uploaded to the cloud bucket (default Mask is - "*"). For example, "*.txt*" mask specifies that all files with <strong>.txt</strong> extension need to be uploaded from the $ANALYSIS_DIR to the data storage.<br />
+<strong><em>Note</em></strong>: Be accurate when specifying masks - if wildcard mask ("*") is specified, all files will be uploaded, no matter what additional masks are specified.</li>
+<li>The <strong>Created</strong> column shows date and time of rules creation.</li>
+<li><strong>Move to Short-Term Storage</strong> column indicates whether pipeline output data will be moved to a short-term storage.</li>
+</ul>
+<h4 id="storage-rules-tab-control">Storage rules tab control</h4>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Add new rule (a)</strong></td>
+<td>This control allows adding a new data managing rule.</td>
+</tr>
+<tr>
+<td><strong>Delete (b)</strong></td>
+<td>To delete a data managing rule press this control.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="graph">GRAPH</h3>
+<p>This section represents the sequence of pipeline tasks as a directed graph.</p>
+<p><strong>Tasks</strong> are graph vertices, <strong>edges</strong> represent execution order. A task can be executed only when all input edges - <strong>associated tasks</strong> - are completed (see more information about creating a pipeline with <strong>GRAPH</strong> section <a href="../6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">here</a>).<br />
+<strong><em>Note</em></strong>: only for Luigi and WDL pipelines.<br />
+<strong><em>Note</em></strong>: If <strong>main_file</strong> has mistakes, pipeline workflow won't be visualized.</p>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_18.png" /></p>
+<h4 id="graph-tab-controls">Graph tab controls</h4>
+<p>When a PipelineBuilder graph is loaded, the following layout controls become available to the user.</p>
+<p><img alt="CP_ManagePipeline" src="../attachments/ManagePipeline_19.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Save</strong></td>
+<td>saves changes.</td>
+</tr>
+<tr>
+<td><strong>Revert</strong></td>
+<td>reverts all changes to the last saving.</td>
+</tr>
+<tr>
+<td><strong>Layout</strong></td>
+<td>performs graph linearization, make it more readable.</td>
+</tr>
+<tr>
+<td><strong>Fit</strong></td>
+<td>zooms graph to fit the screen.</td>
+</tr>
+<tr>
+<td><strong>Show links</strong></td>
+<td>enables/disables workflow level links to the tasks. It is disabled by default, as for large workflows it overwhelms the visualization.</td>
+</tr>
+<tr>
+<td><strong>Zoom out</strong></td>
+<td>zooms graph out.</td>
+</tr>
+<tr>
+<td><strong>Zoom in</strong></td>
+<td>zooms graph in.</td>
+</tr>
+<tr>
+<td><strong>Search element</strong></td>
+<td>allows to find specific object at the graph.</td>
+</tr>
+<tr>
+<td><strong>Fullscreen</strong></td>
+<td>expands graph to the full screen.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="default-environment-variables">Default environment variables</h2>
+<p>Pipeline scripts (e.g. <strong>main_file</strong>) use default environmental variables for pipeline execution. These variables are set in internal CP scripts:</p>
+<ul>
+<li><strong>RUN_ID</strong> - pipeline run ID.</li>
+<li><strong>PIPELINE_NAME</strong> - pipeline name.</li>
+<li><strong>COMMON_DIR</strong> - directory where pipeline common data (parameter with <strong><code>"type": "common"</code></strong>) will be stored.</li>
+<li><strong>ANALYSIS_DIR</strong> - directory where output data of the pipeline (parameter with <strong><code>"type": "output"</code></strong>) will be stored.</li>
+<li><strong>INPUT_DIR</strong> - directory where input data of the pipeline (parameter with <strong><code>"type": "input"</code></strong>) will be stored.</li>
+<li><strong>SCRIPTS_DIR</strong> - directory where all pipeline scripts and config.json file will be stored.</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/" class="btn btn-neutral float-left" title="5.5. Download data from external resources"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../6.1._Create_and_configure_pipeline/" class="btn btn-neutral float-right" title="6.1. Create and configure Pipeline">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../6.1._Create_and_configure_pipeline/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

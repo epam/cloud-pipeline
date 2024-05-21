@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>8.7. Create shared file system - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "8.7. Create shared file system";
+        var mkdocs_page_input_path = "manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">8. Manage Data Storage</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">8.7. Create shared file system</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#create-fs-mount">Create FS mount</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fs-storage-features">FS storage features</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fs-storage-size">FS storage size</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#fs-quotas">FS quotas</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#setup-the-quota">Setup the quota</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#exclude-certain-directories-from-monitoring">Exclude certain directories from monitoring</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#usage-examples">Usage examples</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#grace-period-for-quotas">Grace period for quotas</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>8. Manage Data Storage &raquo;</li>
+      <li>8.7. Create shared file system</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="87-create-shared-file-system">8.7. Create shared file system</h1>
+<ul>
+<li><a href="#create-fs-mount">Create FS mount</a></li>
+<li><a href="#fs-storage-features">FS storage features</a></li>
+<li><a href="#fs-storage-size">FS storage size</a></li>
+<li><a href="#fs-quotas">FS quotas</a><ul>
+<li><a href="#setup-the-quota">Setup the quota</a></li>
+<li><a href="#exclude-certain-directories-from-monitoring">Exclude directories from monitoring</a></li>
+<li><a href="#usage-examples">Usage examples</a></li>
+<li><a href="#grace-period-for-quotas">Grace period for quotas</a></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to mount FS to the Cloud Pipeline. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<p>A shared file system is a data storage based on network file system. It has several advantages over regular data storages and local file system:</p>
+<ul>
+<li>While regular data storage is a great option for a long-term storage, it cannot be used as a shared file system for high-performance computing jobs as it does not support network-like interface.</li>
+<li>A local disk cannot be shared across several nodes.</li>
+<li>A user needs to specify local disk size when scheduling a run. If a user specifies a size that is not enough to finish a job - it will fail. Cloud-based shared file system could be used to workaround this issue.</li>
+</ul>
+<h2 id="create-fs-mount">Create FS mount</h2>
+<ol>
+<li>Navigate to a desired folder and click <strong>+ Create → Storages → Create new FS mount</strong>.<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_1.png" /><br />
+<strong><em>Note</em></strong>: For FS mounts - <strong>"Add existing"</strong> option is not available.<br />
+<strong><em>Note</em></strong>: For the correct FS mount creation, at least one mount point shall be registered in the System Preferences for any Cloud Region. If no - the corresponding button of the FS mount creation becomes invisible:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_6.png" /></li>
+<li>Specify <strong>Storage path</strong> and other optional parameters.<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_2.png" /><br />
+<strong><em>Note</em></strong>: Storage path parameter contains FS mount path and the name of the storage to be created.<br />
+<strong><em>Note</em></strong>: FS storages are just subdirectories of the mounted FS. One FS mount can have multiple FS storages.</li>
+<li>When deleted from GUI, FS storage is unmounted from the Cloud Pipeline.</li>
+</ol>
+<h2 id="fs-storage-features">FS storage features</h2>
+<ol>
+<li>For FS storages GUI doesn't display the following features typical for regular data storages:  <ul>
+<li>STS</li>
+<li>LTS</li>
+<li>Versioning and Backup duration.<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_3.png" /></li>
+</ul>
+</li>
+<li>When a user selects <strong>Input/Common/Output</strong> path parameter for a pipeline run - it is impossible to set FS storage:<ul>
+<li>FS storages aren't displayed in the <strong>"Browse..."</strong> dialog for <strong>Input/Common/Output</strong> path parameters;</li>
+<li>Value of <strong>Input/Common/Output</strong> path parameters is validated so that user is not able to specify a path to FS storage manually.<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_4.png" /></li>
+</ul>
+</li>
+<li>The content of files stored in FS data storage could be previewed as well as in regular data storages:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_5.png" /></li>
+<li>Since FS isn't an object data storage, it isn't possible to add metadata tags to files in the FS storage.</li>
+<li>Use FS storage between cluster nodes. If pipeline Tools contain FS client, FS storage(s) will be mounted automatically.</li>
+</ol>
+<h2 id="fs-storage-size">FS storage size</h2>
+<p>To know the summary size of all files in the FS storage - open its attributes:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_7.png" /></p>
+<p>In the <strong>Attributes</strong> panel, you can view the whole size:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_8.png" /></p>
+<blockquote>
+<p>Please note, in the <strong>Attributes</strong> panel here, the <em>Effective</em> size of all files in the FS storage is displayed.<br />
+To know the <em>Real</em> size of all files in the storage - click the info icon.<br />
+Details about <em>Effective</em> and <em>Real</em> sizes see in the section <a href="#exclude-certain-directories-from-monitoring">below</a>.</p>
+</blockquote>
+<p>FS storage content can be changed during the time, and the displayed size value in the <strong>Attributes</strong> panel may be outdated.<br />
+To know the actual FS storage size currently, you shall "re-index" the storage:</p>
+<ol>
+<li>For example, in the FS storage a new big file was added. But the displayed FS size is still previous:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_9.png" /></li>
+<li>Click the <strong>Re-index</strong> button:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_10.png" /><br />
+    Storage size will be refreshed in a few minutes. You will see the corresponding message.</li>
+<li>Couple minutes later refresh a page, and you can check that size is updated according to the added file:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_11.png" /></li>
+</ol>
+<h2 id="fs-quotas">FS quotas</h2>
+<p>There is a feature that allows to configure quota(s) to the FS storage volume that user can occupy.<br />
+On exceeding such quota(s), different actions can be applied, e.g. read-only mode for that storage.<br />
+This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.</p>
+<h3 id="setup-the-quota">Setup the quota</h3>
+<blockquote>
+<p>To configure FS quotas, you need to have the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p>To setup a quota and actions on quota's exceeding:</p>
+<ol>
+<li>Open a FS storage.</li>
+<li>Click the <strong>Show attributes</strong> button to open the <strong>Attributes</strong> panel of the storage:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_12.png" /></li>
+<li>Click the <strong>Configure notifications</strong> hyperlink to open the notifications/quota settings for the storage:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_13.png" /></li>
+<li>The pop-up with quota settings will appear:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_14.png" /></li>
+<li>Type the username(s) or a groupname(s) in the "Recipients" input to choose who will get the FS quota notifications via <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">emails</a> and <a href="../../12_Manage_Settings/12.9._Change_email_notification/#push-notifications">push notifications</a>, e.g.:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_15.png" /><br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_16.png" /><br />
+    In the example above, one user and one group were selected.</li>
+<li>Click the <strong>Add notification</strong> to configure rules/thresholds:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_17.png" /><br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_18.png" /></li>
+<li>Put a threshold in <code>Gb</code> or <code>%</code> of the total volume and choose which action shall be performed when that threshold is reached.<br />
+    The following actions can be taken by the platform:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_19.png" />  <ul>
+<li><em>Send email</em> - just notify the recipients that a quota has been reached (notification will be resent each hour)</li>
+<li><em>Disable mount</em> - used to let the users cleanup the data:  <ul>
+<li>GUI will still allow to perform the modification of this storage (<code>read-write</code> mode )</li>
+<li>In existing nodes (launched runs), FS storage mount will be switched to a <code>read-only</code> mode (if it was mounted previously)</li>
+<li>This FS storage will be mounted in a <code>read-only</code> mode to the new launched compute nodes</li>
+</ul>
+</li>
+<li><em>Make read-only</em> - used to stop any data activities from the users, only admins can cleanup the data per a request:  <ul>
+<li>GUI will show this FS storage in a <code>read-only</code> mode</li>
+<li>Existing nodes (launched runs) will turn this mounted FS storage in a <code>read-only</code> mode as well</li>
+<li>This FS storage will be mounted in a <code>read-only</code> mode to the new launched compute nodes</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>You may add any count of quota rules by the described way. The notification/quota rules can be combined in any form.<br />
+    E.g. the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_20.png" /></li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: <a href="../../12_Manage_Settings/12._Manage_Settings/#templates">email notification</a> type for FS quota-related processes is <strong>STORAGE_QUOTA_EXCEEDING</strong>.</p>
+</blockquote>
+<h3 id="exclude-certain-directories-from-monitoring">Exclude certain directories from monitoring</h3>
+<p>Some of the tools (e.g. <code>RStudio</code>) use a home directory to store the suspended sessions data.<br />
+This may make the data storage to exceed all the quotas, if this home directory is the FS storage and some quotas are set for it. While the user will not be aware what has happened.<br />
+To address such issues - admin can exclude certain "well-know" location(s) from the quota evaluation procedure.</p>
+<p>The system preference <strong><code>storage.quotas.skipped.paths</code></strong> is used to specify which storages/paths shall be excluded from the quota-related processing.<br />
+Preference value shall be a JSON-formatted list:</p>
+<pre><code class="language-json">[
+ {
+  &quot;storageName&quot;: &quot;&lt;storage_name&gt;&quot;,
+  &quot;hiddenFilePathGlobs&quot;: [
+   &quot;&lt;path_to_dir&gt;&quot;
+  ]
+ }
+]
+</code></pre>
+<p>Where:</p>
+<ul>
+<li><code>&lt;storage_name&gt;</code> - can be one of:  <ul>
+<li>exact storage name (e.g. "Storage-USER1") - rules will be applied only to that storage</li>
+<li>wildcard (e.g. "Storage-*" or "*") - rules will be applied to any storage which match the mask</li>
+</ul>
+</li>
+<li><code>&lt;path_to_dir&gt;</code> - path to a directory or a file within a storage, which will be skipped:  <ul>
+<li>absolute path (e.g. "path/to/dir") will skip only exactly that directory/file</li>
+<li>wildcard path (e.g. "path/to/dir/*") will skip directory and it's content recursively</li>
+</ul>
+</li>
+</ul>
+<p>E.g. to address the <code>RStudio</code> issue (described in the beginning of the current section), the preference shall look like:</p>
+<pre><code class="language-json">[
+ {
+  &quot;storageName&quot;: &quot;*&quot;,
+  &quot;hiddenFilePathGlobs&quot;: [
+   &quot;.local/share/rstudio/sessions/*&quot;
+  ]
+ }
+]
+</code></pre>
+<p>If the preference is set - you can view the following usage metrics of the data storage in its <strong>Attributes</strong>:</p>
+<ul>
+<li><em>Real size</em> - a real size of the storage, i.e. summary size of all files in this storage. This value is used for the billing reports.</li>
+<li><em>Effective size</em> - a real size minus the volume of the directories, specified in the <strong><code>storage.quotas.skipped.paths</code></strong> preference. This value is used to evaluate quotas.</li>
+</ul>
+<p><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_21.png" /></p>
+<h3 id="usage-examples">Usage examples</h3>
+<blockquote>
+<p>Please note, examples below are shown for the "general" user.<br />
+<strong><em>ROLE_ADMIN</em></strong> users will not be affected by the restrictions. Even if the storage is in <code>read-only</code> state - admins can perform <em>READ</em> and <em>WRITE</em> operations.</p>
+<p>Also note, transition between the FS storage states (<code>ACTIVE</code> → <code>MOUNT DISABLED</code> → <code>READ ONLY</code> and vice versa) may take up to 5 min.</p>
+</blockquote>
+<p>For our examples:</p>
+<ul>
+<li>we have selected a data storage with a known effective volume (3.55 GB)</li>
+<li>we have setup two thresholds for this storage:  <ul>
+<li>4 Gb - disable mounts, but keep GUI available for changes</li>
+<li>5 Gb - make the datastorage fully <code>read-only</code><br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_22.png" /></li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Action</th>
+<th>Results</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Create 1 Gb file in the filesystem (FS exceeds 4 Gb threshold)</td>
+<td><em>Active jobs</em>: filesystem mount becomes <code>read-only</code> and a user can not perform any modification<br><em>New jobs</em>: filesystem is mounted as <code>read-only</code> by default<br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_27.png" /><br><br><em>GUI</em>:<ul><li>Permissions are not changed. Write operations can be performed, according to the permissions</li><li>"Warning" icon is displayed. It shows <code>MOUNT DISABLED</code> state<br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_23.png" /></li><li>Storage size is increased by 1 Gb:<br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_24.png" /></li></ul></td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td>Create another 1 Gb file in the filesystem (FS exceeds 5 Gb threshold)</td>
+<td><em>Active jobs</em>: filesystem mount remains <code>read-only</code> and a user can not perform any modification<br><em>New jobs</em>: filesystem is mounted as <code>read-only</code> by default<br><br><em>GUI</em>:<ul><li>Storage becomes <code>read-only</code>. User can not perform any modification to the filesystem</li><li>"Warning" icon is still displayed. It shows <code>READ ONLY</code> state<br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_25.png" /></li><li>Storage size is increased by 1 Gb:<br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_26.png" /></li></ul></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Delete one 1 Gb file (<strong><em>Note</em></strong>: this action can be performed only by admin)</td>
+<td><em>Active jobs</em>: filesystem is still <code>read-only</code> and a user can not perform any modification<br><em>New jobs</em>: filesystem is mounted as <code>read-only</code> by default<br><br><em>GUI</em>:<ul><li>Permissions are reverted to the previous state. Changes can be done.</li><li>"Warning" icon is still displayed. Wording is reverted to <code>MOUNT DISABLED</code> state</li><li>Storage size is decreased by 1 Gb</li><br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_28.png" /><ul></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Delete second 1 Gb file</td>
+<td><em>Active jobs</em>: filesystem is remounted according to the user's permissions<br><em>New jobs</em>: filesystem is mounted according to the user's permissions by default<br><br><em>GUI</em>:<ul><li>Permissions are not changed. <em>WRITE</em> operations can be performed, according to the permissions</li><li>"Warning" icon is hidden</li><li>Storage size is decreased by 1 Gb</li><br><img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_29.png" /></ul></td>
+</tr>
+</tbody>
+</table>
+<h3 id="grace-period-for-quotas">Grace period for quotas</h3>
+<p>By default, FS quotas are being applied immediately as they had been reached.<br />
+While this is totally correct - users may face the compute workloads to stop.<br />
+To address this - there is a grace period for the quotas restrictions to become effective.</p>
+<p>The system preference <strong><code>storage.quotas.actions.grace.period</code></strong> is used to configure such grace period.<br />
+Preference value shall be a JSON-formatted list:</p>
+<pre><code class="language-json">{
+ &quot;READONLY&quot;: &lt;VALUE_1&gt;,
+ &quot;DISABLE_MOUNT&quot;: &lt;VALUE_2&gt;
+}
+</code></pre>
+<p>Preference allows to specify grace periods for both states: <code>MOUNT DISABLED</code> and <code>READ ONLY</code>. Value is specified in minutes.</p>
+<p>If that preference is specified - actions for FS quotas will be delayed. That means that restrictive actions will be applied only after specified "grace" period and the user has some time to free storage space up, i.e.:</p>
+<ul>
+<li>when the data storage volume exceeds a threshold - storage's state will not be changed to <code>MOUNT DISABLED</code> or <code>READ ONLY</code> until the grace period exceeds</li>
+<li>if a certain state does not have a grace period - for that state, the immediate state switching will be in place</li>
+</ul>
+<p>Example of using:</p>
+<ol>
+<li>Let's suppose that <strong><code>storage.quotas.actions.grace.period</code></strong> is configured as:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_30.png" /><br />
+    I.e. for <code>MOUNT DISABLED</code> action grace period is 1 hour, for <code>READ ONLY</code> action grace period is 2 hours.</li>
+<li>Let's suppose we have a storage with 10 Gb volume and the following quota is configured:<br />
+<img alt="CP_CreateSharedFileSystem" src="../attachments/CreateSharedFileSystem_31.png" /></li>
+<li>User uploads 15 Gb file and this information gets into the index.</li>
+<li>"Effective" storage size (25 Gb) exceeds the threshold configured for <code>MOUNT DISABLED</code> action.</li>
+<li>So, the quota monitor will perform the following actions:  <ul>
+<li>will send a notification to the user, that a quota has been reached, but the state is still <code>ACTIVE</code></li>
+<li>will not change the real state of the storage</li>
+<li>once 1 hour is elapsed and the size of the storage will be still 25 Gb:<ul>
+<li>storage state will be set to <code>MOUNT DISABLED</code></li>
+<li>user will be notified about that event</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../8.6._Delete_Files_and_Folders_from_Storage/" class="btn btn-neutral float-left" title="8.6. Delete Files and Folders from Data Storage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../8.8._Data_sharing/" class="btn btn-neutral float-right" title="8.8. Data sharing">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../8.6._Delete_Files_and_Folders_from_Storage/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../8.8._Data_sharing/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

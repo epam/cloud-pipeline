@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>12.0. Overview - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "12.0. Overview";
+        var mkdocs_page_input_path = "manual/12_Manage_Settings/12._Manage_Settings.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
+    <ul class="current">
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">12.0. Overview</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#cli-tab">CLI tab</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#pipe-cli">Pipe CLI</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#git-cli">Git CLI</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-events">System events</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#system-events-controls">System events controls</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#user-management">User management</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#users">Users</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#groups">Groups</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#roles">Roles</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#usage-report">Usage report</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#email-notifications">Email notifications</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#email-notifications-tab-controls">Email notifications tab controls</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#templates">Templates</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#preferences">Preferences</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cloud-regions">Cloud Regions</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-dictionaries">System dictionaries</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-management">System management</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#system-logs">System logs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#nat-gateway">NAT gateway</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#my-profile">My profile</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#profile">Profile</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#appearance">Appearance</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>12. Manage settings &raquo;</li>
+      <li>12.0. Overview</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="12-manage-settings">12. Manage Settings</h1>
+<p>System Settings consist of <strong>CLI</strong>, <strong>System events</strong>, <strong>User management</strong>, <strong>Email notifications</strong>, <strong>Preferences</strong>, <strong>Cloud Regions</strong> and <strong>System logs</strong> tabs.<br />
+To open System Settings click the <strong>gear</strong> icon on the main menu in the left side of the Cloud Pipeline application:  </p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_0.png" /></p>
+<ul>
+<li><a href="#cli-tab">CLI tab</a><ul>
+<li><a href="#pipe-cli">Pipe CLI</a></li>
+<li><a href="#git-cli">Git CLI</a></li>
+</ul>
+</li>
+<li><a href="#system-events">System events</a></li>
+<li><a href="#user-management">User management</a><ul>
+<li><a href="#users">Users</a></li>
+<li><a href="#groups">Groups</a></li>
+<li><a href="#roles">Roles</a></li>
+<li><a href="#usage-report">Usage report</a></li>
+</ul>
+</li>
+<li><a href="#email-notifications">Email notifications</a></li>
+<li><a href="#preferences">Preferences</a></li>
+<li><a href="#cloud-regions">Cloud Regions</a></li>
+<li><a href="#system-dictionaries">System dictionaries</a></li>
+<li><a href="#system-management">System management</a><ul>
+<li><a href="#system-logs">System logs</a></li>
+<li><a href="#nat-gateway">NAT gateway</a></li>
+</ul>
+</li>
+<li><a href="#my-profile">My profile</a><ul>
+<li><a href="#profile">Profile</a></li>
+<li><a href="#appearance">Appearance</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="cli-tab">CLI tab</h2>
+<p>"<strong>CLI</strong>" tab generates two types of CLI installation and configuration commands to set CLI for the Cloud Pipeline - <strong>Pipe CLI</strong> and <strong>Git CLI</strong>. You can select each of them by click the corresponding option in the "<strong>CLI</strong>" tab menu.</p>
+<h3 id="pipe-cli">Pipe CLI</h3>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_1.png" /></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Operation system</strong></td>
+<td>Choose an operation system from drop-down list and the instruction how to install the Cloud Pipeline CLI will appear in the window below.</td>
+</tr>
+<tr>
+<td><strong>Generate access key</strong></td>
+<td>Generates access token to be used by CLI.</td>
+</tr>
+<tr>
+<td><strong>Valid till</strong></td>
+<td>A date access key expires.</td>
+</tr>
+</tbody>
+</table>
+<p>For more details see <a href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup CLI</a>.</p>
+<h3 id="git-cli">Git CLI</h3>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_10.png" /></p>
+<p>Here you can see instructions how to configure your Git client to work with the Cloud Pipeline.</p>
+<hr />
+<h2 id="system-events">System events</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p><strong>System events</strong> tab represents system events notifications. Here you can create, edit, delete system events notifications.<br />
+System events notifications are organized into a table. It represents the <strong>body of the notification</strong>, its <strong>severity status</strong> ("<em>info</em>", "<em>warning</em>" or "<em>critical</em>") and <strong>date of creation</strong>, <strong>activity status</strong>.<br />
+<strong><em>Note</em></strong>: Variants of activity status:</p>
+<ul>
+<li><strong>Blocking</strong> event emerges in the middle of the window and requires confirmation from the user to disappear.</li>
+<li><strong>Active</strong> notifications will be shown for all users of the Cloud Pipeline until admin sets them inactive.</li>
+</ul>
+<p>Administrator can <strong>edit</strong> and <strong>delete</strong> notifications via corresponding buttons.<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_2.png" /></p>
+<h3 id="system-events-controls">System events controls</h3>
+<p>Controls are at the top right of the table.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Expand/Collapse</strong></td>
+<td>This button shows/hides the body of the event.</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Refresh</strong></td>
+<td>To refresh a list of notifications.</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>+ ADD</strong></td>
+<td>To create a new notification.</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>Edit</strong></td>
+<td>To open the edit form for the event.</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>Delete</strong></td>
+<td>To delete an event.</td>
+</tr>
+</tbody>
+</table>
+<p>For more detais see <a href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>.</p>
+<hr />
+<h2 id="user-management">User management</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role or the <strong><em>ROLE_USER_READER</em></strong> role.</p>
+</blockquote>
+<p>The <strong>User management</strong> tab helps to manage user groups and system roles.</p>
+<p>To grant or refuse permissions to a specific group of users (e.g. project team members), you can just create a user group and grant or refuse permissions to the specific set of objects to the whole group.<br />
+System roles is one of the principal tool for managing security access to the objects. Even if you have <strong>WRITE</strong> permission for a folder object, you might be not able to create a pipeline there, if you don't have the <strong>ROLE_PIPELINE_MANAGER</strong> role.<br />
+<strong><em>Note</em></strong>: About permissions, you can read more <a href="../../13_Permissions/13._Permissions/">here</a>.</p>
+<p><strong>User management</strong> consists of the following subtabs: <a href="#users"><strong>Users</strong></a>, <a href="#groups"><strong>Groups</strong></a>, <a href="#roles"><strong>Roles</strong></a>, <a href="#usage-report"><strong>Usage report</strong></a>.</p>
+<h3 id="users">Users</h3>
+<p>This table view displays a list of users and their additional information:</p>
+<ul>
+<li><strong>Name</strong> - an authenticated domain account (SAML/OAuth/OpenID), e.g. e-mail.</li>
+<li><strong>Groups</strong> - a set of groups assigned to a user. It could be whether CP's user's groups and groups, given to each user automatically by <strong>SSO authentication system</strong>.<br />
+<strong><em>Note</em></strong>: automatically created groups based on SSO authentication system are light-grey colored.</li>
+<li><strong>Roles</strong> - a set of system roles assigned to a user.</li>
+</ul>
+<p>Additionally, near the name user's state is shown. Possible states:</p>
+<ul>
+<li><em>Online</em> - for users who are logged in and use the Platform in the moment<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_31.png" /></li>
+<li><em>Offline</em> - for users who are not logged in at the moment/do not use the Platform for some time<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_32.png" /></li>
+</ul>
+<p>By hover over the <em>Offline</em> icons - the tooltip will be shown that contains the info when the specific user has utilized the Platform the last time, e.g.:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_33.png" /></p>
+<blockquote>
+<p>Please note, that users' states are visible only for user with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<h4 id="users-tab-controls">Users tab controls</h4>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_3.png" /></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Search field</strong></td>
+<td>Field to search a particular user from a list of users.</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Show users</strong></td>
+<td>This control allows to filter which users to show in the list:<br><img alt="CP_ManageSettings" src="../attachments/ManageSettings_30.png" /><ul><li>all (<em>by default</em>)</li><li>only <strong><em>blocked</em></strong> users. More details about blocking/unblocking see <a href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/#blockingunblocking-users-and-groups">here</a></li><li>only <strong><em>online</em></strong> users - i.e. users that are working at the Platform in the current moment</li><li>only users that exceeded any spending <a href="../../Appendix_D/Appendix_D._Costs_management/#spending-quotas">quota</a></li></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>+ Create user</strong></td>
+<td>By click this button, the <strong>"Create user"</strong> form will be opened - to create a new user. More details see <a href="../12.3._Create_a_new_user/">here</a>.</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>Import users</strong></td>
+<td>Allows to import users from the list in <code>.csv</code> format.</td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>Export users</strong></td>
+<td>Allows to export all users with selected set of attributes. More details see <a href="#export-users">below</a>.</td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td><strong>Edit</strong></td>
+<td>Allows to change a list of roles/groups assigned to a user. More details see <a href="../12.4._Edit_delete_a_user/#edit-a-user">here</a>.</td>
+</tr>
+</tbody>
+</table>
+<h4 id="export-users">Export users</h4>
+<p>The <strong>Export users</strong> button allows administrator to export user list in <code>.csv</code> format.<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_12.png" /></p>
+<p>There are 2 export options:</p>
+<ol>
+<li><strong>Default configuration</strong><br />
+    In this case, the file with all users and full list of their properties (<strong><em>ID</em></strong>, <strong><em>username</em></strong>, <strong><em>attributes</em></strong> (first and last name, email), <strong><em>registration date</em></strong>, <strong><em>first login date</em></strong>, list of <strong><em>groups</em></strong>, list of <strong><em>roles</em></strong>, <strong><em>blocked</em></strong>/<strong><em>unblocked</em></strong> state, <strong><em>default data storage</em></strong>) will be downloaded to the local workstation.<br />
+    To export full user list with default configuration:  <ul>
+<li>click the <strong>Export users</strong> button in the right upper corner of the <strong>Users</strong> tab in the <strong>User management</strong> dashboard<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_14.png" /><br />
+<strong><em>or</em></strong></li>
+<li>hover the <strong>v</strong> button next to the <strong>Export users</strong> button and click the <strong>Default configuration</strong> item in the appeared drop-down menu<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_15.png" /></li>
+</ul>
+</li>
+<li><strong>Custom configuration</strong><br />
+    Custom configuration allows admins to select which user properties should be downloaded:  <ul>
+<li>hover the <strong>v</strong> button next to the <strong>Export users</strong> button and click the <strong>Custom configuration</strong> item in the appeared drop-down menu<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_16.png" />  </li>
+<li>the modal window with the list of available user properties to export will appear, e.g.:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_13.png" /><br />
+    User can select any set of attributes by marking/unmarking corresponding checkboxes. At least 1 checkbox should be marked to export user list.<br />
+<em>"Fields"</em> section contains the list of all users' attributes (by default, all attributes are selected).<br />
+<em>"Metadata"</em> section contains the list of all users' metadata attributes (by default, all attributes are deselected).<br />
+<strong><em>Note</em></strong>: enabled <strong>Header</strong> checkbox adds the headers row into the exporting file.</li>
+<li>to download the result file with full user list and custom set of their properties click the <strong>Download CSV</strong> button.</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: not all user's metadata have to be exported. Some of them may contains the sensitive data. To restrict the list of the metadata to export the following system preference should be used - <strong><code>misc.metadata.sensitive.keys</code></strong>. In this preference, all metadata keys that <strong><em>shouldn't be exported</em></strong> are being specified (i.e. if these metadata keys are specified in the preference, they will not be displayed at the export pop-up for selection).</p>
+<p>Example of that configured preference:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_25.png" /></p>
+</blockquote>
+<h3 id="groups">Groups</h3>
+<p>The <strong>"Groups"</strong> subtab shows a set of user groups created in CP. Here you can grant or refuse users in a group membership.<br />
+Note that this tab displays groups created in CP only, not given by <strong>SSO authentication system</strong>.</p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_4.png" /></p>
+<h4 id="groups-tab-controls">Groups tab controls</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Search field</strong></td>
+<td>To search a particular group from a list of groups.</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>+ Create group</strong></td>
+<td>To create a new group. More details see <a href="../12.5._Create_a_group/">here</a>.</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>Edit</strong></td>
+<td>This control allows to change a list of users owning this group. More details see <a href="../12.6._Edit_a_group_role/#edit-a-group-role">here</a>.</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>Delete</strong></td>
+<td>Delete a group. More details see <a href="../12.7._Delete_a_group/">here</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="roles">Roles</h3>
+<p>The "<strong>Roles</strong>" subtab shows a set of predefined system roles that couldn't be extended or reduced. Here you can grant or refuse users in a role.<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_5.png" /></p>
+<p>There is a list of CP system roles:</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ROLE_ADMIN</strong></td>
+<td>The user gets Read/Write/Execute/Owner permissions to all objects in the system.<br /><strong><em>Note</em></strong>: The owner of the object can manage its Access Control List. <strong>OWNER</strong> property is assigned to a user has created an object by default.</td>
+</tr>
+<tr>
+<td><strong>ROLE_USER</strong></td>
+<td>basic user.</td>
+</tr>
+<tr>
+<td><strong>ROLE_ADVANCED_USER</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>ROLE_ANONYMOUS_USER</strong></td>
+<td>specific role for the ability of sharing interactive runs endpoints to the <code>anonymous</code> users (users, who have successfully passed the IdP authentication but is not registered in the Cloud Pipeline).</td>
+</tr>
+<tr>
+<td><strong>ROLE_BILLING_MANAGER</strong></td>
+<td>users who are granted this role are able to view the whole <strong>Billing reports</strong> info of the platform (as if they were admins).</td>
+</tr>
+<tr>
+<td><strong>ROLE_CONFIGURATION_MANAGER</strong></td>
+<td>allows to create/delete <strong>Cluster Configurations</strong> (given to each user by default).</td>
+</tr>
+<tr>
+<td><strong>ROLE_DTS_MANAGER</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>ROLE_ENTITIES_MANAGER</strong> </td>
+<td>allows to create/delete <strong>Entities</strong>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_FOLDER_MANAGER</strong></td>
+<td>allows to create/delete <strong>Folders</strong> (given to each user by default).</td>
+</tr>
+<tr>
+<td><strong>ROLE_PIPELINE_MANAGER</strong></td>
+<td>allows to create/delete <strong>Pipelines</strong> (given to each user by default).</td>
+</tr>
+<tr>
+<td><strong>ROLE_STORAGE_MANAGER</strong></td>
+<td>allows to create/delete <strong>Data Storages</strong>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_TOOL_GROUP_MANAGER</strong></td>
+<td>allows to create/delete <strong>Tool groups</strong>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_USER_READER</strong></td>
+<td>allows read-only access to the users, groups, roles information and export users feature.</td>
+</tr>
+</tbody>
+</table>
+<p>Set of user's roles combined with <a href="../../13_Permissions/13._Permissions/">permission settings</a> defines allowed actions for the user and therefore the layout of GUI buttons. A user sees GUI options in appliance with his rights.<br />
+<strong><em>Note</em></strong>: roles 6-12 are being checked if a user has <strong>WRITE</strong> permission for the parent object.</p>
+<h4 id="roles-tab-controls">Roles tab controls</h4>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Search field</strong></td>
+<td>To search particular group from a list of roles, start to enter the role name (see the picture above, <strong>1</strong>).</td>
+</tr>
+<tr>
+<td><strong>Edit</strong></td>
+<td>Allows changing a list of users assigned the role (see the picture above, <strong>2</strong>). More details see <a href="../12.8._Change_a_set_of_roles_groups_for_a_user/#change-a-member-list-for-a-selected-role-or-group">here</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="usage-report">Usage report</h3>
+<p>The "<strong>Usage report</strong>" subtab shows the Platform's statistics of users activity.<br />
+At this subtab, the summary info about total count of Platform users that were online at different time moments during the certain period is displayed in a chart form:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_34.png" /></p>
+<h4 id="usage-report-tab-controls">Usage report tab controls</h4>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Calendar control</strong></td>
+<td>To select a specific day/month from the calendar.</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Period selector</strong></td>
+<td>To select the type of period of view - day (<em>by default</em>) or month.</td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>User filter</strong></td>
+<td>To restrict the displayed data by specific user(s) or user group(s)/role(s). Multiselect is supported</td>
+</tr>
+</tbody>
+</table>
+<h5 id="day-period">Day period</h5>
+<p>By default, the day report is generated for the today (see example on the picture above).<br />
+You can select another day to view statistics by the <strong>Calendar</strong> control.</p>
+<p>Report contains the chart with the average count of the Platform users that were online in the selected day - by hours division.</p>
+<p>By click any point - info tooltip appears including the time moment and the full list of users that were online in this moment, e.g.:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_37.png" /></p>
+<h5 id="month-period">Month period</h5>
+<p>By default, the month report is generated for the current month.<br />
+You can select another month to view statistics by the <strong>Calendar</strong> control.</p>
+<p>There are 2 possible views for the month period:</p>
+<ul>
+<li><strong>Average</strong> (<em>default</em>) - chart shows the number of the Platform online users by days division in the selected month.<br />
+    For each day, the count of online users is being calculated as median value between all hourly values:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_35.png" /></li>
+<li><strong>Unique</strong> - chart shows the summary number of the unique Platform online users by days division during the selected month.<br />
+    For each day, the count of users is being calculated as summary accumulative count of the unique Platform online users at the end of the day:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_36.png" /><br />
+    By click any point - info tooltip appears including the date and the full list of unique users that were online in this day, e.g.:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_38.png" /></li>
+</ul>
+<hr />
+<h2 id="email-notifications">Email notifications</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p>The <strong>email notifications</strong> helps to keep track of what's happening in the Cloud Pipeline.
+On the left you can see a list of the email notification templates.</p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_6.png" /></p>
+<h3 id="email-notifications-tab-controls">Email notifications tab controls</h3>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Descriptions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Enabled</strong> checkbox</td>
+<td>If set, email distribution of the selected type will be enabled.</td>
+</tr>
+<tr>
+<td><strong>Keep admins informed</strong> checkbox</td>
+<td>If set, all emails with such type will be sent to all users with <strong>ROLE_ADMIN</strong> role.</td>
+</tr>
+<tr>
+<td><strong>Keep owners informed</strong> checkbox</td>
+<td>If set, all emails with such type will be sent to the <strong>OWNERS</strong> of the corresponding Cloud Pipeline objects.</td>
+</tr>
+<tr>
+<td><strong>Informed users</strong> text field</td>
+<td>Select users that will get such email types.</td>
+</tr>
+<tr>
+<td><strong>Threshold</strong> text field</td>
+<td>Amount of seconds that is required for the process to generate email.</td>
+</tr>
+<tr>
+<td><strong>Resend delay</strong> text field</td>
+<td>Amount of seconds that is required for the process to generate a repeat email notification on that subject.</td>
+</tr>
+<tr>
+<td><strong>Subject</strong> text field</td>
+<td>Email notification subject.</td>
+</tr>
+<tr>
+<td><strong>Body</strong> text field</td>
+<td>Body of the email notification.</td>
+</tr>
+<tr>
+<td><strong>Revert</strong> button</td>
+<td>Return an email settings to the previous unsaved state.</td>
+</tr>
+<tr>
+<td><strong>Save</strong> button</td>
+<td>Saves current email notification settings.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_7.png" /></p>
+<p>Also you can switch from the <strong>Edit</strong> to the <strong>Preview</strong> mode to see how the <strong>Subject</strong> and the <strong>Body</strong> of the email notification will actually look:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_8.png" /></p>
+<h3 id="templates">Templates</h3>
+<p><strong><em>Note</em></strong>: this is the current list of notification templates. It might be extended in the future.</p>
+<table>
+<thead>
+<tr>
+<th>Notification type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BILLING_QUOTA_EXCEEDING</strong></td>
+<td>tells that billing quota is higher than a threshold value</td>
+</tr>
+<tr>
+<td><strong>DATASTORAGE_LIFECYCLE_ACTION</strong></td>
+<td>tells that datastorage lifecycle event (data transition) is approaching or has happened</td>
+</tr>
+<tr>
+<td><strong>DATASTORAGE_LIFECYCLE_RESTORE_ACTION</strong></td>
+<td>tells that datastorage lifecycle event (data restoring) has happened</td>
+</tr>
+<tr>
+<td><strong>FULL_NODE_POOL</strong></td>
+<td>tells that all nodes of some node pool(s) are already in use</td>
+</tr>
+<tr>
+<td><strong>HIGH_CONSUMED_RESOURCES</strong></td>
+<td>tells that memory or disk consuming is higher than a threshold value for a specific period of time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN</strong></td>
+<td>tells that the job is idle for a long time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN_PAUSED</strong></td>
+<td>tells that the job was paused because it was idle for a long time</td>
+</tr>
+<tr>
+<td><strong>IDLE_RUN_STOPPED</strong></td>
+<td>tells that the job was stopped because it was idle for a long time</td>
+</tr>
+<tr>
+<td><strong>INACTIVE_USERS</strong></td>
+<td>tells that some users are not active for a long period of time</td>
+</tr>
+<tr>
+<td><strong>LDAP_BLOCKED_USERS</strong></td>
+<td>tells that specific users were blocked in the Platform due to their blocking in LDAP</td>
+</tr>
+<tr>
+<td><strong>LONG_INIT</strong></td>
+<td>tells that the job is initializing for a long time</td>
+</tr>
+<tr>
+<td><strong>LONG_PAUSED</strong></td>
+<td>tells that the job has been paused for a long time</td>
+</tr>
+<tr>
+<td><strong>LONG_PAUSED_STOPPED</strong></td>
+<td>tells that the job, that has been paused for a long time, is stopped at the moment</td>
+</tr>
+<tr>
+<td><strong>LONG_RUNNING</strong></td>
+<td>tells that the job is running for a long time</td>
+</tr>
+<tr>
+<td><strong>LONG_STATUS</strong></td>
+<td>tells that the job is been waiting in a certain status for a long time</td>
+</tr>
+<tr>
+<td><strong>NEW_ISSUE</strong></td>
+<td>notifies about new issue</td>
+</tr>
+<tr>
+<td><strong>NEW_ISSUE_COMMENT</strong></td>
+<td>tells that an issue was commented</td>
+</tr>
+<tr>
+<td><strong>PIPELINE_RUN_STATUS</strong></td>
+<td>notifies about current pipeline status</td>
+</tr>
+<tr>
+<td><strong>STORAGE_QUOTA_EXCEEDING</strong></td>
+<td>tells that a storage has reached volume consumption threshold</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="preferences">Preferences</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p>The <strong>Preferences</strong> tab contains different global settings for the Cloud Pipeline. These settings determine default behavior of the Cloud Pipeline.<br />
+On the left you can see a set of sections. Each section contains a list of global settings. See more information <a href="../12.10._Manage_system-level_settings/">here</a>.</p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_9.png" /></p>
+<hr />
+<h2 id="cloud-regions">Cloud Regions</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p>The <strong>Cloud Regions</strong> tab contains different settings for the specific Cloud Regions and Cloud Providers.<br />
+You could manage regions, add or remove them from the Cloud Pipeline.</p>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_11.png" /></p>
+<hr />
+<h2 id="system-dictionaries">System dictionaries</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p>The <strong>System dictionaries</strong> tab contains the list of predefined "dictionaries" - sets of "key-value(s)" that could be used by admins when configuring <strong>Cloud Pipeline</strong> objects attributes (metadata).</p>
+<p>For example, admins have to set attributes (metadata) for "general" users manually. In case, when such metadata keys aren't different for each user and has certain amount of values, it is convenient to select these values from the predefined values list, not to specify them manually each time.</p>
+<p>Each dictionary is the categorical attribute. I.e. it is attribute which values are predefined.
+Each dictionary has its name and values:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_18.png" /><br />
+If the dictionary exists in the system, then admin can use it when specifying attributes for any Platform object (<strong><code>Pipeline</code></strong>, <strong><code>Folder</code></strong>, <strong><code>Storage</code></strong>, <strong><code>Project</code></strong>, <strong><code>Tool</code></strong>), and also for <strong><code>User</code></strong>, <strong><code>Group</code></strong> or <strong><code>Role</code></strong>. In this case, it is enough to specify only the dictionary name as the attribute key, the list of dictionary values will appear automatically in the value field:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_20.png" /></p>
+<p>Also, the different dictionaries may be connected (linked). I.e. admins can create two dictionaries, which values are mapped <code>1-1</code> or <code>1-many</code>, e.g.:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_19.png" /><br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_22.png" /><br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_21.png" /></p>
+<p>In the GUI, such connection is being handled in the following way:</p>
+<ol>
+<li>Admin specifies the links between the dictionaries items (e.g. for the example above <em><code>ProjectID</code>:<code>BRCA1</code></em> -&gt; <em><code>DataStorage</code>:<code>&lt;path&gt;</code></em>).</li>
+<li>Links have the "autofill" attribute. If the admin selects the source key (<em><code>ProjectID</code>:<code>BRCA1</code></em>) as attribute key for any object - the destination key will be specified automatically (<em><code>DataStorage</code></em> will be added with the <em><code>&lt;path&gt;</code></em> selection):<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_23.png" /><br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_24.png" /></li>
+</ol>
+<p>For more details see <a href="../12.13._System_dictionaries/">here</a>.</p>
+<p><strong><em>Note</em></strong>: all functionality described above is available only for admins. "General" users can't view/edit System Dictionaries. If non-admin user tries to specify any existing dictionary as the attribute "Key" - it will be displayed as plain text attribute. No dictionary values will be loaded/displayed.</p>
+<hr />
+<h2 id="system-management">System management</h2>
+<blockquote>
+<p>This tab is visible only for users with the <strong><em>ROLE_ADMIN</em></strong> role.</p>
+</blockquote>
+<p>The <strong>System management</strong> tab includes several possibilities to configure/observe the Platform deployment in general.</p>
+<h3 id="system-logs">System logs</h3>
+<p>The <strong>System logs</strong> subtab contains the following audit trail events:</p>
+<ul>
+<li>users' authentication attempts</li>
+<li>users' profiles modifications</li>
+<li>platform objects' permissions management</li>
+<li>access to interactive applications from pipeline runs</li>
+<li>access to the data stored in the object storages</li>
+<li>management of the transition rules for <a href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">storages lifecycle</a></li>
+<li>other platform functionality features</li>
+</ul>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_17.png" /></p>
+<p>For more details see <a href="../12.12._System_logs/">here</a>.</p>
+<h3 id="nat-gateway">NAT gateway</h3>
+<p>The <strong>NAT gateway</strong> subtab allows to configure network routes.<br />
+This is nessasary when the Cloud Pipeline Platform is deployed in some private subnet and the admin needs to expose a network endpoint for some service.<br />
+Via this form, admins can create/remove network routes from private subnet(s) to the external network resources.</p>
+<p>The <strong>NAT gateway</strong> subtab contains:</p>
+<ul>
+<li>the list of existing routes (port forwarding map). Each route record contains:<ul>
+<li>info about external resources</li>
+<li>info about corresponding internal config (mapping details)</li>
+<li>comment</li>
+</ul>
+</li>
+<li>controls to manage the routes list (add/remove/save etc.)</li>
+</ul>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_26.png" /></p>
+<p>For more details see <a href="../12.14._NAT_gateway/">here</a>.</p>
+<hr />
+<h2 id="my-profile">My profile</h2>
+<p>The <strong>My profile</strong> tab allows:</p>
+<ul>
+<li>to view main info about the current user</li>
+<li>to configure the view of the Platform pages (for the current user)</li>
+</ul>
+<h3 id="profile">Profile</h3>
+<p>The <strong>Profile</strong> subtab allows to view the following info for the current loginned user:</p>
+<ul>
+<li>registration user info (username, name, last name, etc.)</li>
+<li>roles assigned to the user</li>
+<li>user attributes (metadata)</li>
+</ul>
+<p><img alt="CP_ManageSettings" src="../attachments/ManageSettings_27.png" /></p>
+<h3 id="appearance">Appearance</h3>
+<p>The <strong>Appearance</strong> subtab allows to select the UI theme(s) - to configure the view of the Platform pages for the current user.</p>
+<p>User can select a single theme that will always shown:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_28.png" /></p>
+<p>Or configure synchronization with system preferences and automatically switch between day and night themes:<br />
+<img alt="CP_ManageSettings" src="../attachments/ManageSettings_29.png" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/" class="btn btn-neutral float-left" title="11.4. Automatic labels and actions for the runs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../12.1._Add_a_new_system_event/" class="btn btn-neutral float-right" title="12.1. Add a new system event">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../12.1._Add_a_new_system_event/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

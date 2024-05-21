@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>8.10. Storage lifecycle - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "8.10. Storage lifecycle";
+        var mkdocs_page_input_path = "manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">8. Manage Data Storage</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">8.10. Storage lifecycle</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#archiving">Archiving</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#create-transition-rule">Create transition rule</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#edit-transition-rule">Edit transition rule</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#view-rules-and-logs">View rules and logs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#archived-files">Archived files</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#restoring">Restoring</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#restore-file">Restore file</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#restore-folder">Restore folder</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>8. Manage Data Storage &raquo;</li>
+      <li>8.10. Storage lifecycle</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="810-storage-lifecycle-management">8.10. Storage lifecycle management</h1>
+<blockquote>
+<p><strong><em>Note</em></strong>: currently, described functionality may be supported not by all Cloud Providers</p>
+</blockquote>
+<ul>
+<li><a href="#archiving">Archiving</a><ul>
+<li><a href="#create-transition-rule">Create transition rule</a></li>
+<li><a href="#edit-transition-rule">Edit transition rule</a></li>
+<li><a href="#view-rules-and-logs">View rules and logs</a><ul>
+<li><a href="#rule-events-logs">Rule logs</a></li>
+<li><a href="#view-rules-in-attributes">View in attributes</a></li>
+</ul>
+</li>
+<li><a href="#archived-files">Archived files</a><ul>
+<li><a href="#listing-via-cli">Listing via CLI</a></li>
+<li><a href="#view-archive-size">View archive size</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#restoring">Restoring</a><ul>
+<li><a href="#restore-file">Restore file</a></li>
+<li><a href="#restore-folder">Restore folder</a></li>
+</ul>
+</li>
+</ul>
+<p>Users have the ability to manage the lifecycle of data in storages - configure the automatic data transition from standard storage to different types of archival storages by occurrence of a certain event and restore that data back as well if needed.<br />
+That includes abilities:</p>
+<ul>
+<li>to create and edit multiple transition rules for a storage data based on file prefix and/or glob pattern</li>
+<li>to select an archive class as the data destination for each specific rule. <strong><em>Note</em></strong>: archive classes depend on the Cloud Provider</li>
+<li>to select the "deletion" operation as one of the possible data destinations - for the automated data removing</li>
+<li>to define the event by which the data shall be transferred</li>
+<li>to configure notifications:  <ul>
+<li>notifications on each lifecycle event</li>
+<li>ability to delay data transition using link from notification email</li>
+</ul>
+</li>
+<li>to restore previously archived files and folders</li>
+</ul>
+<h2 id="archiving">Archiving</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: only storage <strong><em>OWNER</em></strong> or users with the <strong><code>ROLE_STORAGE_ARCHIVE_MANAGER</code></strong> or <strong><code>ROLE_ADMIN</code></strong> role are able to manage the archival rules</p>
+</blockquote>
+<p>Data archiving in any storage is defined by the set of transition rules.<br />
+For a storage, any count of transition rules can be created.<br />
+Each rule includes:</p>
+<ul>
+<li>source path inside the storage where data for the transition will be searched</li>
+<li>glob that defines which specific data shall be transferred</li>
+<li>event that defines when data shall be transferred</li>
+<li>notification settings</li>
+</ul>
+<p>Once the rule is created and saved - it automatically becomes enabled for the storage. All files matching the rule conditions will be transferred to corresponding archives according to configured dates.</p>
+<h3 id="create-transition-rule">Create transition rule</h3>
+<p>To create a new transition rule:</p>
+<ol>
+<li>Open a storage</li>
+<li>Click <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_01.png" /> icon to open storage settings</li>
+<li>Click the "<strong>Transition rules</strong>" tab:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_02.png" /></li>
+<li>The tab with list of existing rules of the current storage will appear:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_03.png" /></li>
+<li>Click the "<strong>+ Create</strong>" button</li>
+<li>The pop-up will be opened:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_04.png" />  </li>
+<li>Here, the following fields shall be filled in:  <ul>
+<li><strong>Root path</strong> - it is the path inside the storage, from which the search for files to transition (corresponding to the specified glob pattern) will be performed. <em>Text and glob patterns are supported</em>. Examples: <code>/</code>, <code>/some_folder/sub_folder/</code>, <code>/some_folder/*</code></li>
+<li><strong>Glob</strong> - glob pattern for the file(s) to transfer. Pattern defines files that will be transferred by the current rule. Pattern will be applied in the storage path specified as root.  Examples: <code>*.csv</code> - any CSV file in the current root path, <code>/**/*.csv</code> - any CSV file in any subfolder of the root path.</li>
+<li><strong>Method</strong> - method that defines the transition process. There are 3 possible variants:  <ul>
+<li><em>One by one</em> (default) - each file matches the glob pattern will be transferred separately. For each such file separate notification will be sent (if notifications are enabled)</li>
+<li><em>By the earliest file</em> - all files match the glob pattern will be transferred simultaneously - when the earliest file from them corresponds to all conditions of the transition rule</li>
+<li><em>By the latest file</em> - all files match the glob pattern will be transferred simultaneously - when the latest file from them corresponds to all conditions of the transition rule</li>
+</ul>
+</li>
+<li><strong>Condition</strong> - additional condition that shall be met to initiate the transition procedure. There are 2 possible variants:  <ul>
+<li><em>Default</em> - no additional conditions are required</li>
+<li><em>Files matches</em> - if this condition is selected, a new field appears - to specify additional glob pattern. In this case, transition of the files that match main glob pattern can be performed only after in the root path the files will appear that match this additional glob pattern. Example - rule for the transition of <code>123.csv</code> file in case when <code>123.tsv</code> file appears:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_05.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Next, the <strong>Transitions</strong> section shall be filled in. Here, you can specify destination(s) where exactly files shall be transferred and in which dates:  <ul>
+<li><strong>Destination</strong> - destination where files matches the glob pattern will be transferred. Possible variants are depend on the Cloud Provider. For example, for <code>AWS</code> there are: <code>S3 Glacier Instant Retrieval</code>, <code>S3 Glacier Flexible Retrieval</code>, <code>S3 Glacier Deep Archive</code>. Additionally, there is the <code>Deletion</code> destination - to remove files once the transition event has come:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_06.png" /></li>
+<li><strong>Date</strong> - date when files match the glob pattern will be transferred. There are two variants (only one can be selected for the rule):  <ul>
+<li><em>the count of days</em> - days count from the file creation after which the transition will be performed. For example, if in this field the count <code>30</code> is specified - so files match the glob pattern in the root path will be transferred to <code>S3 Glacier Instant Retrieval</code> after <code>30</code> days after their appearance in the current storage:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_07.png" /></li>
+<li><em>specific date</em> - files match the glob pattern in the root path will be transferred exactly in that date:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_08.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>By default, at least one item shall be in the <strong>Transitions</strong> section. You can add several destinations here (up to total count of available destinations) - via the "<strong>+ Add</strong>" button.<br />
+    For example:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_09.png" /><br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_10.png" /><br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_11.png" /><br />
+    To remove the destination item from the list - click the <strong>Delete</strong> icon in the corresponding row</li>
+<li>Next, the <strong>Notify</strong> section shall be filled in.<br />
+<strong><em>Note</em></strong>: notifications are defaultly disabled in case when <code>One by one</code> transition method is selected. To configure notifications you shall select any other method.<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_20.png" /><br />
+    Here you can configure:  <ul>
+<li>disable all notifications for the current rule by the corresponding checkbox, if needed</li>
+<li><strong>Recipients</strong> - list of recipients (users and groups/roles) who shall receive notifications</li>
+<li><strong>Notice period</strong> - period in days before the transition (according to specified date in the <strong>Transitions</strong> section) - when the notification about further transition will be sent.<br />
+<strong><em>Note</em></strong>: if it is not specified - the default value will be used from the System Preference <strong><code>storage.lifecycle.notify.before.days</code></strong> during the rule performing</li>
+<li><strong>Prolongation period</strong> - period in days for which the transition can be delayed - it may happen in case when user clicks the <strong>Prolongate</strong> button from the email notification. This prolongate period will be applied explicitly to files for which notification is received. After prolongation period is over, a new notification will be sent. Prolongations can be performed any number of times.<br />
+<strong><em>Note</em></strong>: if <strong>Prolongation period</strong> is not specified - the default value will be used from the System Preference <strong><code>storage.lifecycle.prolong.days</code></strong> during the rule performing</li>
+<li>notification template. By default, the template from <a href="../../12_Manage_Settings/12._Manage_Settings/#templates"><strong>DATASTORAGE_LIFECYCLE_ACTION</strong></a> email notification is used (this behavior is defined by the corresponding checkbox). If you want to specify custom notification template for a rule - untick the checkbox <strong>Use default template</strong> - fields <strong>Subject</strong> and <strong>Notification</strong> will appear, where changes can be made:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_21.png" /><br />
+You have the ability to view/edit these fields and also preview - how the notification will be displayed in the email:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_22.png" /><br />
+<strong><em>Note</em></strong>: if the notification subject/body will be changed via this section - this will impact only to the ending view of the current rule notifications and will not change the default <a href="../../12_Manage_Settings/12._Manage_Settings/#templates"><strong>DATASTORAGE_LIFECYCLE_ACTION</strong></a> template</li>
+</ul>
+</li>
+<li>After all fields of the rule are filled in - click the <strong>Save</strong> button to proceed:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_12.png" /></li>
+<li>Just-created rule will appear in the list:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_13.png" /></li>
+</ol>
+<h3 id="edit-transition-rule">Edit transition rule</h3>
+<p>To edit an existing transition rule:</p>
+<ol>
+<li>Open a storage</li>
+<li>Click <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_01.png" /> icon to open storage settings</li>
+<li>Click the "<strong>Transition rules</strong>" tab:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_02.png" /></li>
+<li>The tab with list of existing rules of the current storage will appear:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_14.png" /></li>
+<li>Click <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_15.png" /> icon to open the desired rule, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_16.png" /></li>
+<li>The pop-up with rule details will be opened:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_17.png" /></li>
+<li>Here, you can edit any details except <strong>Root path</strong> and <strong>Glob</strong>.<br />
+   Click the <strong>Save</strong> button to confirm changes.</li>
+</ol>
+<h3 id="view-rules-and-logs">View rules and logs</h3>
+<p>To view rules configured for the storage - open its settings and switch to the "<strong>Transition rules</strong>" tab:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_18.png" /></p>
+<blockquote>
+<p><strong>Note</strong>: if the rule has several transition destinations - they are shown above the special label within a tooltip, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_19.png" /></p>
+</blockquote>
+<h4 id="rule-events-logs">Rule events logs</h4>
+<p>To view all events performed according to the current rule - click the <strong>View events logs</strong> icon at the rule row.<br />
+The form with list of events of the selected rule will appear:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_23.png" /></p>
+<p>That form contains:</p>
+<ul>
+<li>info fields:  <ul>
+<li><strong>Root</strong> - root path of the current rule</li>
+<li><strong>Glob</strong> - glob of the current rule</li>
+</ul>
+</li>
+<li><strong>Action type</strong> dropdown list - to filter logs table by performed action (<code>transition</code>/<code>deletion</code>/<code>prolongation</code>). Empty value in this field means that logs table is not filtered</li>
+<li>logs table with columns:<ul>
+<li><strong>Date</strong> - datetime of the event</li>
+<li><strong>Action</strong> - type of the performed action</li>
+<li><strong>User</strong> - in case of system actions, there will be the stub <code>System</code>. In case of prolongation event, there will be a user name who has prolonged transition for a file(s)</li>
+<li><strong>Path</strong> - path to the folder that contains files with which the action was performed</li>
+<li><strong>Destination</strong> - transition destination</li>
+<li><strong>Prolongation</strong> - period in days for which transition/deletion was delayed (<strong><em>Note</em></strong>: applicable only for prolonged files)</li>
+<li><strong>Renewed transition</strong> - a new date when transition/deletion will take place (<strong><em>Note</em></strong>: applicable only for prolonged files)</li>
+</ul>
+</li>
+</ul>
+<h4 id="view-rules-in-attributes">View rules in attributes</h4>
+<p>If for a storage transition rules are configured - you can view that in the <strong>Attributes</strong> panel:</p>
+<ol>
+<li>Open the desired storage</li>
+<li>Click the "<strong>Show attributes</strong>" button in the right upper corner</li>
+<li>In the <strong>Attributes</strong> panel, total count of configured rules will be shown, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_24.png" /></li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: you can check the count of rules configured for a specific folder - by similar way as described, you should open that folder and the <strong>Attributes</strong> panel for it.</p>
+</blockquote>
+<h3 id="archived-files">Archived files</h3>
+<p>If file was transferred to any destination (except <code>Deletion</code>) by some rule:</p>
+<ul>
+<li>this file becomes disabled for changing/renaming from the GUI/CLI</li>
+<li>content of this file can not be viewed from the GUI/CLI</li>
+<li>at the GUI, near such file a label appears that corresponds to the transition destination<blockquote>
+<p><strong><em>Note</em></strong>: regular files in storages has <code>STANDARD</code> label.</p>
+</blockquote>
+</li>
+</ul>
+<p>Example for <code>AWS</code> <strong>Cloud Provider</strong>:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_25.png" /></p>
+<blockquote>
+<p>Please note, archived files are not visible for general users:</p>
+<ul>
+<li>only storage <strong><em>OWNER</em></strong> or users with the <strong><code>ROLE_STORAGE_ARCHIVE_READER</code></strong> or <strong><code>ROLE_ADMIN</code></strong> role are able to view the archived files</li>
+<li>by default, archived files are hidden. To show them - the checkbox <strong>Show archived files</strong> shall be enabled:
+   <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_48.png" /></li>
+</ul>
+</blockquote>
+<h4 id="listing-via-cli">Listing via CLI</h4>
+<blockquote>
+<p>For details, how to manage storages via the CLI see the corresponding section <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/">Manage Storages</a>.</p>
+</blockquote>
+<p>As mentioned above, archived files are disabled for changing/renaming/viewing/copying/moving from the CLI.<br />
+By default, archived files are invisible for users that perform any <code>pipe storage</code> commands (including <code>mount</code> abilities).</p>
+<p>For example, storage with archived files via the GUI:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_39.png" /><br />
+The same storage via the CLI (using <code>pipe storage ls</code> command):<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_40.png" /><br />
+The attempt to copy one of the archived file (using <code>pipe storage cp</code> command):<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_41.png" /></p>
+<p>But if users want to browse archived files via the CLI, the special option <code>--show-archive</code> can be used. This flag allows to list archived files in storages.  </p>
+<blockquote>
+<p><strong><em>Note</em></strong>: flag allows only the listing of archived files, still not changing/renaming/copying/moving.</p>
+</blockquote>
+<p>The same storage as in the example above but with <code>--show-archive</code> flag via the CLI (using <code>pipe storage ls</code> command):<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_42.png" /></p>
+<h4 id="view-archive-size">View archive size</h4>
+<p>User can separately view the common info about whole size of the archived files.<br />
+To view that info, open the attributes panel of a storage, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_43.png" /></p>
+<p>Here, the following info is shown:</p>
+<ul>
+<li>the whole summary size of all archived files - it is based on the sum of sizes of current and previous versions of files (for all archive types)</li>
+<li>the whole summary size of only previous versions of archived files in the storage (for all archive types) - it is shown in the parentheses </li>
+</ul>
+<p>To view details, click the corresponding hyperlink:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_47.png" /><br />
+Details info pop-up will be opened, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_44.png" /></p>
+<p>Here, the following info about archived files size can be found:</p>
+<ul>
+<li><strong>Storage class</strong> - archive type. The type is presented in the table only if there are/were any versions of files of this archive type</li>
+<li><strong>Current ver.</strong> - the whole summary size of all current versions of archived files</li>
+<li><strong>Previous ver.</strong> - the whole summary size of all previous versions of archived files</li>
+<li><strong>Total</strong> - sum of the current and previous files versions</li>
+</ul>
+<blockquote>
+<p><strong><em>Note</em></strong>: info about the archive size can be viewed via the CLI <code>pipe storage du</code> command as well, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_45.png" /><br />
+In the CLI, only total summary size of current and previous files versions is shown.</p>
+<p>To view details about archive types, use <code>-o f</code> option (<code>--output-mode full</code>):<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_46.png" /></p>
+<p>For more details see in the <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#show-storage-usage"><code>pipe storage du</code></a> section.</p>
+</blockquote>
+<h2 id="restoring">Restoring</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: data restoring in the storage is available for admins and storage <strong><em>OWNER</em></strong> only</p>
+</blockquote>
+<p>If there are files in the storage folder that were previously transferred to any destination (except <code>Deletion</code>) according to some transition rule - user has the ability to restore such files.
+That available:</p>
+<ul>
+<li>for separate file(s)</li>
+<li>for whole folder</li>
+</ul>
+<h3 id="restore-file">Restore file</h3>
+<p>To restore a file:</p>
+<ol>
+<li>Open a storage</li>
+<li>Select the desired file(s) you want to restore</li>
+<li>Click the "<strong>Restore transferred item</strong>" button in the management menu:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_26.png" /></li>
+<li>Pop-up to confirm restoring will appear:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_27.png" /><br />
+    This pop-up contains fields for:  <ul>
+<li><strong>Recovery period</strong> - to specify the period duration for which the file will be restored</li>
+<li><strong>Recipients</strong> - to specify recipients who will be notified about file restoring process (by email notification <a href="../../12_Manage_Settings/12._Manage_Settings/#templates"><strong>DATASTORAGE_LIFECYCLE_RESTORE_ACTION</strong></a>). If this field was left empty - file will be restored without notifications</li>
+<li><strong>Restore mode</strong> - to select the restore mode (<code>Standard</code> or <code>Bulk</code>). This affects on duration of restoring processes and their cost.<br />
+Additionally, you have the ability to define - restore only the latest file version (default behavior) or all file versions - via the corresponding checkbox <strong>Restore all versions</strong> (<strong><em>Note</em></strong>: this checkbox is available only for versioning storages)</li>
+</ul>
+</li>
+<li>Click the <strong>Restore</strong> button to confirm</li>
+<li>If for a file the restoring is requested - the restoring status will appear at the file icon:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_28.png" /><br />
+    There are possible states:  <ul>
+<li><strong>RESTORING</strong> <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_29.png" /> - restore operation is in progress. This status is shown after the request for the restore was submitted and until the file is restored successfully or restoring is failed</li>
+<li><strong>RESTORE FAILED</strong> - restore operation is failed. This status is not shown at the GUI</li>
+<li><strong>RESTORED</strong> <img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_30.png" /> - restore operation is completed. This status is shown after the file is restored successfully and till the date when the recovery period is finished.<br />
+You may hover over any state icon and view details of restoring process in a tooltip, e.g.:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_31.png" /><br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_32.png" /><blockquote>
+<p><strong><em>Note</em></strong>: if file was restored for some period:</p>
+<ul>
+<li>this file becomes enabled for changing/renaming from the GUI/CLI</li>
+<li>content of this file can be viewed from the GUI/CLI</li>
+<li>label of the file original destination doesn't disappear</li>
+<li>after restore period is over, file becomes regular <a href="#archived-files">archived</a> file</li>
+</ul>
+</blockquote>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="restore-folder">Restore folder</h3>
+<p>When user restores the whole folder - all previously transferred files in that folder will be restored simultaneously. Also, all transferred files in sub-folders of the folder, will be restored too - recursively.</p>
+<p>To restore a folder:</p>
+<ol>
+<li>Open a storage</li>
+<li>Open the desired folder you want to restore</li>
+<li>Open the <strong>Attributes</strong> panel</li>
+<li>Click the "<strong>Restore files</strong>" hyperlink:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_33.png" /></li>
+<li>Pop-up to confirm restoring will appear:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_34.png" /><br />
+    Options are similar as for the <a href="#restore-file">file restore</a> operation</li>
+<li>Click the <strong>Restore</strong> button to confirm</li>
+<li>All files in the folder that will be restored are shown with the corresponding state:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_35.png" /><br />
+    Additionally, the state of the folder restore operation is shown in the <strong>Attributes</strong> panel</li>
+<li>You may navigate to the upper level and view the state for the restoring folder (similar to restoring files):<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_36.png" /></li>
+<li>Restored files in restored folder are shown fully the same as separately <a href="#restore-file">restored files</a>:<br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_37.png" /><br />
+<img alt="CP_StorageLifecycle" src="../attachments/StorageLifecycle_38.png" /></li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../8.9._Mapping_storages/" class="btn btn-neutral float-left" title="8.9. Mapping storages"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../8.11._Sensitive_storages/" class="btn btn-neutral float-right" title="8.11. Sensitive storages">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../8.9._Mapping_storages/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../8.11._Sensitive_storages/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

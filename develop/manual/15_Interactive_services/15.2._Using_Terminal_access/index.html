@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>15.2. Using terminal access - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "15.2. Using terminal access";
+        var mkdocs_page_input_path = "manual/15_Interactive_services/15.2._Using_Terminal_access.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">15. Interactive services</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">15.2. Using terminal access</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#using-terminal-access">Using Terminal access</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#terminal-view">Terminal view</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</a>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>15. Interactive services &raquo;</li>
+      <li>15.2. Using terminal access</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="152-using-terminal-access">15.2. Using Terminal access</h1>
+<ul>
+<li><a href="#using-terminal-access">Using Terminal access</a><ul>
+<li><a href="#terminal-view">Terminal view</a></li>
+</ul>
+</li>
+<li><a href="#example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</a></li>
+<li><a href="#example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</a></li>
+</ul>
+<blockquote>
+<p><strong>Terminal access</strong> is available to the <strong>OWNER</strong> of the running job and users with <strong>ADMIN</strong> role. With sufficient permissions, <strong>Terminal access</strong> can be achieved to any running job.<br />
+For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+<p>Also you can get a terminal access to the running job using the <code>pipe</code> CLI. For more details see <a href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol">here</a>.</p>
+</blockquote>
+<p>All software in the Cloud Pipeline is located in <strong>Docker containers</strong>, and we can use <strong>Terminal access</strong> to the Docker container via the <strong>Interactive services</strong>.<br />
+This can be useful when:</p>
+<ul>
+<li>usage of a new bioinformatics tool shall be tested;</li>
+<li>batch job scripts shall be tested within a real execution environment;</li>
+<li>docker image shall be extended and saved (install more packages/bioinformatics tools) - see <a href="../../10_Manage_Tools/10.4._Edit_a_Tool/#commit-a-tool">10.4. Edit a Tool</a>.</li>
+</ul>
+<h2 id="using-terminal-access">Using Terminal access</h2>
+<p>Both <strong>Pipelines</strong> and <strong>Tools</strong> can be run as <strong>interactive services</strong>. The example below shows launching tool scenario:</p>
+<ol>
+<li>Navigate to the list of registered <strong>Tools</strong> and search for the Tool required (e.g. <strong>"base-generic-centos7"</strong>).<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_1.png" /></li>
+<li>Go to the <strong>Tool</strong> page and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_2.png" /></li>
+<li><strong>Launch Tool page</strong> form will load (it's the same form that is used to configure a batch run). The following fields shall be filled:<ul>
+<li><strong>Node type</strong></li>
+<li><strong>Disk size</strong></li>
+<li><strong>Cloud Region</strong></li>
+<li>"<strong>Start idle</strong>" box should be chosen. Click the <strong>Launch</strong> button when all above parameters are set.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_3.png" /></li>
+</ul>
+</li>
+<li>Once a run is scheduled and configured <strong>SSH</strong> hyperlink will appear in the <strong>"Run Log"</strong> form in the right upper corner of the form.<br />
+<strong><em>Note</em></strong>: This link is only visible to the owner of the run and users with <strong>ROLE_ADMIN</strong> role assigned.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_4.png" /><br />
+<strong><em>Note</em></strong>: Also you can find this link at the <strong>Active Runs</strong> panel of the main Dashboard:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_21.png" /></li>
+<li>Clicking the <strong>SSH</strong> link will load a new browser tab with an authenticated <strong>Terminal</strong>.<br />
+<strong><em>Note</em></strong>: If an <strong>unauthorized user</strong> will load a direct link, <strong>"Permission denied"</strong> error will be returned.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_5.png" /></li>
+</ol>
+<h3 id="terminal-view">Terminal view</h3>
+<p>The view of the SSH terminal session can be configured.<br />
+At the moment, two color schemas can be used:</p>
+<ul>
+<li><em>Dark</em> (default)<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_34.png" /></li>
+<li><em>Light</em><br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_35.png" /></li>
+</ul>
+<p>There are two ways to configure a required color schema:</p>
+<ul>
+<li><strong>Persistent</strong> - schema will be stored in the user profile and used any time SSH session is opened:  <ul>
+<li>Navigate to the <strong>Settings</strong> -&gt; <strong>My Profile</strong> -&gt; <strong>Profile</strong></li>
+<li>Choose the schema from the <em>SSH terminal theme</em> menu:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_36.png" /><br />
+Any SSH windows already opened - will still use the older parameter until reloaded (i.e. F5).</li>
+</ul>
+</li>
+<li><strong>Temporary</strong> - will be used during a current SSH session only. Any other sessions will use the settings from the <strong>My Profile</strong> (see <strong>Persistent</strong> option above):  <ul>
+<li>Open SSH session</li>
+<li>Click the <img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_37.png" /> icon to toggle the color schema <em>Dark</em> &lt;-&gt; <em>Light</em>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_38.png" /><br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_39.png" /></li>
+</ul>
+</li>
+</ul>
+<h2 id="example-using-of-environment-modules-for-the-cloud-pipeline-runs">Example: using of Environment Modules for the Cloud Pipeline runs</h2>
+<blockquote>
+<p>Configure of <strong>Environment Modules</strong> using is available only for users with <strong>ADMIN</strong> role.</p>
+</blockquote>
+<p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
+<p>In the example below, we will use <code>Modules</code> to switch between two versions of <strong>Java Development Kit</strong>.</p>
+<ol>
+<li>At the beginning we will create a storage for all <code>JDK</code> versions files and <code>modulefiles</code>. For that: open the <strong>Library</strong>, click <strong>Create +</strong> → <strong>Storages</strong> → <strong>Create new object storage</strong></li>
+<li>While creating - specify a storage name and mount point, e.g. <code>/opt/software</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_6.png" /><br />
+    Click the <strong>Create</strong> button.</li>
+<li>Open the created storage and create two folders in it:<ul>
+<li><strong>app</strong> - here we will upload <code>JDK</code> files</li>
+<li><strong>modulefiles</strong> - here we will create <code>modulefiles</code> for each <code>JDK</code> version<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_7.png" /></li>
+</ul>
+</li>
+<li>Open the <strong>modulefiles</strong> folder, create the <strong>jdk</strong> folder in it.</li>
+<li>Open the <strong>jdk</strong> folder, create <code>modulefile</code> for the <code>JDK ver. 9.0.4</code> - name it <strong>9.0.4</strong>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_8.png" /></li>
+<li>Click the file name, click the <strong>Fullscreen</strong> button at the file content panel:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_9.png" /></li>
+<li>At the popup click the <strong>EDIT</strong> button and input the <code>modulefile</code> content, e.g. for the <code>JDK ver. 9.0.4</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_10.png" /><br />
+    Save it.</li>
+<li>Repeat steps 5-7 for the <code>JDK ver. 11.0.2</code>. At the end you will have two <code>modulefiles</code> in the <strong>jdk</strong> folder:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_11.png" /></li>
+<li>Open <strong>System Settings</strong> popup, click the <strong>Preferences</strong> tab, select <strong>Launch</strong> section.<br />
+    Into the <strong><code>launch.env.properties</code></strong> field add a new variable - <code>CP_CAP_MODULES_FILES_DIR</code>. That variable specify path to the source <code>modulefiles</code>.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_12.png" /><br />
+    As you can see - during the run, when the storage created at step 2 will be mounted to the node in the specified mount-point (<code>/opt/software</code>), created above <code>JDK</code> <code>modulefiles</code> will be available in the <strong>modulefiles</strong> folder created at step 3 - by the path <code>/opt/software/modulefiles</code>.<br />
+    Save and close the <strong>Settings</strong> popup.</li>
+<li>Go to the <strong>Tool</strong> page, open the tool page you want to use the <code>Environment Modules</code> with and click the arrow near the <strong>Run</strong> button → Select <strong>"Custom Settings"</strong>.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_2.png" /></li>
+<li>At the <strong>Launch</strong> page expand <strong>Advanced</strong> section.</li>
+<li>In the <strong>Limit mounts</strong> field select the storage created at step 2 (see more details <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>).</li>
+<li>Click the <strong>Add system parameter</strong> button</li>
+<li>In the popup select the <strong><code>CP_CAP_MODULES</code></strong> item and click the <strong>OK</strong> button:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_13.png" /><br />
+<code>CP_CAP_MODULES</code> parameter enables installation and using the <code>Modules</code> for the current run. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (that was set at step 9). If <code>CP_CAP_MODULES_FILES_DIR</code> is not set - default <code>modulefiles</code> location will be used.<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_14.png" /></li>
+<li>Launch the tool.</li>
+<li>Open <strong>Run logs</strong> page, wait until <strong>InstallEnvironmentModules</strong> task will appear and check that the <code>Modules</code> was installed successfully:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_15.png" /></li>
+<li>Wait until <strong>SSH</strong> hyperlink will appear in the right upper corner. Click it.</li>
+<li>In the terminal run the command <code>module use</code> to check the ource path to the <code>modulefiles</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_16.png" /></li>
+<li>Now, we will install <code>JDK</code>. For the <code>ver. 9.0.4</code> run the following commands:  </li>
+</ol>
+<pre><code class="language-bash"># Download &quot;jdk 9.0.4&quot; archive
+wget https://download.java.net/java/GA/jdk9/9.0.4/binaries/openjdk-9.0.4_linux-x64_bin.tar.gz
+# Extract archive content
+tar -zxf openjdk-9.0.4_linux-x64_bin.tar.gz
+# Copy &quot;jdk 9.0.4&quot; files into the mounted data storage
+cp -r jdk-9.0.4 /opt/software/app/jdk-9.0.4
+</code></pre>
+<p>For the <code>ver. 11.0.2</code> run the following commands:  </p>
+<pre><code class="language-bash"># Download &quot;jdk 11.0.2&quot; archive
+wget https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+# Extract archive content
+tar -zxf openjdk-11.0.2_linux-x64_bin.tar.gz
+# Copy &quot;jdk 11.0.2&quot; files into the mounted data storage
+cp -r jdk-11.0.2 /opt/software/app/jdk-11.0.2
+</code></pre>
+<p>Now, you can check the facilities of the <code>Environment Modules</code> package.<br />
+Load the available <code>modulefiles</code> list:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_17.png" /><br />
+Load the <code>JDK ver. 11.0.2</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_18.png" /><br />
+Switch to the <code>JDK ver. 9.0.4</code>:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_20.png" /><br />
+Unload all <code>JDK</code> versions:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_19.png" />  </p>
+<h2 id="example-using-of-slurm-for-the-cloud-pipelines-clusters">Example: using of Slurm for the Cloud Pipeline's clusters</h2>
+<p><a href="https://slurm.schedmd.com"><code>Slurm</code></a> is an open source, highly scalable cluster management and job scheduling system for large and small <code>Linux</code> clusters.</p>
+<p>In the example below, we will use <code>Slurm</code> for performing the simplest batch job.</p>
+<ol>
+<li>Open the <strong>Tools</strong> page, select a tool and its version (<strong><em>Note</em></strong>: in our example we will use <code>Ubuntu 18.04</code>). Hover over the <strong>v</strong> button near the <strong>Run</strong> button and click the "Custom settings" item in the dropdown list.</li>
+<li>At the <strong>Launch</strong> page expand "Exec environment" section and click the "<strong>Configure cluster</strong>" button:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_22.png" /></li>
+<li>In the appeared popup click the <strong>Cluster</strong> tab. Set the count of "child" nodes, tick the "Enable Slurm" checkbox and click the <strong>OK</strong> button to confirm:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_23.png" /></li>
+<li>Launch the tool:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_24.png" /></li>
+<li>Open the main Dashboard and wait until the <strong>SSH</strong> hyperlink will appear at the Active Runs panel for the just-launched tool, then click it:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_25.png" /></li>
+<li>The terminal web GUI will appear.</li>
+<li>At the beginning, let's check general system state, view existing partitions in the system and the list of available nodes. For that, perform the <code>sinfo</code> command:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_26.png" /><br />
+    Only <code>main.q</code> partition is created. All cluster nodes are attached to this partition.</li>
+<li>To report more detailed information about partition - the <code>scontrol</code> command can be used:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_27.png" /><br />
+    And to display detailed information about one of the nodes, e.g.:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_28.png" /></li>
+<li>Now, we'll parallely execute <code>/bin/hostname</code> on all three nodes (<code>-N3</code> option) and include task numbers in the output (<code>-l</code> option) via the <code>srun</code> command.<br />
+The default partition will be used. One task per node will be used by default:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_29.png" /></li>
+<li>For the batch job, create the following script:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_30.png" /><br />
+    This script contains a timelimit for the job embedded within itself (via the <code>--time</code> option after the <code>#SBATCH</code> prefix).<br />
+    Script contains the command <code>/bin/hostname</code> that will be executed on the first node in the allocation (where the script runs) plus two job steps initiated using the <code>srun</code> command and executed sequentially.<br />
+    To submit a job script for execution over all three nodes use the <code>sbatch</code> command, result will be written to the file (<code>-o</code> option):<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_31.png" /></li>
+<li>During the script execution you can check the queue of running jobs in priority order via the <code>squeue</code> command:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_32.png" /></li>
+<li>The result of the <code>sbatch</code> command performing:<br />
+<img alt="CP_UsingTerminalAccess" src="../attachments/TerminalAccess_33.png" /></li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../15.1._Starting_an_Interactive_application/" class="btn btn-neutral float-left" title="15.1. Starting an interactive application"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../15.3._Expose_node_filesystem/" class="btn btn-neutral float-right" title="15.3. Expose node filesystem">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../15.1._Starting_an_Interactive_application/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../15.3._Expose_node_filesystem/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
