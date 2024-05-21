@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>12.10. Manage system-level settings - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "12.10. Manage system-level settings";
+        var mkdocs_page_input_path = "manual/12_Manage_Settings/12.10._Manage_system-level_settings.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">12.10. Manage system-level settings</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#read-system-level-settings">Read system-level settings</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#base-urls">Base URLs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#billing-reports">Billing Reports</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#cluster">Cluster</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#commit">Commit</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#dts">DTS</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#data-sharing">Data Sharing</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#data-storage">Data Storage</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#docker-security">Docker security</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#faceted-filter">Faceted Filter</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#firecloud">FireCloud</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#gcp">GCP</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#git">Git</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#grid-engine-autoscaling">Grid engine autoscaling</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#launch">Launch</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#lustre-fs">Lustre FS</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#miscellaneous">Miscellaneous</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#search">Search</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#system">System</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#system-jobs">System Jobs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#user-interface">User Interface</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#make-system-level-settings-visible-to-all-users">Make system-level settings visible to all users</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#update-system-level-settings">Update system-level settings</a>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>12. Manage settings &raquo;</li>
+      <li>12.10. Manage system-level settings</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="1210-manage-system-level-settings">12.10. Manage system-level settings</h1>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to read and update system-level settings.</p>
+</blockquote>
+<ul>
+<li><a href="#read-system-level-settings">Read system-level settings</a><ul>
+<li><a href="#base-urls">Base URLs</a></li>
+<li><a href="#billing-reports">Billing Reports</a></li>
+<li><a href="#cluster">Cluster</a></li>
+<li><a href="#commit">Commit</a></li>
+<li><a href="#dts">DTS</a></li>
+<li><a href="#data-sharing">Data sharing</a></li>
+<li><a href="#data-storage">Data Storage</a></li>
+<li><a href="#docker-security">Docker security</a></li>
+<li><a href="#faceted-filter">Faceted Filter</a></li>
+<li><a href="#firecloud">FireCloud</a></li>
+<li><a href="#gcp">GCP</a></li>
+<li><a href="#git">Git</a></li>
+<li><a href="#grid-engine-autoscaling">Grid engine autoscaling</a></li>
+<li><a href="#launch">Launch</a></li>
+<li><a href="#lustre-fs">Lustre FS</a></li>
+<li><a href="#miscellaneous">Miscellaneous</a></li>
+<li><a href="#search">Search</a></li>
+<li><a href="#system">System</a></li>
+<li><a href="#user-interface">User Interface</a></li>
+</ul>
+</li>
+<li><a href="#make-system-level-settings-visible-to-all-users">Make system-level settings visible to all users</a></li>
+<li><a href="#update-system-level-settings">Update system-level settings</a></li>
+</ul>
+<h2 id="read-system-level-settings">Read system-level settings</h2>
+<ol>
+<li>Hover to the <strong>Settings</strong> tab.</li>
+<li>Select the <strong>Preferences</strong> section.</li>
+<li>All system-level parameters are categorized into the several groups.<br />
+<img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_1.png" /></li>
+</ol>
+<h3 id="base-urls">Base URLs</h3>
+<p>These settings define pipeline URLs:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>base.invalidate.edge.auth.path</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>base.api.host</code></strong></td>
+<td>REST API endpoint</td>
+</tr>
+<tr>
+<td><strong><code>base.pipe.distributions.url</code></strong></td>
+<td>URL that is used to download pipeline scripts</td>
+</tr>
+<tr>
+<td><strong><code>base.cloud.data.distribution.url</code></strong></td>
+<td>URLs that are used to download Cloud Data app distribution</td>
+</tr>
+<tr>
+<td><strong><code>base.dav.auth.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>base.api.host.external</code></strong></td>
+<td>REST API external endpoint</td>
+</tr>
+</tbody>
+</table>
+<h3 id="billing-reports">Billing Reports</h3>
+<p>These settings define parameters of <strong>Billing reports</strong> pages displaying:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>billing.reports.enabled</code></strong></td>
+<td>Defines whether "general" users can access personal billing information - runs/storages where the user is an owner</td>
+</tr>
+<tr>
+<td><strong><code>billing.reports.enabled.admins</code></strong></td>
+<td>Defines whether admins and users with the <em>ROLE_BILLING_MANAGER</em> role can have full access to the Billing reports</td>
+</tr>
+<tr>
+<td><strong><code>billing.reports.user.name.attribute</code></strong></td>
+<td>Defines which user's attribute is used to display the users in the Billing reports (charts, tables, export reports)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cluster">Cluster</h3>
+<p>Settings in this tab define different cluster options:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>instance.compute.family.names</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>instance.dns.hosted.zone.base</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>instance.dns.hosted.zone.id</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>instance.limit.state.reasons</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>instance.offer.update.rate</code></strong></td>
+<td>How often instance cost is calculated (in milliseconds)</td>
+</tr>
+<tr>
+<td><strong><code>instance.restart.state.reasons</code></strong></td>
+<td>Instance status codes, upon receipt of which an instance tries automatically to restart</td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.device.prefix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.device.suffixes</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.type</code></strong></td>
+<td>Default instance type</td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd</code></strong></td>
+<td>Default hard drive size for instance (in gigabytes)</td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd_extra_multi</code></strong></td>
+<td>Disk extra multiplier. Allows to add extra space, during a launch, to the disk size selected through the GUI. The size of that extra space is calculated as <code>(Unarchived docker image size) * (Disk extra multiplier)</code></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.enabled</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.delta.ratio</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.monitoring.delay</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.max.devices</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.max.size</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.disk.max.size</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.disk.min.size</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.instance.hdd.scale.threshold.ratio</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.keep.alive.minutes</code></strong></td>
+<td>If node doesn't have a running pipeline on it for that amount of minutes, it will be shut down</td>
+</tr>
+<tr>
+<td><strong><code>cluster.keep.alive.policy</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.random.scheduling</code></strong></td>
+<td>If this property is true, pipeline scheduler will rely on Kubernetes order of pods, otherwise pipelines will be ordered according to their parent (batch) ID</td>
+</tr>
+<tr>
+<td><strong><code>cluster.reassign.disk.delta</code></strong></td>
+<td>This delta sets the max possible difference that could be between the disk size of the node from the hot pool and the <em>real</em> disk size requested by the user for a job</td>
+</tr>
+<tr>
+<td><strong><code>cluster.max.size</code></strong></td>
+<td>Maximal number of nodes to be launched simultaneously</td>
+</tr>
+<tr>
+<td><strong><code>cluster.min.size</code></strong></td>
+<td>Minimal number of nodes to be launched at a time</td>
+</tr>
+<tr>
+<td><strong><code>cluster.allowed.instance.types</code></strong></td>
+<td>Allowed instance types. Can restrict available instance types for launching tools, pipelines, configurations</td>
+</tr>
+<tr>
+<td><strong><code>cluster.allowed.instance.types.docker</code></strong></td>
+<td>Allowed instance types for docker images (tools). Can restrict available instance types for launching tools. Has a higher priority for a tool than <strong><code>cluster.allowed.instance.types</code></strong></td>
+</tr>
+<tr>
+<td><strong><code>cluster.allowed.price.types</code></strong></td>
+<td>Allowed price types. Can restrict available price types for launching tools, pipelines, configurations</td>
+</tr>
+<tr>
+<td><strong><code>cluster.allowed.price.types.master</code></strong></td>
+<td>Allowed price types for the cluster master node. Can restrict available price types for the master node of the cluster while launching tools, pipelines, detach configurations</td>
+</tr>
+<tr>
+<td><strong><code>cluster.enable.autoscaling</code></strong></td>
+<td>Enables/disables Kubernetes autoscaler service</td>
+</tr>
+<tr>
+<td><strong><code>cluster.networks.config</code></strong></td>
+<td>Config that contains information to start new nodes in Cloud Provider</td>
+</tr>
+<tr>
+<td><strong><code>cluster.batch.retry.count</code></strong></td>
+<td>Count of automatically retries to relaunch a job, if one of the instance status codes from <strong><code>instance.restart.state.reasons</code></strong> returns, when a batch job fails</td>
+</tr>
+<tr>
+<td><strong><code>cluster.autoscale.rate</code></strong></td>
+<td>How often autoscaler checks what tasks are executed on each node (in milliseconds)</td>
+</tr>
+<tr>
+<td><strong><code>cluster.monitoring.elastic.minimal.interval</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.monitoring.elastic.intervals.number</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cloud.provider.default</code></strong></td>
+<td>Sets a default CLoud Provider</td>
+</tr>
+<tr>
+<td><strong><code>cluster.docker.extra_multi</code></strong></td>
+<td>Docker image extra multiplier. Allows to get an approximate size of the unarchived docker image. That size is calculated as <code>(Archived docker image size) * (Docker image extra multiplier)</code></td>
+</tr>
+<tr>
+<td><strong><code>cluster.kill.not.matching.nodes</code></strong></td>
+<td>If this property is true, any free node that doesn't match configuration of a pending pod will be scaled down immediately, otherwise it will be left until it will be reused or expired. If most of the time we use nodes with the same configuration set this to true</td>
+</tr>
+<tr>
+<td><strong><code>cluster.spot</code></strong></td>
+<td>If this is true, spot instances will be launched by default</td>
+</tr>
+<tr>
+<td><strong><code>cluster.spot.alloc.strategy</code></strong></td>
+<td>Parameter that sets the strategy of calculating the price limit for instance:<ul><li><strong>on-demand</strong> - maximal instance price equals the price of the on-demand instance of the same type;</li><li><strong>manual</strong> - uses value from the <strong><code>cluster.spot.bid.price</code></strong> parameter</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>cluster.spot.bid.price</code></strong></td>
+<td>The maximum price per hour that you are willing to pay for a Spot Instance. The default is the On-Demand price</td>
+</tr>
+<tr>
+<td><strong><code>cluster.spot.max.attempts</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>cluster.nodeup.max.threads</code></strong></td>
+<td>Maximal number of nodes that can be started simultaneously</td>
+</tr>
+<tr>
+<td><strong><code>cluster.nodeup.retry.count</code></strong></td>
+<td>Maximal number of tries to start the node</td>
+</tr>
+<tr>
+<td><strong><code>cluster.high.non.batch.priority</code></strong></td>
+<td>If this property is true, pipelines without parent (batch ID) will have the highest priority, otherwise - the lowest</td>
+</tr>
+</tbody>
+</table>
+<h3 id="commit">Commit</h3>
+<p>This tab contains various commit settings:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>commit.pre.command.path</code></strong></td>
+<td>Specifies a path to a script within a docker image, that will be executed in a currently running container, before docker commit occurs</td>
+</tr>
+<tr>
+<td><strong><code>commit.username</code></strong></td>
+<td>Git username</td>
+</tr>
+<tr>
+<td><strong><code>commit.deploy.key</code></strong></td>
+<td>Used to SSH for COMMIT. Key is stored in a DB</td>
+</tr>
+<tr>
+<td><strong><code>commit.timeout</code></strong></td>
+<td>Commit will fail if exceeded (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>commit.post.command.path</code></strong></td>
+<td>Specifies a path to a script within a docker image, that will be executed in a committed image, after docker commit occurs</td>
+</tr>
+<tr>
+<td><strong><code>pause.timeout</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="dts">DTS</h3>
+<p>These settings define DTS parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>dts.launch.cmd</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>dts.launch.script.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>dts.dist.url</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-sharing">Data Sharing</h3>
+<p>These settings define data sharing parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>data.sharing.base.api</code></strong></td>
+<td>Specifies a format of the generating URL to the data storage with enabled sharing</td>
+</tr>
+<tr>
+<td><strong><code>data.sharing.disclaimer</code></strong></td>
+<td>Allows to set a warning text for the "Share storage link" pop-up</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-storage">Data Storage</h3>
+<p>These settings define storage parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>storage.mounts.per.gb.ratio</code></strong></td>
+<td>This preference allows to specify the "safe" number of storages per Gb of <code>RAM</code>. When launching a job - the user's available object storages count is being calculated and checked that it does not exceed selected instance type <code>RAM</code> value multiplied by this preference value. If it's exceeded - the user is being warned</td>
+</tr>
+<tr>
+<td><strong><code>storage.mounts.nfs.sensitive.policy</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.enabled</code></strong></td>
+<td>Allows to enable FSBrowser</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.black.list</code></strong></td>
+<td>List of directories/files which shall not be visible via FSBrowser</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.wd</code></strong></td>
+<td>Allows to set a work directory for FSBrowser (this directory will be opened by default and set as <code>root</code>)</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.transfer</code></strong></td>
+<td>Allows to specify intermediate object storage for data transfer operations in FSBrowser (this is actual for "heavy" transfer operations to not reduce performance)</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.port</code></strong></td>
+<td>Allows to set a port for FSBrowser</td>
+</tr>
+<tr>
+<td><strong><code>storage.fsbrowser.tmp</code></strong></td>
+<td>A path to the directory where the temporary archive shall be created (when the folder is downloading). Archive is being removed when download is finished</td>
+</tr>
+<tr>
+<td><strong><code>storage.incomplete.upload.clean.days</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.user.home.auto</code></strong></td>
+<td>Controls whether the home storages will be created automatically for new users</td>
+</tr>
+<tr>
+<td><strong><code>storage.webdav.access.duration.seconds</code></strong></td>
+<td>Period duration for which user can request the file system access to the storage</td>
+</tr>
+<tr>
+<td><strong><code>storage.user.home.template</code></strong></td>
+<td>Describes a template that shall be used for the automatic home storage creation for new users</td>
+</tr>
+<tr>
+<td><strong><code>storage.temp.credentials.duration</code></strong></td>
+<td>Temporary credentials lifetime for Cloud Provider's operations with data storages (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>storage.transfer.pipeline.id</code></strong></td>
+<td>Pipeline ID that is used to automated data transfers from the external sites</td>
+</tr>
+<tr>
+<td><strong><code>storage.system.run.shared.storage.name</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.system.run.shared.folder.pattern</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.system.storage.name</code></strong></td>
+<td>Configures a system data storage for storing attachments from e.g. issues</td>
+</tr>
+<tr>
+<td><strong><code>storage.mount.black.list</code></strong></td>
+<td>List of directories where Data Storages couldn't be mounted</td>
+</tr>
+<tr>
+<td><strong><code>storage.transfer.pipeline.version</code></strong></td>
+<td>Pipeline version that is used to automated data transfers from the external sites</td>
+</tr>
+<tr>
+<td><strong><code>storage.max.download.size</code></strong></td>
+<td>Chunk size to download (bytes)</td>
+</tr>
+<tr>
+<td><strong><code>storage.object.prefix</code></strong></td>
+<td>A mandatory prefix for the new creating data storages</td>
+</tr>
+<tr>
+<td><strong><code>storage.operations.bulk.size</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.listing.time.limit</code></strong></td>
+<td>Sets the timeout (in milliseconds) for the processing of the size getting for all input/common files before the pipeline launch. Default: 3000 milliseconds (3 sec). If computation of the files size doesn't end in this timeout, accumulated size will return as is</td>
+</tr>
+<tr>
+<td><strong><code>profile.temp.credentials.duration</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>storage.quotas.actions.grace.period</code></strong></td>
+<td>Allows to specify grace periods for both states: <code>MOUNT DISABLED</code> and <code>READ ONLY</code> FS quota-related processes. If that preference is specified - corresponding actions for FS quotas will be delayed. Values are specified in minutes.</td>
+</tr>
+<tr>
+<td><strong><code>storage.quotas.skipped.paths</code></strong></td>
+<td>Allows to specify which storages/paths shall be excluded from the FS quota-related processing.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="docker-security">Docker security</h3>
+<p>This tab contains settings related to Docker security checks:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>security.tools.scan.all.registries</code></strong></td>
+<td>If this is true, all registries will be scanned for Tools vulnerability</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.clair.root.url</code></strong></td>
+<td>Clair root URL</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.docker.comp.scan.root.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>security.tools.jwt.token.expiration</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.clair.connect.timeout</code></strong></td>
+<td>Sets timeout for connection with Clair (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.os</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>security.tools.policy.max.high.vulnerabilities</code></strong></td>
+<td>Denies running a Tool if the number of high vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.grace.hours</code></strong></td>
+<td>Allows users to run a new docker image (if it is not scanned yet) or an image with a lot of vulnerabilities during a specified period.<br />During this period user will be able to run a tool, but an appropriate message will be displayed. Period lasts from date/time since the docker version became vulnerable or since the docker image's push time (if this version was not scanned yet)</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.clair.read.timeout</code></strong></td>
+<td>Sets timeout for Clair response (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.policy.deny.not.scanned</code></strong></td>
+<td>Allow/deny execution of unscanned Tools</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.enabled</code></strong></td>
+<td>Enables/disables security scan</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.policy.max.medium.vulnerabilities</code></strong></td>
+<td>Denies running a Tool if the number of medium vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.policy.max.critical.vulnerabilities</code></strong></td>
+<td>Denies running a Tool if the number of critical vulnerabilities exceeds the threshold. To disable the policy, set to -1</td>
+</tr>
+<tr>
+<td><strong><code>security.tools.scan.schedule.cron</code></strong></td>
+<td>Security scan schedule</td>
+</tr>
+</tbody>
+</table>
+<h3 id="faceted-filter">Faceted Filter</h3>
+<p>These settings define parameters of the faceted filters at the "Advanced search" form:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>faceted.filter.dictionaries</code></strong></td>
+<td>Allows to specify system dictionaries that should be used as faceted filters. Additionally can be specified: filter (dictionary) order in the "Faceted filters" panel, default count of filters entries to display</td>
+</tr>
+</tbody>
+</table>
+<h3 id="firecloud">FireCloud</h3>
+<p>These settings define FireCloud parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>google.client.settings</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.base.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.billing.project</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>google.client.id</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.launcher.cmd</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.instance.disk</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.launcher.tool</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>google.redirect.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.api.scopes</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.instance.type</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>firecloud.enable.user.auth</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="gcp">GCP</h3>
+<p>These settings define specific Google Cloud Platform parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>gcp.sku.mapping</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>gcp.regions.list</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="git">Git</h3>
+<p>These settings define Git parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>ui.git.cli.configure.template</code></strong></td>
+<td>Template for the message of the Git config that would be displayed for user in the "<strong>Git CLI</strong>" section of the System Settings</td>
+</tr>
+<tr>
+<td><strong><code>git.user.name</code></strong></td>
+<td>User name to access Git with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.external.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.fork.retry.count</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.fork.wait.timeout</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.repository.hook.url</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.token</code></strong></td>
+<td>Token to access Git with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.repository.indexing.enabled</code></strong></td>
+<td>Allows to enable the indexing of Git repository with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.reader.service.host</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>git.user.id</code></strong></td>
+<td>User id to access Git with pipelines</td>
+</tr>
+<tr>
+<td><strong><code>git.host</code></strong></td>
+<td>IP address where Git service is deployed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="grid-engine-autoscaling">Grid engine autoscaling</h3>
+<blockquote>
+<p>See <a href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a> for details.</p>
+</blockquote>
+<p>These settings define auto-scaled cluster parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>ge.autoscaling.scale.down.timeout</code></strong></td>
+<td>If jobs queue is empty or all jobs are running and there are some idle nodes longer than that timeout in seconds - auto-scaled cluster will start to drop idle auto-scaled nodes ("scale-down")</td>
+</tr>
+<tr>
+<td><strong><code>ge.autoscaling.scale.up.to.max</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ge.autoscaling.scale.up.timeout</code></strong></td>
+<td>If some jobs are in waiting state longer than that timeout in seconds - auto-scaled cluster will start to attach new computation nodes to the cluster ("scale-up")</td>
+</tr>
+<tr>
+<td><strong><code>ge.autoscaling.scale.up.polling.timeout</code></strong></td>
+<td>Defines how many seconds GE autoscaler should wait for pod initialization and run initialization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="launch">Launch</h3>
+<p>Settings in this tab contains default Launch parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>launch.kube.pod.search.path</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.kube.pod.domains.enabled</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.kube.pod.service</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.kube.pod.subdomain</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.kube.service.suffix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.jwt.token.expiration</code></strong></td>
+<td>Lifetime of a pipeline token (in seconds)</td>
+</tr>
+<tr>
+<td><strong><code>launch.max.scheduled.number</code></strong></td>
+<td>Controls maximum number of scheduled at once runs summary by all platform users</td>
+</tr>
+<tr>
+<td><strong><code>launch.max.runs.user.global</code></strong></td>
+<td>Controls maximum number of scheduled at once runs for a single user. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum</td>
+</tr>
+<tr>
+<td><strong><code>launch.env.properties</code></strong></td>
+<td>Sets of environment variables that will be passed to each running Tool</td>
+</tr>
+<tr>
+<td><strong><code>launch.docker.image</code></strong></td>
+<td>Default Docker image</td>
+</tr>
+<tr>
+<td><strong><code>launch.cmd.template</code></strong></td>
+<td>Default cmd template</td>
+</tr>
+<tr>
+<td><strong><code>launch.container.cpu.resource</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.container.memory.resource.policy</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.container.memory.resource.request</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.insufficient.capacity.message</code></strong></td>
+<td>Defines the text displayed in the run logs in case when an instance requested by the user is missing due to <code>InsufficientInstanceCapacity</code> error (means insufficient capacity in the selected Cloud Region)</td>
+</tr>
+<tr>
+<td><strong><code>launch.run.visibility</code></strong></td>
+<td>Allow to view foreign runs based on pipeline permissions (value <code>INHERIT</code>) or restrict visibility of all non-owner runs (value <code>OWNER</code>)</td>
+</tr>
+<tr>
+<td><strong><code>launch.dind.enable</code></strong></td>
+<td>Enables Docker in Docker functionality</td>
+</tr>
+<tr>
+<td><strong><code>launch.dind.container.vars</code></strong></td>
+<td>Allows to specify the variables, which will be passed to the DIND container (if they are set for the host environment)</td>
+</tr>
+<tr>
+<td><strong><code>launch.dind.mounts</code></strong></td>
+<td>List of mounts that shall be added to k8s pod for Docker in Docker</td>
+</tr>
+<tr>
+<td><strong><code>launch.task.status.update.rate</code></strong></td>
+<td>Sets task status update rate, on which application will query kubernetes cluster for running task status, ms. Pod Monitor</td>
+</tr>
+<tr>
+<td><strong><code>launch.pods.release.rate</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.serverless.endpoint.wait.count</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.serverless.endpoint.wait.time</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.serverless.stop.timeout</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.serverless.wait.count</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>launch.system.parameters</code></strong></td>
+<td>System parameters, that are used when launching pipelines</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lustre-fs">Lustre FS</h3>
+<p>These settings define Lustre FS parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>lustre.fs.default.throughput</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>lustre.fs.mount.options</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>lustre.fs.deployment.type</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>lustre.fs.default.size.gb</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>lustre.fs.backup.retention.days</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="miscellaneous">Miscellaneous</h3>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>misc.metadata.sensitive.keys</code></strong></td>
+<td>Allows to specify the list of the metadata that will not be exported during the users export operation</td>
+</tr>
+<tr>
+<td><strong><code>misc.max.tool.icon.size.kb</code></strong></td>
+<td>Sets maximum size (in Kb) of the uploaded icon for the tool</td>
+</tr>
+<tr>
+<td><strong><code>system.events.confirmation.metadata.key</code></strong></td>
+<td>Sets the <strong>KEY</strong> for the user's attribute displaying information about "blocking" notifications confirmation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="search">Search</h3>
+<p>Settings in this tab contains Elasticsearch parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>search.aggs.max.count</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.scheme</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.allowed.users.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.allowed.groups.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.denied.users.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.denied.groups.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.type.field</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.host</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.index.type.prefix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.port</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.search.fields</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.index.common.prefix</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>search.elastic.index.metadata.fields</code></strong></td>
+<td>Allows to specify attributes keys which values will be shown in corresponding additional columns in table view of the search results of the "Advanced search"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="system">System</h3>
+<p>The settings in this tab contain parameters and actions that are performed depending on the system monitoring metrics:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.ssh.default.root.user.enabled</code></strong></td>
+<td>Enables launch of the SSH terminal from the run under <code>root</code>-user access</td>
+</tr>
+<tr>
+<td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
+<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user and the corresponding run will be marked by the "IDLE" label</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
+<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
+</tr>
+<tr>
+<td><strong><code>system.resource.monitoring.period</code></strong></td>
+<td>Specifies period (in seconds) between the users' instances scanning to collect the monitoring metrics</td>
+</tr>
+<tr>
+<td><strong><code>system.monitoring.time.range</code></strong></td>
+<td>Specifies time delay (in sec) after which the notification "HIGH_CONSUMED_RESOURCES" would be sent again, if the problem is still in place</td>
+</tr>
+<tr>
+<td><strong><code>system.disk.consume.threshold</code></strong></td>
+<td>Specifies disk threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent and the corresponding run will be marked by the "PRESSURE" label</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.cpu.threshold</code></strong></td>
+<td>Specifies percentage of the CPU utilization, below which action shall be taken</td>
+</tr>
+<tr>
+<td><strong><code>system.resource.monitoring.stats.retention.period</code></strong></td>
+<td>Specifies the time period (in days) during which resources utilization data is stored</td>
+</tr>
+<tr>
+<td><strong><code>system.memory.consume.threshold</code></strong></td>
+<td>Specifies memory threshold (in %) above which the notification "HIGH_CONSUMED_RESOURCES" would be sent and the corresponding run will be marked by the "PRESSURE" label</td>
+</tr>
+<tr>
+<td><strong><code>system.idle.action</code></strong></td>
+<td>Sets which action to perform on the instance, that showed low CPU utilization (that is below <strong><code>system.idle.cpu.threshold</code></strong>):<br /><ul><li><strong><em>NOTIFY</em></strong> - only send notification</li><li><strong><em>PAUSE</em></strong> - pause an instance if possible (e.g. instance is On-Demand, Spot instances are skipped)</li><li><strong><em>PAUSE_OR_STOP</em></strong> - pause an instance if it is On-Demand, stop an instance if it is Spot</li><li><strong><em>STOP</em></strong> - Stop an instance, disregarding price-type</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>system.long.paused.action</code></strong></td>
+<td>Sets which action to perform on the instance, that is in the "paused" state for a long time:<br /><ul><li><strong><em>NOTIFY</em></strong> - only send <code>LONG_PAUSED</code> notification(s)</li><li><strong><em>STOP</em></strong> - send <code>LONG_PAUSED_STOPPED</code> notification and terminate the run</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>system.notifications.exclude.instance.types</code></strong></td>
+<td>Defines a list of node types. If a job runs on any node from that list - <code>IDLE_RUN</code>, <code>LONG_PAUSED</code>, <code>LONG_RUNNING</code> email notifications will not be submitted for that job</td>
+</tr>
+<tr>
+<td><strong><code>system.external.services.endpoints</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>system.log.line.limit</code></strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="system-jobs">System Jobs</h3>
+<p>Here settings for <a href="../12.15._System_jobs/">System jobs</a> can be found:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.jobs.pipeline.id</code></strong></td>
+<td>The ID of the prepared system pipeline that contains system jobs scripts</td>
+</tr>
+<tr>
+<td><strong><code>system.jobs.scripts.location</code></strong></td>
+<td>The path to the system scripts directory inside the pipeline code. Default value is <code>src/system-jobs</code></td>
+</tr>
+<tr>
+<td><strong><code>system.jobs.output.pipeline.task</code></strong></td>
+<td>The name of the task at the <strong>Run logs</strong> page of the system pipeline that is launched for the system job. Task contains system job output results. Default value is <code>SystemJob</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="user-interface">User Interface</h3>
+<p>Here different user interface settings can be found:</p>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>ui.pipeline.deployment.name</code></strong></td>
+<td>UI deployment name</td>
+</tr>
+<tr>
+<td><strong><code>ui.launch.command.template</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ui.hidden.objects</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ui.library.drag</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ui.pipe.cli.install.template</code></strong></td>
+<td>CLI install templates for different operating systems</td>
+</tr>
+<tr>
+<td><strong><code>ui.pipe.file.browser.app</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ui.pipe.drive.mapping</code></strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong><code>ui.project.indicator</code></strong></td>
+<td>These attributes define a Project folder</td>
+</tr>
+<tr>
+<td><strong><code>ui.pipe.cli.configure.template</code></strong></td>
+<td>CLI configure templates for different operating systems</td>
+</tr>
+<tr>
+<td><strong><code>ui.support.template</code></strong></td>
+<td>Markdown-formatted text that will be displayed in tooltip of the "support" info in the main menu. If nothing is specified (empty), support icon in the main menu will not be displayed</td>
+</tr>
+<tr>
+<td><strong><code>ui.controls.settings</code></strong></td>
+<td>JSON file that contains control settings</td>
+</tr>
+</tbody>
+</table>
+<h2 id="make-system-level-settings-visible-to-all-users">Make system-level settings visible to all users</h2>
+<ol>
+<li>Hover to the <strong>Settings</strong> tab.</li>
+<li>Select the <strong>Preferences</strong> section.</li>
+<li>Choose one of the tabs with system level settings (e.g. <strong>Grid engine autoscaling</strong>).<br />
+<img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_2.png" /></li>
+<li>Press the "<strong>Eye</strong>" button near any setting. Now it will be visible to all users by using the API.<br />
+<strong><em>Note</em></strong>: press "<strong>Eye</strong>" button again to hide it from all users.<br />
+<img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_3.png" /></li>
+</ol>
+<h2 id="update-system-level-settings">Update system-level settings</h2>
+<ol>
+<li>Choose any system-level setting and change its value (e.g. change <strong><code>cluster.keep.alive.minutes value</code></strong> from 10 to 15).<br />
+<img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_4.png" /></li>
+<li>Press the <strong>Save</strong> button.<br />
+<strong><em>Note</em></strong>: before saving you can press the <strong>Revert</strong> button to return setting's value to the previous state.<br />
+<img alt="CP_ManageSystemLevelSettings" src="../attachments/ManageSystemLevelSettings_5.png" /></li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../12.9._Change_email_notification/" class="btn btn-neutral float-left" title="12.9. Email notifications"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../12.11._Advanced_features/" class="btn btn-neutral float-right" title="12.11. Advanced features">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../12.9._Change_email_notification/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../12.11._Advanced_features/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
