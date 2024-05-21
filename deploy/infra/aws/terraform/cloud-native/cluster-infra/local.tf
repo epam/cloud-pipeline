@@ -1,8 +1,8 @@
 locals {
 
   tags = merge({
-    Environment = var.env
-    Project     = var.project_name
+    Environment    = var.env
+    Deployment     = var.project_name
     },
     var.additional_tags
   )
@@ -71,7 +71,7 @@ locals {
     "-env CP_IDP_INTERNAL_PORT=443",
   ] : [
     "-env CP_API_SRV_SSO_ENDPOINT_ID=\"https://${var.cp_api_srv_host}/pipeline\"",
-    "-env CP_API_SRV_SAML_USER_ATTRIBUTES=\"${var.srv_saml_user_attr}\""
+    "-env CP_API_SRV_SAML_USER_ATTRIBUTES=\"${var.cp_api_srv_saml_user_attr}\""
   ]
 
   cp_edge_elb_sgs = join(
@@ -102,6 +102,7 @@ locals {
     "-env CP_DOCKER_STORAGE_TYPE=\"obj\"",
     "-env CP_DOCKER_STORAGE_CONTAINER=\"${module.s3_docker.s3_bucket_id}\"",
     "-env CP_DEPLOYMENT_ID=\"${var.deployment_id}\"",
+    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.deployment_id}\"",
     "-env CP_CLOUD_REGION_ID=\"${data.aws_region.current.name}\"",
     "-env CP_KUBE_CLUSTER_NAME=\"${module.eks.cluster_name}\"",
     "-env CP_KUBE_EXTERNAL_HOST=\"${module.eks.cluster_endpoint}\"",
