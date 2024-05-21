@@ -18,7 +18,8 @@ set -e
 
 # Publish docs only if it is one of the allowed branches and it is a push (not PR)
 if [ "$APPVEYOR_REPO_NAME" != "epam/cloud-pipeline" ] || \
-    [ "$APPVEYOR_REPO_BRANCH" != "develop" ]; then
+    [ "$APPVEYOR_REPO_BRANCH" != "develop" ] && \
+    [[ "$APPVEYOR_REPO_BRANCH" != "release/"* ]] && [[ "$APPVEYOR_REPO_BRANCH" != "stage/"* ]]; then
     echo "Skipping docs publishing, as a build is not triggered from the correct repo/branch via push"
     exit 0
 fi
