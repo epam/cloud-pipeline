@@ -39,10 +39,10 @@ git config --global user.name "Appveyor"
 echo "Preparing gh-pages branch"
 git clone --quiet --branch=gh-pages https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/epam/cloud-pipeline.git gh-pages > /dev/null
 cd gh-pages
-find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' ! -name 'CNAME' -exec rm -rf {} +
-mkdir -p ./$APPVEYOR_REPO_BRANCH
+rm -rf ./$APPVEYOR_REPO_BRANCH && mkdir -p ./$APPVEYOR_REPO_BRANCH
 cp -Rf $HOME/cloud-pipeline-docs/* ./$APPVEYOR_REPO_BRANCH
 if [ "$APPVEYOR_REPO_BRANCH" == "develop" ]; then
+    find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' ! -name 'CNAME' ! -name "stage" ! -name "release" ! -name "develop" -exec rm -rf {} +
     cp -Rf $HOME/cloud-pipeline-docs/* ./   
 fi
 
