@@ -37,7 +37,6 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selectors.byTitle;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -57,7 +56,6 @@ public class ToolsParametersTest
     private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private static final String CUSTOM_CAPABILITIES_3_JSON = "/customCapabilities3.json";
     private static final String SYSTEM_D = "SystemD";
-    private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
             "centos 8";
     private static final String CUSTOM_CAPABILITY_DESC_1 = "Custom test capability 1";
