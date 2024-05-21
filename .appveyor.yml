@@ -19,7 +19,7 @@ environment:
     - job_name: Build_Cli
       appveyor_build_worker_image: Ubuntu1604  
     - job_name: Build_All
-      job_depends_on: CLI_MacOS, Bild_Cli
+      job_depends_on: CLI_MacOS, Build_Cli
       appveyor_build_worker_image: Ubuntu1604
     - job_name: Publish_Docs
       appveyor_build_worker_image: Ubuntu1604
