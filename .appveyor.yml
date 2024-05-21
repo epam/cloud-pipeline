@@ -5,6 +5,7 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
+    - f_appveyor_modular_deployment
 
 skip_tags: true
 max_jobs: 1
