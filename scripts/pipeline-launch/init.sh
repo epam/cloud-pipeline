@@ -33,9 +33,6 @@ if [ "\$_curl_exists" -eq 0 ]; then
     export LAUNCH_CMD="curl -s -k '\$CP_LAUNCH_SH_URL'"
 fi
 
-if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
-    export CP_CAP_FORCE_EXIT_STATE="true"
-fi
 eval "\$LAUNCH_CMD" | bash /dev/stdin "\$CP_GIT_CLONE_URL" "\$PIPELINE_VERSION" "\$CP_CMD"
 _launch_sh_result=\$?
 
