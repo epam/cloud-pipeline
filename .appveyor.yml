@@ -16,11 +16,14 @@ environment:
   matrix:
     - job_name: CLI_MacOS
       appveyor_build_worker_image: macos-catalina
+    - job_name: Build_Cli
+      appveyor_build_worker_image: Ubuntu1604  
     - job_name: Build_All
-      job_depends_on: CLI_MacOS
+      job_depends_on: CLI_MacOS, Build_Cli
       appveyor_build_worker_image: Ubuntu1604
     - job_name: Publish_Docs
       appveyor_build_worker_image: Ubuntu1604
+    
 
 for:
 
@@ -53,4 +56,13 @@ for:
     - |-
       sudo pip install mkdocs
       sudo -E bash deploy/appveyor/appveyor_publish_docs.sh
+
+  -
+    matrix:
+      only:
+        - job_name: Build_Cli
+
+    build_script:
+    - |-
+      sudo -E bash deploy/appveyor/appveyor_buld_cli.sh   
 test: off
