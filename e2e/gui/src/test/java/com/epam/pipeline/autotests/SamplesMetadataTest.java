@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -404,16 +404,18 @@ public class SamplesMetadataTest
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
-                                .ensure(withText("Estimated price per hour:"), visible)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(save())
                                 .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))

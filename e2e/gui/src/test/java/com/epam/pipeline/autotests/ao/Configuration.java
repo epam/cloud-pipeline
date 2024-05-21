@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -162,7 +163,8 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:")))
         );
     }
 

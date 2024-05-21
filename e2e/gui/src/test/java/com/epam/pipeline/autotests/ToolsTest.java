@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -437,8 +437,9 @@ public class ToolsTest
                 .ensure(LAUNCH, visible)
                 .ensure(PIPELINE, text(nameWithoutGroup(toolWithoutDefaultSettings)))
                 .ensure(VERSION, text("latest"))
-                .ensure(ESTIMATED_PRICE, not(visible))
-                .ensure(INFORMATION_ICON, not(visible))
+                .checkEstimatedPriceValue("—")
+                .ensure(INFORMATION_ICON, visible)
+                .checkEstimatedPriceTooltip("Price cannot be estimated for the selected node type / disk configuration")
                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                 .ensure(IMAGE, valueContains(image))
                 .ensure(DEFAULT_COMMAND, empty)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -306,6 +306,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .firstVersion()
                 .runPipeline()
                 .setDefaultLaunchOptions()
+                .setPriceType(onDemandPrice)
                 .enableClusterLaunch()
                 .clusterSettingsForm(clusterSettingForm)
                 .clusterEnableCheckboxSelect("Enable Slurm")
@@ -327,7 +328,7 @@ public class LaunchClusterTest extends AbstractAutoRemovingPipelineRunningTest i
                 .ensure(configurationParameter("CP_CAP_SLURM", "true"), exist)
                 .waitForSshLink()
                 .clickTaskWithName("SLURMMasterSetup")
-                .ensure(log(), containsMessages("Master ENV is ready"))
+                .ensure(log(), containsMessages("SLURM master node has been successfully configured"))
                 .clickTaskWithName("SLURMMasterSetupWorkers")
                 .ensure(log(), containsMessages("All SLURM hosts are connected"))
                 .ssh(shell -> shell
