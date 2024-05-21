@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>v.0.15 - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "v.0.15";
+        var mkdocs_page_input_path = "release_notes/v.0.15/v.0.15_-_Release_notes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="./">v.0.15</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#microsoft-azure-support">Microsoft Azure Support</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#saml-claims-based-access">SAML claims based access</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#limit-mounted-storages">Limit mounted storages</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#personal-ssh-keys-configuration">Personal SSH keys configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#allow-to-terminate-paused-runs">Allow to terminate paused runs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#runs-system-paths-shall-be-available-for-the-general-user-account">Run's system paths shall be available for the general user account</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#renewed-wdl-visualization">Renewed WDL visualization</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#queued-state-of-the-run">"QUEUED" state of the run</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#help-tooltips-for-the-run-state-icons">Help tooltips for the run state icons</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#vm-monitor-service">VM monitor service</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#web-gui-caching">Web GUI caching</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#installation-via-pipectl">Installation via pipectl</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#scenario-1">Scenario 1</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scenario-2">Scenario 2</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs within a parent log form</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pipe-cli-warnings-on-the-jwt-expiration">pipe CLI warnings on the JWT expiration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pipe-configuration-for-using-ntlm-authentication-proxy">pipe configuration for using NTLM Authentication Proxy</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via pipe without failures in case of lacks read permissions</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via pipe</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via pipe</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run pipe commands on behalf of the other user</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">The ability to use custom domain names as a "friendly URL" for the interactive services</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the DIND containers</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#notable-bug-fixes">Notable Bug fixes</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#committing-status-hangs">"COMMITTING..." status hangs</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#missing-region-while-estimating-a-run-price">Missing region while estimating a run price</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause OutOfMemory error</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect nodeup handling of spot request status</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#not-handling-clusters-in-autopause-daemon">Not handling clusters in autopause daemon</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#incorrect-pipe-cli-version-displaying">Incorrect pipe CLI version displaying</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#pipe-incorrect-behavior-of-the-nc-option-for-the-run-command">pipe: incorrect behavior of the -nc option for the run command</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cluster-run-cannot-be-launched-with-a-pretty-url">Cluster run cannot be launched with a Pretty URL</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#cloning-of-large-repositories-might-fail">Cloning of large repositories might fail</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#system-events-html-overflow">System events HTML overflow</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run InitializeNode task fails</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors">git-sync shall not fail the whole object synchronization if a single entry errors</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#enddate-isnt-set-when-node-of-a-paused-run-was-terminated">endDate isn't set when node of a paused run was terminated</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster">GE autoscaler doesn't remove dead additional workers from cluster</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#broken-layouts">Broken layouts</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../manual/Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>Release notes &raquo;</li>
+      <li>v.0.15</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cloud-pipeline-v015-release-notes">Cloud Pipeline v.0.15 - Release notes</h1>
+<ul>
+<li><a href="#microsoft-azure-support">Microsoft Azure Support</a></li>
+<li><a href="#saml-claims-based-access">SAML claims based access</a></li>
+<li><a href="#notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</a></li>
+<li><a href="#limit-mounted-storages">Limit mounted storages</a></li>
+<li><a href="#personal-ssh-keys-configuration">Personal SSH keys configuration</a></li>
+<li><a href="#allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</a></li>
+<li><a href="#enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</a></li>
+<li><a href="#consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</a></li>
+<li><a href="#allow-to-terminate-paused-runs">Allow to terminate paused runs</a></li>
+<li><a href="#prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</a></li>
+<li><a href="#restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</a></li>
+<li><a href="#setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</a></li>
+<li><a href="#runs-system-paths-shall-be-available-for-the-general-user-account">Run's system paths shall be available for the general user account</a></li>
+<li><a href="#renewed-wdl-visualization">Renewed WDL visualization</a></li>
+<li><a href="#queued-state-of-the-run">"QUEUED" state of the run</a></li>
+<li><a href="#help-tooltips-for-the-run-state-icons">Help tooltips for the run state icons</a></li>
+<li><a href="#vm-monitor-service">VM monitor service</a></li>
+<li><a href="#web-gui-caching">Web GUI caching</a></li>
+<li><a href="#installation-via-pipectl">Installation via pipectl</a></li>
+<li><a href="#add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</a></li>
+<li><a href="#displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs</a></li>
+<li><a href="#environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support</a></li>
+<li><a href="#sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</a></li>
+<li><a href="#allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</a></li>
+<li><a href="#verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</a></li>
+<li><a href="#ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the queue/PE configuration in the GE configuration</a></li>
+<li><a href="#estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</a></li>
+<li><a href="#disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</a></li>
+<li><a href="#disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</a></li>
+<li><a href="#displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</a></li>
+<li><a href="#object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</a></li>
+<li><a href="#track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</a></li>
+<li><a href="#pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</a></li>
+<li><a href="#pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</a></li>
+<li><a href="#execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Files uploading via <code>pipe</code> in case of restrictions</a></li>
+<li><a href="#run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></a></li>
+<li><a href="#perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></a></li>
+<li><a href="#mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</a></li>
+<li><a href="#allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</a></li>
+<li><a href="#ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</a></li>
+<li><a href="#ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</a></li>
+<li><a href="#the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">Using custom domain names as a "friendly URL" for the interactive services</a></li>
+<li><a href="#displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</a></li>
+<li><a href="#pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the <code>DIND</code> containers</a></li>
+<li><a href="#interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</a></li>
+</ul>
+<hr />
+<ul>
+<li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
+<li><a href="#incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</a></li>
+<li><a href="#commiting-status-hangs">"COMMITING..." status hangs</a></li>
+<li><a href="#instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</a></li>
+<li><a href="#tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</a></li>
+<li><a href="#missing-region-while-estimating-a-run-price">Missing region while estimating a run price</a></li>
+<li><a href="#cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</a></li>
+<li><a href="#acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</a></li>
+<li><a href="#getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</a></li>
+<li><a href="#aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</a></li>
+<li><a href="#not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</a></li>
+<li><a href="#incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</a></li>
+<li><a href="#jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</a></li>
+<li><a href="#trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</a></li>
+<li><a href="#pipe-incorrect-behavior-of-the-nc-option-for-the-run-command"><code>pipe</code>: incorrect behavior of the <code>-nc</code> option for the <code>run</code> command</a></li>
+<li><a href="#cluster-run-cannot-be-launched-with-a-pretty-url">Cluster run cannot be launched with a Pretty URL</a></li>
+<li><a href="#cloning-of-large-repositories-might-fail">Cloning of large repositories might fail</a></li>
+<li><a href="#system-events-html-overflow">System events HTML overflow</a></li>
+<li><a href="#aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run <code>InitializeNode</code> task fails</a></li>
+<li><a href="#git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</a></li>
+<li><a href="#enddate-isnt-set-when-node-of-a-paused-run-was-terminated"><code>endDate</code> isn't set when node of a paused run was terminated</a></li>
+<li><a href="#aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</a></li>
+<li><a href="#resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</a></li>
+<li><a href="#ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster">GE autoscaler doesn't remove dead additional workers from cluster</a></li>
+<li><a href="#broken-layouts">Broken layouts</a></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2 id="microsoft-azure-support">Microsoft Azure Support</h2>
+<p>One of the major <strong><code>v0.15</code></strong> features is a support for the <strong><a href="https://azure.microsoft.com/en-us/">Microsoft Azure Cloud</a></strong>.</p>
+<p>All the features, that were previously used for <code>AWS</code>, are now available in all the same manner, from all the same GUI/CLI, for <code>Azure</code>.</p>
+<p>Another cool thing, is that now it is possible to have a single installation of the <code>Cloud Pipeline</code>, which will manage both Cloud Providers (<code>AWS</code> and <code>Azure</code>). This provides a flexibility to launch jobs in the locations, closer to the data, with cheaper prices or better compute hardware for a specific task.</p>
+<h2 id="saml-claims-based-access">SAML claims based access</h2>
+<p>Previously, there were two options for users to be generally authenticated in Cloud Pipeline Platform, i.e. to pass SAML validation:</p>
+<ul>
+<li><strong><code>Auto-register</code></strong> - any valid SAML authentication automatically registers user (if he isn't registered yet) and grant <code>ROLE_USER</code> access</li>
+<li><strong><code>Explicit-register</code></strong> - after a valid SAML authentication, it is checked whether this user is already registered in the Cloud Pipeline catalog, and if no - request denies, authentication fails</li>
+</ul>
+<p>To automate things a bit more, in <strong><code>v0.15</code></strong> additional way to grant first-time access to the users was implemented: <strong><code>Explicit-group</code></strong> register.<br />
+If such registration type is set - once a valid SAML authentication is received, it is checked, whether SAML response contains any of the domain groups, that are already granted any access to the Cloud Pipeline objects (registered in Cloud Pipeline catalog). If so - proceeds as with <strong><code>Auto-register</code></strong> - user with all his domain groups and granted <code>ROLE_USER</code> access is being registered. If user's SAML domain groups aren't intersected with pre-registered groups the authentication fails.</p>
+<p>This Platform's behavior is set via application property <code>saml.user.auto.create</code> that could accept one of the corresponding values: <code>AUTO</code>, <code>EXPLICIT</code>, <code>EXPLICIT_GROUP</code>.</p>
+<h2 id="notifications-on-the-ramdisk-pressure">Notifications on the RAM/Disk pressure</h2>
+<p>When a compute-intensive job is run - compute node may start starving for the resources.<br />
+CPU high load is typically a normal situation - it could result just to the SSH/metrics slowdown. But running low on memory and disk could crash the node, in such cases autoscaler will eventually terminate the cloud instance.</p>
+<p>In <strong><code>v0.15</code></strong> version, the <code>Cloud Pipeline</code> platform could notify user on the fact of Memory/Disk high load.<br />
+When memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
+<p>Such notifications could be configured at <code>HIGH_CONSUMED_RESOURCES</code> section of the <code>Email notifications</code>:  </p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NotificationsResourcePressure_1.png" /></p>
+<p>The following items at <code>System</code> section of the <code>Preferences</code> define behavior of such notifications:</p>
+<ul>
+<li><strong><code>system.memory.consume.threshold</code></strong> - memory threshold (in %) above which the notification would be sent</li>
+<li><strong><code>system.disk.consume.threshold</code></strong> - disk threshold (in %) above which the notification would be sent</li>
+<li><strong><code>system.monitoring.time.range</code></strong> - time delay (in sec) after which the notification would be sent again, if the problem is still in place.</li>
+</ul>
+<p>See more information about <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> and <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#system">System Preferences</a>.</p>
+<h2 id="limit-mounted-storages">Limit mounted storages</h2>
+<p>Previously, all available storages were mounted to the container during the run initialization. User could have access to them via <code>/cloud-data</code> or <code>~/cloud-data</code> folder using the interactive sessions (SSH/Web endpoints/Desktop) or <code>pipeline</code> runs.</p>
+<p>For certain reasons (e.g. takes too much time to mount all or a run is going to be shared with others), user may want to limit the number of data storages being mounted to a specific job run.</p>
+<p>Now, user can configure the list of the storages that will be mounted. This can be accomplished using the <code>Limit mount</code> field of the <code>Launch</code> form:</p>
+<ul>
+<li>By default, <code>All available storages</code> are mounted (i.e. the ones, that user has <code>ro</code> or <code>rw</code> permissions)</li>
+<li>To change the default behavior - click the drop-down list next to "Limit mounts" label:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_1.png" /></li>
+<li>Select storages that shall be mounted:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_2.png" /></li>
+<li>Review that only a limited number of data storages is mounted:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_3.png" /></li>
+<li>Mounted storage is available for the interactive/batch jobs using the path <code>/cloud-data/{storage_name}</code>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_LimitMountStorage_4.png" /></li>
+</ul>
+<p>See an example <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-limit-mounted-storages">here</a>.</p>
+<h2 id="personal-ssh-keys-configuration">Personal SSH keys configuration</h2>
+<p>Previously, there were two options to communicate with the embedded gitlab repositories, that host pipelines code:</p>
+<ul>
+<li>From the local (non-cloud) machine: use the <code>https</code> protocol and the repository URI, provided by the GUI (i.e. <code>GIT REPOSITORY</code> button in the pipeline view)</li>
+<li>From the cloud compute node: <code>git</code> command line interface, that is preconfigured to authenticate using https protocol and the auto-generated credentials</li>
+</ul>
+<p>Both options consider that https is used. It worked fine for 99% of the use cases. But for some of the applications - <code>ssh</code> protocol is required as this is the only way to achieve a passwordless authentication against the gitlab instance</p>
+<p>To address this issue, SSH keys management was introduced:</p>
+<ul>
+<li>Users' ssh keys are generated by the <code>Git Sync</code> service</li>
+<li>SSH key-pair is created and assigned to the <code>Cloud Pipeline</code> user and a public key is registered in the GitLab</li>
+<li>Those SSH keys are now also configured for all the runs, launched by the user. So it is possible to perform a passwordless authentication, when working with the gitlab or other services, that will be implemented in the near future</li>
+<li>HTTPS/SSH selector is added to the <code>GIT REPOSITORY</code> popup of the <code>Cloud Pipeline</code> Web GUI:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSHKeysConfig_1.png" /></li>
+<li>Default selection is HTTP, which displays the same URI as previously (repository), but user is able to switch it to the SSH and get the reformatted address:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSHKeysConfig_2.png" /></li>
+</ul>
+<p>For more details see <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#details-controls">here</a>.</p>
+<h2 id="allow-to-set-the-grid-engine-capability-for-the-fixed-cluster">Allow to set the Grid Engine capability for the "fixed" cluster</h2>
+<p>Version <code>0.14</code> introduced an ability to launch <code>autoscaled</code> clusters. Besides the autoscaling itself - such cluster were configured to use <code>GridEngine</code> server by default, which is pretty handy.</p>
+<p>On the other hand - <code>fixed</code> cluster (i.e. those which contain a predefined number of compute nodes), required user to set the <code>CP_CAP_SGE</code> explicitly. Which is no a big deal, but may be tedious.</p>
+<p>In <strong><code>v0.15</code></strong> Grid Engine can be configured within the <code>Cluster</code> (fixed size cluster) tab.</p>
+<p>This is accomplished by using the <code>Enable GridEngine</code> checkbox. By default, this checkbox is unticked. If the user sets this ON - <code>CP_CAP_SGE</code> parameter is added automatically.</p>
+<p>Also a number of help icons is added to the <code>Cluster configuration</code> dialog to clarify the controls purpose:</p>
+<ul>
+<li>Popup header (E.g. next to the tabs line) - displays information on different cluster modes</li>
+<li>(Cluster) <code>Enable GridEngine</code> checkbox - displays information on the GridEngine usage</li>
+<li>(Cluster) <code>Enable Apache Spark</code> checkbox - displays information on the Apache Spark usage (see <a href="#enable-apache-spark-for-the-cloud-pipelines-clusters">below</a>)</li>
+<li>(Auto-scaled cluster) <code>Auto-scaled up</code> - displays information on the autoscaling logic</li>
+<li>(Auto-scaled cluster) <code>Default child nodes</code> - displays information on the initial node pool size</li>
+</ul>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GE_Autoconfig_1.png" /></p>
+<p>See more information about cluster launch <a href="../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/#configuration">here</a>.</p>
+<h2 id="enable-apache-spark-for-the-cloud-pipelines-clusters">Enable Apache Spark for the Cloud Pipeline's clusters</h2>
+<p>Another one feature for the Cloud Pipeline's clusters was implemented in <strong><code>v0.15</code></strong>.<br />
+Now, <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-overview.html"><strong><code>Apache Spark</code></strong></a> with the access to File/Object Storages from the <code>Spark Applications</code> can be configured within the <code>Cluster</code> tab. It is available only for the fixed size clusters.</p>
+<p>To enable this feature - tick the <code>Enable Apache Spark</code> checkbox and set the child nodes count at cluster settings. By default, this checkbox is unticked. Also users can manually enable <code>Spark</code> functionality by the <code>CP_CAP_SPARK</code> system parameter:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_1.png" /></p>
+<p>This feature, for example, allows you to run <code>Apache Spark</code> cluster with RStudio where you may code in R using <code>sparklyr</code> to run the workload over the cluster:</p>
+<ol>
+<li>Open the <strong>RStudio</strong> tool<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_2.png" /></li>
+<li>Select the node type, set the <code>Apache Spark</code> cluster as shown above, and launch the tool:
+    <img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_3.png" /></li>
+<li>Open main <strong>Dashboard</strong> and wait until the <strong>OPEN</strong> hyperlink for the launched tool will appear. Hover over it:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_4.png" /><br />
+    Two endpoints will appear:<ul>
+<li><strong><em>RStudio</em></strong> (as the main endpoint it is in bold) - it exposes RStudio's Web IDE</li>
+<li><strong><em>SparkUI</em></strong> - it exposes Web GUI of the Spark. It allows to monitor Spark master/workers/application via the web-browser. Details are available in the <a href="https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-webui.html">Spark UI manual</a></li>
+</ul>
+</li>
+<li>Click the <strong>RStudio</strong> endpoint:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_5.png" /><br />
+    Here you can start create scripts in <code>R</code> using the pre-installed <code>sparklyr</code> package to distribute the workload over the cluster.</li>
+<li>Click the <strong>SparkUI</strong> endpoint:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Spark_6.png" /><br />
+    Here you can view the details of the jobs being executed in Spark, how the memory is used and get other useful information.</li>
+</ol>
+<p>For more information about using <code>Apache Spark</code> via the <code>Cloud Pipeline</code> see <a href="../../../manual/15_Interactive_services/15.4._Interactive_service_examples/#running-apache-spark-cluster-with-rstudio-web-gui">here</a>.</p>
+<h2 id="consider-cloud-providers-resource-limitations-when-scheduling-a-job">Consider Cloud Providers' resource limitations when scheduling a job</h2>
+<p><code>Cloud Pipeline</code> supports queueing of the jobs, that cannot be scheduled to the existing or new compute nodes immediately.</p>
+<p>Queueing occurs if:</p>
+<ul>
+<li><code>cluster.max.size</code> limit  is reached (configurable via <code>Preferences</code>)</li>
+<li>Cloud Provider limitations are reached (e.g. <a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html">AWS EC2 Limits</a>)</li>
+</ul>
+<p>If (<strong>1</strong>) happens - job will sit in the <code>QUEUED</code> state, until a spare will be available or stopped manually. This is the correct behavior.<br />
+But if (<strong>2</strong>) occurs - an error will be raised by the Cloud Provider, <code>Cloud Pipeline</code> treats this as an issue with the node creation. Autoscaler will then resubmit the node creation task for <code>cluster.nodeup.retry.count</code> times (default: 5) and then fail the job run.<br />
+This behavior confuses users, as (<strong>2</strong>) shall behave almost in the same manner as (<strong>1</strong>) - job shall be kept in the queue until there will be free space for a new node.</p>
+<p>In <strong><code>v0.15</code></strong> (<strong>2</strong>) scenario works as described:</p>
+<ul>
+<li>If a certain limit is reached (e.g. number of <code>m4.large</code> instances exceeds the configured limit) - run will not fail, but will await for a spare node or limit increase</li>
+<li>A warning will be highlighted in the job initialization log:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_Resource_Limits_1.png" /></li>
+</ul>
+<h2 id="allow-to-terminate-paused-runs">Allow to terminate paused runs</h2>
+<p>Some of the jobs, that were paused (either manually, or by the automated service), may be not needed anymore.<br />
+But when a run is paused - the user cannot terminate/stop it before resuming. I.e. one have to run <code>RESUME</code> operation, wait for it's completion and then <code>STOP</code> the run.</p>
+<p>While this is the expected behavior (at least designed in this manner) - it requires some extra steps to be performed, which may look like meaningless (why one shall resume a run, that is going to be stopped?).</p>
+<p>Another issue with such a behavior is that in certain "bad" conditions - paused runs are not able to resume and just fail, e.g.:</p>
+<ul>
+<li>An underlying instance is terminated outside of the Cloud Pipeline</li>
+<li>Docker image was removed from the registry</li>
+<li>And other cases that are not yet uncovered</li>
+</ul>
+<p>This introduces a number of stale runs, that just sit there in the PAUSED state and nobody can remove them.</p>
+<p>To address those concerns - current version of <code>Cloud Pipeline</code> allows to terminate <code>PAUSED</code> run, without a prior <code>RESUME</code>. This operation can be performed by the <code>OWNER</code> of the run and the <code>ADMIN</code> users.
+Termination of the <code>PAUSED</code> run drops the underlying cloud instance and marks the run as <code>STOPPED</code>.</p>
+<p>From the GUI perspective - <code>TERMINATE</code> button is shown (instead of <code>STOP</code>), when a run is in the <code>PAUSED</code> state:  </p>
+<ul>
+<li>on the "Active runs" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_1.png" /></li>
+<li>on the "Run logs" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_2.png" /></li>
+<li>on the "Dashboard" page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TerminateButton_3.png" /></li>
+</ul>
+<p>Clicking it - performs the run termination, as described above.<br />
+See more information <a href="../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/#stopterminate-run">here</a>.</p>
+<h2 id="prepost-commit-hooks-implementation">Pre/Post-commit hooks implementation</h2>
+<p>In certain use-cases, extra steps shall be executed before/after running the commit command in the container.<br />
+E.g. imagine the following scenario:</p>
+<ol>
+<li>User launches <code>RStudio</code></li>
+<li>User installs packages and commits it as a new image</li>
+<li>User launches the new image</li>
+<li>The following error will be displayed in the R Console:</li>
+</ol>
+<pre><code class="language-r">16 Jan 2019 21:17:15 [rsession-GRODE01] ERROR session hadabend; LOGGED FROM: rstudio::core::Error {anonymous}::rInit(const rstudio::r::session::RInitInfo&amp;) /home/ubuntu/rstudio/src/cpp/session/SessionMain.cpp:563
+</code></pre>
+<p>There is nothing bad about this message and states that previous RSession was terminated in a non-graceful manner.
+RStudio will work correctly, but it may confuse the users.</p>
+<p>While this is only one example - there are other applications, that require extra cleanup to be performed before the termination.</p>
+<p>To workaround such issues (RStudio and others) an approach of <code>pre/post-commit hooks</code> is implemented. That allows to perform some graceful cleanup/restore before/after performing the commit itself.</p>
+<p>Those hooks are valid only for the specific images and therefore shall be contained within those images. <code>Cloud Pipeline</code> itself performs the calls to the hooks if they exist.</p>
+<p>Two preferences are introduced:</p>
+<ul>
+<li><code>commit.pre.command.path</code>: specified a path to a script within a docker image, that will be executed in a currently running container, <strong>BEFORE</strong> <code>docker commit</code> occurs (default: <code>/root/pre_commit.sh</code>).<ul>
+<li>This option is useful if any operations shall be performed with the running processes (e.g. send a signal), because in the subsequent <code>post</code> operation - only filesystem operations will be available.</li>
+<li><strong><em>Note</em></strong> that any changes done at this stage will affect the running container.</li>
+</ul>
+</li>
+<li><code>commit.post.command.path</code>: specified a path to a script within a docker image, that will be executed in a committed image, <strong>AFTER</strong> <code>docker commit</code> occurs (default: <code>/root/post_commit.sh</code>).<ul>
+<li>This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.</li>
+</ul>
+</li>
+<li>If a corresponding pre/post script is not found in the docker image - it will not be executed.</li>
+</ul>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#committing-features">here</a>.</p>
+<h2 id="restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</h2>
+<p>It was uncovered that some of the GPU-enabled runs are not able to initialize due to an issue describe at <a href="https://github.com/NVIDIA/nvidia-docker/issues/825">NVIDIA/nvidia-docker#825</a>.</p>
+<p>To limit a possibility of producing such docker images (which will not be able to start using GPU instance types) - a set of restrictions/notifications was implemented:</p>
+<ul>
+<li>A notification is now displayed (in the Web GUI), that warns a user about the risks of installing any of the <code>nvidia</code> packages manually. And that all <code>cuda-based</code> dockers shall be built using <code>nvidia/cuda</code> base images instead:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_1.png" /></li>
+<li>Restrict users (to the reasonable extent) from installing those packages while running SSH/terminal session in the container. If user will try to install a <code>restricted</code> package - a warning will be shown (with an option to bypass it - for the advanced users):<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GPU_Notification_2.png" /></li>
+</ul>
+<h2 id="setup-swap-files-for-the-cloud-vms">Setup swap files for the Cloud VMs</h2>
+<p>This feature is addresses the same issues as the previous <strong>Notifications about high resources pressure</strong> by making the compute-intensive jobs runs more reliable.</p>
+<p>In certain cases jobs may fail with unexpected errors if the compute node runs <code>Out Of Memory</code>.</p>
+<p><strong><code>v0.15</code></strong> provides an ability for admin users to configure a default <code>swap</code> volume to the compute node being created.
+This allows to avoid runs failures due to memory limits.</p>
+<p>The size of the <code>swap</code> volume can be configured via <code>cluster.networks.config</code> item of the <code>Preferences</code>. It is accomplished by adding the similar <code>json</code> object to the platform's global or a region/cloud specific configuration:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SwapFiles_1.png" /></p>
+<p>Options that can be used to configure <code>swap</code>:</p>
+<ul>
+<li><code>swap_ratio</code> - defines a swap file size. It is equal the node RAM multiplied by that ratio. If ratio is 0, a swap file will not be created (default: 0)</li>
+<li><code>swap_location</code> - defines a location of the swap file. If that option is not set - default location will be used (default: AWS will use <code>SSD/gp2</code> EBS, Azure will be <a href="https://blogs.msdn.microsoft.com/mast/2013/12/06/understanding-the-temporary-drive-on-windows-azure-virtual-machines/">Temporary Storage</a>)</li>
+</ul>
+<p>See an example <a href="../../../manual/12_Manage_Settings/12.11._Advanced_features/#setup-swap-files-for-the-cloud-vms">here</a>.</p>
+<h2 id="runs-system-paths-shall-be-available-for-the-general-user-account">Run's system paths shall be available for the general user account</h2>
+<p>Previously, all the system-level directories (e.g. pipeline code location - <code>$SCRIPTS_DIR</code>, input/common data folders - <code>$INPUT_DATA</code>, etc.) were owned by the <code>root</code> user with <code>read-only</code> access to the general users.</p>
+<p>This was working fine for the <code>pipeline</code> runs, as they are executed on behalf of <code>root</code>. But for the interactive sessions (SSH/Web endpoints/Desktop) - such location were not writable.</p>
+<p>From now on - all the system-level location will be granted <code>rwx</code> access for the <code>OWNER</code> of the job (the user, who launched that run).</p>
+<h2 id="renewed-wdl-visualization">Renewed WDL visualization</h2>
+<p><strong><code>v0.15</code></strong> offers an updated Web GUI viewer/editor for the WDL scripts. These improvements allow to focus on the WDL diagram and make it more readable and clear. Which very useful for large WDL scripts.</p>
+<ul>
+<li>Auxiliary controls ("Save", "Revert changes", "Layout", "Fit to screen", "Show links", "Zoom out", "Zoom in", "Fullscreen") are moved to the left side of the <code>WDL GRAPH</code> into single menu:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_1.png" /></li>
+<li>WDL search capabilities are added. This feature allows to search for any task/variable/input/output within the script and focus/zoom to the found element. Search box is on the auxiliary controls menu and supports entry navigation (for cases when more than one item was found in the WDL):<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_3.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_4.png" /></li>
+<li>Workflow/Task editor is moved from the modal popup to the right floating menu <code>PROPERTIES</code>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_WDLRenewed_5.png" /></li>
+</ul>
+<p>See more details <a href="../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">here</a>.</p>
+<h2 id="queued-state-of-the-run">"QUEUED" state of the run</h2>
+<p>Previously, user was not able to distinguish runs that are waiting in the queue and the runs that are being initialized (both were reporting the same state using the same icons).
+Now, a more clear run's state is provided - "QUEUED" state is introduced:</p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_QueueStatus_1.png" />  </p>
+<p>During this phase of the lifecycle - a job is waiting in the queue for the available compute node. Typically this shall last for a couple of second and proceed to the initialization phase. But if this state lasts for a long time - it may mean that a cluster capacity is reached (limited by the administrator).</p>
+<p>This feature allows users to make a decision - whether to wait for run in a queue or stop it and resubmit.</p>
+<p>See more details <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-runs">here</a>.</p>
+<h2 id="help-tooltips-for-the-run-state-icons">Help tooltips for the run state icons</h2>
+<p>With the runs' <code>QUEUED</code> state introduction - we now have a good number of possible job phases.</p>
+<p>To make the phases meaning more clear - tooltips are provided when hovering a run state icon within all relevant forms, i.e.: <code>Dashboard</code>, <code>Runs</code> (<code>Active Runs</code>/<code>History</code>/etc.), <code>Run Log</code>.  </p>
+<p>Tooltips contain a state name in bold (e.g. <strong>Queued</strong>) and a short description of the state and info on the next stage:  </p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TooltipsStatuses_1.png" /></p>
+<p>See more details - <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-runs">Active runs states</a>, <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#completed-runs">Completed runs states</a> and <a href="../../../manual/18_Home_page/18._Home_page/#recently-completed-runs">Home page</a>.</p>
+<h2 id="vm-monitor-service">VM monitor service</h2>
+<p>For various reasons cloud VM instances may "hang" and become invisible to <code>Cloud Pipeline</code> services. E.g. VM was created but some error occurred during joining k8s cluster or a communication to the Cloud Providers API is interrupted.</p>
+<p>In this case <code>Autoscaler</code> service will not be able to find such instance and it won't be shut down. This problem may lead to unmonitored useless resource consumption and billing.</p>
+<p>To address this issue - a separate <code>VM-Monitor</code> service was implemented:</p>
+<ul>
+<li>Tracks all VM instances in the registered Cloud Regions</li>
+<li>Determines whether instances is in "hang" state</li>
+<li>Notifies a configurable set of users about a possible problem</li>
+</ul>
+<p>Notification recipients (administrators) may check the actual state of VM in Cloud Provider console and shut down VM manually.</p>
+<p>Additionally, <code>VM-Monitor</code>:</p>
+<ul>
+<li>Checks states of Cloud Pipeline's services (Kubernetes deployments). If any service changes it's state (i.e. goes down or up) - administrators will get the corresponding notification. List of such Kubernetes deployments to check includes all Cloud Pipeline's services by default, but also could be configed manually</li>
+<li>Checks all the PKI assets, available for the Platform, for the expiration - traverses over the list of directories that should contains certificate files, searches that certificates and verifies their expiration date. If some certificate expires less than in a certain amount of days - administrators also will get the corresponding notification. List of certificate directories to scan, certificate's mask and amount of days before expiration after which the notification will be sent are configurable</li>
+</ul>
+<h2 id="web-gui-caching">Web GUI caching</h2>
+<p>Previously, <code>Cloud Pipeline</code> Web GUI was not using HTTP caching to optimize the page load time. Each time application was loaded - <code>~2Mb</code> of the app bundle was downloaded.</p>
+<p>This caused "non-optimal" experience for the end-users.</p>
+<p>Now the application bundle is split into chunks, which are identified by the <code>content-hash</code> in names:</p>
+<ul>
+<li>If nothing is changed - no data will be downloaded</li>
+<li>If some part of the app is changed - only certain chunks will be downloaded, not the whole bundle</li>
+</ul>
+<p>Administrator may control cache period using the <code>static.resources.cache.sec.period</code> parameter in the <code>application.properties</code> of the Core API service.</p>
+<h2 id="installation-via-pipectl">Installation via pipectl</h2>
+<p>Previous versions of the <code>Cloud Pipeline</code> did not offer any automated approach for deploying its components/services.
+All the deployment tasks were handed manually or by custom scripts.</p>
+<p>To simplify the deployment procedure and improve stability of the deployment - <code>pipectl</code> utility was introduced.</p>
+<p><code>pipectl</code> offers an automated approach to deploy and configure the <code>Cloud Pipeline</code> platform, as well as publish some demo pipelines and docker images for NGS/MD/MnS tasks.</p>
+<p>Brief description and example installation commands are available in the <a href="https://github.com/epam/cloud-pipeline/tree/develop/deploy">pipectl's home directory</a>.</p>
+<p>More sophisticated documentation on the installation procedure and resulting deployment architecture will be created further.</p>
+<h2 id="add-more-logging-to-troubleshoot-unexpected-pods-failures">Add more logging to troubleshoot unexpected pods failures</h2>
+<p>When a <code>Cloud Pipeline</code> is being for a long time (e.g. years), it is common to observe rare "strange" problems with the jobs execution.
+I.e. the following behavior was observed couple of times over the last year:</p>
+<h3 id="scenario-1"><em>Scenario 1</em></h3>
+<ol>
+<li>Run is launched and initialized fine</li>
+<li>During processing execution - run fails</li>
+<li>Console logs print nothing, compute node is fine and is attached to the cluster</li>
+</ol>
+<h3 id="scenario-2"><em>Scenario 2</em></h3>
+<ol>
+<li>Run is launched, compute node is up</li>
+<li>Run fails during initialization</li>
+<li>Console logs print the similar error message:</li>
+</ol>
+<pre><code class="language-bash">failed to open log file &quot;/var/log/pods/**.log&quot;: open /var/log/pods/**.log: no such file or directory
+</code></pre>
+<p>Both scenarios are flaky and almost impossible to reproduce. To provide more insights into the situation - an extended <code>node-level</code> logging was implemented:</p>
+<ol>
+<li><code>kubelet</code> logs (from all compute nodes) are now written to the files (via <code>DaemonSet</code>)</li>
+<li>Log files are streamed to the storage, identified by <code>storage.system.storage.name</code> preference</li>
+<li>Administrators can find the corresponding node logs (e.g. by the <code>hostname</code> or <code>ip</code> that are attached to the run information) in that storage under <code>logs/node/{hostname}</code></li>
+</ol>
+<p>See an example <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#console-output">here</a>.</p>
+<h2 id="displaying-information-on-the-nested-runs-within-a-parent-log-form">Displaying information on the nested runs within a parent log form</h2>
+<p>Previously, if user launched a run, that has a number of children (e.g. a cluster run or any other case with the parent-id specified), he could view the children list only from "Runs" page.</p>
+<p>In <strong><code>v.0.15</code></strong> a convenient opportunity to view the list of children directly in the parent's run logs form is implemented:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_1.png" /></p>
+<p>For each child-run in the list the following information is displayed:</p>
+<ul>
+<li>State icons with help tooltips when hovering over them</li>
+<li>Pipeline name and version/docker image and version</li>
+<li>Run time duration</li>
+</ul>
+<p>Similar as a parent-run state, states for nested runs are automatically updated without page refreshing. So, you can watch for them in real time.</p>
+<p>If you click any of the children-runs, you will navigate to its log page.</p>
+<p>That feature is implemented for the comleted runs too:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NestedRunsIcons_2.png" /></p>
+<p>More information about nested runs displaying see <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#active-cluster-runs">here</a> and <a href="../../../manual/11_Manage_Runs/11._Manage_Runs/#general-information">here</a>.</p>
+<h2 id="environment-modules-support-for-the-cloud-pipeline-runs">Environment Modules support for the Cloud Pipeline runs</h2>
+<p>The <code>Environment Modules</code> <a href="http://modules.sourceforge.net/index.html">package</a> provides for the dynamic modification of a user's environment via <code>modulefiles</code>.</p>
+<p>In current version, an ability to configure the <code>Modules</code> support for the compute jobs is introduced, if this is required by any use case.</p>
+<p>For using facilities of the <code>Environment Modules</code> package, a new system parameter was added to the Cloud Pipeline:</p>
+<ul>
+<li><strong><code>CP_CAP_MODULES</code></strong> <em>(boolean)</em> - enables installation and using the <code>Modules</code> for the current run (for all supported Linux distributions)</li>
+</ul>
+<p>If <code>CP_CAP_MODULES</code> system parameter is set - the <code>Modules</code> will be installed and made available. While installing, <code>Modules</code> will be configured to the source <code>modulefiles</code> path from the <code>CP_CAP_MODULES_FILES_DIR</code> launch environment variable (value of this variable could be set only by admins via system-level settings). If that variable is not set - default <code>modulefiles</code> location will be used.</p>
+<p>See an example <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#example-using-of-environment-modules-for-the-cloud-pipeline-runs">here</a>.</p>
+<h2 id="sharing-ssh-access-to-running-instances-with-other-usersgroups">Sharing SSH access to running instances with other user(s)/group(s)</h2>
+<p>As was introduced in <a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users">Release Notes v.0.13</a>, for certain use cases it is beneficial to be able to share applications with other users/groups.  </p>
+<p><strong><code>v0.15</code></strong> introduces a feature that allows to share the SSH-session of any active run (regardless of whether the job type is interactive or not):</p>
+<ol>
+<li>The user can share an interactive run with others:<ul>
+<li>"Share with: ..." parameter, within a run log form, can be used for this<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_1.png" /></li>
+<li>Specific users or whole groups can be set for sharing<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_2.png" /></li>
+<li>Once this is set - other users will be able to access run's endpoints</li>
+<li>Also you can share SSH access to the running instance via setting "<strong>Enable SSH connection</strong>" checkbox<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_3.png" /></li>
+</ul>
+</li>
+<li>Also, the user can share a non-interactive run:<ul>
+<li>"Share with: ..." parameter, within a run log form, can be used for this<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_5.png" /></li>
+<li>Specific users or whole groups can be set for sharing<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_6.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_7.png" />  </li>
+<li>Once this is set - specified users/groups will be able to access the running instance via the SSH</li>
+</ul>
+</li>
+<li><strong>SERVICES</strong> widget within a Home dashboard page lists such "shared" services. It displays a "catalog" of services, that can be accessed by a current user, without running own jobs.<br />
+To open shared instance application user should click the service name.<br />
+To get SSH-access to the shared instance (regardless of whether the job type is interactive or not), the user should hover over the service "card" and click the <strong>SSH</strong> hyperlink<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SharingInstancesSSH_4.png" /></li>
+</ol>
+<p>For more information about runs sharing see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users or groups of users</a>.</p>
+<h2 id="allow-to-limit-the-number-of-concurrent-ssh-sessions">Allow to limit the number of concurrent SSH sessions</h2>
+<p>Previously, some users could try to start a real big number of Web SSH sessions. If 1000+ SSH sessions are established via EDGE service, the performance will degrade. It is not common, but it could be critical as it affects all the users of the platform deploment.</p>
+<p>To avoid such cases, in <strong><code>v0.15</code></strong> the <a href="#installation-via-pipectl"><code>pipectl</code></a> parameter <strong><code>CP_EDGE_MAX_SSH_CONNECTIONS</code></strong> (with default value <code>25</code>) for the EDGE server is introduced, that allows to control a number of simultaneous SSH connections to a single job.<br />
+Now, if this max number will be reached, the next attemp to open another one Web SSH session to the same job will return a notification to the user and a new session will not be opened until the any one previous is closed:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SSH_SessionLimits_1.png" /></p>
+<h2 id="verification-of-dockerstorage-permissions-when-launching-a-run">Verification of docker/storage permissions when launching a run</h2>
+<p>Users are allowed to launch pipeline, detached configuration or tool if they have a corresponding <strong>permission</strong> for that executable.<br />
+But in some cases this verification is not enough, e.g. when user has no read permission for input parameter - in this case, run execution could cause an error.</p>
+<p>In <strong><code>v0.15</code></strong> additional verification implemented that checks if:</p>
+<ul>
+<li><code>execution</code> is allowed for specified docker image;</li>
+<li><code>read</code> operations are allowed for <strong>input</strong> and <strong>common</strong> path parameters;</li>
+<li><code>write</code> operations are allowed for <strong>output</strong> path parameters.</li>
+</ul>
+<p>If there are such permission issues, run won't be launched and special warning notifications will be shown to a user, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_1.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PermissionsVerification_2.png" /></p>
+<p>For more details see sections <a href="../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a pipeline</a>, <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached Configuration</a> and <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>.</p>
+<h2 id="ability-to-override-the-queuepe-configuration-in-the-ge-configuration">Ability to override the <code>queue</code>/<code>PE</code> configuration in the GE configuration</h2>
+<p>Previously, if the Grid Engine was enabled, the following was configured:</p>
+<ul>
+<li>a single <code>queue</code> with all the hosts was creating, named "<strong>main.q</strong>"</li>
+<li>a single <code>PE</code> (Parallel Environment) was creating, named "<strong>local</strong>"</li>
+</ul>
+<p>In <strong><code>v0.15</code></strong>, the overriding of the names of the <code>queue</code>/<code>PE</code> is implemented to be compatible with any existing scripts, that rely on a specific GE configuration (e.g. hardcoded).<br />
+You can do it using two new System Parameters at the Launch or the Configuration forms:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_GE_QueueAndPeRenaming_1.png" /></p>
+<ul>
+<li><strong><code>CP_CAP_SGE_QUEUE_NAME</code></strong> <em>(string)</em> - allows to override the GE's <code>queue</code> name (default: "<strong>main.q</strong>")</li>
+<li><strong><code>CP_CAP_SGE_PE_NAME</code></strong> <em>(string)</em> - allows to override the GE's <code>PE</code> name (default: "<strong>local</strong>")</li>
+</ul>
+<p>More information how to use System Parameters when a job is launched see <a href="../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#example-create-a-configuration-that-uses-system-parameter">here</a>.</p>
+<h2 id="estimation-runs-disk-size-according-to-the-inputcommon-parameters">Estimation run's disk size according to the input/common parameters</h2>
+<p>Previously, if a job was run with the disk size, which was not enough to handle the job's inputs - it failed (e.g. 10Gb disk was set for a run, which processed data using <code>STAR</code> aligner, where the genome index file is 20Gb).</p>
+<p>In <strong><code>v0.15</code></strong>, an attempt to handle some of such cases is implemented. Now, the Cloud Pipeline try to estimate the required disk size using the input/common parameters and warn the user if the requested disk is not enough.</p>
+<p>When a job is launching, the system try to get the size of all input/common parameters. The time of the size getting for all files is limited, as this may take too much for lots of small files. Limit for this time is set by the <strong><code>storage.listing.time.limit</code></strong> system preference (in milliseconds). Default: 3 sec (3000 milliseconds). If computation doesn't end in this timeout, accumulated size will return as is.</p>
+<p>If the resulting size of all input/common parameters is greater than requested disk size (considering cluster configuration) - the user will be warned:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EstimateDiskSize_1.png" /><br />
+    User can set suggested disk size or launch a job at user's own risk with the requested size.</p>
+<p>If calculated suggested disk size exceeds 16Tb (hard limit) a different warning message will be shown:</p>
+<pre><code class="language-text">The requested disk size for this run is &lt;N&gt; Gb, but the data that is going to be processed exceeds 16 Tb (which is a hard limit).
+Please use the cluster run configuration to scale the disks horizontally or reduce the input data volume.
+Do you want to use the maximum disk size 16 Tb anyway?
+</code></pre>
+<h2 id="disabling-of-the-global-search-form-if-a-corresponding-service-is-not-installed">Disabling of the Global Search form if a corresponding service is not installed</h2>
+<p>Version <strong><code>0.14</code></strong> introduced the <a href="../../v.0.14/v.0.14_-_Release_notes/#global-search">Global Search</a> feature over all Cloud Pipeline objects.<br />
+In current version, a small enhancement for the Global Search is implemented. Now, if the <strong><code>search.elastic.host</code></strong> system preference is not set by admin - other users will not be able to try search performing:</p>
+<ul>
+<li>the "Search" button will be hidden from the left menu</li>
+<li>keyboard search shortcut will be disabled</li>
+</ul>
+<h2 id="disabling-of-the-fs-mounts-creation-if-no-fs-mount-points-are-registered">Disabling of the FS mounts creation if no FS mount points are registered</h2>
+<p>In the <code>Cloud Pipeline</code>, along with the regular data storages user can also create <a href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">FS mounts</a> - data storages based on the network file system:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DisablingFSmounts_1.png" /></p>
+<p>For the correct FS mount creation, at least one mount point shall be registered in the <code>Cloud Pipeline</code> Preferences.<br />
+Now, if no FS mount points are registered for any Cloud Region in the System Preferences - user can not create a new FS mount, the corresponding button becomes invisible:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DisablingFSmounts_2.png" /></p>
+<h2 id="displaying-resource-limit-errors-during-run-resuming">Displaying resource limit errors during run resuming</h2>
+<p>User may hit a situation of resource limits while trying to resume previously paused run. E.g. instance type was available when run was initially launched, but at the moment of resume operation provider has no sufficient capacity for this type. Previously, in this case run could be failed with an error of insufficient resources.</p>
+<p>In <strong><code>v0.15</code></strong> the following approach is implemented for such cases:</p>
+<ul>
+<li>resuming run doesn't fail if resource limits are hit. That run returns to the <code>Paused</code> state</li>
+<li>log message that contains a reason for resume failure and returning back to the <code>Paused</code> state is being added to the <code>ResumeRun</code> task</li>
+<li>user is notified about such event. The corresponding warning messages are displayed:<ul>
+<li>at the <strong>Run logs</strong> page<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_1.png" /></li>
+<li>at the <strong>ACTIVE RUNS</strong> page (hint message while hovering the <strong>RESUME</strong> button)<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_3.png" /></li>
+<li>at the <strong>ACTIVE RUNS</strong> panel of the Dashboard (hint message while hovering the <strong>RESUME</strong> button)<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_FailedResuming_2.png" /></li>
+</ul>
+</li>
+</ul>
+<h2 id="object-storage-creation-in-despite-of-that-the-corspolicies-could-not-be-applied">Object storage creation in despite of that the CORS/Policies could not be applied</h2>
+<p>Previously, if the Cloud service account/role had permissions to create object storages, but lacked permissions to apply <code>CORS</code> or other policies - object storage was created, but the <code>Cloud Pipeline API</code> threw an exception and storage was not being registered.<br />
+This led to the creation of a "zombie" storage, which was not available via GUI, but existed in the Cloud.</p>
+<p>Currently, the <code>Cloud Pipeline API</code> doesn't fail such requests and storage is being registered normally.<br />
+But the corresponding warning will be displayed to the user like this:</p>
+<pre><code>The storage {storage_name} was created, but certain policies were not applied.
+This can be caused by insufficient permissions.
+</code></pre>
+<h2 id="track-the-confirmation-of-the-blocking-notifications">Track the confirmation of the "Blocking" notifications</h2>
+<p>System events allow to create popup notifications for users.<br />
+One of the notification types - the "Blocking" notification. Such event emerges in the middle of the window and requires confirmation from the user to disappear for proceeding with the GUI operations.<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_1.png" /></p>
+<p>In certain cases (e.g. for some important messages), it is handy to be able to check which users confirmed the notification.<br />
+For that, in the current version the ability to view, which "blocking" notifications confirmed by specific user, was implemented for admins.<br />
+Information about confirmed notifications can be viewed at the "<strong>Attributes</strong>" section of the specific user's profile page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_2.png" /></p>
+<p>Confirmed notifications are displayed as user attribute with the <strong>KEY</strong> <code>confirmed_notifications</code> (that name could be changed via the system-level preference <strong><code>system.events.confirmation.metadata.key</code></strong>) and the <strong>VALUE</strong> link that shows summary count of confirmed notifications for the user.<br />
+Click the <strong>VALUE</strong> link with the notification count to open the detailed table with confirmed notifications:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_TrackBlockingNotifications_3.png" /></p>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/#blocking-notifications-track">"blocking" notifications track</a>.</p>
+<h2 id="pipe-cli-warnings-on-the-jwt-expiration"><code>pipe</code> CLI warnings on the JWT expiration</h2>
+<p>By default, when <code>pipe</code> CLI is being configured JWT token is given for one month, if user didn't select another expiration date.</p>
+<p>In <strong><code>v.0.15</code></strong> extra <code>pipe</code> CLI warnings are introduced to provide users an information on the JWT token expiration:</p>
+<ul>
+<li>When <code>pipe configure</code> command is executed - the warning about the expiration date of the provided token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_1.png" /></li>
+<li>When <code>--version</code> option is specified - <code>pipe</code> prints dates of issue and expiration for the currently used token:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_2.png" /></li>
+<li>When any other command is running - the warning about the expiration date of the provided JWT token is printed, if it is less than 7 days left:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JWTtokenExp_3.png" /></li>
+</ul>
+<p>See more information about <code>pipe</code> CLI installation <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#how-to-install-and-setup-pipe-cli">here</a>.</p>
+<h2 id="pipe-configuration-for-using-ntlm-authentication-proxy"><code>pipe</code> configuration for using NTLM Authentication Proxy</h2>
+<p>For some special customer needs, <code>pipe</code> configuration for using NTLM Authentication Proxy, when running in Linux, could be required.</p>
+<p>For that, several new options were added to <code>pipe configure</code> command:</p>
+<ul>
+<li><code>-nt</code> or <code>--proxy-ntlm</code> - flag that enable NTLM proxy support</li>
+<li><code>-nu</code> or <code>--proxy-ntlm-user</code> - username for NTLM proxy authorization</li>
+<li><code>-np</code> or <code>--proxy-ntlm-pass</code> - password for NTLM proxy authorization</li>
+<li><code>-nd</code> or <code>--proxy-ntlm-domain</code> - domain for NTLM proxy authorization</li>
+</ul>
+<p>If <code>--proxy-ntlm</code> is set, <code>pipe</code> will try to get the proxy value from the environment variables or <code>--proxy</code> option (<code>--proxy</code> option has a higher priority).<br />
+If <code>--proxy-ntlm-user</code> and <code>--proxy-ntlm-pass</code> options are not set - user will be prompted for username/password in an interactive manner.  </p>
+<p>Valid configuration examples:</p>
+<ul>
+<li>User will be prompted for NTLM Proxy Username, Password and Domain:</li>
+</ul>
+<pre><code class="language-bash">pipe configure --proxy-ntlm
+...
+Username for the proxy NTLM authentication: user1
+Domain of the user1 user: ''
+Password of the user1 user:
+</code></pre>
+<ul>
+<li>Use <code>http://myproxy:3128</code> as the "original" proxy address. User will not be prompted for NTLM credentials:</li>
+</ul>
+<pre><code class="language-bash">pipe configure --proxy-ntlm --proxy-ntlm-user $MY_NAME --proxy-ntlm-pass $MY_PASS --proxy &quot;http://myproxy:3128&quot;
+</code></pre>
+<p>See more information about <code>pipe</code> CLI installation and configure <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/">here</a>.</p>
+<h2 id="execution-of-files-uploading-via-pipe-without-failures-in-case-of-lacks-read-permissions">Execution of files uploading via <code>pipe</code> without failures in case of lacks read permissions</h2>
+<p>Previously, <code>pipe storage cp</code>/<code>mv</code> commands could fail if a "local" source file/dir lacked read permissions. For example, when user tried to upload to the "remote" storage several files and when the <code>pipe</code> process had reached one of files that was not readable for the <code>pipe</code> process, then the whole command was being failed, remaining files did not upload.</p>
+<p>In current version, the <code>pipe</code> process checks read permission for the "local" source (directories and files) and skip those that are not readable:</p>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeCPforNotReadable_1.png" /></p>
+<h2 id="run-a-single-command-or-an-interactive-session-over-the-ssh-protocol-via-pipe">Run a single command or an interactive session over the SSH protocol via <code>pipe</code></h2>
+<p>For the certain purposes, it could be conveniently to start an interactive session over the SSH protocol for the job run via the <code>pipe</code> CLI.</p>
+<p>For such cases, in <strong><code>v0.15</code></strong> the <code>pipe ssh</code> command was implemented. It allows you, if you are the <strong>ADMIN</strong> or the run <strong>OWNER</strong>, to perform a single command or launch an interactive session for the specified job run.<br />
+Launching of an interactive session:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_1.png" /><br />
+This session is similar to the <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#using-terminal-access">terminal access</a> that user can get via the GUI.</p>
+<p>Performing the same single command without launching an interactive session:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeSsh_2.png" />  </p>
+<h2 id="perform-objects-restore-in-a-batch-mode-via-pipe">Perform objects restore in a batch mode via <code>pipe</code></h2>
+<p>Users can restore files that were removed from the data storages with enabled versioning.<br />
+For these purposes, the Cloud Pipeline's CLI has the <code>restore</code> command which is capable of restoring a single object at a time.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to recursively restore the whole folder, deleted from the storage, was implemented.<br />
+Now, if the source path is a directory, the <code>pipe storage restore</code> command gets the top-level deleted files from the source directory and restore them to the latest version.<br />
+Also, to the <code>restore</code> command some options were added:</p>
+<ul>
+<li><code>-r</code> or <code>--recursive</code> - flag allows to restore the whole directory hierarchy</li>
+<li><code>-i</code> or <code>--include [TEXT]</code> - flag allows to restore only files which names match the [TEXT] pattern and skip all others</li>
+<li><code>-e</code> or <code>--exclude [TEXT]</code> - flag allows to skip restoring of files which names match the [TEXT] pattern and restore all others</li>
+</ul>
+<p><img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeRestoreRecursive.png" /></p>
+<p><strong><em>Note</em></strong>: this feature is yet supported for <code>AWS</code> only.</p>
+<p>For more details about file restoring via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#restore-files">here</a>.</p>
+<h2 id="mounting-data-storages-to-linux-and-mac-workstations">Mounting data storages to Linux and Mac workstations</h2>
+<p>Previously, when users had to copy/move datasets to/from Cloud data storages via CLI, they could use only special <code>pipe storage</code> commands.<br />
+That was not always comfortable or could lead to some functionality restrictions.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to mount Cloud data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed) was added.<br />
+For the mounted storages, regular listing/read/write commands are supported, users can manage files/folders as with any general hard drive.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: this feature is yet supported for <code>AWS</code> only.</p>
+</blockquote>
+<p>To mount a data storage into the local mountpoint the <code>pipe storage mount</code> command was implemented. It has two main options that are mutually exclusive:</p>
+<ul>
+<li><code>-f</code> or <code>--file</code> specifies that all available file systems should be mounted into a mountpoint</li>
+<li><code>-b</code> or <code>--bucket [STORAGE_NAME]</code> specifies a storage name to mount into a mountpoint</li>
+</ul>
+<p>Users can:</p>
+<ul>
+<li>leverage mount options, supported by underlying <strong><code>FUSE</code></strong> implementation, via <code>-o</code> option</li>
+<li>enable multithreading for simultaneously interaction of several processes with the mount point, via <code>-t</code> option</li>
+<li>trace all information about mount operations into a log-file, via <code>-l</code> option</li>
+</ul>
+<p>To unmount a mountpoint the <code>pipe storage umount</code> command was implemented.</p>
+<p>For more details about mounting data storages via the <code>pipe</code> see <a href="../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/#mounting-of-storages">here</a>.</p>
+<h2 id="allow-to-run-pipe-commands-on-behalf-of-the-other-user">Allow to run <code>pipe</code> commands on behalf of the other user</h2>
+<p>In the current version, the ability to run <code>pipe</code> commands on behalf of the other user was implemented.<br />
+It could be convenient when administrators need to perform some operations on behalf of the other user (e.g. check permissions/act as a service account/etc.).</p>
+<p>This feature is implemented via the common option that was added to <strong>all</strong> <code>pipe</code> commands: <strong><code>--user|-u &lt;USER_ID&gt;</code></strong> (where <strong><code>&lt;USER_ID&gt;</code></strong> is the name of the user account).<br />
+<strong><em>Note</em></strong>: the option isn't available for the following <code>pipe</code> commands: <code>configure</code>, <code>--version</code>, <code>--help</code>.</p>
+<p>If this option is specified - operation (command execution) will be performed using the corresponding user account, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeBehalfOfOtherUser_1.png" /><br />
+In the example above, active runs were outputted from the admin account (firstly) and then on behalf of the user without <em>ROLE_ADMIN</em> role.</p>
+<p>Additionally, a new command <strong><code>pipe token &lt;USER_ID&gt;</code></strong> was implemented. It prints the <code>JWT</code> token for a specified user.<br />
+This command also can be used with non-required option <strong><code>-d</code></strong> (<strong><code>--duration</code></strong>), that specified the number of days the token will be valid. If it's not set - the default value will be used, same as in the GUI.<br />
+Example of using:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_PipeBehalfOfOtherUser_2.png" /></p>
+<p>Then, the generated <code>JWT</code> token could be used manually with the <code>pipe configure</code> command - to configure <code>pipe</code> CLI on behalf of the desired user.</p>
+<p><strong><em>Note</em></strong>: both - the command (<code>pipe token</code>) and the option (<code>--user</code>) - are available only for admins.</p>
+<p>For more details see <a href="../../../manual/14_CLI/14.1._Install_and_setup_CLI/#allow-to-run-pipe-commands-on-behalf-of-the-other-user">here</a>.</p>
+<h2 id="ability-to-restrict-the-visibility-of-the-jobs">Ability to restrict the visibility of the jobs</h2>
+<p>Previously, <code>Cloud Pipeline</code> inherited the pipeline jobs' permissions from the parent pipeline object. So, if two users had permissions on the same pipeline, then when the first user had launched that pipeline - the second user also could view (not manage) launched run in the <strong>Active Runs</strong> tab.<br />
+Now admin can restrict the visibility of the jobs for non-owner users. The setting of such visibility can get one of the following values:</p>
+<ul>
+<li><strong><code>Inherit</code></strong> - the behavior is the same as described above (for the previous approach), when the runs visibility is controlled by the pipeline permissions. It is set as a default for the <code>Cloud Pipeline</code> environment</li>
+<li><strong><code>Only owner</code></strong> - when only the person who launch a run can see it</li>
+</ul>
+<p>Jobs visibility could be set by different ways on several forms:</p>
+<ul>
+<li>within <strong>User management</strong> tab in the system-level settings admin can specify runs visibility for a user/group/role:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JobsVisibility_1.png" /></li>
+<li>within <strong>Launch</strong> section of <strong>Preferences</strong> tab in the system-level settings admin can specify runs visibility for a whole platform as global defaults - by the setting <strong><code>launch.run.visibility</code></strong>:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_JobsVisibility_2.png" /></li>
+</ul>
+<p>Next hierarchy is set for applying of specified jobs visibility:</p>
+<ul>
+<li>User level - highest priority (specified for a user)</li>
+<li>Group level (specified for a group/role)</li>
+<li>Platform level <strong><code>launch.run.visibility</code></strong> (specified as global defaults via system-level settings)</li>
+</ul>
+<blockquote>
+<p><strong><em>Note</em></strong>: admins can see all runs despite of settings</p>
+</blockquote>
+<h2 id="ability-to-perform-scheduled-runs-from-detached-configurations">Ability to perform scheduled runs from detached configurations</h2>
+<p>Previously, Cloud Pipeline allowed starting compute jobs only manually (API/GUI/CLI).<br />
+But in certain use cases, it is beneficial to launch runs on a scheduled basis.</p>
+<p>In <strong><code>v0.15</code></strong> the ability to configure a schedule for detached configuration was implemented:  </p>
+<ul>
+<li>User is able to set a schedule for launch a run from the detached configuration:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_1.png" /></li>
+<li>Schedule is defined as a list of rules - user is able to specify any number of them:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_2.png" /><br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_3.png" /></li>
+<li>For each rule in the list user is able to set the recurrence:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SchedulingDetachedConfigurationRuns_4.png" /></li>
+</ul>
+<p>If any schedule rule is configured for the detached configuration - a corresponding job (plain container or a pipeline) will be started accordingly in the scheduled day and time.</p>
+<p>See more details <a href="../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/#schedule-a-launch-from-the-detached-configuration">here</a>.</p>
+<h2 id="the-ability-to-use-custom-domain-names-as-a-friendly-url-for-the-interactive-services">The ability to use custom domain names as a "friendly URL" for the interactive services</h2>
+<p>In <strong><a href="../../v.0.13/v.0.13_-_Release_notes/#running-instances-sharing-with-other-users-or-groups-of-users"><code>v0.13</code></a></strong> the ability to set a "friendly URL" for the interactive services endpoint was implemented. It allows to configure the view of the interactive service endpoint:</p>
+<ul>
+<li>Default view: <code>https://&lt;host&gt;/pipeline-&lt;run-id&gt;-&lt;port&gt;</code>  </li>
+<li>"Friendly" view: <code>https://&lt;host&gt;/&lt;friendly-url&gt;</code></li>
+</ul>
+<p>In the current version this feature is expanded: users allow to specify a custom host.<br />
+So the endpoint url now can look like: <code>https://&lt;custom-host&gt;</code> or <code>https://&lt;custom-host&gt;/&lt;friendly-url&gt;</code>.<br />
+<strong><em>Note</em></strong>: custom host should exist, be valid and configured.</p>
+<p>The custom host is being specified into the same field as a "friendly URL" previously, e.g.:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_CustomDomainNames_1.png" /><br />
+Final URL for the service endpoint will be generated using the specified host and friendly URL:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_CustomDomainNames_2.png" /></p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-friendly-url">here</a>.</p>
+<h2 id="displaying-of-the-additional-support-iconinfo">Displaying of the additional support icon/info</h2>
+<p>In certain cases, users shall have a quick access to the help/support information (e.g. links to docs/faq/support request/etc.)</p>
+<p>In the current version, the ability to display additional "support" icon with the corresponding info in the bottom of the main menu was implemented:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_SupportIcon_1.png" /></p>
+<p>The displaying of this icon and the info content can be configured by admins via the system-level preference <strong><code>ui.support.template</code></strong>:</p>
+<ul>
+<li>this preference is empty by default - in this case the support icon is invisible</li>
+<li>if this preference contains any text (<code>Markdown</code>-formatted):<ul>
+<li>the support icon is visible</li>
+<li>specified text is displayed in the support icon tooltip (support info)</li>
+</ul>
+</li>
+</ul>
+<p>For more details see <a href="../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/#user-interface">UI system settings</a>.</p>
+<h2 id="pass-proxy-settings-to-the-dind-containers">Pass proxy settings to the <code>DIND</code> containers</h2>
+<p>Previously, <code>DIND</code> containers configuration included only registry credentials and a couple of driver settings.<br />
+In certain environments, it is not possible to access external networks (e.g. for the packages installation) without the proxy settings.<br />
+So the users had to pass this manually every time when using the <code>docker run</code> command.</p>
+<p>In the current version, a new system preference <strong><code>launch.dind.container.vars</code></strong> is introduced. It allows to specify all the additions variables, which will be passed to the <code>DIND</code> containers (if they are set for the host environment).  </p>
+<p>By default, the following variables are set for the <code>launch.dind.container.vars</code> preference (and so will be passed to <code>DIND</code> container): <code>http_proxy</code>,<code>https_proxy</code>, <code>no_proxy</code>, <code>API</code>, <code>API_TOKEN</code>. Variables are being specified as a comma-separated list.</p>
+<p>Example of using:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_DINDvariations_1.png" /></p>
+<p>At the same time, a new system parameter (per run) was added - <strong><code>CP_CAP_DIND_CONTAINER_NO_VARS</code></strong>, which disables described behavior. You can set it before any run if you don't want to pass any additional variations to the <code>DIND</code> container.</p>
+<h2 id="interactive-endpoints-can-be-optionally-available-to-the-anonymous-users">Interactive endpoints can be (optionally) available to the anonymous users</h2>
+<p>Cloud Pipeline allows sharing the interactive and SSH endpoints with the other users/groups.</p>
+<p>Previously, this necessary required the end-user to be registered in the Cloud Pipeline users database.</p>
+<p>For certain use-cases, it is required to allow such type of access for any user, who has successfully passed the IdP authentication but is not registered in the Cloud Pipeline and also such users shall not be automatically registered at all and remain <code>Anonymous</code>.</p>
+<p>In the current version, such ability is implemented. It's enabled by the following application properties:</p>
+<ul>
+<li><code>saml.user.auto.create=EXPLICIT_GROUP</code></li>
+<li><code>saml.user.allow.anonymous=true</code></li>
+</ul>
+<p>After that, to share any interactive run with the <code>Anonymous</code> - it's simple enough to share endpoints with the following user group - <code>ROLE_ANONYMOUS_USER</code>:</p>
+<ul>
+<li>At the <strong>Run logs</strong> page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_01.png" /></li>
+<li>The user should select the <code>ROLE_ANONYMOUS_USER</code> role to share:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_03.png" /></li>
+<li>Sharing with the <code>Anonymous</code> will be displayed at the Run logs page:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_EndpointToAnonymous_04.png" /></li>
+<li>That's all. Now, the endpoint-link of the run could be sent to the <code>Anonymous</code> user.</li>
+</ul>
+<p>If that <code>Anonymous</code> user passes <code>SAML</code> authentication, he will get access to the endpoint. Attempts to open any other Platform pages will fail.</p>
+<p>For more details see <a href="../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/#sharing-runs-with-the-anonymous-users">here</a>.</p>
+<hr />
+<h2 id="notable-bug-fixes">Notable Bug fixes</h2>
+<h3 id="incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/221">#221</a></p>
+<p>When user was searching for an entry, that may belong to different classes (e.g. <code>issues</code> and <code>folders</code>) - user was not able to filter the results by the class.</p>
+<h3 id="committing-status-hangs">"COMMITTING..." status hangs</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/152">#152</a></p>
+<p>In certain cases, while committing pipeline with the stop flag enabled - the run's status hangs in <code>Committing...</code> state. Run state does not change even after the commit operation succeeds and a job is stopped.</p>
+<h3 id="instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/150">#150</a></p>
+<p>Metadata entities (i.e. project-related metadata) sorting was faulty:</p>
+<ol>
+<li>Sort direction indicator (Web GUI) was displaying an inverted direction</li>
+<li>Entities were not sorted correctly</li>
+</ol>
+<h3 id="tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/144">#144</a></p>
+<p>If there is a tool group in the registry, which is not empty (i.e. contains 1+ tools) - an attempt to delete it throws SQL error.<br />
+It works fine if the child tools are dropped beforehand.<br />
+Now, it is possible to delete such a group if a <code>force</code> flag is set in the confirmation dialog.</p>
+<h3 id="missing-region-while-estimating-a-run-price">Missing region while estimating a run price</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/93">#93</a></p>
+<p>On the launch page, while calculating a price of the run, Cloud Provider's region was ignored. This way a calculation used a price of the specified instance type in any of the available regions. In practice, requested price may vary from region to region.</p>
+<h3 id="cannot-specify-region-when-an-existing-object-storage-is-added">Cannot specify region when an existing object storage is added</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/45">#45</a></p>
+<p>Web GUI interface was not providing an option to select a region when adding an existing object storage. And it was impossible to add a bucket from the non-default region.</p>
+<h3 id="acl-control-for-pipeline_user-and-role-entities-for-metadata-api">ACL control for PIPELINE_USER and ROLE entities for metadata API</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/265">#265</a></p>
+<p>All authorized users were permitted to browse the metadata of <code>users</code> and <code>roles</code> entities. But those entries may contain a sensitive data, that shall not be shared across users.<br />
+Now, a general user may list only personal <code>user-level</code> metadata. Administrators may list both <code>users</code> and <code>roles</code> metadata across all entries.</p>
+<h3 id="getting-logs-from-kubernetes-may-cause-outofmemory-error">Getting logs from Kubernetes may cause <code>OutOfMemory</code> error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/468">#468</a></p>
+<p>For some workloads, container logs may become very large: up to several gigabytes. When we tried to fetch such logs it is likely to cause <code>OutOfMemory</code> error, since Kubernetes library tries to load it into a single String object.<br />
+In current version, a new system preference was introduced: <strong><code>system.logs.line.limit</code></strong>. That preference sets allowable log size in lines. If actual pod logs exceeds the specified limit only log tail lines will be loaded, the rest will be truncated.</p>
+<h3 id="aws-incorrect-nodeup-handling-of-spot-request-status">AWS: Incorrect <code>nodeup</code> handling of spot request status</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/556">#556</a></p>
+<p>Previously, in a situation when an <code>AWS</code> spot instance created after some timeout - spot status wasn't updated correctly in the handling of <code>spot request status</code>. It might cause errors while getting spot instance info.</p>
+<h3 id="not-handling-clusters-in-autopause-daemon">Not handling clusters in <code>autopause</code> daemon</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/557">#557</a></p>
+<p>Previously, if cluster run was launched with enabled "Auto pause" option, parent-run or its child-runs could be paused (when autopause conditions were satisfied, of course). It was incorrect behavior because in that case, user couldn't resume such paused runs and go on his work (only "Terminate" buttons were available).<br />
+In current version, <code>autopause</code> daemon doesn't handle any clusters ("Static" or "Autoscaled").<br />
+Also now, if the cluster is configured - <strong>Auto pause</strong> checkbox doesn't display in the <strong>Launch Form</strong> for the <code>On-Demand</code> node types.</p>
+<h3 id="incorrect-pipe-cli-version-displaying">Incorrect <code>pipe</code> CLI version displaying</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/561">#561</a></p>
+<p>Previously, <code>pipe</code> CLI version displayed incorrectly for the <code>pipe</code> CLI installations performed via hints from the <strong>Cloud Pipeline</strong> System Settings menu.</p>
+<h3 id="jwt-token-shall-be-updated-for-the-jobs-being-resumed">JWT token shall be updated for the jobs being resumed</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/579">#579</a></p>
+<p>In cases when users launched on-demand jobs, paused them and then, after a long time period (2+ months), tried to resume such jobs - expired JWT tokens were set for them that led to different problems when any of the initialization routines tried to communicate with the API.<br />
+Now, the JWT token and other variables as well are being updated when a job is being resumed.</p>
+<h3 id="trying-to-rename-file-in-the-data-storage-while-the-attributes-panel-is-opened-throws-an-error">Trying to rename file in the data storage, while the "Attributes" panel is opened, throws an error</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/520">#520</a></p>
+<p>Renaming file in the datastorage with opened "Attributes" panel caused an unexpected error.</p>
+<h3 id="pipe-incorrect-behavior-of-the-nc-option-for-the-run-command"><code>pipe</code>: incorrect behavior of the <code>-nc</code> option for the <code>run</code> command</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/609">#609</a>
+Previously, trying to launch a pipeline via the <code>pipe run</code> command with the single <code>-nc</code> option threw an error.</p>
+<h3 id="cluster-run-cannot-be-launched-with-a-pretty-url">Cluster run cannot be launched with a Pretty URL</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/620">#620</a></p>
+<p>Previously, if user tried to launch any interactive tool with <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-friendly-url">Pretty URL</a> and configured cluster - an error appeared <code>URL {Pretty URL} is already used for run {Run ID}</code>.<br />
+Now, pretty URL could be set only for the parent runs, for the child runs regular URLs are set.</p>
+<h3 id="cloning-of-large-repositories-might-fail">Cloning of large repositories might fail</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/626">#626</a></p>
+<p>When large repository (&gt; 1Gb) was cloned (e.g. when a pipeline was being run) - <code>git clone</code> could fail with the OOM error happened at the GitLab server if it is not powerful enough.<br />
+OOM was produced by the <code>git pack-objects</code> process, which tries to pack all the data in-memory.<br />
+Now, <code>git pack-objects</code> memory usage is limited to avoid errors in cases described above.</p>
+<h3 id="system-events-html-overflow">System events HTML overflow</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/630">#630</a></p>
+<p>If admin set a quite long text (without separators) into the message body of the <a href="../../../manual/12_Manage_Settings/12._Manage_Settings/#system-events">system event notifications</a> - the resulting notification text "overflowed" the browser window.<br />
+Now, text wrapping is considered for such cases.</p>
+<p>Also, support of <a href="https://en.wikipedia.org/wiki/Markdown">Markdown</a> was added for the system notification messages:<br />
+<img alt="CP_v.0.15_ReleaseNotes" src="../attachments/RN015_NotificationsMarkdown.png" /></p>
+<h3 id="aws-pipeline-run-initializenode-task-fails">AWS: Pipeline run <code>InitializeNode</code> task fails</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/635">#635</a></p>
+<p>Previously, if <code>AWS</code> spot instance could not be created after the specific number of attempts during the run initialization - such run was failed with the error, e.g.: <code>Exceeded retry count (100) for spot instance. Spot instance request status code: capacity-not-available</code>.<br />
+Now, in these cases, if spot instance isn't created after specific attempts number - the price type is switched to <code>on-demand</code> and run initialization continues.</p>
+<h3 id="git-sync-shall-not-fail-the-whole-object-synchronization-if-a-single-entry-errors"><code>git-sync</code> shall not fail the whole object synchronization if a single entry errors</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/648">#648</a>, <a href="https://github.com/epam/cloud-pipeline/issues/691">#691</a></p>
+<p>When the <code>git-sync</code> script processed a repository and failed to sync permissions of a specific user (e.g. git exception was thrown) - the subsequent users were not being processed for that repository.<br />
+Now, the repository sync routine does not fail if a single user cannot be synced. Also, the issues with the synchronization of users with duplicate email addresses and users with empty email were resolved.</p>
+<h3 id="enddate-isnt-set-when-node-of-a-paused-run-was-terminated"><code>endDate</code> isn't set when node of a paused run was terminated</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/743">#743</a></p>
+<p>Previously, when user terminated the node of a paused run - <code>endDate</code> for that run wasn't being set. This was leading to wrong record of running time for such run.</p>
+<h3 id="aws-nodeup-retry-process-may-stuck-when-first-attempt-to-create-a-spot-instance-failed">AWS: Nodeup retry process may stuck when first attempt to create a spot instance failed</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/744">#744</a></p>
+<p>Previously, if first nodeup attempt failed due to unavailablity to connect on 8888 port (in expected amounts of attempts) after getting instance running state, the second nodeup attempt might stuck because it waited for the same instance (associated with existed <code>SpotRequest</code> for the first attempt) to be up. But it couldn't happen - this instance was already in terminating state after the first attempt.<br />
+Now, checks that instance associated with <code>SpotRequest</code> (created for the first attempt) is in appropriate status, if not - a new <code>SpotRequest</code> is being created and the nodeup process is being started from scratch.</p>
+<h3 id="resume-job-timeout-throws-strange-error-message">Resume job timeout throws strange error message</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/832">#832</a></p>
+<p>Previously, the non-informative error message was shown if the paused run could't be resumed in a reasonable amount of time - the count of attempts to resume was displaying incorrectly.</p>
+<h3 id="ge-autoscaler-doesnt-remove-dead-additional-workers-from-cluster">GE autoscaler doesn't remove dead additional workers from cluster</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/946">#946</a></p>
+<p>Previously, the Grid Engine Autoscaler didn't properly handle dead workers downscaling. For example, if some spot worker instance was preempted during the run then the autoscaler could not remove such worker from GE. Moreover, such cluster was blocked from accepting new jobs.</p>
+<h3 id="broken-layouts">Broken layouts</h3>
+<p><a href="https://github.com/epam/cloud-pipeline/issues/553">#553</a>, <a href="https://github.com/epam/cloud-pipeline/issues/619">#619</a>, <a href="https://github.com/epam/cloud-pipeline/issues/643">#643</a>, <a href="https://github.com/epam/cloud-pipeline/issues/644">#644</a>, <a href="https://github.com/epam/cloud-pipeline/issues/915">#915</a></p>
+<p>Previously, <strong>pipeline versions page</strong> had broken layout if there were pipeline versions with long description.<br />
+<strong>Global search page</strong> was not rendered correctly when the search results table had too many records.<br />
+When a list of items in the <strong>docker groups selection</strong> dialog was long - it was almost impossible to use a search feature, as the list hid immediately.<br />
+Some of the other page layouts also were broken.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../v.0.14/v.0.14_-_Release_notes/" class="btn btn-neutral float-left" title="v.0.14"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../v.0.16/v.0.16_-_Release_notes/" class="btn btn-neutral float-right" title="v.0.16">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../v.0.14/v.0.14_-_Release_notes/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../v.0.16/v.0.16_-_Release_notes/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

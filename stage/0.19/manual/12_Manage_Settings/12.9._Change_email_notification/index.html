@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>12.9. Email notifications - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "12.9. Email notifications";
+        var mkdocs_page_input_path = "manual/12_Manage_Settings/12.9._Change_email_notification.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">12.9. Email notifications</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#change-the-email-notification">Change the email notification</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configure-automatic-email-notifications-on-users-runs">Configure automatic email notifications on users' runs</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#idle-runs">IDLE runs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#notifications-for-long-paused-runs">Notifications for long paused runs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#high-consumed-runs">HIGH-CONSUMED runs</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#push-notifications">Push notifications</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#view-push-notifications">View push notifications</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#notifications-section">Notifications section</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#settings">Settings</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>12. Manage settings &raquo;</li>
+      <li>12.9. Email notifications</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="129-email-notifications">12.9. Email notifications</h1>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to manage Email notifications.</p>
+</blockquote>
+<ul>
+<li><a href="#change-the-email-notification">Change the email notification</a></li>
+<li><a href="#configure-automatic-email-notifications-on-users-runs">Configure automatic email notifications on users' runs</a><ul>
+<li><a href="#idle-runs">IDLE runs</a></li>
+<li><a href="#notifications-for-long-paused-runs">Notifications for long paused runs</a></li>
+<li><a href="#example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</a></li>
+<li><a href="#high-consumed-runs">HIGH-CONSUMED runs</a></li>
+</ul>
+</li>
+<li><a href="#push-notifications">Push notifications</a><ul>
+<li><a href="#view-push-notifications">View push notifications</a></li>
+<li><a href="#notifications-section">Notifications section</a></li>
+<li><a href="#settings">Settings</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="change-the-email-notification">Change the email notification</h2>
+<ol>
+<li>Navigate to the <strong>Settings</strong> tab.</li>
+<li>Select the <strong>Email notifications</strong> section.</li>
+<li>Choose any of the email notification types (e.g. <strong>LONG_INIT</strong>) on the left:<br />
+<img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_1.png" /></li>
+<li>Remove <strong>Keep admins informed</strong> and <strong>Keep owners informed</strong> options. This email notification type will no longer inform admins and owners.<br />
+<img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_2.png" /></li>
+<li>Add a new user to the <strong>Informed users</strong>. While typing system will suggest you users. When you selected all users, click outside this field.<br />
+<img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_3.png" /></li>
+<li>Change the <strong>Threshold</strong> parameter to e.g. 1400.<br />
+<img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_4.png" /></li>
+<li>Press the <strong>Save</strong> button to save all changes to the <strong>LONG_INIT</strong> email notification template.<br />
+<img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_5.png" /></li>
+</ol>
+<h2 id="configure-automatic-email-notifications-on-users-runs">Configure automatic email notifications on users' runs</h2>
+<p>Here, the mechanism of automatic email notifications for <strong><em>IDLE</em></strong> and <strong><em>HIGH-CONSUMED</em></strong> runs will be described.</p>
+<h3 id="idle-runs">IDLE runs</h3>
+<p>The system behavior for the <strong><em>IDLE</em></strong> runs is defined by the set of the following parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Preference-duplicate</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Max duration of idle</strong> (min)</td>
+<td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
+<td>Specifies the duration in minutes after that the system should check node's activity. If after this duration node's CPU utilization will be below <strong>CPU idle threshold</strong> - email notification <strong><code>IDLE_RUN</code></strong> will be sent to the user and the run itself will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label</td>
+</tr>
+<tr>
+<td><strong>Action delay</strong> (min)</td>
+<td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
+<td>Specifies the duration in minutes. If node's CPU utilization is still below <strong>CPU idle threshold</strong> for this duration after the <strong>Max duration of idle</strong> is over - an action, specified in <strong>Action</strong> field will be performed</td>
+</tr>
+<tr>
+<td><strong>CPU idle threshold</strong> (%)</td>
+<td><strong><code>system.idle.cpu.threshold</code></strong></td>
+<td>Specifies percentage of the node's CPU utilization, below which an <strong>Action</strong> shall be taken</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td><strong><code>system.idle.action</code></strong></td>
+<td>Sets which action to perform with the node, that has the CPU utilization below than <strong>CPU idle threshold</strong>:<br /><ul><li><em>NOTIFY</em> - only send email notification <strong><code>IDLE_RUN</code></strong>. This action will be repeated every <strong>Resend delay</strong> if the node's CPU utilization will be still below than <strong>CPU idle threshold</strong></li><li><em>PAUSE</em> - pause an instance if possible (only if the instance is <code>On-Demand</code>, <code>Spot</code> instances are skipped) and send single email notification <strong><code>IDLE_RUN_PAUSED</code></strong></li><li><em>PAUSE_OR_STOP</em> - pause an instance if it is <code>On-Demand</code> or stop an instance if it is <code>Spot</code> and send the corresponding single email notification <strong><code>IDLE_RUN_PAUSED</code></strong> / <strong><code>IDLE_RUN_STOPPED</code></strong></li><li><em>STOP</em> - Stop an instance, disregarding price-type, and send single email notification <strong><code>IDLE_RUN_STOPPED</code></strong></li></ul></td>
+</tr>
+<tr>
+<td><strong>Resend delay</strong> (sec)<br />Only for <strong><code>IDLE_RUN</code></strong> notification</td>
+<td></td>
+<td>Specifies the duration in seconds. Defines a delay after which the <strong><code>IDLE_RUN</code></strong> notification will be sent repeatedly in case when node's CPU utilization is still below <strong>CPU idle threshold</strong>. <strong><code>IDLE_RUN</code></strong> notifications will be repeated until <strong>Action delay</strong> is over. Then <strong>Action</strong> will be performed.<br /><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br /><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>IDLE_RUN</code></strong> notifications will not be resending.</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>system.resource.monitoring.period</code></strong></td>
+<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics. After each such period, it's defined to display <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label for the specific instance or not</td>
+</tr>
+</tbody>
+</table>
+<p>Described parameters are configured in "common" panel for all <strong><em>IDLE</em></strong> notifications - <strong><code>IDLE_RUN</code></strong>, <strong><code>IDLE_RUN_PAUSED</code></strong>, <strong><code>IDLE_RUN_STOP</code></strong>, e.g.:<br />
+<img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_02.png" /></p>
+<p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in <strong>PREFERENCES</strong>, and vice versa.</p>
+<h3 id="notifications-for-long-paused-runs">Notifications for long paused runs</h3>
+<p>There are two notification types for the runs that are in the <strong><em>PAUSED</em></strong> state for a long time:</p>
+<p><strong><code>LONG_PAUSED</code></strong> - this notification will be sent if the run has been paused for a long time.<br />
+<strong><code>LONG_PAUSED_STOPPED</code></strong> - this notification will be sent if the run has been paused for a long time and should be terminated.</p>
+<p>The system behavior for the "long paused" runs is defined by the set of the following parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Preference-duplicate</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Action</strong><br /><em>Common setting for both notification types</em></td>
+<td><strong><code>system.long.paused.action</code></strong></td>
+<td>Sets which action to perform with the node, that has been paused for a long time:<br /><ul><li><em>NOTIFY</em> - only send email notification <strong><code>LONG_PAUSED</code></strong>. Then this action will be repeated every <strong>Resend delay</strong> if the run will be still paused</li><li><em>STOP</em> - terminate the paused run and send single email notification <strong><code>LONG_PAUSED_STOPPED</code></strong></li></ul></td>
+</tr>
+<tr>
+<td><strong>Threshold</strong> (sec)<br /><em>Separately sets for each notification type</em></td>
+<td></td>
+<td>Specifies the duration in seconds. Defines the delay after which an action, specified in <strong>Action</strong> field, will be performed and the corresponding notification will be sent if the run is still paused.</td>
+</tr>
+<tr>
+<td><strong>Resend delay</strong> (sec)<br />Only for <strong><code>LONG_PAUSED</code></strong> notification type</td>
+<td></td>
+<td>Specifies the duration in seconds. Defines a delay after which the <strong><code>LONG_PAUSED</code></strong> notification will be sent repeatedly in case when the run is still paused after a <strong>Threshold</strong> duration.<br /><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br /><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>LONG_PAUSED</code></strong> notifications will not be resending.</td>
+</tr>
+</tbody>
+</table>
+<p>Saving of the changes in described parameter value (for <strong>Action</strong>) at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding value in <strong>PREFERENCES</strong>, and vice versa.</p>
+<p>For example, <strong><code>LONG_PAUSED</code></strong> notification settings:<br />
+<img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_03.png" /></p>
+<h3 id="example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</h3>
+<p>In general, the system behavior is the following:</p>
+<ol>
+<li>User launches a run</li>
+<li>After <strong>Max duration of idle</strong> (<strong><code>system.max.idle.timeout.minutes</code></strong>) period, the system starts to check the node's activity. Then, the state of the node is checked every <strong><code>system.resource.monitoring.period</code></strong></li>
+<li>If the node's CPU utilization becomes below the <strong>CPU idle threshold</strong> (<strong><code>system.idle.cpu.threshold</code></strong>):<ul>
+<li>email notification <strong><code>IDLE_RUN</code></strong> is being sent, the run itself is being marked by the <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label</li>
+</ul>
+</li>
+<li><strong><code>IDLE_RUN</code></strong> notification is being repeated every <strong>Resend delay</strong> (configured for <strong><code>IDLE_RUN</code></strong>) until the <strong>Action delay</strong> (<strong><code>system.idle.action.timeout.minutes</code></strong>) period is over.</li>
+<li>After <strong>Action delay</strong> (<strong><code>system.idle.action.timeout.minutes</code></strong>), if the node's CPU utilization is still below <strong>CPU idle threshold</strong> (<strong><code>system.idle.cpu.threshold</code></strong>):<ul>
+<li>email notification <strong><code>IDLE_RUN</code></strong> is being sent (in case when <strong>Action</strong> (<strong><code>system.idle.action</code></strong>) is set as <em>NOTIFY</em>)</li>
+<li>run is being paused/stopped and the corresponding email notification <strong><code>IDLE_RUN_PAUSED</code></strong> or <strong><code>IDLE_RUN_STOPPED</code></strong> is being sent (in case when <strong>Action</strong> (<strong><code>system.idle.action</code></strong>) is set as <em>PAUSE</em> / <em>PAUSE_OR_STOP</em> / <em>STOP</em>)</li>
+</ul>
+</li>
+<li>In case when <strong>Action</strong> (<strong><code>system.idle.action</code></strong>) is set as <em>NOTIFY</em>, email notifications <strong><code>IDLE_RUN</code></strong> continue to be sent every <strong>Resend delay</strong>, if the node's CPU utilization remains below the <strong>CPU idle threshold</strong> (<strong><code>system.idle.cpu.threshold</code></strong>).</li>
+<li>In case when run has been paused:<ul>
+<li>if the <strong>Action</strong> (for Long Paused notifications - <strong><code>system.long.paused.action</code></strong>) is set as <em>NOTIFY</em>, and the run has been paused for a <strong>Threshold</strong> period (configured for <strong><code>LONG_PAUSED</code></strong>), the notification <strong><code>LONG_PAUSED</code></strong> is being sent.<ul>
+<li>and if <strong>Resend delay</strong> (for <strong><code>LONG_PAUSED</code></strong>) is configured, then email notifications <strong><code>LONG_PAUSED</code></strong> continue to be sent every <strong>Resend delay</strong>, if the run is still paused</li>
+</ul>
+</li>
+<li>if the <strong>Action</strong> (for Long Paused notifications - <strong><code>system.long.paused.action</code></strong>) is set as <em>STOP</em>, and the run has been paused for a <strong>Threshold</strong> period (configured for <strong><code>LONG_PAUSED_STOPPED</code></strong>), run is being stopped (terminated) and the corresponding email notification <strong><code>LONG_PAUSED_STOPPED</code></strong> is being sent.</li>
+</ul>
+</li>
+</ol>
+<p><strong><em>Note</em></strong>: users can manually disable the automatic pausing of on-demand instances if they aren't used. For that the "<strong>Auto pause</strong>" checkbox at the Launch page shall be unchecked before the run:<br />
+<img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_04.png" /><br />
+This action cancels only the auto pause, but the <strong><code>RUN_IDLE</code></strong> email notifications will be being sent (if the corresponding conditions will be met).</p>
+<h3 id="high-consumed-runs">HIGH-CONSUMED runs</h3>
+<p>All settings that configure actions/notifications for "high-consumed" runs are moved to the <strong>EMAIL NOTIFICATIONS</strong> section. These settings duplicate some System Preferences and also can be configured from the <strong>PREFERENCES</strong> section, but it is more comfortable to configure them from the <strong>NOTIFICATIONS</strong>.</p>
+<p><strong><code>HIGH_CONSUMED_RESOURCES</code></strong> notification settings:<br />
+<img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_05.png" /></p>
+<p>The system behavior for the "high-consumed" runs is defined by the set of the following System-level parameters (Preferences):</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Preference name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Threshold of disk consumption</strong> (%)</td>
+<td><strong><code>system.disk.consume.threshold</code></strong></td>
+<td>Specifies the node's disk threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent and the corresponding run will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
+</tr>
+<tr>
+<td><strong>Threshold of memory consumption</strong> (%)</td>
+<td><strong><code>system.memory.consume.threshold</code></strong></td>
+<td>Specifies the node's memory threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent and the corresponding run will be marked by the <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
+</tr>
+<tr>
+<td><strong><code>system.monitoring.time.range</code></strong></td>
+<td></td>
+<td>Specifies the threshold timeout (if a real average resource consumption is higher then any of the thresholds above for that timeout - a notification shall be sent). Also defines the period after which the notification will be sent again, if the problem is still in place</td>
+</tr>
+</tbody>
+</table>
+<p>So, when memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
+<p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in <strong>PREFERENCES</strong>, and vice versa.</p>
+<hr />
+<h2 id="push-notifications">Push notifications</h2>
+<p>All email notifications, that are sending by Cloud Pipeline platform, are also duplicated as push notifications. This allows to view notifications right in the platform GUI.<br />
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recipients list, frequency and trigger of sending, etc.<br />
+Therefore, administrator shall only configure <a href="#change-the-email-notification">email notifications</a> once - platform will automatically duplicate emails sending as push notifications on the GUI.</p>
+<h3 id="view-push-notifications">View push notifications</h3>
+<p>Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients (according to the notification template settings).<br />
+Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients.<br />
+If these recipients are working in the Cloud Pipeline GUI at that moment or when they will open the platform GUI next time, they will view the corresponding push notification - in the right-upper corner, over any layout Cloud Pipeline page, e.g.:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_01.png" /></p>
+<p>At the same moment, near the <a href="#notifications-section"><strong>Notifications</strong></a> icon in the main menu will appear a count of new unread messages:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_02.png" /></p>
+<p>To view details and full notification body, click the notification tile. Notification will be opened in a pop-up:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_03.png" /><br />
+Once that pop-up is closed, the notification will be marked as "read", the counter near the <a href="#notifications-section"><strong>Notifications</strong></a> icon in the main menu will decrease.<br />
+If you close the push notification by click the cross-button on it, such notification also will be marked as "read":<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_04.png" /></p>
+<p>If there are several push notifications were received, a couple of them will be shown with short details and the rest will be collapsed into a tile, e.g.:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_05.png" /></p>
+<p>Such collapsed tile contains:</p>
+<ul>
+<li>a label with a count of collapsed notifications</li>
+<li>button <strong>hide</strong> - to hide all appeared push notifications but left them "<em>unread</em>"</li>
+<li>button <strong>read all</strong> - to hide all appeared push notifications and mark them as "<em>read</em>"</li>
+</ul>
+<h3 id="notifications-section">Notifications section</h3>
+<p><strong>Notifications</strong> section allows to view all push notifications/emails sent to the current user.<br />
+To open the section, click the corresponding button in the main menu:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_06.png" /></p>
+<p>This page allows to view notifications. By default, new "unread" notifications list will be shown (as on the picture above).<br />
+To view "read" notifications list, select the corresponding item in the dropdown list near the page title:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_07.png" /> <br />
+"Read" notifications list will appear:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_08.png" /></p>
+<p>Notifications list has the following fields:</p>
+<ul>
+<li><strong>Status</strong> - status of the notification ("unread" or "read", distinct by the icon color)</li>
+<li><strong>Title</strong> - notification title - it corresponds to the original email subject</li>
+<li><strong>Text</strong> - first row of the notification text - it corresponds to the beginning of the original email body</li>
+<li><strong>Created date</strong> - date and time of the notification push</li>
+<li><strong>Read date</strong> - date and time when the notification is read</li>
+</ul>
+<p>Additionally, the page contains controls:</p>
+<ul>
+<li><strong>Read all</strong> button - to mark all new "unread" notifications as "read"</li>
+<li><strong>Refresh</strong> button - to refresh notifications lists and update a counter of "unread" notifications</li>
+</ul>
+<p>To view the notification - click it in the list, e.g.:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_09.png" /><br />
+Notification will be opened in a pop-up:<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_10.png" /><br />
+If the notification was new and "unread" - once that pop-up is closed, the notification will be marked as "read" and will be placed to the corresponding notifications list.</p>
+<h3 id="settings">Settings</h3>
+<h4 id="mute-notifications">Mute notifications</h4>
+<p>If user do not want to receive push notifications over all forms and pages in the platform GUI - they can be "muted".<br />
+For that, user shall:</p>
+<ol>
+<li>Open <strong>System settings</strong></li>
+<li>Select the tab <strong>My profile</strong></li>
+<li>In the <strong>Profile</strong> sub-tab, tick the checkbox "<strong>Mute email notifications</strong>":<br />
+<img alt="CP_EmailNotification" src="../attachments/PushNotification_11.png" />  </li>
+</ol>
+<p>After, new notifications will be appearing only in the <a href="#notifications-section"><strong>Notifications</strong></a> section, but corresponding pushs will not be showing.</p>
+<h4 id="storing-period">Storing period</h4>
+<p>Admins can configure the period for which described GUI notifications will be stored.<br />
+It can be done via the system preference <strong><code>system.notifications.exp.period</code></strong>.<br />
+This preference set the duration of the period in days after which old received notifications will be removed.<br />
+The default value is not set (blank). This means that notifications are not being removed at all.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../12.8._Change_a_set_of_roles_groups_for_a_user/" class="btn btn-neutral float-left" title="12.8. Change a set of roles/groups for a user"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../12.10._Manage_system-level_settings/" class="btn btn-neutral float-right" title="12.10. Manage system-level settings">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../12.8._Change_a_set_of_roles_groups_for_a_user/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../12.10._Manage_system-level_settings/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

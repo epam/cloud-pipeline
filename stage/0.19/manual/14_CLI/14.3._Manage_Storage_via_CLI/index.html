@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>14.3. Manage Data Storage - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "14.3. Manage Data Storage";
+        var mkdocs_page_input_path = "manual/14_CLI/14.3._Manage_Storage_via_CLI.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">14. CLI interface</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">14.3. Manage Data Storage</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#create-a-datastorage">Create a datastorage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#list-storagesstorage-content">List storages/storage content</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#show-storage-usage">Show storage usage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#edit-a-datastorage">Edit a datastorage</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#change-backup-duration-stslts-duration-versioning">Change backup duration, STS/LTS duration, versioning</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#change-a-parent-folder-for-a-datastorage">Change a parent folder for a datastorage</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#delete-a-datastorage">Delete a datastorage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#create-a-folder-in-a-storage">Create a folder in a storage</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#upload-and-download-data">Upload and download data</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#control-file-versions">Control File versions</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#show-files-versions">Show files versions</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#restore-files">Restore files</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#delete-an-object-from-a-datastorage">Delete an object from a datastorage</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#manage-datastorage-objects-attributes">Manage datastorage objects attributes</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#get-object-attributes">Get object attributes</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#set-object-attributes">Set object attributes</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#delete-object-attributes">Delete object attributes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#mounting-of-storages">Mounting of storages</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#mount-a-storage">Mount a storage</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#unmount-a-storage">Unmount a storage</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>14. CLI interface &raquo;</li>
+      <li>14.3. Manage Data Storage</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="143-manage-storage-via-cli">14.3. Manage Storage via CLI</h1>
+<ul>
+<li><a href="#create-a-datastorage">Create a datastorage</a></li>
+<li><a href="#list-storagesstorage-content">List storages/storage content</a></li>
+<li><a href="#show-storage-usage">Show storage usage</a></li>
+<li><a href="#edit-a-datastorage">Edit a datastorage</a><ul>
+<li><a href="#change-backup-duration-stslts-duration-versioning">Change backup duration, STS/LTS duration, versioning</a></li>
+<li><a href="#change-a-parent-folder-for-a-datastorage">Change a parent folder for a datastorage</a></li>
+</ul>
+</li>
+<li><a href="#delete-a-datastorage">Delete a datastorage</a></li>
+<li><a href="#create-a-folder-in-a-storage">Create a folder in a storage</a></li>
+<li><a href="#upload-and-download-data">Upload and download data</a></li>
+<li><a href="#control-file-versions">Control File versions</a><ul>
+<li><a href="#show-files-versions">Show files versions</a></li>
+<li><a href="#restore-files">Restore files</a></li>
+<li><a href="#delete-an-object-from-a-datastorage">Delete an object from a datastorage</a></li>
+</ul>
+</li>
+<li><a href="#manage-datastorage-objects-attributes">Manage datastorage objects attributes</a><ul>
+<li><a href="#get-object-attributes">Get object attributes</a></li>
+<li><a href="#set-object-attributes">Set object attributes</a></li>
+<li><a href="#delete-object-attributes">Delete object attributes</a></li>
+</ul>
+</li>
+<li><a href="#mounting-of-storages">Mounting of storages</a><ul>
+<li><a href="#mount-a-storage">Mount a storage</a></li>
+<li><a href="#unmount-a-storage">Unmount a storage</a></li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>Cloud Pipeline CLI has to be installed. See <a href="../14.1._Install_and_setup_CLI/">14.1. Install and setup CLI</a>.</p>
+</blockquote>
+<p>To perform different operations with object storages the command set <code>pipe storage</code> is used.</p>
+<h2 id="create-a-datastorage">Create a datastorage</h2>
+<p>The command to create an object storage:</p>
+<pre><code class="language-bash">pipe storage create [OPTIONS]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-n</code> / <code>--name</code></td>
+<td>Alias of the new object storage</td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--path</code></td>
+<td>Datastorage path</td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-d</code> / <code>--description</code></td>
+<td>Description of the object storage</td>
+</tr>
+<tr>
+<td><code>-sts</code> / <code>--short_term_storage</code></td>
+<td>Number of days for storing data in the short term storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-lts</code> / <code>--long_term_storage</code></td>
+<td>Number of days for storing data in the long term storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--versioning</code></td>
+<td>Enable versioning for this object storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-b</code> / <code>--backup_duration</code></td>
+<td>Number of days for storing backups of the storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--type</code></td>
+<td>Type of the Cloud for the object storage. Depends on the Cloud Provider. Possible values - <code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) and <code>NFS</code> (for FS mounts).<br/>Additionally, for AWS HealthOmics Storages - <code>AWS_OMICS_REF</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/#reference-store">reference store</a>) and <code>AWS_OMICS_SEQ</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/#sequence-store">sequence store</a>).</td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--parent_folder</code></td>
+<td>Name/ID of the folder which will contain the object storage. Default value - library root folder</td>
+</tr>
+<tr>
+<td><code>-c</code> / <code>--on_cloud</code></td>
+<td>To create datastorage on the Cloud. This flag shall be specified, only if a new datastorage is being created. If user want to add an existing storage this flag should not be specified</td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--region_id</code></td>
+<td>Cloud region ID where storage shall be created</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong><em>Note</em></strong>: there is not necessary to set all options while input that command. If some options are not set - user shall be prompted for them in an interactive manner, if they will not be set in an interactive manner, default values will be used.</p>
+</blockquote>
+<p>In the example below the object storage <strong>output_results</strong> for the new datastorage <strong>output_results_storage</strong> will be created in the folder with ID <strong><em>297</em></strong> with the following options: STS duration - 20 days, LTS duration - 45 days, backup duration - 30 days.</p>
+<pre><code class="language-bash">pipe storage create -n output-results -p output-results-storage -c -sts 20 -lts 45 -b 30 -f 297
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_01.png" /></p>
+<p><code>-c</code> flag was specify to create a storage in the Cloud.<br />
+As you can see - <strong>Description</strong>, <strong>Type of the Cloud</strong> and <strong>Cloud Region ID</strong> fields were left empty. So, values for these options will be set as default.</p>
+<h2 id="list-storagesstorage-content">List storages/storage content</h2>
+<p>The command to view the full storage list of the current platform deployment:</p>
+<pre><code class="language-bash">pipe storage ls [OPTIONS]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--show_details</code></td>
+<td>Show details</td>
+</tr>
+</tbody>
+</table>
+<p>Perform the following command to view full storage list and to check that the object storage from the example above was created:</p>
+<pre><code class="language-bash">pipe storage ls -l
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_13.png" /></p>
+<p>The command to view the content of the datastorage:</p>
+<pre><code class="language-bash">pipe storage ls [OPTIONS] &lt;Path&gt;
+</code></pre>
+<p><strong>Path</strong> - defines a full path to the datastorage.<br />
+<strong>Path</strong> value must begin from the Cloud prefix:</p>
+<ul>
+<li><code>s3</code> (for AWS) / <code>az</code> (for MS Azure) / <code>gs</code> (for GCP) / common <code>cp</code> (instead of described ones, regardless of Provider)</li>
+<li><em>OR</em> <code>omics</code> (for <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/">AWS HealthOmics Storages</a>)</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--show_details</code></td>
+<td>Show details</td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--show_versions</code></td>
+<td>Show object versions. Only for storages with enabled versioning</td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--recursive</code></td>
+<td>Recursive listing</td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--page</code></td>
+<td>Maximum number of records to show</td>
+</tr>
+<tr>
+<td><code>-a</code> / <code>--all</code></td>
+<td>Show all results at once ignoring page settings</td>
+</tr>
+</tbody>
+</table>
+<p>Example of the detailed datastorage content view:</p>
+<pre><code class="language-bash">pipe storage ls --show_details s3://objstor
+</code></pre>
+<p>Or you can use the common <code>CP</code> prefix instead of <code>S3</code>:</p>
+<pre><code class="language-bash">pipe storage ls --show_details cp://objstor
+</code></pre>
+<p>Result will be the same:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_14.png" /></p>
+<h2 id="show-storage-usage">Show storage usage</h2>
+<p>To obtain a "disk usage" information on the supported data storage or its inner folder(s) use the command:</p>
+<pre><code class="language-bash">pipe storage du [OPTIONS] [STORAGE]
+</code></pre>
+<p>The command prints for the data storages/path:</p>
+<ul>
+<li>summary number of files in the storage/path</li>
+<li>summary size of files in the storage/path</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-p</code> / <code>--relative-path</code></td>
+<td>The relative path inside the storage</td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--format</code></td>
+<td>The size unit format (default: <code>Mb</code>). Possible values: <code>K</code>, <code>Kb</code>, <code>KB</code> - for kilobytes; <code>M</code>, <code>Mb</code>, <code>MB</code> - for megabytes; <code>G</code>, <code>Gb</code>, <code>GB</code> - for gigabytes</td>
+</tr>
+<tr>
+<td><code>-d</code> / <code>--depth</code></td>
+<td>The maximum depth level of the nesting folders. <strong><em>Note</em></strong><em>: this option isn't supported for the FS storages yet</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>STORAGE</strong> - defines the datastorage name/path.</p>
+<p>Without specifying any options and storage this command prints the full list of the available storages (both types - object and FS) with the "usage" information for each of them:  </p>
+<pre><code class="language-bash">pipe storage du
+</code></pre>
+<p>With specifying the storage name this command prints the "usage" information only by that storage, e.g.:</p>
+<pre><code class="language-bash">pipe storage du objectdatastorage
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_31.png" /></p>
+<p>With <code>-p</code> (<code>--relative-path</code>) option the command prints the "usage" information for the specified path in the required storage, e.g.:  </p>
+<pre><code class="language-bash">pipe storage du objectdatastorage -p innerdir1
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_32.png" /></p>
+<p>With <code>-d</code> (<code>--depth</code>) option the command prints the "usage" information in the required storage (and path) for the specified folders nesting depth, e.g.:  </p>
+<pre><code class="language-bash">pipe storage du objectdatastorage -p innerdir2 -d 1
+</code></pre>
+<p>Specified command will print the "usage" information for all folders with the nesting depth no more 1 relative to the path <code>objectdatastorage/innerdir2/</code>:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_33.png" /></p>
+<p>With <code>-f</code> (<code>--format</code>) option user can change the unit for the size value, e.g. to print the storage usage in gigabytes:  </p>
+<pre><code class="language-bash">pipe storage du objectdatastorage -f GB
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_34.png" /></p>
+<h2 id="edit-a-datastorage">Edit a datastorage</h2>
+<h3 id="change-backup-duration-stslts-duration-versioning">Change backup duration, STS/LTS duration, versioning</h3>
+<p>The Command to change backup duration, select STS/LTS duration or enable versioning:</p>
+<pre><code class="language-bash">pipe storage policy [OPTIONS]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-n</code> / <code>--name</code></td>
+<td>Alias/path of the storage to update the policy. Specified without Cloud prefix</td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-sts</code> / <code>--short_term_storage</code></td>
+<td>Number of days for storing data in the short term storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-lts</code> / <code>--long_term_storage</code></td>
+<td>Number of days for storing data in the long term storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--versioning</code></td>
+<td>Enable versioning for this object storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+<tr>
+<td><code>-b</code> / <code>--backup_duration</code></td>
+<td>Number of days for storing backups of the storage. <em><strong>Note</strong></em>: <em>This option is available not for all Cloud Providers</em></td>
+</tr>
+</tbody>
+</table>
+<p>In the example below backup duration is set to 25 days, STS and LTS durations are set to 50 days and 100 days respectively for the datastorage <strong>objstor</strong>. Also, we enable versioning for that datastorage:</p>
+<pre><code class="language-bash">pipe storage policy -n objstor -b 25 -sts 50 -lts 100 -v
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_12.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: there is not necessary to set all options while input that command. If some options are not set - user shall be prompted for them in an interactive manner, if they will not be set in an interactive manner, default values will be used.</p>
+</blockquote>
+<p>You can check via the GUI that parameters were changed:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_22.png" /></p>
+<h3 id="change-a-parent-folder-for-a-datastorage">Change a parent folder for a datastorage</h3>
+<p>The command to move a datastorage to a new parent folder:</p>
+<pre><code class="language-bash">pipe storage mvtodir &lt;Storage&gt; &lt;Directory&gt;
+</code></pre>
+<p><strong>Directory</strong> - name of the folder to which the object storage will be moved.<br />
+<strong>Storage</strong> - alias/path of the storage to move. Specified without Cloud prefix.</p>
+<p>In the example below we will move the storage <strong>objstor</strong> to the folder "<strong>InnerFolder</strong>":</p>
+<pre><code class="language-bash">pipe storage mvtodir objstor InnerFolder
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_23.png" /></p>
+<h2 id="delete-a-datastorage">Delete a datastorage</h2>
+<p>The command to delete an object storage:</p>
+<pre><code class="language-bash">pipe storage delete [OPTIONS]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-n</code> / <code>--name</code></td>
+<td>Alias/path of the storage to delete. Specified without Cloud prefix</td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-c</code> / <code>--on_cloud</code></td>
+<td>To delete datastorage from a Cloud. If this option isn't set, datastorage will just become unregistered</td>
+</tr>
+<tr>
+<td><code>-y</code> / <code>--yes</code></td>
+<td>Do not ask confirmation</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will delete the <strong>output-results-storage</strong> without asking confirmation:</p>
+<pre><code class="language-bash">pipe storage delete -n output-results-storage -y
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_02.png" /></p>
+<p>As the command above was performed withoud <code>--on_cloud</code> option, <strong>output-results-storage</strong> wasn't deleted from a Cloud actually and it might be added again to the Cloud Pipeline platform via described <a href="#create-a-datastorage"><code>storage create</code></a> command:  </p>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_15.png" /></p>
+<h2 id="create-a-folder-in-a-storage">Create a folder in a storage</h2>
+<p>The command to create a folder in a storage:</p>
+<pre><code class="language-bash">pipe storage mkdir &lt;List of FOLDERs&gt;
+</code></pre>
+<p><strong>List of FOLDERs</strong> - defines a list of the folders paths. Each path in the list shall be a full path to a new folder in the specific datastorage. Path value must begin from the Cloud prefix (<code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) or common <code>CP</code>(instead of described ones, regardless of Provider)).</p>
+<p>In the example below we will create folders "<strong>new-folder1</strong>", "<strong>new-folder2</strong>" in the storage <strong>output-results-storage</strong> and then will check that they're exist via described <a href="#list-storagesstorage-content"><code>storage ls</code></a> command:</p>
+<pre><code class="language-bash">pipe storage mkdir cp://output-results-storage/new-folder1 cp://output-results-storage/new-folder2
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_03.png" /></p>
+<h2 id="upload-and-download-data">Upload and download data</h2>
+<p>There are two commands to upload/download data:</p>
+<pre><code class="language-bash">pipe storage cp [OPTIONS] &lt;Source&gt; &lt;Destination&gt;
+pipe storage mv [OPTIONS] &lt;Source&gt; &lt;Destination&gt;
+</code></pre>
+<p>By <code>cp</code> command you can copy files from one datastorage to another one or between local filesystem and a datastorage (in both directions).<br />
+By <code>mv</code> command you can move files from one datastorage to another one or between local filesystem and a datastorage (in both directions).</p>
+<p><strong>Source</strong> - defines a path (in the local filesystem or datastorage) to the object to be copied/moved.
+<strong>Destination</strong> - defines a path (in the local filesystem or datastorage) to the object where source object will be copied/moved.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--recursive</code></td>
+<td>Recursive source scan. This option is not needed when you copy/move a single file</td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--force</code></td>
+<td>Rewrite files in destination</td>
+</tr>
+<tr>
+<td><code>-e</code> / <code>--exclude</code></td>
+<td>Exclude all files matching this pattern from processing</td>
+</tr>
+<tr>
+<td><code>-i</code> / <code>--include</code></td>
+<td>Include only files matching this pattern into processing</td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+<tr>
+<td><code>-s</code> / <code>--skip-existing</code></td>
+<td>Skip files existing in destination, if they have size matching source</td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--tags</code></td>
+<td>Set object attributes during processing. attributes can be specified as single <code>KEY=VALUE</code> pair or a list of them. If this option specified all existent attributes will be overwritten</td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--file-list</code></td>
+<td>Path to the file with file paths that should be copied/moved. This file should be tab delimited and consist of two columns: relative path to file and size</td>
+</tr>
+<tr>
+<td><code>-sl</code> / <code>--symlinks</code> [follow|filter|skip]</td>
+<td>Describe symlinks processing strategy for local sources. Possible values: <strong><em>follow</em></strong> - follow symlinks (default); <strong><em>skip</em></strong> - do not follow symlinks; <strong><em>filter</em></strong> - follow symlinks but check for cyclic links</td>
+</tr>
+<tr>
+<td><code>-a</code> / <code>--additional-options</code></td>
+<td><em>For <code>cp</code> command only</em>. Comma-separated list of additional arguments to be used during file copy</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will upload files from the local filesystem to the storage <strong>objstor</strong> into the folder "<strong>upload</strong>":</p>
+<pre><code class="language-bash">pipe storage cp ~/data cp://objstor/upload --recursive
+</code></pre>
+<p>Application will start uploading files and print progress. You can view it:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_16.png" /><br />
+After uploading is complete, check that they're uploaded - via described <a href="#list-storagesstorage-content"><code>storage ls</code></a> command:
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_17.png" />  </p>
+<p>In the example below we will upload the file "<strong>2.fastq</strong>" from the local filesystem in the quiet mode, rewrite it to the storage <strong>objstor</strong> into the folder "<strong>upload</strong>" and set two attributes on it:</p>
+<pre><code class="language-bash">storage cp -f -q ~/data/2.fastq cp://objstor/upload/ -t testkey1=testvalue1 -t testkey2=testvalue2
+</code></pre>
+<p>After that, we will check attributes of the uploaded file - via <a href="#get-object-attributes"><code>storage get-object-tags</code></a> command:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_18.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: Files uploaded via CLI will have the following attributes and values automatically set:</p>
+<ul>
+<li><strong>CP_OWNER</strong>. The value of the attribute will be set as a user ID.</li>
+<li><strong>CP_SOURCE</strong>. The value of the attribute will be set as a local path used to upload.</li>
+</ul>
+<p>The example demonstrates automatic file tagging after data uploading:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_04.png" /></p>
+</blockquote>
+<p>The example below demonstrates how to download files from the datastorage folder to the local filesystem. Also we will not download files which names starts from <strong><em><code>1.</code></em></strong>:</p>
+<pre><code class="language-bash">pipe storage cp -r -e 1.* cp://objstor/upload/ ~/data/input/
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_19.png" /></p>
+<h2 id="control-file-versions">Control File versions</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported by <strong>AWS</strong> and <strong>GCP</strong>.</p>
+</blockquote>
+<h3 id="show-files-versions">Show files versions</h3>
+<p>To view file versions for the storage with enabled versioning use the <a href="#list-storagesstorage-content"><code>storage ls</code></a> command with the both specified <code>-l</code> and <code>-v</code> options, e.g.:</p>
+<pre><code class="language-bash">pipe storage ls -l -v cp://versioning-storage
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_05.png" /><br />
+As you can see - "<strong>file1</strong>" and "<strong>file3</strong>" each has 1 version. "<strong>file2</strong>" has 3 versions. "<strong>file4</strong>" has 2 verions.</p>
+<p>To view versions of a specific file specify its full path, e.g.:</p>
+<pre><code class="language-bash">pipe storage ls -l -v cp://versioning-storage/file4
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_06.png" /></p>
+<h3 id="restore-files">Restore files</h3>
+<p>The command to restore a previous version of a file:</p>
+<pre><code class="language-bash">pipe storage restore [OPTIONS] &lt;Path&gt;
+</code></pre>
+<p><strong>Path</strong> - defines a full path to the file/directory in a datastorage.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--version</code></td>
+<td>To restore a specified version</td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--recursive</code></td>
+<td>To restore the whole directory hierarchy.<br /><strong><em>Note</em></strong>: this feature is yet supported for the <code>AWS</code> Cloud Provider only</td>
+</tr>
+<tr>
+<td><code>-i</code> / <code>--include</code></td>
+<td>Include only files matching this pattern into processing</td>
+</tr>
+<tr>
+<td><code>-e</code> / <code>--exclude</code></td>
+<td>Exclude all files matching this pattern from processing</td>
+</tr>
+</tbody>
+</table>
+<p>By this command you can restore file version in a datastorage. If version is not specified via <code>-v</code> option it will try to restore the latest non-deleted version. Otherwise a specified version will be restored.<br />
+If the <strong>Path</strong> is a directory, the command gets the top-level deleted files from the <strong>Path</strong> directory and restore them to the latest version.  </p>
+<p>The example below shows how to set one of the previous versions for the "<strong>file2</strong>" as the latest:</p>
+<pre><code class="language-bash">pipe storage restore -v &lt;Version&gt; cp://versioning-storage/file2
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_07.png" /></p>
+<p><strong><em>Note</em></strong>: When a specified version of the "<strong>file2</strong>" is restored, a copy of that version is created to become the latest version of the file.</p>
+<p>You can restore a deleted file without specifying a version. It works only for files with a <em>Delete marker</em> as the latest version ("<strong>file4</strong>" in the example below). In such case the command will be, e.g.:</p>
+<pre><code class="language-bash">pipe storage restore cp://versioning-storage/file4
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_08.png" /><br />
+<strong><em>Note</em></strong>: Before we restored the file "<strong>file4</strong>" its latest version was a <em>Delete marker</em>. After restoration this <em>marker</em> disappeared.</p>
+<p>The example below shows how to restore the latest version for only "*.txt" files recursively in the deleted directory (the directory that was marked with a <em>Delete marker</em> previously), e.g.:</p>
+<pre><code class="language-bash">pipe storage restore --recursive --include *.txt s3://objstor/examples/
+</code></pre>
+<p>After restoring, check that the "*.txt" file in the subfolder also restored:<br />
+<img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_28.png" /></p>
+<h3 id="delete-an-object-from-a-datastorage">Delete an object from a datastorage</h3>
+<p>The command to delete an object from a storage:</p>
+<pre><code class="language-bash">pipe storage rm [OPTIONS] &lt;Path&gt;
+</code></pre>
+<p><strong>Path</strong> - defines a full path to the object in a datastorage.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-y</code> / <code>--yes</code></td>
+<td>Do not ask confirmation</td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--version</code></td>
+<td>Delete a specified version of an object</td>
+</tr>
+<tr>
+<td><code>-d</code> / <code>--hard-delete</code></td>
+<td>Completely delete an object from a storage</td>
+</tr>
+<tr>
+<td><code>-r</code> / <code>--recursive</code></td>
+<td>Recursive deletion (required for deleting folders)</td>
+</tr>
+<tr>
+<td><code>-e</code> / <code>--exclude</code></td>
+<td>Exclude all files matching this pattern from processing</td>
+</tr>
+<tr>
+<td><code>-i</code> / <code>--include</code></td>
+<td>Include only files matching this pattern into processing</td>
+</tr>
+</tbody>
+</table>
+<p>The example below demonstrates how to delete a file from the storage <strong>objstor</strong>:</p>
+<pre><code class="language-bash">pipe storage rm cp://objstor/simplefile
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_09.png" />  </p>
+<p>If this command is performed without options over the object from the storage with enabled versioning, that object will not be removed completely, it will remain in a datastorage and get a <em>Delete marker</em>. Such objects can be restored via <a href="#restore-files"><code>storage restore</code></a> command.<br />
+In the example below we set a <em>Delete marker</em> to the file "<strong>file1</strong>":</p>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_10.png" /><br />
+<strong><em>Note</em></strong>: the latest version of the file "<strong>file1</strong>" is marked with <em>Delete marker</em> now.  </p>
+<p>To completely delete an object from a datastorage use <code>-d</code> option. In the example below we will completely delete the file "<strong>file2</strong>" from the storage with enabled versioning without asking confirmation:</p>
+<pre><code class="language-bash">pipe storage rm -y -d cp://versioning-storage/file2
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_11.png" /></p>
+<p>To delete a specific version of an object use <code>-v</code>option. In the example below we will delete one of the versions of the file "<strong>file4</strong>" from the storage with enabled versioning without asking confirmation:</p>
+<pre><code class="language-bash">pipe storage rm -y -v &lt;Version&gt; cp://versioning-storage/file4
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_20.png" /></p>
+<p>In the example below we will completely delete files from the folder "<strong>initial-data</strong>" - for that we will use <code>--recursive</code> option. But we will delete only files whose names contain symbol <strong><em><code>3</code></em></strong> - for that we will use <code>--include</code> option:</p>
+<pre><code class="language-bash">pipe storage rm --yes --hard-delete --include *3* --recursive cp://versioning-storage/initial-data/
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_21.png" /></p>
+<h2 id="manage-datastorage-objects-attributes">Manage datastorage objects attributes</h2>
+<p>This section is about attribute management of the inner datastorages files via CLI.<br />
+To manage attributes of other Cloud Pipeline objects - see <a href="../14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes via CLI</a>.</p>
+<h3 id="get-object-attributes">Get object attributes</h3>
+<p>The command to list attributes of a specific file in a datastorage:</p>
+<pre><code class="language-bash">pipe storage get-object-tags [OPTIONS] &lt;Path&gt;
+</code></pre>
+<p><strong>Path</strong> - defines a full path to a file in a datastorage. <strong>Path</strong> value must begin from the Cloud prefix (<code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) or common <code>CP</code>(instead of described ones, regardless of Provider)).</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--version</code></td>
+<td>To get attributes for a specified file version. If option is not set, but datastorage versioning is enabled - processing will be performed for the <em>latest</em> file version</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will get attributes for the file "<strong>file1</strong>" from the datastorage <strong>objstor</strong>:</p>
+<pre><code class="language-bash">pipe storage get-object-tags cp://objstor/file1
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_24.png" /></p>
+<p>In the example below we will get attributes for the previous version of the file "<strong>file1</strong>" from the datastorage <strong>objstor</strong>:</p>
+<pre><code class="language-bash">pipe storage get-object-tags -v &lt;Version&gt; cp://objstor/file1
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_25.png" /></p>
+<h3 id="set-object-attributes">Set object attributes</h3>
+<p>The command to set attributes for a specific file in a datastorage:</p>
+<pre><code class="language-bash">pipe storage set-object-tags [OPTIONS] &lt;Path&gt; &lt;List of KEY=VALUE&gt;
+</code></pre>
+<ol>
+<li><strong>Path</strong> - defines a full path to a file in a datastorage. <strong>Path</strong> value must begin from the Cloud prefix (<code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) or common <code>CP</code>(instead of described ones, regardless of Provider)).</li>
+<li><strong>List of KEY=VALUE</strong> - list of attributes to set. Can be specified as a single <code>KEY=VALUE</code> pair or a list of them.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--version</code></td>
+<td>To set attributes for a specified file version. If option is not set, but datastorage versioning is enabled - processing will be performed for the <em>latest</em> file version</td>
+</tr>
+</tbody>
+</table>
+<p><strong><em>Note</em></strong>: if a specific attribute key already exists for a file, it <strong>will be overwritten</strong>.</p>
+<p>In the example below we will set attributes for the file "<strong>file2</strong>" from the datastorage <strong>objstor</strong> and then check that attributes are set by the <a href="#get-object-attributes"><code>storage get-object-tags</code></a> command:</p>
+<pre><code class="language-bash">pipe storage set-object-tags cp://objstor/file2 example_key1=example_value1 example_key2=example_value2
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_26.png" /></p>
+<h3 id="delete-object-attributes">Delete object attributes</h3>
+<p>The command to delete attributes for a specific file in a datastorage:</p>
+<pre><code class="language-bash">pipe storage delete-object-tags [OPTIONS] &lt;Path&gt; &lt;List of KEYs&gt;
+</code></pre>
+<ol>
+<li><strong>Path</strong> - defines a full path to a file in a datastorage. <strong>Path</strong> value must begin from the Cloud prefix (<code>S3</code> (for AWS), <code>AZ</code> (for MS Azure), <code>GS</code> (for GCP) or common <code>CP</code>(instead of described ones, regardless of Provider)).</li>
+<li><strong>List of KEYs</strong> - list of attribute keys to delete.</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-v</code> / <code>--version</code></td>
+<td>To delete attributes for a specified file version. If option is not set, but datastorage versioning is enabled - processing will be performed for the <em>latest</em> file version</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will delete attribute <strong>tagkey1</strong> for the previous version of the file "<strong>file1</strong>" from the datastorage <strong>objstor</strong>:</p>
+<pre><code class="language-bash">pipe storage delete-object-tags -v &lt;Version&gt; cp://objstor/file1 tagkey1
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_27.png" /></p>
+<h2 id="mounting-of-storages">Mounting of storages</h2>
+<p><code>pipe</code> cli supports mounting data storages (both - File Storages and Object Storages) to Linux and Mac workstations (requires <strong><code>FUSE</code></strong> installed).</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: This feature is available not for all Cloud Providers. Currently, it is supported only by <strong>AWS</strong></p>
+</blockquote>
+<p>For the mounted storages, regular listing/read/write commands are supported (e.g. <code>cp</code>, <code>mv</code>, <code>ls</code>, <code>mkdir</code>, <code>rm</code>, <code>fallocate</code>, <code>truncate</code>, <code>dd</code>, etc. - according to the corresponding OS), users can manage files/folders as with any general hard drive.</p>
+<h3 id="mount-a-storage">Mount a storage</h3>
+<p>The command to mount a data storage into the mountpoint:</p>
+<pre><code class="language-bash">pipe storage mount [OPTIONS] &lt;Mountpoint&gt;
+</code></pre>
+<p><strong>Mountpoint</strong> - defines a full path to a directory on the workstation where the data storage shall be mounted.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-f</code> / <code>--file</code></td>
+<td>File System mode. In this mode, all available File Storages will be mounted into the mountpoint. This option is mutually exclusive with <code>-b</code> option</td>
+</tr>
+<tr>
+<td><code>-b</code> / <code>--bucket</code></td>
+<td>Object Storage mode. In this mode, the specified Object Storage will be mounted into the mountpoint. This option is mutually exclusive with <code>-f</code> option</td>
+</tr>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-m</code> / <code>--mode</code></td>
+<td>Allows to set a mask that defines access permissions (to the <code>owner</code>/<code>group</code>/<code>others</code>). This mask is set in the numerical view (three-digit octal number)</td>
+</tr>
+<tr>
+<td><code>-o</code> / <code>--options</code></td>
+<td>Allows to specify any mount options supported by underlying <strong><code>FUSE</code></strong> implementation</td>
+</tr>
+<tr>
+<td><code>-l</code> / <code>--log-file</code></td>
+<td>If set, standard/error output of mount operations will be written into the specified file</td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+<tr>
+<td><code>-t</code> / <code>--threads</code></td>
+<td>Enable multithreading - allows several processes simultaneously interact with the mount point</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will mount the Object Storage named <strong>objstor</strong> into the directory "<strong>mountdir</strong>" and specify the file "<strong>mount.log</strong>" as log-file for mount operations:</p>
+<pre><code class="language-bash">pipe storage mount -l ~/mount.log -b objstor ~/mountdir
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_29.png" /></p>
+<p>In the example below we will mount the Object Storage named <strong>objectdatastorage</strong> into the directory "<strong>mountdir</strong>" and set full access permissons (read, write, execute) to the owner, read and execute permissions to the group and no permissions to others:</p>
+<pre><code class="language-bash">pipe storage mount -b objectdatastorage -m 750 ~/mountdir
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_35.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: if <code>-m</code> option isn't specified, during mounting the default permissions mask will be set - <code>700</code> (full access to the owner and no permissions to the group and others)</p>
+</blockquote>
+<h3 id="unmount-a-storage">Unmount a storage</h3>
+<p>The command to unmount a mountpoint:</p>
+<pre><code class="language-bash">pipe storage umount [OPTIONS] &lt;Mountpoint&gt;
+</code></pre>
+<p><strong>Mountpoint</strong> - defines a full path to a directory on the workstation where the data storage was mounted.</p>
+<table>
+<thead>
+<tr>
+<th>Options</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Non-required options</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>-q</code> / <code>--quiet</code></td>
+<td>Quiet mode</td>
+</tr>
+</tbody>
+</table>
+<p>In the example below we will unmount a storage from the directory "<strong>mountdir</strong>":</p>
+<pre><code class="language-bash">pipe storage umount ~/mountdir
+</code></pre>
+<p><img alt="CP_ManageStorageViaCLI" src="../attachments/ManageStorageViaCLI_30.png" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../14.2._View_and_manage_Attributes_via_CLI/" class="btn btn-neutral float-left" title="14.2. View and manage Attributes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../14.4._View_pipeline_definitions_via_CLI/" class="btn btn-neutral float-right" title="14.4. View pipeline definitions">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../14.2._View_and_manage_Attributes_via_CLI/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../14.4._View_pipeline_definitions_via_CLI/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

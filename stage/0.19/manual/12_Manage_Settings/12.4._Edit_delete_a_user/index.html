@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>12.4. Edit/delete a user - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "12.4. Edit/delete a user";
+        var mkdocs_page_input_path = "manual/12_Manage_Settings/12.4._Edit_delete_a_user.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">12.4. Edit/delete a user</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#edit-a-user">Edit a user</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#user-info">User info</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#default-data-storage">Default data storage</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#groups-roles-management">Groups (roles) management</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#attributes">Attributes</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#launch-options">Launch options</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#possibility-to-revert-changes">Possibility to revert changes</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#blockunblock-a-user">Block/unblock a user</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#gui-impersonation">GUI Impersonation</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#startstop-impersonation">Start/Stop impersonation</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#delete-a-user">Delete a user</a>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>12. Manage settings &raquo;</li>
+      <li>12.4. Edit/delete a user</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="124-editdelete-a-user">12.4. Edit/delete a user</h1>
+<ul>
+<li><a href="#edit-a-user">Edit a user</a><ul>
+<li><a href="#default-data-storage">Default data storage</a></li>
+<li><a href="#groups-roles-management">Groups (roles) management</a></li>
+<li><a href="#attributes">Attributes</a></li>
+<li><a href="#launch-options">Launch options</a></li>
+<li><a href="#possibility-to-revert-changes">Possibility to revert changes</a></li>
+</ul>
+</li>
+<li><a href="#blockunblock-a-user">Block/unblock a user</a></li>
+<li><a href="#gui-impersonation">GUI impersonation</a></li>
+<li><a href="#delete-a-user">Delete a user</a></li>
+</ul>
+<blockquote>
+<p>User shall have <strong>ROLE_ADMIN</strong> to edit/delete users.</p>
+</blockquote>
+<h2 id="edit-a-user">Edit a user</h2>
+<p>For edit a user:</p>
+<ol>
+<li>Open the <strong>Users</strong> subtab in the <strong>User management</strong> section of the system-level settings.</li>
+<li>Find a user.</li>
+<li>Click the <strong>Edit</strong> button in the row opposite the user name:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_01.png" /></li>
+<li>Pop-up window will appear:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_02.png" /></li>
+</ol>
+<p>At this form, there are several blocks of details/settings for a user.</p>
+<h3 id="user-info">User info</h3>
+<p>Main details' section about the user, that contain general info fields like user name, date of the user registration in the Platform, user email address, first and last names, e.g.:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_24.png" /></p>
+<h3 id="default-data-storage">Default data storage</h3>
+<p>Here you can select default data storage for a user:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_03.png" /></p>
+<h3 id="groups-roles-management">Groups (roles) management</h3>
+<p>In this block you can set groups and roles for the selected user:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_04.png" /></p>
+<p>For more information about changing a set of the roles/groups for the specific user see <a href="../12.8._Change_a_set_of_roles_groups_for_a_user/#change-a-set-of-roles-and-groups-to-a-selected-user">12.8. Change a set of roles/groups for a user</a>.</p>
+<h3 id="attributes">Attributes</h3>
+<p><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_05.png" /></p>
+<p>In this block you can set metadata tags (attributes) for a user. These tags represent key/value pairs, same as pipeline/folder tags. For more information see <a href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17. CP objects tagging by additional attributes</a>.</p>
+<h4 id="blocking-notifications-track">"Blocking" notifications track</h4>
+<p>One of the special attribute that is set automatically - information about the notifications confirmation:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_15.png" /><br />
+Via that attribute you can view, which "blocking" notifications were confirmed by the user (about system notifications see <a href="../12._Manage_Settings/#system-events">here</a>).<br />
+This attribute is shown only for users that confirmed at least one "blocking" notification.<br />
+By default, this attribute has the following pair:</p>
+<ul>
+<li><em>KEY</em> - <code>confirmed_notifications</code> (that name could be changed via the system-level preference <strong><code>system.events.confirmation.metadata.key</code></strong>)</li>
+<li><em>VALUE</em> - link that shows summary count of confirmed notifications for the user</li>
+</ul>
+<p>To open the detailed table with confirmed notifications for the user:</p>
+<ol>
+<li>Click the <em>VALUE</em> link:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_16.png" />  </li>
+<li>Here you can view detailed information about confirmed notifications - their titles, messages and datetime of the confirmation:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_17.png" />  </li>
+<li>Also you can open "raw" <code>JSON</code> view of the detailed table, if necessary. For that, click the <strong>EDIT</strong> button under the detailed table:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_18.png" />  </li>
+<li>Here you can edit the contents. Click the <strong>SAVE</strong> button to save changes:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_19.png" />  </li>
+</ol>
+<h3 id="launch-options">Launch options</h3>
+<p><img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_06.png" /></p>
+<p>In this block you can specify some restrictions for a specific user on allowed instance types, price types, jobs visibility, etc.<br />
+To apply configured launch options for a user, click <img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_13.png" /> button in the right bottom corner of the pop-up. This action will save all made changes in the user settings (not only launch options) and close the pop-up.</p>
+<h4 id="allowed-instance-count">Allowed instance count</h4>
+<p>This setting (<strong>Allowed instance max count</strong>) allows to restrict the number of instances a user can run at the same time.<br />
+This is useful to address any bugs as the users' scripts may spawn hundreds of machines without a real need.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: this restriction is not applied to the users with the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p>Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch 5 jobs at a maximum. This includes worker nodes of the clusters.<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_31.png" /></p>
+<p>If the user tries to launch a job, but it exceeds a current limit - the warning and errors will be shown.<br />
+Imagine that user has already launched 5 jobs with the set limit also equal 5.<br />
+The user starts a new instance (which is going to be a 6th job):</p>
+<ul>
+<li>GUI will warn the user at the <strong>Launch</strong> page:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_34.png" /></li>
+<li>GUI will warn the user, before submitting a job:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_32.png" /></li>
+<li>If the user confirms a run operation - it will be rejected:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_33.png" /></li>
+</ul>
+<p>Similar warnings are shown if the user will try to start a cluster or an autoscaled cluster.<br />
+In this case, even if there are some spare slots, but the preparing cluster may exceed it eventually - the corresponding warning will appear. E.g., imagine that user has already launched 3 from 5 allowed jobs and tries to start an autoscaled cluster:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_35.png" /></p>
+<blockquote>
+<p><strong><em>Note</em></strong>: if user has reached the limit, warning will be also shown in case when the user will try to start a new job via <code>pipe</code> CLI. Job will be rejected, e.g.:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_36.png" /><br />
+Via <code>pipe</code> CLI, user can view the allowed instances count to be launched - using the command <a href="../../14_CLI/14.9._User_management_via_CLI/#instances-usage"><code>pipe users instances</code></a>.</p>
+</blockquote>
+<p>Such restrictions could be set not only for a user, but on another levels too.<br />
+Next hierarchy is set for applying of instances max count (in descending order of priority):</p>
+<ul>
+<li><strong>User-level</strong> - i.e. specified for a user - as described above. This overrides any other limit for a particular user.</li>
+<li><strong>User group level</strong> - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. How to configure see <a href="../12.6._Edit_a_group_role/#allowed-instance-count">here</a>. This overrides a global limit for a specific user group.</li>
+<li><em>(global)</em> <strong><code>launch.max.runs.user.global</code></strong> - can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum. See <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a> for details.</li>
+</ul>
+<h4 id="allowed-instance-types">Allowed instance types</h4>
+<p>Here, there are two settings that can restrict allowed instance types for a specific user:</p>
+<ul>
+<li><strong>Allowed instance types mask</strong> - this mask restricts allowed instance types for launching tools, pipelines and configurations (i.e. any user's runs).<br />
+<em>Example of usage</em>: If you want the user to be able to launch runs with only "m5..." instances types, mask would be <strong><code>m5*</code></strong>:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_07.png" /><br />
+    In that case, before that user will launch any tool/pipeline/configuration, dropdown list of available node types for them will be like this:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_08.png" /></li>
+<li><strong>Allowed tool instance types mask</strong> - this mask restricts allowed instance types only for tools' runs.<br />
+    This mask has higher priority for launching tool than <strong>Allowed instance types mask</strong>. I.e. when both masks are set - for the launching tool, <strong>Allowed tool instance types mask</strong> will be applied.<br />
+<em>Example of usage</em>: if you want the user to be able to launch tools with only "large m5..." instances types, mask would be <strong><code>m5*.large*</code></strong>:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_09.png" /><br />
+    In that case, before that user will launch any tool, dropdown list of available node types for them will be like this:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_10.png" /></li>
+</ul>
+<p>Setting restrictions on allowed instance types is a convenient way to minimize a number of invalid configurations' runs.<br />
+Such restrictions could be set not only for a user, but on another levels too.<br />
+Next hierarchy is set for applying of specified allowed instance types (in descending order of priority):</p>
+<ul>
+<li><strong>User level</strong> - i.e. specified for a user - as described above.</li>
+<li><strong>User group level</strong> - i.e. specified for a group/role of a user. If user is a member of several groups - list of allowed instances will be summarized across all the groups. How to configure see <a href="../12.6._Edit_a_group_role/#allowed-instance-types">here</a>.</li>
+<li><strong>Tool level</strong> - i.e. specified for a tool, that a user tries to launch. How to configure see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">10.5. Launch a Tool</a>.</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> - system preference that defines allowed instance types for tools. See <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a> for details.</li>
+<li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> - system preference that defines allowed instance types for pipelines/tools/configurations. See <a href="../12.10._Manage_system-level_settings/#cluster">12.10. Manage system-level settings</a> for details.</li>
+</ul>
+<p>After specifying allowed instance types, all GUI forms that allow to select the list of instance types (configurations/launch forms) - will display only valid instance types, according to hierarchy above.  </p>
+<h4 id="allowed-price-types">Allowed price types</h4>
+<p>This field may restrict, what price types are allowed for a specific user (for launching any job).</p>
+<p><em>Example of usage</em>: if you want the user to be able to launch only "On-demand" runs, select it:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_11.png" /><br />
+In that case, before that user will launch any run, dropdown list of price types for them will be like this:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_12.png" /></p>
+<p>Setting restrictions on allowed price types is a convenient way to minimize a number of invalid configurations' runs.<br />
+Such restrictions could be set not only for a user, but on another levels too.<br />
+Next hierarchy is set for applying of specified allowed price types (in descending order of priority):</p>
+<ul>
+<li><strong>User level</strong> - i.e. specified for a user - as described above.</li>
+<li><strong>User group level</strong> - i.e. specified for a group/role of a user. If user is a member of several groups - list of allowed price types will be summarized across all the groups. How to configure see <a href="../12.6._Edit_a_group_role/#allowed-price-types">here</a>.</li>
+<li><strong>Tool level</strong> - i.e. specified for a tool, that a user tries to launch. How to configure see <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#instance-management">10.5. Launch a Tool</a>.</li>
+</ul>
+<h4 id="jobs-visibility">Jobs visibility</h4>
+<p>This field may restrict the visibility of runs at the <strong>Active Runs</strong> page for users who are non-owners of these runs.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: this restriction is not applied to the users with the <strong>ROLE_ADMIN</strong> role.</p>
+</blockquote>
+<p><em>Example of usage</em>: if you want the user to be able to view all pipeline runs (for that pipelines on which user has corresponding permissions), select "<em>Inherit</em>":<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_21.png" /><br />
+    Therefore USER4, that is owner of the pipeline, will view all runs of that pipeline, e.g.:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_29.png" /></p>
+<p>If you want the user to be able to view only <strong><em>own</em></strong> runs launched, select "<em>Only owner</em>":<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_20.png" /><br />
+    Therefore USER4, that is owner of the pipeline, will view only own runs of that pipeline, e.g.:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_30.png" /></p>
+<p>If this setting is not specified for a user - for them "<em>Inherit</em>" behavior is applied by default.</p>
+<p>Next hierarchy is set for applying of jobs visibility (in descending order of priority):</p>
+<ul>
+<li><strong>User level</strong> - i.e. specified for a user - as described above.</li>
+<li><strong>Group level</strong> - i.e. specified for a group/role. How to configure see <a href="../12.6._Edit_a_group_role/#jobs-visibility">here</a>.</li>
+<li><em>(global)</em> <strong><code>launch.run.visibility</code></strong> - system preference that defines jobs visibility globally. See <a href="../12.10._Manage_system-level_settings/#launch">12.10. Manage system-level settings</a> for details.</li>
+</ul>
+<h4 id="credentials-profiles">Credentials profiles</h4>
+<p>In these fields, specific interfaces can be specified for a user:</p>
+<ul>
+<li><strong>Cloud Credentials Profiles</strong> - here, specific interfaces can be assigned for a user. Such interfaces allow to use seamless authentication in <em>Cloud Provider</em> services.<br />
+    For details and examples see <a href="../12.11._Advanced_features/#seamless-authentication-in-cloud-provider">here</a>.</li>
+<li><strong>Default Credentials Profile</strong> - setting allows to select one of <strong>Cloud Credentials Profiles</strong> assigned to the user as the default profile.<br />
+    For details and examples see <a href="../12.11._Advanced_features/#seamless-authentication-in-cloud-provider">here</a>.</li>
+</ul>
+<h3 id="possibility-to-revert-changes">Possibility to revert changes</h3>
+<p>In certain cases, there could be convenient to undo all changes in a user profile when modifying it - without closing the form.</p>
+<p>The admin has such ability:</p>
+<ul>
+<li>open the <strong>User management</strong> tab</li>
+<li>select the desired user to modify, click the <strong>Edit</strong> button to open the popup with the user's settings</li>
+<li>edit some settings</li>
+<li>if needed to revert done changes - click the <strong>REVERT</strong> button at the bottom of the form (<strong><em>Note</em></strong>: it's possible only before saving!):<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_22.png" /></li>
+<li>all done unsaved changes are reverted. The <strong>REVERT</strong> button becomes disabled:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_23.png" /></li>
+</ul>
+<p><strong><em>Note</em></strong>: in such way all unsaved changes of user settings could be reverted - <em>Default data storage</em>, <em>Roles &amp; Groups</em> list, <em>Attributes</em> and <em>Launch options</em>.</p>
+<h2 id="blockunblock-a-user">Block/unblock a user</h2>
+<p>To block user:</p>
+<ol>
+<li>Open the <strong>Users</strong> subtab in the <strong>User management</strong> section of the system-level settings.</li>
+<li>Find a user.</li>
+<li>Click <strong>Edit</strong> button in the row opposite the user name.</li>
+<li>In the opened pop-up window click the <strong>BLOCK</strong> button in the left bottom corner.<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_3.png" /></li>
+<li>Confirm the blocking:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_1.png" /></li>
+</ol>
+<p>To unblock user:</p>
+<ol>
+<li>Open the <strong>Users</strong> subtab in the <strong>User management</strong> section of the system-level settings.</li>
+<li>Find a user.</li>
+<li>Click <strong>Edit</strong> button in the row opposite the user name.</li>
+<li>In the opened pop-up window click the <strong>UNBLOCK</strong> button in the left bottom corner.<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_4.png" /></li>
+<li>Confirm the unblocking:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/BlockUnblockUsers_2.png" /></li>
+</ol>
+<h2 id="gui-impersonation">GUI Impersonation</h2>
+<p><strong>Cloud Pipeline</strong> supports "Impersonation" feature. It allows admins (users with the <strong><em>ROLE_ADMIN</em></strong> role) to login as a selected user into the <strong>Cloud Pipeline</strong> GUI and have the same permissions/level of access as the user.</p>
+<blockquote>
+<p><strong><em>Note</em></strong>: while running any job in the "impersonated" mode - the <a href="../../Appendix_D/Appendix_D._Costs_management/#user-report">costs</a> will go to that user and a linked billing-group.</p>
+</blockquote>
+<h3 id="startstop-impersonation">Start/Stop impersonation</h3>
+<ol>
+<li>Login to the <strong>Cloud Pipeline</strong> using an administrative account</li>
+<li>Open the <strong>Users</strong> subtab in the <strong>User management</strong> section of the system-level settings.</li>
+<li>Find a user.</li>
+<li>Click the <strong>Edit</strong> button in the row opposite the user name - to load a user's profile:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_25.png" /><br />
+    Click the <strong>Impersonate</strong> button in the top-right corner.</li>
+<li><strong>Cloud Pipeline</strong> GUI will be reloaded using the selected user:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_26.png" /></li>
+<li>While in the "Impersonation" mode, the following changes happen to the GUI:  <ul>
+<li>Main menu will turn orange, indicating that the impersonation mode is <em>ON</em></li>
+<li><strong>Logout</strong> button will be changed to the <strong>Stop impersonation</strong> button:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_27.png" /></li>
+<li>Hovering over the <strong>Stop impersonation</strong> button will bring the ID of the user, whose account is currently active, e.g.:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_28.png" /></li>
+</ul>
+</li>
+<li>To stop the impersonation and revert back to the own admin account - click the <strong>Stop impersonation</strong> button.</li>
+</ol>
+<h2 id="delete-a-user">Delete a user</h2>
+<p>To delete a user:</p>
+<ol>
+<li>Open the <strong>Users</strong> subtab in the <strong>User management</strong> section of the system-level settings.</li>
+<li>Find a user.</li>
+<li>Click the <strong>Edit</strong> button in the row opposite the user name.</li>
+<li>In the opened pop-up window click the <strong>Delete</strong> button in the left bottom corner.</li>
+<li>Confirm the deletion:<br />
+<img alt="CP_EditDeleteUsers" src="../attachments/EditDeleteUsers_14.png" /></li>
+</ol>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../12.3._Create_a_new_user/" class="btn btn-neutral float-left" title="12.3. Create a new user"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../12.5._Create_a_group/" class="btn btn-neutral float-right" title="12.5. Create a group">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../12.3._Create_a_new_user/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../12.5._Create_a_group/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

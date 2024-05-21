@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>17.1. Faceted filters search using tags - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "17.1. Faceted filters search using tags";
+        var mkdocs_page_input_path = "manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">17. Tagging by attributes</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">17.1. Faceted filters search using tags</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#preliminary-preparation">Preliminary preparation</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#configure-faceted-filters">Configure faceted filters</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#faceted-filters-at-the-search-page">Faceted filters at the search page</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#filters-displaying">Filters displaying</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#using-faceted-filters-to-search">Using faceted filters to search</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>17. Tagging by attributes &raquo;</li>
+      <li>17.1. Faceted filters search using tags</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="171-faceted-filters-search-using-tags">17.1. Faceted filters search using tags</h1>
+<ul>
+<li><a href="#preliminary-preparation">Preliminary preparation</a></li>
+<li><a href="#configure-faceted-filters">Configure faceted filters</a></li>
+<li><a href="#faceted-filters-at-the-search-page">Faceted filters at the search page</a><ul>
+<li><a href="#filters-displaying">Filters displaying</a></li>
+<li><a href="#using-faceted-filters-to-search">Using faceted filters to search</a></li>
+</ul>
+</li>
+</ul>
+<p>In <strong>Cloud Pipeline</strong>, besides the <a href="../../19_Search/19._Global_search/#simple-search">simple</a> Global Search, there is also the <a href="../../19_Search/19._Global_search/#advanced-search">advanced</a> search included search by tags (attributes).<br />
+Search by tags is being performed via <strong><em>faceted filters</em></strong> panel. Tags' keys and values displayed in this panel are loaded from <strong>System Dictionaries</strong> marked as filter sources.<br />
+User can restrict (filter) search results - checking/unchecking desired filters.</p>
+<p><img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_01.png" /></p>
+<p>Let's take a closer look.</p>
+<h2 id="preliminary-preparation">Preliminary preparation</h2>
+<p>"Faceted filters" search is convenient, when users have well-structured data in the platform and want to search by the attributes.<br />
+But not all specified attributes are being loaded to the faceted filters, only attributes that were added to objects using <strong>System Dictionaries</strong> will be loaded to these filters.<br />
+Firstly, the sets of key and possible values should be created as corresponding dictionaries in the special section of the <strong>System Settings</strong>, e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_02.png" /><br />
+About <strong>System Dictionaries</strong> see details <a href="../../12_Manage_Settings/12.13._System_dictionaries/">here</a>.</p>
+<p>After the dictionary is created, it can be used for the attribute (tag) creation.<br />
+For that:</p>
+<ol>
+<li>Navigate to the object you wish to tag</li>
+<li>Open the "Attributes" panel for the object</li>
+<li>Click the "<strong>+ Add</strong>" button at the "Attributes" panel:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_03.png" /></li>
+<li>Click the "Key" field. In the appeared list, all available dictionaries list will appear:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_04.png" /><br />
+    Select the dictionary name that you want to use as the attribute key</li>
+<li>In the "Value" field, corresponding values of the selected dictionary will appear:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_05.png" /><br />
+    Select the dictionary value that you want to use as the attribute value</li>
+<li>Click the "<strong>v Add</strong>" button to confirm:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_06.png" /></li>
+<li>Added attribute will appear in the "Attributes" panel:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_07.png" /></li>
+</ol>
+<p>About the tagging objects via <strong>System Dictionaries</strong> see details <a href="../../12_Manage_Settings/12.13._System_dictionaries/#using-dictionaries">here</a>.</p>
+<h2 id="configure-faceted-filters">Configure faceted filters</h2>
+<p>To determine which of the available <strong>System Dictionaries</strong> should be used as faceted filters, there is a special system preference <strong><code>faceted.filter.dictionaries</code></strong>.<br />
+Here, admin shall manually specify dictionaries and some settings of displaying specified dictionaries at the "Faceted filters" panel:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_08.png" /></p>
+<p>This preference has <code>JSON</code>-format.<br />
+Features:</p>
+<ul>
+<li><strong><code>"dictionaries"</code></strong> - array of the existing <strong>System Dictionaries</strong> that shall be used and displayed in the "Faceted filters" panel</li>
+<li><strong><code>"dictionary"</code></strong> - key to specify a name of the existing dictionary</li>
+<li><strong><code>"order"</code></strong> - key to specify an order number by which dictionaries are being sorted in the "Faceted filters" panel. This order number is relative - if dictionary entries are not associated with any object, such entries or even dictionary itself will not be visible at the "Faceted filters" panel</li>
+<li><strong><code>"defaultDictEntriesToDisplay"</code></strong> - key to specify a number of the dictionary values that will be always visible (if the count of the dictionary values exceeds this number - extra values will be hidden). This setting is being configured for all faceted filters simultaneously, but can be configured for the specific dictionary separately (individual dictionary setting has higher priority). Possible values for that setting - number or string <strong><code>"all"</code></strong> - in last case, all dictionary values will be always displayed</li>
+</ul>
+<p>Example of the specific dictionary settings:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_09.png" /></p>
+<p>Here:</p>
+<ul>
+<li>the system dictionary used as faceted filter has name <code>"File formats"</code></li>
+<li>the relative order of that dictionary at the "Faceted filters" panel is <code>7</code></li>
+<li>the default count of that dictionary values that should be always displayed at the "Faceted filters" panel is <code>5</code></li>
+</ul>
+<h2 id="faceted-filters-at-the-search-page">Faceted filters at the search page</h2>
+<h3 id="filters-displaying">Filters displaying</h3>
+<p>To open the "Advanced Search" page - click the <strong>Search</strong> icon in the main menu:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_10.png" /></p>
+<p>The "Faceted filters" panel is placed on the left side of the "Advanced Search" page:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_11.png" /></p>
+<p>Here all dictionaries specified in the system preference <code>faceted.filter.dictionaries</code> are displayed.  </p>
+<blockquote>
+<p>Please note, that only dictionaries which entries associated with any object are displayed.<br />
+For example, let some dictionary <code>Dictionary1</code> has entries <code>Value1</code> and <code>Value2</code>. If any platform object is tagged by <code>Dictionary1:Value1</code> and no objects are tagged by <code>Dictionary1:Value2</code>, in the "Faceted filters" panel <code>Value2</code> will not be shown for the filter <code>Dictionary1</code>.<br />
+If there are no platform objects tagged by <code>Dictionary1:Value1</code> and <code>Dictionary1:Value2</code> - in the "Faceted filters" panel, the filter <code>Dictionary1</code> will not be shown at all.</p>
+</blockquote>
+<p>Displaying of filters:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_12.png" /></p>
+<p>Where:</p>
+<ul>
+<li><strong>a</strong> - header with the filter name (dictionary name). All filter sections are expanded by default. To collapse the section - click the header with the filter name, e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_13.png" /></li>
+<li><strong>b</strong> - filter values (dictionary entries associated with objects)</li>
+<li><strong>c</strong> - footer that allows to show all dictionary entries associated with objects. This element is displayed only for dictionaries which count of associated entries is more than configured <code>"defaultDictEntriesToDisplay"</code> value. For the dictionary in example above, <code>"defaultDictEntriesToDisplay"</code> value is <code>4</code>. Click the footer to show all entries associated with objects:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_14.png" /><br />
+    Click the footer again to hide "extra" entries</li>
+<li><strong>d</strong> - checkbox that allows to select only objects from the search results that are associated with the certain dictionary entry (i.e. only objects tagged by the certain attribute)</li>
+<li><strong>e</strong> - the count of the objects associated with the certain dictionary entry. Filter values are being sorted by this count descending</li>
+</ul>
+<blockquote>
+<p>If any filter has more than 10 associated entries, under its header the search bar appears - to quick search among entries of this filter, e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_22.png" /></p>
+</blockquote>
+<h3 id="using-faceted-filters-to-search">Using faceted filters to search</h3>
+<p>To use faceted filter to search objects by their attributes (tags) - just click the checkbox near the desired filter value. In the search results, only objects were associated with the checked filter value (dictionary entry) will remain, e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_18.png" /><br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_15.png" /><br />
+    Only objects tagged by this dictionary entry remained in the search results.</p>
+<p>After any faceted filter value's checkbox is being changed its state (manually enabled/disabled):</p>
+<ul>
+<li>other filters are being updated - count of associated objects changes according to the new selected condition:  <ul>
+<li>if any value of other faceted filter has no common associated objects with the selected filter value - such value becomes disabled, being colored in grey and has <code>0</code> value as a count of associated objects (i.e. for values from different faceted filters (different dictionaries) the logical operation <code>AND</code> is being performed), e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_16.png" /></li>
+<li>but for the same faceted filter which value is selected (same dictionary) other filter values remain without changes - you can selected them, their counts of associated objects doesn't change (i.e. for values from the same faceted filter (the same dictionary) the logical operation <code>OR</code> is being performed), e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_17.png" /></li>
+</ul>
+</li>
+<li>in the panel of object types (under the main search bar), the count of displayed objects is being changed</li>
+<li>also paging is updated</li>
+</ul>
+<p>You can select several filters values from different dictionaries. Each time, other filters will be updated according to the rules above, and also displayed search results will be changed according to the selected filters, e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_19.png" /></p>
+<p>You can hover over any displayed search result and click the <strong>Info</strong> icon to check that the object is really tagged by selected filters (attributes), e.g.:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_21.png" /><br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_23.png" /></p>
+<p>To clear all filters and remove restrictions click the corresponding button at the top of the "Faceted filters" panel:<br />
+<img alt="CP_FacetedFiltersFromTagsForSearch" src="../attachments/FacetedFilters_20.png" /></p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../17._CP_objects_tagging_by_additional_attributes/" class="btn btn-neutral float-left" title="17.0. CP objects tagging by additional attributes"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../18_Home_page/18._Home_page/" class="btn btn-neutral float-right" title="18. Home page">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../17._CP_objects_tagging_by_additional_attributes/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../18_Home_page/18._Home_page/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

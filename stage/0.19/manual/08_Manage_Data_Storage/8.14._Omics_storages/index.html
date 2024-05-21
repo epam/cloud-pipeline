@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>8.14. Omics storages - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "8.14. Omics storages";
+        var mkdocs_page_input_path = "manual/08_Manage_Data_Storage/8.14._Omics_storages.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">8. Manage Data Storage</a>
+    <ul class="current">
+                <li class="toctree-l2"><a class="reference internal" href="../8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">8.14. Omics storages</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#reference-store">Reference store</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#create-reference-store">Create reference store</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#view-and-edit-content-of-reference-store">View and edit content of reference store</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#sequence-store">Sequence store</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#create-sequence-store">Create sequence store</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#view-and-edit-content-of-sequence-store">View and edit content of sequence store</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#manage-store">Manage store</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#manage-via-the-cli">Manage via the CLI</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#usage">Usage</a>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>8. Manage Data Storage &raquo;</li>
+      <li>8.14. Omics storages</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="814-omics-storages">8.14. Omics storages</h1>
+<ul>
+<li><a href="#reference-store">Reference store</a><ul>
+<li><a href="#create-reference-store">Create reference store</a></li>
+<li><a href="#view-and-edit-content-of-reference-store">View and edit content of reference store</a><ul>
+<li><a href="#import-reference">Import reference</a></li>
+<li><a href="#delete-reference">Delete reference</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#sequence-store">Sequence store</a><ul>
+<li><a href="#create-sequence-store">Create sequence store</a></li>
+<li><a href="#view-and-edit-content-of-sequence-store">View and edit content of sequence store</a><ul>
+<li><a href="#import-sequence">Import sequence</a></li>
+<li><a href="#upload-sequence">Upload sequence</a></li>
+<li><a href="#download-sequence">Download sequence</a></li>
+<li><a href="#delete-sequence">Delete sequence</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#manage-store">Manage store</a></li>
+<li><a href="#manage-via-the-cli">Manage via the CLI</a></li>
+<li><a href="#usage">Usage</a></li>
+</ul>
+<p><strong>Cloud Pipeline</strong> supports <a href="https://docs.aws.amazon.com/omics/latest/dev/gs-console-storage.html">AWS HealthOmics Storages</a>.<br />
+These are specialized storages that allow to store Omics data.<br />
+There are two types of AWS HealthOmics Storages:</p>
+<ul>
+<li><em>reference</em> store - for storing genome references</li>
+<li><em>sequence</em> store - for storing genomics files (e.g., BAM, CRAM, FASTQ)</li>
+</ul>
+<p>Depending on the store type, management and abilities will vary.</p>
+<blockquote>
+<p>To create a <strong>Storage</strong> in a <strong>Folder</strong> you need to have <strong>WRITE</strong> permission for that folder and the <strong>ROLE_STORAGE_MANAGER</strong> role. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
+</blockquote>
+<h2 id="reference-store">Reference store</h2>
+<p>Specialized storage for storing raw genome references.</p>
+<h3 id="create-reference-store">Create reference store</h3>
+<blockquote>
+<p><strong><em>Note</em></strong>: please note that for each Cloud Region, only one reference store can be created.</p>
+</blockquote>
+<p>To create reference store:</p>
+<ol>
+<li>Navigate to the folder where you want to create reference storage.</li>
+<li>Click <strong>+ Create</strong> → <strong>Storages</strong> → <strong>Create AWS HealthOmics Store</strong>:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_01.png" /></li>
+<li>The pop-up of the AWS HealthOmics Storage creation will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_02.png" /></li>
+<li>Specify a name of the creating store and select the service type as <code>Reference store</code>:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_03.png" /></li>
+<li>Specify a description if necessary.</li>
+<li>Click the <strong>Create</strong> button to confirm.</li>
+<li>Reference store will appear in the folder:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_04.png" /></li>
+</ol>
+<h3 id="view-and-edit-content-of-reference-store">View and edit content of reference store</h3>
+<p>Reference store has a flat structure:</p>
+<ul>
+<li>on the first level, there are only folders, where each folder presents a reference</li>
+<li>on the second level (inside the folder of each reference), there are only files of the reference itself and its index</li>
+<li>nested folders are not supported</li>
+</ul>
+<p><img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_08.png" /></p>
+<p>Inside the reference folder:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_09.png" /></p>
+<p>In the row of the reference file/its folder, there is a set of labels, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_10.png" /></p>
+<ul>
+<li>reference name</li>
+<li>state of the file</li>
+<li>type of the content (<code>REFERENCE</code>)</li>
+</ul>
+<p>Possible actions in a reference store:</p>
+<ul>
+<li><strong>Import new reference</strong> - load a reference from the data storage</li>
+<li><strong>Download reference</strong> - download reference files to the local workstation</li>
+<li><strong>Delete reference</strong></li>
+</ul>
+<h4 id="import-reference">Import reference</h4>
+<blockquote>
+<p><strong><em>Note</em></strong>: to load a reference into a reference store, it shall be previously loaded to the s3 bucket available on the Cloud Pipeline Platform.</p>
+</blockquote>
+<p>To load a reference:</p>
+<ol>
+<li>Open the reference store.</li>
+<li>Click the <strong>Import</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_11.png" /></li>
+<li>Import form will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_12.png" /></li>
+<li>Specify mandatory fields:  <ul>
+<li><em>Name</em> - reference genome name</li>
+<li><em>Subject id</em> - source's subject ID</li>
+<li><em>Sample id</em> - source's sample ID</li>
+</ul>
+</li>
+<li>If necessary, specify optional fields:  <ul>
+<li><em>Description</em> - reference description</li>
+<li><em>Generated from</em> - reference details</li>
+</ul>
+</li>
+<li>Select the reference source file:  <ul>
+<li>click the folder icon near the <strong>Source file</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_13.png" /></li>
+<li>the pop-up to select a file from a data storage will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_14.png" /></li>
+<li>select a reference file in one of the regular storages available in the Cloud Pipeline Platform, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_15.png" /></li>
+<li>click the <strong>OK</strong> button to confirm selection</li>
+<li>selected file will be shown near the <strong>Source file</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_16.png" /></li>
+</ul>
+</li>
+<li>Once all fields are specified, click the <strong>Import</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_17.png" /></li>
+<li>Attributes panel with the section of import jobs will be opened automatically on the right side:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_18.png" /><br />
+    At this panel, you can check the state of the file import jobs:  <ul>
+<li>set dates (<em>From</em> and <em>To</em>) and desired state (select from the list)</li>
+<li>click the <strong>Search</strong> button, results will be shown as the job IDs list, e.g. to find newly completed jobs:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_19.png" /></li>
+</ul>
+</li>
+<li>When the import is already completed, reference will appear in the storage:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_20.png" /></li>
+<li>Click the reference, to display reference files:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_21.png" /><br />
+    As you can see, reference folder contains the reference file itself (<code>source</code>) and automatically created index (<code>index</code>).</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: to show/hide import jobs section, you may use the special menu in the upper side of the store:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_46.png" /></p>
+</blockquote>
+<h4 id="delete-reference">Delete reference</h4>
+<blockquote>
+<p><strong><em>Note</em></strong>: you may remove only the reference entirely, separate reference files can not be removed.</p>
+</blockquote>
+<p>To remove a reference:</p>
+<ol>
+<li>Click the <strong>Delete</strong> button in a reference row, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_26.png" /></li>
+<li>Confirm the deletion in the appeared pop-up:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_27.png" /></li>
+<li>Reference will be permanently removed.</li>
+</ol>
+<h2 id="sequence-store">Sequence store</h2>
+<p>Specialized storage for storing different types of genomics files - currently, these are BAM, CRAM, UBAM, FASTQ.</p>
+<h3 id="create-sequence-store">Create sequence store</h3>
+<p>To create sequence store:</p>
+<ol>
+<li>Navigate to the folder where you want to create sequence storage.</li>
+<li>Click <strong>+ Create</strong> → <strong>Storages</strong> → <strong>Create AWS HealthOmics Store</strong>:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_01.png" /></li>
+<li>The pop-up of the AWS HealthOmics Storage creation will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_02.png" /></li>
+<li>Specify a name of the creating store and select the service type as <code>Sequence store</code>:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_05.png" /></li>
+<li>Specify a description if necessary, then click the <strong>Create</strong> button to confirm:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_06.png" /></li>
+<li>Sequence store will appear in the folder:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_07.png" /></li>
+</ol>
+<h3 id="view-and-edit-content-of-sequence-store">View and edit content of sequence store</h3>
+<p>Sequence store has a flat structure:</p>
+<ul>
+<li>on the first level, there are only folders, where each folder presents a separate genomic sequence</li>
+<li>on the second level (inside the folder of each sequence), there are only sequence genomic files - depending on the format, these can be one (for example, a single UBAM file) or two files (for example, a BAM file and its index)</li>
+<li>nested folders are not supported</li>
+</ul>
+<p><img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_28.png" /></p>
+<p>Inside the sequence folder, there are sequence files:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_29.png" /></p>
+<p>In the row of the sequence file/folder, there is a set of labels, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_30.png" /></p>
+<ul>
+<li>sequence name</li>
+<li>state of the file</li>
+<li>type of the content (e.g. <code>FASTQ</code>)</li>
+<li>sample id</li>
+<li>subject id</li>
+</ul>
+<p>Possible actions in a sequence store:</p>
+<ul>
+<li><strong>Import new sequence</strong> - load a sequence from the data storage</li>
+<li><strong>Upload sequence</strong> - upload a sequence from the local workstation</li>
+<li><strong>Download sequence</strong> - download a sequence to the local workstation</li>
+<li><strong>Delete sequence</strong></li>
+</ul>
+<h4 id="import-sequence">Import sequence</h4>
+<blockquote>
+<p><strong><em>Note</em></strong>: to load a sequence into a sequence store, it shall be previously loaded to the s3 bucket available on the Cloud Pipeline Platform.</p>
+</blockquote>
+<p>To load a sequence:</p>
+<ol>
+<li>Open the sequence store.</li>
+<li>Click the <strong>Import</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_31.png" /></li>
+<li>Import form will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_32.png" /></li>
+<li>Specify mandatory fields:  <ul>
+<li><em>Name</em> - sequence name</li>
+<li><em>Subject id</em> - source's subject ID</li>
+<li><em>Sample id</em> - source's sample ID</li>
+</ul>
+</li>
+<li>If necessary, specify optional fields:  <ul>
+<li><em>Description</em> - sequence description</li>
+<li><em>Generated from</em> - sequence details</li>
+</ul>
+</li>
+<li>From the corresponding dropdown list, select the type of a source file you want to load, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_35.png" /></li>
+<li>Select the sequence source file:  <ul>
+<li>click the folder icon near the <strong>Source file</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_13.png" /></li>
+<li>the pop-up to select a file from a data storage will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_14.png" /></li>
+<li>select a sequence file in one of the regular storages available in the Cloud Pipeline Platform, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_33.png" /></li>
+<li>click the <strong>OK</strong> button to confirm selection</li>
+<li>selected file will be shown near the <strong>Source file</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_34.png" /></li>
+</ul>
+</li>
+<li>Additional field for a second source file will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_36.png" /><br />
+    You may add such additional file similarly as described at the previous step, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_37.png" /></li>
+<li>If necessary, you may link a sequence with a reference from the reference store:  <ul>
+<li>click the folder icon near the <strong>Reference path</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_38.png" /></li>
+<li>in the appeared pop-up, select a reference from the reference store, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_39.png" /></li>
+<li>click the <strong>OK</strong> button to confirm selection</li>
+</ul>
+</li>
+<li>Once all fields are specified, click the <strong>Import</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_40.png" /></li>
+<li>Attributes panel with the section of import jobs will be opened automatically on the right side:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_41.png" /><br />
+    At this panel, you can check the state of the file import jobs:  <ul>
+<li>set dates (<em>From</em> and <em>To</em>) and desired state (select from the list)<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_42.png" />  </li>
+<li>click the <strong>Search</strong> button, results will be shown as the job IDs list, e.g. to find newly completed jobs:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_43.png" /></li>
+</ul>
+</li>
+<li>When the import is already completed, sequence will appear in the storage:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_44.png" /></li>
+<li>Click the sequence, to display sequence files:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_45.png" /><br />
+    As you can see, sequence folder contains files named by the format: <code>source</code> plus the index.</li>
+</ol>
+<blockquote>
+<p><strong><em>Note</em></strong>: to show/hide import jobs section, you may use the special menu in the upper side of the store:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_46.png" /></p>
+</blockquote>
+<h4 id="upload-sequence">Upload sequence</h4>
+<p>To upload a sequence:</p>
+<ol>
+<li>Open the sequence store.</li>
+<li>Click the <strong>Upload</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_49.png" /></li>
+<li>Upload form will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_50.png" /></li>
+<li>Select the type of a source file you want to upload, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_51.png" /></li>
+<li>Select the sequence source file from your local workstation:  <ul>
+<li>click the <strong>Upload source file</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_52.png" /></li>
+<li>the OS pop-up to select a file will appear</li>
+<li>choose a sequence file and confirm, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_53.png" /></li>
+<li>selected file will be shown near the <strong>Upload source file</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_54.png" /></li>
+</ul>
+</li>
+<li>Additional button for a second source file will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_55.png" /><br />
+    You may add such additional file similarly as described at the previous step, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_56.png" /></li>
+<li>If necessary, you may link a sequence with a reference from the reference store:  <ul>
+<li>click the folder icon near the <strong>Reference</strong> label:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_57.png" /></li>
+<li>in the appeared pop-up, select a reference from the reference store, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_39.png" /></li>
+<li>click the <strong>OK</strong> button to confirm selection</li>
+</ul>
+</li>
+<li>Specify mandatory fields:  <ul>
+<li><em>Name</em> - sequence name</li>
+<li><em>Sample id</em> - source's sample ID</li>
+<li><em>Subject id</em> - source's subject ID</li>
+</ul>
+</li>
+<li>If necessary, specify optional fields:  <ul>
+<li><em>Description</em> - sequence description</li>
+<li><em>Generated from</em> - sequence details</li>
+</ul>
+</li>
+<li>Once all fields are specified, click the <strong>Upload</strong> button:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_58.png" /></li>
+<li>The upload will take some time:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_59.png" /></li>
+<li>Then, the pop-up will be automatically closed, sequence will appear in the storage:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_60.png" /></li>
+<li>Please note, that the upload may take extra time - during this period state of the sequence will be shown as <code>PROCESSING_UPLOAD</code>, download button will not be shown:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_61.png" /></li>
+<li>When the upload is already completed, sequence state will change to <code>ACTIVE</code> and download button near will appear:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_62.png" /></li>
+</ol>
+<h4 id="download-sequence">Download sequence</h4>
+<p>To download at once all files of the sequence to the local workstation:</p>
+<ol>
+<li>Click the <strong>Download</strong> button in a sequence row.</li>
+<li>Download will be start automatically (please note that files will be loaded separately, not as an archive):<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_47.png" /></li>
+</ol>
+<p>To download specific sequence file to the local workstation:</p>
+<ol>
+<li>Open the sequence folder.</li>
+<li>Click the <strong>Download</strong> button in a row of the sequence file.</li>
+<li>Download of the selected file will be start automatically:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_22.png" /></li>
+</ol>
+<h4 id="delete-sequence">Delete sequence</h4>
+<blockquote>
+<p><strong><em>Note</em></strong>: you may remove only the sequence entirely, separate sequence files can not be removed.</p>
+</blockquote>
+<p>To remove a sequence:</p>
+<ol>
+<li>Click the <strong>Delete</strong> button in a sequence row, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_24.png" /></li>
+<li>Confirm the deletion in the appeared pop-up:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_48.png" /></li>
+<li>Sequence will be permanently removed.</li>
+</ol>
+<h2 id="manage-store">Manage store</h2>
+<p>To edit <a href="#reference-store">reference</a> or <a href="#sequence-store">sequence</a> store:</p>
+<ol>
+<li>Click the <em>gear</em> icon in the right upper corner of the store page.</li>
+<li>The settings pop-up will appear, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_63.png" /></li>
+</ol>
+<p>Here, you can:</p>
+<ul>
+<li>edit store alias and description - specify new value(s) and click the <strong>Save</strong> button</li>
+<li>grant store permissions - for more details see the section <a href="../../13_Permissions/13._Permissions/">13. Permissions</a></li>
+<li>delete a store - for more details the section <a href="../8.5._Delete_and_unregister_Data_Storage/">8.5. Delete Data Storage</a></li>
+</ul>
+<h2 id="manage-via-the-cli">Manage via the CLI</h2>
+<p>You can also manage AWS HealthOmics Storages and their data via <a href="../../14_CLI/14._Command-line_interface/"><strong>CLI</strong></a>.</p>
+<p>Currently, the following CLI functionality is supported for AWS HealthOmics Storages:</p>
+<ul>
+<li><em>store creation</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#create-a-datastorage"><code>pipe storage create</code></a> command:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_74.png" />  <blockquote>
+<p><strong><em>Note</em></strong>: to specify the storage type during the creation (with <code>-t</code> | <code>--type</code> option) use the following values - <code>AWS_OMICS_REF</code> (for <a href="#reference-store">reference store</a>) and <code>AWS_OMICS_SEQ</code> (for <a href="./#sequence-store">sequence store</a>).</p>
+</blockquote>
+</li>
+<li><em>store listing</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#list-storagesstorage-content"><code>pipe storage ls</code></a> command:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_75.png" />  <blockquote>
+<p><strong><em>Note</em></strong>: to specify the storage path, use <code>omics</code> Cloud prefix.</p>
+</blockquote>
+</li>
+<li><em>moving store to another folder</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#change-a-parent-folder-for-a-datastorage"><code>pipe storage mvtodir</code></a> command:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_76.png" /></li>
+<li><em>store deletion</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#delete-a-datastorage"><code>pipe storage delete</code></a> command:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_77.png" /></li>
+<li>
+<p><em>genomic data uploading</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#upload-and-download-data"><code>pipe storage cp &lt;source&gt; &lt;destination&gt;</code></a> command, where: </p>
+<ul>
+<li><code>&lt;source&gt;</code> - path to genomic data file(s) from the existing data storage registered in the <strong>Cloud Pipeline</strong> platform or from your local workstation</li>
+<li><code>&lt;destination&gt;</code> - AWS HealthOmics Storage path<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_78.png" /><blockquote>
+<p><strong><em>Note</em></strong>: for loading genomic data, you shall use the option <code>-a</code> | <code>--additional-options</code> to specify arguments of the data file:</p>
+<ul>
+<li><em>name</em> - genomic file name</li>
+<li><em>subject_id</em> - source's subject ID</li>
+<li><em>sample_id</em> - source's sample ID</li>
+<li><em>file_type</em> - type of the loading file</li>
+</ul>
+</blockquote>
+</li>
+</ul>
+</li>
+<li>
+<p><em>download genomic data</em> - using <a href="../../14_CLI/14.3._Manage_Storage_via_CLI/#upload-and-download-data"><code>pipe storage cp &lt;source&gt; &lt;destination&gt;</code></a> command, where: </p>
+<ul>
+<li><code>&lt;source&gt;</code> - path to genomic data in AWS HealthOmics Storage (folder or file)</li>
+<li><code>&lt;destination&gt;</code> - path on your local workstation
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_79.png" /></li>
+</ul>
+</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<p>AWS HealthOmics Storages can not be mounted to the running instances as regular storages.<br />
+But these storages (and their data) can be used via pipeline's parameters - for more details see the corresponding <a href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/#configure-pipeline-inputoutput-parameters-via-gui">section</a>.</p>
+<p>You may use data from AWS HealthOmics Storages in 2 types of parameters:</p>
+<ul>
+<li><strong>Path parameter</strong>:  <ul>
+<li>select the corresponding parameter type from the list:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_64.png" /></li>
+<li>click the folder icon in the appeared parameter field:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_65.png" /></li>
+<li>in the pop-up, select a reference or sequence store, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_66.png" /></li>
+<li>then, you may select specific genomic data or the whole AWS HealthOmics Store:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_67.png" />  </li>
+<li>an example of the whole selected bucket as the path parameter value:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_68.png" /></li>
+</ul>
+</li>
+<li><strong>Input parameter</strong>:<ul>
+<li>select the corresponding parameter type from the list:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_69.png" /></li>
+<li>click the input icon in the appeared parameter field:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_70.png" /></li>
+<li>in the pop-up, select a reference or sequence store, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_71.png" /></li>
+<li>then, you may select specific genomic data, e.g.:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_72.png" />  </li>
+<li>an example of the selected reference as the input path parameter's value:<br />
+<img alt="CP_AWS_HealthOmicsStorages" src="../attachments/OmicsStorages_73.png" /></li>
+</ul>
+</li>
+</ul>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../8.13._Versioned_storages/" class="btn btn-neutral float-left" title="8.13. Versioned storages"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/" class="btn btn-neutral float-right" title="9.0. Cluster nodes">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../8.13._Versioned_storages/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>

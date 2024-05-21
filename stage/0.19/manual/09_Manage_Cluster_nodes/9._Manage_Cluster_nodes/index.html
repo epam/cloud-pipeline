@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../img/favicon.ico" />
+    <title>9.0. Cluster nodes - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "9.0. Cluster nodes";
+        var mkdocs_page_input_path = "manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="../../Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">9. Manage cluster nodes</a>
+    <ul class="current">
+                <li class="toctree-l2 current"><a class="reference internal current" href="./">9.0. Cluster nodes</a>
+    <ul class="current">
+    <li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#controls">Controls</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#node-information-page">Node information page</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#general-info">GENERAL INFO</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#jobs">JOBS</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#monitor">MONITOR</a>
+    </li>
+        </ul>
+    </li>
+    </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../installation/management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../installation/support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>User guide &raquo;</li>
+          <li>9. Manage cluster nodes &raquo;</li>
+      <li>9.0. Cluster nodes</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="9-cluster-nodes">9. Cluster nodes</h1>
+<p>"<strong>Cluster nodes</strong>" provides a list of working nodes. You can get information on nodes usage and terminate them in this tab.</p>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#controls">Controls</a></li>
+<li><a href="#node-information-page">Node information page</a><ul>
+<li><a href="#general-info">GENERAL INFO</a></li>
+<li><a href="#jobs">JOBS</a></li>
+<li><a href="#monitor">MONITOR</a><ul>
+<li><a href="#filters">Filters</a></li>
+<li><a href="#zooming-and-scrolling-features">Zoom and scroll</a></li>
+<li><a href="#export-utilization-data">Export data</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong><em>Note</em></strong>:  Nodes remain for the time that is already paid for, even if all runs at the node finished execution. So if you restart pipeline, new nodes will not be initialized saving time and money.</p>
+<h2 id="overview">Overview</h2>
+<p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_1.png" /></p>
+<p>This tab shows <strong>Active nodes</strong> table that has information about:</p>
+<ul>
+<li><strong>Name</strong> - a name of the node.</li>
+<li><strong>Pipeline</strong> - a currently assigned run on the node.</li>
+<li><strong>Labels of the node</strong> - characteristics extracted from the parameters of the node.<br />
+    There are common labels: <strong>RUN ID</strong> - ID of currently assigned run, <strong>MASTER/EDGE</strong> - service labels, nodes with this labels may be viewed only by ADMIN users.</li>
+<li><strong>Addresses</strong> - node addresses.</li>
+<li><strong>Created</strong> - a date of creation.</li>
+</ul>
+<h2 id="controls">Controls</h2>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Terminate</strong> </td>
+<td>This control terminates node.</td>
+</tr>
+<tr>
+<td><strong>Refresh</strong></td>
+<td>To get currently active nodes list.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong><em>Note</em></strong>: You can also terminate a node via CLI. For more details see <a href="../../14_CLI/14.5._Manage_pipeline_executions_via_CLI/#terminate-a-node">here</a>.</p>
+</blockquote>
+<h2 id="node-information-page">Node information page</h2>
+<blockquote>
+<p><strong><em>Note</em></strong>: You can also view node information via CLI. See <a href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes via CLI</a>.</p>
+</blockquote>
+<p>Clicking on the row of the table will redirect you to detailed node information page. This page has three tabs.</p>
+<h3 id="general-info">GENERAL INFO</h3>
+<p>This tab allows seeing general info about the node, including:</p>
+<ul>
+<li><strong>System information</strong>;</li>
+<li><strong>Addresses</strong> of internal network and domain name;</li>
+<li><strong>Labels</strong> of the node automatically generated in accordance with system information;</li>
+<li><strong>Node type</strong> - amounts of available and total memory, number of jobs and CPUs.</li>
+</ul>
+<p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_2.png" /></p>
+<h3 id="jobs">JOBS</h3>
+<p>"JOBS" tab lists jobs being processed at the moment.</p>
+<ul>
+<li><strong>Name</strong> of the job; clicking "<strong>+</strong>" icon next to the name expands a list of containers needed for the job.</li>
+<li><strong>Namespace</strong> for a job to be executed at;</li>
+<li><strong>Status</strong> of the job;</li>
+<li><strong>Requests</strong> and <strong>Limits</strong> of resources for the job.</li>
+</ul>
+<p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_3.png" /></p>
+<h3 id="monitor">MONITOR</h3>
+<p>"MONITOR" tab displays a dashboard with following diagrams:</p>
+<table>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CPU usage</strong></td>
+<td>A diagram represents <strong>CPU usage (cores) - time</strong> graph. The usage is displayed in fractions according to left vertical axis. There are two lines (data-series) - the first displays <code>max</code> value of the CPU usage in each moment and the second shows the <code>average</code> value of the usage during the time</td>
+</tr>
+<tr>
+<td><strong>Memory usage</strong></td>
+<td>A diagram represents <strong>memory usage - time</strong> graph. One type of graph represents usage in MB according to left vertical axis (includes two lines - first shows the <code>max</code> value in each moment and another shows the <code>average</code> values during the time). Another type of graph represents usage in % of available amounts of memory according to right vertical axis (analogically, includes two lines - <code>max</code> and <code>average</code>).</td>
+</tr>
+<tr>
+<td><strong>Network connection speed</strong></td>
+<td>A diagram represents <strong>connection speed (bytes) - time</strong> graph. <strong>Blue</strong> graph (<strong>TX</strong>) represents "transmit" speed. <strong>Red</strong> graph (<strong>RX</strong>) represents "receive" speed. Drop-down at the top of the section allows changing connection protocol.</td>
+</tr>
+<tr>
+<td><strong>File system load</strong></td>
+<td>Represents all the disks of the machine and their loading.</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_4.png" /></p>
+<p>The current state of the resources utilization is available for all active runs.<br />
+The maximum storage period for this data is set by the system preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong> (in days, by default - 5).<br />
+So, any utilization data older than that period is unavailable for users (no matter the run duration).</p>
+<p>The historical resources utilization is also available for completed runs (during the specified time storage period). It can be useful for debugging/optimization purposes.<br />
+To view the monitor of resources utilization for the completed run:</p>
+<ol>
+<li>Open the <strong>COMPLETED RUNS</strong> page. Click the run you wish to view the resources utilization data, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_13.png" /></li>
+<li>At the opened <strong>Run logs</strong> page expand the "Instance" section:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_14.png" /><br />
+    Click the node IP hyperlink.</li>
+<li>The monitor of the node resources utilization will appear:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_15.png" /></li>
+</ol>
+<blockquote>
+<p>Please note, the resources utilization data for the completed run is available during <strong><code>system.resource.monitoring.stats.retention.period</code></strong> days.<br />
+If you'll try to view monitor of the completed run after the specified period is over - the monitor will be empty.</p>
+</blockquote>
+<h4 id="filters">Filters</h4>
+<p>User can manage plots date configurations. For this purpose the system has number of filters:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_5.png" /></p>
+<p><strong>Common range for all charts (1)</strong><br />
+User can synchronize the time period for all charts. To do so user should mark this filter.<br />
+If this filter is unmarked, user can zoom or scroll any plot without any change for others.</p>
+<p><strong>Live update (2)</strong><br />
+If this checkbox is marked the charts data will be updated every 5 seconds in a real-time manner. The fields with dates will be updated as well.<br />
+This filter can be marked only in pair with the <strong>Common range for all charts</strong> filter.<br />
+If both checkboxes were unmarked and user set the <strong>Live update</strong> filter active, the system would mark both checkboxes.</p>
+<blockquote>
+<p>This feature is available only for active runs.</p>
+</blockquote>
+<p><strong>Set range (3)</strong><br />
+User can select the predefined time range for all plots from the list:</p>
+<ul>
+<li>Whole range</li>
+<li>Last week</li>
+<li>Last day</li>
+<li>Last hour</li>
+</ul>
+<p>This filter works in pair with the <strong>Common range for all charts</strong> filter. If user sets the date range, the system will mark the <strong>Common range for all charts</strong> checkbox, if it wasn't. So the data in all charts will be filtered by the selected range.</p>
+<p><strong>Date filter (4)</strong><br />
+User can specify the <em>Start</em> and the <em>End</em> dates for plots using this filter.<br />
+By default, the <em>Start</em> date (the left field of the filter) is the node creating datetime, the <em>End</em> date (the right field of the filter) is the current datetime.<br />
+To change the <em>Start</em>\/<em>End</em> date the user should:</p>
+<ul>
+<li>click the corresponding date field, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_11.png" /></li>
+<li>the calendar will be displayed:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_6.png" /><br />
+    The dates before the node creation and after today will be unavailable to select:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_12.png" /></li>
+<li>click the specific available date in the calendar. Selected date will appear in the date field. Charts will be automatically redrawn according to the new set period.</li>
+</ul>
+<p>If the user focuses on the calendar icon or the whole field at any of date fields the "Cross" button will be displayed:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_8.png" /><br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_9.png" /><br />
+If click this button in the <em>Start</em> date field - the node creation date will be substituted into that filter.<br />
+If click this button in the <em>End</em> date field - the date in that field will be erased and the system will interpret it as the current datetime.</p>
+<h4 id="zooming-and-scrolling-features">Zooming and scrolling features</h4>
+<p>In addition, user can <em>scroll</em> plots.<br />
+To do so:</p>
+<ul>
+<li>focus on the plot, hold the left mouse button and move the mouse in the desired direction (left or right)</li>
+<li><strong><em>Note</em></strong>: if <strong>Common range for all charts</strong> filter is on, all charts will be moving simultaneously</li>
+</ul>
+<p>Another feature is chart <em>zooming</em>.<br />
+To zoom a chart:</p>
+<ul>
+<li>hold the Shift key and scroll the plot via mouse. The area will be highlighted:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_7.png" /><br />
+    Then release the Shift key and the highlighted area will be automatically zoomed.</li>
+<li>another way of zooming plot - using the right panel. There are <strong>Plus</strong> and <strong>Minus</strong> buttons for such purpose on it:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_10.png" /><br />
+    Click the desired button and the chart will be zoomed.</li>
+</ul>
+<h4 id="export-utilization-data">Export utilization data</h4>
+<p>Users have the ability to export the utilization information into a <strong><code>csv</code></strong> or <strong><code>xls</code></strong> file.<br />
+This can be useful, if the user wants to keep locally the information for a longer period of time than defined by the preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong>.</p>
+<p><strong><code>csv</code></strong> reports contain only raw monitoring data.<br />
+<strong><code>xls</code></strong> reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.</p>
+<p>To export resources utilization data at the <strong>Monitor</strong> page of the node:</p>
+<ol>
+<li>Hover over the <strong>Export</strong> button in the right upper corner of the page:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_16.png" /></li>
+<li>There are the following items in the list:  <ul>
+<li><strong>Excel</strong> - to download the monitoring report in <code>xls</code> format with default settings</li>
+<li><strong>CSV</strong> - to download the monitoring report in <code>csv</code> format with default settings</li>
+<li><strong>Configure export</strong> - to customize intervals between resources utilization statistics, select format and download a report with that custom settings</li>
+</ul>
+</li>
+<li>If you select <strong>Excel</strong> or <strong>CSV</strong> item in the list, the corresponding file will be downloaded automatically</li>
+</ol>
+<p>Example of <code>csv</code> report file:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_18.png" /></p>
+<p>Report in <code>xls</code> format contains the following datasheets: <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_19.png" /></p>
+<ul>
+<li><strong><em>CHARTS</em></strong> - datasheet with diagrams equal to the ones on the GUI ("<em>CPU usage</em>", "<em>Memory usage</em>", "<em>Network connection speed</em>", "<em>File system load</em>"), e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_20.png" /></li>
+<li><strong><em>DATA</em></strong> - datasheet with raw resources utilization statistics (similar to <code>csv</code> report), e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_21.png" /></li>
+<li><strong><em>SCALED_DATA</em></strong> and <strong><em>DISKS_SUMMARY</em></strong> - auxiliary datasheets with data selection from <strong><em>DATA</em></strong> datasheet that are needed for building charts</li>
+</ul>
+<p>To configure the export click the <strong>Configure export</strong> button in the list. The pop-up will be open:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_22.png" /></p>
+<p>Here:</p>
+<ul>
+<li><strong>Format</strong> dropdown list defines the format for the report (<code>xls</code>/<code>csv</code>) to be exported</li>
+<li><strong>Ticks</strong> dropdown list defines the interval of resources utilization statistics that will be exported (<strong><em>Note</em></strong>: the suggested intervals in the list depends on the node running duration), e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_17.png" /></li>
+<li>once the settings are configured click the <strong>EXPORT</strong> button - the report will be prepared and downloaded</li>
+</ul>
+<blockquote>
+<p>You also can export node usage report via <strong>CLI</strong>. See <a href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/#export-cluster-utilization">here</a>.</p>
+</blockquote>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../../08_Manage_Data_Storage/8.14._Omics_storages/" class="btn btn-neutral float-left" title="8.14. Omics storages"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../9.1._Hot_node_pools/" class="btn btn-neutral float-right" title="9.1. Hot node pools">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../../08_Manage_Data_Storage/8.14._Omics_storages/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../9.1._Hot_node_pools/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../..';</script>
+    <script src="../../../js/theme_extra.js" defer></script>
+    <script src="../../../js/theme.js" defer></script>
+      <script src="../../../css/extra.js" defer></script>
+      <script src="../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
