@@ -382,7 +382,7 @@ Resources:
               fi   
  
               terraform init 
-              terraform apply --auto-approve > terraform_apply.log
+              terraform apply --auto-approve &> terraform_apply.log
 
               export CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
               fs_mount=$(terraform output -raw filesystem_mount)
@@ -430,7 +430,7 @@ Resources:
               wget -c ${CPPipectlUrl} -O pipectl
               chmod +x pipectl
               terraform output -raw cp_pipectl_script > deploycp.sh && chmod +x deploycp.sh
-              ./deploycp.sh > pipectl.log
+              ./deploycp.sh &> pipectl.log
 
               cat << EOF > delete_all_cp_infra.sh
               #!/bin/bash
