@@ -30,7 +30,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz pipe-cli/dist/dist-folder/pipe-el6.tar.
           -x :pipe-cli:test
 
 cd pipe-cli
-DIST_TGZ_NAME=pipe-cli.$APPVEYOR_BUILD_NUMBER.tar.gz
+DIST_TGZ_NAME=pipe.$APPVEYOR_BUILD_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     if [ "$APPVEYOR_REPO_BRANCH" == "develop" ] || [ "$APPVEYOR_REPO_BRANCH" == "master" ] || [[ "$APPVEYOR_REPO_BRANCH" == "release/"* ]] || [[ "$APPVEYOR_REPO_BRANCH" == "stage/"* ]] || [[ "$APPVEYOR_REPO_BRANCH" == "f_appveyor_modular_deployment" ]]; then
