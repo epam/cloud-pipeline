@@ -59,6 +59,18 @@ tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
 mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx ${API_STATIC_PATH}/pipe-osx
 mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
 
+CLI_TAR_NAME=pipe.$APPVEYOR_BUILD_NUMBER.tar.gz
+CLI_PATH=$(mktemp -d)
+aws s3 cp s3://cloud-pipeline-oss-builds/temp/${CLI_TAR_NAME} ${CLI_PATH}/
+tar -zxf $CLI_PATH/$CLI_TAR_NAME -C $CLI_PATH
+
+mv $CLI_PATH/dist/dist-file/pipe ${API_STATIC_PATH}/pipe
+mv $CLI_PATH/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe.tar.gz
+mv $CLI_PATH/dist/dist-file/pipe-el6 ${API_STATIC_PATH}/pipe-el6
+mv $CLI_PATH/dist/dist-folder/pipe-el6.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
+mv $CLI_PATH/dist/win/pipe.zip ${API_STATIC_PATH}/pipe.zip
+
+
 ./gradlew distTar   -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
                     -Pprofile=release \
                     -x test pipe-cli:build pipe-cli:buildLinux pipe-cli:buildWin \
