@@ -568,8 +568,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .switchToUsers()
                 .searchForUserEntry(user.login)
                 .edit()
+                .sleep(5, SECONDS)
                 .addAllowedLaunchOptions("Allowed instance types mask", mask)
-                .addAllowedLaunchOptions("Allowed tool instance types mask", mask)
                 .ok();
     }
 
