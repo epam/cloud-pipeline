@@ -104,63 +104,63 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
 
     @BeforeClass(alwaysRun = true)
     public void setPreferences() {
-//        library()
-//                .createPipeline(pipeline);
-//        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
-//            addAccountToPipelinePermissions(user, pipeline);
-//            givePermissions(user,
-//                    PipelinePermission.allow(READ, pipeline),
-//                    PipelinePermission.allow(EXECUTE, pipeline),
-//                    PipelinePermission.allow(WRITE, pipeline)
-//            );
-//        });
-//        library()
-//                .createConfiguration(conf ->
-//                        conf.setName(configuration).setDescription(configurationDescription).ok()
-//                );
-//        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
-//            addAccountToConfigurationPermissions(user, configuration);
-//            givePermissions(user,
-//                    ConfigurationPermission.allow(READ, configuration),
-//                    ConfigurationPermission.allow(EXECUTE, configuration),
-//                    ConfigurationPermission.allow(WRITE, configuration)
-//            );
-//        });
-//        initialLaunchSystemParameters = editLaunchSystemParameters();
-//        navigationMenu()
-//                .settings()
-//                .switchToUserManagement()
-//                .switchToUsers()
-//                .searchUserEntry(userWithoutCompletedRuns.login)
-//                .edit()
-//                .deleteRoleOrGroupIfExist(USER_ROLE)
-//                .ok();
+        library()
+                .createPipeline(pipeline);
+        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
+            addAccountToPipelinePermissions(user, pipeline);
+            givePermissions(user,
+                    PipelinePermission.allow(READ, pipeline),
+                    PipelinePermission.allow(EXECUTE, pipeline),
+                    PipelinePermission.allow(WRITE, pipeline)
+            );
+        });
+        library()
+                .createConfiguration(conf ->
+                        conf.setName(configuration).setDescription(configurationDescription).ok()
+                );
+        Stream.of(user, userWithoutCompletedRuns).forEach(user -> {
+            addAccountToConfigurationPermissions(user, configuration);
+            givePermissions(user,
+                    ConfigurationPermission.allow(READ, configuration),
+                    ConfigurationPermission.allow(EXECUTE, configuration),
+                    ConfigurationPermission.allow(WRITE, configuration)
+            );
+        });
+        initialLaunchSystemParameters = editLaunchSystemParameters();
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(userWithoutCompletedRuns.login)
+                .edit()
+                .deleteRoleOrGroupIfExist(USER_ROLE)
+                .ok();
     }
 
     @AfterClass(alwaysRun = true)
     public void deleteCustomVersion() {
-//        open(C.ROOT_ADDRESS);
-//        tools()
-//                .perform(registry, group, tool, tool ->
-//                        tool.versions()
-//                                .viewUnscannedVersions()
-//                                .performIf(hasOnPage(customTag), t -> t.deleteVersion(customTag))
-//                );
+        open(C.ROOT_ADDRESS);
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.versions()
+                                .viewUnscannedVersions()
+                                .performIf(hasOnPage(customTag), t -> t.deleteVersion(customTag))
+                );
     }
 
     @AfterClass(alwaysRun = true)
     public void cleanUp() {
-//        open(C.ROOT_ADDRESS);
-//        logoutIfNeeded();
-//        loginAs(admin);
-//        library()
-//                .removeConfigurationIfExists(configuration)
-//                .removePipelineIfExists(pipeline);
-//        navigationMenu()
-//                .settings()
-//                .switchToPreferences()
-//                .updateCodeText(LAUNCH_PARAMETERS_PREFERENCE, initialLaunchSystemParameters, true)
-//                .saveIfNeeded();
+        open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
+        library()
+                .removeConfigurationIfExists(configuration)
+                .removePipelineIfExists(pipeline);
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .updateCodeText(LAUNCH_PARAMETERS_PREFERENCE, initialLaunchSystemParameters, true)
+                .saveIfNeeded();
     }
 
     @Test
