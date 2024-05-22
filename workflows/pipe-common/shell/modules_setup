@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,9 @@ IS_RPM_BASED=$?
 ######################################################
 
 CP_CAP_MODULES_TYPE="${CP_CAP_MODULES_TYPE:-tcl}"
+CP_CAP_MODULES_TRACK_USAGE="${CP_CAP_MODULES_TRACK_USAGE:-false}"
+CP_CAP_MODULES_USAGE_TASK="${CP_CAP_MODULES_USAGE_TASK:-"ModulesUsage"}"
+
 if [ "$CP_CAP_MODULE_PREINSTALLED" != "true" ]; then
   pipe_log_info "--> Installing Environment Modules: $CP_CAP_MODULES_TYPE" "$MODULES_INSTALL_TASK"
 else
@@ -161,6 +164,39 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     MODULES_FILES_DIR="${CP_CAP_MODULES_FILES_DIR:-$MODULES_INSTALL_DIR/lmod/lmod/modulesfiles/Core}"
     echo "export MODULES_FILES_DIR="$MODULES_FILES_DIR"" >> /etc/cp_env.sh
     echo "export MODULEPATH="\$MODULEPATH:\$MODULES_FILES_DIR"" >> /etc/cp_env.sh
+
+    # Configure module usage tracking
+    if [ "$CP_CAP_MODULES_TRACK_USAGE" == "true" ]; then
+        CP_CAP_MODULES_CONFIG_DIR="${CP_CAP_MODULES_CONFIG_DIR:-$MODULES_FILES_DIR}"
+        if [ ! -f "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" ]; then
+            cat > "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" << EOF
+local hook =  require("Hook")
+local uname = require("posix").uname
+
+local module_msg = {}
+
+local function load_hook(t)
+   if (mode() ~= "load") then return end
+   local msg = string.format("user=%s module=%s path=%s host=%s time=%f",
+                             os.getenv("USER"), t.modFullName, t.fn, uname("%n"),
+                             epoch())
+   module_msg[t.modFullName] = msg
+end
+
+hook.register("load", load_hook)
+
+local function report_loads()
+   for k,msg in pairs(module_msg) do
+      lmod_system_execute("pipe_log_info \"" .. msg .. "\" \"$CP_CAP_MODULES_USAGE_TASK\"")
+   end
+end
+
+ExitHookA.register(report_loads)
+EOF
+        fi
+        echo "export LMOD_PACKAGE_PATH=$CP_CAP_MODULES_CONFIG_DIR" >> /etc/cp_env.sh
+        pipe_log_info "--> Configured Environment Modules usage tracking" "$MODULES_INSTALL_TASK"
+    fi
 fi
 
 # Cleanup
