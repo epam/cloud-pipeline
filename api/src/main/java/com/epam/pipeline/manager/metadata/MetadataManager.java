@@ -26,12 +26,15 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.pipeline.CommonCustomInstanceTagsTypes;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -41,7 +44,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -57,12 +60,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -98,6 +96,9 @@ public class MetadataManager {
 
     @Autowired
     private AuthManager authManager;
+
+    @Autowired
+    private ToolManager toolManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -343,6 +344,14 @@ public class MetadataManager {
         return keys;
     }
 
+    public Map<String, String> buildCustomInstanceTags(final PipelineRun run) {
+        final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
+
+        final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
+        final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
+        return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
+    }
+
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
         String delimiter = MetadataParsingUtils.getDelimiterFromFileExtension(file.getOriginalFilename());
         try (InputStream content = file.getInputStream()) {
@@ -401,5 +410,52 @@ public class MetadataManager {
                 .map(Tool.class::cast)
                 .ifPresent(tool -> Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                         MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
+    }
+
+    private Map<String, String> resolveInstanceTagsFromMetadata(final MetadataEntry metadataEntry,
+                                                                final Map<String, String> customTags) {
+        final Map<String, PipeConfValue> metadataData = MapUtils.emptyIfNull(Objects.isNull(metadataEntry)
+                ? null
+                : metadataEntry.getData());
+        if (MapUtils.isEmpty(metadataData)) {
+            return customTags;
+        }
+        final Set<String> instanceTagsKeys = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS);
+        if (CollectionUtils.isEmpty(instanceTagsKeys)) {
+            return customTags;
+        }
+        metadataData.entrySet().stream()
+                .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
+                .forEach(entry -> customTags.put(entry.getKey(), entry.getValue().getValue()));
+        return customTags;
+    }
+
+    private Map<String, String> resolveCommonCustomInstanceTags(final PipelineRun run) {
+        final Map<String, String> customInstanceTags = new HashMap<>();
+        final Map<CommonCustomInstanceTagsTypes, String> commonCustomInstanceTags = MapUtils.emptyIfNull(
+                preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS));
+        commonCustomInstanceTags
+                .forEach((tagType, tagName) -> fillCommonCustomInstanceTags(tagType, tagName, run, customInstanceTags));
+        return customInstanceTags;
+    }
+
+    private void fillCommonCustomInstanceTags(final CommonCustomInstanceTagsTypes tagType,
+                                              final String tagName, final PipelineRun run,
+                                              final Map<String, String> customInstanceTags) {
+        switch (tagType) {
+            case tool:
+                customInstanceTags.put(tagName, run.getDockerImage());
+                break;
+            case run_id:
+                customInstanceTags.put(tagName, run.getId().toString());
+                break;
+            case owner:
+                customInstanceTags.put(tagName, run.getOwner());
+                break;
+            default:
+                throw new IllegalArgumentException(
+                        String.format("Failed to resolve custom instance type '%s'", tagType));
+        }
     }
 }

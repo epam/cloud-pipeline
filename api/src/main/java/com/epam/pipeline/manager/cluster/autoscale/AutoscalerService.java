@@ -20,12 +20,10 @@ import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -41,5 +39,4 @@ public interface AutoscalerService {
     void adjustRunPrices(long runId, List<InstanceDisk> disks);
     Optional<NodePool> findPool(String nodeLabel, KubernetesClient client);
     void registerDisks(Long runId, RunInstance instance);
-    Map<String, String> buildCustomInstanceTags(PipelineRun run);
 }

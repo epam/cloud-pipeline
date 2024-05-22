@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
@@ -116,6 +117,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final List<RunCleaner> runCleaners;
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
+        private final MetadataManager metadataManager;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -136,7 +138,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final ScaleDownHandler scaleDownHandler,
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
-                             final RunRegionShiftHandler runRegionShiftHandler) {
+                             final RunRegionShiftHandler runRegionShiftHandler,
+                             final MetadataManager metadataManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -151,6 +154,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.runCleaners = runCleaners;
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
+            this.metadataManager = metadataManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -608,7 +612,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
-            instanceRequest.setCustomTags(autoscalerService.buildCustomInstanceTags(run));
+            instanceRequest.setCustomTags(metadataManager.buildCustomInstanceTags(run));
             return instanceRequest;
         }
 

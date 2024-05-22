@@ -21,14 +21,9 @@ import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.RunningInstance;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
-import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.pipeline.CommonCustomInstanceTagsTypes;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
-import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
@@ -45,7 +40,6 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
@@ -54,13 +48,10 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 @RequiredArgsConstructor
 @Service
@@ -212,68 +203,11 @@ public class AutoscalerServiceImpl implements AutoscalerService {
         adjustRunPrices(runId, disks);
     }
 
-    @Override
-    public Map<String, String> buildCustomInstanceTags(final PipelineRun run) {
-        final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
-
-        final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-        final MetadataEntry toolMetadata = metadataManager.loadMetadataItem(tool.getId(), AclClass.TOOL);
-        return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
-    }
-
     private void registerNodeDisks(long runId, List<InstanceDisk> disks) {
         PipelineRun run = runCRUDService.loadRunById(runId);
         String nodeId = run.getInstance().getNodeId();
         LocalDateTime creationDate = run.getInstanceStartDateTime();
         List<DiskRegistrationRequest> requests = DiskRegistrationRequest.from(disks);
         nodeDiskManager.register(nodeId, creationDate, requests);
-    }
-
-    private Map<String, String> resolveInstanceTagsFromMetadata(final MetadataEntry metadataEntry,
-                                                                final Map<String, String> customTags) {
-        final Map<String, PipeConfValue> metadataData = MapUtils.emptyIfNull(Objects.isNull(metadataEntry)
-                ? null
-                : metadataEntry.getData());
-        if (MapUtils.isEmpty(metadataData)) {
-            return customTags;
-        }
-        final Set<String> instanceTagsKeys = preferenceManager.getPreference(
-                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS);
-        if (CollectionUtils.isEmpty(instanceTagsKeys)) {
-            return customTags;
-        }
-        metadataData.entrySet().stream()
-                .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
-                .forEach(entry -> customTags.put(entry.getKey(), entry.getValue().getValue()));
-        return customTags;
-    }
-
-    private Map<String, String> resolveCommonCustomInstanceTags(final PipelineRun run) {
-        final Map<String, String> customInstanceTags = new HashMap<>();
-        final Map<CommonCustomInstanceTagsTypes, String> commonCustomInstanceTags = MapUtils.emptyIfNull(
-                preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS));
-        commonCustomInstanceTags
-                .forEach((tagType, tagName) -> fillCommonCustomInstanceTags(tagType, tagName, run, customInstanceTags));
-        return customInstanceTags;
-    }
-
-    private void fillCommonCustomInstanceTags(final CommonCustomInstanceTagsTypes tagType,
-                                              final String tagName, final PipelineRun run,
-                                              final Map<String, String> customInstanceTags) {
-        switch (tagType) {
-            case tool:
-                // TODO: check spec symbols for aws resources tags
-                customInstanceTags.put(tagName, run.getDockerImage());
-                break;
-            case run_id:
-                customInstanceTags.put(tagName, run.getId().toString());
-                break;
-            case owner:
-                customInstanceTags.put(tagName, run.getOwner());
-                break;
-            default:
-                throw new IllegalArgumentException(
-                        String.format("Failed to resolve custom instance type '%s'", tagType));
-        }
     }
 }

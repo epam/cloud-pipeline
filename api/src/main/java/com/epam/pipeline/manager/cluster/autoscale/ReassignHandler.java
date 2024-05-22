@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -57,16 +58,19 @@ public class ReassignHandler {
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
+    private final MetadataManager metadataManager;
 
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
-                           final List<PoolFilterHandler> filterHandlers) {
+                           final List<PoolFilterHandler> filterHandlers,
+                           final MetadataManager metadataManager) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
+        this.metadataManager = metadataManager;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -236,6 +240,6 @@ public class ReassignHandler {
         if (!run.isPresent()) {
             return new HashMap<>();
         }
-        return autoscalerService.buildCustomInstanceTags(run.get());
+        return metadataManager.buildCustomInstanceTags(run.get());
     }
 }
