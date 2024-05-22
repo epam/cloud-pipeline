@@ -10,10 +10,7 @@ _CP_STARTUP_BASH_FILE=/opt/cp_startup.sh
 cat > $_CP_STARTUP_BASH_FILE << EOF
 #!/bin/bash
 
-CP_LAUNCH_SH_URL="$CP_LAUNCH_SH_URL"
-CP_GIT_CLONE_URL="$CP_GIT_CLONE_URL"
-PIPELINE_VERSION="$PIPELINE_VERSION"
-CP_CMD="$CP_CMD"
+CP_LAUNCH_SH_URL='$CP_LAUNCH_SH_URL'
 
 # Inherit environment variables from the PID 1 process
 # So that the SystemD option get a correct environment
@@ -33,7 +30,7 @@ if [ "\$_curl_exists" -eq 0 ]; then
     export LAUNCH_CMD="curl -s -k '\$CP_LAUNCH_SH_URL'"
 fi
 
-eval "\$LAUNCH_CMD" | bash /dev/stdin "\$CP_GIT_CLONE_URL" "\$PIPELINE_VERSION" "\$CP_CMD"
+eval "\$LAUNCH_CMD" | bash /dev/stdin '$CP_GIT_CLONE_URL' '$PIPELINE_VERSION' '$CP_CMD'
 _launch_sh_result=\$?
 
 echo "[init.sh] Main script exited with \${_launch_sh_result}"
