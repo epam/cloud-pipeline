@@ -188,7 +188,7 @@ hook.register("load", load_hook)
 
 local function report_loads()
    for k,msg in pairs(module_msg) do
-      lmod_system_execute("pipe_log_info \"" .. msg .. "\" \"$CP_CAP_MODULES_USAGE_TASK\"")
+      lmod_system_execute("pipe_log_info \"" .. msg .. "\" \"$CP_CAP_MODULES_USAGE_TASK\" &> /dev/null")
    end
 end
 
