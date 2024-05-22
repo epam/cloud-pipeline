@@ -131,7 +131,7 @@ public class ReassignHandler {
                         return false;
                     }
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
-                            previousId, previousInstance);
+                            previousId, previousInstance, pipelineRun);
                 });
     }
 
@@ -172,9 +172,11 @@ public class ReassignHandler {
                                      final Set<String> scheduledRuns,
                                      final Set<String> reassignedNodes,
                                      final String previousNodeId,
-                                     final RunningInstance previousInstance) {
+                                     final RunningInstance previousInstance,
+                                     final Optional<PipelineRun> pipelineRun) {
         log.debug("Reassigning node ID {} to run {}.", previousNodeId, newNodeId);
-        final boolean successfullyReassigned = runReassign(previousNodeId, runId);
+        final Map<String, String> customInstanceTags = findCustomInstanceTags(runId, pipelineRun);
+        final boolean successfullyReassigned = runReassign(previousNodeId, runId, customInstanceTags);
         if (!successfullyReassigned) {
             return false;
         }
@@ -194,13 +196,13 @@ public class ReassignHandler {
         return true;
     }
 
-    private boolean runReassign(final String previousNodeId,
-                                final Long runId) {
+    private boolean runReassign(final String previousNodeId, final Long runId,
+                                final Map<String, String> customInstanceTags) {
         if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX) ||
                 previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
-            return cloudFacade.reassignPoolNode(previousNodeId, runId);
+            return cloudFacade.reassignPoolNode(previousNodeId, runId, customInstanceTags);
         }
-        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId);
+        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, customInstanceTags);
     }
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
@@ -227,5 +229,13 @@ public class ReassignHandler {
             return false;
         }
         return BooleanUtils.toBoolean(value);
+    }
+
+    private Map<String, String> findCustomInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
+        final Optional<PipelineRun> run = optionalRun.isPresent() ? optionalRun : pipelineRunManager.findRun(runId);
+        if (!run.isPresent()) {
+            return new HashMap<>();
+        }
+        return autoscalerService.buildCustomInstanceTags(run.get());
     }
 }

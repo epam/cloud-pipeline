@@ -202,17 +202,17 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any()))
+                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any(), any()))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
                 argThat(Matchers.hasProperty("spot", Matchers.is(true))),
-                any());
+                any(), any());
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
-                Matchers.hasProperty("spot", Matchers.is(false))), any());
+                Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
     }
 }

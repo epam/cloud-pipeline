@@ -59,7 +59,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param instance
      * @return
      */
-    RunInstance scaleUpNode(T region, Long runId, RunInstance instance, Map<String, String> runtimeParameters);
+    RunInstance scaleUpNode(T region, Long runId, RunInstance instance, Map<String, String> runtimeParameters,
+                            Map<String, String> customTags);
 
     RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
 
@@ -140,8 +141,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param newId
      * @return {@code true} if operation was successful
      */
-    boolean reassignNode(T region, Long oldId, Long newId);
-    boolean reassignPoolNode(T region, String nodeLabel, Long newId);
+    boolean reassignNode(T region, Long oldId, Long newId, Map<String, String> customTags);
+    boolean reassignPoolNode(T region, String nodeLabel, Long newId, Map<String, String> customTags);
 
     /**
      * Builds environment variables required for running a container in provided region

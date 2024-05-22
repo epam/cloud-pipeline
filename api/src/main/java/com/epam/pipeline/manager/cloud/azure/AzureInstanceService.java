@@ -103,7 +103,8 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     public RunInstance scaleUpNode(final AzureRegion region,
                                    final Long runId,
                                    final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters,
+                                   final Map<String, String> customTags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
                 runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptAzureEnvVars(region));
@@ -137,17 +138,20 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final AzureRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> customTags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProvider().name());
+                nodeReassignScript, oldId, newId, getProvider().name(), customTags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptAzureEnvVars(region));
     }
 
     @Override
-    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final AzureRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> customTags) {
         final String command = commandService.
-            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+            buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(),
+                    customTags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                                                      String.valueOf(newId), buildScriptAzureEnvVars(region));
     }

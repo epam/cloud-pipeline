@@ -520,7 +520,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 //save required instance
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
                 RunInstance instance = cloudFacade
-                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
+                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                requiredInstance.getCustomTags());
                 //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
                 pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
@@ -607,6 +608,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
+            instanceRequest.setCustomTags(autoscalerService.buildCustomInstanceTags(run));
             return instanceRequest;
         }
 

@@ -85,20 +85,24 @@ public class ClusterCommandService {
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final Long oldId,
                                            final Long newId,
-                                           final String cloud) {
-        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud);
+                                           final String cloud,
+                                           final Map<String, String> customTags) {
+        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud,
+                customTags);
     }
 
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final String oldId,
                                            final String newId,
-                                           final String cloud) {
+                                           final String cloud,
+                                           final Map<String, String> customTags) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
                 .oldRunId(oldId)
                 .newRunId(newId)
                 .cloud(cloud)
+                .customTags(customTags)
                 .build()
                 .getCommand();
     }

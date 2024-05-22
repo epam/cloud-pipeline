@@ -17,9 +17,11 @@
 package com.epam.pipeline.manager.cloud.commands;
 
 import lombok.Builder;
+import org.apache.commons.collections4.MapUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Builder
 public class ReassignCommand extends AbstractClusterCommand {
@@ -31,6 +33,7 @@ public class ReassignCommand extends AbstractClusterCommand {
     private final String oldRunId;
     private final String newRunId;
     private final String cloud;
+    private final Map<String, String> customTags;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -43,6 +46,10 @@ public class ReassignCommand extends AbstractClusterCommand {
         commands.add(newRunId);
         commands.add(CLOUD_PARAMETER);
         commands.add(cloud);
+        MapUtils.emptyIfNull(customTags).forEach((key, value) -> {
+            commands.add("--custom_tags");
+            commands.add(key + "=" + value);
+        });
         return commands;
     }
 }

@@ -29,12 +29,15 @@ import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -134,6 +137,9 @@ public class MetadataPermissionManager {
         if (entityClass.equals(AclClass.ROLE)) {
             return false;
         }
+        if (AclClass.TOOL.equals(entityClass) && isMetadataContainsRestrictedInstanceValues(metadataVO)) {
+            return false;
+        }
         return permissionHelper.isOwner(
                 entityManager.load(entityClass, entity.getEntityId()));
     }
@@ -153,5 +159,15 @@ public class MetadataPermissionManager {
     private boolean isSameUser(final Long entityId) {
         final PipelineUser user = userManager.load(entityId);
         return permissionHelper.isOwner(user.getUserName());
+    }
+
+    private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
+        final Set<String> allowedCustomTags = SetUtils.emptyIfNull(preferenceManager
+                .getPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS));
+        if (CollectionUtils.isEmpty(allowedCustomTags)) {
+            return false;
+        }
+        return SetUtils.emptyIfNull(MapUtils.emptyIfNull(metadata.getData()).keySet()).stream()
+                .anyMatch(allowedCustomTags::contains);
     }
 }
