@@ -16,8 +16,8 @@ Parameters:
   DeploymentAWSCredentialsSecretId:
     Type: String
     Description: >
-      (Optional) If not set the TFDeployRole will be created with full administator access and assumed to Jump-Server role.
-      Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure
+      (Optional) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.
+      If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role.
     Default: ""
   JumpServerInstanceType:
     Type: String
@@ -76,9 +76,11 @@ Parameters:
       (Required) The ID of the public subnet for the Load Balancer to be created. 
       Must be in the same Availability Zone (AZ) as the CPSystemSubnetId
     Default: ""
-  CPEdgeAwsElbEIPAlloc:
+  CPEdgeAwsElbIP:
     Type: String
-    Description: (Required) Allocation ID of the Elastic IP from prerequisites. See README.md for more information
+    Description: >
+      (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. 
+      See README.md for more information
     Default: ""
   CPApiSrvHost:
     Type: String
@@ -210,7 +212,7 @@ Resources:
 # Resource TFDeployRole created conditionally and in this case we cannot refer to this resource in 
 # UserData(stack creation will fail if TFDeployRole was not created) that why we generate role name in UserData manually 
   
-    JumpBoxInstance:
+    CloudPipelineDeployerInstance:
       Type: AWS::EC2::Instance
       DependsOn: TerraformS3Bucket
       Properties:
@@ -220,6 +222,10 @@ Resources:
         SecurityGroupIds: 
           - !GetAtt JumpboxSG.GroupId
         SubnetId: !Ref CPSystemSubnetId
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda"
+            Ebs:
+              VolumeSize: 500
         UserData: 
           "Fn::Base64": !Sub | 
               #!/bin/bash
@@ -313,8 +319,8 @@ Resources:
                 eks_system_node_group_subnet_ids  =  ["${CPSystemSubnetId}"]
                 deploy_filesystem_type            =  "${CPNetworkFileSystemType}"
                 cp_deployment_id                  =  "${CPDeploymentId}"
-                cp_edge_elb_public_subnet         =  "${CPEdgeAwsElbSubnet}"
-                cp_edge_eipalloc                  =  "${CPEdgeAwsElbEIPAlloc}"
+                cp_edge_elb_subnet                =  "${CPEdgeAwsElbSubnet}"
+                cp_edge_elb_ip                    =  "${CPEdgeAwsElbIP}"
                 cp_api_srv_host                   =  "${CPApiSrvHost}"
                 cp_idp_host                       =  "${CPIdpHost}"
                 cp_docker_host                    =  "${CPDockerHost}"
@@ -473,7 +479,7 @@ Resources:
               
         Tags:
         - Key: Name
-          Value: "${DeploymentName}-${DeploymentEnv}-JumpServer"
+          Value: !Sub "${DeploymentName}-${DeploymentEnv}-JumpServer"
         - Key: Deployment
           Value: !Sub "${DeploymentName}"
         - Key: Environment
@@ -482,10 +488,10 @@ Resources:
 Outputs:
   InstanceID:
     Description: "Instance ID"
-    Value: !Ref JumpBoxInstance
+    Value: !Ref CloudPipelineDeployerInstance
   InstanceConnect:
     Description: "SSM connect to JumpBox command"
-    Value: !Sub "aws ssm start-session --target ${JumpBoxInstance} --region ${AWS::Region}"  
+    Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}"  
 
 
 

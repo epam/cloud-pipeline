@@ -20,15 +20,18 @@ module "eks" {
 
   cluster_additional_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
 
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-      configuration_values = jsonencode({
-        replicaCount = 3
-        nodeSelector : local.eks_system_node_labels
-      })
-    }
-  }
+  cluster_addons = merge(
+    {
+      coredns = {
+        most_recent = true
+        configuration_values = jsonencode({
+          replicaCount = 3
+          nodeSelector : local.eks_system_node_labels
+        })
+      }
+    },
+    local.vpc_cni_addon_config
+  )
 
   # External encryption key
   create_kms_key = false
@@ -157,4 +160,3 @@ resource "helm_release" "alb-controller" {
 
   depends_on = [module.eks, module.internal_cluster_access_sg]
 }
-

@@ -54,6 +54,21 @@ locals {
     }
   ]
 
+  vpc_cni_addon_config = var.eks_vpc_cni_driver_custom_config.enable ? {
+    vpc-cni = {
+      most_recent    = true
+      before_compute = true
+      configuration_values = jsonencode({
+        env = {
+          # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
+          WARM_ENI_TARGET = "\"${var.eks_vpc_cni_driver_custom_config.warm_eni_target}\""
+          WARM_IP_TARGET = "\"${var.eks_vpc_cni_driver_custom_config.warm_ip_target}\""
+          MINIMUM_IP_TARGET = "\"${var.eks_vpc_cni_driver_custom_config.min_ip_target}\""
+        }
+      })
+    }
+  } : {}
+
   cloud_pipeline_db_configuration = var.create_cloud_pipeline_db_configuration && var.deploy_rds ? var.cloud_pipeline_db_configuration : {}
 
   pipeline_db_pass = var.cloud_pipeline_db_configuration["pipeline"].password != null ? var.cloud_pipeline_db_configuration["pipeline"].password : nonsensitive(random_password.this["pipeline"].result)
@@ -74,6 +89,11 @@ locals {
     "-env CP_API_SRV_SAML_USER_ATTRIBUTES=\"${var.cp_api_srv_saml_user_attr}\""
   ]
 
+  aws_omics_specific_envs = var.enable_aws_omics_integration ? [
+    "-env CP_PREF_AWS_OMICS_SERVICE_ROLE=${aws_iam_role.cp_omics_service[0].arn}",
+    "-env CP_PREF_AWS_OMICS_ECR_REGISTRY=${data.aws_caller_identity.current.account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com"
+  ] : []
+
   cp_edge_elb_sgs = join(
     ",",
     concat(
@@ -82,6 +102,17 @@ locals {
       try([module.https_access_sg[0].security_group_id], []),
       [module.internal_cluster_access_sg.security_group_id]
     )
+  )
+
+  cp_edge_elb_envs = concat(
+    [
+      "-env CP_EDGE_AWS_ELB_SCHEME=\"${var.cp_edge_elb_schema}\"",
+      "-env CP_EDGE_AWS_ELB_SUBNETS=\"${var.cp_edge_elb_subnet}\"",
+      "-env CP_EDGE_AWS_ELB_SG=\"${local.cp_edge_elb_sgs}\"",
+    ],
+    var.cp_edge_elb_schema == "internet-facing"
+      ? ["-env CP_EDGE_AWS_ELB_EIPALLOCS=\"${var.cp_edge_elb_ip}\"", "-env CP_EDGE_KUBE_SERVICES_TYPE=elb"]
+      : ["-env CP_EDGE_AWS_ELB_PRIVATE_IPS=\"${var.cp_edge_elb_ip}\"", "-env CP_EDGE_KUBE_SERVICES_TYPE=elb-internal"]
   )
 
   deploy_script = join(" \\\n", concat([
@@ -101,16 +132,12 @@ locals {
     "-env CP_CLUSTER_SSH_KEY=\"/opt/root/ssh/ssh-key.pem\"",
     "-env CP_DOCKER_STORAGE_TYPE=\"obj\"",
     "-env CP_DOCKER_STORAGE_CONTAINER=\"${module.s3_docker.s3_bucket_id}\"",
-    "-env CP_DEPLOYMENT_ID=\"${var.deployment_id}\"",
-    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.deployment_id}\"",
+    "-env CP_DEPLOYMENT_ID=\"${var.cp_deployment_id}\"",
+    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.cp_deployment_id}\"",
     "-env CP_CLOUD_REGION_ID=\"${data.aws_region.current.name}\"",
     "-env CP_KUBE_CLUSTER_NAME=\"${module.eks.cluster_name}\"",
     "-env CP_KUBE_EXTERNAL_HOST=\"${module.eks.cluster_endpoint}\"",
     "-env CP_KUBE_SERVICES_TYPE=\"ingress\"",
-    "-env CP_EDGE_AWS_ELB_SCHEME=\"internet-facing\"",
-    "-env CP_EDGE_AWS_ELB_SUBNETS=\"${var.elb_public_subnet}\"",
-    "-env CP_EDGE_AWS_ELB_EIPALLOCS=\"${var.eipalloc}\"",
-    "-env CP_EDGE_AWS_ELB_SG=\"${local.cp_edge_elb_sgs}\"",
     "--external-host-dns",
     "-env PSG_HOST=\"${module.cp_rds.db_instance_address}\"",
     "-env PSG_PASS=\"${local.pipeline_db_pass}\"",
@@ -171,7 +198,9 @@ locals {
     "-env CP_BILLING_DISABLE_AZURE_BLOB=\"true\"",
     "-env CP_BILLING_CENTER_KEY=\"billing-group\""
     ],
-    local.deploy_idp
+    local.deploy_idp,
+    local.aws_omics_specific_envs,
+    local.cp_edge_elb_envs
   ))
 }
 

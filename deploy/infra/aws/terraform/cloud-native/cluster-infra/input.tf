@@ -95,6 +95,21 @@ variable "eks_cloudwatch_logs_retention_in_days" {
   description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
 }
 
+variable "eks_vpc_cni_driver_custom_config" {
+  default = {
+    enable          = true,
+    min_ip_target   = 5,
+    warm_ip_target  = 2,
+    warm_eni_target = 0
+  }
+  type = object({
+    enable          = bool,
+    min_ip_target   = number,
+    warm_ip_target  = number,
+    warm_eni_target = number
+  })
+}
+
 ###################################################################
 #                  File systems for Cloud-Pipeline deployment
 ###################################################################
@@ -251,12 +266,18 @@ variable "cp_deployment_id" {
   description = "Deployment Name"
 }
 
-variable "cp_edge_elb_public_subnet" {
+variable "cp_edge_elb_schema" {
   type        = string
-  description = "Public subnet id to deploy user-facing AWS Elastic Load Balancer."
+  default     = "internet-facing"
+  description = "User-facing ELB schema. Possible values 'internal' or 'internet-facing'."
 }
 
-variable "cp_edge_eipalloc" {
+variable "cp_edge_elb_subnet" {
+  type        = string
+  description = "Subnet id to deploy user-facing AWS Elastic Load Balancer."
+}
+
+variable "cp_edge_elb_ip" {
   type        = string
   description = "Allocation ID of the pre-created Elastic IP. Will be used to assign to the user-facing ELB."
 }

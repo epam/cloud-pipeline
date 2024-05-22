@@ -33,9 +33,9 @@ metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: external
     service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internal
     service.beta.kubernetes.io/aws-load-balancer-subnets: ${CP_EDGE_AWS_ELB_SUBNETS}
-    service.beta.kubernetes.io/aws-load-balancer-eip-allocations: ${CP_EDGE_AWS_ELB_EIPALLOCS}
+    service.beta.kubernetes.io/aws-load-balancer-private-ipv4-addresses: ${CP_EDGE_AWS_ELB_PRIVATE_IPS}
     service.beta.kubernetes.io/aws-load-balancer-security-groups: ${CP_EDGE_AWS_ELB_SG}
 spec:
   type: LoadBalancer
