@@ -1,18 +1,43 @@
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Create Jump-box EC2 instance
+Description: >
+  Deploy Cloud-Pipeline solution on top of AWS infrastructure. 
+  As a first step this stack will spin up EC2 instance that will work as a Jump Server to deploy Cloud-Pipeline solution itself. 
+  On the second step EC2 instance will run terraform deployment to deploy all required AWS infrastructure to host Cloud-Pipeline. 
+  During the final, third step, pipectl deployment command will be executed on top of the created AWS infrastructure to finally deploy all EKS resource and configure Cloud-Pipeline. 
+
 
 Parameters:
-  ProjectName:
+  DeploymentName:
     Type: String
     Description: (Required) Name of the deployment. Will be used as resources name prefix
-  Env:
+  DeploymentEnv:
     Type: String
     Description: (Required) Environment name. Will be used as resources name prefix
+  DeploymentAWSCredentialsSecretId:
+    Type: String
+    Description: >
+      (Optional) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.
+      If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role.
+    Default: ""
   JumpServerInstanceType:
     Type: String
     Description: (Optional) Jump-server EC2 instance type
     Default: t3.medium
-  AmiId:
+  JumpServerAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Description: (Optional) Image id that will be used for Jump-Server
     Default: /aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id
@@ -20,83 +45,90 @@ Parameters:
     Type: String
     Description: (Required) Id of the VPC where all resources will be created
     Default: ""
-  CPInfraSubnetId:
-    Type: String
-    Description: (Required) Subnet where JumpServer instance and EKS node group will be created
-    Default: ""
-  EKSSubnetIds:
+  SubnetIds:
     Type: String
     Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified
     Default: ""
-  IAMrolePermissionsBoundaryArn:
+  EKSAdminRoleArns:
     Type: String
-    Description: (Optional) Account specific role boundaries
+    Description: > 
+      (Optional) Set of roles ARNs which will get admin access in EKS cluster. 
+      Could be useful if DeploymentAWSCredentialsSecretId is not provided. Then here user can provide ARN of his role to get access to the cluster.
     Default: ""
-  FileSystemType:
+  IAMRolePermissionsBoundaryArn:
     Type: String
-    Description: (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.
-    Default: "efs"
+    Description: (Optional) Account specific role boundaries, this value will be used for all created IAM Roles.
+    Default: ""
   TFstateBucketName:
     Type: String
     Description: (Required) S3 Bucket name, that will be created where terraform state file for Cloud-Pipeline Infrastructure module will be stored
   TFStateLockTableName:
     Type: String
     Description: (Required) Name of the DynamoDB table, that will be created, for terraform state lock
-  CPApiAccessPrefixLists:
+  CPSystemSubnetId:
     Type: String
-    Description: (Optional) Prefix Lists to which access to Cloud Pipeline API will be granted
+    Description: (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created
+    Default: ""
+  CPNetworkFileSystemType:
+    Type: String
+    Description: (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs
+    Default: "efs"
+  CPAccessPrefixLists:
+    Type: String
+    Description: (Optional) AWS Prefix Lists to which access to Cloud Pipeline will be granted
     Default: ""
   CPDeploymentId:
     Type: String
-    Description: (Optional) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.
+    Description: >
+      (Optional) Specify unique ID of the Cloud-Pipeline deployment. 
+      It will be used to name cloud entities (e.g. path within a docker registry object container). 
+      Must contain only letters, digits, underscore or dash
     Default: "Cloud-Pipeline"
-  CPEdgeAwsElbSubnets:
+  CPEdgeAwsElbSubnet:
     Type: String
-    Description: (Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the CPInfraSubnetId.
+    Description: >
+      (Required) The ID of the public subnet for the Load Balancer to be created. 
+      Must be in the same Availability Zone (AZ) as the CPSystemSubnetId
     Default: ""
-  CPEdgeAwsElbEipallocs:
+  CPEdgeAwsElbIP:
     Type: String
-    Description: (Required) Allocation ID of the created Elastic IP
+    Description: >
+      (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. 
+      See README.md for more information
     Default: ""
-  CPPrefUiPipelineDeploymentName:
-    Type: String
-    Description: (Optional) Deployment Name that will be shown as the browser tab name
-    Default: "Cloud-Pipeline"  
   CPApiSrvHost:
     Type: String
-    Description: (Required) API service domain name address
-  CPIdpHost:
-    Type: String
-    Description: (Required) IDP service domain name address
-    Default: ""
+    Description: (Required) API service domain name address. See README.md for more information
   CPDockerHost:
     Type: String
-    Description: (Required) Docker service domain name address
+    Description: (Required) Docker service domain name address. See README.md for more information
   CPEdgeHost:
     Type: String
-    Description: (Required) EDGE service domain name address
+    Description: (Required) EDGE service domain name address. See README.md for more information
   CPGitlabHost:
     Type: String 
-    Description: (Required) GITLAB service domain name address
-  EKSAdminRoleArns:
+    Description: (Required) GITLAB service domain name address. See README.md for more information
+  CPIdpHost:
     Type: String
-    Description: (Optional) If secret with aws credentials not specified then set arn of the role wich will get admin access in EKS cluster
-    Default: ""
-  AWSCredentialSecretId:
-    Type: String
-    Description: (Optional, if not set the TFDeployRole will be created with full administator access and assumed to Jump-Server role) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure
+    Description: > 
+      (Optional) Self hosted IDP service domain name address. 
+      WARNING: Using self hosted IDP service in production environment strongly not recommended!
+      If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline. 
+      See README.md for more information
     Default: ""
   CPAssetsS3Url:
-    Type: String 
-    Description: (Optional) Link to zip archive with additional assets on AWS S3 bucket. For example s3://<bucket-name>/<filename.zip>
-    Default: ""
-  PipectlUrl:
     Type: String
-    Description: Link to the latest pipectl binary file that will be user to deploy Cloud Pipeline
+    Description: >
+      (Optional) Link to zip archive with additional assets on AWS S3 bucket. For example s3://<bucket-name>/<filename.zip>. 
+      See README.md for more information
+    Default: ""
+  CPPipectlUrl:
+    Type: String
+    Description: (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline
 
 Conditions:
-    IsSecretNotEntered: !Equals [!Ref AWSCredentialSecretId, ""]
-    IsBoundaryNotEntered: !Equals [!Ref IAMrolePermissionsBoundaryArn, ""]
+    IsSecretNotEntered: !Equals [!Ref DeploymentAWSCredentialsSecretId, ""]
+    IsBoundaryNotEntered: !Equals [!Ref IAMRolePermissionsBoundaryArn, ""]
 
 Resources:
 
@@ -124,9 +156,9 @@ Resources:
     JumpServerIAMRole:
       Type: 'AWS::IAM::Role'
       Properties:
-        RoleName: !Sub "${ProjectName}-${Env}-JumpServer-role"
+        RoleName: !Sub "${DeploymentName}-${DeploymentEnv}-JumpServer-role"
         Path: /
-        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMrolePermissionsBoundaryArn ]
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMRolePermissionsBoundaryArn ]
         AssumeRolePolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -137,7 +169,7 @@ Resources:
               Action:
                 - 'sts:AssumeRole'
         Policies:
-         - PolicyName: !Sub ${ProjectName}-${Env}-JumpServer-read-secret
+         - PolicyName: !Sub ${DeploymentName}-${DeploymentEnv}-JumpServer-read-secret
            PolicyDocument:
              Version: 2012-10-17
              Statement:
@@ -164,9 +196,9 @@ Resources:
       Type: 'AWS::IAM::Role'
       Condition: IsSecretNotEntered
       Properties:
-        RoleName: !Sub "${ProjectName}-${Env}-tf-deploy-infra-role"
+        RoleName: !Sub "${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role"
         Path: /
-        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMrolePermissionsBoundaryArn ]
+        PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMRolePermissionsBoundaryArn ]
         MaxSessionDuration: 7200
         AssumeRolePolicyDocument:
           Version: 2012-10-17
@@ -182,7 +214,7 @@ Resources:
     JumpboxSG:
       Type: AWS::EC2::SecurityGroup
       Properties:
-        GroupDescription: !Sub "${ProjectName}-${Env}-jumpserver-sg"
+        GroupDescription: !Sub "${DeploymentName}-${DeploymentEnv}-jumpserver-sg"
         VpcId: !Ref VpcId
         SecurityGroupIngress:
           - IpProtocol: '-1'
@@ -194,25 +226,34 @@ Resources:
 # Resource TFDeployRole created conditionally and in this case we cannot refer to this resource in 
 # UserData(stack creation will fail if TFDeployRole was not created) that why we generate role name in UserData manually 
   
-    JumpBoxInstance:
+    CloudPipelineDeployerInstance:
       Type: AWS::EC2::Instance
       DependsOn: TerraformS3Bucket
       Properties:
         IamInstanceProfile: !Ref JumpServerInstanceProfile
-        ImageId: !Ref AmiId
+        ImageId: !Ref JumpServerAmiId
         InstanceType: !Ref JumpServerInstanceType
         SecurityGroupIds: 
           - !GetAtt JumpboxSG.GroupId
-        SubnetId: !Ref CPInfraSubnetId
+        SubnetId: !Ref CPSystemSubnetId
+        BlockDeviceMappings:
+          - DeviceName: "/dev/xvda"
+            Ebs:
+              VolumeSize: 500
         UserData: 
           "Fn::Base64": !Sub | 
               #!/bin/bash
-
-              echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
+            
               export HOME=/root
-
+              export CLOUD_PIPELINE_DEPLOY_DIR=$HOME/cloud-pipeline
+              export AWS_INFRA_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/infra
+              export PIPECTL_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/pipectl-deploy
+              echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
+            
+              ######################################
+              ### Installation required packages ###
+              ######################################
               sudo yum install git jq curl vim wget unzip -y
-              
               sudo yum remove awscli -y
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
               unzip awscliv2.zip && \
@@ -231,15 +272,18 @@ Resources:
               sudo yum install -y docker
               sudo systemctl enable docker
               sudo systemctl start docker
-               
-              sudo mkdir -p ~/deployment-eks
-              cd ~/deployment-eks
+            
+              ##############################################
+              ### Preparation of Terraform configuration ###
+              ##############################################
+              sudo mkdir -p $AWS_INFRA_DEPLOY_DIR && \
+              cd $AWS_INFRA_DEPLOY_DIR
 
               cat << EOF > main.tf
               terraform {
                 backend "s3" {
                   bucket         = "${TFstateBucketName}"
-                  key            = "${Env}/terraform.tfstate"
+                  key            = "${DeploymentEnv}/terraform.tfstate"
                   region         = "${AWS::Region}"
                   encrypt        = true
                   dynamodb_table = "${TFStateLockTableName}"
@@ -288,19 +332,18 @@ Resources:
 
               module "cluster-infra" {
                 source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
-                project_name                      = "${ProjectName}"
-                env                               = "${Env}"
+                project_name                      = "${DeploymentName}"
+                env                               = "${DeploymentEnv}"
                 vpc_id                            = "${VpcId}"
-                cp_api_access_prefix_lists        = ["${CPApiAccessPrefixLists}"]
-                subnet_ids                        =  tolist([for subnet in split(",", "${EKSSubnetIds}"): trimspace(subnet)]) 
-                iam_role_permissions_boundary_arn = "${IAMrolePermissionsBoundaryArn}" 
-                eks_system_node_group_subnet_ids  =  ["${CPInfraSubnetId}"]
-                deploy_filesystem_type            =  "${FileSystemType}"
-                deployment_id                     =  "${CPDeploymentId}"
-                elb_public_subnet                 =  "${CPEdgeAwsElbSubnets}"
-                eipalloc                          =  "${CPEdgeAwsElbEipallocs}"
+                cp_api_access_prefix_lists        = ["${CPAccessPrefixLists}"]
+                subnet_ids                        =  tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
+                iam_role_permissions_boundary_arn = "${IAMRolePermissionsBoundaryArn}" 
+                eks_system_node_group_subnet_ids  =  ["${CPSystemSubnetId}"]
+                deploy_filesystem_type            =  "${CPNetworkFileSystemType}"
+                cp_deployment_id                  =  "${CPDeploymentId}"
+                cp_edge_elb_subnet                =  "${CPEdgeAwsElbSubnet}"
+                cp_edge_elb_ip                    =  "${CPEdgeAwsElbIP}"
                 cp_api_srv_host                   =  "${CPApiSrvHost}"
-                ui_deployment_name                =  "${CPPrefUiPipelineDeploymentName}" 
                 cp_idp_host                       =  "${CPIdpHost}"
                 cp_docker_host                    =  "${CPDockerHost}"
                 cp_edge_host                      =  "${CPEdgeHost}"
@@ -346,24 +389,80 @@ Resources:
                 }
               }
               EOF
-              
-              export CP_SECRET=${AWSCredentialSecretId}
+            
+              ##########################################
+              ### Assume appropriate creds to deploy ###
+              ##########################################
+              CP_SECRET=${DeploymentAWSCredentialsSecretId}
               if [ -n "$CP_SECRET"  ]; then
                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                  eval $creds
               else   
                  export $(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
                  $(aws sts assume-role \
-                 --role-arn arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-${Env}-tf-deploy-infra-role \
+                 --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
                  --role-session-name TFDeploy \
                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
                  --output text))
               fi   
- 
+            
+              #########################################
+              ### Start of the terraform deployment ###
+              #########################################
               terraform init 
-              terraform apply --auto-approve > terraform_apply.log
-
-              export CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
+              terraform apply --auto-approve &> terraform_apply.log
+            
+              #####################################
+              ### Prepare infra deletion script ###
+              #####################################
+              cat << EOF > delete_all_cp_infra.sh
+              #!/bin/bash
+              echo "-----------SET ACCESS TO AWS-----------------" 
+              export CP_SECRET=${DeploymentAWSCredentialsSecretId}
+              if [ -n "$CP_SECRET"  ]; then
+                  creds=\$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+                  eval \$creds
+              else   
+                  export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
+                  \$(aws sts assume-role \
+                  --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
+                  --role-session-name TFDeploy \
+                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
+                  --output text))
+              fi
+              while true; do
+                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources? [y/N]" yn
+                  case \$yn in
+                      Yes|yes|Y|y ) export APPROVE="TRUE"; break;;
+                      No|no|N|n ) exit;;
+                      * ) echo "Please answer Yes or No.";;
+                  esac
+              done
+              
+              if [ "\$APPROVE" == "TRUE" ]; then
+                 echo "START DESTROYING TERRAFORM RESOURCES!"
+              
+                 cd $AWS_INFRA_DEPLOY_DIR && \
+                 kubectl delete service ingress && \
+                 terraform destroy --auto-approve
+              
+                 if [ "\$?" -ne 0 ]; then
+                    echo "Something went wrong during automated resources deletion process! Manual intervention is required!"
+                    exit 1
+                 else
+                    echo "INFRASTRUCTURE RESOURCES DESTROYED! NOW YOU CAN DELETE CLOUDFORMATION STACK!"
+                 fi
+              else 
+                 echo "DELETION ABORTED!"
+              fi
+              EOF
+              
+              chmod +x delete_all_cp_infra.sh
+            
+              ##########################################
+              ### Preparation for the pipectl deploy ###
+              ##########################################
+              CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
               fs_mount=$(terraform output -raw filesystem_mount)
               if [ "$CP_FILE_SYSTEM" == "efs" ]; then
                  sudo yum install amazon-efs-utils -y 
@@ -376,14 +475,14 @@ Resources:
               sudo mkdir -p /opt/root/ssh
               terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem     
               
-              export CP_S3Link=${CPAssetsS3Url}
+              CP_S3Link=${CPAssetsS3Url}
               if [ -n "$CP_S3Link"  ]; then
                  aws s3 cp $CP_S3Link . && unzip *.zip -d /opt \
                  # Finish configuration of PKI
-                  cd /opt/common/pki/ \
-                  openssl pkcs12 -export -in ca-public-cert.pem \
-                  -inkey ca-private-key.pem \
-                  -out common-ssl.p12 \
+                  openssl pkcs12 -export \
+                  -in /opt/common/pki/ca-public-cert.pem \
+                  -inkey /opt/common/pki/ca-private-key.pem \
+                  -out /opt/common/pki/common-ssl.p12 \
                   -name ssl \
                   -password pass:changeit
                  # Symlink SSL to API
@@ -403,65 +502,32 @@ Resources:
                   mkdir -p /opt/gitlab/pki
                   ln -s /opt/common/pki/ca-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
                   ln -s /opt/common/pki/ca-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
-                  cd ~/deployment-eks
               fi
+            
+              sudo mkdir -p $PIPECTL_DEPLOY_DIR
+              terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
+              chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
               
-              wget -c ${PipectlUrl} -O pipectl
-              chmod +x pipectl
-              terraform output -raw cp_pipectl_script > deploycp.sh && chmod +x deploycp.sh
-              ./deploycp.sh > pipectl.log
-
-              cat << EOF > delete_all_cp_infra.sh
-              #!/bin/bash
-              echo "-----------SET ACCESS TO AWS-----------------" 
-              export CP_SECRET=${AWSCredentialSecretId}
-              if [ -n "$CP_SECRET"  ]; then
-                  creds=\$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
-                  eval \$creds
-              else   
-                  export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \
-                  \$(aws sts assume-role \
-                  --role-arn arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-${Env}-tf-deploy-infra-role \
-                  --role-session-name TFDeploy \
-                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
-                  --output text))
-              fi
-              while true; do
-                  read -p "Are you sure you want to delete cloud pipeline and all infrastructure resources? [y/N]" yn
-                  case \$yn in
-                      Yes|yes|Y|y ) export APPROVE="TRUE"; break;;
-                      No|no|N|n ) exit;;
-                      * ) echo "Please answer Yes or No.";;
-                  esac
-              done
-
-              if [ "\$APPROVE" == "TRUE" ]; then
-                 echo "-----------START DESTROYING RESOURCES!-------------------"
-                 kubectl delete service ingress
-
-                 terraform destroy --auto-approve
-
-                 aws s3 rm s3://${TFstateBucketName} --recursive
-                 echo "-----------INFRASTRUCTURE RESOURSES DESTROYED!-------------------"
-                 echo "-----------NOW YOU CAN DELETE CLOUDFORMATION STACK!-------------------"
-              else echo "-----------DELETION ABORTED!-------------------"
-              fi
-              EOF
-
-              chmod +x delete_all_cp_infra.sh
-
+              cd $PIPECTL_DEPLOY_DIR
+              
+              wget -c ${CPPipectlUrl} -O pipectl && chmod +x pipectl
+              ./deploy_cloud_pipeline.sh &> pipectl.log
               
         Tags:
         - Key: Name
-          Value: !Sub "${ProjectName}-${Env}-JumpServer"      
+          Value: !Sub "${DeploymentName}-${DeploymentEnv}-JumpServer"
+        - Key: Deployment
+          Value: !Sub "${DeploymentName}"
+        - Key: Environment
+          Value: !Sub "${DeploymentEnv}"
 
 Outputs:
   InstanceID:
     Description: "Instance ID"
-    Value: !Ref JumpBoxInstance
+    Value: !Ref CloudPipelineDeployerInstance
   InstanceConnect:
     Description: "SSM connect to JumpBox command"
-    Value: !Sub "aws ssm start-session --target ${JumpBoxInstance} --region ${AWS::Region}"  
+    Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}"  
 
 
 

@@ -1,3 +1,17 @@
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 variable "env" {
   type        = string
   description = "Environment name"
@@ -93,6 +107,21 @@ variable "eks_cloudwatch_logs_retention_in_days" {
   type        = number
   default     = 30
   description = "Possible values are: 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653, and 0. If you select 0, the events in the log group are always retained and never expire."
+}
+
+variable "eks_vpc_cni_driver_custom_config" {
+  default = {
+    enable          = true,
+    min_ip_target   = 5,
+    warm_ip_target  = 2,
+    warm_eni_target = 0
+  }
+  type = object({
+    enable          = bool,
+    min_ip_target   = number,
+    warm_ip_target  = number,
+    warm_eni_target = number
+  })
 }
 
 ###################################################################
@@ -245,24 +274,26 @@ variable "rds_force_ssl" {
 # but define how Cloud-Pipeline will be deployed on top of this infrastructure
 ###################################################################
 
-variable "deployment_id" {
+variable "cp_deployment_id" {
   type        = string
+  default = "Cloud-Pipeline"
   description = "Deployment Name"
 }
 
-variable "elb_public_subnet" {
+variable "cp_edge_elb_schema" {
   type        = string
-  description = "Public subnet id to deploy user-facing AWS Elastic Load Balancer."
+  default     = "internet-facing"
+  description = "User-facing ELB schema. Possible values 'internal' or 'internet-facing'."
 }
 
-variable "eipalloc" {
+variable "cp_edge_elb_subnet" {
+  type        = string
+  description = "Subnet id to deploy user-facing AWS Elastic Load Balancer."
+}
+
+variable "cp_edge_elb_ip" {
   type        = string
   description = "Allocation ID of the pre-created Elastic IP. Will be used to assign to the user-facing ELB."
-}
-
-variable "ui_deployment_name" {
-  type        = string
-  description = "Cloud-Pipeline name that will be used in several Cloud-Pipeline UI elements. F.i. browser tab name."
 }
 
 variable "cp_api_srv_host" {
@@ -271,6 +302,7 @@ variable "cp_api_srv_host" {
 }
 variable "cp_idp_host" {
   type        = string
+  default     = null
   description = "Cloud-Pipeline Self hosted IDP service domain name address"
 }
 
@@ -289,7 +321,7 @@ variable "cp_gitlab_host" {
   description = "GITLAB service domain name address"
 }
 
-variable "srv_saml_user_attr" {
+variable "cp_api_srv_saml_user_attr" {
   type        = string
   description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
   default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
