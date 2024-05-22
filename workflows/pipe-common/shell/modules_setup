@@ -169,6 +169,7 @@ elif [ "$CP_CAP_MODULES_TYPE" == "lmod" ]; then
     if [ "$CP_CAP_MODULES_TRACK_USAGE" == "true" ]; then
         CP_CAP_MODULES_CONFIG_DIR="${CP_CAP_MODULES_CONFIG_DIR:-$MODULES_FILES_DIR}"
         if [ ! -f "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" ]; then
+            mkdir -p "$CP_CAP_MODULES_CONFIG_DIR"
             cat > "$CP_CAP_MODULES_CONFIG_DIR/SitePackage.lua" << EOF
 local hook =  require("Hook")
 local uname = require("posix").uname
