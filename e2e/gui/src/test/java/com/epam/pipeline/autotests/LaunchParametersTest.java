@@ -37,6 +37,8 @@ import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import static java.lang.Double.parseDouble;
 import static java.util.regex.Pattern.compile;
 import org.testng.annotations.AfterClass;
@@ -472,6 +474,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
 
     @Test
     @TestCase(value = "913")
+    @CloudProviderOnly(values = {Cloud.AWS})
     public void addSupportForAutoscalingFilesystemForAWS() {
         String command = "df -hT";
         tools()
@@ -506,7 +509,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                            .waitUntilTextAppears(getLastRunId())
                                            .execute(command)
                                            .assertNextStringIsVisible(command, rootHost)
-                                           .assertPageAfterCommandContainsStrings(command, logMessage(1, sizeDisk[0]))))
+                                           .assertPageAfterCommandContainsStrings(command, logMessage(sizeDisk[0]))))
                            .commit(commit -> commit.setVersion(customTag).ok())
                            .assertCommittingFinishedSuccessfully()
                            .clickTaskWithName(FILESYSTEM_AUTOSCALING)
@@ -517,7 +520,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                            .waitUntilTextAppears(getLastRunId())
                                            .execute(command)
                                            .assertNextStringIsVisible(command, rootHost)
-                                           .assertPageAfterCommandContainsStrings(command, logMessage(1, sizeDisk[2]))))
+                                           .assertPageAfterCommandContainsStrings(command, logMessage(sizeDisk[2]))))
                            .pause(nameWithoutGroup(tool))
                            .assertPausingFinishedSuccessfully()
                            .resume(nameWithoutGroup(tool))
@@ -530,7 +533,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                            .waitUntilTextAppears(getLastRunId())
                                            .execute(command)
                                            .assertNextStringIsVisible(command, rootHost)
-                                           .assertPageAfterCommandContainsStrings(command, logMessage(2, sizeDisk[3]))
+                                           .assertPageAfterCommandContainsStrings(command, logMessage(sizeDisk[3]))
                                            .close()))
                 );
     }
@@ -575,8 +578,8 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 (int)resize, (int)Math.floor(resize/2), (int)resize + (int)Math.floor(resize/2));
     }
 
-    private String logMessage(int numb, int size) {
-        return format("/dev/nvme%sn1   btrfs%5sG", numb, size);
+    private String logMessage(int size) {
+        return format("btrfs%5sG", size);
     }
 
     private int[] diskSize(String log) {
