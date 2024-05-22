@@ -184,7 +184,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO pause(final String pipelineName) {
         clickOnPauseButton();
-        $(byClassName("ant-modal-body")).shouldBe(visible);
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
         ensure(byClassName("ause-confirmation__title"),
                 matchText(format("Do you want to pause%s", pipelineName)))
                 .sleep(1, SECONDS)
