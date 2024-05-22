@@ -23,6 +23,7 @@ import com.amazonaws.services.ec2.model.AmazonEC2Exception;
 import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.DeleteTagsRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeImagesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceTypesRequest;
@@ -49,6 +50,7 @@ import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
+import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.Volume;
 import com.amazonaws.waiters.Waiter;
@@ -86,6 +88,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -354,6 +357,15 @@ public class EC2Helper implements EC2GpuHelper {
         final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+    }
+
+    public void deleteInstanceTags(final AwsRegion awsRegion, final String instanceId, final Set<String> tags) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        client.deleteTags(new DeleteTagsRequest()
+                .withResources(instanceId)
+                .withTags(tags.stream()
+                        .map(Tag::new)
+                        .collect(Collectors.toList())));
     }
 
     private String getVacantDeviceName(final Instance instance) {

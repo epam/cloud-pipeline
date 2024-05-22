@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CloudFacade {
     RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters,
@@ -111,4 +112,6 @@ public interface CloudFacade {
     void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
 
     boolean instanceScalingSupported(Long cloudRegionId);
+
+    void deleteInstanceTags(Long regionId, String instanceId, Set<String> tagNames);
 }

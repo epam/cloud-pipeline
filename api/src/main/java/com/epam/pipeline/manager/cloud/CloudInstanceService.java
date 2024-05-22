@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CloudInstanceService<T extends AbstractCloudRegion>
         extends CloudAwareService {
@@ -209,4 +210,6 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     InstanceImage getInstanceImageDescription(T region, String imageName);
 
     void adjustOfferRequest(InstanceOfferRequestVO requestVO);
+
+    void deleteInstanceTags(T region, String instanceId, Set<String> tagNames);
 }

@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 @Service
@@ -360,6 +361,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
         final String volumeApiName = preferenceManager.getPreference(SystemPreferences.CLUSTER_AWS_EBS_TYPE);
         requestVO.setVolumeApiName(volumeApiName);
+    }
+
+    @Override
+    public void deleteInstanceTags(final AwsRegion region, final String instanceId, final Set<String> tagNames) {
+        ec2Helper.deleteInstanceTags(region, instanceId, tagNames);
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

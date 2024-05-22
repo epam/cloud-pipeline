@@ -56,6 +56,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -287,6 +288,11 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
 
     @Override
     public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+    }
+
+    @Override
+    public void deleteInstanceTags(final AzureRegion region, final String instanceId, final Set<String> tagNames) {
+
     }
 
     private Map<String, String> buildScriptAzureEnvVars(final AzureRegion region) {

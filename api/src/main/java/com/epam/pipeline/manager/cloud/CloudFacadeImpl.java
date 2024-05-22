@@ -51,6 +51,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -319,6 +320,11 @@ public class CloudFacadeImpl implements CloudFacade {
     public boolean instanceScalingSupported(final Long regionId) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
         return region.getProvider() != CloudProvider.LOCAL;
+    }
+
+    public void deleteInstanceTags(final Long regionId, final String instanceId, final Set<String> tagNames) {
+        final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
+        getInstanceService(region).deleteInstanceTags(region, instanceId, tagNames);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

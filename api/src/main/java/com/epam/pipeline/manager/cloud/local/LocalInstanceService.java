@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -186,6 +187,11 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     @Override
     public void adjustOfferRequest(InstanceOfferRequestVO requestVO) {
         //pass
+    }
+
+    @Override
+    public void deleteInstanceTags(final LocalRegion region, final String instanceId, final Set<String> tagNames) {
+
     }
 
     private boolean reassignKubeNode(final String oldLabel, final String newLabel) {
