@@ -229,12 +229,17 @@ Resources:
         UserData: 
           "Fn::Base64": !Sub | 
               #!/bin/bash
-
-              echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
+            
               export HOME=/root
-
+              export CLOUD_PIPELINE_DEPLOY_DIR=$HOME/cloud-pipeline
+              export AWS_INFRA_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/infra
+              export PIPECTL_DEPLOY_DIR=$CLOUD_PIPELINE_DEPLOY_DIR/pipectl-deploy
+              echo "PATH=$PATH:/usr/local/bin" >> /etc/environment
+            
+              ######################################
+              ### Installation required packages ###
+              ######################################
               sudo yum install git jq curl vim wget unzip -y
-              
               sudo yum remove awscli -y
               curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
               unzip awscliv2.zip && \
@@ -253,9 +258,12 @@ Resources:
               sudo yum install -y docker
               sudo systemctl enable docker
               sudo systemctl start docker
-               
-              sudo mkdir -p ~/deployment-eks
-              cd ~/deployment-eks
+            
+              ##############################################
+              ### Preparation of Terraform configuration ###
+              ##############################################
+              sudo mkdir -p $AWS_INFRA_DEPLOY_DIR && \
+              cd $AWS_INFRA_DEPLOY_DIR
 
               cat << EOF > main.tf
               terraform {
@@ -367,8 +375,11 @@ Resources:
                 }
               }
               EOF
-              
-              export CP_SECRET=${DeploymentAWSCredentialsSecretId}
+            
+              ##########################################
+              ### Assume appropriate creds to deploy ###
+              ##########################################
+              CP_SECRET=${DeploymentAWSCredentialsSecretId}
               if [ -n "$CP_SECRET"  ]; then
                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                  eval $creds
@@ -380,58 +391,16 @@ Resources:
                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
                  --output text))
               fi   
- 
+            
+              #########################################
+              ### Start of the terraform deployment ###
+              #########################################
               terraform init 
               terraform apply --auto-approve &> terraform_apply.log
-
-              export CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
-              fs_mount=$(terraform output -raw filesystem_mount)
-              if [ "$CP_FILE_SYSTEM" == "efs" ]; then
-                 sudo yum install amazon-efs-utils -y 
-                 sudo mount -t efs -o tls $fs_mount  /opt 
-              else 
-                 sudo amazon-linux-extras install -y lustre
-                 sudo mount -t lustre -o relatime,flock $fs_mount /opt 
-              fi
-
-              sudo mkdir -p /opt/root/ssh
-              terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem     
-              
-              export CP_S3Link=${CPAssetsS3Url}
-              if [ -n "$CP_S3Link"  ]; then
-                 aws s3 cp $CP_S3Link . && unzip *.zip -d /opt \
-                 # Finish configuration of PKI
-                  cd /opt/common/pki/ \
-                  openssl pkcs12 -export -in ca-public-cert.pem \
-                  -inkey ca-private-key.pem \
-                  -out common-ssl.p12 \
-                  -name ssl \
-                  -password pass:changeit
-                 # Symlink SSL to API
-                  mkdir -p /opt/api/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/api/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/api/pki/ssl-private-key.pem
-                  ln -s /opt/common/pki/common-ssl.p12 /opt/api/pki/cp-api-srv-ssl.p12
-                 # Symlink SSL to Docker Registry
-                  mkdir -p /opt/docker-registry/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/docker-registry/pki/docker-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/docker-registry/pki/docker-private-key.pem
-                 # Symlink SSL to EDGE
-                  mkdir -p /opt/edge/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/edge/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/edge/pki/ssl-private-key.pem
-                 # Symlink SSL to Git
-                  mkdir -p /opt/gitlab/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
-                  cd ~/deployment-eks
-              fi
-              
-              wget -c ${CPPipectlUrl} -O pipectl
-              chmod +x pipectl
-              terraform output -raw cp_pipectl_script > deploycp.sh && chmod +x deploycp.sh
-              ./deploycp.sh &> pipectl.log
-
+            
+              #####################################
+              ### Prepare infra deletion script ###
+              #####################################
               cat << EOF > delete_all_cp_infra.sh
               #!/bin/bash
               echo "-----------SET ACCESS TO AWS-----------------" 
@@ -455,27 +424,80 @@ Resources:
                       * ) echo "Please answer Yes or No.";;
                   esac
               done
-
+              
               if [ "\$APPROVE" == "TRUE" ]; then
                  echo "START DESTROYING TERRAFORM RESOURCES!"
-                 
+              
+                 cd $AWS_INFRA_DEPLOY_DIR && \
                  kubectl delete service ingress && \
-                   terraform destroy --auto-approve
-                  
+                 terraform destroy --auto-approve
+              
                  if [ "\$?" -ne 0 ]; then
                     echo "Something went wrong during automated resources deletion process! Manual intervention is required!"
                     exit 1
                  else
-                    aws s3 rm s3://${TFstateBucketName} --recursive
                     echo "INFRASTRUCTURE RESOURCES DESTROYED! NOW YOU CAN DELETE CLOUDFORMATION STACK!"
                  fi
               else 
                  echo "DELETION ABORTED!"
               fi
               EOF
-
+              
               chmod +x delete_all_cp_infra.sh
+            
+              ##########################################
+              ### Preparation for the pipectl deploy ###
+              ##########################################
+              CP_FILE_SYSTEM=$(terraform output -raw filesystem_type)
+              fs_mount=$(terraform output -raw filesystem_mount)
+              if [ "$CP_FILE_SYSTEM" == "efs" ]; then
+                 sudo yum install amazon-efs-utils -y 
+                 sudo mount -t efs -o tls $fs_mount  /opt 
+              else 
+                 sudo amazon-linux-extras install -y lustre
+                 sudo mount -t lustre -o relatime,flock $fs_mount /opt 
+              fi
 
+              sudo mkdir -p /opt/root/ssh
+              terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem     
+              
+              CP_S3Link=${CPAssetsS3Url}
+              if [ -n "$CP_S3Link"  ]; then
+                 aws s3 cp $CP_S3Link . && unzip *.zip -d /opt \
+                 # Finish configuration of PKI
+                  openssl pkcs12 -export \
+                  -in /opt/common/pki/ca-public-cert.pem \
+                  -inkey /opt/common/pki/ca-private-key.pem \
+                  -out /opt/common/pki/common-ssl.p12 \
+                  -name ssl \
+                  -password pass:changeit
+                 # Symlink SSL to API
+                  mkdir -p /opt/api/pki
+                  ln -s /opt/common/pki/ca-public-cert.pem /opt/api/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/ca-private-key.pem /opt/api/pki/ssl-private-key.pem
+                  ln -s /opt/common/pki/common-ssl.p12 /opt/api/pki/cp-api-srv-ssl.p12
+                 # Symlink SSL to Docker Registry
+                  mkdir -p /opt/docker-registry/pki
+                  ln -s /opt/common/pki/ca-public-cert.pem /opt/docker-registry/pki/docker-public-cert.pem
+                  ln -s /opt/common/pki/ca-private-key.pem /opt/docker-registry/pki/docker-private-key.pem
+                 # Symlink SSL to EDGE
+                  mkdir -p /opt/edge/pki
+                  ln -s /opt/common/pki/ca-public-cert.pem /opt/edge/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/ca-private-key.pem /opt/edge/pki/ssl-private-key.pem
+                 # Symlink SSL to Git
+                  mkdir -p /opt/gitlab/pki
+                  ln -s /opt/common/pki/ca-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/ca-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
+              fi
+            
+              sudo mkdir -p $PIPECTL_DEPLOY_DIR
+              terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
+              chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
+              
+              cd $PIPECTL_DEPLOY_DIR
+              
+              wget -c ${CPPipectlUrl} -O pipectl && chmod +x pipectl
+              ./deploy_cloud_pipeline.sh &> pipectl.log
               
         Tags:
         - Key: Name
