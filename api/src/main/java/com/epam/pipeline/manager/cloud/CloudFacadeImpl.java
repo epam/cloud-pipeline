@@ -322,9 +322,9 @@ public class CloudFacadeImpl implements CloudFacade {
         return region.getProvider() != CloudProvider.LOCAL;
     }
 
-    public void deleteInstanceTags(final Long regionId, final String instanceId, final Set<String> tagNames) {
+    public void deleteInstanceTags(final Long regionId, final String runId, final Set<String> tagNames) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(regionId);
-        getInstanceService(region).deleteInstanceTags(region, instanceId, tagNames);
+        getInstanceService(region).deleteInstanceTags(region, runId, tagNames);
     }
 
     private AbstractCloudRegion getRegionByRunId(final Long runId) {

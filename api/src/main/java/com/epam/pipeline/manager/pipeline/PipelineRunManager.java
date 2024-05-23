@@ -672,6 +672,9 @@ public class PipelineRunManager {
                     pipelineRun.getId(), pipelineRun.getStatus());
             return pipelineRun;
         }
+        if (status.isFinal()) {
+            removeInstanceTags(pipelineRun);
+        }
         if (pipelineRun.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.DTS
                 && status == TaskStatus.STOPPED) {
             configurationProviderManager.stop(runId, pipelineRun.getExecutionPreferences());
@@ -697,10 +700,6 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun stop(Long runId) {
-        final PipelineRun run = loadPipelineRun(runId);
-        final Map<String, String> tags = metadataManager.buildCustomInstanceTags(run);
-        final RunInstance instance = run.getInstance();
-        cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), instance.getNodeName(), tags.keySet());
         return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED);
     }
 
@@ -1809,5 +1808,18 @@ public class PipelineRunManager {
                 ? cloudRegionManager.loadDefaultRegion().getId().toString()
                 : regionId.toString();
         return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, regionIdStr);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void removeInstanceTags(final PipelineRun run) {
+        try {
+            final Map<String, String> tags = metadataManager.buildCustomInstanceTags(run);
+            if (MapUtils.isNotEmpty(tags)) {
+                final RunInstance instance = run.getInstance();
+                cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), run.getId().toString(), tags.keySet());
+            }
+        } catch (Exception e) {
+            log.error("An error occurred during cloud resource tags removal for run '{}'", run.getId(), e);
+        }
     }
 }

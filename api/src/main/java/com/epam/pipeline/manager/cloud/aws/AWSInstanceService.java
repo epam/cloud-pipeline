@@ -364,8 +364,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void deleteInstanceTags(final AwsRegion region, final String instanceId, final Set<String> tagNames) {
-        ec2Helper.deleteInstanceTags(region, instanceId, tagNames);
+    public void deleteInstanceTags(final AwsRegion region, final String runId, final Set<String> tagNames) {
+        ec2Helper.deleteInstanceTags(region, runId, tagNames);
     }
 
     private String buildNodeUpCommand(final AwsRegion region,

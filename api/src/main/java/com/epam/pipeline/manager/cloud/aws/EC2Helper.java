@@ -82,6 +82,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -359,10 +360,16 @@ public class EC2Helper implements EC2GpuHelper {
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
     }
 
-    public void deleteInstanceTags(final AwsRegion awsRegion, final String instanceId, final Set<String> tags) {
+    public void deleteInstanceTags(final AwsRegion awsRegion, final String runId, final Set<String> tags) {
         final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+
+        final List<String> resourcesIds = new ArrayList<>();
+        resourcesIds.add(instance.getInstanceId());
+        resourcesIds.addAll(getVolumeIds(instance));
+
         client.deleteTags(new DeleteTagsRequest()
-                .withResources(instanceId)
+                .withResources(resourcesIds)
                 .withTags(tags.stream()
                         .map(Tag::new)
                         .collect(Collectors.toList())));

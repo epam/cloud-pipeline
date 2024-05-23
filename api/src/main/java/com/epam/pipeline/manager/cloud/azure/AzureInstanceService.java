@@ -291,7 +291,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     }
 
     @Override
-    public void deleteInstanceTags(final AzureRegion region, final String instanceId, final Set<String> tagNames) {
+    public void deleteInstanceTags(final AzureRegion region, final String runId, final Set<String> tagNames) {
 
     }
 

@@ -211,5 +211,5 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
 
     void adjustOfferRequest(InstanceOfferRequestVO requestVO);
 
-    void deleteInstanceTags(T region, String instanceId, Set<String> tagNames);
+    void deleteInstanceTags(T region, String runId, Set<String> tagNames);
 }

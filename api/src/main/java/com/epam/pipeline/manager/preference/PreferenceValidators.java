@@ -32,10 +32,10 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
 
@@ -45,7 +45,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
@@ -300,15 +304,16 @@ public final class PreferenceValidators {
         );
 
     public static final BiPredicate<String, Map<String, Preference>> isValidInstanceCustomTags =
-            isNullOrValidJson(new TypeReference<Set<String>>() {})
-                    .and((pref, dependencies) -> {
-                        final Set<String> customTags = JsonMapper.parseData(pref, new TypeReference<Set<String>>() {});
-                        if (SetUtils.emptyIfNull(customTags).stream()
-                                .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
-                            throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
-                        }
-                        return true;
-                    });
+            (pref, dependencies) -> {
+        if (Arrays.stream(Optional.ofNullable(pref)
+                        .filter(StringUtils::isNotBlank)
+                        .map(value -> value.split(","))
+                        .orElse(Strings.EMPTY_ARRAY))
+                .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
+            throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
+        }
+        return true;
+    };
 
     private PreferenceValidators() {
         // No-op

@@ -190,7 +190,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public void deleteInstanceTags(final LocalRegion region, final String instanceId, final Set<String> tagNames) {
+    public void deleteInstanceTags(final LocalRegion region, final String runId, final Set<String> tagNames) {
 
     }
 

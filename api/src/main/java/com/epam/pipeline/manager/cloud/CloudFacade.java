@@ -113,5 +113,5 @@ public interface CloudFacade {
 
     boolean instanceScalingSupported(Long cloudRegionId);
 
-    void deleteInstanceTags(Long regionId, String instanceId, Set<String> tagNames);
+    void deleteInstanceTags(Long regionId, String runId, Set<String> tagNames);
 }

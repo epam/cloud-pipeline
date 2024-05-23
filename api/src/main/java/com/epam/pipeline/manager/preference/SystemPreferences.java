@@ -655,12 +655,10 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<CommonCustomInstanceTagsTypes, String>> CLUSTER_INSTANCE_TAGS =
             new ObjectPreference<>("cluster.instances.tags", null,
                     new TypeReference<Map<CommonCustomInstanceTagsTypes, String>>() {}, CLUSTER_GROUP,
-                    isValidInstanceCustomTags);
+                    isNullOrValidJson(new TypeReference<Map<CommonCustomInstanceTagsTypes, String>>() {}));
 
-    public static final ObjectPreference<Set<String>> CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS =
-            new ObjectPreference<>("cluster.instances.allowed.custom.tags", null,
-                    new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
-                    isNullOrValidJson(new TypeReference<Set<String>>() {}));
+    public static final StringPreference CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS = new StringPreference(
+            "cluster.instances.allowed.custom.tags", null, CLUSTER_GROUP, isValidInstanceCustomTags);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

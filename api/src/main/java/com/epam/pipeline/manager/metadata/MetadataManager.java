@@ -47,6 +47,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +61,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -346,7 +356,6 @@ public class MetadataManager {
 
     public Map<String, String> buildCustomInstanceTags(final PipelineRun run) {
         final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
-
         final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
         final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
         return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
@@ -420,8 +429,11 @@ public class MetadataManager {
         if (MapUtils.isEmpty(metadataData)) {
             return customTags;
         }
-        final Set<String> instanceTagsKeys = preferenceManager.getPreference(
-                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS);
+        final Set<String> instanceTagsKeys = new HashSet<>(Arrays.asList(preferenceManager.findPreference(
+                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
+                .filter(StringUtils::isNotBlank)
+                .map(value -> value.split(","))
+                .orElse(Strings.EMPTY_ARRAY)));
         if (CollectionUtils.isEmpty(instanceTagsKeys)) {
             return customTags;
         }

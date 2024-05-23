@@ -251,7 +251,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void deleteInstanceTags(final GCPRegion region, final String instanceId, final Set<String> tagNames) {
+    public void deleteInstanceTags(final GCPRegion region, final String runId, final Set<String> tagNames) {
 
     }
 
