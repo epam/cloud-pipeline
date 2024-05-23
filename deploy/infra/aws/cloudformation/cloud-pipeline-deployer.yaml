@@ -84,18 +84,23 @@ Parameters:
       It will be used to name cloud entities (e.g. path within a docker registry object container). 
       Must contain only letters, digits, underscore or dash
     Default: "Cloud-Pipeline"
-  CPEdgeAwsElbSubnet:
+  CPEdgeAwsELBSubnet:
     Type: String
     Description: >
       (Required) The ID of the public subnet for the Load Balancer to be created. 
       Must be in the same Availability Zone (AZ) as the CPSystemSubnetId
     Default: ""
-  CPEdgeAwsElbIP:
+  CPEdgeAwsELBIP:
     Type: String
     Description: >
       (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. 
       See README.md for more information
     Default: ""
+  CPEdgeAwsELBSchema:
+    Type: String
+    Description: >
+      (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.
+    Default: "internet-facing"
   CPApiSrvHost:
     Type: String
     Description: (Required) API service domain name address. See README.md for more information
@@ -341,8 +346,9 @@ Resources:
                 eks_system_node_group_subnet_ids  =  ["${CPSystemSubnetId}"]
                 deploy_filesystem_type            =  "${CPNetworkFileSystemType}"
                 cp_deployment_id                  =  "${CPDeploymentId}"
-                cp_edge_elb_subnet                =  "${CPEdgeAwsElbSubnet}"
-                cp_edge_elb_ip                    =  "${CPEdgeAwsElbIP}"
+                cp_edge_elb_schema                =  "${CPEdgeAwsELBSchema}"
+                cp_edge_elb_subnet                =  "${CPEdgeAwsELBSubnet}"
+                cp_edge_elb_ip                    =  "${CPEdgeAwsELBIP}"
                 cp_api_srv_host                   =  "${CPApiSrvHost}"
                 cp_idp_host                       =  "${CPIdpHost}"
                 cp_docker_host                    =  "${CPDockerHost}"
