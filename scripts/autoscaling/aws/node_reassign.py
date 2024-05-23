@@ -22,10 +22,28 @@ CLOUD_REGION_LABEL = 'cloud_region'
 KUBE_CONFIG_PATH = '~/.kube/config'
 
 
-def find_and_tag_instance(ec2, old_id, new_id):
+def build_custom_tags(input_tags):
+    if not input_tags:
+        return []
+    instance_tags = []
+    for input_tag in input_tags:
+        tag_parts = input_tag.split("=")
+        if len(tag_parts) == 1:
+            instance_tags.append({'Key': tag_parts[0]})
+        else:
+            instance_tags.append({
+                'Key': tag_parts[0],
+                'Value': tag_parts[1]
+            })
+    return instance_tags
+
+
+def find_and_tag_instance(ec2, old_id, new_id, custom_tags):
     response = ec2.describe_instances(Filters=[{'Name': 'tag:Name', 'Values': [old_id]},
                                                {'Name': 'instance-state-name', 'Values': ['pending', 'running']}])
     tags = [{'Key': 'Name', 'Value': new_id}]
+    if custom_tags:
+        tags.extend(custom_tags)
     if len(response['Reservations']) > 0:
         ins_id = response['Reservations'][0]['Instances'][0]['InstanceId']
         ec2.create_tags(
@@ -111,14 +129,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--old_id", "-kid", type=str, required=True)
     parser.add_argument("--new_id", "-nid", type=str, required=True)
+    parser.add_argument("--custom_tags", type=str, default=[], required=False, action='append')
     args, unknown = parser.parse_known_args()
     old_id = args.old_id
     new_id = args.new_id
+    custom_tags = build_custom_tags(args.custom_tags)
 
     kube_api = get_kube_api()
     aws_region = get_aws_region(kube_api, old_id)
     ec2 = boto3.client('ec2', region_name=aws_region)
-    ins_id = find_and_tag_instance(ec2, old_id, new_id)
+    ins_id = find_and_tag_instance(ec2, old_id, new_id, custom_tags)
     nodename = verify_regnode(kube_api, ec2, ins_id)
     change_label(kube_api, nodename, new_id, aws_region)
 
