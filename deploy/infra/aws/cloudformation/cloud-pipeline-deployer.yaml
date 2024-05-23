@@ -335,6 +335,10 @@ Resources:
                 password  = module.cluster-infra.rds_root_pass_secret
                 superuser = false
               }
+            
+              locals {
+                additional_role_arns_for_cluster_admin = trimspace("${EKSAdminRoleArns}") != "" ? tolist(split(",", trimspace("${EKSAdminRoleArns}"))) : []
+              }
 
 
               module "cluster-infra" {
@@ -364,7 +368,7 @@ Resources:
                   }
                   ],
                   [
-                  for role_arn in tolist(split(",", "${EKSAdminRoleArns}")) : {
+                  for role_arn in local.additional_role_arns_for_cluster_admin : {
                   iam_role_arn  = role_arn
                   eks_role_name = "user-defined:cluster-admin"
                   eks_groups   = ["cluster-admin"]

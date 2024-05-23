@@ -188,7 +188,6 @@ locals {
     "-s cp-docker-comp",
     "-env CP_DOCKER_COMP_WORKING_DIR=\"/cloud-pipeline/docker-comp/wd\"",
     "-s cp-search",
-    "-s cp-heapster",
     "-s cp-dav",
     "-env CP_DAV_AUTH_URL_PATH=\"webdav/auth-sso\"",
     "-env CP_DAV_MOUNT_POINT=\"/dav-mount\"",
