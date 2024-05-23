@@ -68,6 +68,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -78,6 +79,7 @@ import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
@@ -235,6 +237,12 @@ public class PipelineRunManager {
 
     @Autowired
     private MetadataEntityManager metadataEntityManager;
+
+    @Autowired
+    private MetadataManager metadataManager;
+
+    @Autowired
+    private CloudFacade cloudFacade;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -689,6 +697,10 @@ public class PipelineRunManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun stop(Long runId) {
+        final PipelineRun run = loadPipelineRun(runId);
+        final Map<String, String> tags = metadataManager.buildCustomInstanceTags(run);
+        final RunInstance instance = run.getInstance();
+        cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), instance.getNodeName(), tags.keySet());
         return updatePipelineStatusIfNotFinal(runId, TaskStatus.STOPPED);
     }
 
