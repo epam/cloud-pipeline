@@ -141,6 +141,8 @@ Resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: !Ref TFstateBucketName
+        VersioningConfiguration:
+          Status: Enabled
         BucketEncryption:
           ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
