@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <link rel="shortcut icon" href="../../../../img/favicon.ico" />
+    <title>AWS CloudFormation - Cloud Pipeline</title>
+    <link rel="stylesheet" href="../../../../css/theme.css" />
+    <link rel="stylesheet" href="../../../../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/styles/github.min.css" />
+        <link href="../../../../css/extra.css" rel="stylesheet" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "AWS CloudFormation";
+        var mkdocs_page_input_path = "installation/deployment/aws/cloud-formation/README.md";
+        var mkdocs_page_url = null;
+      </script>
+    
+    <script src="../../../../js/jquery-3.6.0.min.js" defer></script>
+    <!--[if lt IE 9]>
+      <script src="../../../../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+      <script>hljs.initHighlightingOnLoad();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href="../../../.." class="icon icon-home"> Cloud Pipeline
+        </a><div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+      <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../../../..">Introduction</a>
+                </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Release notes</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../release_notes/v.0.13/v.0.13_-_Release_notes/">v.0.13</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../release_notes/v.0.14/v.0.14_-_Release_notes/">v.0.14</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../release_notes/v.0.15/v.0.15_-_Release_notes/">v.0.15</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../release_notes/v.0.16/v.0.16_-_Release_notes/">v.0.16</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../release_notes/v.0.17/v.0.17_-_Release_notes/">v.0.17</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">User guide</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Cloud_Pipeline_-_Manual/">Contents</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/01_Quick_start/1._Quick_start/">1. Quick start</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/02_Getting_started/2._Getting_started/">2. Getting started</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/03_Overview/3._Overview/">3. Overview</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">4. Manage Folder</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4._Manage_Folder/">4.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4.1._Create_an_object_in_Folder/">4.1. Create an object in Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4.2._Rename_folder/">4.2. Rename Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4.3._Delete_Folder/">4.3. Delete Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4.4._Clone_a_folder/">4.4. Clone a Folder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/04_Manage_Folder/4.5._Lock_a_folder/">4.5. Lock a Folder</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">5. Manage Metadata</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5._Manage_Metadata/">5.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items/">5.1. Add/delete Metadata items</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5.2._Upload_metadata/">5.2. Upload Metadata</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5.3._Customize_view_of_the_entity_instance_table/">5.3. Customize view of the entity instance table</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5.4._Launch_a_run_configuration_on_metadata/">5.4. Launch a Run configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/05_Manage_Metadata/5.5._Download_data_from_external_resources_to_the_cloud_data_storage/">5.5. Download data from external resources</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">6. Manage Pipeline</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6._Manage_Pipeline/">6.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6.1._Create_and_configure_pipeline/">6.1. Create and configure Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6.1.1._Building_WDL_pipeline_with_graphical_PipelineBuilder/">6.1.1. Building WDL Pipeline with graphical PipelineBuilder</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6.2._Launch_a_pipeline/">6.2. Launch a Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6.3._Delete_a_pipeline/">6.3. Delete and unregister Pipeline</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/06_Manage_Pipeline/6.4._Work_with_aws_healthomics_workflow/">6.4. Work with AWS HealthOmics Workflow</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">7. Manage Detached configuration</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/07_Manage_Detached_configuration/7._Manage_Detached_configuration/">7.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/07_Manage_Detached_configuration/7.1._Create_and_customize_Detached_configuration/">7.1. Create and customize Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/07_Manage_Detached_configuration/7.2._Launch_Detached_Configuration/">7.2. Launch Detached configuration</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/07_Manage_Detached_configuration/7.3._Expansion_Expressions/">7.3. Expansion expressions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/07_Manage_Detached_configuration/7.4._Remove_Detached_configuration/">7.4. Remove Detached configuration</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">8. Manage Data Storage</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8._Manage_Data_Storage/">8.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage/">8.1. Create and edit Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.2._Upload_Download_data/">8.2. Upload/Download data</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.3._Create_and_Edit_text_files/">8.3. Create and edit text files</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.4._Control_File_versions/">8.4. Control file versions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.5._Delete_and_unregister_Data_Storage/">8.5. Delete and unregister Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.6._Delete_Files_and_Folders_from_Storage/">8.6. Delete Files and Folders from Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/">8.7. Create shared file system</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.8._Data_sharing/">8.8. Data sharing</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.9._Mapping_storages/">8.9. Mapping storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/">8.10. Storage lifecycle</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages/">8.11. Sensitive storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app/">8.12. Cloud Data application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.13._Versioned_storages/">8.13. Versioned storages</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/08_Manage_Data_Storage/8.14._Omics_storages/">8.14. Omics storages</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">9. Manage cluster nodes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">9.0. Cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools/">9.1. Hot node pools</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">10. Manage Tools</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10._Manage_Tools/">10.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.1._Add_Edit_a_Docker_registry/">10.1. Add and edit a Docker registry</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.2._Add_Edit_a_Tool_group/">10.2. Add/edit a Tool group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.3._Add_a_Tool/">10.3. Add a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/">10.4. Edit a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/">10.5. Launch a Tool</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.6._Tool_security_check/">10.6. Tool security check</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.7._Tool_version_menu/">10.7. Tool version menu</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.8._Symlinks_between_tools/">10.8. "Symlinked" tools</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/10_Manage_Tools/10.9._Run_capabilities/">10.9. Run capabilities</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">11. Manage Runs</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/11_Manage_Runs/11._Manage_Runs/">11.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles/">11.1. Manage runs lifecycles</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/11_Manage_Runs/11.2._Auto-commit_Docker_image/">11.2. Auto-commit Docker images</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12._Manage_Settings/">12.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.1._Add_a_new_system_event/">12.1. Add a new system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.2._Edit_a_system_event/">12.2. Edit a system event</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.3._Create_a_new_user/">12.3. Create a new user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.4._Edit_delete_a_user/">12.4. Edit/delete a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.5._Create_a_group/">12.5. Create a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.6._Edit_a_group_role/">12.6. Edit a group/role</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.7._Delete_a_group/">12.7. Delete a group</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.8._Change_a_set_of_roles_groups_for_a_user/">12.8. Change a set of roles/groups for a user</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.9._Change_email_notification/">12.9. Email notifications</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.10._Manage_system-level_settings/">12.10. Manage system-level settings</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.11._Advanced_features/">12.11. Advanced features</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.12._System_logs/">12.12. System logs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.13._System_dictionaries/">12.13. System dictionaries</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.14._NAT_gateway/">12.14. NAT gateway</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/12_Manage_Settings/12.15._System_jobs/">12.15. System jobs</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/13_Permissions/13._Permissions/">13. Permissions</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">14. CLI interface</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14._Command-line_interface/">14.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.1._Install_and_setup_CLI/">14.1. Install and setup</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.2._View_and_manage_Attributes_via_CLI/">14.2. View and manage Attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.3._Manage_Storage_via_CLI/">14.3. Manage Data Storage</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.4._View_pipeline_definitions_via_CLI/">14.4. View pipeline definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.5._Manage_pipeline_executions_via_CLI/">14.5. Manage pipeline executions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/">14.6. View cluster nodes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.7._View_and_manage_Permissions_via_CLI/">14.7. View and manage Permissions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.8._View_tools_definitions_via_CLI/">14.8. View tools definitions</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.9._User_management_via_CLI/">14.9. User management</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/14_CLI/14.10._SSH_tunnel/">14.10. SSH tunnel</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">15. Interactive services</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/15_Interactive_services/15._Interactive_services/">15.0. Overview</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/15_Interactive_services/15.1._Starting_an_Interactive_application/">15.1. Starting an interactive application</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/15_Interactive_services/15.2._Using_Terminal_access/">15.2. Using terminal access</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/15_Interactive_services/15.3._Expose_node_filesystem/">15.3. Expose node filesystem</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/15_Interactive_services/15.4._Interactive_service_examples/">15.4. Interactive service examples</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/16_Issues/16._Issues/">16. Issues</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">17. Tagging by attributes</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/17_Tagging_by_attributes/17._CP_objects_tagging_by_additional_attributes/">17.0. CP objects tagging by additional attributes</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../../manual/17_Tagging_by_attributes/17.1._Faceted_filters_search_by_tags/">17.1. Faceted filters search using tags</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/18_Home_page/18._Home_page/">18. Home page</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/19_Search/19._Global_search/">19. Global search</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_A/Appendix_A._Instance_and_Docker_container_lifecycles/">Appendix A. Instance and Docker container lifecycles</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_B/Appendix_B._Working_with_a_Project/">Appendix B. Working with a Project</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_C/Appendix_C._Working_with_autoscaled_cluster_runs/">Appendix C. Working with autoscaled cluster runs</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_D/Appendix_D._Costs_management/">Appendix D. Costs management</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_E/Appendix_E._Pipeline_objects_concept/">Appendix E. Pipeline objects concept</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../manual/Appendix_F/Appendix_F._%D0%A1omparison_of_using_different_FS_storages_%28FSx_for_Lustre_vs_EFS_in_AWS%29/">Appendix F. Сomparison of using different FS storage types</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline API</span></p>
+              <ul>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../api/API_tutorials/API_tutorials/">API tutorials</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../api/API_tutorials/Automation_via_CLI/">Automation via CLI</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../api/API_tutorials/Direct_HTTP_API/">Direct HTTP API implementation</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../../api/API_tutorials/JavaScript_example/">JavaScript example</a>
+                  </li>
+              </ul>
+              <p class="caption"><span class="caption-text">Cloud Pipeline Installation</span></p>
+              <ul class="current">
+                  <li class="toctree-l1"><a class="reference internal" href="#">Prerequisites</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../prerequisites/common/">General requirements</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../prerequisites/aws/">AWS</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../prerequisites/azure/">Azure</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../prerequisites/gcp/">GCP</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1 current"><a class="reference internal current" href="#">Deployment</a>
+    <ul class="current">
+                <li class="toctree-l2 current"><a class="reference internal current" href="#">AWS</a>
+    <ul class="current">
+                <li class="toctree-l3"><a class="reference internal" href="../terraform/">Terraform</a>
+                </li>
+                <li class="toctree-l3 current"><a class="reference internal current" href="./">AWS CloudFormation</a>
+    <ul class="current">
+    <li class="toctree-l4"><a class="reference internal" href="#overview">Overview</a>
+    </li>
+    </ul>
+                </li>
+    </ul>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="#">Management</a>
+    <ul>
+                <li class="toctree-l2"><a class="reference internal" href="../../../management/environments_sync/">Environments sync</a>
+                </li>
+    </ul>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../change_kube_certificates/">Change Kubernetes certificates</a>
+                  </li>
+                  <li class="toctree-l1"><a class="reference internal" href="../../../support_windows_runs/">Support Windows runs</a>
+                  </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../..">Cloud Pipeline</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../../.." class="icon icon-home" alt="Docs"></a> &raquo;</li>
+          <li>Cloud Pipeline Installation &raquo;</li>
+          <li>Deployment &raquo;</li>
+          <li>AWS &raquo;</li>
+      <li>AWS CloudFormation</li>
+    <li class="wy-breadcrumbs-aside">
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide">Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide</h1>
+<h2 id="overview">Overview</h2>
+<p>This step-by-step guide illustrates how to deploy Cloud Pipeline using AWS CloudFormation. The solution relies on
+creating a CloudFormation stack that deploys the necessary infrastructure using a Terraform module and install the Cloud
+Pipeline on top of it.</p>
+<p>Follow the outlined steps below to execute the deployment process: <br></p>
+<ul>
+<li><a href="#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide">Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide</a><ul>
+<li><a href="#overview">Overview</a><ul>
+<li><a href="#prerequisites">Prerequisites</a><ul>
+<li><a href="#aws-vpc">AWS VPC</a></li>
+<li><a href="#aws-elastic-ip">AWS Elastic IP</a></li>
+<li><a href="#credentials-to-create-infrastructure-resources">Credentials to Create Infrastructure Resources</a></li>
+<li><a href="#create-dns-records">Create DNS records</a></li>
+<li><a href="#add-authority-signed-certificates-for-services">Add authority signed certificates for services</a></li>
+<li><a href="#integrate-with-an-identity-provider-idp">Integrate with an Identity Provider (IdP)</a></li>
+<li><a href="#create-a-zip-file-with-additional-assets">Create a Zip File with Additional Assets</a></li>
+</ul>
+</li>
+<li><a href="#create-cloudformation-stack-using-template-file">Create Cloudformation Stack using template file</a><ul>
+<li><a href="#stack-parameters-description">Stack Parameters Description</a></li>
+<li><a href="#deploy-cloud-pipeline-using-aws-console">Deploy Cloud Pipeline using AWS Console</a></li>
+<li><a href="#deploy-cloud-pipeline-using-aws-cli">Deploy Cloud Pipeline using AWS CLI</a></li>
+</ul>
+</li>
+<li><a href="#review-deployment-logs">Review Deployment Logs</a></li>
+<li><a href="#destroy-cloud-pipeline-resources">Destroy Cloud-Pipeline resources</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="prerequisites">Prerequisites</h3>
+<p>Before creating the CloudFormation stack, you need to prepare several requirements:</p>
+<h4 id="aws-vpc">AWS VPC</h4>
+<p>Virtual Private Cloud (VPC) with desired network configuration should be created in advance.
+The deployment will create all necessary resources for Cloud Pipeline deployment during the next phases:</p>
+<ul>
+<li>CloudFormation stack deployment</li>
+<li>Terraform deployment</li>
+</ul>
+<h4 id="aws-elastic-ip">AWS Elastic IP</h4>
+<p>Generate an AWS Elastic IP, which will be used later to deploy an AWS Elastic Load Balancer (ELB) routing users' traffic
+to Cloud-Pipeline services. This EIP should also be used when requesting the creation of DNS records from your DNS
+provider.</p>
+<h4 id="credentials-to-create-infrastructure-resources">Credentials to Create Infrastructure Resources</h4>
+<p>Credentials should be given for this deployment stack to initiate the creation of infrastructure resources.
+There are two ways to provide such credentials:</p>
+<ol>
+<li>
+<p>If you have Administrator role in AWS account or role that Allowed to created resources: EC2 instance, IAM
+   Roles/Policies, EKS cluster, security groups, cloudwatch logs, S3 buckets, EFS/FSX for Luste file systems, KMS keys,
+   RDS
+   etc. you can use these credentials:</p>
+</li>
+<li>
+<p>Put your credentials of temporary credentials into the AWS secret:</p>
+<ul>
+<li>Create aws secretsmanager secret using AWS console or this aws cli command(make sure you have installed aws cli):
+<code>aws secretsmanager create-secret --name &lt;secrets-name&gt; \
+  --secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
+  --region &lt;region-id&gt;</code></li>
+<li>If you need to update the secret value with a new credentials (f.i. when you are using temporary credentials and
+  decide to destroy the infrastructure. See <a href="#destroy-cloud-pipeline-resources">destroy infrastructure</a>):
+<code>aws secretsmanager put-secret-value \
+  --secret-id &lt;secrets-name&gt; \
+  --secret-string 'export AWS_ACCESS_KEY_ID="&lt;key-id&gt;" export AWS_SECRET_ACCESS_KEY="&lt;secret acess key&gt;" export AWS_SESSION_TOKEN="&lt;session token&gt;"' \
+  --region &lt;region-id&gt;</code></li>
+<li>Remember the secret name, you will need this value during further deployment.
+  (To set this secret name as stack parameter <code>AWSCredentialSecretId</code>. For more information you can
+  look <a href="#stack-parameters-description">deploy parameters</a>)</li>
+</ul>
+</li>
+<li>
+<p>If you don't provide secret name with the credentials to the deployment script, an additional IAM Role will be
+   created with full administrator access and assumed by Jump-Server during deploy process.</p>
+</li>
+</ol>
+<h4 id="create-dns-records">Create DNS records</h4>
+<p>Since Cloud Pipeline services communicate through domain names, you need to create DNS records. The proposed records
+scheme:</p>
+<table>
+<thead>
+<tr>
+<th>DNS record</th>
+<th>Record type</th>
+<th>Value</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>A</td>
+<td>&lt; EIP value &gt;</td>
+<td>Required</td>
+</tr>
+<tr>
+<td>edge.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>CNAME</td>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>Required</td>
+</tr>
+<tr>
+<td>docker.<cloud-pipeline-name>.\&lt;your-domain></td>
+<td>CNAME</td>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>Required</td>
+</tr>
+<tr>
+<td>git.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>CNAME</td>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>Required</td>
+</tr>
+<tr>
+<td>auth.&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>CNAME</td>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>Skip, if you use your organisation IdP</td>
+</tr>
+</tbody>
+</table>
+<h4 id="add-authority-signed-certificates-for-services">Add authority signed certificates for services</h4>
+<blockquote>
+<p>NOTE: This step can be skipped. <br>
+By default, if no authority-signed certificates are set, Cloud Pipeline will create self-signed certificates during
+the
+deployment</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subject</td>
+<td>\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+</tr>
+<tr>
+<td>Alternative names</td>
+<td>DNS: *.\&lt;cloud-pipeline-name>.\&lt;your-domain> <br>or<br> DNS:<br> edge.\&lt;cloud-pipeline-name>.\&lt;your-domain> <br> docker.\<cloud-pipeline-name>.\&lt;your-domain> <br> git.\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+</tr>
+<tr>
+<td>Alternative names (optional)</td>
+<td>DNS: auth.\<cloud-pipeline-name>.\&lt;your-domain></td>
+</tr>
+<tr>
+<td>Duration (days)</td>
+<td>365</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Alternative names (optional) - DNS: auth.<cloud-pipeline-name>.<your-domain> - This must be set if there is no
+integration with organization Identity Provider.</p>
+</blockquote>
+<h4 id="integrate-with-an-identity-provider-idp">Integrate with an Identity Provider (IdP)</h4>
+<blockquote>
+<p>If you deploy Cloud-Pipeline with self-hosted IdP, you can skip this step: <br>
+Cloud-pipeline creates a dummy IdP service suitable for testing, it is not recommended for production due to
+security concerns. For secure access, you should integrate your Cloud Pipeline with your organization's IdP Service</p>
+</blockquote>
+<p>Integration is implemented with SAML2 protocol. The following IdP connections shall be requested from the IdP team:</p>
+<table>
+<thead>
+<tr>
+<th>Purpose</th>
+<th>SP URL</th>
+<th>ACS URL</th>
+<th>AML Binding</th>
+<th>Assertion information</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cloud-pipeline GUI</td>
+<td>https://\&lt;cloud-pipeline-name>.\&lt;your-domain>/pipeline</td>
+<td>https://\&lt;cloud-pipeline-name>.\&lt;your-domain>/pipeline/saml/SSO</td>
+<td>HTTP Redirect</td>
+<td>* NameID<br> * email<br> * first name<br> * last name<br></td>
+</tr>
+<tr>
+<td>cloud-pipeline GitLab</td>
+<td>https://git.\&lt;cloud-pipeline-name>.\&lt;your-domain></td>
+<td>https://git.&lt;cloud-pipeline-name>.\&lt;your-domain>//users/auth/saml/callback</td>
+<td>HTTP Post</td>
+<td>* NameID<br> * email<br> * first name<br> * last name<br></td>
+</tr>
+</tbody>
+</table>
+<p>As a result of the requests, the following information shall be provided:</p>
+<ul>
+<li>Federation metadata XML file</li>
+<li>IdP signing certificate</li>
+</ul>
+<h4 id="create-a-zip-file-with-additional-assets">Create a Zip File with Additional Assets</h4>
+<blockquote>
+<p>This step is required if you've prepared SSL certificated and IdP integration on previous steps. <br>
+It allows to provide these assets for the deployment.</p>
+</blockquote>
+<p>Once all additional certificates (and optional metadata) are ready, you should create a zip archive with a specific
+structure. <br></p>
+<p>To do this you can run script <code>create_assets_zip.sh</code> with your parameters, for example:</p>
+<pre><code>bash create_assets_zip.sh ca-public-cert.pem ca-private-key.pem cp-api-srv-fed-meta.xml idp-public-cert.pem
+</code></pre>
+<blockquote>
+<p>Optional: <br>
+If you don't have s3 bucket you can create it in AWS Console or using AWS CLI command:<br> aws s3api create-bucket
+--bucket &lt;<em>s3-bucket-name</em>&gt;</p>
+</blockquote>
+<p>Upload zip file to the s3 bucket using AWS console or aws cli command:</p>
+<pre><code> aws s3 cp &lt;pathtofile&gt;/cp-assets.zip s3://&lt;s3-bucket-name&gt;
+</code></pre>
+<p>Save this link, you will need it for further step t set it as parameter in AWS Console stack parameters(for more
+information you can look
+at <a href="#stack-parameters-description">parameters description</a>) or as additional parameter in .json file(if create stack
+using awc cli) :</p>
+<blockquote>
+<p>Link format should be as follows: s3://<em>s3-bucket-name</em>/cp-assets.zip</p>
+</blockquote>
+<h3 id="create-cloudformation-stack-using-template-file">Create Cloudformation Stack using template file</h3>
+<p>There are two methods to create a CloudFormation stack that deploys the infrastructure and Cloud-Pipeline services: via
+the AWS console, or the AWS Command Line Interface (CLI).</p>
+<h4 id="stack-parameters-description">Stack Parameters Description</h4>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DeploymentName</code></td>
+<td>(Required) Name of the deployment. Will be used as resources name prefix</td>
+</tr>
+<tr>
+<td><code>DeploymentEnv</code></td>
+<td>(Required) Environment name. Will be used as resources name prefix</td>
+</tr>
+<tr>
+<td><code>DeploymentAWSCredentialsSecretId</code></td>
+<td>(Optional) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure. See <a href="#set-access-to-create-infrastructure-resources">Set access to create infrastructure</a></td>
+</tr>
+<tr>
+<td><code>JumpServerInstanceType</code></td>
+<td>(Optional) Jump-server EC2 instance type</td>
+</tr>
+<tr>
+<td><code>JumpServerAmiId</code></td>
+<td>(Optional) Image id that will be used for Jump-Server</td>
+</tr>
+<tr>
+<td><code>VpcId</code></td>
+<td>(Required) Id of the VPC where all resources will be created. See <a href="#create-vpc">Create VPC</a></td>
+</tr>
+<tr>
+<td><code>SubnetIds</code></td>
+<td>(Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified. See <a href="#create-vpc">Create VPC</a></td>
+</tr>
+<tr>
+<td><code>CPSystemSubnetId</code></td>
+<td>(Required) Subnet where JumpServer instance and EKS node group will be created. See <a href="#create-vpc">Create VPC</a></td>
+</tr>
+<tr>
+<td><code>EKSAdminRoleArns</code></td>
+<td>(Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster)</td>
+</tr>
+<tr>
+<td><code>IAMrolePermissionsBoundaryArn</code></td>
+<td>(Optional) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.</td>
+</tr>
+<tr>
+<td><code>TFstateBucketName</code></td>
+<td>(Required) S3 Bucket name, that will be created where terraform state file for Cloud-Pipeline Infrastructure module will be stored</td>
+</tr>
+<tr>
+<td><code>TFStateLockTableName</code></td>
+<td>(Required) Name of the DynamoDB table, that will be created, for terraform state lock</td>
+</tr>
+<tr>
+<td><code>CPNetworkFileSystemType</code></td>
+<td>(Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.</td>
+</tr>
+<tr>
+<td><code>CPApiAccessPrefixLists</code></td>
+<td>(Optional) Prefix Lists to which access to Cloud Pipeline API will be granted</td>
+</tr>
+<tr>
+<td><code>CPExternalAccessSecurityGroupIds</code></td>
+<td>(Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.</td>
+</tr>
+<tr>
+<td><code>CPDeploymentId</code></td>
+<td>(Optional) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.</td>
+</tr>
+<tr>
+<td><code>CPEdgeAwsELBSubnet</code></td>
+<td>(Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the <code>CPInfraSubnetIdNode</code>.</td>
+</tr>
+<tr>
+<td><code>CPEdgeAwsELBIP</code></td>
+<td>(Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. See <a href="#create-aws-elastic-ip">Create AWS Elastic IP</a></td>
+</tr>
+<tr>
+<td><code>CPEdgeAwsELBSchema</code></td>
+<td>(Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.</td>
+</tr>
+<tr>
+<td><code>CPApiSrvHost</code></td>
+<td>(Required) API service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+</tr>
+<tr>
+<td><code>CPIdpHost</code></td>
+<td>(Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended! If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline.</td>
+</tr>
+<tr>
+<td><code>CPDockerHost</code></td>
+<td>(Required) Docker service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+</tr>
+<tr>
+<td><code>CPEdgeHost</code></td>
+<td>(Required) EDGE service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+</tr>
+<tr>
+<td><code>CPGitlabHost</code></td>
+<td>(Required) GITLAB service domain name address. See <a href="#create-dns-records">Create DNS</a></td>
+</tr>
+<tr>
+<td><code>CPAssetsS3Url</code></td>
+<td>(Optional) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example s3://&lt; bucket-name &gt;/&lt; filename.zip &gt; See <a href="#optional-creating-zip-with-additional-assets">Creating zip with additional assets</a></td>
+</tr>
+<tr>
+<td><code>CPPipectlUrl</code></td>
+<td>(Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline</td>
+</tr>
+</tbody>
+</table>
+<h4 id="deploy-cloud-pipeline-using-aws-console">Deploy Cloud Pipeline using AWS Console</h4>
+<ol>
+<li>Go to the CloudFormation service in the AWS Console and select the "create stack" option.
+   <img alt="create_stack" src="images/create_stack.jpg" /></li>
+<li>In the "Prerequisite - Prepare template" section, choose "Use an existing template".
+   <img alt="prepare_template" src="images/prepare_template.jpg" /></li>
+<li>Choose your 'jump-server.yaml' file under "Specify a template" and click "Next".</li>
+<li>On "Specify stack details" step provide the Stack Name and all required parameters, click "Next" and leave next
+   page "Configure stack options" without changes, then click "Next" to check parameters at "Review and create" page.
+   <img alt="stack_details" src="images/stack_details.jpg" /></li>
+<li>Click "Submit" to start stack creation.
+   <img alt="submit" src="images/submit.jpg" /></li>
+</ol>
+<p>Follow the <a href="#stack-parameters-description">Stack Parameters Description</a> section for a detailed explanation of each
+parameter.</p>
+<h4 id="deploy-cloud-pipeline-using-aws-cli">Deploy Cloud Pipeline using AWS CLI</h4>
+<ol>
+<li>Use the AWS CLI to deploy the Cloud Pipeline. Create Cloudformation stack using AWS Console and file jump-server.yaml
+   and set parameters (see <a href="#stack-parameters-description">deployment parameters</a>) or create file jump-server.json like
+   in example (Not all needed parameters could be in this example):</li>
+</ol>
+<pre><code>[
+    {
+        &quot;ParameterKey&quot;: &quot;DeploymentName&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;DeploymentEnv&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;VpcId&quot;,  
+        &quot;ParameterValue&quot;: &quot;vpc-xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPSystemSubnetId&quot;,  
+        &quot;ParameterValue&quot;: &quot;subnet-xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;SubnetIds&quot;,  
+        &quot;ParameterValue&quot;: &quot;subnet-xxxxxxxxxxxxxxx, subnet-xxxxxxxxxxxxxxx, subnet-xxxxxxxxxxxxxxx&quot;
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;IAMRolePermissionsBoundaryArn&quot;,  
+        &quot;ParameterValue&quot;: &quot;arn:aws:iam::xxxxxxxxxxxxxxx:policy/xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;TFstateBucketName&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;TFStateLockTableName&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPAccessPrefixLists&quot;,  
+        &quot;ParameterValue&quot;: &quot;pl-xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPDeploymentId&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPEdgeAwsELBSubnet&quot;,  
+        &quot;ParameterValue&quot;: &quot;subnet-xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPEdgeAwsELBIP&quot;,  
+        &quot;ParameterValue&quot;: &quot;eipalloc-xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPApiSrvHost&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPDeploymentId&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPIdpHost&quot;,  
+        &quot;ParameterValue&quot;: &quot;auth.xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPDockerHost&quot;,  
+        &quot;ParameterValue&quot;: &quot;docker.xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPEdgeHost&quot;,  
+        &quot;ParameterValue&quot;: &quot;edge.xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPGitlabHost&quot;,  
+        &quot;ParameterValue&quot;: &quot;git.xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;DeploymentAWSCredentialsSecretId&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPNetworkFileSystemType&quot;,  
+        &quot;ParameterValue&quot;: &quot;xxxxxxxxxxxxxxx&quot; 
+    },
+    {
+        &quot;ParameterKey&quot;: &quot;CPPipectlUrl&quot;,  
+        &quot;ParameterValue&quot;: &quot;https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/xxxxxxxxxxxxxxx/xxxxxxxxxxxxxxx&quot; 
+    }
+]
+
+
+</code></pre>
+<p>From aws cli run command:</p>
+<pre><code> aws cloudformation create-stack  --stack-name &lt;stack-name&gt;  --template-body file://cloud-pipeline-deployer.yaml  --parameters file://&lt;user parameter filename&gt;.json --capabilities CAPABILITY_NAMED_IAM  --region &lt;region-id&gt;
+</code></pre>
+<p>Monitor the Stack creation in the AWS Console or by running the provided AWS CLI command:</p>
+<pre><code>aws cloudformation describe-stacks --stack-name &lt;stack-name&gt; --query &quot;Stacks[].{\&quot;1.Name\&quot;:StackName,\&quot;2.Status\&quot;:StackStatus,\&quot;3.Output\&quot;:Outputs}&quot; --region &lt;region-d&gt;
+</code></pre>
+<h3 id="review-deployment-logs">Review Deployment Logs</h3>
+<p>To review the deployment process logs, follow these steps:</p>
+<ol>
+<li>Log in to the Jump Server using the AWS Console or by running the ssm start-session command from the stack creation
+   Output.</li>
+<li>Execute the following commands to log in as the root user and navigate to the root/cloud-pipeline/infra/ directory:</li>
+</ol>
+<pre><code>  sudo su 
+  cd ~/cloud-pipeline/infra/
+</code></pre>
+<ol>
+<li>To monitor the Terraform deployment process, open the <code>terraform_apply.log</code> file in this directory. You can do this
+   with the following command:</li>
+</ol>
+<pre><code> tail -f terraform_apply.log
+</code></pre>
+<ol>
+<li>Wait for the log to display "Apply complete!" and additional outputs. Once these appear, wait a few more minutes to
+   allow Cloud Pipeline to start its installation and create the pipectl.log file.</li>
+<li>From ~/cloud-pipeline/pipectl-deploy/ directory monitor the Cloud-Pipeline deployment process using the following
+   command:</li>
+</ol>
+<pre><code> tail -f pipectl.log
+</code></pre>
+<ol>
+<li>Once the installation is finished, the log will display "Installation done" along with some links.</li>
+</ol>
+<p>Wait approximately 40-50 minutes until all resources and services are deployed. Then, verify the deployment by visiting
+https://&lt;service>.&lt;user-domain-name>/</p>
+<h3 id="destroy-cloud-pipeline-resources">Destroy Cloud-Pipeline resources</h3>
+<p>To delete all resources of the Cloud Pipeline along with the infrastructure, follow these steps:</p>
+<ol>
+<li>If you use AWS Secret to store <strong>temporary</strong> credentials as described
+   in <a href="#credentials-to-create-infrastructure-resources">Credentials to create Infrastructure Resources</a>, you need to
+   first update your credentials token in your AWS Secret before proceeding with the next steps.</li>
+<li>Log in to the Jump Server instance using its Instance ID, which can be found in the CloudFormation stack output.
+    <code>aws ssm start-session --target &lt;instance-id&gt; --region &lt;deployment-region&gt;</code></li>
+<li>After a login, switch the user to root by running the command <code>sudo su</code>.</li>
+<li>Next, navigate to the home root directory by entering <code>cd /root/cloud-pipeline/</code>.</li>
+<li>Execute the deletion script by running <code>./delete_all_cp_infra.sh</code>. <br>
+   The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline
+   resources. <br>
+   Confirm if you are sure about the deletion.</li>
+<li>Once the script finished and all resources are deleted, you can now manually delete s3 bucket for terraform state and
+   the CloudFormation stack.</li>
+</ol>
+<p>Please note that these actions will delete all your resources in the Cloud Pipeline infrastructure. Be sure to back up
+any necessary data before starting the deletion process.</p>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../terraform/" class="btn btn-neutral float-left" title="Terraform"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../../management/environments_sync/" class="btn btn-neutral float-right" title="Environments sync">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+    
+      <span><a href="../terraform/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../../../management/environments_sync/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script>var base_url = '../../../..';</script>
+    <script src="../../../../js/theme_extra.js" defer></script>
+    <script src="../../../../js/theme.js" defer></script>
+      <script src="../../../../css/extra.js" defer></script>
+      <script src="../../../../search/main.js" defer></script>
+    <script defer>
+        window.onload = function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        };
+    </script>
+
+</body>
+</html>
