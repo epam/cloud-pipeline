@@ -431,7 +431,7 @@ Resources:
               #####################################
               ### Prepare infra deletion script ###
               #####################################
-              cat << EOF > delete_all_cp_infra.sh
+              cat << EOF > "$CLOUD_PIPELINE_DEPLOY_DIR/delete_all_cp_infra.sh"
               #!/bin/bash
               echo "-----------SET ACCESS TO AWS-----------------" 
               export CP_SECRET=${DeploymentAWSCredentialsSecretId}
@@ -473,7 +473,7 @@ Resources:
               fi
               EOF
               
-              chmod +x delete_all_cp_infra.sh
+              chmod +x "$CLOUD_PIPELINE_DEPLOY_DIR/delete_all_cp_infra.sh"
             
               ##########################################
               ### Preparation for the pipectl deploy ###
@@ -489,8 +489,12 @@ Resources:
               fi
 
               sudo mkdir -p /opt/root/ssh
-              terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem     
-              
+              terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem
+            
+              sudo mkdir -p $PIPECTL_DEPLOY_DIR
+              terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
+              chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
+            
               CP_S3Link=${CPAssetsS3Url}
               if [ -n "$CP_S3Link"  ]; then
                  aws s3 cp $CP_S3Link . && unzip *.zip -d /opt \
@@ -520,12 +524,7 @@ Resources:
                   ln -s /opt/common/pki/ca-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
               fi
             
-              sudo mkdir -p $PIPECTL_DEPLOY_DIR
-              terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
-              chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
-              
               cd $PIPECTL_DEPLOY_DIR
-              
               wget -c ${CPPipectlUrl} -O pipectl && chmod +x pipectl
               ./deploy_cloud_pipeline.sh &> pipectl.log
               
