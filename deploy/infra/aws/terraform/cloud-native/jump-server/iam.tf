@@ -13,7 +13,7 @@
 # limitations under the License.
 
 resource "aws_iam_role" "bastion_execution" {
-  name                 = "${local.resource_name_prefix}_BastionExecutionRole"
+  name                 = "${local.resource_name_prefix}-BastionExecutionRole"
   count                = var.iam_instance_profile == null ? 1 : 0
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -50,7 +50,7 @@ resource "aws_iam_role_policy_attachment" "bastion_execution" {
 resource "aws_iam_instance_profile" "bastion_execution" {
   count = var.iam_instance_profile == null ? 1 : 0
 
-  name = "${aws_iam_role.bastion_execution[0].name}_ip"
+  name = "${aws_iam_role.bastion_execution[0].name}-ip"
   role = aws_iam_role.bastion_execution[0].name
 }
 

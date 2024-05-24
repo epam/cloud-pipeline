@@ -15,8 +15,8 @@
 locals {
 
   tags = merge({
-    Environment    = var.env
-    Deployment     = var.project_name
+    Environment    = var.deployment_env
+    Deployment     = var.deployment_name
     },
     var.additional_tags
   )
@@ -25,7 +25,7 @@ locals {
     "cloud-pipeline/node-group-type" : "system"
   }
 
-  resource_name_prefix = "${var.project_name}-${var.env}"
+  resource_name_prefix = "${var.deployment_name}-${var.deployment_env}"
   cluster_name         = "${local.resource_name_prefix}-eks-cluster"
   efs_name             = "${local.resource_name_prefix}-efs-file-system"
 
@@ -214,5 +214,6 @@ locals {
     local.aws_omics_specific_envs,
     local.cp_edge_elb_envs
   ))
+
 }
 

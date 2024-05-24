@@ -14,7 +14,7 @@
 
 module "ec2_instance" {
   source = "terraform-aws-modules/ec2-instance/aws"
-  name   = "${local.resource_name_prefix}-bastion"
+  name   = "${local.resource_name_prefix}-jump-server"
 
   iam_instance_profile = var.iam_instance_profile == null ? aws_iam_instance_profile.bastion_execution[0].name : var.iam_instance_profile
 
@@ -77,7 +77,7 @@ module "internal_bastion_access_sg" {
   source              = "terraform-aws-modules/security-group/aws"
   version             = "5.1.0"
   vpc_id              = var.vpc_id
-  name                = "${local.resource_name_prefix}-jumbox-internal-sg"
+  name                = "${local.resource_name_prefix}-jump-server-internal-sg"
   ingress_cidr_blocks = [data.aws_vpc.this.cidr_block]
   ingress_rules       = ["all-all"]
   egress_cidr_blocks  = ["0.0.0.0/0"]

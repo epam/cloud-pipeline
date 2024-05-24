@@ -159,29 +159,32 @@ the AWS console, or the AWS Command Line Interface (CLI).
 
 | Name                             | Description                                                                                                                                                                                                                                                                         |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProjectName`                    | (Required) Name of the deployment. Will be used as resources name prefix                                                                                                                                                                                                            |
-| `Env`                            | (Required) Environment name. Will be used as resources name prefix                                                                                                                                                                                                                  |  | `JumpServerInstanceType` | (Optional) Jump-server EC2 instance type |
-| `AmiId`                          | (Optional) Image id that will be used for Jump-Server                                                                                                                                                                                                                               |
+| `DeploymentName`                    | (Required) Name of the deployment. Will be used as resources name prefix     |
+| `DeploymentEnv`                     | (Required) Environment name. Will be used as resources name prefix           | 
+| `DeploymentAWSCredentialsSecretId`          | (Optional) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure. See [Set access to create infrastructure](#set-access-to-create-infrastructure-resources)                                   | 
+| `JumpServerInstanceType` | (Optional) Jump-server EC2 instance type |
+| `JumpServerAmiId`                          | (Optional) Image id that will be used for Jump-Server     |
 | `VpcId`                          | (Required) Id of the VPC where all resources will be created. See [Create VPC](#create-vpc)                                                                                                                                                                                         |
-| `CPInfraSubnetId`                | (Required) Subnet where JumpServer instance and EKS node group will be created. See [Create VPC](#create-vpc)                                                                                                                                                                       |
-| `EKSSubnetIds`                   | (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified. See [Create VPC](#create-vpc)                                                                                                  |
+| `SubnetIds`                   | (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified. See [Create VPC](#create-vpc)     |
+| `CPSystemSubnetId`                | (Required) Subnet where JumpServer instance and EKS node group will be created. See [Create VPC](#create-vpc)                                                                                                                                                                       |
+| `EKSAdminRoleArns`               | (Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster) |
 | `IAMrolePermissionsBoundaryArn`  | (Optional) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.                                                                                                                                                    |
-| `FileSystemType`                 | (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.                                                                                                                                                                                                    |
 | `TFstateBucketName`              | (Required) S3 Bucket name, that will be created where terraform state file for Cloud-Pipeline Infrastructure module will be stored                                                                                                                                                  |
 | `TFStateLockTableName`           | (Required) Name of the DynamoDB table, that will be created, for terraform state lock                                                                                                                                                                                               |
+| `CPNetworkFileSystemType`                 | (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.                                                                                                                                                                                                    |
 | `CPApiAccessPrefixLists`         | (Optional) Prefix Lists to which access to Cloud Pipeline API will be granted                                                                                                                                                                                                       |
+| `CPExternalAccessSecurityGroupIds` |  (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.   |
 | `CPDeploymentId`                 | (Optional) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.                                                                      |
-| `CPEdgeAwsElbSubnets`            | (Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the `CPInfraSubnetIdNode`.                                                                                                                                              |
-| `CPEdgeAwsElbEipallocs`          | (Required) Allocation ID of the created Elastic IP. See [Create AWS Elastic IP](#create-aws-elastic-ip)                                                                                                                                                                             |
-| `CPPrefUiPipelineDeploymentName` | (Optional) Deployment Name that will be shown as the browser tab name                                                                                                                                                                                                               |
-| `CPApiSrvHost`                   | (Required) API service domain name address. See [Create DNS](#create-dns-records)                                                                                                                                                                                                   |
-| `CPIdpHost`                      | (Optional) IDP service domain name address. If External Identity Provider is used this parameter is optional.                                                                                                                                                                       |
-| `CPDockerHost`                   | (Required) Docker service domain name address. See [Create DNS](#create-dns-records)                                                                                                                                                                                                |
-| `CPEdgeHost`                     | (Required) EDGE service domain name address. See [Create DNS](#create-dns-records)                                                                                                                                                                                                  |
-| `CPGitlabHost`                   | (Required) GITLAB service domain name address. See [Create DNS](#create-dns-records)                                                                                                                                                                                                |
-| `EKSAdminRoleArns`               | (Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster) |
-| `AWSCredentialSecretId`          | (Optional) Name of the aws secret with secret key and access key of the user that will be used on Jumpserver to run Terraform to deploy infrastructure. See [Set access to create infrastructure](#set-access-to-create-infrastructure-resources)                                   |
-| `CPAssetsS3Url`                  | (Optional) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example s3://< bucket-name >/< filename.zip > See [Creating zip with additional assets](#optional-creating-zip-with-additional-assets)                                                    |
+| `CPEdgeAwsELBSubnet`            | (Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the `CPInfraSubnetIdNode`.    |
+| `CPEdgeAwsELBIP`     | (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. See [Create AWS Elastic IP](#create-aws-elastic-ip)  |
+| `CPEdgeAwsELBSchema`          | (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.  |
+| `CPApiSrvHost`                   | (Required) API service domain name address. See [Create DNS](#create-dns-records)    |
+| `CPIdpHost`                      | (Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended! If not provided CPAssetsS3Url parameter should be provided with all necessary artifacts to configure SSO authentication for Cloud-Pipeline. |
+| `CPDockerHost`                   | (Required) Docker service domain name address. See [Create DNS](#create-dns-records) |
+| `CPEdgeHost`                     | (Required) EDGE service domain name address. See [Create DNS](#create-dns-records)    |
+| `CPGitlabHost`                   | (Required) GITLAB service domain name address. See [Create DNS](#create-dns-records)    |
+| `CPAssetsS3Url`                  | (Optional) Link to zip archive with additional assets(certificates) on AWS S3 bucket. For example s3://< bucket-name >/< filename.zip > See [Creating zip with additional assets](#optional-creating-zip-with-additional-assets) |
+|  `CPPipectlUrl` |  (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline |
 
 #### Deploy Cloud Pipeline using AWS Console
 
@@ -202,89 +205,103 @@ parameter.
 #### Deploy Cloud Pipeline using AWS CLI
 
 1. Use the AWS CLI to deploy the Cloud Pipeline. Create Cloudformation stack using AWS Console and file jump-server.yaml
-   and set parameters (see [deployment parameters](#stack-parameters-description)) or create file jump-server.json like:
+   and set parameters (see [deployment parameters](#stack-parameters-description)) or create file jump-server.json like in example (Not all needed parameters could be in this example):
 
 ```
- [
+[
     {
-        "ParameterKey": "ProjectName",  
-        "ParameterValue": "<Name of the deployment. Will be used as resources name prefix>" 
+        "ParameterKey": "DeploymentName",  
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "Env",  
-        "ParameterValue": "<Environment name. Will be used as resources name prefix>" 
+        "ParameterKey": "DeploymentEnv",  
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "VpcId",  
-        "ParameterValue": "<VPC Id where all resources will be created>" 
+        "ParameterValue": "vpc-xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "CPInfraSubnetId",  
-        "ParameterValue": "<Subnet where JumpServer instance and EKS node group will be created>" 
+        "ParameterKey": "CPSystemSubnetId",  
+        "ParameterValue": "subnet-xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "EKSSubnetIds",  
-        "ParameterValue": "<Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified>"
+        "ParameterKey": "SubnetIds",  
+        "ParameterValue": "subnet-xxxxxxxxxxxxxxx, subnet-xxxxxxxxxxxxxxx, subnet-xxxxxxxxxxxxxxx"
     },
     {
-        "ParameterKey": "IAMrolePermissionsBoundaryArn",  
-        "ParameterValue": "<Optional, ARN of the account specific role boundary>" 
+        "ParameterKey": "IAMRolePermissionsBoundaryArn",  
+        "ParameterValue": "arn:aws:iam::xxxxxxxxxxxxxxx:policy/xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "TFstateBucketName",  
-        "ParameterValue": "<S3 Bucket name, that will be created where terraform state file for Cloud-Pipeline Infrastructure module will be stored>" 
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "TFStateLockTableName",  
-        "ParameterValue": "<Name of the DynamoDB table, that will be created, for terraform state lock>" 
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "CPApiAccessPrefixLists",  
-        "ParameterValue": "<Optional, prefix Lists to which access to Cloud Pipeline API will be granted>" 
+        "ParameterKey": "CPAccessPrefixLists",  
+        "ParameterValue": "pl-xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPDeploymentId",  
-        "ParameterValue": "<Specify unique ID of the deployment.It will be used to name cloud entities (e.g. path within a docker registry object container)>" 
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "CPEdgeAwsElbSubnets",  
-        "ParameterValue": "<The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the JumpServer and EKS Cluster Node>" 
+        "ParameterKey": "CPEdgeAwsELBSubnet",  
+        "ParameterValue": "subnet-xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "CPEdgeAwsElbEipallocs",  
-        "ParameterValue": "<Allocation ID of the created Elastic IP>" 
+        "ParameterKey": "CPEdgeAwsELBIP",  
+        "ParameterValue": "eipalloc-xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPApiSrvHost",  
-        "ParameterValue": "<user-domain-name>" 
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
+    },
+    {
+        "ParameterKey": "CPDeploymentId",  
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPIdpHost",  
-        "ParameterValue": "auth.<user-domain-name>" 
+        "ParameterValue": "auth.xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPDockerHost",  
-        "ParameterValue": "docker.<user-domain-name>" 
+        "ParameterValue": "docker.xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPEdgeHost",  
-        "ParameterValue": "edge.<user-domain-name>" 
+        "ParameterValue": "edge.xxxxxxxxxxxxxxx" 
     },
     {
         "ParameterKey": "CPGitlabHost",  
-        "ParameterValue": "git.<user-domain-name>" 
+        "ParameterValue": "git.xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "AWSCredentialSecretId",  
-        "ParameterValue": "<secret name with aws credentials>" 
+        "ParameterKey": "DeploymentAWSCredentialsSecretId",  
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
+    },
+    {
+        "ParameterKey": "CPNetworkFileSystemType",  
+        "ParameterValue": "xxxxxxxxxxxxxxx" 
+    },
+    {
+        "ParameterKey": "CPPipectlUrl",  
+        "ParameterValue": "https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/xxxxxxxxxxxxxxx/xxxxxxxxxxxxxxx" 
     }
 ]
+
+
 ```
 
 From aws cli run command:
 
 ```
- aws cloudformation create-stack  --stack-name <stack-name>  --template-body file://jump-server.yaml  --parameters file://jump-server.json --capabilities CAPABILITY_NAMED_IAM  --region <region-id>
+ aws cloudformation create-stack  --stack-name <stack-name>  --template-body file://cloud-pipeline-deployer.yaml  --parameters file://<user parameter filename>.json --capabilities CAPABILITY_NAMED_IAM  --region <region-id>
 ```
 
 Monitor the Stack creation in the AWS Console or by running the provided AWS CLI command:
@@ -299,11 +316,11 @@ To review the deployment process logs, follow these steps:
 
 1. Log in to the Jump Server using the AWS Console or by running the ssm start-session command from the stack creation
    Output.
-2. Execute the following commands to log in as the root user and navigate to the root/deployment-eks directory:
+2. Execute the following commands to log in as the root user and navigate to the root/cloud-pipeline/infra/ directory:
 
 ```
   sudo su 
-  cd ~/deployment-eks
+  cd ~/cloud-pipeline/infra/
 ```
 
 3. To monitor the Terraform deployment process, open the `terraform_apply.log` file in this directory. You can do this
@@ -315,7 +332,7 @@ To review the deployment process logs, follow these steps:
 
 4. Wait for the log to display "Apply complete!" and additional outputs. Once these appear, wait a few more minutes to
    allow Cloud Pipeline to start its installation and create the pipectl.log file.
-5. Monitor the Cloud-Pipeline deployment process using the following command:
+5. From ~/cloud-pipeline/pipectl-deploy/ directory monitor the Cloud-Pipeline deployment process using the following command:
 
 ```
  tail -f pipectl.log
@@ -336,10 +353,10 @@ To delete all resources of the Cloud Pipeline along with the infrastructure, fol
     aws ssm start-session --target <instance-id> --region <deployment-region>
     ```
 3. After a login, switch the user to root by running the command `sudo su`.
-4. Next, navigate to the home root directory by entering `cd ~/deployment-eks`.
+4. Next, navigate to the home root directory by entering `cd ~/cloud-pipeline/infra/`.
 5. Execute the deletion script by running `./delete_all_cp_infra.sh`. <br>
    The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. <br>
    Confirm if you are sure about the deletion.
-6. Once the script finished and all resources are deleted, you can now delete the CloudFormation stack.
+6. Once the script finished and all resources are deleted, you can now manually delete s3 bucket for terraform state and the CloudFormation stack.
 
-Please note that these actions will delete all your resources in the Cloud Pipeline. Be sure to back up any necessary data before starting the deletion process.
+Please note that these actions will delete all your resources in the Cloud Pipeline infrastructure. Be sure to back up any necessary data before starting the deletion process.

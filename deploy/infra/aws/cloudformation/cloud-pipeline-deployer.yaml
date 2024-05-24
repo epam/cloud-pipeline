@@ -76,6 +76,9 @@ Parameters:
   CPAccessPrefixLists:
     Type: String
     Description: (Optional) AWS Prefix Lists to which access to Cloud Pipeline will be granted
+  CPExternalAccessSecurityGroupIds:
+    Type: String
+    Description: (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. 
     Default: ""
   CPDeploymentId:
     Type: String
@@ -342,25 +345,26 @@ Resources:
 
 
               module "cluster-infra" {
-                source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
-                project_name                      = "${DeploymentName}"
-                env                               = "${DeploymentEnv}"
-                vpc_id                            = "${VpcId}"
-                cp_api_access_prefix_lists        = ["${CPAccessPrefixLists}"]
-                subnet_ids                        =  tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
-                iam_role_permissions_boundary_arn = "${IAMRolePermissionsBoundaryArn}" 
-                eks_system_node_group_subnet_ids  =  ["${CPSystemSubnetId}"]
-                deploy_filesystem_type            =  "${CPNetworkFileSystemType}"
-                cp_deployment_id                  =  "${CPDeploymentId}"
-                cp_edge_elb_schema                =  "${CPEdgeAwsELBSchema}"
-                cp_edge_elb_subnet                =  "${CPEdgeAwsELBSubnet}"
-                cp_edge_elb_ip                    =  "${CPEdgeAwsELBIP}"
-                cp_api_srv_host                   =  "${CPApiSrvHost}"
-                cp_idp_host                       =  "${CPIdpHost}"
-                cp_docker_host                    =  "${CPDockerHost}"
-                cp_edge_host                      =  "${CPEdgeHost}"
-                cp_gitlab_host                    =  "${CPGitlabHost}"
-                eks_additional_role_mapping = concat([
+                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
+                project_name                       = "${DeploymentName}"
+                env                                = "${DeploymentEnv}"
+                vpc_id                             = "${VpcId}"
+                cp_api_access_prefix_lists         = ["${CPAccessPrefixLists}"]
+                external_access_security_group_ids = tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)])
+                subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
+                iam_role_permissions_boundary_arn  = "${IAMRolePermissionsBoundaryArn}" 
+                eks_system_node_group_subnet_ids   = ["${CPSystemSubnetId}"]
+                deploy_filesystem_type             = "${CPNetworkFileSystemType}"
+                cp_deployment_id                   = "${CPDeploymentId}"
+                cp_edge_elb_schema                 = "${CPEdgeAwsELBSchema}"
+                cp_edge_elb_subnet                 = "${CPEdgeAwsELBSubnet}"
+                cp_edge_elb_ip                     = "${CPEdgeAwsELBIP}"
+                cp_api_srv_host                    = "${CPApiSrvHost}"
+                cp_idp_host                        = "${CPIdpHost}"
+                cp_docker_host                     = "${CPDockerHost}"
+                cp_edge_host                       = "${CPEdgeHost}"
+                cp_gitlab_host                     = "${CPGitlabHost}"
+                eks_additional_role_mapping        = concat([
                   {
                     iam_role_arn  = "${JumpServerIAMRole.Arn}"
                     eks_role_name = "system:node:{{EC2PrivateDNSName}}"
@@ -371,7 +375,7 @@ Resources:
                   for role_arn in local.additional_role_arns_for_cluster_admin : {
                   iam_role_arn  = role_arn
                   eks_role_name = "user-defined:cluster-admin"
-                  eks_groups   = ["cluster-admin"]
+                  eks_groups    = ["cluster-admin"]
                 }
                 ]
                )

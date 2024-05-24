@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-variable "env" {
+variable "deployment_env" {
   type        = string
   description = "Environment name"
 }
 
-variable "project_name" {
+variable "deployment_name" {
   type        = string
   description = "Project name"
 }

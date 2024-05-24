@@ -16,8 +16,8 @@ module "kms" {
   source  = "terraform-aws-modules/kms/aws"
   version = "1.5"
 
-  aliases               = ["${var.project_name}/${var.env}"]
-  description           = "${var.project_name}/${var.env} encryption key"
+  aliases               = ["${var.deployment_name}/${var.deployment_env}"]
+  description           = "${var.deployment_name}/${var.deployment_env} encryption key"
   enable_default_policy = true
 
   policy = jsonencode({
@@ -85,8 +85,8 @@ module "kms_eks" {
   source  = "terraform-aws-modules/kms/aws"
   version = "1.5"
 
-  aliases               = ["${var.project_name}/${var.env}/eks"]
-  description           = "${var.project_name}/${var.env} encryption key for eks cluster"
+  aliases               = ["${var.deployment_name}/${var.deployment_env}/eks"]
+  description           = "${var.deployment_name}/${var.deployment_env} encryption key for eks cluster"
   enable_default_policy = true
 
   policy = jsonencode({
