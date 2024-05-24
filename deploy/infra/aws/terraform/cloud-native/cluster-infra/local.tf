@@ -15,8 +15,8 @@
 locals {
 
   tags = merge({
-    Environment    = var.env
-    Deployment     = var.project_name
+    Environment    = var.deployment_env
+    Deployment     = var.deployment_name
     },
     var.additional_tags
   )
@@ -25,7 +25,7 @@ locals {
     "cloud-pipeline/node-group-type" : "system"
   }
 
-  resource_name_prefix = "${var.project_name}-${var.env}"
+  resource_name_prefix = "${var.deployment_name}-${var.deployment_env}"
   cluster_name         = "${local.resource_name_prefix}-eks-cluster"
   efs_name             = "${local.resource_name_prefix}-efs-file-system"
 
@@ -162,7 +162,7 @@ locals {
     "-env CP_API_SRV_EXTERNAL_HOST=\"${var.cp_api_srv_host}\"",
     "-env CP_API_SRV_INTERNAL_HOST=\"${var.cp_api_srv_host}\"",
     "-env CP_API_SRV_IDP_CERT_PATH=\"/opt/idp/pki\"",
-    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.project_name}\"",
+    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.deployment_name}\"",
     "-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\"${module.s3_etc.s3_bucket_id}\"",
     "-env CP_API_SRV_SSO_BINDING=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST\"",
     "-env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER=\"true\"",
@@ -216,5 +216,6 @@ locals {
     local.aws_omics_specific_envs,
     local.cp_edge_elb_envs
   ))
+
 }
 

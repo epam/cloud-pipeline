@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-variable "env" {
+variable "deployment_env" {
   type        = string
-  description = "Environment name"
+  description = "Environment name. Will be used as resources name prefix"
 }
 
-variable "project_name" {
+variable "deployment_name" {
   type        = string
-  description = "Project name"
+  description = "Name of the deployment. Will be used as resources name prefix"
 }
 
 variable "vpc_id" {
