@@ -445,6 +445,8 @@ export default class PermissionsForm extends React.Component {
             ...(userInfo.roles || []).map(({name}) => ({name, principal: false}))
           );
         }
+      } else {
+        rolesToCheck.push({name: 'ROLE_USER', principal: false});
       }
       for (let o = 0; o < subObjectsPermissions.length; o++) {
         const subObjectPermission = subObjectsPermissions[o];
