@@ -162,7 +162,6 @@ locals {
     "-env CP_API_SRV_EXTERNAL_HOST=\"${var.cp_api_srv_host}\"",
     "-env CP_API_SRV_INTERNAL_HOST=\"${var.cp_api_srv_host}\"",
     "-env CP_API_SRV_IDP_CERT_PATH=\"/opt/idp/pki\"",
-    "-env CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME=\"${var.deployment_name}\"",
     "-env CP_PREF_STORAGE_SYSTEM_STORAGE_NAME=\"${module.s3_etc.s3_bucket_id}\"",
     "-env CP_API_SRV_SSO_BINDING=\"urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST\"",
     "-env CP_API_SRV_SAML_ALLOW_ANONYMOUS_USER=\"true\"",

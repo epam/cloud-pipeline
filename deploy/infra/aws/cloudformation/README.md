@@ -357,6 +357,6 @@ To delete all resources of the Cloud Pipeline along with the infrastructure, fol
 5. Execute the deletion script by running `./delete_all_cp_infra.sh`. <br>
    The script will ask for confirmation before proceeding since this action will remove all Cloud Pipeline resources. <br>
    Confirm if you are sure about the deletion.
-6. Once the script finished and all resources are deleted, you can now delete the CloudFormation stack.
+6. Once the script finished and all resources are deleted, you can now manually delete s3 bucket for terraform state and the CloudFormation stack.
 
-Please note that these actions will delete all your resources in the Cloud Pipeline. Be sure to back up any necessary data before starting the deletion process.
+Please note that these actions will delete all your resources in the Cloud Pipeline infrastructure. Be sure to back up any necessary data before starting the deletion process.

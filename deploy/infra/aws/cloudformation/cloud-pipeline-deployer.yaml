@@ -344,7 +344,7 @@ Resources:
                 env                                = "${DeploymentEnv}"
                 vpc_id                             = "${VpcId}"
                 cp_api_access_prefix_lists         = ["${CPAccessPrefixLists}"]
-                external_access_security_group_ids = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)])
+                external_access_security_group_ids = tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)])
                 subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
                 iam_role_permissions_boundary_arn  = "${IAMRolePermissionsBoundaryArn}" 
                 eks_system_node_group_subnet_ids   = ["${CPSystemSubnetId}"]
