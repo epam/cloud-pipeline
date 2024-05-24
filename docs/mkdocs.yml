@@ -140,6 +140,10 @@ nav:
     - AWS: 'installation/prerequisites/aws.md'
     - Azure: 'installation/prerequisites/azure.md'
     - GCP: 'installation/prerequisites/gcp.md'
+  - Deployment:
+    - AWS:
+      - Terraform: 'installation/deployment/aws/terraform/README.md'
+      - AWS CloudFormation: 'installation/deployment/aws/cloud-formation/README.md'
   - Management:
     - Environments sync: 'installation/management/environments_sync.md'
   - Change Kubernetes certificates: 'installation/change_kube_certificates.md'
