@@ -73,7 +73,10 @@ mv $CLI_PATH/dist/win/pipe.zip ${API_STATIC_PATH}/pipe.zip
 
 ./gradlew distTar   -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
                     -Pprofile=release \
-                    -x test pipe-cli:build pipe-cli:buildLinux pipe-cli:buildWin \
+                    -x test \
+                    -x :pipe-cli:build \
+                    -x :pipe-cli:buildLinux \
+                    -x :pipe-cli:buildWin \
                     -Pfast \
                     --no-daemon
 
