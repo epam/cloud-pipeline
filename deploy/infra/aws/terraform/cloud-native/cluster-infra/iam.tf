@@ -50,7 +50,7 @@ data "aws_iam_policy" "AmazonElasticFileSystemFullAccess" {
 }
 
 resource "aws_iam_policy" "eks_node_observability" {
-  name        = "${local.resource_name_prefix}_eks_observability"
+  name        = "${local.resource_name_prefix}-eks-observability"
   description = "Access to write logs by CW Agent and FluentBit to the cloudwatch log groups"
   path        = "/"
 
@@ -85,7 +85,7 @@ resource "aws_iam_policy" "eks_node_observability" {
 }
 
 resource "aws_iam_policy" "kms_eks_access" {
-  name        = "${local.resource_name_prefix}_kms_eks_access"
+  name        = "${local.resource_name_prefix}-kms-eks-access"
   description = "Access to KMS for EKS"
   path        = "/"
 
@@ -110,7 +110,7 @@ resource "aws_iam_policy" "kms_eks_access" {
 }
 
 resource "aws_iam_policy" "kms_data_access" {
-  name        = "${local.resource_name_prefix}_kms_access"
+  name        = "${local.resource_name_prefix}-kms-access"
   description = "Access to KMS for Data"
   path        = "/"
 
@@ -135,7 +135,7 @@ resource "aws_iam_policy" "kms_data_access" {
 }
 
 resource "aws_iam_policy" "cp_ecr_access" {
-  name        = "${local.resource_name_prefix}ECROmicsAccessPolicy"
+  name        = "${local.resource_name_prefix}-ECROmicsAccessPolicy"
   description = "Permissions for access ECR for Omics in ${local.resource_name_prefix}"
   count       = var.enable_aws_omics_integration ? 1 : 0
   path        = "/"
@@ -203,7 +203,7 @@ resource "aws_iam_policy" "cp_ecr_access" {
 }
 
 resource "aws_iam_policy" "cp_main_service" {
-  name        = "${local.resource_name_prefix}ServicePolicy"
+  name        = "${local.resource_name_prefix}-ServicePolicy"
   description = "Permissions for Cloud-Pipeline in ${local.resource_name_prefix}"
   path        = "/"
 
@@ -382,7 +382,7 @@ resource "aws_iam_policy" "cp_main_service" {
 }
 
 resource "aws_iam_policy" "cp_omics_service_role_access" {
-  name        = "${local.resource_name_prefix}_Omics_Service_Role_Access_policy"
+  name        = "${local.resource_name_prefix}-Omics-Service-Role-Access-policy"
   description = "Permissions for managing AWS Omics Service role for ${local.resource_name_prefix}"
   count       = var.enable_aws_omics_integration ? 1 : 0
   path        = "/"
@@ -406,7 +406,7 @@ resource "aws_iam_policy" "cp_omics_service_role_access" {
 }
 
 resource "aws_iam_policy" "cp_s3_via_sts" {
-  name        = "${local.resource_name_prefix}S3viaSTSPolicy"
+  name        = "${local.resource_name_prefix}-S3viaSTSPolicy"
   description = "Permissions for Cloud-Pipeline S3iaSTS Role in ${local.resource_name_prefix}"
   path        = "/"
 
@@ -459,7 +459,7 @@ resource "aws_iam_policy" "cp_s3_via_sts" {
 ===============================================================================
 */
 resource "aws_iam_role" "eks_cluster_execution" {
-  name = "${local.resource_name_prefix}EKSClusterExecutionRole"
+  name = "${local.resource_name_prefix}-EKSClusterExecutionRole"
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -495,7 +495,7 @@ resource "aws_iam_role_policy_attachment" "eks_cluster" {
 # IRSA auth (to get use of service account on kube to assume AWS Role), and updating to registry:3.0.1-alpha (where IRSA is supported)
 # is not possible because of problem with registry token auth
 resource "aws_iam_policy" "s3_bucket_docker_store_access" {
-  name        = "${local.resource_name_prefix}_s3_bucket_docker_store_access"
+  name        = "${local.resource_name_prefix}-s3-bucket-docker-store-access"
   description = "Access to s3 bucket where docker registry will store images"
   path        = "/"
 
@@ -606,7 +606,7 @@ resource "aws_iam_role_policy_attachment" "eks_cp_system_node_cni" {
 }
 
 resource "aws_iam_role" "eks_cp_system_node_execution" {
-  name = "${local.resource_name_prefix}EKSCPSystemNodeExecutionRole"
+  name = "${local.resource_name_prefix}-EKSCPSystemNodeExecutionRole"
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -650,12 +650,12 @@ resource "aws_iam_role_policy_attachment" "eks_cp_system_node_AWSXrayWriteOnly" 
 
 
 resource "aws_iam_instance_profile" "eks_cp_worker_node" {
-  name = "${local.resource_name_prefix}EKSCPWorkerNodeExecutionRole_IP"
+  name = "${local.resource_name_prefix}-EKSCPWorkerNodeExecutionRole_IP"
   role = aws_iam_role.eks_cp_worker_node_execution.name
 }
 
 resource "aws_iam_role" "eks_cp_worker_node_execution" {
-  name = "${local.resource_name_prefix}EKSCPWorkerNodeExecutionRole"
+  name = "${local.resource_name_prefix}-EKSCPWorkerNodeExecutionRole"
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -722,7 +722,7 @@ module "fsx_csi_irsa" {
   source      = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version     = "5.30.0"
 
-  role_name                     = "${local.resource_name_prefix}-fsx_csi-ExecutionRole"
+  role_name                     = "${local.resource_name_prefix}-fsx-csi-ExecutionRole"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
   policy_name_prefix            = local.resource_name_prefix
 
@@ -747,7 +747,7 @@ module "efs_csi_irsa" {
   source      = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version     = "5.30.0"
 
-  role_name                     = "${local.resource_name_prefix}-efs_csi-ExecutionRole"
+  role_name                     = "${local.resource_name_prefix}-efs-csi-ExecutionRole"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
   policy_name_prefix            = local.resource_name_prefix
 
@@ -777,7 +777,7 @@ module "cp_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.30.0"
 
-  role_name                     = "${local.resource_name_prefix}CPExecutionRole"
+  role_name                     = "${local.resource_name_prefix}-CPExecutionRole"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
   policy_name_prefix            = local.resource_name_prefix
 
@@ -808,7 +808,7 @@ module "cp_irsa" {
 ===============================================================================
 */
 resource "aws_iam_role" "cp_s3_via_sts" {
-  name = "${local.resource_name_prefix}S3viaSTSRole"
+  name = "${local.resource_name_prefix}-S3viaSTSRole"
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
 
@@ -845,7 +845,7 @@ resource "aws_iam_role_policy_attachment" "cp_s3_via_sts_kms_allow" {
 */
 
 resource "aws_iam_role" "cp_omics_service" {
-  name  = "${local.resource_name_prefix}OmicsServiceRole"
+  name  = "${local.resource_name_prefix}-OmicsServiceRole"
   count = var.enable_aws_omics_integration ? 1 : 0
 
   permissions_boundary = var.iam_role_permissions_boundary_arn
@@ -868,7 +868,7 @@ resource "aws_iam_role" "cp_omics_service" {
 }
 
 resource "aws_iam_policy" "cp_omics_service" {
-  name        = "${local.resource_name_prefix}OmicsServicePolicy"
+  name        = "${local.resource_name_prefix}-OmicsServicePolicy"
   description = "Permissions for Cloud-Pipeline Omics Service Role in ${local.resource_name_prefix}"
   count       = var.enable_aws_omics_integration ? 1 : 0
   path        = "/"
@@ -963,7 +963,7 @@ module "aws_lbc_addon_sa_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.30.0"
 
-  role_name                     = "${local.resource_name_prefix}-EKS-LB_Controller_Role"
+  role_name                     = "${local.resource_name_prefix}-EKS-LB-Controller-Role"
   role_permissions_boundary_arn = var.iam_role_permissions_boundary_arn
   policy_name_prefix            = local.resource_name_prefix
 

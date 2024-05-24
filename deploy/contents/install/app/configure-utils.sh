@@ -680,7 +680,7 @@ read -r -d '' payload <<-EOF
     "versioningEnabled":true,
     "backupDuration":${CP_PREF_STORAGE_BACKUP_DURATION:-20},
     "omicsServiceRole":"$CP_PREF_AWS_OMICS_SERVICE_ROLE",
-    "omicsEcrRegistry":"$CP_PREF_AWS_OMICS_ECR_REGISTRY",
+    "omicsEcrUrl":"$CP_PREF_AWS_OMICS_ECR_REGISTRY",
     "kmsKeyId":"$encryption_key_id",
     "kmsKeyArn":"$encryption_key_arn",
     "corsRules":"$cors_rules"
