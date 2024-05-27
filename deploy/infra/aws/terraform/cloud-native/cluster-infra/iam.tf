@@ -33,6 +33,10 @@ data "aws_iam_policy" "AmazonEKSWorkerNodePolicy" {
   arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
 }
 
+data "aws_iam_policy" "AmazonEKSVPCResourceController" {
+  arn = "arn:aws:iam::aws:policy/AmazonEKSVPCResourceController"
+}
+
 data "aws_iam_policy" "AmazonEKS_CNI_Policy" {
   arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
@@ -481,9 +485,15 @@ resource "aws_iam_role" "eks_cluster_execution" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "eks_cluster" {
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSClusterPolicy" {
   role       = aws_iam_role.eks_cluster_execution.name
   policy_arn = data.aws_iam_policy.AmazonEKSClusterPolicy.arn
+}
+
+# https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html
+resource "aws_iam_role_policy_attachment" "eks_cluster_AmazonEKSVPCResourceController" {
+  role       = aws_iam_role.eks_cluster_execution.name
+  policy_arn = data.aws_iam_policy.AmazonEKSVPCResourceController.arn
 }
 
 /*

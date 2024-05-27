@@ -99,6 +99,7 @@ module "eks-aws-auth" {
       groups = [
         "system:bootstrappers",
         "system:nodes",
+        "eks:kube-proxy-windows"
       ]
     }
     ],
