@@ -93,6 +93,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("unused")
 public class PipelineRunManagerUnitTest {
     private static final Long RUN_ID = 1L;
     private static final long NOT_EXISTING_RUN_ID = -1L;

@@ -358,9 +358,7 @@ public class MetadataManager {
     public Map<String, String> prepareCustomInstanceTags(final PipelineRun run) {
         try {
             final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
-            final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-            final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
-            return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
+            return resolveInstanceTagsFromMetadata(run.getDockerImage(), customTags);
         } catch (Exception e) {
             LOGGER.error("An error occurred during custom tags preparation for run '{}'.", run.getId(), e);
             return new HashMap<>();
@@ -427,14 +425,8 @@ public class MetadataManager {
                         MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
     }
 
-    private Map<String, String> resolveInstanceTagsFromMetadata(final MetadataEntry metadataEntry,
+    private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage,
                                                                 final Map<String, String> customTags) {
-        final Map<String, PipeConfValue> metadataData = MapUtils.emptyIfNull(Objects.isNull(metadataEntry)
-                ? null
-                : metadataEntry.getData());
-        if (MapUtils.isEmpty(metadataData)) {
-            return customTags;
-        }
         final Set<String> instanceTagsKeys = new HashSet<>(Arrays.asList(preferenceManager.findPreference(
                 SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
                 .filter(StringUtils::isNotBlank)
@@ -443,6 +435,17 @@ public class MetadataManager {
         if (CollectionUtils.isEmpty(instanceTagsKeys)) {
             return customTags;
         }
+
+        final Tool tool = toolManager.loadByNameOrId(dockerImage);
+        final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
+
+        final Map<String, PipeConfValue> metadataData = MapUtils.emptyIfNull(Objects.isNull(toolMetadata)
+                ? null
+                : toolMetadata.getData());
+        if (MapUtils.isEmpty(metadataData)) {
+            return customTags;
+        }
+
         metadataData.entrySet().stream()
                 .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
                 .forEach(entry -> customTags.put(entry.getKey(), entry.getValue().getValue()));

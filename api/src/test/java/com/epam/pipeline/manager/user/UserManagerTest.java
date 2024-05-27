@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("unused")
 @Transactional
 public class UserManagerTest extends AbstractSpringTest {
 
@@ -128,6 +130,9 @@ public class UserManagerTest extends AbstractSpringTest {
 
     @MockBean
     private DataStorageValidator storageValidator;
+
+    @MockBean
+    private MetadataManager metadataManager;
 
     @Before
     public void setUpPreferenceManager() {
