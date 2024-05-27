@@ -75,11 +75,16 @@ locals {
       configuration_values = jsonencode({
         env = {
           # Reference docs https://docs.aws.amazon.com/eks/latest/userguide/cni-increase-ip-addresses.html
-          WARM_ENI_TARGET   = "${var.eks_vpc_cni_driver_custom_config.warm_eni_target}"
-          WARM_IP_TARGET    = "${var.eks_vpc_cni_driver_custom_config.warm_ip_target}"
-          MINIMUM_IP_TARGET = "${var.eks_vpc_cni_driver_custom_config.min_ip_target}"
-          # https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html
-          enable-windows-ipam = "true"
+          WARM_ENI_TARGET    = "${var.eks_vpc_cni_driver_custom_config.warm_eni_target}"
+          WARM_IP_TARGET     = "${var.eks_vpc_cni_driver_custom_config.warm_ip_target}"
+          MINIMUM_IP_TARGET  = "${var.eks_vpc_cni_driver_custom_config.min_ip_target}"
+        }
+
+        # https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html
+        vpcCni = {
+          properties = {
+            enableWindowsIpam = "true"
+          }
         }
       })
     }
