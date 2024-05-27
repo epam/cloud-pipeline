@@ -673,7 +673,7 @@ public class PipelineRunManager {
             return pipelineRun;
         }
         if (status.isFinal()) {
-            removeInstanceTags(pipelineRun);
+            tryRemoveInstanceTags(pipelineRun);
         }
         if (pipelineRun.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.DTS
                 && status == TaskStatus.STOPPED) {
@@ -1195,7 +1195,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        final Map<String, String> resourceTags = metadataManager.buildCustomInstanceTags(pipelineRun);
+        final Map<String, String> resourceTags = metadataManager.prepareCustomInstanceTags(pipelineRun);
         nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
     }
@@ -1812,9 +1812,9 @@ public class PipelineRunManager {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void removeInstanceTags(final PipelineRun run) {
+    private void tryRemoveInstanceTags(final PipelineRun run) {
         try {
-            final Map<String, String> tags = metadataManager.buildCustomInstanceTags(run);
+            final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
             if (MapUtils.isNotEmpty(tags)) {
                 final RunInstance instance = run.getInstance();
                 cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), run.getId().toString(), tags.keySet());

@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.pipeline;
+package com.epam.pipeline.entity.metadata;
 
+/**
+ * Provides tag types for common instance tags that can be applied via
+ * {@link com.epam.pipeline.manager.preference.SystemPreferences#CLUSTER_INSTANCE_TAGS}
+ *
+ * Supported values:
+ * - tool - Docker image of a tool used for a run
+ * - run_id - Integer ID of a run
+ * - owner - Username of a run owner
+ */
 public enum CommonCustomInstanceTagsTypes {
     tool, run_id, owner
 }

@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.pipeline.CommonCustomInstanceTagsTypes;
+import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -354,11 +354,17 @@ public class MetadataManager {
         return keys;
     }
 
-    public Map<String, String> buildCustomInstanceTags(final PipelineRun run) {
-        final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
-        final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
-        final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
-        return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public Map<String, String> prepareCustomInstanceTags(final PipelineRun run) {
+        try {
+            final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
+            final Tool tool = toolManager.loadByNameOrId(run.getDockerImage());
+            final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
+            return resolveInstanceTagsFromMetadata(toolMetadata, customTags);
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during custom tags preparation for run '{}'.", run.getId(), e);
+            return new HashMap<>();
+        }
     }
 
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
@@ -467,7 +473,7 @@ public class MetadataManager {
                 break;
             default:
                 throw new IllegalArgumentException(
-                        String.format("Failed to resolve custom instance type '%s'", tagType));
+                        String.format("Failed to resolve custom instance tag type '%s'", tagType));
         }
     }
 }

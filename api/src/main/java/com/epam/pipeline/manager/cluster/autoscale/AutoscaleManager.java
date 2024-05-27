@@ -612,7 +612,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
-            instanceRequest.setCustomTags(metadataManager.buildCustomInstanceTags(run));
+            instanceRequest.setCustomTags(metadataManager.prepareCustomInstanceTags(run));
             return instanceRequest;
         }
 

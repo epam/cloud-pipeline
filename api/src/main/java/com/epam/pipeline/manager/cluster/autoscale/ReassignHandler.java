@@ -240,6 +240,6 @@ public class ReassignHandler {
         if (!run.isPresent()) {
             return new HashMap<>();
         }
-        return metadataManager.buildCustomInstanceTags(run.get());
+        return metadataManager.prepareCustomInstanceTags(run.get());
     }
 }
