@@ -179,6 +179,7 @@ public class AutoscaleManagerTest {
         when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
+        when(cloudFacade.instanceScalingSupported(any())).thenReturn(true);
 
         MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> mockPods =
             new KubernetesTestUtils.MockPods()
