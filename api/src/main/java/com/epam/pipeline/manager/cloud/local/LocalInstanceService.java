@@ -152,7 +152,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public void attachDisk(LocalRegion region, Long runId, DiskAttachRequest request) {
+    public void attachDisk(LocalRegion region, Long runId, DiskAttachRequest request, Map<String, String> tags) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_SCALING_LOCAL_CLUSTER));
     }

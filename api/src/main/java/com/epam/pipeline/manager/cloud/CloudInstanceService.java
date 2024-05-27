@@ -190,8 +190,9 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param region
      * @param runId
      * @param request
+     * @param tags
      */
-    void attachDisk(T region, Long runId, DiskAttachRequest request);
+    void attachDisk(T region, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
      * Loads all disks attached to cloud instance.

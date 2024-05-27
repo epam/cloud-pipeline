@@ -260,9 +260,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region,
-                region.getKmsKeyArn());
+                region.getKmsKeyArn(), tags);
     }
 
     @Override

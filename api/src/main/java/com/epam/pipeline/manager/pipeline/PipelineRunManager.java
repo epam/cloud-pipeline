@@ -1195,7 +1195,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        nodesManager.attachDisk(pipelineRun, request);
+        final Map<String, String> resourceTags = metadataManager.buildCustomInstanceTags(pipelineRun);
+        nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
     }
 

@@ -19,40 +19,7 @@ package com.epam.pipeline.manager.cloud.aws;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
-import com.amazonaws.services.ec2.model.AmazonEC2Exception;
-import com.amazonaws.services.ec2.model.AttachVolumeRequest;
-import com.amazonaws.services.ec2.model.AvailabilityZone;
-import com.amazonaws.services.ec2.model.CreateVolumeRequest;
-import com.amazonaws.services.ec2.model.DeleteTagsRequest;
-import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
-import com.amazonaws.services.ec2.model.DescribeImagesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstanceTypesRequest;
-import com.amazonaws.services.ec2.model.DescribeInstanceTypesResult;
-import com.amazonaws.services.ec2.model.DescribeInstancesRequest;
-import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesRequest;
-import com.amazonaws.services.ec2.model.DescribeNetworkInterfacesResult;
-import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest;
-import com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryResult;
-import com.amazonaws.services.ec2.model.DescribeVolumesRequest;
-import com.amazonaws.services.ec2.model.EbsInstanceBlockDevice;
-import com.amazonaws.services.ec2.model.EbsInstanceBlockDeviceSpecification;
-import com.amazonaws.services.ec2.model.Filter;
-import com.amazonaws.services.ec2.model.Instance;
-import com.amazonaws.services.ec2.model.InstanceBlockDeviceMapping;
-import com.amazonaws.services.ec2.model.InstanceBlockDeviceMappingSpecification;
-import com.amazonaws.services.ec2.model.InstanceStateName;
-import com.amazonaws.services.ec2.model.InstanceTypeInfo;
-import com.amazonaws.services.ec2.model.ModifyInstanceAttributeRequest;
-import com.amazonaws.services.ec2.model.NetworkInterface;
-import com.amazonaws.services.ec2.model.Placement;
-import com.amazonaws.services.ec2.model.Reservation;
-import com.amazonaws.services.ec2.model.SpotPrice;
-import com.amazonaws.services.ec2.model.StartInstancesRequest;
-import com.amazonaws.services.ec2.model.StateReason;
-import com.amazonaws.services.ec2.model.StopInstancesRequest;
-import com.amazonaws.services.ec2.model.Tag;
-import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
-import com.amazonaws.services.ec2.model.Volume;
+import com.amazonaws.services.ec2.model.*;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
@@ -350,7 +317,8 @@ public class EC2Helper implements EC2GpuHelper {
     }
 
     public void createAndAttachVolume(final String runId, final Long size,
-                                      final AwsRegion awsRegion, final String kmsKeyArn) {
+                                      final AwsRegion awsRegion, final String kmsKeyArn,
+                                      final Map<String, String> tags) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         final String device = getVacantDeviceName(instance);
@@ -358,6 +326,7 @@ public class EC2Helper implements EC2GpuHelper {
         final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+        createTags(client, tags, Collections.singletonList(volume.getVolumeId()));
     }
 
     public void deleteInstanceTags(final AwsRegion awsRegion, final String runId, final Set<String> tags) {
@@ -525,5 +494,13 @@ public class EC2Helper implements EC2GpuHelper {
                 .findFirst()
                 .map(region -> region.getAllowedNetworks().keySet())
                 .orElse(Collections.emptySet());
+    }
+
+    private void createTags(final AmazonEC2 client, final Map<String, String> tags, final List<String> resourceIds) {
+        client.createTags(new CreateTagsRequest()
+                .withResources(resourceIds)
+                .withTags(tags.entrySet().stream()
+                        .map(entry -> new Tag(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toList())));
     }
 }

@@ -43,6 +43,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import org.junit.Before;
@@ -148,6 +149,9 @@ public class PipelineRunManagerUnitTest {
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
+
+    @Mock
+    private MetadataManager metadataManager;
 
     private final Map<String, String> envVars = singletonMap(ENV_VAR_NAME, ENV_VAR_VALUE);
     private final List<PipelineRunParameter> parameters = singletonList(
@@ -472,7 +476,7 @@ public class PipelineRunManagerUnitTest {
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         pipelineRunManager.attachDisk(RUN_ID, diskAttachRequest());
         verify(nodesManager).attachDisk(argThat(matches(r -> r.getStatus() == run.getStatus())),
-                eq(diskAttachRequest()));
+                eq(diskAttachRequest()), any());
     }
 
     private PipelineRun run(final TaskStatus status) {

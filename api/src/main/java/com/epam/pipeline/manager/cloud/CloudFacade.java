@@ -92,7 +92,7 @@ public interface CloudFacade {
     /**
      * Creates and attaches new disk by the given request to an instance associated with run.
      */
-    void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
+    void attachDisk(Long regionId, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
      * Loads all disks attached to an instance associated with run including os, data and swap disks.

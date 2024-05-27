@@ -225,7 +225,8 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
     }
 
     @Override
-    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final GCPRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         throw new UnsupportedOperationException("Disk attaching doesn't work with GCP provider yet.");
     }
 
