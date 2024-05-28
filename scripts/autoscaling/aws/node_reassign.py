@@ -38,6 +38,16 @@ def build_custom_tags(input_tags):
     return instance_tags
 
 
+def find_volumes_ids(instance_description):
+    volume_ids = []
+    volumes = instance_description.get('BlockDeviceMappings', [])
+    for volume in volumes:
+        volume_id = volume.get('Ebs', {}).get('VolumeId')
+        if volume_id:
+            volume_ids.append(volume_id)
+    return volume_ids
+
+
 def find_and_tag_instance(ec2, old_id, new_id, custom_tags):
     response = ec2.describe_instances(Filters=[{'Name': 'tag:Name', 'Values': [old_id]},
                                                {'Name': 'instance-state-name', 'Values': ['pending', 'running']}])
@@ -45,11 +55,19 @@ def find_and_tag_instance(ec2, old_id, new_id, custom_tags):
     if custom_tags:
         tags.extend(custom_tags)
     if len(response['Reservations']) > 0:
-        ins_id = response['Reservations'][0]['Instances'][0]['InstanceId']
+        instance_description = response['Reservations'][0]['Instances'][0]
+        ins_id = instance_description['InstanceId']
         ec2.create_tags(
             Resources=[ins_id],
             Tags=tags
         )
+        if custom_tags:
+            volume_ids = find_volumes_ids(instance_description)
+            if volume_ids:
+                ec2.create_tags(
+                    Resources=volume_ids,
+                    Tags=custom_tags
+                )
         return ins_id
     else:
         raise RuntimeError("Failed to find instance {}".format(old_id))
