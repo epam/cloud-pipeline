@@ -473,128 +473,6 @@ version = 2
     $containerdconfigfile|Out-File -FilePath 'C:\Program Files\containerd\config.toml' -Encoding ascii -Force
 }
 
-function DownloadSigWindowsToolsIfRequired($GlobalDistributionUrl) {
-    if (-not(Test-Path .\sig-windows-tools)) {
-        NewDirIfRequired -Path .\sig-windows-tools
-        Invoke-WebRequest "${GlobalDistributionUrl}tools/kube/1.15.4/win/sig-windows-tools-00012ee6d171b105e7009bff8b2e42d96a45426f.zip" -Outfile .\sig-windows-tools.zip
-        tar -xvf .\sig-windows-tools.zip --strip-components=1 -C sig-windows-tools
-    }
-}
-
-function PatchSigWindowsTools($KubeHost, $KubePort, $Dns) {
-    $instanceId=$(Invoke-RestMethod -uri http://169.254.169.254/latest/meta-data/instance-id)
-    $kubeClusterHelperContent = Get-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
-    $kubeClusterHelperContent[262] = '    Write-Host "Skipping node joining verification..."'
-    $kubeClusterHelperContent[263] = '    return 1'
-    $kubeClusterHelperContent[344] = '        $nodeName = "' + $instanceId + '"'
-    $kubeClusterHelperContent[656] = '        "--hostname-override=' + $instanceId + '"'
-    $kubeClusterHelperContent[704] = '        "--hostname-override=' + $instanceId + '"'
-    $kubeClusterHelperContent[723] = '        hostnameOverride = "' + $instanceId + '";'
-    $kubeClusterHelperContent[778] = '        -BinaryPathName "$kubeletBinPath --windows-service --v=6 --log-dir=$logDir --cert-dir=$env:SYSTEMDRIVE\var\lib\kubelet\pki --cni-bin-dir=$CniDir --cni-conf-dir=$CniConf --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf --hostname-override=' + $instanceId + ' --pod-infra-container-image=$Global:PauseImage --enable-debugging-handlers  --cgroups-per-qos=false --enforce-node-allocatable=`"`" --logtostderr=false --network-plugin=cni --resolv-conf=`"`" --cluster-dns=`"$KubeDnsServiceIp`" --cluster-domain=cluster.local --feature-gates=$KubeletFeatureGates"'
-    $kubeClusterHelperContent[782] = '    & cmd /c kubeadm join "$(GetAPIServerEndpoint)" --token "$Global:Token" --discovery-token-ca-cert-hash "$Global:CAHash" --ignore-preflight-errors "all" --node-name "' + $instanceId + '" ''2>&1'''
-    $kubeClusterHelperContent[1212] = '    Write-Host "Returning kubernetes dns ip..."'
-    $kubeClusterHelperContent[1213] = "    return '$Dns'"
-    $kubeClusterHelperContent[1217] = '    Write-Host "Returning kubernetes master address..."'
-    $kubeClusterHelperContent[1218] = "    return '$KubeHost`:$KubePort'"
-    $kubeClusterHelperContent[1223] = '    Write-Host "Skipping nodes listing..."'
-    $kubeClusterHelperContent[1228] = '    Write-Host "Skipping node deletion..."'
-    $kubeClusterHelperContent | Set-Content .\sig-windows-tools\kubeadm\KubeClusterHelper.psm1
-}
-
-function InitSigWindowsToolsConfigFile($KubeHost, $KubeToken, $KubeCertHash, $KubeDir, $Interface, $GlobalDistributionUrl) {
-    $configfile = @"
-{
-    "Cri" : {
-        "Name" : "dockerd",
-        "Images" : {
-            "Pause" : "mcr.microsoft.com/k8s/core/pause:1.2.0",
-            "Nanoserver" : "mcr.microsoft.com/windows/nanoserver:1809",
-            "ServerCore" : "mcr.microsoft.com/windows/servercore:ltsc2019"
-        }
-    },
-    "Cni" : {
-        "Name" : "flannel",
-        "Source" : [{
-            "Name" : "flanneld",
-            "Url" : "${GlobalDistributionUrl}tools/kube/1.15.4/win/flanneld.exe"
-            }
-        ],
-        "Plugin" : {
-            "Name": "vxlan"
-        },
-        "InterfaceName" : "$Interface"
-    },
-    "Kubernetes" : {
-        "Source" : {
-            "Release" : "1.15.4",
-            "Url" : "${GlobalDistributionUrl}tools/kube/1.15.4/win/kubernetes-node-windows-amd64.tar.gz"
-        },
-        "ControlPlane" : {
-            "IpAddress" : "$KubeHost",
-            "Username" : "root",
-            "KubeadmToken" : "$KubeToken",
-            "KubeadmCAHash" : "sha256:$KubeCertHash"
-        },
-        "KubeProxy" : {
-            "Gates" : "WinOverlay=true"
-        },
-        "Network" : {
-            "ServiceCidr" : "10.96.0.0/12",
-            "ClusterCidr" : "10.244.0.0/16"
-        }
-    },
-    "Install" : {
-        "Destination" : "$($KubeDir -replace "\\","\\")"
-    }
-}
-"@
-    $configfile|Out-File -FilePath .\Kubeclustervxlan.json -Encoding ascii -Force
-    RestrictRegularUsersAccess -Path .\Kubeclustervxlan.json
-}
-
-function InstallKubeUsingSigWindowsToolsIfRequired($KubeDir) {
-    $kubernetesInstalled = Get-ChildItem $KubeDir `
-        | Measure-Object `
-        | ForEach-Object { $_.Count -gt 0 }
-    if (-not($kubernetesInstalled)) {
-        Write-Host "Installing kubernetes using Sig Windows Tools..."
-        .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -install
-    }
-}
-
-function WriteKubeConfig($KubeHost, $KubePort, $KubeNodeToken, $KubeDir) {
-    $kubeConfig = @"
-apiVersion: v1
-kind: Config
-preferences: {}
-
-clusters:
-- cluster:
-    insecure-skip-tls-verify: true
-    server: https://$KubeHost`:$KubePort
-  name: kubernetes
-
-contexts:
-- context:
-    cluster: kubernetes
-    user: kubernetes-user
-  name: kubernetes-user@kubernetes
-
-users:
-- name: kubernetes-user
-  user:
-    token: $KubeNodeToken
-
-current-context: kubernetes-user@kubernetes
-"@
-    $kubeConfig | Out-File -FilePath "$KubeDir\config" -Encoding ascii -Force
-    RestrictRegularUsersAccess -Path "$KubeDir\config"
-}
-
-function JoinKubeClusterUsingSigWindowsTools {
-    .\sig-windows-tools\kubeadm\KubeCluster.ps1 -ConfigFile .\Kubeclustervxlan.json -join
-}
-
 function WaitAndConfigureDnsIfRequired($Dns, $Interface) {
     if (-not([string]::IsNullOrEmpty($Dns))) {
         while ($true) {
@@ -698,97 +576,22 @@ $pythonDir = "c:\python"
 $dokanyDir = "C:\Program Files\Dokan\Dokan Library-1.5.0"
 $initLog = "$workingDir\log.txt"
 
-Write-Host "Creating system directories..."
-NewDirIfRequired -Path $workingDir
-NewDirIfRequired -Path $hostDir
-NewDirIfRequired -Path $runsDir
-NewDirIfRequired -Path $kubeDir
 
 Write-Host "Starting logs capturing..."
 Start-Transcript -path $initLog -append
 
-Write-Host "Changing working directory..."
-Set-Location -Path "$workingDir"
-
-Write-Host "Initializing disks..."
-InitializeDisks
-
-$restartRequired = $false
-
-Write-Host "Installing nomachine if required..."
-$restartRequired = (InstallNoMachineIfRequired -GlobalDistributionUrl $globalDistributionUrl | Select-Object -Last 1) -or $restartRequired
-Write-Host "Restart required: $restartRequired"
-
-Write-Host "Installing OpenSSH server if required..."
-$restartRequired = (InstallOpenSshServerIfRequired | Select-Object -Last 1) -or $restartRequired
-Write-Host "Restart required: $restartRequired"
-
-Write-Host "Installing WebDAV if required..."
-$restartRequired = (InstallWebDAVIfRequired | Select-Object -Last 1) -or $restartRequired
-Write-Host "Restart required: $restartRequired"
-
-Write-Host "Installing pGina if required..."
-$restartRequired = (InstallPGinaIfRequired -GlobalDistributionUrl $globalDistributionUrl | Select-Object -Last 1) -or $restartRequired
-Write-Host "Restart required: $restartRequired"
-
-Write-Host "Restarting computer if required..."
-if ($restartRequired) {
-    Write-Host "Restarting computer..."
-    Stop-Transcript
-    Restart-Computer -Force
-    Exit
-}
-
-Write-Host "Starting OpenSSH services..."
-StartOpenSSHServices
-
-Write-Host "Starting WebDAV services..."
-StartWebDAVServices
-
-Write-Host "Installing python if required..."
-InstallPythonIfRequired -PythonDir $pythonDir -GlobalDistributionUrl $globalDistributionUrl
-
-Write-Host "Installing chrome if required..."
-InstallChromeIfRequired -GlobalDistributionUrl $globalDistributionUrl
-
-Write-Host "Installing Dokany if required..."
-InstallDokanyIfRequired -DokanyDir $dokanyDir -GlobalDistributionUrl $globalDistributionUrl
-
-Write-Host "Installing NICE DCV if required..."
-InstallNiceDcvIfRequired
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
 
-Write-Host "Generating SSH keys..."
-GenerateSshKeys -Path $homeDir
-
-Write-Host "Adding node SSH keys to authorized keys..."
-AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\Windows\.ssh\authorized_keys
-AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\ProgramData\ssh\administrators_authorized_keys
-
-Write-Host "Publishing node SSH keys..."
-CopyPrivateKey -SourcePath "$homeDir\.ssh\id_rsa" -DestinationPath "$hostDir\.ssh\id_rsa"
-
 Write-Host "Configuring containerd daemon..."
 ConfigureContainerd
 
-[string]$EKSBinDir = "$env:ProgramFiles\Amazon\EKS"
-[string]$EKSBootstrapScriptName = 'Start-EKSBootstrap.ps1'
-& $EKSBootstrapScriptFile -EKSClusterName "@KUBE_CLUSTER_NAME@" 3>&1 4>&1 5>&1 6>&1
+& 'C:\Program Files\Amazon\EKS\Start-EKSBootstrap.ps1' -EKSClusterName "@KUBE_CLUSTER_NAME@" 3>&1 4>&1 5>&1 6>&1
 
-Write-Host "Configuring AWS routes..."
-ConfigureAwsRoutes -Addrs $awsAddrs -Interface $interfacePost
-
-Write-Host "Waiting for dns to be accessible if required..."
+rite-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
-
-Write-Host "Loading preferences..."
-$preferences = LoadPreferences -ApiUrl $apiUrl -ApiToken $apiToken
-
-Write-Host "Configuring loopback route if it is enabled in preferences..."
-ConfigureLoopbackRouteIfEnabled -Preferences $preferences -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
