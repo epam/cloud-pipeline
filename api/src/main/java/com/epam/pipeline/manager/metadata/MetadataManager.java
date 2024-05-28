@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
@@ -357,11 +358,14 @@ public class MetadataManager {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public Map<String, String> prepareCustomInstanceTags(final PipelineRun run) {
         try {
+            if (!CloudProvider.AWS.equals(run.getInstance().getCloudProvider())) {
+                return Collections.emptyMap();
+            }
             final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
             return resolveInstanceTagsFromMetadata(run.getDockerImage(), customTags);
         } catch (Exception e) {
             LOGGER.error("An error occurred during custom tags preparation for run '{}'.", run.getId(), e);
-            return new HashMap<>();
+            return Collections.emptyMap();
         }
     }
 

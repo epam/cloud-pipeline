@@ -22,7 +22,9 @@ import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -78,11 +80,7 @@ public class MetadataManagerUnitTest {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
                 .thenReturn(buildCommonTagsMapping());
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
-        run.setOwner(TEST_USER);
-        run.setDockerImage(TEST_IMAGE);
-
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
         final Tool tool = new Tool();
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
@@ -107,10 +105,7 @@ public class MetadataManagerUnitTest {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
                 .thenReturn(buildCommonTagsMapping());
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
-        run.setOwner(TEST_USER);
-        run.setDockerImage(TEST_IMAGE);
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
 
         when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
                 .thenReturn(Optional.empty());
@@ -129,11 +124,7 @@ public class MetadataManagerUnitTest {
     public void shouldPrepareTagsFromToolsMetadata() {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS)).thenReturn(null);
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
-        run.setOwner(TEST_USER);
-        run.setDockerImage(TEST_IMAGE);
-
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
         final Tool tool = new Tool();
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
@@ -154,11 +145,7 @@ public class MetadataManagerUnitTest {
     public void shouldReturnEmptyTagsIfToolsMetadataNotMatch() {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS)).thenReturn(null);
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
-        run.setOwner(TEST_USER);
-        run.setDockerImage(TEST_IMAGE);
-
+        final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
         final Tool tool = new Tool();
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
@@ -178,8 +165,7 @@ public class MetadataManagerUnitTest {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
                 .thenReturn(buildCommonTagsMapping());
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
+        final PipelineRun run = run(TEST_RUN_ID, null, null);
 
         when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
                 .thenReturn(Optional.of(String.join(",", KEY_1, KEY_2)));
@@ -192,10 +178,7 @@ public class MetadataManagerUnitTest {
     public void shouldReturnEmptyTagsIfNoToolMetadata() {
         when(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS)).thenReturn(null);
 
-        final PipelineRun run = new PipelineRun();
-        run.setId(Long.valueOf(TEST_RUN_ID));
-        run.setDockerImage(TEST_IMAGE);
-
+        final PipelineRun run = run(TEST_RUN_ID, null, TEST_IMAGE);
         final Tool tool = new Tool();
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
@@ -226,5 +209,20 @@ public class MetadataManagerUnitTest {
         metadataEntry.setEntity(entityVO);
         metadataEntry.setData(data);
         return metadataEntry;
+    }
+
+    private static RunInstance awsRunInstance() {
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setCloudProvider(CloudProvider.AWS);
+        return runInstance;
+    }
+
+    private static PipelineRun run(final String runId, final String owner, final String tool) {
+        final PipelineRun run = new PipelineRun();
+        run.setId(Long.valueOf(runId));
+        run.setOwner(owner);
+        run.setDockerImage(tool);
+        run.setInstance(awsRunInstance());
+        return run;
     }
 }

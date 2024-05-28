@@ -40,6 +40,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -238,7 +239,7 @@ public class ReassignHandler {
     private Map<String, String> findCustomInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
         final Optional<PipelineRun> run = optionalRun.isPresent() ? optionalRun : pipelineRunManager.findRun(runId);
         if (!run.isPresent()) {
-            return new HashMap<>();
+            return Collections.emptyMap();
         }
         return metadataManager.prepareCustomInstanceTags(run.get());
     }
