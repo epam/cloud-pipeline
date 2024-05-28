@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.datastorage.exception.LustreFSException;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.EC2Helper;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -61,6 +62,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +84,7 @@ public class LustreFSManager {
     private final PreferenceManager preferenceManager;
     private final EC2Helper ec2Helper;
     private final MessageHelper messageHelper;
+    private final MetadataManager metadataManager;
 
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
                                         final String type, final Integer throughput) {
@@ -173,13 +176,15 @@ public class LustreFSManager {
         final AwsRegion regionForRun = getRegion(pipelineRun);
         final LustreDeploymentType deploymentType = getDeploymentType(type);
         final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType, throughput);
+        final List<Tag> tags = buildCustomTags(pipelineRun);
+        tags.add(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)));
         final CreateFileSystemRequest createFileSystemRequest = new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
                 .withStorageCapacity(getFSSize(size, deploymentType))
                 .withStorageType(StorageType.SSD)
                 .withSecurityGroupIds(getSecurityGroups(regionForRun))
                 .withSubnetIds(getSubnetId(pipelineRun, regionForRun))
-                .withTags(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)))
+                .withTags(tags)
                 .withLustreConfiguration(lustreConfiguration);
         if (isPersistent(deploymentType)) {
             createFileSystemRequest.withKmsKeyId(regionForRun.getKmsKeyArn());
@@ -371,5 +376,11 @@ public class LustreFSManager {
         } else {
             throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_REGION_NOT_SUPPORTED));
         }
+    }
+
+    private List<Tag> buildCustomTags(final PipelineRun run) {
+        return metadataManager.prepareCustomInstanceTags(run).entrySet().stream()
+                .map(entry -> new Tag().withKey(entry.getKey()).withValue(entry.getValue()))
+                .collect(Collectors.toList());
     }
 }
