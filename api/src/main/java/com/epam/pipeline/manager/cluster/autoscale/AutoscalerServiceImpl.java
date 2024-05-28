@@ -28,10 +28,8 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
-import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
@@ -65,8 +63,6 @@ public class AutoscalerServiceImpl implements AutoscalerService {
     private final NodePoolManager nodePoolManager;
     private final CloudFacade cloudFacade;
     private final NodeDiskManager nodeDiskManager;
-    private final ToolManager toolManager;
-    private final MetadataManager metadataManager;
 
     @Override
     public boolean requirementsMatch(final RunningInstance instanceOld,

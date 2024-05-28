@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Provides helper methods for {@link AutoscaleManager}
+ * Provides helper nethods for {@link AutoscaleManager}
  */
 public interface AutoscalerService {
 
