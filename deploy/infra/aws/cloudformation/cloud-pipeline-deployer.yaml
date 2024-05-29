@@ -346,7 +346,7 @@ Resources:
 
 
               module "cluster-infra" {
-                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
+                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra_win_node"
                 deployment_name                    = trimspace("${DeploymentName}")
                 deployment_env                     = trimspace("${DeploymentEnv}")
                 vpc_id                             = trimspace("${VpcId}")
@@ -410,7 +410,7 @@ Resources:
               ##########################################
               ### Assume appropriate creds to deploy ###
               ##########################################
-              CP_SECRET=trimspace(${DeploymentAWSCredentialsSecretId})
+              CP_SECRET=${DeploymentAWSCredentialsSecretId}
               if [ -n "$CP_SECRET"  ]; then
                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                  eval $creds
