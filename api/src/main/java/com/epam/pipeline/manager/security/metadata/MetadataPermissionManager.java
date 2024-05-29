@@ -34,14 +34,14 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -166,11 +166,14 @@ public class MetadataPermissionManager {
     }
 
     private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
-        final Set<String> allowedCustomTags = new HashSet<>(Arrays.asList(preferenceManager.findPreference(
+        final Set<String> allowedCustomTags = preferenceManager.findPreference(
                         SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
                 .filter(StringUtils::isNotBlank)
                 .map(value -> value.split(","))
-                .orElse(Strings.EMPTY_ARRAY)));
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
         if (CollectionUtils.isEmpty(allowedCustomTags)) {
             return false;
         }

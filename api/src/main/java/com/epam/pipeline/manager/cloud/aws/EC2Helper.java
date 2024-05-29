@@ -371,11 +371,7 @@ public class EC2Helper implements EC2GpuHelper {
         resourcesIds.add(instance.getInstanceId());
         resourcesIds.addAll(getVolumeIds(instance));
 
-        client.deleteTags(new DeleteTagsRequest()
-                .withResources(resourcesIds)
-                .withTags(tags.stream()
-                        .map(Tag::new)
-                        .collect(Collectors.toList())));
+        deleteTags(client, tags, resourcesIds);
     }
 
     private String getVacantDeviceName(final Instance instance) {
@@ -535,6 +531,14 @@ public class EC2Helper implements EC2GpuHelper {
                 .withResources(resourceIds)
                 .withTags(tags.entrySet().stream()
                         .map(entry -> new Tag(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toList())));
+    }
+
+    private void deleteTags(final AmazonEC2 client, final Set<String> tags, final List<String> resourceIds) {
+        client.deleteTags(new DeleteTagsRequest()
+                .withResources(resourceIds)
+                .withTags(tags.stream()
+                        .map(Tag::new)
                         .collect(Collectors.toList())));
     }
 }

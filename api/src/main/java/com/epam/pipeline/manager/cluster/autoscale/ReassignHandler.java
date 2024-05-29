@@ -237,10 +237,9 @@ public class ReassignHandler {
     }
 
     private Map<String, String> findCustomInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
-        final Optional<PipelineRun> run = optionalRun.isPresent() ? optionalRun : pipelineRunManager.findRun(runId);
-        if (!run.isPresent()) {
-            return Collections.emptyMap();
-        }
-        return metadataManager.prepareCustomInstanceTags(run.get());
+        return optionalRun.map(Optional::of)
+                .orElseGet(() -> pipelineRunManager.findRun(runId))
+                .map(metadataManager::prepareCustomInstanceTags)
+                .orElseGet(Collections::emptyMap);
     }
 }

@@ -26,7 +26,7 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -42,13 +42,13 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
+import com.epam.pipeline.utils.CommonUtils;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,15 +65,13 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -361,8 +359,9 @@ public class MetadataManager {
             if (!CloudProvider.AWS.equals(run.getInstance().getCloudProvider())) {
                 return Collections.emptyMap();
             }
-            final Map<String, String> customTags = resolveCommonCustomInstanceTags(run);
-            return resolveInstanceTagsFromMetadata(run.getDockerImage(), customTags);
+            final Map<String, String> implicitTags = resolveInstanceTagsFromPreference(run);
+            final Map<String, String> explicitTags = resolveInstanceTagsFromMetadata(run.getDockerImage());
+            return CommonUtils.mergeMaps(explicitTags, implicitTags);
         } catch (Exception e) {
             LOGGER.error("An error occurred during custom tags preparation for run '{}'.", run.getId(), e);
             return Collections.emptyMap();
@@ -429,55 +428,44 @@ public class MetadataManager {
                         MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
     }
 
-    private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage,
-                                                                final Map<String, String> customTags) {
-        final Set<String> instanceTagsKeys = new HashSet<>(Arrays.asList(preferenceManager.findPreference(
-                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
+    private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage) {
+        final Set<String> instanceTagsKeys = preferenceManager.findPreference(
+                        SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
                 .filter(StringUtils::isNotBlank)
                 .map(value -> value.split(","))
-                .orElse(Strings.EMPTY_ARRAY)));
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
         if (CollectionUtils.isEmpty(instanceTagsKeys)) {
-            return customTags;
+            return Collections.emptyMap();
         }
 
         final Tool tool = toolManager.loadByNameOrId(dockerImage);
         final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
 
-        final Map<String, PipeConfValue> metadataData = MapUtils.emptyIfNull(Objects.isNull(toolMetadata)
-                ? null
-                : toolMetadata.getData());
-        if (MapUtils.isEmpty(metadataData)) {
-            return customTags;
-        }
-
-        metadataData.entrySet().stream()
+        return Optional.ofNullable(toolMetadata)
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap)
+                .entrySet().stream()
                 .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
-                .forEach(entry -> customTags.put(entry.getKey(), entry.getValue().getValue()));
-        return customTags;
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
     }
 
-    private Map<String, String> resolveCommonCustomInstanceTags(final PipelineRun run) {
-        final Map<String, String> customInstanceTags = new HashMap<>();
-        final Map<CommonCustomInstanceTagsTypes, String> commonCustomInstanceTags = MapUtils.emptyIfNull(
-                preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS));
-        commonCustomInstanceTags
-                .forEach((tagType, tagName) -> fillCommonCustomInstanceTags(tagType, tagName, run, customInstanceTags));
-        return customInstanceTags;
+    private Map<String, String> resolveInstanceTagsFromPreference(final PipelineRun run) {
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, entry -> getInstanceTagValue(entry.getKey(), run)));
     }
 
-    private void fillCommonCustomInstanceTags(final CommonCustomInstanceTagsTypes tagType,
-                                              final String tagName, final PipelineRun run,
-                                              final Map<String, String> customInstanceTags) {
+    private String getInstanceTagValue(final CommonInstanceTagsType tagType, final PipelineRun run) {
         switch (tagType) {
             case tool:
-                customInstanceTags.put(tagName, run.getDockerImage());
-                break;
+                return run.getDockerImage();
             case run_id:
-                customInstanceTags.put(tagName, run.getId().toString());
-                break;
+                return run.getId().toString();
             case owner:
-                customInstanceTags.put(tagName, run.getOwner());
-                break;
+                return run.getOwner();
             default:
                 throw new IllegalArgumentException(
                         String.format("Failed to resolve custom instance tag type '%s'", tagType));

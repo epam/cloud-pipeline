@@ -18,7 +18,7 @@ package com.epam.pipeline.manager.metadata;
 
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
-import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -193,11 +193,11 @@ public class MetadataManagerUnitTest {
         verify(toolManager).loadByNameOrId(TEST_IMAGE);
     }
 
-    private static Map<CommonCustomInstanceTagsTypes, String> buildCommonTagsMapping() {
-        final Map<CommonCustomInstanceTagsTypes, String> mapping = new HashMap<>();
-        mapping.put(CommonCustomInstanceTagsTypes.owner, OWNER_KEY);
-        mapping.put(CommonCustomInstanceTagsTypes.run_id, RUN_ID_KEY);
-        mapping.put(CommonCustomInstanceTagsTypes.tool, TOOL_KEY);
+    private static Map<CommonInstanceTagsType, String> buildCommonTagsMapping() {
+        final Map<CommonInstanceTagsType, String> mapping = new HashMap<>();
+        mapping.put(CommonInstanceTagsType.owner, OWNER_KEY);
+        mapping.put(CommonInstanceTagsType.run_id, RUN_ID_KEY);
+        mapping.put(CommonInstanceTagsType.tool, TOOL_KEY);
         return mapping;
     }
 

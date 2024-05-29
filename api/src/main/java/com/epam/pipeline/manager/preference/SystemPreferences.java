@@ -39,7 +39,7 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
-import com.epam.pipeline.entity.metadata.CommonCustomInstanceTagsTypes;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -652,10 +652,10 @@ public class SystemPreferences {
                     new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
 
-    public static final ObjectPreference<Map<CommonCustomInstanceTagsTypes, String>> CLUSTER_INSTANCE_TAGS =
+    public static final ObjectPreference<Map<CommonInstanceTagsType, String>> CLUSTER_INSTANCE_TAGS =
             new ObjectPreference<>("cluster.instances.tags", null,
-                    new TypeReference<Map<CommonCustomInstanceTagsTypes, String>>() {}, CLUSTER_GROUP,
-                    isNullOrValidJson(new TypeReference<Map<CommonCustomInstanceTagsTypes, String>>() {}));
+                    new TypeReference<Map<CommonInstanceTagsType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CommonInstanceTagsType, String>>() {}));
 
     public static final StringPreference CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS = new StringPreference(
             "cluster.instances.allowed.custom.tags", null, CLUSTER_GROUP, isValidInstanceCustomTags);

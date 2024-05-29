@@ -25,6 +25,6 @@ package com.epam.pipeline.entity.metadata;
  * - run_id - Integer ID of a run
  * - owner - Username of a run owner
  */
-public enum CommonCustomInstanceTagsTypes {
+public enum CommonInstanceTagsType {
     tool, run_id, owner
 }
