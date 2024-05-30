@@ -35,7 +35,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
 
@@ -51,6 +50,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
 
@@ -305,10 +305,12 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidInstanceTags =
             (pref, dependencies) -> {
-        if (Arrays.stream(Optional.ofNullable(pref)
-                        .filter(StringUtils::isNotBlank)
-                        .map(value -> value.split(","))
-                        .orElse(Strings.EMPTY_ARRAY))
+        if (Optional.ofNullable(pref)
+                .filter(StringUtils::isNotBlank)
+                .map(value -> value.split(","))
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .filter(StringUtils::isNotBlank)
                 .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
             throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
         }
