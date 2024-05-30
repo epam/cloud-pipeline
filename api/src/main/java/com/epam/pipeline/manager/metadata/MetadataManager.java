@@ -460,8 +460,7 @@ public class MetadataManager {
             case owner:
                 return run.getOwner();
             default:
-                throw new IllegalArgumentException(
-                        String.format("Failed to resolve custom instance tag type '%s'", tagType));
+                throw new IllegalArgumentException(String.format("Failed to resolve instance tag type '%s'", tagType));
         }
     }
 }
