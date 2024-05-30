@@ -651,6 +651,8 @@ public class SystemPreferences {
             new ObjectPreference<>("cluster.run.parameters.mapping", null,
                     new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
+    public static final IntPreference CLUSTER_NODE_READY_TIMEOUT = new IntPreference(
+            "cluster.node.ready.polling.timeout", 300000, CLUSTER_GROUP, isGreaterThan(0));
 
     public static final ObjectPreference<Map<CommonInstanceTagsType, String>> CLUSTER_INSTANCE_TAGS =
             new ObjectPreference<>("cluster.instances.tags", null,
