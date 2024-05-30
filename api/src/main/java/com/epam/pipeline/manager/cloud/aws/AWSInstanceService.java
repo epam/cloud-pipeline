@@ -114,9 +114,9 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                    final Long runId,
                                    final RunInstance instance,
                                    final Map<String, String> runtimeParameters,
-                                   final Map<String, String> customTags) {
+                                   final Map<String, String> tags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance,
-                Collections.emptyMap(), runtimeParameters, customTags);
+                Collections.emptyMap(), runtimeParameters, tags);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars(region));
     }
 
@@ -144,17 +144,17 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId,
-                                final Map<String, String> customTags) {
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProvider().name(), customTags);
+                nodeReassignScript, oldId, newId, getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars(region));
     }
 
     @Override
     public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId,
-                                    final Map<String, String> customTags) {
+                                    final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(), customTags);
+                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                 String.valueOf(newId), buildScriptEnvVars(region));
     }
@@ -374,11 +374,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                       final RunInstance instance,
                                       final Map<String, String> labels,
                                       final Map<String, String> runtimeParameters,
-                                      final Map<String, String> customTags) {
+                                      final Map<String, String> tags) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
                 .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
                 .sshKey(region.getSshKeyName())
-                .customTags(customTags);
+                .tags(tags);
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());

@@ -60,7 +60,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
                                    final Long runId,
                                    final RunInstance instance,
                                    final Map<String, String> runtimeParameters,
-                                   final Map<String, String> customTags) {
+                                   final Map<String, String> tags) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_SCALING_LOCAL_CLUSTER));
     }
@@ -131,13 +131,13 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
 
     @Override
     public boolean reassignNode(final LocalRegion region, final Long oldId, final Long newId,
-                                final Map<String, String> customTags) {
+                                final Map<String, String> tags) {
         return reassignKubeNode(String.valueOf(oldId), String.valueOf(newId));
     }
 
     @Override
     public boolean reassignPoolNode(final LocalRegion region, final String nodeLabel, final Long newId,
-                                    final Map<String, String> customTags) {
+                                    final Map<String, String> tags) {
         return reassignKubeNode(nodeLabel, String.valueOf(newId));
     }
 

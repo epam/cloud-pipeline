@@ -104,7 +104,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
-import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceCustomTags;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -657,8 +657,8 @@ public class SystemPreferences {
                     new TypeReference<Map<CommonInstanceTagsType, String>>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<Map<CommonInstanceTagsType, String>>() {}));
 
-    public static final StringPreference CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS = new StringPreference(
-            "cluster.instances.allowed.custom.tags", null, CLUSTER_GROUP, isValidInstanceCustomTags);
+    public static final StringPreference CLUSTER_INSTANCE_ALLOWED_TAGS = new StringPreference(
+            "cluster.instances.allowed.tags", null, CLUSTER_GROUP, isValidInstanceTags);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

@@ -33,7 +33,7 @@ public class ReassignCommand extends AbstractClusterCommand {
     private final String oldRunId;
     private final String newRunId;
     private final String cloud;
-    private final Map<String, String> customTags;
+    private final Map<String, String> tags;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -46,8 +46,8 @@ public class ReassignCommand extends AbstractClusterCommand {
         commands.add(newRunId);
         commands.add(CLOUD_PARAMETER);
         commands.add(cloud);
-        MapUtils.emptyIfNull(customTags).forEach((key, value) -> {
-            commands.add("--custom_tags");
+        MapUtils.emptyIfNull(tags).forEach((key, value) -> {
+            commands.add("--tags");
             commands.add(key + "=" + value);
         });
         return commands;

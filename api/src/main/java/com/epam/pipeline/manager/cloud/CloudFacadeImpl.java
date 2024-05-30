@@ -88,10 +88,10 @@ public class CloudFacadeImpl implements CloudFacade {
 
     @Override
     public RunInstance scaleUpNode(final Long runId, final RunInstance instance,
-                                   final Map<String, String> runtimeParameters, final Map<String, String> customTags) {
+                                   final Map<String, String> runtimeParameters, final Map<String, String> tags) {
         final AbstractCloudRegion region = regionManager.loadOrDefault(instance.getCloudRegionId());
         final RunInstance scaledUpInstance = getInstanceService(region)
-                .scaleUpNode(region, runId, instance, runtimeParameters, customTags);
+                .scaleUpNode(region, runId, instance, runtimeParameters, tags);
         kubernetesManager.createNodeService(scaledUpInstance);
         return scaledUpInstance;
     }
@@ -146,15 +146,15 @@ public class CloudFacadeImpl implements CloudFacade {
     }
 
     @Override
-    public boolean reassignNode(final Long oldId, final Long newId, final Map<String, String> customTags) {
+    public boolean reassignNode(final Long oldId, final Long newId, final Map<String, String> tags) {
         final AbstractCloudRegion region = getRegionByRunId(oldId);
-        return getInstanceService(region).reassignNode(region, oldId, newId, customTags);
+        return getInstanceService(region).reassignNode(region, oldId, newId, tags);
     }
 
     @Override
-    public boolean reassignPoolNode(final String nodeLabel, final Long newId, final Map<String, String> customTags) {
+    public boolean reassignPoolNode(final String nodeLabel, final Long newId, final Map<String, String> tags) {
         final AbstractCloudRegion region = loadRegionFromNodeLabels(nodeLabel);
-        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId, customTags);
+        return getInstanceService(region).reassignPoolNode(region, nodeLabel, newId, tags);
     }
 
     @Override

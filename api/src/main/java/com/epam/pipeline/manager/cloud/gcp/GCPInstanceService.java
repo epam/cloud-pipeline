@@ -98,7 +98,7 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public RunInstance scaleUpNode(final GCPRegion region, final Long runId, final RunInstance instance,
-                                   final Map<String, String> runtimeParameters, final Map<String, String> customTags) {
+                                   final Map<String, String> runtimeParameters, final Map<String, String> tags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap(),
                 runtimeParameters);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptGCPEnvVars(region));
@@ -128,19 +128,18 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
 
     @Override
     public boolean reassignNode(final GCPRegion region, final Long oldId, final Long newId,
-                                final Map<String, String> customTags) {
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProviderName(), customTags);
+                nodeReassignScript, oldId, newId, getProviderName(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId,
                 buildScriptGCPEnvVars(region));
     }
 
     @Override
     public boolean reassignPoolNode(final GCPRegion region, final String nodeLabel, final Long newId,
-                                    final Map<String, String> customTags) {
+                                    final Map<String, String> tags) {
         final String command = commandService
-            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName(),
-                    customTags);
+            .buildNodeReassignCommand(nodeReassignScript, nodeLabel, String.valueOf(newId), getProviderName(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel, String.valueOf(newId),
                                                      buildScriptGCPEnvVars(region));
     }

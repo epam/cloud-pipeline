@@ -176,7 +176,7 @@ public class LustreFSManager {
         final AwsRegion regionForRun = getRegion(pipelineRun);
         final LustreDeploymentType deploymentType = getDeploymentType(type);
         final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType, throughput);
-        final List<Tag> tags = buildCustomTags(pipelineRun);
+        final List<Tag> tags = buildResourceTags(pipelineRun);
         tags.add(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)));
         final CreateFileSystemRequest createFileSystemRequest = new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
@@ -378,8 +378,8 @@ public class LustreFSManager {
         }
     }
 
-    private List<Tag> buildCustomTags(final PipelineRun run) {
-        return metadataManager.prepareCustomInstanceTags(run).entrySet().stream()
+    private List<Tag> buildResourceTags(final PipelineRun run) {
+        return metadataManager.prepareCloudResourceTags(run).entrySet().stream()
                 .map(entry -> new Tag().withKey(entry.getKey()).withValue(entry.getValue()))
                 .collect(Collectors.toList());
     }

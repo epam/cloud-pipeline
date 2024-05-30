@@ -303,7 +303,7 @@ public final class PreferenceValidators {
                 })
         );
 
-    public static final BiPredicate<String, Map<String, Preference>> isValidInstanceCustomTags =
+    public static final BiPredicate<String, Map<String, Preference>> isValidInstanceTags =
             (pref, dependencies) -> {
         if (Arrays.stream(Optional.ofNullable(pref)
                         .filter(StringUtils::isNotBlank)

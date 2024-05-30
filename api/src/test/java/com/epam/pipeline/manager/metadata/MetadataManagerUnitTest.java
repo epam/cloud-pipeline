@@ -85,13 +85,13 @@ public class MetadataManagerUnitTest {
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.of(String.join(",", KEY_1, KEY_2)));
 
         final EntityVO entityVO = new EntityVO(TEST_TOOL_ID, AclClass.TOOL);
         when(metadataDao.loadMetadataItem(entityVO)).thenReturn(toolMetadata(entityVO));
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags)
                 .hasSize(4)
                 .contains(Maps.immutableEntry(KEY_1, VALUE_1))
@@ -107,10 +107,10 @@ public class MetadataManagerUnitTest {
 
         final PipelineRun run = run(TEST_RUN_ID, TEST_USER, TEST_IMAGE);
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.empty());
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags)
                 .hasSize(3)
                 .contains(Maps.immutableEntry(OWNER_KEY, TEST_USER))
@@ -132,10 +132,10 @@ public class MetadataManagerUnitTest {
         final EntityVO entityVO = new EntityVO(TEST_TOOL_ID, AclClass.TOOL);
         when(metadataDao.loadMetadataItem(entityVO)).thenReturn(toolMetadata(entityVO));
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.of(String.join(",", KEY_1, KEY_2)));
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags)
                 .hasSize(1)
                 .contains(Maps.immutableEntry(KEY_1, VALUE_1));
@@ -153,10 +153,10 @@ public class MetadataManagerUnitTest {
         final EntityVO entityVO = new EntityVO(TEST_TOOL_ID, AclClass.TOOL);
         when(metadataDao.loadMetadataItem(entityVO)).thenReturn(toolMetadata(entityVO));
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.of(KEY_2));
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags).hasSize(0);
     }
 
@@ -167,10 +167,10 @@ public class MetadataManagerUnitTest {
 
         final PipelineRun run = run(TEST_RUN_ID, null, null);
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.of(String.join(",", KEY_1, KEY_2)));
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags).hasSize(0);
     }
 
@@ -183,12 +183,12 @@ public class MetadataManagerUnitTest {
         tool.setId(TEST_TOOL_ID);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(tool);
 
-        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS))
+        when(preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS))
                 .thenReturn(Optional.of(String.join(",", KEY_1, KEY_2)));
         final EntityVO entityVO = new EntityVO(TEST_TOOL_ID, AclClass.TOOL);
         when(metadataDao.loadMetadataItem(entityVO)).thenReturn(null);
 
-        final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+        final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
         assertThat(tags).hasSize(0);
         verify(toolManager).loadByNameOrId(TEST_IMAGE);
     }

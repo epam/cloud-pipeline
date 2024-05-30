@@ -166,18 +166,18 @@ public class MetadataPermissionManager {
     }
 
     private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
-        final Set<String> allowedCustomTags = preferenceManager.findPreference(
-                        SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
+        final Set<String> allowedTags = preferenceManager.findPreference(
+                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS)
                 .filter(StringUtils::isNotBlank)
                 .map(value -> value.split(","))
                 .map(Arrays::stream)
                 .orElseGet(Stream::empty)
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
-        if (CollectionUtils.isEmpty(allowedCustomTags)) {
+        if (CollectionUtils.isEmpty(allowedTags)) {
             return false;
         }
         return SetUtils.emptyIfNull(MapUtils.emptyIfNull(metadata.getData()).keySet()).stream()
-                .anyMatch(allowedCustomTags::contains);
+                .anyMatch(allowedTags::contains);
     }
 }

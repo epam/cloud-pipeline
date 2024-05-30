@@ -180,8 +180,8 @@ public class ReassignHandler {
                                      final RunningInstance previousInstance,
                                      final Optional<PipelineRun> pipelineRun) {
         log.debug("Reassigning node ID {} to run {}.", previousNodeId, newNodeId);
-        final Map<String, String> customInstanceTags = findCustomInstanceTags(runId, pipelineRun);
-        final boolean successfullyReassigned = runReassign(previousNodeId, runId, customInstanceTags);
+        final Map<String, String> tags = findInstanceTags(runId, pipelineRun);
+        final boolean successfullyReassigned = runReassign(previousNodeId, runId, tags);
         if (!successfullyReassigned) {
             return false;
         }
@@ -202,12 +202,12 @@ public class ReassignHandler {
     }
 
     private boolean runReassign(final String previousNodeId, final Long runId,
-                                final Map<String, String> customInstanceTags) {
+                                final Map<String, String> tags) {
         if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX) ||
                 previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
-            return cloudFacade.reassignPoolNode(previousNodeId, runId, customInstanceTags);
+            return cloudFacade.reassignPoolNode(previousNodeId, runId, tags);
         }
-        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, customInstanceTags);
+        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, tags);
     }
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
@@ -236,10 +236,10 @@ public class ReassignHandler {
         return BooleanUtils.toBoolean(value);
     }
 
-    private Map<String, String> findCustomInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
+    private Map<String, String> findInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
         return optionalRun.map(Optional::of)
                 .orElseGet(() -> pipelineRunManager.findRun(runId))
-                .map(metadataManager::prepareCustomInstanceTags)
+                .map(metadataManager::prepareCloudResourceTags)
                 .orElseGet(Collections::emptyMap);
     }
 }

@@ -51,7 +51,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Map<String, String> additionalLabels;
     private final Set<String> prePulledImages;
     private final Map<String, String> runtimeParameters;
-    private final Map<String, String> customTags;
+    private final Map<String, String> tags;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -106,8 +106,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
             commands.add(argName);
             commands.add(argValue);
         });
-        MapUtils.emptyIfNull(customTags).forEach((key, value) -> {
-            commands.add("--custom_tags");
+        MapUtils.emptyIfNull(tags).forEach((key, value) -> {
+            commands.add("--tags");
             commands.add(key + "=" + value);
         });
         return commands;

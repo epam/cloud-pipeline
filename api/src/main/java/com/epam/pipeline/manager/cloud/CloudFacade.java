@@ -38,7 +38,7 @@ import java.util.Set;
 
 public interface CloudFacade {
     RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters,
-                            Map<String, String> customTags);
+                            Map<String, String> tags);
 
     RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
@@ -50,9 +50,9 @@ public interface CloudFacade {
 
     boolean isNodeExpired(Long runId);
 
-    boolean reassignNode(Long oldId, Long newId, Map<String, String> customTags);
+    boolean reassignNode(Long oldId, Long newId, Map<String, String> tags);
 
-    boolean reassignPoolNode(String nodeLabel, Long newId, Map<String, String> customTags);
+    boolean reassignPoolNode(String nodeLabel, Long newId, Map<String, String> tags);
 
     /**
      * Fills in provider related data for running instance associated with run,

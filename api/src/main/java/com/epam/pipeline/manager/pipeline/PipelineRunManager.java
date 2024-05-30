@@ -1195,7 +1195,7 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        final Map<String, String> resourceTags = metadataManager.prepareCustomInstanceTags(pipelineRun);
+        final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
         nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
     }
@@ -1814,7 +1814,7 @@ public class PipelineRunManager {
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void tryRemoveInstanceTags(final PipelineRun run) {
         try {
-            final Map<String, String> tags = metadataManager.prepareCustomInstanceTags(run);
+            final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
             if (MapUtils.isNotEmpty(tags)) {
                 final RunInstance instance = run.getInstance();
                 cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), run.getId().toString(), tags.keySet());

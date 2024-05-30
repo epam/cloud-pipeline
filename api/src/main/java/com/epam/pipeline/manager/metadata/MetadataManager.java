@@ -354,7 +354,7 @@ public class MetadataManager {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    public Map<String, String> prepareCustomInstanceTags(final PipelineRun run) {
+    public Map<String, String> prepareCloudResourceTags(final PipelineRun run) {
         try {
             if (!CloudProvider.AWS.equals(run.getInstance().getCloudProvider())) {
                 return Collections.emptyMap();
@@ -363,7 +363,7 @@ public class MetadataManager {
             final Map<String, String> explicitTags = resolveInstanceTagsFromMetadata(run.getDockerImage());
             return CommonUtils.mergeMaps(explicitTags, implicitTags);
         } catch (Exception e) {
-            LOGGER.error("An error occurred during custom tags preparation for run '{}'.", run.getId(), e);
+            LOGGER.error("An error occurred during cloud resource tags preparation for run '{}'.", run.getId(), e);
             return Collections.emptyMap();
         }
     }
@@ -430,7 +430,7 @@ public class MetadataManager {
 
     private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage) {
         final Set<String> instanceTagsKeys = preferenceManager.findPreference(
-                        SystemPreferences.CLUSTER_INSTANCE_ALLOWED_CUSTOM_TAGS)
+                        SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS)
                 .filter(StringUtils::isNotBlank)
                 .map(value -> value.split(","))
                 .map(Arrays::stream)

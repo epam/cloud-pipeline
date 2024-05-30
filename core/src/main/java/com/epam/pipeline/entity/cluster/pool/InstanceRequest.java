@@ -25,5 +25,5 @@ public class InstanceRequest {
     private RunInstance instance;
     private Map<String, String> runtimeParameters;
     private String requestedImage;
-    private Map<String, String> customTags;
+    private Map<String, String> tags;
 }
