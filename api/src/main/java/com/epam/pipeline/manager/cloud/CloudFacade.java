@@ -31,9 +31,11 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CloudFacade {
-    RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters);
+    RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters,
+                            Map<String, String> tags);
 
     RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
@@ -45,9 +47,9 @@ public interface CloudFacade {
 
     boolean isNodeExpired(Long runId);
 
-    boolean reassignNode(Long oldId, Long newId);
+    boolean reassignNode(Long oldId, Long newId, Map<String, String> tags);
 
-    boolean reassignPoolNode(String nodeLabel, Long newId);
+    boolean reassignPoolNode(String nodeLabel, Long newId, Map<String, String> tags);
 
     /**
      * Fills in provider related data for running instance associated with run,
@@ -87,7 +89,7 @@ public interface CloudFacade {
     /**
      * Creates and attaches new disk by the given request to an instance associated with run.
      */
-    void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
+    void attachDisk(Long regionId, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
      * Loads all disks attached to an instance associated with run including os, data and swap disks.
@@ -103,4 +105,6 @@ public interface CloudFacade {
     boolean reassignKubeNode(String previousNodeId, String valueOf);
 
     boolean instanceScalingSupported(Long cloudRegionId);
+
+    void deleteInstanceTags(Long regionId, String runId, Set<String> tagNames);
 }

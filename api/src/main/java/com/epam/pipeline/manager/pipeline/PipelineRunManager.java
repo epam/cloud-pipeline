@@ -61,6 +61,7 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -70,6 +71,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
@@ -218,6 +220,12 @@ public class PipelineRunManager {
 
     @Autowired
     private RunLimitsService runLimitsService;
+
+    @Autowired
+    private MetadataManager metadataManager;
+
+    @Autowired
+    private CloudFacade cloudFacade;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -643,6 +651,9 @@ public class PipelineRunManager {
             LOGGER.debug("Pipeline run {} is already in the final status: {}.",
                     pipelineRun.getId(), pipelineRun.getStatus());
             return pipelineRun;
+        }
+        if (status.isFinal()) {
+            tryRemoveInstanceTags(pipelineRun);
         }
         if (pipelineRun.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.DTS
                 && status == TaskStatus.STOPPED) {
@@ -1155,7 +1166,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        nodesManager.attachDisk(pipelineRun, request);
+        final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
+        nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
     }
 
@@ -1700,5 +1712,18 @@ public class PipelineRunManager {
                 ? cloudRegionManager.loadDefaultRegion().getId().toString()
                 : regionId.toString();
         return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, regionIdStr);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void tryRemoveInstanceTags(final PipelineRun run) {
+        try {
+            final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
+            if (MapUtils.isNotEmpty(tags)) {
+                final RunInstance instance = run.getInstance();
+                cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), run.getId().toString(), tags.keySet());
+            }
+        } catch (Exception e) {
+            log.error("An error occurred during cloud resource tags removal for run '{}'", run.getId(), e);
+        }
     }
 }

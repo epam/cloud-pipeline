@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -57,7 +58,8 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     public RunInstance scaleUpNode(final LocalRegion region,
                                    final Long runId,
                                    final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters,
+                                   final Map<String, String> tags) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_SCALING_LOCAL_CLUSTER));
     }
@@ -127,12 +129,14 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public boolean reassignNode(final LocalRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final LocalRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> tags) {
         return reassignKubeNode(String.valueOf(oldId), String.valueOf(newId));
     }
 
     @Override
-    public boolean reassignPoolNode(final LocalRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final LocalRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> tags) {
         return reassignKubeNode(nodeLabel, String.valueOf(newId));
     }
 
@@ -147,7 +151,7 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     }
 
     @Override
-    public void attachDisk(LocalRegion region, Long runId, DiskAttachRequest request) {
+    public void attachDisk(LocalRegion region, Long runId, DiskAttachRequest request, Map<String, String> tags) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_SCALING_LOCAL_CLUSTER));
     }
@@ -172,6 +176,11 @@ public class LocalInstanceService implements CloudInstanceService<LocalRegion> {
     public InstanceDNSRecord deleteInstanceDNSRecord(LocalRegion region, InstanceDNSRecord record) {
         throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_DNS_LOCAL_CLUSTER));
+    }
+
+    @Override
+    public void deleteInstanceTags(final LocalRegion region, final String runId, final Set<String> tagNames) {
+
     }
 
     private boolean reassignKubeNode(final String oldLabel, final String newLabel) {

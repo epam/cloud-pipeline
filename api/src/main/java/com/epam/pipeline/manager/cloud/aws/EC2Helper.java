@@ -22,7 +22,9 @@ import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.ec2.model.AmazonEC2Exception;
 import com.amazonaws.services.ec2.model.AttachVolumeRequest;
 import com.amazonaws.services.ec2.model.AvailabilityZone;
+import com.amazonaws.services.ec2.model.CreateTagsRequest;
 import com.amazonaws.services.ec2.model.CreateVolumeRequest;
+import com.amazonaws.services.ec2.model.DeleteTagsRequest;
 import com.amazonaws.services.ec2.model.DeleteVolumeRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceTypesRequest;
 import com.amazonaws.services.ec2.model.DescribeInstanceTypesResult;
@@ -48,6 +50,7 @@ import com.amazonaws.services.ec2.model.SpotPrice;
 import com.amazonaws.services.ec2.model.StartInstancesRequest;
 import com.amazonaws.services.ec2.model.StateReason;
 import com.amazonaws.services.ec2.model.StopInstancesRequest;
+import com.amazonaws.services.ec2.model.Tag;
 import com.amazonaws.services.ec2.model.TerminateInstancesRequest;
 import com.amazonaws.services.ec2.model.Volume;
 import com.amazonaws.waiters.Waiter;
@@ -78,12 +81,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -329,7 +334,8 @@ public class EC2Helper implements EC2GpuHelper {
     }
 
     public void createAndAttachVolume(final String runId, final Long size,
-                                      final AwsRegion awsRegion, final String kmsKeyArn) {
+                                      final AwsRegion awsRegion, final String kmsKeyArn,
+                                      final Map<String, String> tags) {
         final AmazonEC2 client = getEC2Client(awsRegion);
         final Instance instance = getAliveInstance(runId, awsRegion);
         final String device = getVacantDeviceName(instance);
@@ -337,6 +343,18 @@ public class EC2Helper implements EC2GpuHelper {
         final Volume volume = createVolume(client, size, zone, kmsKeyArn);
         tryAttachVolume(client, instance, volume, device);
         enableVolumeDeletionOnInstanceTermination(client, instance.getInstanceId(), device);
+        createTags(client, tags, Collections.singletonList(volume.getVolumeId()));
+    }
+
+    public void deleteInstanceTags(final AwsRegion awsRegion, final String runId, final Set<String> tags) {
+        final AmazonEC2 client = getEC2Client(awsRegion);
+        final Instance instance = getAliveInstance(runId, awsRegion);
+
+        final List<String> resourcesIds = new ArrayList<>();
+        resourcesIds.add(instance.getInstanceId());
+        resourcesIds.addAll(getVolumeIds(instance));
+
+        deleteTags(client, tags, resourcesIds);
     }
 
     private String getVacantDeviceName(final Instance instance) {
@@ -489,5 +507,21 @@ public class EC2Helper implements EC2GpuHelper {
                 .findFirst()
                 .map(region -> region.getAllowedNetworks().keySet())
                 .orElse(Collections.emptySet());
+    }
+
+    private void createTags(final AmazonEC2 client, final Map<String, String> tags, final List<String> resourceIds) {
+        client.createTags(new CreateTagsRequest()
+                .withResources(resourceIds)
+                .withTags(tags.entrySet().stream()
+                        .map(entry -> new Tag(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toList())));
+    }
+
+    private void deleteTags(final AmazonEC2 client, final Set<String> tags, final List<String> resourceIds) {
+        client.deleteTags(new DeleteTagsRequest()
+                .withResources(resourceIds)
+                .withTags(tags.stream()
+                        .map(Tag::new)
+                        .collect(Collectors.toList())));
     }
 }

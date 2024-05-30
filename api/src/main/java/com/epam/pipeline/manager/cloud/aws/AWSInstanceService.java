@@ -58,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 @Service
@@ -111,9 +112,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     public RunInstance scaleUpNode(final AwsRegion region,
                                    final Long runId,
                                    final RunInstance instance,
-                                   final Map<String, String> runtimeParameters) {
+                                   final Map<String, String> runtimeParameters,
+                                   final Map<String, String> tags) {
         final String command = buildNodeUpCommand(region, String.valueOf(runId), instance,
-                Collections.emptyMap(), runtimeParameters);
+                Collections.emptyMap(), runtimeParameters, tags);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars(region));
     }
 
@@ -125,7 +127,7 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         final Map<String, String> labels = Collections.singletonMap(
                 KubernetesConstants.NODE_POOL_ID_LABEL, String.valueOf(node.getId()));
         final String command = buildNodeUpCommand(region, nodeIdLabel, instance, labels,
-                Collections.emptyMap());
+                Collections.emptyMap(), Collections.emptyMap());
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars(region));
     }
 
@@ -142,16 +144,18 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProvider().name());
+                nodeReassignScript, oldId, newId, getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars(region));
     }
 
     @Override
-    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                 String.valueOf(newId), buildScriptEnvVars(region));
     }
@@ -257,9 +261,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region,
-                region.getKmsKeyArn());
+                region.getKmsKeyArn(), tags);
     }
 
     @Override
@@ -345,14 +350,21 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         }
     }
 
+    @Override
+    public void deleteInstanceTags(final AwsRegion region, final String runId, final Set<String> tagNames) {
+        ec2Helper.deleteInstanceTags(region, runId, tagNames);
+    }
+
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,
                                       final Map<String, String> labels,
-                                      final Map<String, String> runtimeParameters) {
+                                      final Map<String, String> runtimeParameters,
+                                      final Map<String, String> tags) {
         final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
                 .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
-                .sshKey(region.getSshKeyName());
+                .sshKey(region.getSshKeyName())
+                .tags(tags);
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());

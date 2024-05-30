@@ -29,11 +29,12 @@ import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -71,6 +72,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("unused")
 public class PipelineRunManagerUnitTest {
 
     private static final Long RUN_ID = 1L;
@@ -116,6 +118,9 @@ public class PipelineRunManagerUnitTest {
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
+
+    @Mock
+    private MetadataManager metadataManager;
 
     @Before
     public void setUp() throws Exception {
@@ -273,7 +278,7 @@ public class PipelineRunManagerUnitTest {
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         pipelineRunManager.attachDisk(RUN_ID, diskAttachRequest());
         verify(nodesManager).attachDisk(argThat(matches(r -> r.getStatus() == run.getStatus())),
-                eq(diskAttachRequest()));
+                eq(diskAttachRequest()), any());
     }
 
     private PipelineRun run(final TaskStatus status) {
