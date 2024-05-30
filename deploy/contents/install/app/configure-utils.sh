@@ -974,7 +974,7 @@ function api_setup_base_preferences {
 
     ## Set cluster.networks.config preference
     local cloud_config_network_file
-    if [ -z "$CP_CLOUD_NETWORK_CONFIG_FILE" ] && [ -f "$CP_CLOUD_NETWORK_CONFIG_FILE" ]; then
+    if [ ! -z "$CP_CLOUD_NETWORK_CONFIG_FILE" ] && [ -f "$CP_CLOUD_NETWORK_CONFIG_FILE" ]; then
           cloud_config_network_file="$CP_CLOUD_NETWORK_CONFIG_FILE"
     else
           cloud_config_network_file="$CP_CLOUD_CONFIG_PATH/cluster.networks.config.json"
