@@ -702,14 +702,14 @@ public class KubernetesManager {
     public void waitForNodeReady(String nodeName, String runId, String cloudRegion) throws InterruptedException {
         KubernetesClient client = getKubernetesClient();
         final int nodeReadyTimeout = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODE_READY_TIMEOUT);
-        final int nodeReadyStatusCheckTimeout = preferenceManager.getPreference(
-                SystemPreferences.CLUSTER_NODE_READY_STATUS_CHECK_TIMEOUT);
-        final int attemptsStatusNode = nodeReadyTimeout / nodeReadyStatusCheckTimeout;
+        final int nodeReadyPollingTimeout = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_NODE_READY_POLLING_TIMEOUT);
+        final int attemptsStatusNode = nodeReadyTimeout / nodeReadyPollingTimeout;
         int attempts = attemptsStatusNode;
         while (!isReadyNode(nodeName, client)) {
             LOGGER.debug("Waiting for node {} is ready.", nodeName);
             attempts -= 1;
-            Thread.sleep(nodeReadyStatusCheckTimeout);
+            Thread.sleep(nodeReadyPollingTimeout);
             if (attempts <= 0) {
                 throw new IllegalStateException(String.format(
                         "Node %s doesn't match the ready status over than %d times.", nodeName, attemptsStatusNode));
