@@ -18,6 +18,12 @@ package com.epam.pipeline.utils;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 public final class PipelineStringUtils {
 
     public static final String DASH = "-";
@@ -34,4 +40,12 @@ public final class PipelineStringUtils {
         return input.replaceAll(ALPHANUMERIC_DASH_TEMPLATE, DASH);
     }
 
+    public static Set<String> parseCommaSeparatedSet(final Optional<String> input) {
+        return input.filter(StringUtils::isNotBlank)
+                .map(value -> value.split(","))
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+    }
 }

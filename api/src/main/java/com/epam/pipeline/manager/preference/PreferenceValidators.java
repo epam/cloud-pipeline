@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.math.NumberUtils;
@@ -50,7 +51,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiPredicate;
-import java.util.stream.Stream;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
 
@@ -305,12 +305,7 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidInstanceTags =
             (pref, dependencies) -> {
-        if (Optional.ofNullable(pref)
-                .filter(StringUtils::isNotBlank)
-                .map(value -> value.split(","))
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
-                .filter(StringUtils::isNotBlank)
+        if (PipelineStringUtils.parseCommaSeparatedSet(Optional.ofNullable(pref)).stream()
                 .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
             throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
         }

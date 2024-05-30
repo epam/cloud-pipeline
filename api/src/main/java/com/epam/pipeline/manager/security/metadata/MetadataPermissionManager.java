@@ -27,21 +27,18 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.SetUtils;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -166,14 +163,8 @@ public class MetadataPermissionManager {
     }
 
     private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
-        final Set<String> allowedTags = preferenceManager.findPreference(
-                SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS)
-                .filter(StringUtils::isNotBlank)
-                .map(value -> value.split(","))
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
+        final Set<String> allowedTags = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
         if (CollectionUtils.isEmpty(allowedTags)) {
             return false;
         }

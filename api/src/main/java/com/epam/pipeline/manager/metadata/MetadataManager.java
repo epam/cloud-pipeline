@@ -43,6 +43,7 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.utils.CommonUtils;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
@@ -63,7 +64,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +71,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -429,14 +428,8 @@ public class MetadataManager {
     }
 
     private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage) {
-        final Set<String> instanceTagsKeys = preferenceManager.findPreference(
-                        SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS)
-                .filter(StringUtils::isNotBlank)
-                .map(value -> value.split(","))
-                .map(Arrays::stream)
-                .orElseGet(Stream::empty)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
+        final Set<String> instanceTagsKeys = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
         if (CollectionUtils.isEmpty(instanceTagsKeys)) {
             return Collections.emptyMap();
         }
