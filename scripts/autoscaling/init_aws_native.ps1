@@ -371,25 +371,8 @@ version = 2
 
         [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime.options]
 
-    [plugins."io.containerd.grpc.v1.cri".image_decryption]
-      key_model = "node"
-
     [plugins."io.containerd.grpc.v1.cri".registry]
-      config_path = ""
-
-      [plugins."io.containerd.grpc.v1.cri".registry.configs]
-        [plugins."io.containerd.grpc.v1.cri".registry.configs.cp-docker-registry.default.svc.cluster.local:31443.tls]
-          insecure_skip_verify = true
-
-      [plugins."io.containerd.grpc.v1.cri".registry.auths]
-
-      [plugins."io.containerd.grpc.v1.cri".registry.headers]
-
-      [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
-
-    [plugins."io.containerd.grpc.v1.cri".x509_key_pair_streaming]
-      tls_cert_file = ""
-      tls_key_file = ""
+       config_path = "C:\Program Files\containerd\certs.d"
 
   [plugins."io.containerd.internal.v1.opt"]
     path = "C:\\ProgramData\\containerd\\root\\opt"
@@ -563,7 +546,7 @@ $kubeNodeToken = "@KUBE_NODE_TOKEN@"
 $dnsProxyPost = "@dns_proxy_post@"
 $globalDistributionUrl = "@GLOBAL_DISTRIBUTION_URL@"
 
-$interface = Get-NetAdapter | Where-Object { $_.Name -match "Ethernet \d+" } | ForEach-Object { $_.Name }
+$interface = Get-NetAdapter | Where-Object { $_.Name -match "^Ethernet \d+" } | ForEach-Object { $_.Name }
 $interfacePost = "vEthernet ($interface)"
 $awsAddrs = @("169.254.169.254/32", "169.254.169.250/32", "169.254.169.251/32", "169.254.169.249/32", "169.254.169.123/32", "169.254.169.253/32")
 
@@ -580,6 +563,8 @@ $initLog = "$workingDir\log.txt"
 Write-Host "Starting logs capturing..."
 Start-Transcript -path $initLog -append
 
+Write-Host "Initializing disks..."
+InitializeDisks
 
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
