@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.autoscale.filter.PoolFilterHandler;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.utils.CommonUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -39,6 +40,7 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,16 +59,19 @@ public class ReassignHandler {
     private final CloudFacade cloudFacade;
     private final PipelineRunManager pipelineRunManager;
     private final Map<PoolInstanceFilterType, PoolFilterHandler> filterHandlers;
+    private final MetadataManager metadataManager;
 
 
     public ReassignHandler(final AutoscalerService autoscalerService,
                            final CloudFacade cloudFacade,
                            final PipelineRunManager pipelineRunManager,
-                           final List<PoolFilterHandler> filterHandlers) {
+                           final List<PoolFilterHandler> filterHandlers,
+                           final MetadataManager metadataManager) {
         this.autoscalerService = autoscalerService;
         this.cloudFacade = cloudFacade;
         this.pipelineRunManager = pipelineRunManager;
         this.filterHandlers = CommonUtils.groupByKey(filterHandlers, PoolFilterHandler::type);
+        this.metadataManager = metadataManager;
     }
 
     public boolean tryReassignNode(final KubernetesClient client,
@@ -131,7 +136,7 @@ public class ReassignHandler {
                         return false;
                     }
                     return reassignInstance(runId, longId, scheduledRuns, reassignedNodes,
-                            previousId, previousInstance);
+                            previousId, previousInstance, pipelineRun);
                 });
     }
 
@@ -172,9 +177,11 @@ public class ReassignHandler {
                                      final Set<String> scheduledRuns,
                                      final Set<String> reassignedNodes,
                                      final String previousNodeId,
-                                     final RunningInstance previousInstance) {
+                                     final RunningInstance previousInstance,
+                                     final Optional<PipelineRun> pipelineRun) {
         log.debug("Reassigning node ID {} to run {}.", previousNodeId, newNodeId);
-        final boolean successfullyReassigned = runReassign(previousNodeId, runId);
+        final Map<String, String> tags = findInstanceTags(runId, pipelineRun);
+        final boolean successfullyReassigned = runReassign(previousNodeId, runId, tags);
         if (!successfullyReassigned) {
             return false;
         }
@@ -194,13 +201,13 @@ public class ReassignHandler {
         return true;
     }
 
-    private boolean runReassign(final String previousNodeId,
-                                final Long runId) {
+    private boolean runReassign(final String previousNodeId, final Long runId,
+                                final Map<String, String> tags) {
         if (previousNodeId.startsWith(AutoscaleContants.NODE_POOL_PREFIX) ||
                 previousNodeId.startsWith(AutoscaleContants.NODE_LOCAL_PREFIX)) {
-            return cloudFacade.reassignPoolNode(previousNodeId, runId);
+            return cloudFacade.reassignPoolNode(previousNodeId, runId, tags);
         }
-        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId);
+        return cloudFacade.reassignNode(Long.valueOf(previousNodeId), runId, tags);
     }
 
     private boolean reassignAllowed(final Optional<PipelineRun> pipelineRun) {
@@ -227,5 +234,12 @@ public class ReassignHandler {
             return false;
         }
         return BooleanUtils.toBoolean(value);
+    }
+
+    private Map<String, String> findInstanceTags(final Long runId, final Optional<PipelineRun> optionalRun) {
+        return optionalRun.map(Optional::of)
+                .orElseGet(() -> pipelineRunManager.findRun(runId))
+                .map(metadataManager::prepareCloudResourceTags)
+                .orElseGet(Collections::emptyMap);
     }
 }

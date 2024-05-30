@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
@@ -103,6 +104,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
@@ -649,6 +651,14 @@ public class SystemPreferences {
             new ObjectPreference<>("cluster.run.parameters.mapping", null,
                     new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
+
+    public static final ObjectPreference<Map<CommonInstanceTagsType, String>> CLUSTER_INSTANCE_TAGS =
+            new ObjectPreference<>("cluster.instances.tags", null,
+                    new TypeReference<Map<CommonInstanceTagsType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CommonInstanceTagsType, String>>() {}));
+
+    public static final StringPreference CLUSTER_INSTANCE_ALLOWED_TAGS = new StringPreference(
+            "cluster.instances.allowed.tags", null, CLUSTER_GROUP, isValidInstanceTags);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
