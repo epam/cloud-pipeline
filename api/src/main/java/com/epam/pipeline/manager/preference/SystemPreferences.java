@@ -649,10 +649,8 @@ public class SystemPreferences {
             new ObjectPreference<>("cluster.run.parameters.mapping", null,
                     new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
-    public static final IntPreference CLUSTER_NODE_READY_TIMEOUT = new IntPreference("cluster.node.ready.timeout",
-            300000, CLUSTER_GROUP, isGreaterThan(0));
-    public static final IntPreference CLUSTER_NODE_READY_POLLING_TIMEOUT = new IntPreference(
-            "cluster.node.ready.polling.timeout", 5000, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_READY_TIMEOUT = new IntPreference(
+            "cluster.node.ready.polling.timeout", 300000, CLUSTER_GROUP, isGreaterThan(0));
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
