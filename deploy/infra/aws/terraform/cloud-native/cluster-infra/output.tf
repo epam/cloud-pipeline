@@ -164,15 +164,15 @@ output "cp_cloud_network_config" {
       ],
       "amis": [
         {
-        "platform": "linux",
-        "instance_mask": "*",
-        "ami": "${data.aws_ami.al2_amd64.id}",
-        "init_script": "/opt/api/scripts/init_aws_native.sh",
-        "additional_spec": {
-          "IamInstanceProfile": {
-          "Arn": "${aws_iam_instance_profile.eks_cp_worker_node.arn}"
+          "platform": "linux",
+          "instance_mask": "*",
+          "ami": "${data.aws_ami.al2_amd64.id}",
+          "init_script": "/opt/api/scripts/init_aws_native.sh",
+          "additional_spec": {
+            "IamInstanceProfile": {
+            "Arn": "${aws_iam_instance_profile.eks_cp_worker_node.arn}"
+            }
           }
-        }
         }
       ],
       "swap": [
@@ -187,6 +187,8 @@ output "cp_cloud_network_config" {
       }
     ],
     "tags": {
+      "eks:cluster-name": "${module.eks.cluster_name}",
+      "kubernetes.io/cluster/${module.eks.cluster_name}": "owned",
       "monitored": "true"
     }
     }

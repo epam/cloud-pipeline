@@ -57,4 +57,3 @@ data "aws_ami" "al2_amd64" {
 
   most_recent = true
 }
-
