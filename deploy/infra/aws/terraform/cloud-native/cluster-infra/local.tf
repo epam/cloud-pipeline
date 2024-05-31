@@ -93,6 +93,10 @@ locals {
   cp_filesystem_id = var.deploy_filesystem_type == "efs" ? module.cp_system_efs.id : try(aws_fsx_lustre_file_system.fsx[0].id, "<efs-id>")
   cp_filesystem_exec_role = var.deploy_filesystem_type == "efs" ? module.efs_csi_irsa.iam_role_arn : module.fsx_csi_irsa.iam_role_arn
   cp_filesystem_mountname = var.deploy_filesystem_type == "fsx" ? aws_fsx_lustre_file_system.fsx[0].mount_name : ""
+
+  az_to_subnet = {
+    for s in data.aws_subnet.selected : s.availability_zone => s.id
+  }
   
   deploy_idp = var.cp_idp_host != null ? [
     "-s cp-idp",
@@ -210,12 +214,13 @@ locals {
     "-s cp-billing-srv",
     "-env CP_BILLING_DISABLE_GS=\"true\"",
     "-env CP_BILLING_DISABLE_AZURE_BLOB=\"true\"",
-    "-env CP_BILLING_CENTER_KEY=\"billing-group\""
+    "-env CP_BILLING_CENTER_KEY=\"billing-group\"",
+    "-env CP_CLOUD_NETWORK_CONFIG_FILE=\"/root/cloud-pipeline/pipectl-deploy/cluster.networks.config.json\""
     ],
     local.deploy_idp,
     local.aws_omics_specific_envs,
     local.cp_edge_elb_envs
   ))
-
+  
 }
 
