@@ -146,3 +146,53 @@ output "cp_deploy_script" {
   value = local.deploy_script
 }
 
+output "cp_cloud_network_config" {
+  value = <<EOT
+  [
+   {
+    "regions": [
+      {
+      "name": "${data.aws_region.current.name}",
+      "default": true,
+      "networks": {
+        "${data.aws_region.current.name}a": "${local.az_to_subnet["${data.aws_region.current.name}a"]}",
+        "${data.aws_region.current.name}b": "${local.az_to_subnet["${data.aws_region.current.name}b"]}",
+        "${data.aws_region.current.name}c": "${local.az_to_subnet["${data.aws_region.current.name}c"]}"
+      },
+      "proxies": [
+        $${CP_PREF_CLUSTER_PROXIES}
+      ],
+      "amis": [
+        {
+          "platform": "linux",
+          "instance_mask": "*",
+          "ami": "${data.aws_ami.al2_amd64.id}",
+          "init_script": "/opt/api/scripts/init_aws_native.sh",
+          "additional_spec": {
+            "IamInstanceProfile": {
+            "Arn": "${aws_iam_instance_profile.eks_cp_worker_node.arn}"
+            }
+          }
+        }
+      ],
+      "swap": [
+        {
+        "name": "swap_ratio",
+        "path": "0.01"
+        }
+      ],
+      "security_group_ids": [
+        "${module.internal_cluster_access_sg.security_group_id}"
+      ]
+      }
+    ],
+    "tags": {
+      "eks:cluster-name": "${module.eks.cluster_name}",
+      "kubernetes.io/cluster/${module.eks.cluster_name}": "owned",
+      "monitored": "true"
+    }
+    }
+  ]
+  EOT
+}
+

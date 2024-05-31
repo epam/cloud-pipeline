@@ -47,6 +47,10 @@ Parameters:
   SubnetIds:
     Type: String
     Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified
+  EKSVersion:
+    Type: String
+    Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information
+    Default: "1.29"
   EKSAdminRoleArns:
     Type: String
     Description: > 
@@ -346,10 +350,11 @@ Resources:
 
 
               module "cluster-infra" {
-                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
+                source                             = "git::https://github.com/oleksii-mart/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_cloud_config_tf_output"
                 deployment_name                    = trimspace("${DeploymentName}")
                 deployment_env                     = trimspace("${DeploymentEnv}")
                 vpc_id                             = trimspace("${VpcId}")
+                eks_cluster_version                = trimspace("${EKSVersion}")
                 cp_api_access_prefix_lists         = trimspace("${CPAccessPrefixLists}") != "" ? [trimspace("${CPAccessPrefixLists}")] : []
                 external_access_security_group_ids = trimspace("${CPExternalAccessSecurityGroupIds}") != "" ?  tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)]) : []
                 subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
@@ -393,6 +398,10 @@ Resources:
 
               output "cp_pipectl_script" {
                 value = module.cluster-infra.cp_deploy_script
+              }
+
+              output "cp_cloud_network_config" {
+                value = module.cluster-infra.cp_cloud_network_config
               }
               EOF
 
@@ -493,6 +502,7 @@ Resources:
               terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem
             
               sudo mkdir -p $PIPECTL_DEPLOY_DIR
+              terraform output -raw cp_cloud_network_config > "$PIPECTL_DEPLOY_DIR/cluster.networks.config.json" && \
               terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
               chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
             

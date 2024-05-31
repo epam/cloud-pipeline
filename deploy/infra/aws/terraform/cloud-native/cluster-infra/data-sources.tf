@@ -35,3 +35,25 @@ data "aws_subnets" "this" {
     values = var.subnet_ids
   }
 }
+
+data "aws_subnet" "selected" {
+  count = length(var.subnet_ids)
+  id    = var.subnet_ids[count.index]
+}
+
+/*
+===============================================================================
+  AWS AMI ID form deployed EKS cluster
+===============================================================================
+*/
+
+data "aws_ami" "al2_amd64" {
+  owners = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amazon-eks-node-${var.eks_cluster_version}-v*"]
+  }
+
+  most_recent = true
+}

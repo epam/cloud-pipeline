@@ -9,21 +9,21 @@ Pipeline on top of it.
 Follow the outlined steps below to execute the deployment process: <br>
 
 - [Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide](#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide)
-    - [Overview](#overview)
-        - [Prerequisites](#prerequisites)
-            - [AWS VPC](#aws-vpc)
-            - [AWS Elastic IP](#aws-elastic-ip)
-            - [Credentials to Create Infrastructure Resources](#credentials-to-create-infrastructure-resources)
-            - [Create DNS records](#create-dns-records)
-            - [Add authority signed certificates for services](#add-authority-signed-certificates-for-services)
-            - [Integrate with an Identity Provider (IdP)](#integrate-with-an-identity-provider-idp)
-            - [Create a Zip File with Additional Assets](#create-a-zip-file-with-additional-assets)
-        - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
-            - [Stack Parameters Description](#stack-parameters-description)
-            - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
-            - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
-        - [Review Deployment Logs](#review-deployment-logs)
-        - [Destroy Cloud-Pipeline resources](#destroy-cloud-pipeline-resources)
+  - [Overview](#overview)
+    - [Prerequisites](#prerequisites)
+      - [AWS VPC](#aws-vpc)
+      - [AWS Elastic IP](#aws-elastic-ip)
+      - [Credentials to Create Infrastructure Resources](#credentials-to-create-infrastructure-resources)
+      - [Create DNS records](#create-dns-records)
+      - [Add authority signed certificates for services](#add-authority-signed-certificates-for-services)
+      - [Integrate with an Identity Provider (IdP)](#integrate-with-an-identity-provider-idp)
+      - [Create a Zip File with Additional Assets](#create-a-zip-file-with-additional-assets)
+    - [Create Cloudformation Stack using template file](#create-cloudformation-stack-using-template-file)
+      - [Stack Parameters Description](#stack-parameters-description)
+      - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
+      - [Deploy Cloud Pipeline using AWS CLI](#deploy-cloud-pipeline-using-aws-cli)
+    - [Review Deployment Logs](#review-deployment-logs)
+    - [Destroy Cloud-Pipeline resources](#destroy-cloud-pipeline-resources)
 
 ### Prerequisites
 
@@ -170,6 +170,7 @@ the AWS console, or the AWS Command Line Interface (CLI).
 | `JumpServerAmiId`                  | (Optional) Image id that will be used for Jump-Server                                                                                                                                                                                                                                          |
 | `VpcId`                            | (Required) Id of the VPC where all resources will be created. See [Create VPC](#create-vpc)                                                                                                                                                                                                    |
 | `SubnetIds`                        | (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified. See [Create VPC](#create-vpc)                                                                                                             |
+| `EKSVersion` | (Optional) This refers to the version of the installed AWS EKS Cluster. Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline. Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues. Users attempting to install them do so at their own risk. |
 | `CPSystemSubnetId`                 | (Required) Subnet where JumpServer instance and EKS node group will be created. See [Create VPC](#create-vpc)                                                                                                                                                                                  |
 | `EKSAdminRoleArns`                 | (Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster)            |
 | `IAMrolePermissionsBoundaryArn`    | (Optional) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.                                                                                                                                                               |
