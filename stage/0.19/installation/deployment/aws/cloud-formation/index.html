@@ -400,9 +400,9 @@ creating a CloudFormation stack that deploys the necessary infrastructure using 
 Pipeline on top of it.</p>
 <p>Follow the outlined steps below to execute the deployment process: <br></p>
 <ul>
-<li><a href="#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide">Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide</a><ul>
+<li><a href="#cloud-pipeline-deployment-using-aws-cloudformation-step-by-step-guide">Cloud-pipeline Deployment using AWS Cloudformation step-by-step guide</a></li>
 <li><a href="#overview">Overview</a><ul>
-<li><a href="#prerequisites">Prerequisites</a><ul>
+<li><a href="#prerequisites">Prerequisites</a></li>
 <li><a href="#aws-vpc">AWS VPC</a></li>
 <li><a href="#aws-elastic-ip">AWS Elastic IP</a></li>
 <li><a href="#credentials-to-create-infrastructure-resources">Credentials to Create Infrastructure Resources</a></li>
@@ -410,18 +410,12 @@ Pipeline on top of it.</p>
 <li><a href="#add-authority-signed-certificates-for-services">Add authority signed certificates for services</a></li>
 <li><a href="#integrate-with-an-identity-provider-idp">Integrate with an Identity Provider (IdP)</a></li>
 <li><a href="#create-a-zip-file-with-additional-assets">Create a Zip File with Additional Assets</a></li>
-</ul>
-</li>
-<li><a href="#create-cloudformation-stack-using-template-file">Create Cloudformation Stack using template file</a><ul>
+<li><a href="#create-cloudformation-stack-using-template-file">Create Cloudformation Stack using template file</a></li>
 <li><a href="#stack-parameters-description">Stack Parameters Description</a></li>
 <li><a href="#deploy-cloud-pipeline-using-aws-console">Deploy Cloud Pipeline using AWS Console</a></li>
 <li><a href="#deploy-cloud-pipeline-using-aws-cli">Deploy Cloud Pipeline using AWS CLI</a></li>
-</ul>
-</li>
 <li><a href="#review-deployment-logs">Review Deployment Logs</a></li>
 <li><a href="#destroy-cloud-pipeline-resources">Destroy Cloud-Pipeline resources</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
@@ -656,6 +650,10 @@ the AWS console, or the AWS Command Line Interface (CLI).</p>
 <tr>
 <td><code>SubnetIds</code></td>
 <td>(Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified. See <a href="#create-vpc">Create VPC</a></td>
+</tr>
+<tr>
+<td><code>EKSVersion</code></td>
+<td>(Optional) This refers to the version of the installed AWS EKS Cluster. Please note that the current version (1.29) has been tested and verified to work properly with Cloud-Pipeline. Cloud-Pipeline has not been tested with other versions of the EKS cluster and may potentially encounter issues. Users attempting to install them do so at their own risk.</td>
 </tr>
 <tr>
 <td><code>CPSystemSubnetId</code></td>
