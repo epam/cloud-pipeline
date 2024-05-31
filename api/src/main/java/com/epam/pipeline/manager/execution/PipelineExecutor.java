@@ -155,6 +155,15 @@ public class PipelineExecutor {
 
             if (preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING)) {
                 nodeSelector.put(podAssignPolicy.getSelector().getLabel(), podAssignPolicy.getSelector().getValue());
+
+                // In case of AWS native deployment on EKS these labels will be used by EKS to prepare Pod to be run on windows machine on EKS,
+                // see more info in https://docs.aws.amazon.com/eks/latest/userguide/windows-support.html#windows-support-pod-deployment
+                // basically it will add vpc.amazonaws.com/PrivateIPv4Address resource demand for a pod
+                if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
+                    nodeSelector.put(KubernetesConstants.K8S_OS, KubernetesConstants.WINDOWS);
+                    nodeSelector.put(KubernetesConstants.K8S_ARCH, KubernetesConstants.AMD_64);
+                }
+
                 // id pod ip == pipeline id we have a root pod, otherwise we prefer to skip pod in autoscaler
                 if (run.getPodId().equals(pipelineId) &&
                         podAssignPolicy.isMatch(KubernetesConstants.RUN_ID_LABEL, runIdLabel)) {
