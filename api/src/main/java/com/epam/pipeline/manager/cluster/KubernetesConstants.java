@@ -63,6 +63,10 @@ public final class KubernetesConstants {
     public static final String POD_NODE_SELECTOR_OPERATOR_IN = "In";
 
     public static final String WINDOWS = "windows";
+    public static final String AMD_64 = "amd64";
+
+    public static final String K8S_OS = "kubernetes.io/os";
+    public static final String K8S_ARCH = "kubernetes.io/arch";
 
     public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
     public static final String TRUE_LABEL_VALUE = "true";

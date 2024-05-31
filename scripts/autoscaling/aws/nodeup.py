@@ -654,13 +654,15 @@ def get_certs_string():
         pipe_api = PipelineAPI(api_url, None)
         result = pipe_api.load_certificates()
         if not result:
-            return ""
+            return "", ""
         else:
+            repo_urls = []
             entries = []
             for url, cert in result.iteritems():
+                repo_urls.append(url)
                 entries.append(command_pattern.format(url=url, cert=cert))
-            return " && ".join(entries)
-    return ""
+            return ",".join(repo_urls), " && ".join(entries)
+    return "", ""
 
 def get_well_known_hosts_string(aws_region):
     pipe_log('Setting well-known hosts an instance in {} region'.format(aws_region))
@@ -801,7 +803,7 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
         user_data_script = init_script.read()
-        certs_string = get_certs_string()
+        repo_urls_string, certs_string = get_certs_string()
         well_known_string = get_well_known_hosts_string(aws_region)
         init_script.close()
         user_data_script = replace_proxies(aws_region, user_data_script)
@@ -813,6 +815,7 @@ def get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins
                           (fs_type, DEFAULT_FS_TYPE))
             fs_type = DEFAULT_FS_TYPE
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                           .replace('@DOCKER_REGISTRY_URLS@', repo_urls_string) \
                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
                                            .replace('@KUBE_IP@', kube_ip) \
                                            .replace('@KUBE_TOKEN@', kubeadm_token) \

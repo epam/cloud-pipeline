@@ -410,7 +410,7 @@ Resources:
               ##########################################
               ### Assume appropriate creds to deploy ###
               ##########################################
-              CP_SECRET=trimspace(${DeploymentAWSCredentialsSecretId})
+              CP_SECRET=${DeploymentAWSCredentialsSecretId}
               if [ -n "$CP_SECRET"  ]; then
                  creds=$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                  eval $creds

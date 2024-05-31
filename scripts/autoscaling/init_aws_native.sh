@@ -210,7 +210,7 @@ default_runtime_name = "runc"
 discard_unpacked_layers = true
 
 [plugins."io.containerd.grpc.v1.cri"]
-sandbox_image = "602401143452.dkr.ecr.eu-west-1.amazonaws.com/eks/pause:3.5"
+sandbox_image = "registry.k8s.io/pause:3.5"
 
 [plugins."io.containerd.grpc.v1.cri".registry]
 config_path = "/etc/containerd/certs.d:/etc/docker/certs.d"
@@ -233,54 +233,24 @@ mkdir -p /etc/docker/certs.d/
 @DOCKER_CERTS@
 
 cloud=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Server | cut -f2 -d:)
-gcloud_header=$(curl --head -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep Metadata-Flavor | cut -f2 -d:)
 
-if [[ $cloud == *"EC2"* ]]; then
-    _CLOUD_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
-    _CLOUD_INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep availabilityZone | cut -d\" -f4)
-    _CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
-    _CLOUD_INSTANCE_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
-    _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
-    _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
-    _CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-    _CLOUD_PROVIDER=AWS
-    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_HOSTNAME"
+_CLOUD_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep region | cut -d\" -f4)
+_CLOUD_INSTANCE_AZ=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep availabilityZone | cut -d\" -f4)
+_CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
+_CLOUD_INSTANCE_HOSTNAME=$(curl -s http://169.254.169.254/latest/meta-data/local-hostname)
+_CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
+_CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
+_CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+_CLOUD_PROVIDER=AWS
+_KUBE_NODE_NAME="$_CLOUD_INSTANCE_HOSTNAME"
 
-    useradd pipeline
-    cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
-    chown -R pipeline. /home/pipeline/.ssh
-    chmod 700 .ssh
-    usermod -a -G wheel pipeline
-    echo 'pipeline ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/cloud-init
-elif [[ $cloud == *"Microsoft"* ]]; then
-    _CLOUD_REGION=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/location?api-version=2018-10-01&format=text')
-    _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
-    _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
-    _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
-    _CI_IP=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/ipv4/Ipaddress?api-version=2018-10-01&format=text')
-    _KUBE_NODE_NAME=$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &> /dev/null && echo $_CLOUD_INSTANCE_ID || hostname)
+useradd pipeline
+cp -r /home/ec2-user/.ssh /home/pipeline/.ssh
+chown -R pipeline. /home/pipeline/.ssh
+chmod 700 .ssh
+usermod -a -G wheel pipeline
+echo 'pipeline ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/cloud-init
 
-    _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
-    if [[ "$_CLOUD_INSTANCE_IMAGE_ID" == '::' ]]; then
-        _CLOUD_INSTANCE_IMAGE_ID=""
-    fi
-    _CLOUD_PROVIDER=AZURE
-
-    CHECK_AZURE_EVENTS_COMMAND="curl -k -H Metadata:true http://169.254.169.254/metadata/scheduledevents?api-version=2017-11-01 2> /dev/null | grep -q Preempt && kubectl label node $(hostname) cloud-pipeline/preempted=true --kubeconfig='/etc/kubernetes/kubelet.conf'"
-
-    crontab -l | { cat ; echo -e "* * * * * $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 20 && $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 40 && $CHECK_AZURE_EVENTS_COMMAND" ; } | crontab -
-
-elif [[ $gcloud_header == *"Google"* ]]; then
-    _gcp_h='-H Metadata-Flavor:Google -s'
-    _CLOUD_INSTANCE_AZ=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
-    _CLOUD_REGION=${_CLOUD_INSTANCE_AZ}
-    _CLOUD_INSTANCE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/name)
-    _CLOUD_INSTANCE_TYPE=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
-    _CLOUD_INSTANCE_IMAGE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
-    _CI_IP=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip)
-    _CLOUD_PROVIDER=GCP
-    _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
-fi
 
 mtu="@mtu@"
 if [ "$mtu" ] && [[ "$mtu" != "@"*"@" ]]; then
