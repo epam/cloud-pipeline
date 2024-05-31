@@ -346,7 +346,7 @@ Resources:
 
 
               module "cluster-infra" {
-                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra_win_node"
+                source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=f_aws_native_infra"
                 deployment_name                    = trimspace("${DeploymentName}")
                 deployment_env                     = trimspace("${DeploymentEnv}")
                 vpc_id                             = trimspace("${VpcId}")

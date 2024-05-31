@@ -207,6 +207,8 @@ function RestrictRegularUsersAccess($Path) {
 }
 
 function ConfigureContainerd {
+    Stop-Service containerd
+
     $containerdconfigfile = @"
 disabled_plugins = []
 imports = []
@@ -242,6 +244,37 @@ version = 2
 [metrics]
   address = ""
   grpc_histogram = false
+
+[proxy_plugins]
+
+[stream_processors]
+
+  [stream_processors."io.containerd.ocicrypt.decoder.v1.tar"]
+    accepts = ["application/vnd.oci.image.layer.v1.tar+encrypted"]
+    args = ["--decryption-keys-path", "C:\\Program Files\\containerd\\ocicrypt\\keys"]
+    env = ["OCICRYPT_KEYPROVIDER_CONFIG=C:\\Program Files\\containerd\\ocicrypt\\ocicrypt_keyprovider.conf"]
+    path = "ctd-decoder"
+    returns = "application/vnd.oci.image.layer.v1.tar"
+
+  [stream_processors."io.containerd.ocicrypt.decoder.v1.tar.gzip"]
+    accepts = ["application/vnd.oci.image.layer.v1.tar+gzip+encrypted"]
+    args = ["--decryption-keys-path", "C:\\Program Files\\containerd\\ocicrypt\\keys"]
+    env = ["OCICRYPT_KEYPROVIDER_CONFIG=C:\\Program Files\\containerd\\ocicrypt\\ocicrypt_keyprovider.conf"]
+    path = "ctd-decoder"
+    returns = "application/vnd.oci.image.layer.v1.tar+gzip"
+
+[timeouts]
+  "io.containerd.timeout.bolt.open" = "0s"
+  "io.containerd.timeout.metrics.shimstats" = "2s"
+  "io.containerd.timeout.shim.cleanup" = "5s"
+  "io.containerd.timeout.shim.load" = "5s"
+  "io.containerd.timeout.shim.shutdown" = "3s"
+  "io.containerd.timeout.task.state" = "2s"
+
+[ttrpc]
+  address = ""
+  gid = 0
+  uid = 0
 
 [plugins]
 
@@ -371,9 +404,6 @@ version = 2
 
         [plugins."io.containerd.grpc.v1.cri".containerd.untrusted_workload_runtime.options]
 
-    [plugins."io.containerd.grpc.v1.cri".registry]
-       config_path = "C:\Program Files\containerd\certs.d"
-
   [plugins."io.containerd.internal.v1.opt"]
     path = "C:\\ProgramData\\containerd\\root\\opt"
 
@@ -422,38 +452,22 @@ version = 2
       platform = "windows/amd64"
       snapshotter = "windows"
 
-[proxy_plugins]
-
-[stream_processors]
-
-  [stream_processors."io.containerd.ocicrypt.decoder.v1.tar"]
-    accepts = ["application/vnd.oci.image.layer.v1.tar+encrypted"]
-    args = ["--decryption-keys-path", "C:\\Program Files\\containerd\\ocicrypt\\keys"]
-    env = ["OCICRYPT_KEYPROVIDER_CONFIG=C:\\Program Files\\containerd\\ocicrypt\\ocicrypt_keyprovider.conf"]
-    path = "ctd-decoder"
-    returns = "application/vnd.oci.image.layer.v1.tar"
-
-  [stream_processors."io.containerd.ocicrypt.decoder.v1.tar.gzip"]
-    accepts = ["application/vnd.oci.image.layer.v1.tar+gzip+encrypted"]
-    args = ["--decryption-keys-path", "C:\\Program Files\\containerd\\ocicrypt\\keys"]
-    env = ["OCICRYPT_KEYPROVIDER_CONFIG=C:\\Program Files\\containerd\\ocicrypt\\ocicrypt_keyprovider.conf"]
-    path = "ctd-decoder"
-    returns = "application/vnd.oci.image.layer.v1.tar+gzip"
-
-[timeouts]
-  "io.containerd.timeout.bolt.open" = "0s"
-  "io.containerd.timeout.metrics.shimstats" = "2s"
-  "io.containerd.timeout.shim.cleanup" = "5s"
-  "io.containerd.timeout.shim.load" = "5s"
-  "io.containerd.timeout.shim.shutdown" = "3s"
-  "io.containerd.timeout.task.state" = "2s"
-
-[ttrpc]
-  address = ""
-  gid = 0
-  uid = 0
+  [plugins."io.containerd.grpc.v1.cri".registry]
+    config_path = ""
+    [plugins."io.containerd.grpc.v1.cri".registry.configs]
 "@
     $containerdconfigfile|Out-File -FilePath 'C:\Program Files\containerd\config.toml' -Encoding ascii -Force
+
+    $dockerRegistryUrls = "@DOCKER_REGISTRY_URLS@"
+    $dockerRegistryUrls.Split(",") | ForEach {
+         $containerdConfigFileRegistryConfig = @"
+      [plugins."io.containerd.grpc.v1.cri".registry.configs."$_"]
+        [plugins."io.containerd.grpc.v1.cri".registry.configs."$_".tls]
+          insecure_skip_verify = true
+
+"@
+         $containerdConfigFileRegistryConfig| Add-Content -Path 'C:\Program Files\containerd\config.toml' -Encoding ascii -Force
+    }
 }
 
 function WaitAndConfigureDnsIfRequired($Dns, $Interface) {
@@ -575,7 +589,7 @@ ConfigureContainerd
 
 & 'C:\Program Files\Amazon\EKS\Start-EKSBootstrap.ps1' -EKSClusterName "@KUBE_CLUSTER_NAME@" 3>&1 4>&1 5>&1 6>&1
 
-rite-Host "Waiting for dns to be accessible if required..."
+Write-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
