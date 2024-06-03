@@ -445,8 +445,8 @@ Resources:
               #!/bin/bash
               echo "-----------SET ACCESS TO AWS-----------------" 
               export CP_SECRET=${DeploymentAWSCredentialsSecretId}
-              if [ -n "$CP_SECRET"  ]; then
-                  creds=\$(aws secretsmanager get-secret-value --secret-id $CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
+              if [ -n "\$CP_SECRET"  ]; then
+                  creds=\$(aws secretsmanager get-secret-value --secret-id \$CP_SECRET  --query SecretString --output text  --region ${AWS::Region})
                   eval \$creds
               else   
                   export \$(printf "AWS_ACCESS_KEY_ID=%s AWS_SECRET_ACCESS_KEY=%s AWS_SESSION_TOKEN=%s" \

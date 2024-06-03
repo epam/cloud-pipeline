@@ -148,7 +148,6 @@ output "cp_deploy_script" {
 
 output "cp_cloud_network_config" {
   value = <<EOT
-  [
    {
     "regions": [
       {
@@ -192,7 +191,6 @@ output "cp_cloud_network_config" {
       "monitored": "true"
     }
     }
-  ]
   EOT
 }
 
