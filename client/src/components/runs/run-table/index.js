@@ -196,8 +196,13 @@ function runIsService (run) {
 function extractTagsFromFilter (filter = {}) {
   const tags = [...new Set((filter.tags || []).filter(Boolean))];
   return tags.reduce((acc, tag) => {
-    const [tagName, value = true] = tag.split('=');
-    acc[tagName] = value;
+    const [tagName, ...rest] = tag.split('=');
+    let value = rest.join('=') || true;
+    if (value === 'true' || value === 'false') {
+      acc[tagName] = value === 'true';
+    } else {
+      acc[tagName] = value;
+    }
     return acc;
   }, {});
 };
