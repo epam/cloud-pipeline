@@ -15,12 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
-import static com.codeborne.selenide.Condition.text;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
-import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
-import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -30,31 +27,42 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
-import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import com.epam.pipeline.autotests.utils.listener.Cloud;
+import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.codeborne.selenide.Condition.text;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.START_IDLE;
+import static com.epam.pipeline.autotests.ao.Primitive.TYPE;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
+import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static com.epam.pipeline.autotests.utils.Utils.resourceName;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
+import static java.lang.Double.parseDouble;
+import static java.util.regex.Pattern.compile;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -80,12 +88,20 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String CLEANUP_FINISH_MESSAGE = "Run #%s is still running after %smin. Terminating a node.";
     private static final String CONSOLE = "Console";
     private static final String CLEANUP_ENVIRONMENT_TASK = "CleanupEnvironment";
+    private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
+    private static final double SCALING_COEFF = 1.5;
+    private static final String CHECK_SPACE_COMMAND = "df -hT";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
+    private final String rootHost = "root@pipeline";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
+    private final String customTag = "test_tag";
+    private static String testInstance = "r6i.%s";
+    private int[] scaling = new int[4];
+    private int[] sizeDisk = new int[4];
     private String initialLaunchSystemParameters;
 
     @BeforeClass(alwaysRun = true)
@@ -121,6 +137,17 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .edit()
                 .deleteRoleOrGroupIfExist(USER_ROLE)
                 .ok();
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void deleteCustomVersion() {
+        open(C.ROOT_ADDRESS);
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.versions()
+                                .viewUnscannedVersions()
+                                .performIf(hasOnPage(customTag), t -> t.deleteVersion(customTag))
+                );
     }
 
     @AfterClass(alwaysRun = true)
@@ -353,7 +380,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDefaultLaunchOptions()
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
@@ -373,7 +400,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setCommand(UMOUNT_COMMAND)
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForTask(CONSOLE)
                 .clickTaskWithName(CONSOLE)
@@ -388,7 +415,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .setName(TERMINATE_RUN_TIMEOUT)
                 .setValue(valueOf(TEST_TERMINATE_RUN_TIMEOUT))
                 .close()
-                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .launchTool(this, nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForTask(CONSOLE)
                 .clickTaskWithName(CONSOLE)
@@ -409,21 +436,21 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         try {
             logoutIfNeeded();
             loginAs(admin);
-            setUserSettings("*");
+            setUserSettings(format(testInstance, "*"));
             logoutIfNeeded();
             loginAs(user);
             tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
                     .expandTab(ADVANCED_PANEL)
-                    .setTypeValue("r6i.xlarge")
+                    .setTypeValue(format(testInstance, "xlarge"))
                     .setPriceType(ON_DEMAND)
                     .doNotMountStoragesSelect(true)
                     .enableClusterLaunch()
                     .clusterSettingsForm("Auto-scaled cluster")
                     .enableHybridClusterSelect()
                     .ok()
-                    .launchTool(this, Utils.nameWithoutGroup(tool))
+                    .launchTool(this, nameWithoutGroup(tool))
                     .showLog(getLastRunId())
                     .waitForSshLink()
                     .ssh(shell -> shell
@@ -437,7 +464,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                     .waitForNestedRunsLink()
                     .clickOnNestedRunLink()
                     .instanceParameters(instance ->
-                            instance.ensure(TYPE, text("r6i.8xlarge"))
+                            instance.ensure(TYPE, text(format(testInstance, "8xlarge")))
                     );
         } finally {
             open(C.ROOT_ADDRESS);
@@ -445,6 +472,50 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
             loginAs(admin);
             setUserSettings("");
         }
+    }
+
+    @Test
+    @TestCase(value = "913")
+    @CloudProviderOnly(values = {Cloud.AWS})
+    public void addSupportForAutoscalingFilesystemForAWS() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDisk("25")
+                .setPriceType(ON_DEMAND)
+                .doNotMountStoragesSelect(true)
+                .click(START_IDLE)
+                .launchTool(this, nameWithoutGroup(tool))
+                .log(getLastRunId(), log ->
+                        log.waitForSshLink()
+                           .inAnotherTab(logTab -> logTab
+                                   .ssh(shell -> createBigFile(shell))
+                           )
+                           .waitForTask(FILESYSTEM_AUTOSCALING)
+                           .clickTaskWithName(FILESYSTEM_AUTOSCALING)
+                           .ensure(log(), containsMessages(autoscalingMessage(scaling[0])))
+                           .inAnotherTab(logTab -> logTab
+                                   .ssh(shell -> checkFilesystemSpace(shell, sizeDisk[0])))
+                           .commit(commit -> commit.setVersion(customTag).ok())
+                           .assertCommittingFinishedSuccessfully()
+                           .clickTaskWithName(FILESYSTEM_AUTOSCALING)
+                           .ensure(log(), containsMessages(autoscalingMessage(sizeDisk[0])))
+                           .ensure(log(), containsMessages(autoscalingMessage(sizeDisk[1])))
+                           .inAnotherTab(logTab -> logTab
+                                   .ssh(shell -> checkFilesystemSpace(shell, sizeDisk[2])))
+                           .pause(nameWithoutGroup(tool))
+                           .assertPausingFinishedSuccessfully()
+                           .resume(nameWithoutGroup(tool))
+                           .assertResumingFinishedSuccessfully()
+                           .waitForSshLink()
+                           .clickTaskWithName(FILESYSTEM_AUTOSCALING)
+                           .ensure(log(), containsMessages(autoscalingMessage(sizeDisk[2])))
+                           .inAnotherTab(logTab -> logTab
+                                   .ssh(shell -> {
+                                       checkFilesystemSpace(shell, sizeDisk[3]);
+                                       shell.close();
+                                   })
+                           )
+                );
     }
 
     private String editLaunchSystemParameters() {
@@ -478,7 +549,49 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .searchForUserEntry(user.login)
                 .edit()
                 .addAllowedLaunchOptions("Allowed instance types mask", mask)
-                .addAllowedLaunchOptions("Allowed tool instance types mask", mask)
+                .sleep(2, SECONDS)
                 .ok();
+    }
+
+    private String autoscalingMessage(double resize) {
+        return format("Filesystem /ebs was autoscaled %sG + %sG = %sG.",
+                (int)resize, (int)Math.floor(resize/2), (int)resize + (int)Math.floor(resize/2));
+    }
+
+    private String logMessage(int size) {
+        return format("btrfs%5sG", size);
+    }
+
+    private int[] diskSize(String log) {
+        final Matcher matcher = compile("([\\d]*[.,]*[\\d]+)")
+                .matcher(log.substring(log.indexOf("btrfs"), log.indexOf("/tmpfs")));
+        int[] res = new int[4];
+        int i = 0;
+        while(matcher.find()) {
+            res[i] = (int)parseDouble(matcher.group());
+            i++;
+        }
+        return res;
+    }
+
+    private void createBigFile (ShellAO shell) {
+        String lastResult = shell
+                .waitUntilTextAppears(getLastRunId())
+                .execute(CHECK_SPACE_COMMAND)
+                .assertNextStringIsVisible(CHECK_SPACE_COMMAND, rootHost)
+                .lastCommandResult(CHECK_SPACE_COMMAND);
+        scaling = diskSize(lastResult);
+        sizeDisk[0] = (int) Math.floor(scaling[0] * SCALING_COEFF);
+        for(int i = 0; i < 3; i++) {
+            sizeDisk[i+1] = (int) Math.floor(sizeDisk[i] * SCALING_COEFF);
+        }
+        shell.execute(format("fallocate -l %sG test.big", scaling[2] - 1));
+    }
+
+    private void checkFilesystemSpace(ShellAO shell, int diskSize) {
+        shell.waitUntilTextAppears(getLastRunId())
+                .execute(CHECK_SPACE_COMMAND)
+                .assertNextStringIsVisible(CHECK_SPACE_COMMAND, rootHost)
+                .assertPageAfterCommandContainsStrings(CHECK_SPACE_COMMAND, logMessage(diskSize));
     }
 }
