@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -182,6 +182,10 @@ class AllRuns extends React.Component {
       .find((aFilter) => aFilter.key.toLowerCase() === (status || '').toLowerCase());
   }
 
+  get additionalFilters () {
+    return (this.currentFilters || {}).additionalFilters;
+  }
+
   navigateToRuns = (status, my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
     SessionStorageWrapper.navigateToRuns(this.props.router, status);
@@ -266,6 +270,7 @@ class AllRuns extends React.Component {
     }
     return (
       <RunTable
+        additionalFilters={this.additionalFilters}
         filters={filters}
         autoUpdate={current.autoUpdate}
         disableFilters={current.showPersonalRuns && !all ? [Columns.owner] : []}
