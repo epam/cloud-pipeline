@@ -127,6 +127,7 @@ public class C {
         DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
         TEST_RUN_TAG = conf.getProperty("e2e.ui.test.run.tag");
         DEFAULT_CLOUD_REGION = conf.getProperty("e2e.ui.default.cloud.region");
+        CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = conf.getProperty("e2e.ui.cluster.instance.hdd.scale.delta.ratio");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -233,4 +234,5 @@ public class C {
     public static final String BACKUP_STORAGE_PATH;
     public static final int BACKUP_STORAGE_OFFSET;
     public static final String TEST_RUN_TAG;
+    public static final String CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO;
 }

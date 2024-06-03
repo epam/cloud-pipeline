@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -29,6 +30,7 @@ import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
+import static org.testng.Assert.assertTrue;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -89,7 +91,9 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String CONSOLE = "Console";
     private static final String CLEANUP_ENVIRONMENT_TASK = "CleanupEnvironment";
     private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
-    private static final double SCALING_COEFF = 1.5;
+    private static final String CLUSTER_INSTANCE_HDD_SCALE_ENABLED = "cluster.instance.hdd.scale.enabled";
+    private static final String CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO = "cluster.instance.hdd.scale.delta.ratio";
+    private static final double SCALING_COEFF = 1 + Double.parseDouble(C.CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO);
     private static final String CHECK_SPACE_COMMAND = "df -hT";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
@@ -478,6 +482,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     @TestCase(value = "913")
     @CloudProviderOnly(values = {Cloud.AWS})
     public void addSupportForAutoscalingFilesystemForAWS() {
+        checkHDDpreferences();
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setDisk("25")
@@ -593,5 +598,21 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .execute(CHECK_SPACE_COMMAND)
                 .assertNextStringIsVisible(CHECK_SPACE_COMMAND, rootHost)
                 .assertPageAfterCommandContainsStrings(CHECK_SPACE_COMMAND, logMessage(diskSize));
+    }
+
+    private void checkHDDpreferences() {
+        PreferencesAO preferencesAO = navigationMenu()
+                .settings()
+                .switchToPreferences();
+        boolean[] hddScaleEnabled = preferencesAO
+                .getCheckboxPreferenceState(CLUSTER_INSTANCE_HDD_SCALE_ENABLED);
+        assertTrue(hddScaleEnabled[0],
+                format("Preference '%s' isn't enabled", CLUSTER_INSTANCE_HDD_SCALE_ENABLED));
+
+        String[] hddScaleDeltaRatio = preferencesAO
+                .getPreference(CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO);
+        assertTrue(hddScaleDeltaRatio[0].equals(C.CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO),
+                format("Preference '%s' has value '%s' instead of '%s'", CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO,
+                        hddScaleDeltaRatio[0], C.CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO));
     }
 }
