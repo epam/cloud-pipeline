@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Alert, Pagination, Table} from 'antd';
+import {Alert, Pagination, Table, Row, Button} from 'antd';
 import {isObservableArray, observable} from 'mobx';
 import {
   filtersAreEqual,
@@ -193,6 +193,20 @@ function runIsService (run) {
     run.initialized;
 }
 
+function extractTagsFromFilter (filter = {}) {
+  const tags = [...new Set((filter.tags || []).filter(Boolean))];
+  return tags.reduce((acc, tag) => {
+    const [tagName, ...rest] = tag.split('=');
+    let value = rest.join('=') || true;
+    if (value === 'true' || value === 'false') {
+      acc[tagName] = value === 'true';
+    } else {
+      acc[tagName] = value;
+    }
+    return acc;
+  }, {});
+};
+
 @inject('localization', 'routing')
 @runPipelineActions
 @observer
@@ -206,6 +220,7 @@ class RunTable extends localization.LocalizedReactComponent {
     total: 0,
     runs: [],
     filters: {},
+    additionalFilters: undefined,
     filtersState: {},
     expandedRows: []
   }
@@ -273,6 +288,7 @@ class RunTable extends localization.LocalizedReactComponent {
       error: undefined,
       expandedRows: [],
       filters: {},
+      additionalFilters: {},
       filtersState: {},
       runs: [],
       total: 0
@@ -295,7 +311,8 @@ class RunTable extends localization.LocalizedReactComponent {
       this.finishFetching();
       const {
         page,
-        filters: userFilters = {}
+        filters: userFilters = {},
+        additionalFilters
       } = this.state;
       this.fetchToken += 1;
       let token = this.fetchToken;
@@ -317,6 +334,7 @@ class RunTable extends localization.LocalizedReactComponent {
         runs: [],
         error: undefined
       };
+      const tags = extractTagsFromFilter(additionalFilters);
       if (search) {
         if (searchFilters) {
           fetchRunsPromise = () => new Promise((resolve, reject) => {
@@ -352,6 +370,7 @@ class RunTable extends localization.LocalizedReactComponent {
           const payload = getFiltersPayload({
             ...filters,
             ...userFilters,
+            tags,
             page: page + 1,
             pageSize
           });
@@ -527,7 +546,22 @@ class RunTable extends localization.LocalizedReactComponent {
         }
       );
     }
-  }
+  };
+
+  onAdditionalFiltersChange = (filter) => {
+    const {additionalFilters} = this.state;
+    const checked = additionalFilters && additionalFilters.title === filter.title;
+    if (checked) {
+      return this.clearAdditionalFilters();
+    }
+    this.setState({
+      additionalFilters: filter
+    }, () => this.onPageChanged(0, true));
+  };
+
+  clearAdditionalFilters = () => {
+    this.setState({additionalFilters: {}}, () => this.onPageChanged(0, true));
+  };
 
   renderCustomTable = (runs) => {
     const {
@@ -648,6 +682,32 @@ class RunTable extends localization.LocalizedReactComponent {
     );
   };
 
+  renderAdditionalFilters = () => {
+    const {additionalFilters, pending} = this.state;
+    const {additionalFilters: additionalFiltersProps} = this.props;
+    if (!additionalFiltersProps?.length) {
+      return null;
+    }
+    return (
+      <Row
+        style={{gap: 5, padding: 2, marginBottom: 9}} align="middle"
+        type="flex"
+      >
+        {additionalFiltersProps.map((filter) => (
+          <Button
+            size="small"
+            key={filter.title}
+            onClick={() => this.onAdditionalFiltersChange(filter)}
+            type={additionalFilters?.title === filter.title ? 'primary' : null}
+            disabled={pending}
+          >
+            {filter.title}
+          </Button>
+        ))}
+      </Row>
+    );
+  };
+
   render () {
     const {
       className,
@@ -687,6 +747,7 @@ class RunTable extends localization.LocalizedReactComponent {
             />
           )
         }
+        {this.renderAdditionalFilters()}
         {
           typeof customRunRenderer === 'function'
             ? this.renderCustomTable(runs)
@@ -762,7 +823,11 @@ RunTable.propTypes = {
   ]),
   beforeTable: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   onRunClick: PropTypes.func,
-  runRowClassName: PropTypes.func
+  runRowClassName: PropTypes.func,
+  additionalFilters: PropTypes.arrayOf(PropTypes.shape({
+    title: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string)
+  }))
 };
 
 RunTable.defaultProps = {
