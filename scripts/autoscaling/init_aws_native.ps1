@@ -190,6 +190,18 @@ function CopyPrivateKey($SourcePath, $DestinationPath) {
     RestrictRegularUsersAccess -Path $DestinationPath
 }
 
+function StartOpenSSHServices {
+    Set-Service -Name sshd -StartupType Automatic
+    Start-Service sshd
+}
+
+function StartWebDAVServices {
+    Set-Service WebClient -StartupType Automatic
+    Set-Service MRxDAV -StartupType Automatic
+    Start-Service WebClient
+    Start-Service MRxDAV
+}
+
 function AllowRegularUsersAccess($Path) {
     $acl = Get-Acl $Path
     $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("BUILTIN\Users", "Write", "ContainerInherit,ObjectInherit", "None", "Allow")
@@ -580,9 +592,38 @@ Start-Transcript -path $initLog -append
 Write-Host "Initializing disks..."
 InitializeDisks
 
+Write-Host "Starting OpenSSH services..."
+StartOpenSSHServices
+
+Write-Host "Starting WebDAV services..."
+StartWebDAVServices
+
+Write-Host "Installing python if required..."
+InstallPythonIfRequired -PythonDir $pythonDir -GlobalDistributionUrl $globalDistributionUrl
+
+Write-Host "Installing chrome if required..."
+InstallChromeIfRequired -GlobalDistributionUrl $globalDistributionUrl
+
+Write-Host "Installing Dokany if required..."
+InstallDokanyIfRequired -DokanyDir $dokanyDir -GlobalDistributionUrl $globalDistributionUrl
+
+Write-Host "Installing NICE DCV if required..."
+InstallNiceDcvIfRequired
+
+
 Write-Host "Opening host ports..."
 OpenPortIfRequired -Port 4000
 OpenPortIfRequired -Port 8888
+
+Write-Host "Generating SSH keys..."
+GenerateSshKeys -Path $homeDir
+
+Write-Host "Adding node SSH keys to authorized keys..."
+AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\Windows\.ssh\authorized_keys
+AddPublicKeyToAuthorizedKeys -SourcePath "$homeDir\.ssh\id_rsa.pub" -DestinationPath C:\ProgramData\ssh\administrators_authorized_keys
+
+Write-Host "Publishing node SSH keys..."
+CopyPrivateKey -SourcePath "$homeDir\.ssh\id_rsa" -DestinationPath "$hostDir\.ssh\id_rsa"
 
 Write-Host "Configuring containerd daemon..."
 ConfigureContainerd
@@ -591,6 +632,12 @@ ConfigureContainerd
 
 Write-Host "Waiting for dns to be accessible if required..."
 WaitAndConfigureDnsIfRequired -Dns $dnsProxyPost -Interface $interfacePost
+
+Write-Host "Loading preferences..."
+$preferences = LoadPreferences -ApiUrl $apiUrl -ApiToken $apiToken
+
+Write-Host "Configuring loopback route if it is enabled in preferences..."
+ConfigureLoopbackRouteIfEnabled -Preferences $preferences -Interface $interfacePost
 
 Write-Host "Listening on port 8888..."
 ListenForConnection -Port 8888
