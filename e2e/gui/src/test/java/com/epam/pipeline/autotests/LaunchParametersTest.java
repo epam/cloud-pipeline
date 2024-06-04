@@ -610,7 +610,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 format("Preference '%s' isn't enabled", CLUSTER_INSTANCE_HDD_SCALE_ENABLED));
 
         String[] hddScaleDeltaRatio = preferencesAO
-                .getPreference(CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO);
+                .getLinePreference(CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO);
         assertTrue(hddScaleDeltaRatio[0].equals(C.CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO),
                 format("Preference '%s' has value '%s' instead of '%s'", CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO,
                         hddScaleDeltaRatio[0], C.CLUSTER_INSTANCE_HDD_SCALE_DELTA_RATIO));
