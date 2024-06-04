@@ -24,8 +24,8 @@ function install_prerequisites {
     if [ "$CP_OS" == "centos" ]; then
       _rpm_dcv_extra_pkgs="xvattr gnome-system-log desktop-backgrounds-gnome"
     fi
-    yum install -y epel-release
-    yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
+
+    _rpm_dcv_pkgs="glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
                        xorg-x11-utils xorg-x11-xauth xorg-x11-xinit \
                        xorg*fonts* xterm libXvMC mesa-libxatracker freeglut \
                        gnome-desktop3 gnome-terminal \
@@ -34,8 +34,18 @@ function install_prerequisites {
                        metacity gnome-session gnome-classic-session \
                        gnome-session-xsession gnu-free-fonts-common \
                        gnu-free-mono-fonts gnu-free-sans-fonts \
-                       gnu-free-serif-fonts $_rpm_dcv_extra_pkgs && \
+                       gnu-free-serif-fonts $_rpm_dcv_extra_pkgs"
+    
+    yum install -y epel-release
+    yum -y install $_rpm_dcv_pkgs && \
     yum -y groupinstall "Xfce"
+    _pkg_result=$?
+    
+    # Fallback: try same with an upstream repo
+    if [ $_pkg_result -ne 0 ]; then
+      yum -y install --disablerepo=cloud-pipeline $_rpm_dcv_pkgs && \
+      yum -y groupinstall --disablerepo=cloud-pipeline "Xfce"
+    fi
     _pkg_result=$?
   else
     apt update -y && \
