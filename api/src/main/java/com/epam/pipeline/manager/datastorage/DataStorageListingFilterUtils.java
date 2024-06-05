@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -46,15 +47,13 @@ public final class DataStorageListingFilterUtils {
         }
 
         return ListUtils.emptyIfNull(items).stream()
-                .filter(item -> item instanceof DataStorageFile)
-                .map(item -> (DataStorageFile) item)
                 .filter(item -> matchNameFilter(item, filter))
                 .filter(item -> matchDateFilters(item, filter, dateParser))
                 .filter(item -> matchSizeFilters(item, filter))
                 .collect(Collectors.toList());
     }
 
-    private static boolean matchNameFilter(final DataStorageFile item, final DataStorageListingFilter filter) {
+    private static boolean matchNameFilter(final AbstractDataStorageItem item, final DataStorageListingFilter filter) {
         if (StringUtils.isBlank(filter.getNameFilter())) {
             return true;
         }
@@ -64,16 +63,20 @@ public final class DataStorageListingFilterUtils {
         return StringUtils.containsIgnoreCase(item.getName(), filter.getNameFilter());
     }
 
-    private static boolean matchDateFilters(final DataStorageFile item, final DataStorageListingFilter filter,
+    private static boolean matchDateFilters(final AbstractDataStorageItem item, final DataStorageListingFilter filter,
                                             final DateFormat dateParser) {
         if (Objects.isNull(filter.getDateAfter()) && Objects.isNull(filter.getDateBefore())) {
             return true;
         }
-        if (StringUtils.isBlank(item.getChanged())) {
+        if (DataStorageItemType.Folder.equals(item.getType())) {
+            return false;
+        }
+        final DataStorageFile file = (DataStorageFile) item;
+        if (StringUtils.isBlank(file.getChanged())) {
             return false;
         }
         try {
-            final Date itemChangedDate = dateParser.parse(item.getChanged());
+            final Date itemChangedDate = dateParser.parse(file.getChanged());
             if (Objects.nonNull(filter.getDateAfter()) && itemChangedDate.before(filter.getDateAfter())) {
                 return false;
             }
@@ -83,11 +86,15 @@ public final class DataStorageListingFilterUtils {
         }
     }
 
-    private static boolean matchSizeFilters(final DataStorageFile item, final DataStorageListingFilter filter) {
+    private static boolean matchSizeFilters(final AbstractDataStorageItem item, final DataStorageListingFilter filter) {
         if (Objects.isNull(filter.getSizeGreaterThan()) && Objects.isNull(filter.getSizeLessThan())) {
             return true;
         }
-        final Long itemSize = item.getSize();
+        if (DataStorageItemType.Folder.equals(item.getType())) {
+            return false;
+        }
+        final DataStorageFile file = (DataStorageFile) item;
+        final Long itemSize = file.getSize();
         if (Objects.isNull(itemSize)) {
             return false;
         }
