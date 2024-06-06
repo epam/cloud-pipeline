@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ShellAO;
@@ -65,6 +66,7 @@ import static java.lang.Double.parseDouble;
 import static java.util.regex.Pattern.compile;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
@@ -80,6 +82,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String UMOUNT_COMMAND = "echo \"#!/usr/bin/env bash\" > /usr/local/sbin/umount && " +
             "echo \"sleep infinity\" >> /usr/local/sbin/umount && chmod +x /usr/local/sbin/umount";
     private static final String TERMINATE_RUN_TIMEOUT = "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
+    private static final String CP_CAP_AUTOSCALE_DNS_HOSTS = "CP_CAP_AUTOSCALE_DNS_HOSTS";
     private static final int DEFAULT_TERMINATE_RUN_TIMEOUT = 1;
     private static final int TEST_TERMINATE_RUN_TIMEOUT = DEFAULT_TERMINATE_RUN_TIMEOUT + 2;
     private static final String UNMOUNTING_STARTED = "Unmounting all storage mounts";
@@ -91,6 +94,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
     private static final double SCALING_COEFF = 1.5;
     private static final String CHECK_SPACE_COMMAND = "df -hT";
+    private static final String SERVER_IP = "Server:         10.96.0.10";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
@@ -100,6 +104,13 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String customTag = "test_tag";
     private static String testInstance = "r6i.%s";
+
+    private static String[] command = {
+            "cat /etc/hosts | grep %s",
+            "yum install -y bind-utils",
+            "nslookup pipeline-%s",
+            "cat /etc/hosts | grep %s | wc -l"
+    };
     private int[] scaling = new int[4];
     private int[] sizeDisk = new int[4];
     private String initialLaunchSystemParameters;
@@ -518,6 +529,100 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 );
     }
 
+    @Test
+    @TestCase(value = "1900_1")
+    public void implementKubernetesDnsCustomHostsManagement() {
+        final String[] userRunIP = new String[1];
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            tools()
+                    .perform(registry, group, tool, tool -> tool.run(this));
+            final String userRunId1 = getLastRunId();
+
+            tools()
+                    .perform(registry, group, tool, tool -> tool.run(this));
+            final String userRunId2 = getLastRunId();
+            runsMenu()
+                    .showLog(userRunId1)
+                    .waitForSshLink()
+                    .ssh(shell -> {
+                        userRunIP[0] = getRunIP(shell
+                                .waitUntilTextAppears(userRunId1)
+                                .execute(format(command[0], "$HOSTNAME"))
+                                .lastCommandResult(format(command[0], "$HOSTNAME")));
+                        shell.close();
+                    });
+            runsMenu()
+                    .showLog(userRunId2)
+                    .waitForSshLink()
+                    .ssh(shell -> shell
+                            .waitUntilTextAppears(userRunId2)
+                            .execute(command[1])
+                            .assertNextStringIsVisible("Complete!",
+                                        format("pipeline-%s", userRunId2))
+                            .execute(format(command[2], userRunId1))
+                            .assertPageAfterCommandContainsStrings(format(command[2], userRunId1), SERVER_IP,
+                                    format("Address: %s", userRunIP[0]))
+                            .close()
+                    );
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
+    }
+
+    @Test
+    @TestCase(value = "1900_2")
+    public void supportDnsHostsManagementInSgeAutoscaler() {
+        final String[] childRunIP = new String[1];
+        logoutIfNeeded();
+        loginAs(user);
+        try {
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .expandTab(ADVANCED_PANEL)
+                    .setPriceType(ON_DEMAND)
+                    .doNotMountStoragesSelect(true)
+                    .enableClusterLaunch()
+                    .clusterSettingsForm("Auto-scaled cluster")
+                    .ok()
+                    .setCommand("qsub -b y -e /common/workdir/err -o /common/workdir/out -t 1:20 sleep 5m && sleep infinity")
+                    .clickAddBooleanParameter()
+                    .setName(CP_CAP_AUTOSCALE_DNS_HOSTS)
+                    .close()
+                    .doNotMountStoragesSelect(true)
+                    .launchTool(this, nameWithoutGroup(tool));
+            final String parentRunId = getLastRunId();
+            LogAO logAO = runsMenu()
+                    .showLog(parentRunId);
+            String childRunID = logAO
+                    .waitForNestedRunsLink()
+                    .getNestedRunID(1);
+            logAO
+                    .waitForSshLink()
+                    .waitForNestedRunWorking(childRunID)
+                    .ssh(shell -> {
+                        shell
+                                .waitUntilTextAppears(parentRunId)
+                                .execute(command[1])
+                                .assertNextStringIsVisible("Complete!",
+                                        format("pipeline-%s", parentRunId))
+                                .execute(format(command[2], childRunID))
+                                .assertPageAfterCommandContainsStrings(format(command[2], childRunID), SERVER_IP);
+                        childRunIP[0] = getRunIP(shell.lastCommandResult("Name:"));
+                        shell
+                                .execute(format(command[3], childRunIP[0]))
+                                .assertPageAfterCommandContainsStrings(format(command[3], childRunIP[0]), "0")
+                                .close();
+                    });
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+        }
+    }
+
     private String editLaunchSystemParameters() {
         final String launchSystemParameters = navigationMenu()
                 .settings()
@@ -593,5 +698,12 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .execute(CHECK_SPACE_COMMAND)
                 .assertNextStringIsVisible(CHECK_SPACE_COMMAND, rootHost)
                 .assertPageAfterCommandContainsStrings(CHECK_SPACE_COMMAND, logMessage(diskSize));
+    }
+
+    private String getRunIP(String logMessage) {
+        final Matcher matcher = compile("\\d+\\.\\d+\\.\\d+\\.\\d+")
+                .matcher(logMessage);
+        assertTrue(matcher.find());
+        return matcher.group();
     }
 }
