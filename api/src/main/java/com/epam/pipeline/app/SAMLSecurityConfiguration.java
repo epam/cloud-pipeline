@@ -178,6 +178,8 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getSwaggerResources())
+                .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_ADVANCED_USER.getName())
                 .antMatchers(getSecuredResourcesRoot())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
@@ -189,6 +191,15 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/restapi/**",
                 "/error",
                 "/error/**");
+        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+    }
+
+    protected String[] getSwaggerResources() {
+        final List<String> excludePaths = Arrays.asList(
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
