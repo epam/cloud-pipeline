@@ -292,6 +292,13 @@ public class LogAO implements AccessObject<LogAO> {
                 .find(byXpath(format("td/div[2]/a[%s]/b", childNum))).getText();
     }
 
+    public LogAO waitForNestedRunWorking(String childRunID) {
+        $(byAttribute("href", format("#/run/%s", childRunID)))
+                .$(byXpath(".//i[contains(@class, 'anticon')]"))
+                .waitUntil(cssClass("anticon-play-circle-o"), COMPLETION_TIMEOUT);
+        return this;
+    }
+
     public LogAO shareWithGroup(final String groupName) {
         click(SHARE_WITH);
         new ShareWith().addGroupToShare(groupName);

@@ -393,6 +393,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return clickAddParameter("String parameter");
     }
 
+    public RunParameterAO clickAddBooleanParameter() {
+        return clickAddParameter("Boolean parameter");
+    }
+
     private RunParameterAO clickAddParameter(String parameterType) {
         resetMouse();
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
