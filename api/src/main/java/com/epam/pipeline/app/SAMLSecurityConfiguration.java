@@ -156,6 +156,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${saml.validate.message.inresponse:true}")
     private boolean validateMessageInResponse;
 
+    @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
+    private String[] swaggerAccessRoles;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -179,7 +182,7 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
                 .antMatchers(getSwaggerResources())
-                .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_ADVANCED_USER.getName())
+                .hasAnyAuthority(swaggerAccessRoles)
                 .antMatchers(getSecuredResourcesRoot())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
