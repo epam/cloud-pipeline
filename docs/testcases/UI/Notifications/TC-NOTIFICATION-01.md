@@ -7,13 +7,13 @@ Test verifies that notification isn't sent if a run's status doesn't change.
 - Admin user
 
 | Steps | Actions | Expected results |
-|:---:|---|---|
+|:---:|------|---|
 | 1 | Login as admin user from the prerequisites | |
 | 2 | Open the **Tools** page | |
 | 3 | Select test tool | |
 | 4 | Launch a tool with default settings (`run1`) | |
 | 5 | Repeat steps 2-4 (`run2`) | |
-| 6 | At the **Runs** page, click the run launched step 4 (`run2`) | |
+| 6 | At the **Runs** page, click the run launched step 5 (`run2`) | |
 | 7 | Wait until the **SSH** hyperlink appears | |
 | 8 | Click the **SSH** hyperlink | |
 | 9 | In the opened tab enter and perform the command: `pipe stop -y <run1_ID>` | |
