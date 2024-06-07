@@ -39,7 +39,7 @@ public enum DefaultRoles {
     ROLE_PIPELINE_MANAGER(new Role(null, "ROLE_PIPELINE_MANAGER", true, false, null, null, null, null)),
     ROLE_VERSIONED_STORAGE_MANAGER(new Role(null, "ROLE_VERSIONED_STORAGE_MANAGER", true, false,
             null, null, null, null)),
-    ROLE_STORAGE_ADMIN(new Role(null, "ROLE_STORAGE_ADMIN", true, false, null, null, null, null)),;
+    ROLE_STORAGE_ADMIN(new Role(null, "ROLE_STORAGE_ADMIN", true, false, null, null, null, null));
 
     private Role role;
 
