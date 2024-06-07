@@ -38,6 +38,8 @@ public class ContainerInstance {
     private Map<String, String> requests;
     private Map<String, String> limits;
     private ContainerInstanceStatus status;
+    private Integer restartCount;
+    private ContainerInstanceStatus lastRestartStatus;
 
     public ContainerInstance() {
         this.requests = new HashMap<>();

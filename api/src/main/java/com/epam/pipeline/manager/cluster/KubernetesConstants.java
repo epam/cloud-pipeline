@@ -65,6 +65,7 @@ public final class KubernetesConstants {
     public static final String WINDOWS = "windows";
 
     public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    public static final String CORE_COMPONENT_PREFIX = CP_LABEL_PREFIX + "cp-";
     public static final String TRUE_LABEL_VALUE = "true";
     public static final String KUBERNETES_APP_LABEL = "k8s-app";
     public static final String KUBE_DNS_APP = "kube-dns";
@@ -82,6 +83,7 @@ public final class KubernetesConstants {
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
+    protected static final String EVENT_POD_SELECTOR = "involvedObject.name";
 
     // node condition types
     protected static final String OUT_OF_DISK = "OutOfDisk";

@@ -44,6 +44,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -593,6 +594,9 @@ public class AclTestBeans {
 
     @MockBean
     protected InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected PodsManager podsManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

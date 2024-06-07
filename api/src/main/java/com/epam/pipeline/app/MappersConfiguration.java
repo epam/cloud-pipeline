@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
+import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
@@ -40,7 +41,6 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 
 @Configuration
 public class MappersConfiguration {
@@ -148,5 +148,10 @@ public class MappersConfiguration {
     @Bean
     public BitbucketMapper bitbucketRepositoryMapper() {
         return Mappers.getMapper(BitbucketMapper.class);
+    }
+
+    @Bean
+    public KubernetesMapper kubernetesMapper() {
+        return Mappers.getMapper(KubernetesMapper.class);
     }
 }

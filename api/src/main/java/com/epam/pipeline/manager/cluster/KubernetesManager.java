@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.api.model.EndpointAddress;
 import io.fabric8.kubernetes.api.model.EndpointPort;
 import io.fabric8.kubernetes.api.model.EndpointSubset;
 import io.fabric8.kubernetes.api.model.Endpoints;
+import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
@@ -291,13 +292,31 @@ public class KubernetesManager {
         }
     }
 
+    public String getPodContainerLogs(final String podId, final String containerId, final int limit) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .inContainer(containerId)
+                    .tailingLines(limit + 1)
+                    .getLog();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     public Pod findPodById(final String podId) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.pods().inNamespace(kubeNamespace).withName(podId).get();
+            return findPodById(client, podId);
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    public Pod findPodById(final KubernetesClient client, final String podId) {
+        return client.pods().inNamespace(kubeNamespace).withName(podId).get();
     }
 
     private boolean isLogTruncated(final String tail, final int limit) {
@@ -1191,6 +1210,27 @@ public class KubernetesManager {
             }
             deleteEndpoints(client, endpoints.get());
         }
+    }
+
+    public List<Pod> getPodsByLabel(final String labelName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withLabel(labelName)
+                    .list()
+                    .getItems();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Event> getPodEvents(final KubernetesClient client, final String podId) {
+        return client.events()
+                .inNamespace(kubeNamespace)
+                .withField(KubernetesConstants.EVENT_POD_SELECTOR, podId)
+                .list()
+                .getItems();
     }
 
     private boolean deleteEndpoints(final KubernetesClient client, final Endpoints endpoints) {
