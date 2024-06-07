@@ -198,12 +198,12 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     }
 
     protected String[] getSwaggerResources() {
-        final List<String> excludePaths = Arrays.asList(
+        final List<String> paths = Arrays.asList(
                 "/restapi/swagger-resources/**",
                 "/restapi/swagger-ui.html",
                 "/restapi/webjars/springfox-swagger-ui/**",
                 "/restapi/v2/api-docs/**");
-        return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+        return paths.toArray(new String[0]);
     }
 
     public String[] getSecuredResourcesRoot() {
