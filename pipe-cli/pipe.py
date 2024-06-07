@@ -487,6 +487,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
+@click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @common_options
 def view_runs(run_id,
               status,
@@ -498,7 +499,8 @@ def view_runs(run_id,
               top,
               node_details,
               parameters_details,
-              tasks_details):
+              tasks_details,
+              user_filter):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
@@ -506,12 +508,12 @@ def view_runs(run_id,
         view_run(run_id, node_details, parameters_details, tasks_details)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
 
 
-def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
+def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter):
     runs_table = prettytable.PrettyTable()
-    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started"]
+    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started", "Owner"]
     runs_table.align = "r"
     if date_to and not status:
         click.echo("The run status shall be specified for viewing completed before specified date runs")
@@ -545,7 +547,8 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                   pipeline_id=pipeline_id,
                                   version=pipeline_version_name,
                                   parent_id=parent_id,
-                                  custom_filter=find)
+                                  custom_filter=find,
+                                  owners=user_filter.split(",") if user_filter else None)
     if run_filter.total_count == 0:
         click.echo('No data is available for the request')
     else:
@@ -557,7 +560,8 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                 run_model.pipeline,
                                 run_model.version,
                                 state_utilities.color_state(run_model.status),
-                                run_model.scheduled_date])
+                                run_model.scheduled_date,
+                                run_model.owner])
         click.echo(runs_table)
         click.echo()
 
