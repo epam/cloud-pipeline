@@ -292,6 +292,8 @@ class DataStorageListing {
   @observable resultsTruncated = false;
   @observable filtersApplied = false;
 
+  @observable ngbSettingsFileExists = false;
+
   /**
    * @param {DataStoragePagesOptions} options
    */
@@ -416,6 +418,11 @@ class DataStorageListing {
     return this.token;
   };
 
+  _increaseUniqueNgbSettingsToken = () => {
+    this.ngbSettingsToken = (this.ngbSettingsToken || 0) + 1;
+    return this.ngbSettingsToken;
+  };
+
   @action
   clearMarkersForPath = (path, including = true) => {
     this.markers = resetMarkersForPath(
@@ -467,7 +474,10 @@ class DataStorageListing {
       showVersionsChanged ||
       showArchivesChanged
     ) {
-      (this.fetchCurrentPage)();
+      (async () => {
+        await this.fetchCurrentPage();
+        await this.updateNgbSettingsFileExists();
+      })();
     }
     return storageChanged ||
     pathChanged ||
@@ -481,12 +491,14 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     this.pageElements = [];
     this.pagePath = undefined;
     this.pageError = undefined;
     this.pagePending = false;
     this.pageLoaded = false;
     this.storageId = storageId;
+    this.ngbSettingsFileExists = false;
     this.path = correctPath('');
     this.clearMarkers();
     this.storageRequest = dataStorages.load(this.storageId);
@@ -562,6 +574,7 @@ class DataStorageListing {
     }
     this.path = corrected;
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     if (this.keepPagesHistory) {
       this.markers = ensureMarkersForPath(corrected, this.markers);
     } else {
@@ -576,6 +589,7 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     // We need to clear all markers
     this.clearMarkers();
     this.showVersions = showVersions;
@@ -588,6 +602,7 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     // We need to clear all markers
     this.clearMarkers();
     this.showArchives = showArchives;
@@ -728,6 +743,64 @@ class DataStorageListing {
         this.pagePending = false;
         this.pageLoaded = !this.pageError;
         this.filtersApplied = false;
+      });
+    }
+  };
+
+  @action
+  updateNgbSettingsFileExists = async () => {
+    const token = this._increaseUniqueNgbSettingsToken();
+    const submitChanges = (fn) => {
+      if (token === this.ngbSettingsToken && typeof fn === 'function') {
+        fn();
+      }
+    };
+    let ngbSettingsFile = correctPath(
+      this.path,
+      {
+        leadingSlash: false,
+        trailingSlash: true,
+        undefinedAsEmpty: false
+      }
+    );
+    ngbSettingsFile = ngbSettingsFile.concat('ngb.settings');
+    const fileExistsOnPage = !!this.pageElements.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+    if (fileExistsOnPage) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = true;
+      });
+      return;
+    }
+    if (this.currentPagination && !this.currentPagination.next) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = false;
+      });
+      return;
+    }
+    try {
+      const request = new DataStorageRequest(
+        this.storageId,
+        decodeURIComponent(ngbSettingsFile),
+        false,
+        false,
+        100,
+      );
+      await request.fetchPage(undefined);
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      if (!request.loaded) {
+        throw new Error('Error loading page');
+      }
+      const {
+        results = [],
+      } = request.value || {};
+      submitChanges(() => {
+        this.ngbSettingsFileExists = !!results.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+      });
+    } catch (error) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = false;
       });
     }
   };

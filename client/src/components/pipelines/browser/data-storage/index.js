@@ -103,6 +103,7 @@ import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import styles from '../Browser.css';
 import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
+import {getNgbFileName, isNgbFile, openNgbFile} from './ngb-files';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -598,6 +599,10 @@ export default class DataStorage extends React.Component {
         hcs: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
           fastCheckHCSPreviewAvailable({path: i.path, storageId}),
+        ngb: !i.deleteMarker &&
+          this.storage.ngbSettingsFileExists &&
+          i.type.toLowerCase() === 'file' &&
+          isNgbFile(i.path),
         documentPreview: !i.deleteMarker &&
           documentPreviewAvailable(i),
         archived,
@@ -1361,6 +1366,24 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onNgbFileActionClick = async (file, event) => {
+    const {storageId, path, preferences} = this.props;
+    event && event.stopPropagation();
+    const fileName = getNgbFileName(file.path);
+    const hide = message.loading((<span>Opening <b>{fileName}</b>...</span>), 0);
+    try {
+      await openNgbFile({
+        storageId,
+        path: file.path,
+        preferences
+      });
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
+    }
+  };
+
   closePreviewModal = () => {
     this.setState({previewModal: null});
   };
@@ -1446,7 +1469,12 @@ export default class DataStorage extends React.Component {
 
   get columns () {
     const tableData = this.items;
-    const hasAppsColumn = tableData.some(o => o.miew || o.vsi || o.hcs || o.documentPreview);
+    const hasAppsColumn = tableData.some(o => o.miew ||
+      o.vsi ||
+      o.hcs ||
+      o.ngb ||
+      o.documentPreview
+    );
     const hasVersions = tableData.some(o => o.versions);
     const getItemIcon = (item) => {
       if (!item) {
@@ -1573,6 +1601,17 @@ export default class DataStorage extends React.Component {
               key={item.key}
             >
               <img src="icons/file-extensions/hcs.png" />
+            </div>
+          );
+        }
+        if (item.ngb) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.onNgbFileActionClick(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/ngb.svg" width={20} height={20} />
             </div>
           );
         }
