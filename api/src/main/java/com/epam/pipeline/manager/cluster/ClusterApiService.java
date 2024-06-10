@@ -28,6 +28,8 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
@@ -37,6 +39,7 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
@@ -50,6 +53,7 @@ public class ClusterApiService {
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
@@ -119,5 +123,20 @@ public class ClusterApiService {
 
     public String buildEdgeExternalUrl(final String region) {
         return edgeServiceManager.buildEdgeExternalUrl(region);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getCorePods() {
+        return podsManager.getCorePods();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public PodDescription getPodDescription(final String podId, final boolean detailed) {
+        return podsManager.describePod(podId, detailed);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
+        return podsManager.getContainerLogs(podId, containerId, limit);
     }
 }

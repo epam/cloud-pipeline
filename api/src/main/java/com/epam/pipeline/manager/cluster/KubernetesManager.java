@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
@@ -285,13 +286,31 @@ public class KubernetesManager {
         }
     }
 
+    public String getPodContainerLogs(final String podId, final String containerId, final int limit) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .inContainer(containerId)
+                    .tailingLines(limit + 1)
+                    .getLog();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     public Pod findPodById(final String podId) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.pods().inNamespace(kubeNamespace).withName(podId).get();
+            return findPodById(client, podId);
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    public Pod findPodById(final KubernetesClient client, final String podId) {
+        return client.pods().inNamespace(kubeNamespace).withName(podId).get();
     }
 
     private boolean isLogTruncated(final String tail, final int limit) {
@@ -1092,6 +1111,28 @@ public class KubernetesManager {
                 .withName(name)
                 .get());
     }
+
+    public List<Pod> getPodsByLabel(final String labelName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withLabel(labelName)
+                    .list()
+                    .getItems();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Event> getEvents(final KubernetesClient client, final String objectId) {
+        return client.events()
+                .inNamespace(kubeNamespace)
+                .withField(KubernetesConstants.EVENT_SELECTOR, objectId)
+                .list()
+                .getItems();
+    }
+
 
     private List<Service> findServicesByLabel(final KubernetesClient client, final String labelName,
                                               final String labelValue) {

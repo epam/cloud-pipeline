@@ -5,6 +5,7 @@ metadata:
   namespace: default
   labels:
     cloud-pipeline/cp-idp: "true"
+    cloud-pipeline/core-component: "Pod"
 spec:
   nodeSelector:
     cloud-pipeline/cp-idp: "true"

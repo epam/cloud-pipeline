@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-bkp-worker: "$CP_BKP_SERVICE_NAME"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/$CP_BKP_SERVICE_NAME: "true"

@@ -622,6 +622,8 @@ public class SystemPreferences {
 
     public static final StringPreference CLUSTER_INSTANCE_ALLOWED_TAGS = new StringPreference(
             "cluster.instances.allowed.tags", null, CLUSTER_GROUP, isValidInstanceTags);
+    public static final StringPreference CLUSTER_KUBE_CORE_COMPONENT_LABEL = new StringPreference(
+            "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",

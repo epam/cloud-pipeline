@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-share-srv: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-share-srv: "true"

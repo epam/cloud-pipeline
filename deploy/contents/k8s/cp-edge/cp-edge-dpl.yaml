@@ -11,6 +11,7 @@ spec:
       labels:
         cloud-pipeline/cp-edge: "true"
         cloud-pipeline/role: "EDGE"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-edge: "true"
