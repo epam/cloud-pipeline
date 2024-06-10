@@ -12,6 +12,7 @@ spec:
         cloud-pipeline/cp-edge: "true"
         cloud-pipeline/role: "EDGE"
         cloud-pipeline/region: $CP_CLOUD_REGION_ID
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-edge: "true"
