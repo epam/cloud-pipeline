@@ -83,7 +83,7 @@ public final class KubernetesConstants {
 
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
-    protected static final String EVENT_POD_SELECTOR = "involvedObject.name";
+    protected static final String EVENT_SELECTOR = "involvedObject.name";
 
     // node condition types
     protected static final String OUT_OF_DISK = "OutOfDisk";

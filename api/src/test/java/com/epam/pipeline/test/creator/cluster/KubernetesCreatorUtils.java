@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public final class PodCreatorUtils {
+public final class KubernetesCreatorUtils {
     public static final String CORE_LABEL = "core";
     public static final String COMPONENT1 = "cp-component-1";
     public static final String COMPONENT2 = "cp-component-2";
@@ -48,7 +48,7 @@ public final class PodCreatorUtils {
     public static final String TYPE = "Deployment";
     public static final String TEST = "test";
 
-    private PodCreatorUtils() {
+    private KubernetesCreatorUtils() {
         // no-op
     }
 

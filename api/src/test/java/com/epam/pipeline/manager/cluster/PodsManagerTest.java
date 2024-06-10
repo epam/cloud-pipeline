@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import com.epam.pipeline.entity.cluster.CorePodInstance;
+import com.epam.pipeline.entity.cluster.ContainerInstance;
+import com.epam.pipeline.entity.cluster.ContainerInstanceStatus;
 import com.epam.pipeline.entity.cluster.EventEntity;
 import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
+import com.epam.pipeline.entity.cluster.PodInstanceStatus;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
@@ -27,11 +30,14 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.test.creator.cluster.PodCreatorUtils.*;
+import static com.epam.pipeline.test.creator.cluster.KubernetesCreatorUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -58,13 +64,11 @@ public class PodsManagerTest {
         final Pod pod1 = pod(COMPONENT1);
         final Pod pod2 = pod(COMPONENT2);
         doReturn(Arrays.asList(pod1, pod2)).when(kubernetesManager).getPodsByLabel(CORE_LABEL);
-        doReturn(new CorePodInstance(pod1)).when(mapper).mapCorePod(pod1);
-        doReturn(new CorePodInstance(pod2)).when(mapper).mapCorePod(pod2);
 
-        final List<CorePodInstance> corePods = manager.getCorePods();
+        final List<PodInstance> corePods = manager.getCorePods();
         assertThat(corePods).hasSize(2);
-        final Map<String, CorePodInstance> byParentName = corePods.stream()
-                .collect(Collectors.toMap(CorePodInstance::getParentName, Function.identity()));
+        final Map<String, PodInstance> byParentName = corePods.stream()
+                .collect(Collectors.toMap(PodInstance::getParentName, Function.identity()));
         assertCorePod(byParentName.get(COMPONENT1), COMPONENT1);
         assertCorePod(byParentName.get(COMPONENT2), COMPONENT2);
     }
@@ -73,7 +77,7 @@ public class PodsManagerTest {
     public void shouldLoadShortPodDescription() {
         doReturn(kubernetesClient).when(kubernetesManager).getKubernetesClient();
         doReturn(Collections.singletonList(event())).when(kubernetesManager)
-                .getPodEvents(kubernetesClient, NAME1);
+                .getEvents(kubernetesClient, NAME1);
         final EventEntity event = new EventEntity();
         doReturn(event).when(mapper).mapEvent(any());
 
@@ -87,7 +91,7 @@ public class PodsManagerTest {
     public void shouldLoadLongPodDescription() {
         doReturn(kubernetesClient).when(kubernetesManager).getKubernetesClient();
         doReturn(Collections.singletonList(event())).when(kubernetesManager)
-                .getPodEvents(kubernetesClient, NAME1);
+                .getEvents(kubernetesClient, NAME1);
         final EventEntity event = new EventEntity();
         doReturn(event).when(mapper).mapEvent(any());
         doReturn(pod(NAME1)).when(kubernetesManager).findPodById(kubernetesClient, NAME1);
@@ -97,8 +101,36 @@ public class PodsManagerTest {
         assertThat(podDescription.getDescription()).isNotBlank();
     }
 
-    private static void assertCorePod(final CorePodInstance pod, final String name) {
+    private static void assertCorePod(final PodInstance pod, final String name) {
         assertEquals(pod.getParentName(), name);
         assertEquals(pod.getParentType(), TYPE);
+        assertThat(pod).isNotNull();
+        assertEquals(pod.getName(), name);
+        assertEquals(pod.getNamespace(), DEFAULT);
+        assertEquals(pod.getPhase(), PHASE);
+
+        final PodInstanceStatus status = pod.getStatus();
+        assertThat(status).isNotNull();
+        assertEquals(status.getTimestamp(), TIMESTAMP);
+
+        final List<ContainerInstance> containers = pod.getContainers();
+        assertThat(containers).hasSize(2);
+        final Map<String, ContainerInstance> byName = containers.stream()
+                .collect(Collectors.toMap(ContainerInstance::getName, Function.identity()));
+        assertContainer(byName.get(NAME1), NAME1);
+        assertContainer(byName.get(NAME2), NAME2);
+    }
+
+    private static void assertContainer(final ContainerInstance container, final String name) {
+        assertEquals(container.getName(), name);
+        assertEquals(container.getRestartCount(), RESTARTS_COUNT);
+
+        final ContainerInstanceStatus status = container.getStatus();
+        assertThat(status).isNotNull();
+        assertEquals(status.getStatus(), "Running");
+
+        final ContainerInstanceStatus lastRestart = container.getLastRestartStatus();
+        assertThat(lastRestart).isNotNull();
+        assertEquals(lastRestart.getStatus(), "Terminated");
     }
 }

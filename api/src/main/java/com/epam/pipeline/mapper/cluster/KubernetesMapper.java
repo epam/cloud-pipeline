@@ -16,60 +16,12 @@
 
 package com.epam.pipeline.mapper.cluster;
 
-import com.epam.pipeline.entity.cluster.ContainerInstance;
-import com.epam.pipeline.entity.cluster.ContainerInstanceStatus;
-import com.epam.pipeline.entity.cluster.CorePodInstance;
 import com.epam.pipeline.entity.cluster.EventEntity;
-import com.epam.pipeline.entity.cluster.PodInstanceStatus;
-import io.fabric8.kubernetes.api.model.ContainerState;
-import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.Event;
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodStatus;
-import org.apache.commons.collections4.CollectionUtils;
 import org.mapstruct.Mapper;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface KubernetesMapper {
 
     EventEntity mapEvent(Event event);
-
-    default CorePodInstance mapCorePod(final Pod kubePod) {
-        final CorePodInstance pod = new CorePodInstance(kubePod);
-        final PodStatus podStatus = kubePod.getStatus();
-        if (Objects.nonNull(podStatus)) {
-            pod.setStatus(new PodInstanceStatus(podStatus));
-            pod.setContainers(mapContainerInstances(podStatus, pod.getContainers()));
-        }
-        return pod;
-    }
-
-    static ContainerInstance mapContainerInstance(final ContainerStatus containerStatus,
-                                                  final ContainerInstance containerInstance) {
-        containerInstance.setRestartCount(containerStatus.getRestartCount());
-        final ContainerState lastState = containerStatus.getLastState();
-        if (Objects.nonNull(lastState)) {
-            containerInstance.setLastRestartStatus(new ContainerInstanceStatus(lastState));
-        }
-        return containerInstance;
-    }
-
-    static List<ContainerInstance> mapContainerInstances(final PodStatus podStatus,
-                                                         final List<ContainerInstance> containers) {
-        if (CollectionUtils.isEmpty(containers)) {
-            return null;
-        }
-        final Map<String, ContainerInstance> containersByName = containers.stream()
-                .collect(Collectors.toMap(ContainerInstance::getName, Function.identity()));
-        return podStatus.getContainerStatuses().stream()
-                .map(containerStatus -> mapContainerInstance(containerStatus,
-                        containersByName.get(containerStatus.getName())))
-                .collect(Collectors.toList());
-    }
 }

@@ -22,13 +22,13 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
-import com.epam.pipeline.entity.cluster.CorePodInstance;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
@@ -289,14 +289,14 @@ public class ClusterController extends AbstractRestController {
         return Result.success(infrastructureApiService.createInstanceDNSRecord(regionId, dnsRecord));
     }
 
-    @GetMapping("/cluster/core/pods")
+    @GetMapping("/cluster/pods/core")
     @ResponseBody
     @ApiOperation(
             value = "Returns core pods.",
             notes = "Returns core pods.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
-    public Result<List<CorePodInstance>> loadCorePods() {
+    public Result<List<PodInstance>> loadCorePods() {
         return Result.success(clusterApiService.getCorePods());
     }
 

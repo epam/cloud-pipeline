@@ -17,9 +17,9 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.entity.cluster.CorePodInstance;
 import com.epam.pipeline.entity.cluster.EventEntity;
 import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
@@ -50,7 +50,7 @@ public class PodsManager {
     private final KubernetesMapper mapper;
     private final PreferenceManager preferenceManager;
 
-    public List<CorePodInstance> getCorePods() {
+    public List<PodInstance> getCorePods() {
         final String labelName = preferenceManager.getPreference(SystemPreferences.CLUSTER_KUBE_CORE_COMPONENT_LABEL);
         return kubernetesManager.getPodsByLabel(labelName).stream()
                 .map(pod -> buildCorePod(pod, labelName))
@@ -59,7 +59,7 @@ public class PodsManager {
 
     public PodDescription describePod(final String podId, final boolean detailed) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
-            final List<EventEntity> events = kubernetesManager.getPodEvents(client, podId).stream()
+            final List<EventEntity> events = kubernetesManager.getEvents(client, podId).stream()
                     .map(mapper::mapEvent)
                     .collect(Collectors.toList());
             final PodDescription podDescription = PodDescription.builder()
@@ -87,8 +87,8 @@ public class PodsManager {
         return kubernetesManager.getPodContainerLogs(podId, containerId, linesCount);
     }
 
-    private CorePodInstance buildCorePod(final Pod kubePod, final String coreLabel) {
-        final CorePodInstance pod = mapper.mapCorePod(kubePod);
+    private PodInstance buildCorePod(final Pod kubePod, final String coreLabel) {
+        final PodInstance pod = new PodInstance(kubePod);
         final ObjectMeta metadata = kubePod.getMetadata();
         if (Objects.nonNull(metadata)) {
             final Map<String, String> labels = MapUtils.emptyIfNull(kubePod.getMetadata().getLabels());
@@ -97,7 +97,7 @@ public class PodsManager {
         return pod;
     }
 
-    private void resolveCorePodParent(final CorePodInstance pod, final String labelName, final String labelValue,
+    private void resolveCorePodParent(final PodInstance pod, final String labelName, final String labelValue,
                                       final String coreLabel) {
         if (coreLabel.equals(labelName)
                 && !KubernetesConstants.TRUE_LABEL_VALUE.equals(labelValue.toLowerCase(Locale.ROOT))) {

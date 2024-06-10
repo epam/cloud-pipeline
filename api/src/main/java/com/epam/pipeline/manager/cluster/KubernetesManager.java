@@ -1225,10 +1225,10 @@ public class KubernetesManager {
         }
     }
 
-    public List<Event> getPodEvents(final KubernetesClient client, final String podId) {
+    public List<Event> getEvents(final KubernetesClient client, final String objectId) {
         return client.events()
                 .inNamespace(kubeNamespace)
-                .withField(KubernetesConstants.EVENT_POD_SELECTOR, podId)
+                .withField(KubernetesConstants.EVENT_SELECTOR, objectId)
                 .list()
                 .getItems();
     }

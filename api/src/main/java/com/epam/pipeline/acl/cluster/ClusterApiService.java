@@ -23,13 +23,13 @@ import java.util.List;
 
 import com.epam.pipeline.controller.vo.FilterNodesVO;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
-import com.epam.pipeline.entity.cluster.CorePodInstance;
 import com.epam.pipeline.entity.cluster.FilterPodsRequest;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
@@ -135,7 +135,7 @@ public class ClusterApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public List<CorePodInstance> getCorePods() {
+    public List<PodInstance> getCorePods() {
         return podsManager.getCorePods();
     }
 

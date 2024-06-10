@@ -16,24 +16,13 @@
 
 package com.epam.pipeline.mapper.cluster;
 
-import com.epam.pipeline.entity.cluster.ContainerInstance;
-import com.epam.pipeline.entity.cluster.ContainerInstanceStatus;
-import com.epam.pipeline.entity.cluster.CorePodInstance;
 import com.epam.pipeline.entity.cluster.EventEntity;
-import com.epam.pipeline.entity.cluster.PodInstanceStatus;
 import io.fabric8.kubernetes.api.model.Event;
-import io.fabric8.kubernetes.api.model.Pod;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.epam.pipeline.test.creator.cluster.PodCreatorUtils.*;
+import static com.epam.pipeline.test.creator.cluster.KubernetesCreatorUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 public class KubernetesMapperTest {
 
@@ -45,40 +34,5 @@ public class KubernetesMapperTest {
         final EventEntity eventEntity = mapper.mapEvent(kubeEvent);
 
         assertThat(eventEntity).isEqualTo(eventEntity());
-    }
-
-    @Test
-    public void shouldMapCorePod() {
-        final Pod kubePod = pod(NAME1);
-        final CorePodInstance corePod = mapper.mapCorePod(kubePod);
-
-        assertThat(corePod).isNotNull();
-        assertEquals(corePod.getName(), NAME1);
-        assertEquals(corePod.getNamespace(), DEFAULT);
-        assertEquals(corePod.getPhase(), PHASE);
-
-        final PodInstanceStatus status = corePod.getStatus();
-        assertThat(status).isNotNull();
-        assertEquals(status.getTimestamp(), TIMESTAMP);
-
-        final List<ContainerInstance> containers = corePod.getContainers();
-        assertThat(containers).hasSize(2);
-        final Map<String, ContainerInstance> byName = containers.stream()
-                .collect(Collectors.toMap(ContainerInstance::getName, Function.identity()));
-        assertContainer(byName.get(NAME1), NAME1);
-        assertContainer(byName.get(NAME2), NAME2);
-    }
-
-    private static void assertContainer(final ContainerInstance container, final String name) {
-        assertEquals(container.getName(), name);
-        assertEquals(container.getRestartCount(), RESTARTS_COUNT);
-
-        final ContainerInstanceStatus status = container.getStatus();
-        assertThat(status).isNotNull();
-        assertEquals(status.getStatus(), "Running");
-
-        final ContainerInstanceStatus lastRestart = container.getLastRestartStatus();
-        assertThat(lastRestart).isNotNull();
-        assertEquals(lastRestart.getStatus(), "Terminated");
     }
 }
