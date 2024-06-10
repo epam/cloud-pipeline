@@ -11,6 +11,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-deployment-autoscaler: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-deployment-autoscaler: "true"
