@@ -50,8 +50,8 @@ const NGB_FILE_INDEX_PATH = {
     (path) => replaceExtension(path, 'bai')
   ],
   vcf: [
-    (path) => appendExtension(path, 'idx'),
-    (path) => appendExtension(path, 'tbi')
+    (path) => appendExtension(path, 'tbi'),
+    (path) => appendExtension(path, 'idx')
   ],
 };
 
@@ -153,7 +153,9 @@ export async function openNgbFile (options) {
     reference,
     annotation_tracks = [],
     annotationTracks = annotation_tracks,
-    [fileName]: fileNameSettings = {}
+    [fileName]: fileNameSettings = {},
+    dataset = false,
+    ...rest
   } = settings || {};
   if (!server) {
     throw new Error('NGB server not specified');
@@ -200,6 +202,24 @@ export async function openNgbFile (options) {
     l: true,
     p: reference,
   });
+  if (dataset && settings[fileName]) {
+    const root = path.split(/[\/\\]/).slice(0, -1).join('/');
+    Object.entries(rest).forEach(([track, settings]) => {
+      const datasetTrackPath = `${root}/${track}`;
+      const datasetTrackUrl = getFilePath(datasetTrackPath);
+      const datasetTrackIndex = getNgbFileIndexPaths(datasetTrackPath)[0];
+      const datasetTrackIndexUrl = datasetTrackIndex ? getFilePath(datasetTrackIndex) : undefined;
+      const datasetTrackExtension = getNgbFileExtension(datasetTrackPath);
+      tracks.push({
+        b: datasetTrackUrl,
+        n: datasetTrackUrl,
+        i1: datasetTrackIndexUrl,
+        f: datasetTrackExtension.toUpperCase(),
+        l: true,
+        p: reference,
+      })
+    });
+  }
   let ngbServer = server;
   if (!ngbServer.endsWith('/')) {
     ngbServer = ngbServer.concat('/');
