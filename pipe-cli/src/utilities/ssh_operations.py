@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import collections
-import errno
+import functools
 from contextlib import closing
 
 import click
@@ -58,6 +58,42 @@ UNKNOWN_USER = 'unknown'
 
 run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner '
                                                     'sensitive platform parameters')
+
+
+def restarting(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        timeout = 10
+        while True:
+            try:
+                return func(*args, **kwargs)
+            except KeyboardInterrupt:
+                raise
+            except Exception:
+                logging.warn('Restarting in %s seconds...', timeout)
+            time.sleep(10)
+    return wrapper
+
+
+def socketclosing(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        inputs = []
+        while True:
+            try:
+                return func(inputs, *args, **kwargs)
+            except KeyboardInterrupt:
+                logging.info('Interrupted...')
+                raise
+            except Exception:
+                logging.exception('Errored...')
+                raise
+            finally:
+                logging.info('Closing all sockets...')
+                for input in inputs:
+                    input.close()
+                logging.info('Exiting...')
+    return wrapper
 
 
 class TunnelError(Exception):
@@ -486,18 +522,8 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                   retries, region, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
-    if not local_ports_str and not remote_ports_str:
-        raise RuntimeError('Either --lp/--local-port or --rp/--remote-port option should be specified.')
-    local_ports = parse_ports(local_ports_str)
-    remote_ports = parse_ports(remote_ports_str)
-    if not local_ports and not remote_ports:
-        raise RuntimeError('Either a single port (4567) or a range of ports (4567-4569) '
-                           'can be specified using -lp/--local-port and -rp/--remote-port options.')
-    local_ports = local_ports or remote_ports
-    remote_ports = remote_ports or local_ports
-    if len(local_ports) != len(remote_ports):
-        raise RuntimeError('The number of local ({}) and remote ({}) ports should be the same.'
-                           .format(len(local_ports), len(remote_ports)))
+    local_ports, remote_ports = resolve_ports(local_ports_str, remote_ports_str,
+                                              '-lp/--local-port', '-rp/--remote-port')
     if len(local_ports) > 1 and ssh:
         raise RuntimeError('A single port can be specified using -lp/--local-port and -rp/--remote-port options '
                            'if -s/--ssh option is used.')
@@ -518,6 +544,76 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
         create_tunnel_to_host(host_id, local_ports, remote_ports, connection_timeout,
                               direct, log_file, log_level,
                               timeout, foreground, retries, region)
+
+
+def create_transmitting_tunnel(tunnel_host, tunnel_ports_str, output_host, output_ports_str,
+                               refresh_interval, pool_size,
+                               connection_timeout,
+                               direct, log_file, log_level,
+                               timeout, foreground,
+                               retries, region):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    tunnel_ports, output_ports = resolve_ports(tunnel_ports_str, output_ports_str,
+                                               '-tp/--tunnel-port', '-op/--output-port')
+    create_transmitting_tunnel_to_host(tunnel_host, tunnel_ports,
+                                       output_host, output_ports,
+                                       refresh_interval, pool_size,
+                                       connection_timeout,
+                                       direct, log_file, log_level,
+                                       timeout, foreground, retries,
+                                       region)
+
+
+def create_transmitting_tunnel_to_host(tunnel_host, tunnel_ports,
+                                       output_host, output_ports,
+                                       refresh_interval, pool_size,
+                                       connection_timeout,
+                                       direct, log_file, log_level,
+                                       timeout, foreground, retries,
+                                       region=None):
+    if foreground:
+        conn_info = get_custom_conn_info(tunnel_host, region)
+        create_foreground_transmitting_tunnel(tunnel_host, tunnel_ports, output_host, output_ports,
+                                              refresh_interval, pool_size,
+                                              connection_timeout, conn_info, direct, log_level, retries)
+    else:
+        create_background_tunnel(tunnel_ports, output_ports, tunnel_host, log_file, log_level, timeout)
+
+
+def create_receiving_tunnel(input_ports_str, tunnel_ports_str,
+                            log_file, log_level,
+                            timeout, foreground):
+    logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
+    input_ports, tunnel_ports = resolve_ports(input_ports_str, tunnel_ports_str,
+                                              '-ip/--input-port', '-tp/--tunnel-port')
+    create_receiving_tunnel_to_host(input_ports, tunnel_ports,
+                                    log_file, log_level,
+                                    timeout, foreground)
+
+
+def create_receiving_tunnel_to_host(input_ports, tunnel_ports,
+                                    log_file, log_level,
+                                    timeout, foreground):
+    if foreground:
+        create_foreground_receiving_tunnel(input_ports, tunnel_ports)
+    else:
+        create_background_tunnel(input_ports, tunnel_ports, '127.0.0.1', log_file, log_level, timeout)
+
+
+def resolve_ports(left_ports_str, right_ports_str, left_ports_arg, right_ports_arg):
+    if not left_ports_str and not right_ports_str:
+        raise RuntimeError('Either %s or %s option should be specified.' % (left_ports_arg, right_ports_arg))
+    left_ports = parse_ports(left_ports_str)
+    right_ports = parse_ports(right_ports_str)
+    if not left_ports and not right_ports:
+        raise RuntimeError('Either a single port (4567) or a range of ports (4567-4569) '
+                           'can be specified using %s and %s options.' % (left_ports_arg, right_ports_arg))
+    left_ports = left_ports or right_ports
+    right_ports = right_ports or left_ports
+    if len(right_ports) != len(left_ports):
+        raise RuntimeError('The number of ({}) and ({}) ports should be the same.'
+                           .format(len(right_ports), len(left_ports)))
+    return left_ports, right_ports
 
 
 def parse_ports(port_str):
@@ -994,107 +1090,60 @@ def configure_ssh_and_execute_on_linux(run_id, local_port, remote_port, conn_inf
                             passwordless_config.local_host_ed25519_public_key_path)
 
 
-def create_foreground_tunnel(run_id, local_ports, remote_ports, connection_timeout, conn_info,
+@socketclosing
+def create_foreground_tunnel(inputs, run_id, local_ports, remote_ports, connection_timeout, conn_info,
                              remote_host, direct, log_level, retries,
                              chunk_size=4096, server_delay=0.0001):
-    if len(local_ports) > 1:
-        logging.info('Initializing tunnel %s-%s:%s:%s-%s...',
-                     local_ports[0], local_ports[-1], remote_host, remote_ports[0], remote_ports[-1])
-    else:
-        logging.info('Initializing tunnel %s:%s:%s...', local_ports[0], remote_host, remote_ports[0])
-    inputs = []
+    logging.info('Initializing tunnel %s:%s:%s...',
+                 stringify_ports(local_ports), remote_host, stringify_ports(remote_ports))
+    listeners = []
+    for listener_socket in serve_local_ports(local_ports):
+        add_to_socket_lists(listener_socket, inputs, listeners)
+    listener_local_ports = dict(zip(inputs, local_ports))
+    listener_remote_ports = dict(zip(inputs, remote_ports))
     channel = {}
-    try:
-        for server_socket in serve_local_ports(local_ports):
-            inputs.append(server_socket)
-        server_sockets = set(list(inputs))
-        server_local_ports = dict(zip(inputs, local_ports))
-        server_remote_ports = dict(zip(inputs, remote_ports))
-        configure_graceful_exiting()
-        logging.info('Serving tunnel...')
-        while True:
-            time.sleep(server_delay)
-            logging.info('Waiting for connections...')
-            inputs_ready, _, _ = select.select(inputs, [], [])
-            for input in inputs_ready:
-                if input in server_sockets:
-                    local_port = server_local_ports[input]
-                    remote_port = server_remote_ports[input]
-                    target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
-                    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
-                                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
-                    try:
-                        logging.info('Initializing client connection %s:%s:%s...',
-                                     local_port, remote_host, remote_port)
-                        client_socket, address = input.accept()
-                    except KeyboardInterrupt:
-                        raise
-                    except Exception:
-                        logging.exception('Cannot establish client connection %s:%s:%s.',
-                                          local_port, remote_host, remote_port)
-                        break
-                    try:
-                        logging.info('Initializing tunnel connection %s:%s:%s...',
-                                     local_port, remote_host, remote_port)
-                        if direct:
-                            tunnel_socket = direct_connect(target_endpoint,
-                                                           timeout=connection_timeout,
-                                                           retries=retries)
-                        else:
-                            tunnel_socket = http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
-                                                                      timeout=connection_timeout,
-                                                                      retries=retries)
-                    except KeyboardInterrupt:
-                        raise
-                    except Exception:
-                        logging.exception('Cannot establish tunnel connection %s:%s:%s.',
-                                          local_port, remote_host, remote_port)
-                        client_socket.close()
-                        break
-                    inputs.append(client_socket)
-                    inputs.append(tunnel_socket)
-                    channel[client_socket] = tunnel_socket
-                    channel[tunnel_socket] = client_socket
-                    break
-
-                logging.debug('Reading data...')
-                read_data = None
-                sent_data = None
+    logging.info('Serving tunnel...')
+    while True:
+        time.sleep(server_delay)
+        logging.info('Waiting for connections...')
+        inputs_ready, _, _ = select.select(inputs, [], [])
+        for input in inputs_ready:
+            if input in listeners:
+                local_port = listener_local_ports[input]
+                remote_port = listener_remote_ports[input]
                 try:
-                    read_data = input.recv(chunk_size)
+                    logging.info('Initializing client connection %s:%s:%s...',
+                                 local_port, remote_host, remote_port)
+                    client_socket, address = input.accept()
                 except KeyboardInterrupt:
                     raise
                 except Exception:
-                    logging.exception('Cannot read data from socket')
-                if read_data:
-                    logging.debug('Writing data...')
-                    try:
-                        channel[input].send(read_data)
-                        sent_data = read_data
-                    except KeyboardInterrupt:
-                        raise
-                    except Exception:
-                        logging.exception('Cannot write data to socket')
-                if not read_data or not sent_data:
-                    logging.info('Closing client and tunnel connections...')
-                    output = channel[input]
-                    inputs.remove(input)
-                    inputs.remove(output)
-                    channel[output].close()
-                    channel[input].close()
-                    del channel[output]
-                    del channel[input]
+                    logging.exception('Cannot establish client connection %s:%s:%s.',
+                                      local_port, remote_host, remote_port)
                     break
-    except KeyboardInterrupt:
-        logging.info('Interrupted...')
-    except Exception:
-        logging.exception('Errored...')
-        raise
-    finally:
-        logging.info('Closing all sockets...')
-        for input in inputs:
-            input.close()
-        logging.info('Exiting...')
+                try:
+                    tunnel_socket = connect(conn_info, remote_host, remote_port, local_port,
+                                            direct, connection_timeout, retries)
+                except KeyboardInterrupt:
+                    raise
+                except Exception:
+                    close_socket(client_socket)
+                    break
+                add_to_socket_lists(client_socket, inputs)
+                add_to_socket_lists(tunnel_socket, inputs)
+                add_to_channel(client_socket, tunnel_socket, channel)
+                break
+
+            read_data, sent_data = exchange_data(input, channel, chunk_size)
+            if not read_data or not sent_data:
+                logging.info('Closing client and tunnel connections...')
+                output = channel[input] if input in channel else None
+                close_sockets(input, output)
+                remove_from_socket_list(input, inputs)
+                remove_from_socket_list(output, inputs)
+                remove_from_socket_dict(input, channel)
+                remove_from_socket_dict(output, channel)
+                break
 
 
 def serve_local_ports(local_ports):
@@ -1108,15 +1157,6 @@ def serve_local_ports(local_ports):
             server_socket.close()
             logging.debug('Local port %s is occupied or not allowed.', local_port, exc_info=sys.exc_info())
             raise TunnelError('Local port {} is occupied or not allowed.'.format(local_port))
-
-
-def configure_graceful_exiting():
-    def throw_keyboard_interrupt(signum, frame):
-        logging.info('Killed...')
-        raise KeyboardInterrupt()
-
-    import signal
-    signal.signal(signal.SIGTERM, throw_keyboard_interrupt)
 
 
 def generate_remote_openssh_and_putty_keys(run_id, retries, passwordless_config):
@@ -1570,3 +1610,264 @@ def build_scp_progress():
         progress(total - progress._seen_so_far_in_bytes)
 
     return scp_progress
+
+
+@restarting
+@socketclosing
+def create_foreground_receiving_tunnel(inputs, input_ports, tunnel_ports,
+                                       chunk_size=4096, server_delay=0.0001):
+    logging.info('Initializing receiving tunnel %s:%s:%s...',
+                 stringify_ports(input_ports), '127.0.0.1', stringify_ports(tunnel_ports))
+    input_listeners = []
+    tunnel_listeners = []
+    tunnel_client_ports = {tunnel_port: [] for tunnel_port in tunnel_ports}
+    ports_mapping = dict(list(zip(input_ports, tunnel_ports)) + list(zip(tunnel_ports, input_ports)))
+    for listener_socket in serve_local_ports(input_ports):
+        add_to_socket_lists(listener_socket, inputs, input_listeners)
+    for listener_socket in serve_local_ports(tunnel_ports):
+        add_to_socket_lists(listener_socket, inputs, tunnel_listeners)
+    input_listener_ports = dict(zip(input_listeners, input_ports))
+    tunnel_listener_ports = dict(zip(tunnel_listeners, tunnel_ports))
+    channel = {}
+    logging.info('Serving tunnel...')
+    while True:
+        time.sleep(server_delay)
+        logging.info('Waiting for connections...')
+        inputs_ready, _, _ = select.select(inputs, [], [])
+
+        for input in inputs_ready:
+            if input in tunnel_listeners:
+                tunnel_port = tunnel_listener_ports[input]
+                try:
+                    logging.info('Initializing tunnel client connection on %s...', tunnel_port)
+                    client_socket, address = input.accept()
+                except KeyboardInterrupt:
+                    raise
+                except Exception:
+                    logging.exception('Cannot establish tunnel client connection on %s.', tunnel_port)
+                    break
+                add_to_socket_lists(client_socket, inputs)
+                add_socket_to_multidict(client_socket, tunnel_port, tunnel_client_ports)
+                break
+
+            if input in input_listeners:
+                input_port = input_listener_ports[input]
+                tunnel_port = ports_mapping[input_port]
+                try:
+                    logging.info('Initializing input client connection on %s...', input_port)
+                    client_socket, address = input.accept()
+                except KeyboardInterrupt:
+                    raise
+                except Exception:
+                    logging.exception('Cannot establish input client connection on %s.', input_port)
+                    break
+                if not tunnel_client_ports[tunnel_port]:
+                    logging.error('There are no more tunnel client connections available on %s '
+                                  'for input client connection on %s.', tunnel_port, input_port)
+                    close_socket(client_socket)
+                    break
+                remote_client_socket = tunnel_client_ports[tunnel_port].pop()
+                add_to_socket_lists(client_socket, inputs)
+                add_to_channel(client_socket, remote_client_socket, channel)
+                break
+
+            read_data, sent_data = exchange_data(input, channel, chunk_size)
+            if not read_data or not sent_data:
+                logging.info('Closing client and tunnel connections...')
+                output = channel[input] if input in channel else None
+                close_sockets(input, output)
+                remove_from_socket_lists(input, inputs)
+                remove_from_socket_lists(output, inputs)
+                remove_from_socket_multidict(input, tunnel_client_ports)
+                remove_from_socket_multidict(output, tunnel_client_ports)
+                remove_from_socket_dict(input, channel)
+                remove_from_socket_dict(output, channel)
+                break
+
+
+@restarting
+@socketclosing
+def create_foreground_transmitting_tunnel(inputs, tunnel_host, tunnel_ports, output_host, output_ports,
+                                          refresh_interval, pool_size,
+                                          connection_timeout, conn_info, direct, log_level, retries,
+                                          chunk_size=4096, server_delay=0.0001):
+    logging.info('Initializing transmitting tunnel %s:%s:%s:%s...',
+                 stringify_ports(tunnel_ports), tunnel_host,
+                 output_host, stringify_ports(output_ports))
+    tunnel_clients = []
+    tunnel_client_ports = {}
+    ports_mapping = dict(list(zip(tunnel_ports, output_ports)) + list(zip(output_ports, tunnel_ports)))
+    for tunnel_port in tunnel_ports:
+        output_port = ports_mapping[tunnel_port]
+        for i in range(0, pool_size):
+            client_socket = connect(conn_info, tunnel_host, tunnel_port, output_port,
+                                    direct, connection_timeout, retries)
+            add_to_socket_lists(client_socket, inputs, tunnel_clients)
+            add_to_socket_dict(client_socket, tunnel_port, tunnel_client_ports)
+    latest_refresh_time = time.time()
+    channel = {}
+    logging.info('Serving tunnel...')
+    while True:
+        time.sleep(server_delay)
+        logging.info('Waiting for connections...')
+        inputs_ready, _, _ = select.select(inputs, [], [], refresh_interval)
+
+        if not inputs_ready:
+            current_refresh_time = time.time()
+            if current_refresh_time - latest_refresh_time > refresh_interval:
+                latest_refresh_time = current_refresh_time
+                logging.info('Refreshing socket connections...')
+                for remote_client in list(tunnel_clients):
+                    tunnel_port = tunnel_client_ports[remote_client]
+                    output_port = ports_mapping[tunnel_port]
+                    close_socket(remote_client)
+                    remove_from_socket_lists(remote_client, inputs, tunnel_clients)
+                    remove_from_socket_dict(remote_client, tunnel_client_ports)
+                    client_socket = connect(conn_info, tunnel_host, tunnel_port, output_port,
+                                            direct, connection_timeout, retries)
+                    add_to_socket_lists(client_socket, inputs, tunnel_clients)
+                    add_to_socket_dict(client_socket, tunnel_port, tunnel_client_ports)
+
+        for input in inputs_ready:
+            if input in tunnel_clients and input not in channel:
+                tunnel_port = tunnel_client_ports[input]
+                output_port = ports_mapping[tunnel_port]
+                logging.info('Connecting to output host at %s:%s...', output_host, output_port)
+                try:
+                    client_socket = direct_connect((output_host, output_port),
+                                                   timeout=connection_timeout,
+                                                   retries=retries)
+                except KeyboardInterrupt:
+                    raise
+                except Exception:
+                    logging.exception('Cannot establish output connection %s:%s:%s.',
+                                      tunnel_port, output_host, output_port)
+                    close_socket(input)
+                    remove_from_socket_lists(input, inputs, tunnel_clients)
+                    logging.info('Reconnecting to remote host at %s:%s...', tunnel_host, stringify_ports(tunnel_ports))
+                    client_socket = connect(conn_info, tunnel_host, tunnel_port, output_port,
+                                            direct, connection_timeout, retries)
+                    add_to_socket_lists(client_socket, inputs, tunnel_clients)
+                    add_to_socket_dict(client_socket, tunnel_port, tunnel_client_ports)
+                    continue
+                add_to_socket_lists(client_socket, inputs)
+                add_to_channel(input, client_socket, channel)
+
+            read_data, sent_data = exchange_data(input, channel, chunk_size)
+            if not read_data or not sent_data:
+                logging.info('Closing client and tunnel connections...')
+                output = channel[input] if input in channel else None
+                tunnel_port = tunnel_client_ports[input] if input in tunnel_client_ports else \
+                    tunnel_client_ports[output] if output in tunnel_client_ports else \
+                    None
+                output_port = ports_mapping[tunnel_port] if tunnel_port else None
+                close_sockets(input, output)
+                remove_from_socket_lists(input, inputs, tunnel_clients)
+                remove_from_socket_lists(output, inputs, tunnel_clients)
+                remove_from_socket_dicts(input, channel, tunnel_client_ports)
+                remove_from_socket_dicts(output, channel, tunnel_client_ports)
+                if output_port and tunnel_port:
+                    logging.info('Reconnecting to remote host at ' + tunnel_host + ':' + str(tunnel_ports) + '...')
+                    client_socket = connect(conn_info, tunnel_host, tunnel_port, output_port,
+                                            direct, connection_timeout, retries)
+                    add_to_socket_lists(client_socket, inputs, tunnel_clients)
+                    add_to_socket_dict(client_socket, tunnel_port, tunnel_client_ports)
+                break
+
+
+def connect(conn_info, remote_host, remote_port, local_port, direct, connection_timeout, retries):
+    target_endpoint = (conn_info.ssh_endpoint[0], remote_port)
+    proxy_endpoint = (os.getenv('CP_CLI_TUNNEL_PROXY_HOST', conn_info.ssh_proxy[0]),
+                      int(os.getenv('CP_CLI_TUNNEL_PROXY_PORT', conn_info.ssh_proxy[1])))
+    try:
+        logging.info('Initializing tunnel connection %s:%s:%s...',
+                     local_port, remote_host, remote_port)
+        if direct:
+            return direct_connect(target_endpoint,
+                                  timeout=connection_timeout,
+                                  retries=retries)
+        else:
+            return http_proxy_tunnel_connect(proxy_endpoint, target_endpoint,
+                                             timeout=connection_timeout,
+                                             retries=retries)
+    except KeyboardInterrupt:
+        raise
+    except Exception:
+        logging.exception('Cannot establish tunnel connection %s:%s:%s.',
+                          local_port, remote_host, remote_port)
+        raise
+
+
+def exchange_data(input, channel, chunk_size):
+    logging.debug('Reading data...')
+    read_data = None
+    sent_data = None
+    try:
+        read_data = input.recv(chunk_size)
+    except KeyboardInterrupt:
+        raise
+    except Exception:
+        logging.exception('Cannot read data from socket')
+    if read_data:
+        logging.debug('Writing data...')
+        try:
+            channel[input].send(read_data)
+            sent_data = read_data
+        except KeyboardInterrupt:
+            raise
+        except Exception:
+            logging.exception('Cannot write data to socket')
+    return read_data, sent_data
+
+
+def add_to_socket_lists(client_socket, *client_socket_lists):
+    for client_socket_list in client_socket_lists:
+        client_socket_list.append(client_socket)
+
+
+def remove_from_socket_lists(client_socket, *client_socket_lists):
+    for client_socket_list in client_socket_lists:
+        remove_from_socket_list(client_socket, client_socket_list)
+
+
+def remove_from_socket_list(client_socket, client_socket_list):
+    if client_socket and client_socket in client_socket_list:
+        client_socket_list.remove(client_socket)
+
+
+def add_to_socket_dict(client_socket, value, client_socket_dict):
+    client_socket_dict[client_socket] = value
+
+
+def remove_from_socket_dicts(client_socket, *client_socket_dicts):
+    for client_socket_dict in client_socket_dicts:
+        remove_from_socket_dict(client_socket, client_socket_dict)
+
+
+def remove_from_socket_dict(client_socket, client_socket_dict):
+    if client_socket and client_socket in client_socket_dict:
+        del client_socket_dict[client_socket]
+
+
+def add_socket_to_multidict(client_socket, value, client_socket_multidict):
+    client_socket_multidict[value].append(client_socket)
+
+
+def remove_from_socket_multidict(client_socket, client_socket_multidict):
+    for _, client_sockets in client_socket_multidict.items():
+        remove_from_socket_list(client_socket, client_sockets)
+
+
+def add_to_channel(left_client_socket, right_client_socket, channel):
+    channel[left_client_socket] = right_client_socket
+    channel[right_client_socket] = left_client_socket
+
+
+def close_sockets(*client_sockets):
+    for client_socket in client_sockets:
+        close_socket(client_socket)
+
+
+def close_socket(client_socket):
+    if client_socket:
+        client_socket.close()

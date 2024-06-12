@@ -44,7 +44,8 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
+from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels, \
+    create_transmitting_tunnel, create_receiving_tunnel
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
@@ -1948,6 +1949,159 @@ def view_tunnels(log_level):
 
     """
     list_tunnels(log_level, parse_tunnel_args)
+
+
+@tunnel.command(name='transmit')
+@click.option('-th', '--tunnel-host', required=False, type=str,
+              help='Host name of a tunnel host which has active pipe tunnel receiver process.')
+@click.option('-tp', '--tunnel-port', required=False, type=str,
+              help='A single tunnel port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then tunnel and output ports will be the same.')
+@click.option('-oh', '--output-host', required=False, type=str,
+              help='Host name of an output host which will receive tunnel connections.')
+@click.option('-op', '--output-port', required=False, type=str,
+              help='A single output port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for.'
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then tunnel and output ports will be the same.')
+@click.option('--refresh-interval', required=False, type=int, default=60,
+              help='Tunnel connections refresh interval in seconds.')
+@click.option('--pool-size', required=False, type=int, default=5,
+              help='Tunnel connections pool size.')
+@click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
+              help='Socket connection timeout in seconds.')
+@click.option('-d', '--direct', required=False, is_flag=True, default=False,
+              help='Configures direct tunnel connection without proxy.')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode.')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+              help='Maximum timeout for background tunnel process health check in seconds.')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Establishes tunnel in foreground mode.')
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
+@common_options
+def transmit_tunnel(tunnel_host, tunnel_port,
+                    output_host, output_port,
+                    refresh_interval, pool_size,
+                    connection_timeout,
+                    direct, log_file, log_level,
+                    timeout, foreground,
+                    retries, region):
+    """
+    Establishes transmitting reverse tunnel connection from the specified tunnel host to the specified output host.
+
+    It allows to transfer any tcp traffic from the tunnel connections to the output connections
+    and works both on Linux and Windows.
+
+    Tunnel connection transmitting requires a tunnel connection receiver to be accessible
+    by the specified tunnel host and port.
+
+    Examples:
+
+    I.   Example of a single transmitting reverse tcp port tunnel connection establishing.
+
+    Establish tunnel connection receiver in the target run (12345).
+
+        pipe ssh pipeline-12345 pipe tunnel receive -ip 4568 -tp 4567
+
+    Establish tunnel connection from run (12345) instance port (4567) to a host (cloud-pipeline.com) local port (4568).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567 -oh cloud-pipeline.com -op 4568
+
+    Establish tunnel connection from run (12345) instance port (4567) to a local port (4568).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567 -oh 127.0.0.1 -op 4568
+
+    II.  Example of multiple transmitting reverse tcp ports tunnel connection establishing.
+
+    Establish tunnel connection receiver in the target run (12345).
+
+        pipe ssh pipeline-12345 pipe tunnel receive -ip 4570-4572 -tp 4567-4569
+
+    Establish tunnel connections from run (12345) instance ports (4567, 4568 and 4569)
+    to some local ports (4570, 4571 and 4572).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567-4569 -oh 127.0.0.1 -op 4570-4572
+
+    III. Example of transmitting reverse tcp port tunnel connection establishing to a specific host.
+
+    Establish tunnel connection receiver in the target host (10.244.123.123).
+
+        ssh 10.244.123.123 pipe tunnel receive -ip 4568 -tp 4567
+
+    Establish tunnel connection from host (10.244.123.123) port (4567) to a local port (4568).
+
+        pipe tunnel transmit -th 10.244.123.123 -tp 4567 -oh 127.0.0.1 -op 4568
+
+    Advanced tunnel configuration environment variables:
+
+    \b
+        CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
+        CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
+    """
+    create_transmitting_tunnel(tunnel_host, tunnel_port, output_host, output_port,
+                               refresh_interval, pool_size,
+                               connection_timeout,
+                               direct, log_file, log_level,
+                               timeout, foreground,
+                               retries, region)
+
+
+@tunnel.command(name='receive')
+@click.option('-ip', '--input-port', required=False, type=str,
+              help='A single input port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then input and tunnel ports will be the same.')
+@click.option('-tp', '--tunnel-port', required=False, type=str,
+              help='A single tunnel port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then input and tunnel ports will be the same.')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode.')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+              help='Maximum timeout for background tunnel process health check in seconds.')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Establishes tunnel in foreground mode.')
+@common_options
+def receive_tunnel(input_port, tunnel_port,
+                   log_file, log_level,
+                   timeout, foreground):
+    """
+    Establishes receiving reverse tunnel connection from the specified local input port
+    to the specified local tunnel port.
+
+    It allows to transfer any tcp traffic from the input connections to the tunnel connections
+    and works both on Linux and Windows.
+
+    Tunnel connection receiving requires a tunnel connection transmitter to be connected to the specified tunnel port.
+
+    Examples:
+
+    I.   Example of a single receiving reverse tcp port tunnel connection establishing.
+
+    Establish tunnel connection from input port (4568) to a tunnel port (4567).
+
+        pipe tunnel receive -ip 4568 -tp 4567
+
+    II.  Example of multiple transmitting reverse tcp ports tunnel connection establishing.
+
+    Establish tunnel connections from input ports (4567, 4568 and 4569) to tunnel ports (4570, 4571 and 4572).
+
+        pipe tunnel receive -ip 4567-4569 -tp 4570-4572
+
+    Advanced tunnel configuration environment variables:
+
+    \b
+        CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
+    """
+    create_receiving_tunnel(input_port, tunnel_port,
+                            log_file, log_level,
+                            timeout, foreground)
 
 
 @cli.command(name='update')
