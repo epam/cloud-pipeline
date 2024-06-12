@@ -114,11 +114,16 @@ function findText (html, text, options = {}) {
   };
 }
 
+function downloadCurrentLog (logs = '', fileName = 'logs') {
+  FileSaver.saveAs(new Blob([logs]), `${fileName}.txt`);
+}
+
 async function downloadTaskLogs (
   runId,
   task,
   parameters = undefined,
-  instance = undefined
+  instance = undefined,
+  fileNameProp
 ) {
   const request = new PipelineRunLog(runId, task, {parameters, instance});
   await request.fetch();
@@ -129,7 +134,7 @@ async function downloadTaskLogs (
     .filter((log) => log.logText && log.logText.length)
     .map((log) => log.logText)
     .join('\n');
-  const fileName = [
+  const fileName = fileNameProp || [
     runId,
     task,
     'logs.txt'
@@ -459,13 +464,20 @@ class RunTaskLogs extends React.Component {
       runId,
       taskName,
       taskParameters,
-      taskInstance
+      taskInstance,
+      downloadCurrentLog: downloadCurrentLogProp,
+      logs,
+      fileName
     } = this.props;
+    if (downloadCurrentLogProp) {
+      return downloadCurrentLog(logs, fileName);
+    }
     (downloadTaskLogs)(
       runId,
       taskName,
       taskParameters,
-      taskInstance
+      taskInstance,
+      fileName
     );
   };
 
@@ -631,7 +643,8 @@ class RunTaskLogs extends React.Component {
       showDate,
       showLineNumber,
       autoUpdate,
-      runId
+      runId,
+      downloadCurrentLog
     } = this.props;
     const {
       followLog,
@@ -676,7 +689,7 @@ class RunTaskLogs extends React.Component {
                 >
                   Expand more
                 </a>
-                {runId && (
+                {(runId || downloadCurrentLog) && (
                   <p>
                     <span
                       style={{
@@ -877,7 +890,8 @@ RunTaskLogs.propTypes = {
   maxLinesToDisplay: PropTypes.number,
   showLineNumber: PropTypes.bool,
   showDate: PropTypes.bool,
-  searchAvailable: PropTypes.bool
+  searchAvailable: PropTypes.bool,
+  downloadCurrentLog: PropTypes.bool
 };
 
 RunTaskLogs.defaultProps = {
