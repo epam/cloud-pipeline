@@ -251,7 +251,7 @@ public class SearchRequestBuilder {
     private List<SearchRequestSort> resolveSorts(final List<SearchRequestSort> requestedSorts) {
         final List<SearchRequestSort> sorts = new ArrayList<>(ListUtils.emptyIfNull(requestedSorts));
         sorts.add(new SearchRequestSort(ES_DOC_SCORE_FIELD, SearchRequestSortOrder.DESC));
-        sorts.add(new SearchRequestSort(ES_DOC_ID_FIELD, SearchRequestSortOrder.DESC));
+        sorts.add(new SearchRequestSort(NAME_FIELD, SearchRequestSortOrder.DESC));
         return sorts;
     }
 
@@ -334,7 +334,7 @@ public class SearchRequestBuilder {
 
     private Map<String, Object> getDefaultSearchAfterParameters(final ScrollingParameters scrollingParameters) {
         final Map<String, Object> parameters = new HashMap<>();
-        parameters.put(ES_DOC_ID_FIELD, scrollingParameters.getDocId());
+        parameters.put(NAME_FIELD, scrollingParameters.getDocId());
         parameters.put(ES_DOC_SCORE_FIELD, scrollingParameters.getDocScore());
         return parameters;
     }
@@ -371,7 +371,8 @@ public class SearchRequestBuilder {
 
     private boolean isDefaultField(final String field) {
         return StringUtils.equalsIgnoreCase(field, ES_DOC_ID_FIELD)
-                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD);
+                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD)
+                || StringUtils.equalsIgnoreCase(field, NAME_FIELD);
     }
 
     private boolean isOwnerField(final String field) {
