@@ -114,11 +114,16 @@ function findText (html, text, options = {}) {
   };
 }
 
+function downloadCurrentLog (logs = '', fileName = 'logs') {
+  FileSaver.saveAs(new Blob([logs]), `${fileName}.txt`);
+}
+
 async function downloadTaskLogs (
   runId,
   task,
   parameters = undefined,
-  instance = undefined
+  instance = undefined,
+  fileNameProp
 ) {
   const request = new PipelineRunLog(runId, task, {parameters, instance});
   await request.fetch();
@@ -129,7 +134,7 @@ async function downloadTaskLogs (
     .filter((log) => log.logText && log.logText.length)
     .map((log) => log.logText)
     .join('\n');
-  const fileName = [
+  const fileName = fileNameProp || [
     runId,
     task,
     'logs.txt'
@@ -174,12 +179,16 @@ class RunTaskLogs extends React.Component {
       this.props.autoUpdate !== prevProps.autoUpdate ||
       this.props.taskName !== prevProps.taskName ||
       this.props.taskParameters !== prevProps.taskParameters ||
-      this.props.taskInstance !== prevProps.taskInstance
+      this.props.taskInstance !== prevProps.taskInstance ||
+      this.props.logs !== prevProps.logs
     ) {
       this.loadData();
     }
     if (this.props.searchAvailable !== prevProps.searchAvailable) {
       this.registerSearchHotKeys();
+    }
+    if (this.props.scrollToLineToken !== prevProps.scrollToLineToken && this.props.scrollToLine) {
+      this.scrollToLine(this.props.scrollToLine);
     }
   }
 
@@ -252,9 +261,20 @@ class RunTaskLogs extends React.Component {
       taskName,
       taskParameters,
       taskInstance,
-      autoUpdate
+      autoUpdate,
+      logs: logsProps
     } = this.props;
-    if (runId) {
+    if (logsProps && typeof logsProps === 'string' && !runId) {
+      this.setState({logs: logsProps.split('\n').map(text => ({
+        date: undefined,
+        log: text,
+        logHTML: ansiUp.ansi_to_html(text),
+        isError: isError(text),
+        isWarning: isWarning(text)
+      }))}, () => {
+        this.scrollDown(false);
+      });
+    } else if (runId) {
       this.setState({
         logs: [],
         maxLinesToDisplay: undefined,
@@ -425,6 +445,11 @@ class RunTaskLogs extends React.Component {
   };
 
   onExpandClicked = () => {
+    const {onExpandClicked} = this.props;
+    if (onExpandClicked) {
+      onExpandClicked();
+      return;
+    }
     const {
       maxLinesToDisplay: maxLinesToDisplayProps = MAX_LINES_TO_DISPLAY
     } = this.props;
@@ -447,13 +472,20 @@ class RunTaskLogs extends React.Component {
       runId,
       taskName,
       taskParameters,
-      taskInstance
+      taskInstance,
+      downloadCurrentLog: downloadCurrentLogProp,
+      logs,
+      fileName
     } = this.props;
+    if (downloadCurrentLogProp) {
+      return downloadCurrentLog(logs, fileName);
+    }
     (downloadTaskLogs)(
       runId,
       taskName,
       taskParameters,
-      taskInstance
+      taskInstance,
+      fileName
     );
   };
 
@@ -614,10 +646,14 @@ class RunTaskLogs extends React.Component {
   render () {
     const {
       className,
+      lineClassName,
       style = {},
       showDate,
       showLineNumber,
-      autoUpdate
+      autoUpdate,
+      runId,
+      downloadCurrentLog,
+      onDownloadCompleteLogClick
     } = this.props;
     const {
       followLog,
@@ -662,19 +698,44 @@ class RunTaskLogs extends React.Component {
                 >
                   Expand more
                 </a>
-                <span
-                  style={{
-                    marginLeft: 5,
-                    marginRight: 5
-                  }}
-                >
-                  or
-                </span>
-                <a
-                  onClick={this.onDownloadClicked}
-                >
-                  download complete log
-                </a>
+                {(runId || onDownloadCompleteLogClick) && (
+                  <p>
+                    <span
+                      style={{
+                        marginLeft: 5,
+                        marginRight: 5
+                      }}
+                    >
+                      or
+                    </span>
+                    <a
+                      onClick={() => {
+                        onDownloadCompleteLogClick
+                          ? onDownloadCompleteLogClick()
+                          : this.onDownloadClicked();
+                      }}
+                    >
+                      download complete log
+                    </a>
+                  </p>
+                )}
+                {downloadCurrentLog && (
+                  <p>
+                    <span
+                      style={{
+                        marginLeft: 5,
+                        marginRight: 5
+                      }}
+                    >
+                      or
+                    </span>
+                    <a
+                      onClick={this.onDownloadClicked}
+                    >
+                      download current log
+                    </a>
+                  </p>
+                )}
               </div>
             )
           }
@@ -707,7 +768,7 @@ class RunTaskLogs extends React.Component {
           {
             logs.map((log) => (
               <div
-                className={styles.consoleLine}
+                className={classNames(lineClassName, styles.consoleLine)}
                 key={`log-line-${log.index}`}
                 data-line={log.index}
               >
@@ -849,6 +910,7 @@ class RunTaskLogs extends React.Component {
 
 RunTaskLogs.propTypes = {
   className: PropTypes.string,
+  lineClassName: PropTypes.string,
   style: PropTypes.object,
   runId: PropTypes.number,
   taskName: PropTypes.string,
@@ -858,7 +920,13 @@ RunTaskLogs.propTypes = {
   maxLinesToDisplay: PropTypes.number,
   showLineNumber: PropTypes.bool,
   showDate: PropTypes.bool,
-  searchAvailable: PropTypes.bool
+  searchAvailable: PropTypes.bool,
+  downloadCurrentLog: PropTypes.bool,
+  onDownloadCompleteLogClick: PropTypes.func,
+  fileName: PropTypes.string,
+  onExpandClicked: PropTypes.func,
+  scrollToLine: PropTypes.number,
+  scrollToLineToken: PropTypes.number
 };
 
 RunTaskLogs.defaultProps = {
