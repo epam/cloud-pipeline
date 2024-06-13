@@ -659,7 +659,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
 
                 public UserEntry validateUserStatus(final String status) {
-                    get(STATUS).shouldBe(visible).shouldHave(cssClass(format("cp-user-status-%s", status)));
+                    get(STATUS).shouldBe(visible).shouldHave(cssClass(format("cp-status-%s", status)));
                     return this;
                 }
 
