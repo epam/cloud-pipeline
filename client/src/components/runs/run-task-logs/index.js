@@ -187,6 +187,9 @@ class RunTaskLogs extends React.Component {
     if (this.props.searchAvailable !== prevProps.searchAvailable) {
       this.registerSearchHotKeys();
     }
+    if (this.props.scrollToLineToken !== prevProps.scrollToLineToken && this.props.scrollToLine) {
+      this.scrollToLine(this.props.scrollToLine);
+    }
   }
 
   componentWillUnmount () {
@@ -442,6 +445,11 @@ class RunTaskLogs extends React.Component {
   };
 
   onExpandClicked = () => {
+    const {onExpandClicked} = this.props;
+    if (onExpandClicked) {
+      onExpandClicked();
+      return;
+    }
     const {
       maxLinesToDisplay: maxLinesToDisplayProps = MAX_LINES_TO_DISPLAY
     } = this.props;
@@ -644,7 +652,8 @@ class RunTaskLogs extends React.Component {
       showLineNumber,
       autoUpdate,
       runId,
-      downloadCurrentLog
+      downloadCurrentLog,
+      onDownloadCompleteLogClick
     } = this.props;
     const {
       followLog,
@@ -689,7 +698,28 @@ class RunTaskLogs extends React.Component {
                 >
                   Expand more
                 </a>
-                {(runId || downloadCurrentLog) && (
+                {(runId || onDownloadCompleteLogClick) && (
+                  <p>
+                    <span
+                      style={{
+                        marginLeft: 5,
+                        marginRight: 5
+                      }}
+                    >
+                      or
+                    </span>
+                    <a
+                      onClick={() => {
+                        onDownloadCompleteLogClick
+                          ? onDownloadCompleteLogClick()
+                          : this.onDownloadClicked();
+                      }}
+                    >
+                      download complete log
+                    </a>
+                  </p>
+                )}
+                {downloadCurrentLog && (
                   <p>
                     <span
                       style={{
@@ -702,7 +732,7 @@ class RunTaskLogs extends React.Component {
                     <a
                       onClick={this.onDownloadClicked}
                     >
-                      download complete log
+                      download current log
                     </a>
                   </p>
                 )}
@@ -891,7 +921,12 @@ RunTaskLogs.propTypes = {
   showLineNumber: PropTypes.bool,
   showDate: PropTypes.bool,
   searchAvailable: PropTypes.bool,
-  downloadCurrentLog: PropTypes.bool
+  downloadCurrentLog: PropTypes.bool,
+  onDownloadCompleteLogClick: PropTypes.func,
+  fileName: PropTypes.string,
+  onExpandClicked: PropTypes.func,
+  scrollToLine: PropTypes.number,
+  scrollToLineToken: PropTypes.number
 };
 
 RunTaskLogs.defaultProps = {

@@ -26,9 +26,17 @@ import {
 import ContainerLogs from '../../../../models/cluster/ContainerLogs';
 import RunTaskLogs from '../../../runs/run-task-logs';
 import styles from './container-logs-modal.css';
+import FileSaver from 'file-saver';
+
+const LIMIT_PER_PAGE = 500;
 
 @observer
 export default class ContainerLogsModal extends React.Component {
+  state = {
+    page: 1,
+    scrollToLineToken: 1
+  };
+
   @observable _logs;
   @observable _pending = false;
 
@@ -55,11 +63,12 @@ export default class ContainerLogsModal extends React.Component {
 
   fetchLogs = async () => {
     const {container} = this.props;
+    const {page} = this.state;
     if (!container) {
       return;
     }
     this._pending = true;
-    const request = new ContainerLogs(container.podName, container.name);
+    const request = new ContainerLogs(container.podName, container.name, page * LIMIT_PER_PAGE);
     await request.fetch();
     if (request.error) {
       this._pending = false;
@@ -67,15 +76,52 @@ export default class ContainerLogsModal extends React.Component {
     }
     this._logs = request.value;
     this._pending = false;
+    this.refreshScrollPosition();
   };
 
   onCancel = () => {
     const {onClose} = this.props;
+    this.setState({page: 1, scrollToLineToken: LIMIT_PER_PAGE});
     onClose && onClose();
+  };
+
+  refreshLogs = () => {
+    this.setState({page: 1}, this.fetchLogs);
+  };
+
+  refreshScrollPosition = () => {
+    this.setState({
+      scrollToLineToken: this.state.scrollToLineToken + 1
+    });
+  };
+
+  onExpandClicked = () => {
+    const {page} = this.state;
+    this.setState({
+      page: page + 1
+    }, this.fetchLogs);
+  };
+
+  downloadCompleteLog = async () => {
+    const {container} = this.props;
+    this._pending = true;
+    const request = new ContainerLogs(container.podName, container.name);
+    await request.fetch();
+    if (request.error) {
+      this._pending = false;
+      return message.error(request.error, 5);
+    }
+    this._pending = false;
+    try {
+      FileSaver.saveAs(new Blob([request.value]), `${container.name}-full-logs.txt`);
+    } catch (e) {
+      message.error(e.message, 5);
+    }
   };
 
   render () {
     const {container} = this.props;
+    const {scrollToLineToken, page} = this.state;
     return (
       <Modal
         visible={!!container}
@@ -97,7 +143,7 @@ export default class ContainerLogsModal extends React.Component {
             paddingBottom: 5,
             justifyContent: 'flex-end'
           }}>
-            <a onClick={this.fetchLogs}>
+            <a onClick={this.refreshLogs}>
               Refresh logs
             </a>
           </div>
@@ -109,7 +155,12 @@ export default class ContainerLogsModal extends React.Component {
             showLineNumber
             searchAvailable
             downloadCurrentLog
+            onDownloadCompleteLog={this.downloadCompleteLog}
             fileName={`${(container || {}).name}-logs`}
+            onExpandClicked={this.onExpandClicked}
+            maxLinesToDisplay={page * LIMIT_PER_PAGE}
+            scrollToLine={LIMIT_PER_PAGE + 2}
+            scrollToLineToken={scrollToLineToken}
           />
         </Spin>
       </Modal>
