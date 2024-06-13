@@ -27,6 +27,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
@@ -42,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -370,5 +372,10 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public List<RunInfo> loadRunsByParentId(final Long runId) {
         return runManager.loadRunsByParentId(runId);
+    }
+
+    @AclFilter
+    public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
+        return runManager.loadActiveRunsCharts(filter);
     }
 }
