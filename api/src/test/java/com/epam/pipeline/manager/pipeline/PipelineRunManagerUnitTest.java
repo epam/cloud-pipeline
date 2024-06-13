@@ -66,7 +66,14 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.REGISTRY1;
