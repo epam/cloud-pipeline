@@ -1160,9 +1160,9 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun stopped = toolRun(TaskStatus.STOPPED, DOCKER_IMAGE, NODE_TYPE, USER, tags);
         pipelineRunDao.createPipelineRun(stopped);
 
-        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(RunChartFilterVO.builder()
-                .statuses(Collections.singletonList(TaskStatus.RUNNING))
-                .build());
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
         assertEquals(charts.size(), 4);
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
@@ -1189,13 +1189,13 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2));
         pipelineRunDao.createPipelineRun(run6);
 
-        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(RunChartFilterVO.builder()
-                .statuses(Collections.singletonList(TaskStatus.RUNNING))
-                .dockerImages(Collections.singletonList(DOCKER_IMAGE))
-                .instanceTypes(Collections.singletonList(NODE_TYPE))
-                .owners(Collections.singletonList(USER))
-                .tags(Collections.singletonList(TAG_KEY_1))
-                .build());
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
         assertEquals(4, charts.size());
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
@@ -1224,14 +1224,14 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun run7 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags);
         pipelineRunDao.createPipelineRun(run7);
 
-        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(RunChartFilterVO.builder()
-                .statuses(Collections.singletonList(TaskStatus.RUNNING))
-                .dockerImages(Collections.singletonList(DOCKER_IMAGE))
-                .instanceTypes(Collections.singletonList(NODE_TYPE))
-                .owners(Collections.singletonList(USER))
-                .tags(Collections.singletonList(TAG_KEY_1))
-                .ownershipFilter(USER)
-                .build());
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        filter.setOwnershipFilter(USER);
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
         assertEquals(4, charts.size());
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
@@ -1269,15 +1269,15 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 notAllowedPipelineId);
         pipelineRunDao.createPipelineRun(run7);
 
-        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(RunChartFilterVO.builder()
-                .statuses(Collections.singletonList(TaskStatus.RUNNING))
-                .dockerImages(Collections.singletonList(DOCKER_IMAGE))
-                .instanceTypes(Collections.singletonList(NODE_TYPE))
-                .owners(Collections.singletonList(USER))
-                .tags(Collections.singletonList(TAG_KEY_1))
-                .ownershipFilter(TEST_USER)
-                .allowedPipelines(Collections.singletonList(allowedPipelineId))
-                .build());
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        filter.setOwnershipFilter(TEST_USER);
+        filter.setAllowedPipelines(Collections.singletonList(allowedPipelineId));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
         assertEquals(4, charts.size());
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))

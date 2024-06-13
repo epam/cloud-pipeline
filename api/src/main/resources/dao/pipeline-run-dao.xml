@@ -2179,14 +2179,14 @@
                            'docker_image' as type,
                            docker_image as value,
                            COUNT(*) as count
-                    FROM filtered
+                    FROM filtered WHERE docker_image IS NOT NULL
                     GROUP BY status, docker_image
                     UNION ALL
                     SELECT status,
                            'node_type' as type,
                             node_type as value,
                             COUNT(*) as count
-                    FROM filtered
+                    FROM filtered WHERE node_type IS NOT NULL
                     GROUP BY status, node_type
                     UNION ALL
                     SELECT status,

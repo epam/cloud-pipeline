@@ -474,9 +474,9 @@ public class PipelineRunManagerUnitTest {
         final RunChartInfoEntity runningTags2 = runningChart(RunChartInfoEntity.ColumnName.tags, TEST_NAME_2);
         final RunChartInfoEntity pausingTags = pausingChart(RunChartInfoEntity.ColumnName.tags, TEST_NAME);
 
-        final RunChartFilterVO runChartFilterVO = RunChartFilterVO.builder()
-                .statuses(Arrays.asList(TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED, TaskStatus.RESUMING))
-                .build();
+        final RunChartFilterVO runChartFilterVO = new RunChartFilterVO();
+        runChartFilterVO.setStatuses(Arrays.asList(TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED,
+                        TaskStatus.RESUMING));
         final List<RunChartInfoEntity> entities = Arrays.asList(
                 runningUser1, runningUser2, pausingUser,
                 runningDocker1, runningDocker2, pausingDocker,

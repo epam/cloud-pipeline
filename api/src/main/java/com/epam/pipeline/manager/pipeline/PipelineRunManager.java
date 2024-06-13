@@ -1326,6 +1326,7 @@ public class PipelineRunManager {
         }
         final Map<RunChartInfoEntity.ColumnName, Map<TaskStatus, Map<String, Long>>> charts =
                 pipelineRunDao.loadRunsCharts(filter).stream()
+                        .filter(entity -> Objects.nonNull(entity.getValue()))
                         .collect(Collectors.groupingBy(RunChartInfoEntity::getColumnName,
                                 Collectors.groupingBy(RunChartInfoEntity::getStatus,
                                         Collectors.toMap(RunChartInfoEntity::getValue, RunChartInfoEntity::getCount))));
