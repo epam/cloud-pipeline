@@ -155,7 +155,7 @@ export default class ContainerLogsModal extends React.Component {
             showLineNumber
             searchAvailable
             downloadCurrentLog
-            onDownloadCompleteLog={this.downloadCompleteLog}
+            onDownloadCompleteLogClick={this.downloadCompleteLog}
             fileName={`${(container || {}).name}-logs`}
             onExpandClicked={this.onExpandClicked}
             maxLinesToDisplay={page * LIMIT_PER_PAGE}
