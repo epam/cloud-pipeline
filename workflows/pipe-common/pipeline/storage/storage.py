@@ -78,6 +78,8 @@ class S3Bucket:
             ls_file_command += ' -l'
         listing = self.get_cmd_stdout(ls_file_command, max_attempts)
         result = []
+        if not listing or 'Name' not in listing[0]:
+            raise ValueError('File {} not found while listing storage'.format(target))
         file_path_start = listing[0].index('Name')
         for path in listing[1:]:
             fields = path.strip().split()

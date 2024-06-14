@@ -18,6 +18,7 @@
   display: flex;
   gap: 5px;
   flex-direction: column;
+  height: calc(100% - 50px);
 }
 
 .controls {
@@ -26,10 +27,14 @@
 }
 
 .logs-console {
-  max-height: 60vh;
   overflow: auto;
 }
 
 .logs-console .console-line {
-  white-space: pre;
+  white-space: pre-wrap;
+}
+
+.spin,
+.spin div[class~="ant-spin-container"] {
+  height: 100%;
 }

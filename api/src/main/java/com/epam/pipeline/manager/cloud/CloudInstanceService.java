@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CloudInstanceService<T extends AbstractCloudRegion>
         extends CloudAwareService {
@@ -59,7 +60,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param instance
      * @return
      */
-    RunInstance scaleUpNode(T region, Long runId, RunInstance instance, Map<String, String> runtimeParameters);
+    RunInstance scaleUpNode(T region, Long runId, RunInstance instance, Map<String, String> runtimeParameters,
+                            Map<String, String> tags);
 
     RunInstance scaleUpPoolNode(T region, String nodeId, NodePool node);
 
@@ -140,8 +142,8 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param newId
      * @return {@code true} if operation was successful
      */
-    boolean reassignNode(T region, Long oldId, Long newId);
-    boolean reassignPoolNode(T region, String nodeLabel, Long newId);
+    boolean reassignNode(T region, Long oldId, Long newId, Map<String, String> tags);
+    boolean reassignPoolNode(T region, String nodeLabel, Long newId, Map<String, String> tags);
 
     /**
      * Builds environment variables required for running a container in provided region
@@ -188,8 +190,9 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
      * @param region
      * @param runId
      * @param request
+     * @param tags
      */
-    void attachDisk(T region, Long runId, DiskAttachRequest request);
+    void attachDisk(T region, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
      * Loads all disks attached to cloud instance.
@@ -208,4 +211,6 @@ public interface CloudInstanceService<T extends AbstractCloudRegion>
     InstanceImage getInstanceImageDescription(T region, String imageName);
 
     void adjustOfferRequest(InstanceOfferRequestVO requestVO);
+
+    void deleteInstanceTags(T region, String runId, Set<String> tagNames);
 }

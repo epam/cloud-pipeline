@@ -28,9 +28,10 @@ class SectionsList extends React.Component {
 
   onSelectSection = (section) => {
     const {
-      onSectionChange
+      onSectionChange,
+      disabled
     } = this.props;
-    if (typeof onSectionChange === 'function') {
+    if (typeof onSectionChange === 'function' && !disabled) {
       onSectionChange(section);
     }
   };
@@ -46,7 +47,9 @@ class SectionsList extends React.Component {
       showSearch,
       searchPlaceholder,
       className,
-      beforeListRowRenderer
+      beforeListRowRenderer,
+      searchControlsRenderer,
+      disabled
     } = this.props;
     const {
       sectionSearch
@@ -82,11 +85,15 @@ class SectionsList extends React.Component {
               className={styles.listSearch}
             >
               <Input.Search
-                style={{width: '100%'}}
+                style={{width: 'auto', flexGrow: 1}}
                 value={sectionSearch}
                 onChange={onSearch}
                 placeholder={searchPlaceholder}
               />
+              {searchControlsRenderer && typeof searchControlsRenderer === 'function'
+                ? searchControlsRenderer()
+                : null
+              }
             </div>
           )
         }
@@ -100,6 +107,7 @@ class SectionsList extends React.Component {
           columns={columns}
           rowClassName={
             (item) => classNames(
+              {[styles.disabledRow]: disabled},
               `section-${(item.key.toString() || '').replace(/\s/g, '-').toLowerCase()}`,
               'cp-settings-sidebar-element',
               {
@@ -118,6 +126,7 @@ class SectionsList extends React.Component {
 SectionsList.propTypes = {
   className: PropTypes.string,
   beforeListRowRenderer: PropTypes.func,
+  searchControlsRenderer: PropTypes.func,
   activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSectionChange: PropTypes.func,
   showSearch: PropTypes.bool,
@@ -126,7 +135,8 @@ SectionsList.propTypes = {
     key: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
     name: PropTypes.string
-  }))
+  })),
+  disabled: PropTypes.bool
 };
 
 export default observer(SectionsList);

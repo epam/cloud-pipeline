@@ -717,11 +717,14 @@ class TransferBetweenGsBucketsManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_path):
         return destination_wrapper.get_list_manager().get_file_size(destination_path)
 
+    def get_destination_object_head(self, destination_wrapper, destination_path):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_path)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
         source_client = GsBucketOperations.get_client(source_wrapper.bucket, read=True, write=clean)
@@ -782,11 +785,15 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -857,11 +864,14 @@ class GsDownloadStreamManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return 0
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return 0, None
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -904,6 +914,9 @@ class GsUploadManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
             return os.path.join(source_wrapper.path, source_path)
@@ -911,7 +924,7 @@ class GsUploadManager(GsManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -989,11 +1002,14 @@ class GSUploadStreamManager(GsManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 

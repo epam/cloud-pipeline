@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {Modal} from 'antd';
 
 import roleModel from '../../../utils/roleModel';
@@ -43,6 +43,16 @@ export default class SystemManagement extends React.Component {
 
   componentWillUnmount () {
     this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
+  }
+
+  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo &&
+      authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
   }
 
   @computed
@@ -114,22 +124,24 @@ export default class SystemManagement extends React.Component {
     return (
       <SubSettings
         sections={[
-          {
-            key: 'logs',
-            title: 'LOGS',
-            default: true,
-            render: () => (<SystemLogs />)
-          },
-          {
-            key: 'nat',
-            title: 'NAT GATEWAY',
-            render: () => (<NATGateway handleModified={this.handleModified} />)
-          },
-          {
-            key: 'jobs',
-            title: 'SYSTEM JOBS',
-            render: () => (<SystemJobs router={this.props.router} />)
-          },
+          ...(this.isAdmin ? [
+            {
+              key: 'logs',
+              title: 'LOGS',
+              default: true,
+              render: () => (<SystemLogs />)
+            },
+            {
+              key: 'nat',
+              title: 'NAT GATEWAY',
+              render: () => (<NATGateway handleModified={this.handleModified} />)
+            },
+            {
+              key: 'jobs',
+              title: 'SYSTEM JOBS',
+              render: () => (<SystemJobs router={this.props.router} />)
+            }
+          ] : []),
           this.dtsAllowed ? (
             {
               key: 'dts',

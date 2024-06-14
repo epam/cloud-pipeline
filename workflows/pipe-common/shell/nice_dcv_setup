@@ -21,17 +21,31 @@ function install_prerequisites {
   pipe_log_info "Installing DCV prerequisites" "$DCV_INSTALL_TASK"
   _pkg_result=0
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
-                       xorg-x11-utils xorg-x11-xauth xorg-x11-xinit xvattr \
+    if [ "$CP_OS" == "centos" ]; then
+      _rpm_dcv_extra_pkgs="xvattr gnome-system-log desktop-backgrounds-gnome"
+    fi
+
+    _rpm_dcv_pkgs="glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
+                       xorg-x11-utils xorg-x11-xauth xorg-x11-xinit \
                        xorg*fonts* xterm libXvMC mesa-libxatracker freeglut \
-                       gnome-desktop3 gnome-terminal gnome-system-log \
+                       gnome-desktop3 gnome-terminal \
                        gnome-system-monitor nautilus evince gnome-color-manager \
                        gnome-font-viewer gnome-shell gnome-calculator gedit gdm \
                        metacity gnome-session gnome-classic-session \
                        gnome-session-xsession gnu-free-fonts-common \
                        gnu-free-mono-fonts gnu-free-sans-fonts \
-                       gnu-free-serif-fonts desktop-backgrounds-gnome && \
+                       gnu-free-serif-fonts $_rpm_dcv_extra_pkgs"
+    
+    yum install -y epel-release
+    yum -y install $_rpm_dcv_pkgs && \
     yum -y groupinstall "Xfce"
+    _pkg_result=$?
+    
+    # Fallback: try same with an upstream repo
+    if [ $_pkg_result -ne 0 ]; then
+      yum -y install --disablerepo=cloud-pipeline $_rpm_dcv_pkgs && \
+      yum -y groupinstall --disablerepo=cloud-pipeline "Xfce"
+    fi
     _pkg_result=$?
   else
     apt update -y && \
@@ -59,15 +73,18 @@ function install_dcv {
     if [[ "$CP_VER" == *"7"* ]]; then
         _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
         rpm --import "$_dcv_distro_url/NICE-GPG-KEY"
-        wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
-        tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
-        cd ${_NICE_DCV_DISTRIBUTION} && \
-        yum install -y nice-dcv-server-2021.2.11190-1.el7.x86_64.rpm \
-                        nice-dcv-web-viewer-2021.2.11190-1.el7.x86_64.rpm \
-                        nice-xdcv-2021.2.411-1.el7.x86_64.rpm && \
-        systemctl start dbus
-        _pkg_result=$?
+    else
+        _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11445-el8-x86_64
     fi
+
+    wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
+      tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
+      cd ${_NICE_DCV_DISTRIBUTION} && \
+      yum install -y nice-dcv-server-*.x86_64.rpm \
+                      nice-dcv-web-viewer-*.x86_64.rpm \
+                      nice-xdcv-*.x86_64.rpm && \
+      systemctl start dbus
+    _pkg_result=$?
   else
     if [[ "$CP_VER" == *"18.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
@@ -91,15 +108,16 @@ function install_dcv {
       _pkg_result=$?  
     fi
 
-    if [ $_pkg_result -ne 0 ]; then
-      pipe_log_fail "[ERROR] Cannot install DCV itself" "$DCV_INSTALL_TASK"
-      return $_pkg_result
-    fi
-
     service dbus start
   fi
+
+  if [ $_pkg_result -ne 0 ]; then
+    pipe_log_fail "[ERROR] Cannot install DCV itself" "$DCV_INSTALL_TASK"
+    return $_pkg_result
+  fi
+
   cd ..
-  rm -rf "${_NICE_DCV_DISTRIBUTION}*"
+  rm -rf "${_NICE_DCV_DISTRIBUTION}"*
   pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
 }
 

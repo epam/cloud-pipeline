@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -476,7 +476,9 @@ public class RoleModelTest
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
                 .ensureNotVisible(CREATE_FOLDER, UPLOAD)
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -504,7 +506,9 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 19)

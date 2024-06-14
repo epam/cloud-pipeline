@@ -84,6 +84,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
+import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -489,4 +490,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected CloudFacade cloudFacade;
+
+    @MockBean
+    protected KubernetesMapper kubernetesMapper;
 }

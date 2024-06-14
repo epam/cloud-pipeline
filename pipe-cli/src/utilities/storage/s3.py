@@ -21,6 +21,7 @@ from src.utilities.datastorage_lifecycle_manager import DataStorageLifecycleMana
 from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
+from src.utilities.storage.s3_checksum import ChecksumProcessor
 
 import collections
 import os
@@ -63,9 +64,30 @@ class UploadedObjectsContainer:
 
 
 uploaded_objects_container = UploadedObjectsContainer()
+checksum_processor = ChecksumProcessor()
+
+
+def _upload_part_task_main(self, client, fileobj, bucket, key, upload_id, part_number, extra_args):
+    if checksum_processor.enabled:
+        extra_args['ContentMD5'] = ''
+
+    with fileobj as body:
+        response = client.upload_part(
+            Bucket=bucket, Key=key,
+            UploadId=upload_id, PartNumber=part_number,
+            Body=body, **extra_args)
+
+    result = {'PartNumber': part_number, 'ETag': response['ETag']}
+    if checksum_processor.enabled and not checksum_processor.skip:
+        result.update({checksum_processor.boto_field:
+                       response['ResponseMetadata']['HTTPHeaders'][checksum_processor.checksum_header]})
+    return result
 
 
 def _put_object_task_main(self, client, fileobj, bucket, key, extra_args):
+    if checksum_processor.enabled:
+        extra_args['ContentMD5'] = ''
+
     with fileobj as body:
         output = client.put_object(Bucket=bucket, Key=key, Body=body, **extra_args)
         uploaded_objects_container.add(bucket, key, output.get('VersionId'))
@@ -92,6 +114,7 @@ def _copy_object_task_main(self, client, copy_source, bucket, key, extra_args, c
 # This monkey patching allows to aggregate uploaded object versions
 # and use them later on without any extra requests being performed.
 upload.PutObjectTask._main = _put_object_task_main
+upload.UploadPartTask._main = _upload_part_task_main
 tasks.CompleteMultipartUploadTask._main = _complete_multipart_upload_task_main
 copies.CopyObjectTask._main = _copy_object_task_main
 
@@ -148,6 +171,16 @@ class StorageItemManager(object):
         except ClientError:
             return None
 
+    def get_s3_file_object_head(self, bucket, key):
+        try:
+            client = self._get_client()
+            item = client.head_object(Bucket=bucket, Key=key)
+            if 'DeleteMarker' in item:
+                return None, None
+            return int(item['ContentLength']), item.get('LastModified', None)
+        except ClientError:
+            return None, None
+
     def get_s3_file_version(self, bucket, key):
         try:
             client = self._get_client()
@@ -164,6 +197,10 @@ class StorageItemManager(object):
     @staticmethod
     def get_local_file_size(path):
         return StorageOperations.get_local_file_size(path)
+
+    @staticmethod
+    def get_local_modification_datetime(path):
+        return StorageOperations.get_local_file_modification_datetime(path)
 
     def get_transfer_config(self, io_threads):
         transfer_config = TransferConfig()
@@ -191,8 +228,12 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_local_file_size(destination_key)
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -226,8 +267,11 @@ class DownloadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return 0
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return 0, None
+
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -257,14 +301,17 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
             return os.path.join(source_wrapper.path, source_path)
         else:
             return source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -280,6 +327,9 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         else:
             progress_callback = None
         self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
+        if checksum_algorithm:
+            checksum_processor.init(checksum_algorithm, checksum_skip)
+            checksum_processor.prepare_boto_client(self.s3.meta.client)
         self.bucket.upload_file(to_string(source_key), destination_key,
                                 Callback=progress_callback,
                                 Config=transfer_config,
@@ -303,11 +353,14 @@ class UploadStreamManager(StorageItemManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None,
-                 clean=False, quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -346,11 +399,14 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
     def get_destination_size(self, destination_wrapper, destination_key):
         return self.get_s3_file_size(destination_wrapper.bucket.path, destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return self.get_s3_file_object_head(destination_wrapper.bucket.path, destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         # checked is bucket and file
         source_bucket = source_wrapper.bucket.path
         source_region = source_wrapper.bucket.region
@@ -542,7 +598,8 @@ class RestoreManager(StorageItemManager, AbstractRestoreManager):
         pages = paginator.paginate(**operation_parameters)
         restore_items = []
         for page in pages:
-            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include, prefix,
+            S3BucketOperations.process_listing(page, 'DeleteMarkers', restore_items, delimiter, exclude, include,
+                                               prefix,
                                                versions=True)
             restore_items, flushing_items = S3BucketOperations.split_by_aws_limit(restore_items)
             if flushing_items:
@@ -1011,7 +1068,7 @@ class S3BucketOperations(object):
                     name = cls.get_item_name(file['Key'], prefix=prefix)
                     if name.endswith(delimiter):
                         continue
-                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
+                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'], file['LastModified'])
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):

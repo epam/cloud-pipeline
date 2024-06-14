@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.cluster.autoscale;
 
+import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.cluster.pool.InstanceRequest;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
@@ -34,6 +35,7 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
@@ -99,6 +101,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
     @Component
     static class AutoscaleManagerCore {
+        private static final String NODE_PENDING_TAG = "NODE_PENDING";
+
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
         private final AutoscalerService autoscalerService;
@@ -113,6 +117,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         private final List<RunCleaner> runCleaners;
         private final PoolAutoscaler poolAutoscaler;
         private final RunRegionShiftHandler runRegionShiftHandler;
+        private final MetadataManager metadataManager;
         private final Set<Long> nodeUpTaskInProgress = ConcurrentHashMap.newKeySet();
         private final Map<Long, Integer> nodeUpAttempts = new ConcurrentHashMap<>();
         private final Map<Long, Integer> spotNodeUpAttempts = new ConcurrentHashMap<>();
@@ -133,7 +138,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                              final ScaleDownHandler scaleDownHandler,
                              final List<RunCleaner> runCleaners,
                              final PoolAutoscaler poolAutoscaler,
-                             final RunRegionShiftHandler runRegionShiftHandler) {
+                             final RunRegionShiftHandler runRegionShiftHandler,
+                             final MetadataManager metadataManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.executorService = executorService;
             this.autoscalerService = autoscalerService;
@@ -148,6 +154,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             this.runCleaners = runCleaners;
             this.poolAutoscaler = poolAutoscaler;
             this.runRegionShiftHandler = runRegionShiftHandler;
+            this.metadataManager = metadataManager;
         }
 
         @SchedulerLock(name = "AutoscaleManager_runAutoscaling", lockAtMostForString = "PT10M")
@@ -284,11 +291,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             }
 
             try {
-                InstanceRequest requiredInstance = getNewRunInstance(runId);
+                final PipelineRun run = pipelineRunManager.findRun(longId)
+                        .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longId));
+                InstanceRequest requiredInstance = getNewRunInstance(run);
                 // check whether instance already exists
                 RunInstance instance = cloudFacade.describeInstance(longId, requiredInstance.getInstance());
                 if (instance != null && instance.getNodeId() != null) {
                     log.debug("Found {} instance for run ID {}.", instance.getNodeId(), runId);
+                    unLabelPendingRun(run);
                     createNodeForRun(tasks, runId, requiredInstance);
                     return;
                 }
@@ -300,9 +310,11 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 log.debug("Found {} free nodes.", freeNodes.size());
                 if (reassignHandler.tryReassignNode(client, scheduledRuns, reassignedNodes, runId,
                         longId, requiredInstance, freeNodes)) {
+                    unLabelPendingRun(run);
                     return;
                 }
                 if (!hasClusterCapacity(client)) {
+                    labelPendingRun(run);
                     return;
                 }
                 int currentClusterSize = getCurrentClusterSize(client);
@@ -325,6 +337,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     } else {
                         log.debug("Exceeded maximum cluster size {}.", currentClusterSize);
                         log.debug("Leaving pending run {}.", runId);
+                        labelPendingRun(run);
                         return;
                     }
                 }
@@ -332,10 +345,27 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     return;
                 }
                 scheduledRuns.add(runId);
+                unLabelPendingRun(run);
                 createNodeForRun(tasks, runId, requiredInstance);
             } catch (Exception e) {
                 log.error("Failed to create node for run {}.", runId);
                 log.error("An error during pod processing: {}" + e.getMessage(), e);
+            }
+        }
+
+        private void labelPendingRun(final PipelineRun run) {
+            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            if (!tags.containsKey(NODE_PENDING_TAG)) {
+                tags.put(NODE_PENDING_TAG, KubernetesConstants.TRUE_LABEL_VALUE);
+                pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
+            }
+        }
+
+        private void unLabelPendingRun(final PipelineRun run) {
+            final Map<String, String> tags = MapUtils.emptyIfNull(run.getTags());
+            if (tags.containsKey(NODE_PENDING_TAG)) {
+                tags.remove(NODE_PENDING_TAG);
+                pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), true);
             }
         }
 
@@ -494,7 +524,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 //save required instance
                 pipelineRunManager.updateRunInstance(longId, requiredInstance.getInstance());
                 RunInstance instance = cloudFacade
-                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters());
+                        .scaleUpNode(longId, requiredInstance.getInstance(), requiredInstance.getRuntimeParameters(),
+                                requiredInstance.getTags());
                 //save instance ID and IP
                 pipelineRunManager.updateRunInstance(longId, instance);
                 pipelineRunManager.updateRunInstanceStartDate(longId, DateUtils.nowUTC());
@@ -562,29 +593,26 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                     kubernetesManager.getAvailableNodes(client).getItems().size();
         }
 
-        public InstanceRequest getNewRunInstance(String runId) throws GitClientException {
-            Long longRunId = Long.parseLong(runId);
-            PipelineRun run = pipelineRunManager.findRun(longRunId)
-                    .orElseThrow(() -> new IllegalArgumentException("Failed to find run " + longRunId));
-
+        public InstanceRequest getNewRunInstance(final PipelineRun run) throws GitClientException {
             RunInstance instance;
             if (run.getInstance() == null || run.getInstance().isEmpty()) {
-                PipelineConfiguration configuration = pipelineRunManager.loadRunConfiguration(longRunId);
+                PipelineConfiguration configuration = pipelineRunManager.loadRunConfiguration(run.getId());
                 instance = autoscalerService.configurationToInstance(configuration);
             } else {
                 instance = autoscalerService.fillInstance(run.getInstance());
             }
 
             if (instance.getSpot() != null && instance.getSpot() &&
-                    spotNodeUpAttempts.getOrDefault(longRunId, 0) >= preferenceManager.getPreference(
+                    spotNodeUpAttempts.getOrDefault(run.getId(), 0) >= preferenceManager.getPreference(
                             SystemPreferences.CLUSTER_SPOT_MAX_ATTEMPTS)) {
                 instance.setSpot(false);
-                pipelineRunManager.updateRunInstance(longRunId, instance);
+                pipelineRunManager.updateRunInstance(run.getId(), instance);
             }
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             instanceRequest.setRuntimeParameters(buildRuntimeParameters(run));
+            instanceRequest.setTags(metadataManager.prepareCloudResourceTags(run));
             return instanceRequest;
         }
 

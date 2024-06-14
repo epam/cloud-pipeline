@@ -66,6 +66,7 @@ import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
 import RunTaskLogs from '../run-task-logs';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import runStatusTooltips from '../../special/run-status-icon/run-status-tooltips';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
@@ -98,6 +99,7 @@ import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
+import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1541,6 +1543,7 @@ class Logs extends localization.LocalizedReactComponent {
     let CommitStatusButton;
     let ResumeFailureReason;
     let ShowMonitorButton;
+    let NodePendingAlert;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -2213,6 +2216,19 @@ class Logs extends localization.LocalizedReactComponent {
       }
     };
 
+    if (
+      isRunStatusNodePending(run) &&
+      runStatusTooltips[RunStatuses.nodePending] &&
+      runStatusTooltips[RunStatuses.nodePending].description
+    ) {
+      NodePendingAlert = (
+        <Alert
+          message={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
+          type="warning"
+        />
+      );
+    }
+
     return (
       <Card
         className={
@@ -2248,6 +2264,9 @@ class Logs extends localization.LocalizedReactComponent {
               style={{margin: '5px 0'}}
               run={run}
             />
+            {
+              NodePendingAlert && (<Row>{NodePendingAlert}</Row>)
+            }
             <Row>
               {Details}
             </Row>

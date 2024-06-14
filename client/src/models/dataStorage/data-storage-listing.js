@@ -15,15 +15,24 @@
  */
 
 import {action, computed, observable} from 'mobx';
+import moment from 'moment-timezone';
 import dataStorages from './DataStorages';
 import preferences from '../preferences/PreferencesLoad';
 import authenticatedUserInfo from '../user/WhoAmI';
 import DataStorageRequest from './DataStoragePage';
+import DataStorageFilter from './DataStorageFilter';
 import roleModel from '../../utils/roleModel';
 import MetadataLoad from '../metadata/MetadataLoad';
 
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
+
+const mbToBytes = mb => {
+  if (isNaN(mb)) {
+    return;
+  }
+  return Math.round(mb * (1024 ** 2));
+};
 
 /**
  * Returns true if user is allowed to download from storage according to the
@@ -269,6 +278,23 @@ class DataStorageListing {
   @observable downloadEnabled = false;
 
   /**
+   * Filters info.
+   * Request results may be truncated.
+   */
+  @observable filters = {
+    name: undefined,
+    sizeGreaterThan: undefined,
+    sizeLessThan: undefined,
+    dateFilterType: undefined,
+    dateAfter: undefined,
+    dateBefore: undefined
+  };
+  @observable resultsTruncated = false;
+  @observable filtersApplied = false;
+
+  @observable ngbSettingsFileExists = false;
+
+  /**
    * @param {DataStoragePagesOptions} options
    */
   constructor (options = {}) {
@@ -363,9 +389,38 @@ class DataStorageListing {
     };
   }
 
+  @computed
+  get currentFilter () {
+    return this.filters;
+  }
+
+  @computed
+  get filtersEmpty () {
+    if (!this.currentFilter) {
+      return true;
+    }
+    return Object.values(this.currentFilter)
+      .every(value => value === undefined);
+  }
+
+  @computed
+  get resultsFiltered () {
+    return this.filtersApplied && !this.filtersEmpty;
+  }
+
+  @computed
+  get resultsFilteredAndTruncated () {
+    return this.resultsFiltered && this.resultsTruncated;
+  }
+
   _increaseUniqueToken = () => {
     this.token = (this.token || 0) + 1;
     return this.token;
+  };
+
+  _increaseUniqueNgbSettingsToken = () => {
+    this.ngbSettingsToken = (this.ngbSettingsToken || 0) + 1;
+    return this.ngbSettingsToken;
   };
 
   @action
@@ -388,6 +443,21 @@ class DataStorageListing {
   };
 
   @action
+  resetFilter = (silent = true) => {
+    this.filters = {
+      name: undefined,
+      sizeGreaterThan: undefined,
+      sizeLessThan: undefined,
+      dateFilterType: undefined,
+      dateAfter: undefined,
+      dateBefore: undefined
+    };
+    if (!silent) {
+      this.refreshCurrentPath(true);
+    }
+  };
+
+  @action
   initialize = (
     storageId,
     path,
@@ -404,7 +474,10 @@ class DataStorageListing {
       showVersionsChanged ||
       showArchivesChanged
     ) {
-      (this.fetchCurrentPage)();
+      (async () => {
+        await this.fetchCurrentPage();
+        await this.updateNgbSettingsFileExists();
+      })();
     }
     return storageChanged ||
     pathChanged ||
@@ -418,12 +491,14 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     this.pageElements = [];
     this.pagePath = undefined;
     this.pageError = undefined;
     this.pagePending = false;
     this.pageLoaded = false;
     this.storageId = storageId;
+    this.ngbSettingsFileExists = false;
     this.path = correctPath('');
     this.clearMarkers();
     this.storageRequest = dataStorages.load(this.storageId);
@@ -499,6 +574,7 @@ class DataStorageListing {
     }
     this.path = corrected;
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     if (this.keepPagesHistory) {
       this.markers = ensureMarkersForPath(corrected, this.markers);
     } else {
@@ -513,6 +589,7 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     // We need to clear all markers
     this.clearMarkers();
     this.showVersions = showVersions;
@@ -525,10 +602,87 @@ class DataStorageListing {
       return false;
     }
     this._increaseUniqueToken();
+    this._increaseUniqueNgbSettingsToken();
     // We need to clear all markers
     this.clearMarkers();
     this.showArchives = showArchives;
     return true;
+  };
+
+  @action
+  changeFilterField = (key, value, applyChanges = true) => {
+    this.currentFilter[key] = value;
+    if (applyChanges) {
+      this.applyFilters();
+    }
+  };
+
+  @action
+  changeFilter = (newFilterObj = {}, applyChanges = true) => {
+    Object.keys(newFilterObj).forEach(key => {
+      this.changeFilterField(key, newFilterObj[key], false);
+    });
+    if (applyChanges) {
+      this.applyFilters();
+    }
+  };
+
+  @action
+  applyFilters = async () => {
+    const pathCorrected = correctPath(
+      this.path,
+      {
+        leadingSlash: false,
+        trailingSlash: false,
+        undefinedAsEmpty: true
+      }
+    );
+    const formatToUTCString = date => date
+      ? moment.utc(date).format('YYYY-MM-DD HH:mm:ss.SSS')
+      : undefined;
+    try {
+      const request = new DataStorageFilter(
+        this.storageId,
+        pathCorrected ? decodeURIComponent(pathCorrected) : undefined,
+        this.showVersions,
+        this.showArchives
+      );
+      let payload = {
+        nameFilter: this.currentFilter?.name,
+        sizeGreaterThan: mbToBytes(this.currentFilter?.sizeGreaterThan),
+        sizeLessThan: mbToBytes(this.currentFilter?.sizeLessThan),
+        dateAfter: formatToUTCString(this.currentFilter?.dateAfter),
+        dateBefore: formatToUTCString(this.currentFilter?.dateBefore)
+      };
+      payload = Object.fromEntries(Object.entries(payload)
+        .filter(([_, value]) => value !== undefined)
+      );
+      if (!Object.keys(payload).length) {
+        return this.refreshCurrentPath(true);
+      }
+      await request.send(payload);
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      if (!request.loaded) {
+        throw new Error('Error loading page');
+      }
+      const {results = [], nextPageMarker} = request.value || {};
+      this.resultsTruncated = !!nextPageMarker;
+      this.filtersApplied = true;
+      this.pageElements = results;
+      this.pageLoaded = true;
+      this.pagePath = pathCorrected;
+    } catch (error) {
+      this.pageElements = [];
+      this.pageError = error.message;
+      this.pageLoaded = false;
+      this.pagePath = pathCorrected;
+    } finally {
+      this.pagePending = false;
+      this.pageLoaded = !this.pageError;
+      this.filtersApplied = true;
+    }
   };
 
   @action
@@ -575,6 +729,7 @@ class DataStorageListing {
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
         this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
+        this.filtersApplied = false;
       });
     } catch (error) {
       submitChanges(() => {
@@ -587,6 +742,65 @@ class DataStorageListing {
       submitChanges(() => {
         this.pagePending = false;
         this.pageLoaded = !this.pageError;
+        this.filtersApplied = false;
+      });
+    }
+  };
+
+  @action
+  updateNgbSettingsFileExists = async () => {
+    const token = this._increaseUniqueNgbSettingsToken();
+    const submitChanges = (fn) => {
+      if (token === this.ngbSettingsToken && typeof fn === 'function') {
+        fn();
+      }
+    };
+    let ngbSettingsFile = correctPath(
+      this.path,
+      {
+        leadingSlash: false,
+        trailingSlash: true,
+        undefinedAsEmpty: false
+      }
+    );
+    ngbSettingsFile = ngbSettingsFile.concat('ngb.settings');
+    const fileExistsOnPage = !!this.pageElements.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+    if (fileExistsOnPage) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = true;
+      });
+      return;
+    }
+    if (this.currentPagination && !this.currentPagination.next) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = false;
+      });
+      return;
+    }
+    try {
+      const request = new DataStorageRequest(
+        this.storageId,
+        decodeURIComponent(ngbSettingsFile),
+        false,
+        false,
+        100,
+      );
+      await request.fetchPage(undefined);
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      if (!request.loaded) {
+        throw new Error('Error loading page');
+      }
+      const {
+        results = [],
+      } = request.value || {};
+      submitChanges(() => {
+        this.ngbSettingsFileExists = !!results.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+      });
+    } catch (error) {
+      submitChanges(() => {
+        this.ngbSettingsFileExists = false;
       });
     }
   };
@@ -643,6 +857,9 @@ class DataStorageListing {
   refreshCurrentPath = (keepCurrentPage = false) => {
     if (!keepCurrentPage) {
       this.clearMarkersForCurrentPath();
+    }
+    if (!this.filtersEmpty) {
+      this.resetFilter();
     }
     return this.fetchCurrentPage();
   }

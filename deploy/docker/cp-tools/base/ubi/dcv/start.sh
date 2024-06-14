@@ -63,7 +63,20 @@ for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT"); do
 done
 
 _dcv_user=${OWNER%@*}
-dcv create-session --owner $_dcv_user --user $_dcv_user session
+for _RETRY_ITERATION in $(seq 1 "$_RETRIES_COUNT"); do
+    dcv create-session --owner $_dcv_user --user $_dcv_user session
+    _LICENSE_CHECKOUT_RESULT=$?
+    if [ $_LICENSE_CHECKOUT_RESULT -eq 0 ]; then
+        pipe_log_info "[INFO] DCV server license retrieved, session created. Proceeding." "$DCV_INSTALL_TASK"
+        break
+    fi
+    pipe_log_warn "[WARNING] Cannot get DCV server license. Try #${_RETRY_ITERATION}." "$DCV_INSTALL_TASK"
+done
+
+if [ $_LICENSE_CHECKOUT_RESULT -ne 0 ]; then
+  pipe_log_fail "[WARNING] Cannot get DCV server license." "$DCV_INSTALL_TASK"
+  exit 1
+fi
 
 
 pipe_log_info "Run DCV desktop launcher" "$DCV_INSTALL_TASK"

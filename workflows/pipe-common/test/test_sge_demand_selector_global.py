@@ -18,7 +18,7 @@ import pytest
 from mock import MagicMock, Mock
 
 from pipeline.hpc.engine.gridengine import GridEngineJob
-from pipeline.hpc.engine.sge import SunGridEngineCustomDemandSelector
+from pipeline.hpc.engine.sge import SunGridEngineGlobalDemandSelector
 from pipeline.hpc.resource import CustomResourceSupply
 
 PE_LOCAL = 'local'
@@ -185,6 +185,6 @@ test_cases = [
                          ids=[test_case[0] for test_case in test_cases])
 def test_filter(jobs, resource_supplies, required_filtered_jobs):
     grid_engine.get_global_supplies = MagicMock(return_value=iter(resource_supplies))
-    demand_selector = SunGridEngineCustomDemandSelector(inner=inner_demand_selector, grid_engine=grid_engine)
+    demand_selector = SunGridEngineGlobalDemandSelector(inner=inner_demand_selector, grid_engine=grid_engine)
     actual_filtered_jobs = list(demand_selector.filter(jobs))
     assert required_filtered_jobs == actual_filtered_jobs

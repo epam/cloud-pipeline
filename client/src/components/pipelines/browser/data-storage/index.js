@@ -86,6 +86,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../../special/metadata/special/request-dav-access';
 import StorageSize from '../../../special/storage-size';
+import highlightText from '../../../special/highlightText';
 import {extractFileShareMountList} from '../forms/DataStoragePathInput';
 import SharedItemInfo from '../forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../../special/sample-sheet/utilities';
@@ -101,6 +102,8 @@ import StorageSharedLinkButton from './components/storage-shared-link-button';
 import DownloadFileButton from './components/download-file-button';
 import handleDownloadItems from '../../../special/download-storage-items';
 import styles from '../Browser.css';
+import {SizeFilter, DateFilter, InputFilter, FILTER_FIELDS} from './components/filters';
+import {getNgbFileName, isNgbFile, openNgbFile} from './ngb-files';
 
 const STORAGE_CLASSES = {
   standard: 'STANDARD',
@@ -177,6 +180,7 @@ export default class DataStorage extends React.Component {
   });
 
   @observable generateDownloadUrls;
+  @observable filterDropdownVisible;
 
   get showMetadata () {
     if (this.state.metadata === undefined && this.storage.info) {
@@ -595,6 +599,10 @@ export default class DataStorage extends React.Component {
         hcs: !i.deleteMarker &&
           i.type.toLowerCase() === 'file' &&
           fastCheckHCSPreviewAvailable({path: i.path, storageId}),
+        ngb: !i.deleteMarker &&
+          this.storage.ngbSettingsFileExists &&
+          i.type.toLowerCase() === 'file' &&
+          isNgbFile(i.path),
         documentPreview: !i.deleteMarker &&
           documentPreviewAvailable(i),
         archived,
@@ -1358,6 +1366,24 @@ export default class DataStorage extends React.Component {
     }
   };
 
+  onNgbFileActionClick = async (file, event) => {
+    const {storageId, path, preferences} = this.props;
+    event && event.stopPropagation();
+    const fileName = getNgbFileName(file.path);
+    const hide = message.loading((<span>Opening <b>{fileName}</b>...</span>), 0);
+    try {
+      await openNgbFile({
+        storageId,
+        path: file.path,
+        preferences
+      });
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
+    }
+  };
+
   closePreviewModal = () => {
     this.setState({previewModal: null});
   };
@@ -1443,7 +1469,12 @@ export default class DataStorage extends React.Component {
 
   get columns () {
     const tableData = this.items;
-    const hasAppsColumn = tableData.some(o => o.miew || o.vsi || o.hcs || o.documentPreview);
+    const hasAppsColumn = tableData.some(o => o.miew ||
+      o.vsi ||
+      o.hcs ||
+      o.ngb ||
+      o.documentPreview
+    );
     const hasVersions = tableData.some(o => o.versions);
     const getItemIcon = (item) => {
       if (!item) {
@@ -1476,9 +1507,18 @@ export default class DataStorage extends React.Component {
         </RestoreStatusIcon>
       );
     };
+    const filteredStatus = (keys = []) => {
+      const filtered = keys.some(key => !!this.storage.currentFilter?.[key]);
+      return {
+        filtered,
+        filteredValue: filtered ? ['filtered'] : null
+      };
+    };
+    const hideFilterDropdown = () => {
+      this.filterDropdownVisible = undefined;
+    };
     const selectionColumn = {
       key: 'selection',
-      title: '',
       className: (this.showVersions || hasVersions)
         ? styles.checkboxCellVersions
         : styles.checkboxCell,
@@ -1564,6 +1604,17 @@ export default class DataStorage extends React.Component {
             </div>
           );
         }
+        if (item.ngb) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.onNgbFileActionClick(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/ngb.svg" width={20} height={20} />
+            </div>
+          );
+        }
         if (item.documentPreview) {
           apps.push(
             <div
@@ -1588,11 +1639,30 @@ export default class DataStorage extends React.Component {
       title: 'Name',
       className: styles.nameCell,
       render: (text, item) => {
+        const search = this.storage.currentFilter[FILTER_FIELDS.name];
+        const highlightedText = this.storage.filtersApplied && search
+          ? highlightText(text, search)
+          : text;
         if (item.latest) {
-          return `${text} (latest)`;
+          return <span>{highlightedText} (latest)</span>;
         }
-        return text;
+        return highlightedText;
       },
+      filterDropdown: (
+        <InputFilter
+          filterKey={FILTER_FIELDS.name}
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'name'}
+          placeholder="File name"
+          submitDisabled={value => (value || '').length < 3}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'name',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'name' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.name]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const sizeColumn = {
@@ -1601,6 +1671,18 @@ export default class DataStorage extends React.Component {
       title: 'Size',
       className: styles.sizeCell,
       render: size => displaySize(size),
+      filterDropdown: (
+        <SizeFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'size'}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'size',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'size' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.sizeGreaterThan, FILTER_FIELDS.sizeLessThan]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const changedColumn = {
@@ -1609,6 +1691,18 @@ export default class DataStorage extends React.Component {
       title: 'Date changed',
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
+      filterDropdown: (
+        <DateFilter
+          storage={this.storage}
+          hideFilterDropdown={hideFilterDropdown}
+          visible={this.filterDropdownVisible === 'date'}
+        />
+      ),
+      filterDropdownVisible: this.filterDropdownVisible === 'date',
+      onFilterDropdownVisibleChange: (visible) => {
+        this.filterDropdownVisible = visible ? 'date' : undefined;
+      },
+      ...filteredStatus([FILTER_FIELDS.dateAfter, FILTER_FIELDS.dateBefore]),
       onCellClick: (item) => this.didSelectDataStorageItem(item)
     };
     const labelsColumn = {
@@ -1627,6 +1721,19 @@ export default class DataStorage extends React.Component {
     const actionsColumn = {
       key: 'actions',
       className: styles.itemActions,
+      title: (
+        <div style={{display: 'flex', justifyContent: 'flex-end'}}>
+          {this.storage.resultsFiltered ? (
+            <Button
+              size="small"
+              type="primary"
+              onClick={() => this.storage.resetFilter(false)}
+            >
+              Reset filters
+            </Button>
+          ) : null}
+        </div>
+      ),
       render: this.actionsRenderer
     };
 
@@ -2534,6 +2641,14 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
+            {this.storage.resultsFilteredAndTruncated ? (
+              <Alert
+                style={{marginBottom: 3}}
+                message={`Current folder contains too many objects.
+                Filtered data does not include all of them.`}
+                type="info"
+              />
+            ) : null}
             {
               this.renderContent()
             }
@@ -2833,12 +2948,15 @@ export default class DataStorage extends React.Component {
   }
 
   updateStorageIfRequired = () => {
-    this.storage.initialize(
+    const changed = this.storage.initialize(
       this.props.storageId,
       this.props.path,
       this.props.showVersions,
       this.props.showArchives
     );
+    if (changed) {
+      this.storage.resetFilter();
+    }
   };
 
   clearSelectedItemsIfRequired = () => {

@@ -34,7 +34,7 @@ from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCom
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.storage.common import TransferResult
+from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.user_operations_manager import UserOperationsManager
@@ -67,7 +67,8 @@ class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
            io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, verify_destination=False):
+           clean=False, skip_existing=False, sync_newer=False, verify_destination=False, checksum_algorithm='md5',
+           checksum_skip=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -105,6 +106,9 @@ class DataStorageOperations(object):
         if file_list and source_type in [WrapperType.STREAM]:
             click.echo('Option --file-list (-l) is not supported for {} sources.'.format(source_type), err=True)
             sys.exit(1)
+        if skip_existing and sync_newer and source_type in [WrapperType.STREAM, WrapperType.HTTP, WrapperType.FTP]:
+            click.echo('Option --sync-newer is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
         if file_list and source_wrapper.is_file():
             click.echo('Option --file-list (-l) allowed for folders copy only.', err=True)
             sys.exit(1)
@@ -124,6 +128,21 @@ class DataStorageOperations(object):
             click.echo('The destination already exists. Specify --force (-f) flag to overwrite data or '
                        '--verify-destination (-vd) flag to enable existence check for each destination path.',
                        err=True)
+            sys.exit(1)
+        if not checksum_algorithm == 'md5' and source_type not in [WrapperType.LOCAL]:
+            click.echo('Checksum algorithm {} is not supported for {} sources.'
+                       .format(checksum_algorithm, source_type), err=True)
+            sys.exit(1)
+        if not checksum_algorithm == 'md5' and destination_type not in [WrapperType.S3]:
+            click.echo('Checksum algorithm {} is not supported for {} destinations.'
+                       .format(checksum_algorithm, source_type), err=True)
+            sys.exit(1)
+        if checksum_skip and source_type not in [WrapperType.LOCAL]:
+            click.echo('Option --checksum-skip is not supported for {} sources.'.format(source_type), err=True)
+            sys.exit(1)
+        if checksum_skip and destination_type not in [WrapperType.S3]:
+            click.echo('Option --checksum-skip is not supported for {} destinations.'
+                       .format(source_type), err=True)
             sys.exit(1)
 
         # append slashes to path to correctly determine file/folder type
@@ -148,18 +167,20 @@ class DataStorageOperations(object):
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                      include, exclude, force, quiet, skip_existing, verify_destination,
+                                      include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             audit_ctx, clean, quiet, tags, io_threads, on_failures)
+                                             audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
+                                             checksum_skip)
         else:
             cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                audit_ctx, clean, quiet, tags, io_threads, on_failures)
+                                audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                      include, exclude, force, quiet, skip_existing, verify_destination,
+                      include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                       unsafe_chars, unsafe_chars_replacement, empty_files):
         logging.debug(u'Preprocessing paths...')
         filtered_items = []
@@ -213,15 +234,24 @@ class DataStorageOperations(object):
                 continue
 
             destination_key = manager.get_destination_key(destination_wrapper, relative_path)
-            destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+            if skip_existing and sync_newer:
+                destination_size, destination_modification_datetime = \
+                    manager.get_destination_object_head(destination_wrapper, destination_key)
+            else:
+                destination_size = manager.get_destination_size(destination_wrapper, destination_key)
+                destination_modification_datetime = None
             destination_is_empty = destination_size is None
             if destination_is_empty:
                 filtered_items.append(item)
                 continue
             if skip_existing:
                 source_key = manager.get_source_key(source_wrapper, full_path)
-                need_to_overwrite = not manager.skip_existing(source_key, source_size, destination_key,
-                                                              destination_size, quiet)
+                source_modification_datetime = item[4] if sync_newer and len(item) >= 5 else None
+                if sync_newer and source_modification_datetime is None and source_wrapper.is_local():
+                    source_modification_datetime = StorageOperations.get_local_file_modification_datetime(source_key)
+                need_to_overwrite = not manager.skip_existing(source_key, source_size, source_modification_datetime,
+                                                              destination_key, destination_size,
+                                                              destination_modification_datetime, sync_newer, quiet)
                 if need_to_overwrite and not force:
                     cls._force_required()
                 if need_to_overwrite:
@@ -608,7 +638,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                     audit_ctx, clean, quiet, tags, io_threads, on_failures):
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
+                                     checksum_skip):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -627,14 +658,16 @@ class DataStorageOperations(object):
                                                     tags,
                                                     io_threads,
                                                     on_failures,
-                                                    lock))
+                                                    lock,
+                                                    checksum_algorithm,
+                                                    checksum_skip))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper,
-                        audit_ctx, clean, quiet, tags, io_threads, on_failures, lock=None):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
+                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
         with audit_ctx:
             transfer_results = []
             fail_after_exception = None
@@ -643,7 +676,8 @@ class DataStorageOperations(object):
                                                                             source_wrapper, destination_wrapper,
                                                                             transfer_results,
                                                                             clean, quiet, tags, io_threads,
-                                                                            on_failures, lock)
+                                                                            on_failures, lock, checksum_algorithm,
+                                                                            checksum_skip)
             if not destination_wrapper.is_local():
                 cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                             transfer_results, clean=clean, flush_size=1)
@@ -652,7 +686,8 @@ class DataStorageOperations(object):
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
-                       clean, quiet, tags, io_threads, on_failures, lock):
+                       clean, quiet, tags, io_threads, on_failures, lock, checksum_algorithm='md5',
+                       checksum_skip=False):
         full_path = item[1]
         relative_path = item[2]
         size = item[3]
@@ -660,7 +695,8 @@ class DataStorageOperations(object):
         try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                               tags=tags, io_threads=io_threads, lock=lock)
+                                               tags=tags, io_threads=io_threads, lock=lock,
+                                               checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
             if not destination_wrapper.is_local() and transfer_result:
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,

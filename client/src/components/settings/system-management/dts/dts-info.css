@@ -55,3 +55,8 @@
   line-height: 10px;
   padding-left: 5px;
 }
+
+.tabs div[class~="ant-tabs-content"],
+.tabs {
+  height: 100%;
+}
