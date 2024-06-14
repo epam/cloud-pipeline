@@ -24,6 +24,7 @@ class DataStorageModel(DataStorageItemModel):
         self.description = None
         self.delimiter = None
         self.parent_folder_id = None
+        self.source_storage_id = None
         self.mask = 0
         self.policy = StoragePolicy()
         self.region = None
@@ -48,6 +49,8 @@ class DataStorageModel(DataStorageItemModel):
             instance.changed = date_utilities.server_date_representation(json['createdDate'])
         if 'parentFolderId' in json:
             instance.parent_folder_id = json['parentFolderId']
+        if 'sourceStorageId' in json:
+            instance.source_storage_id = json['source_storage_id']
         if 'mask' in json:
             instance.mask = json['mask']
         instance.policy = StoragePolicy()

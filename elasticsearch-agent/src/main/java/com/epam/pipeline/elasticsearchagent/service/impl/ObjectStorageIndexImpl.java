@@ -333,9 +333,6 @@ public class ObjectStorageIndexImpl implements ObjectStorageIndex {
 
     private boolean isNotSharedOrChild(final AbstractDataStorage dataStorage,
                                        final List<AbstractDataStorage> allStorages) {
-        if (!dataStorage.isShared()) {
-            return true;
-        }
         if (dataStorage.getSourceStorageId() != null) {
             return false;
         }
