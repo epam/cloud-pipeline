@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
@@ -59,11 +60,13 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -1313,6 +1316,26 @@ public class PipelineRunManager {
                         .endDate(run.getEndDate())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
+        if (CollectionUtils.isEmpty(filter.getStatuses())) {
+            filter.setStatuses(Arrays.stream(TaskStatus.values())
+                    .filter(status -> !status.isFinal())
+                    .collect(Collectors.toList()));
+        }
+        final Map<RunChartInfoEntity.ColumnName, Map<TaskStatus, Map<String, Long>>> charts =
+                pipelineRunDao.loadRunsCharts(filter).stream()
+                        .filter(entity -> Objects.nonNull(entity.getValue()))
+                        .collect(Collectors.groupingBy(RunChartInfoEntity::getColumnName,
+                                Collectors.groupingBy(RunChartInfoEntity::getStatus,
+                                        Collectors.toMap(RunChartInfoEntity::getValue, RunChartInfoEntity::getCount))));
+        return RunChartInfo.builder()
+                .owners(charts.get(RunChartInfoEntity.ColumnName.owner))
+                .dockerImages(charts.get(RunChartInfoEntity.ColumnName.docker_image))
+                .instanceTypes(charts.get(RunChartInfoEntity.ColumnName.node_type))
+                .tags(charts.get(RunChartInfoEntity.ColumnName.tags))
+                .build();
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
