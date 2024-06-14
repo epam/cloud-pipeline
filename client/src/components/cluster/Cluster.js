@@ -30,7 +30,6 @@ import {
   Tooltip
 } from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
-import nodesFilter from '../../models/cluster/FilterClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
@@ -45,15 +44,16 @@ import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
-  testRole
+  testRole,
+  matchesPlatformCoreNodes,
+  matchesLabelValue
 } from './node-roles';
 
 @connect({
-  clusterNodes,
-  nodesFilter
+  clusterNodes
 })
 @localization.localizedComponent
-@inject('clusterNodes', 'nodesFilter')
+@inject('clusterNodes')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -67,27 +67,27 @@ import {
 export default class Cluster extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
+      label: null,
       haveRunId: null,
-      noRunId: null,
-      runId: null,
+      platformCoreNodes: null,
       address: null
     },
     filter: {
-      runId: {
-        noRunId: null,
+      label: {
+        value: null,
+        finalValue: null,
         haveRunId: null,
-        finalNoRunId: null,
         finalHaveRunId: null,
+        platformCoreNodes: null,
+        finalPlatformCoreNodes: null,
         visible: false,
         filtered () {
           return (
             this.finalValue !== null ||
-            this.finalNoRunId ||
-            this.finalHaveRunId
+            this.finalHaveRunId ||
+            this.finalPlatformCoreNodes
           );
-        },
-        value: null,
-        finalValue: null
+        }
       },
       address: {
         visible: false,
@@ -111,7 +111,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   get nodes () {
-    const {clusterNodes, nodesFilter, filter} = this.props;
+    const {clusterNodes, filter} = this.props;
     if (filter && Object.keys(filter).length > 0) {
       if (clusterNodes.loaded) {
         const nodes = this.props.clusterNodes.value || [];
@@ -123,30 +123,35 @@ export default class Cluster extends localization.LocalizedReactComponent {
         return (nodes || [])
           .filter(nodeMatchesLabels);
       }
-    } else if (nodesFilter.loaded) {
-      return nodesFilter.value || [];
+    } else {
+      if (clusterNodes.loaded) {
+        return clusterNodes.value || [];
+      }
     }
     return [];
   }
 
   get filteredNodes () {
     const {filter} = this.props;
-    const {appliedFilter} = this.state;
-    const {runId, address, haveRunId, noRunId} = appliedFilter;
-    if ((filter && Object.keys(filter).length > 0) || haveRunId || noRunId) {
-      const hasRunIdProp = (node) => node.labels && node.labels.hasOwnProperty('runid');
-      const matchesRunId = node => hasRunIdProp(node) && `${node.labels.runid}` === `${runId}`;
-      const matchesNoRunId = node => !hasRunIdProp(node) || isNaN(Number(node.labels.runid));
-      const matchesHaveRunId = node => hasRunIdProp(node) && !isNaN(Number(node.labels.runid));
-
+    const isFilter = filter && Object.keys(filter).length > 0;
+    const {label, address, haveRunId, platformCoreNodes} = this.state.appliedFilter;
+    const isLabel = label && label.length > 0;
+    if (isFilter || haveRunId || platformCoreNodes || isLabel || address) {
       const matchesAddress = node => node.addresses &&
-        node.addresses.map(a => a.address).find(a => a === address);
-      const matches = node =>
-        (!runId || matchesRunId(node)) &&
-        (!address || matchesAddress(node)) &&
-        (!haveRunId || matchesHaveRunId(node)) &&
-        (!noRunId || matchesNoRunId(node))
-        ;
+          node.addresses
+            .map(a => a.address)
+            .some(a => a.toLowerCase().includes(address.toLowerCase()));
+      const matchesHaveRunId = node => node.labels &&
+        node.labels.hasOwnProperty('runid') &&
+        !isNaN(Number(node.labels.runid));
+      const matches = node => {
+        return (
+          (!isLabel || matchesLabelValue(node, label)) &&
+          (!address || matchesAddress(node)) &&
+          (!haveRunId || matchesHaveRunId(node)) &&
+          (!platformCoreNodes || matchesPlatformCoreNodes(node))
+        );
+      };
       return this.nodes.filter(matches);
     }
     return this.nodes;
@@ -156,30 +161,23 @@ export default class Cluster extends localization.LocalizedReactComponent {
     if (!this.props.clusterNodes.pending) {
       this.props.clusterNodes.fetch();
     }
-    if (!this.props.nodesFilter.pending) {
-      this.props.nodesFilter.send({
-        runId: this.state.appliedFilter.runId,
-        address: this.state.appliedFilter.address
-      });
-    }
     this.props.pools.fetch();
   };
 
   isFilterChanged = () => {
-    return this.state.filter.runId.finalValue !== this.state.appliedFilter.runId ||
+    return this.state.filter.label.finalValue !== this.state.appliedFilter.label ||
       this.state.filter.address.finalValue !== this.state.appliedFilter.address ||
-      this.state.filter.runId.finalNoRunId !== this.state.appliedFilter.noRunId ||
-      this.state.filter.runId.finalHaveRunId !== this.state.appliedFilter.haveRunId
-    ;
+      this.state.filter.label.finalHaveRunId !== this.state.appliedFilter.haveRunId ||
+      this.state.filter.label.finalPlatformCoreNodes !== this.state.appliedFilter.platformCoreNodes;
   };
 
   applyFilter = () => {
-    const filter = this.state.appliedFilter;
-    filter.runId = this.state.filter.runId.finalValue;
-    filter.noRunId = this.state.filter.runId.finalNoRunId;
-    filter.haveRunId = this.state.filter.runId.finalHaveRunId;
-    filter.address = this.state.filter.address.finalValue;
-    this.setState({appliedFilter: filter}, () => {
+    const appliedFilter = this.state.appliedFilter;
+    appliedFilter.label = this.state.filter.label.finalValue;
+    appliedFilter.haveRunId = this.state.filter.label.finalHaveRunId;
+    appliedFilter.platformCoreNodes = this.state.filter.label.finalPlatformCoreNodes;
+    appliedFilter.address = this.state.filter.address.finalValue;
+    this.setState({appliedFilter}, () => {
       this.refreshCluster();
     });
   };
@@ -302,7 +300,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   renderJobsAssociationFilter = () => {
     const options = [
       {title: 'Has run id', prop: 'haveRunId'},
-      {title: 'No run id', prop: 'noRunId'}
+      {title: 'Platform core nodes', prop: 'platformCoreNodes'}
     ];
     return (
       <div
@@ -321,7 +319,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             >
               <li className={styles.popoverListItem}>
                 <Checkbox
-                  checked={this.state.filter.runId[prop]}
+                  checked={this.state.filter.label[prop]}
                   onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, prop)}
                 >
                   {title}
@@ -385,73 +383,76 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
   };
 
-  onFilterDropdownVisibleChange = (filterParameterName) => (visible) => {
+  onFilterDropdownVisibleChange = (parameter) => (visible) => {
     const filter = this.state.filter;
-    filter[filterParameterName].visible = visible;
+    filter[parameter].visible = visible;
     if (!visible) {
-      filter[filterParameterName].validationError = undefined;
-      filter[filterParameterName].value = filter[filterParameterName].finalValue
-        ? filter[filterParameterName].finalValue : null;
-      if (filterParameterName === 'runId') {
-        filter[filterParameterName].noRunId = filter[filterParameterName].finalNoRunId
-          ? filter[filterParameterName].finalNoRunId : null;
-        filter[filterParameterName].haveRunId = filter[filterParameterName].finalHaveRunId
-          ? filter[filterParameterName].finalHaveRunId : null;
+      filter[parameter].validationError = undefined;
+      filter[parameter].value = filter[parameter].finalValue
+        ? filter[parameter].finalValue : null;
+      if (parameter === 'label') {
+        filter[parameter].platformCoreNodes = filter[parameter].finalPlatformCoreNodes
+          ? filter[parameter].finalPlatformCoreNodes : null;
+        filter[parameter].haveRunId = filter[parameter].finalHaveRunId
+          ? filter[parameter].finalHaveRunId : null;
       }
     }
     this.setState({filter});
   };
 
-  onFilterChanged = (filterParameterName) => () => {
+  onFilterChanged = (parameter) => () => {
     const filter = this.state.filter;
-    filter[filterParameterName].finalValue = filter[filterParameterName].value;
-    if (filterParameterName === 'runId') {
-      filter[filterParameterName].finalNoRunId = filter[filterParameterName].noRunId;
-      filter[filterParameterName].finalHaveRunId = filter[filterParameterName].haveRunId;
+    filter[parameter].finalValue = filter[parameter].value;
+    if (parameter === 'label') {
+      filter[parameter].finalPlatformCoreNodes = filter[parameter].platformCoreNodes;
+      filter[parameter].finalHaveRunId = filter[parameter].haveRunId;
     }
-    this.onFilterDropdownVisibleChange(filterParameterName)(false);
+    this.onFilterDropdownVisibleChange(parameter)(false);
   };
 
-  onFilterValueChange = (filterParameterName) => (value) => {
+  onFilterValueChange = (parameter) => (value) => {
     const filter = this.state.filter;
-    filter[filterParameterName].value = value && value.length > 0 ? value : null;
-    if (value && filterParameterName === 'runId') {
-      filter[filterParameterName].noRunId = null;
-      filter[filterParameterName].haveRunId = null;
+    filter[parameter].value = value && value.length > 0 ? value : null;
+    if (value && parameter === 'label') {
+      filter[parameter].platformCoreNodes = null;
+      filter[parameter].haveRunId = null;
     }
     this.setState({filter});
   };
 
-  onInputChange = (filterParameterName) => (e) => {
-    this.onFilterValueChange(filterParameterName)(e.target.value);
+  onInputChange = (parameter) => (e) => {
+    this.onFilterValueChange(parameter)(e.target.value);
   };
 
   onJobsAssociationFilterChanged = (value, param) => {
     const params = {
-      noRunId: 'noRunId',
-      haveRunId: 'haveRunId'
+      haveRunId: 'haveRunId',
+      platformCoreNodes: 'platformCoreNodes'
     };
-    let oppositeParam;
-    oppositeParam = (param === params.noRunId)
-      ? params.haveRunId
-      : params.noRunId;
+    const oppositeParam = (param === params.haveRunId)
+      ? params.platformCoreNodes
+      : params.haveRunId;
 
     const filter = {...this.state.filter};
-    filter.runId[param] = value;
-    filter.runId[oppositeParam] = value ? !value : value;
+    filter.label[param] = value;
+    filter.label[oppositeParam] = value ? !value : value;
+    if (filter.label[param] || filter.label[oppositeParam]) {
+      filter.label.value = null;
+      filter.label.finalValue = null;
+    }
     this.setState({filter});
   }
 
   getInputFilter = (parameter, placeholder) => {
-    const isRunId = parameter === 'runId';
+    const isLabel = parameter === 'label';
     const clear = () => {
       const filter = this.state.filter;
       filter[parameter].value = null;
       filter[parameter].finalValue = null;
       filter[parameter].visible = false;
       filter[parameter].validationError = false;
-      if (isRunId) {
-        filter[parameter].noRunId = null;
+      if (isLabel) {
+        filter[parameter].platformCoreNodes = null;
         filter[parameter].haveRunId = null;
       }
       this.setState({filter}, () => {
@@ -461,18 +462,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
     const validateAndSubmit = () => {
       const filter = this.state.filter;
-      let validationSuccedded = false;
-      if (isRunId) {
-        if (!isNaN(filter[parameter].value)) {
-          filter[parameter].validationError = undefined;
-          validationSuccedded = true;
-        } else {
-          filter[parameter].validationError = 'Please enter valid integer';
-        }
-      } else {
-        filter[parameter].validationError = undefined;
-        validationSuccedded = true;
-      }
+      const validationSuccedded = true;
+      filter[parameter].validationError = undefined;
       this.setState({filter}, () => {
         if (validationSuccedded) {
           this.onFilterChanged(parameter)();
@@ -501,7 +492,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
               />
             </li>
           </div>
-          {isRunId && this.renderJobsAssociationFilter()}
+          {isLabel && this.renderJobsAssociationFilter()}
         </ul>
         {
           isError && (
@@ -629,7 +620,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('runId', 'Run Id'),
+        ...this.getInputFilter('label', 'Label value'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect
@@ -726,7 +717,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   render () {
     let description = this.getDescription();
-    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
+    const error = this.props.clusterNodes.error;
     const selectionLength = (this.state.selection || []).length;
     return (
       <div>
@@ -747,7 +738,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
                 <Button
                   id="cluster-batch-terminate-button"
                   type="danger"
-                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  disabled={this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
                 >
@@ -758,7 +749,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              disabled={this.props.clusterNodes.pending}>
               Refresh
             </Button>
           </Col>
@@ -777,7 +768,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         {
           this.generateNodeInstancesTable(
             this.filteredNodes,
-            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.props.clusterNodes.pending,
             this.props.pools.loaded ? (this.props.pools.value || []) : []
           )
         }
