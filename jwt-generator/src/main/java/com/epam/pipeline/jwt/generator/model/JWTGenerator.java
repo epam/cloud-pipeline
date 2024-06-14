@@ -61,9 +61,17 @@ public class JWTGenerator {
     }
 
     public String createToken(User user, long expiration) {
+        Date expiresAt = toDate(LocalDateTime.now().plusSeconds(expiration));
+        if (isContainsProblemY2038(expiresAt.toInstant().getEpochSecond())) {
+            throw new IllegalArgumentException("Expiration date configured too far. Please configure expiration date before 19.01.2038");
+        }
         JWTCreator.Builder tokenBuilder = buildToken(user.toClaims());
-        tokenBuilder.withExpiresAt(toDate(LocalDateTime.now().plusSeconds(expiration)));
+        tokenBuilder.withExpiresAt(expiresAt);
         return tokenBuilder.sign(Algorithm.RSA512(privateKey));
+    }
+
+    private boolean isContainsProblemY2038(long expiration) {
+        return expiration > Integer.MAX_VALUE;
     }
 
     private JWTCreator.Builder buildToken(JwtTokenClaims claims) {
