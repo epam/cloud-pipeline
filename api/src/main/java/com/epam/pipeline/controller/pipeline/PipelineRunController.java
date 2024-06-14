@@ -30,6 +30,7 @@ import com.epam.pipeline.controller.vo.RunCommitVO;
 import com.epam.pipeline.controller.vo.RunStatusVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -42,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -585,5 +587,15 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<RunInfo>> loadRunsByParentId(@PathVariable(RUN_ID) final Long parentId) {
         return Result.success(runApiService.loadRunsByParentId(parentId));
+    }
+
+    @PostMapping("/runs/charts")
+    @ApiOperation(
+            value = "Loads active runs charts info",
+            notes = "Loads active runs charts info",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunChartInfo> loadActiveRunsCharts(@RequestBody final RunChartFilterVO filter) {
+        return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
 }
