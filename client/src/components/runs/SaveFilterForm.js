@@ -55,7 +55,7 @@ export default class SaveFilterForm extends React.Component {
       <Row>
         <Button
           id="filter-edit-form-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="filter-edit-form-ok-button"
           type="primary"

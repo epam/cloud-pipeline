@@ -241,6 +241,7 @@ class LifeCycleRestoreModal extends React.Component {
           >
             <Button
               onClick={onCancel}
+              id="lifecycle-restore-modal-cancel-btn"
             >
               CANCEL
             </Button>
@@ -248,6 +249,7 @@ class LifeCycleRestoreModal extends React.Component {
               disabled={pending}
               type="primary"
               onClick={this.onOk}
+              id="lifecycle-restore-modal-restore-btn"
             >
               RESTORE
             </Button>

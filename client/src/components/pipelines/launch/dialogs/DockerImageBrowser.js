@@ -452,7 +452,9 @@ export default class DockerImageBrowser extends React.Component {
         title="Select docker image"
         visible={this.props.visible}
         onCancel={this.props.onCancel}
-        onOk={this.onSave}>
+        onOk={this.onSave}
+        cancelText="CANCEL"
+      >
         <Row type="flex" align="middle" style={{marginBottom: 10}}>
           {this.renderRegistrySelector()}
           {this.renderGroupSelector()}

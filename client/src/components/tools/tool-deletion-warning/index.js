@@ -163,7 +163,7 @@ class ToolDeletionWarning extends React.Component {
               id="remove-button-cancel"
               onClick={resolve ? () => resolve(false) : undefined}
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               disabled={!groupAlertConfirmed}
@@ -172,7 +172,7 @@ class ToolDeletionWarning extends React.Component {
               onClick={resolve ? () => resolve(true) : undefined}
               style={{marginLeft: 5}}
             >
-              Delete
+              DELETE
             </Button>
           </Row>
         )}

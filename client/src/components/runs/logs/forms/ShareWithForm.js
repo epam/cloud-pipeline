@@ -413,6 +413,7 @@ export default class ShareWithForm extends React.Component {
         visible={this.props.visible}
         onOk={this.onSave}
         onCancel={this.props.onClose}
+        cancelText="CANCEL"
         footer={this.props.pending ? false : undefined}
         title="Share with users and groups">
         <Row>
@@ -420,6 +421,7 @@ export default class ShareWithForm extends React.Component {
           <Modal
             title="Select user"
             onCancel={this.closeFindUserDialog}
+            cancelText="CANCEL"
             onOk={this.onSelectUser}
             visible={this.state.findUserVisible}>
             <AutoComplete
@@ -443,7 +445,9 @@ export default class ShareWithForm extends React.Component {
             title="Select group"
             onCancel={this.closeFindGroupDialog}
             onOk={this.onSelectGroup}
-            visible={this.state.findGroupVisible}>
+            visible={this.state.findGroupVisible}
+            cancelText="CANCEL"
+          >
             <AutoComplete
               value={this.state.groupSearchString}
               style={{width: '100%'}}

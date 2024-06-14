@@ -145,14 +145,17 @@ export default class CreateGroupDialog extends React.Component {
             <Button
               disabled={pending}
               onClick={() => onClose(false)}
+              id="user-management-create-group-modal-cancel-btn"
             >
-              Cancel
+              CANCEL
             </Button>
             <Button
               disabled={!name || pending}
               type="primary"
-              onClick={this.createGroup}>
-              Create
+              onClick={this.createGroup}
+              id="user-management-create-group-modal-create-btn"
+            >
+              CREATE
             </Button>
           </Row>
         }

@@ -533,6 +533,7 @@ class ConfigurationBrowser extends React.Component {
               CANCEL
             </Button>
             <Button
+              id="configuration-browser-select"
               type="primary"
               disabled={!valid || !configurationPayload}
               onClick={this.onSelect}

@@ -170,6 +170,7 @@ class RestrictDockerDialog extends React.Component {
             <Button
               onClick={this.onCancel}
               style={{marginRight: 5}}
+              id="docker-images-to-limit-mounts-modal-cancel-btn"
             >
               CANCEL
             </Button>
@@ -182,6 +183,7 @@ class RestrictDockerDialog extends React.Component {
                   .filter(tool => tool.id && tool.image && tool.registry)
                   .length === 0
               }
+              id="docker-images-to-limit-mounts-modal-ok-btn"
             >
               OK
             </Button>

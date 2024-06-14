@@ -195,7 +195,9 @@ class StorageSharedLinkButton extends React.Component {
           footer={(
             <Button
               type="primary"
-              onClick={this.closeModal}>
+              onClick={this.closeModal}
+              id="storage-share-link-modal-ok-btn"
+            >
               OK
             </Button>
           )}>

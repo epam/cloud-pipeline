@@ -478,6 +478,7 @@ export default class RunScheduleDialog extends React.Component {
       <Modal
         title={title}
         onCancel={onClose}
+        cancelText="CANCEL"
         onOk={this.onOkClicked}
         visible={visible}
         width={showActionType ? '800px' : '700px'}

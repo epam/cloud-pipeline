@@ -533,15 +533,25 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
           <Row type="flex" justify="space-between">
             <Col>
               <Button
-                onClick={() => this.onClearSelectionClicked()}>Clear selection</Button>
+                onClick={() => this.onClearSelectionClicked()}
+                id="pipeline-browser-select-pipeline-modal-clear-btn"
+              >
+                CLEAR SELECTION
+              </Button>
             </Col>
             <Col className={styles.buttonsContainer}>
               <Button
-                onClick={() => this.onCancelClicked()}>Cancel</Button>
+                onClick={() => this.onCancelClicked()}
+                id="pipeline-browser-select-pipeline-modal-cancel-btn"
+              >
+                CANCEL
+              </Button>
               <Button
                 type="primary"
                 disabled={!this.state.selectionChanged}
-                onClick={() => this.onSelectClicked()}>
+                onClick={() => this.onSelectClicked()}
+                id="pipeline-browser-select-pipeline-modal-ok-btn"
+              >
                 OK
               </Button>
             </Col>

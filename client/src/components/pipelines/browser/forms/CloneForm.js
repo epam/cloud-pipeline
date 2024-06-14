@@ -96,7 +96,7 @@ export default class CloneForm extends React.Component {
       <Row>
         <Button
           id="folder-clone-form-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="folder-clone-form-ok-button"
           disabled={

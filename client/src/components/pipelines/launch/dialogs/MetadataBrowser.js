@@ -580,15 +580,25 @@ export default class MetadataBrowser extends React.Component {
           <Row type="flex" justify="space-between">
             <Col>
               <Button
-                onClick={() => this.onClearSelectionClicked()}>Clear selection</Button>
+                onClick={() => this.onClearSelectionClicked()}
+                id="metadata-browser-select-metadata-modal-clear-btn"
+              >
+                CLEAR SELECTION
+              </Button>
             </Col>
             <Col className={styles.buttonsContainer}>
               <Button
-                onClick={() => this.onCancelClicked()}>Cancel</Button>
+                onClick={() => this.onCancelClicked()}
+                id="metadata-browser-select-metadata-modal-cancel-btn"
+              >
+                CANCEL
+              </Button>
               <Button
                 type="primary"
                 disabled={!this.isSelectAvailable}
-                onClick={() => this.onSubmitClicked()}>
+                onClick={() => this.onSubmitClicked()}
+                id="metadata-browser-select-metadata-modal-ok-btn"
+              >
                 OK
                 {
                   this.isSelectAvailable && this.selectedItemsCount &&

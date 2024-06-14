@@ -832,14 +832,21 @@ export default class PersonalToolsPanel extends React.Component {
           width="50%"
           footer={
             <Row type="flex" align="middle" justify="space-between">
-              <Button onClick={() => {
-                this.runToolWithCustomSettings(this.state.runToolInfo.tool.id, this.state.runToolInfo.tag);
-                this.cancelRunTool();
-              }}>Run custom</Button>
+              <Button
+                onClick={() => {
+                  this.runToolWithCustomSettings(this.state.runToolInfo.tool.id, this.state.runToolInfo.tag);
+                  this.cancelRunTool();
+                }}
+                id="personal-tools-panel-modal-run-custom-btn"
+              >
+                RUN CUSTOM
+              </Button>
               <Col>
                 <Button
-                  onClick={this.cancelRunTool}>
-                  Cancel
+                  onClick={this.cancelRunTool}
+                  id="personal-tools-panel-modal-cancel-btn"
+                >
+                  CANCEL
                 </Button>
                 <Button
                   disabled={
@@ -853,7 +860,9 @@ export default class PersonalToolsPanel extends React.Component {
                     this.runCapabilitiesError
                   }
                   onClick={this.runToolWithDefaultSettings}
-                  type="primary">
+                  type="primary"
+                  id="personal-tools-panel-modal-run-btn"
+                >
                   RUN
                 </Button>
               </Col>

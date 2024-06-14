@@ -242,13 +242,18 @@ export default class SystemParametersBrowser extends Component {
         onCancel={this.onCancel}
         footer={
           <Row type="flex" justify="end">
-            <Button id="system-parameters-browser-cancel-button" onClick={this.onCancel}>
-              Cancel
+            <Button
+              id="system-parameters-browser-cancel-button"
+              onClick={this.onCancel}
+            >
+              CANCEL
             </Button>
             <Button
               type="primary"
               disabled={!this.state.selectedParameters.length}
-              id="system-parameters-browser-ok-button" onClick={this.onSave}>
+              id="system-parameters-browser-ok-button"
+              onClick={this.onSave}
+            >
               OK{
                 !!this.state.selectedParameters.length &&
                 ` (${this.state.selectedParameters.length})`

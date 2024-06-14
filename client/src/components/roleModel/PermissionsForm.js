@@ -883,13 +883,15 @@ export default class PermissionsForm extends React.Component {
               <Button
                 onClick={this.closeFindUserDialog}
                 style={{marginRight: 5}}
+                id="permission-form-select-user-modal-cancel-btn"
               >
-                Cancel
+                CANCEL
               </Button>
               <Button
                 type="primary"
                 disabled={this.state.operationInProgress}
                 onClick={this.operationWrapper(this.onSelectUser)}
+                id="permission-form-select-user-modal-ok-btn"
               >
                 OK
               </Button>
@@ -946,13 +948,15 @@ export default class PermissionsForm extends React.Component {
               <Button
                 onClick={this.closeFindGroupDialog}
                 style={{marginRight: 5}}
+                id="permission-form-select-group-modal-cancel-btn"
               >
-                Cancel
+                CANCEL
               </Button>
               <Button
                 type="primary"
                 disabled={this.state.operationInProgress}
                 onClick={this.operationWrapper(this.onSelectGroup)}
+                id="permission-form-select-group-modal-ok-btn"
               >
                 OK
               </Button>

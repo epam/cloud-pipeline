@@ -71,7 +71,7 @@ export default class EditFolderForm extends React.Component {
       <Row>
         <Button
           id="folder-edit-form-cancel-button"
-          onClick={this.props.onCancel}>Cancel</Button>
+          onClick={this.props.onCancel}>CANCEL</Button>
         <Button
           id="folder-edit-form-ok-button"
           type="primary"

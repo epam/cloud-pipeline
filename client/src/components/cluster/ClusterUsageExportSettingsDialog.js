@@ -90,6 +90,7 @@ class ClusterUsageExportSettingsDialog extends React.Component {
             <Button
               disabled={disabled}
               onClick={onCancel}
+              id="cluster-usage-export-settings-modal-cancel-btn"
             >
               CANCEL
             </Button>
@@ -97,6 +98,7 @@ class ClusterUsageExportSettingsDialog extends React.Component {
               disabled={disabled}
               type="primary"
               onClick={this.onExportClicked}
+              id="cluster-usage-export-settings-modal-export-btn"
             >
               EXPORT
             </Button>
