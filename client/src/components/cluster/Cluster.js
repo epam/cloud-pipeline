@@ -697,31 +697,27 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   getDescription = () => {
-    let total = 1;
-    let totalWithRunId = 0;
-    let description;
     if (this.filteredNodes.length > 0) {
-      total = this.filteredNodes.filter(this.nodeIsSlave).length;
-      totalWithRunId = this.filteredNodes
+      const total = this.filteredNodes.length;
+      const totalWorker = this.filteredNodes.filter(this.nodeIsSlave).length;
+      const totalSystem = total - totalWorker;
+      const totalWithRunId = this.filteredNodes
         .filter(n => n.labels && n.labels.runid)
         .length;
-      if (total > 0) {
-        let totalPart = `${total} nodes`;
-        if (total === 1) {
-          totalPart = `${total} node`;
-        }
-        if (totalWithRunId > 0) {
-          if (totalWithRunId > 1) {
-            description = `(${totalPart}, ${totalWithRunId} nodes with associated RunId)`;
-          } else {
-            description = `(${totalPart}, ${totalWithRunId} node with associated RunId)`;
-          }
-        } else {
-          description = `(${totalPart})`;
-        }
-      }
+
+      const nodeOrNodes = number => number === 1 ? 'node' : 'nodes';
+      const totalPart = `${total} ${nodeOrNodes(total)}`;
+      const systemPart = totalSystem > 0
+        ? (`, ${totalSystem} system ${nodeOrNodes(totalSystem)}`)
+        : ('');
+      const workerPart = totalWorker > 0
+        ? (`, ${totalWorker} worker ${nodeOrNodes(totalWorker)}`)
+        : ('');
+      const withRunIdPart = (totalWithRunId > 0)
+        ? (`, ${totalWithRunId} worker ${nodeOrNodes(totalWithRunId)} with associated RunId`)
+        : ('');
+      return `(${totalPart}${systemPart}${workerPart}${withRunIdPart})`;
     }
-    return description;
   };
 
   render () {
