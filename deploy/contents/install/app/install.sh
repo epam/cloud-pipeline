@@ -589,6 +589,9 @@ if is_service_requested cp-api-srv; then
         print_info "-> Registering Email templates (Email notification service itself will be installed afterwards)"
         api_register_email_templates
 
+        print_info "-> Registering default Version Storage report template"
+        api_register_vs_report_templates
+
         # if -env CP_CUSTOM_USERS_SPEC= is specified - it will be used, otherwise default one will be tried ($OTHER_PACKAGES_PATH/prerequisites/users.json)
         print_info "-> Registering custom users in IdP and API services"
         api_register_custom_users "$CP_CUSTOM_USERS_SPEC"
@@ -989,6 +992,8 @@ if is_service_requested cp-git-sync; then
 fi
 
 # GitLab Reader
+## Always register preference for gitlab-reader
+api_register_git_reader
 if is_service_requested cp-gitlab-reader; then
     print_ok "[Starting GitLab Reader deployment]"
 
@@ -1003,7 +1008,6 @@ if is_service_requested cp-gitlab-reader; then
 
         print_info "-> Waiting for GitLab Reader to initialize"
         wait_for_deployment "cp-gitlab-reader"
-        api_register_git_reader
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-gitlab-reader: deployed"
     fi
     echo

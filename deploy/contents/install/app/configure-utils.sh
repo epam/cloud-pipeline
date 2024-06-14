@@ -1573,6 +1573,15 @@ EOF
     done
 }
 
+function api_register_vs_report_templates() {
+    local vs_report_template_file="${CP_PREF_TEMPLATES_REPORT_DIRECTORY}/vs_report_default_template.docx"
+    api_set_preference "storage.version.storage.report.template" "$vs_report_template_file" "false"
+    if [ $? -ne 0 ]; then
+        print_err "Unable to register Version Storage report template $vs_report_template_file"
+        return 1
+    fi
+}
+
 function api_register_custom_users {
     local users_file="${1:-$OTHER_PACKAGES_PATH/prerequisites/users.json}"
     if [ ! -f "$users_file" ]; then
