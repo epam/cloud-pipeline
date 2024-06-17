@@ -81,7 +81,8 @@ class Settings(object):
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                  configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
                  deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
-                 estimate_size, sample_sheet_prefix, demultiplex_config_prefix, validate_illumina):
+                 estimate_size, sample_sheet_prefix, demultiplex_config_prefix, validate_illumina,
+                 validate_token):
         self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')[
             'value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
@@ -107,6 +108,7 @@ class Settings(object):
         self.sample_sheet_prefix = sample_sheet_prefix
         self.demultiplex_config_prefix = demultiplex_config_prefix
         self.validate_illumina = validate_illumina
+        self.validate_token = validate_token
 
 
 class MachineRun(object):
@@ -122,12 +124,7 @@ class MachineRun(object):
         try:
             Logger.info('\nSynchronizing machine run %s.' % self.machine_run, task_name=self.machine_run)
 
-            if self.settings.validate_illumina:
-                Logger.info('Validating Illumina folder %s.' % self.run_folder, task_name=self.machine_run)
-                if not self.validate_illumina_folder():
-                    Logger.info('Illumina machine run %s is not fully uploaded, skipping processing' % self.machine_run, task_name=self.machine_run)
-                    return
-            else:
+            if self.settings.validate_token:
                 completion_mark = os.path.join(self.run_folder, self.settings.complete_token_file_name)
                 if not os.path.isfile(completion_mark):
                     Logger.info('Completion token is not present for machine run %s. Skipping processing.'
@@ -135,6 +132,12 @@ class MachineRun(object):
                     return
                 Logger.info('Completion token is present for machine run %s.' % self.machine_run,
                             task_name=self.machine_run)
+
+            if self.settings.validate_illumina:
+                Logger.info('Validating Illumina folder %s.' % self.run_folder, task_name=self.machine_run)
+                if not self.validate_illumina_folder():
+                    Logger.info('Illumina machine run %s is not fully uploaded, skipping processing' % self.machine_run, task_name=self.machine_run)
+                    return
 
             sample_sheets = self.find_sample_sheet(self.run_folder)
             trigger_run = len(sample_sheets) == 0
@@ -559,12 +562,13 @@ def main():
     demultiplex_config_prefix = os.getenv('NGS_SYNC_DEMU_CONFIG_PREFIX', 'demu_config')
     connection_timeout = int(os.getenv('NGS_SYNC_CONNECTION_TIMEOUT', '20'))
     validate_illumina = os.getenv('NGS_SYNC_VALIDATE_ILLUMINA', 'false') == 'true'
+    validate_token = os.getenv('NGS_SYNC_VALIDATE_TOKEN', 'false') == 'true'
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs', connection_timeout=connection_timeout)
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
                         deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
                         'true' == estimate_size.lower(), sample_sheet_prefix, demultiplex_config_prefix,
-                        validate_illumina)
+                        validate_illumina, validate_token)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 
