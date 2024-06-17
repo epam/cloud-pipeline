@@ -3,6 +3,7 @@ import glob
 import json
 import os
 import time
+import xml.etree.ElementTree as ET
 
 from pipeline import Logger, PipelineAPI, common
 
@@ -80,7 +81,7 @@ class Settings(object):
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                  configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
                  deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
-                 estimate_size, sample_sheet_prefix, demultiplex_config_prefix):
+                 estimate_size, sample_sheet_prefix, demultiplex_config_prefix, validate_illumina):
         self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')[
             'value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
@@ -105,6 +106,7 @@ class Settings(object):
         self.estimate_size = estimate_size
         self.sample_sheet_prefix = sample_sheet_prefix
         self.demultiplex_config_prefix = demultiplex_config_prefix
+        self.validate_illumina = validate_illumina
 
 
 class MachineRun(object):
@@ -119,13 +121,21 @@ class MachineRun(object):
     def sync(self):
         try:
             Logger.info('\nSynchronizing machine run %s.' % self.machine_run, task_name=self.machine_run)
-            completion_mark = os.path.join(self.run_folder, self.settings.complete_token_file_name)
-            if not os.path.isfile(completion_mark):
-                Logger.info('Completion token is not present for machine run %s. Skipping processing.'
-                            % self.machine_run, task_name=self.machine_run)
-                return
-            Logger.info('Completion token is present for machine run %s.' % self.machine_run,
-                        task_name=self.machine_run)
+
+            if self.settings.validate_illumina:
+                Logger.info('Validating Illumina folder %s.' % self.run_folder, task_name=self.machine_run)
+                if not self.validate_illumina_folder():
+                    Logger.info('Illumina machine run %s is not fully uploaded, skipping processing' % self.machine_run, task_name=self.machine_run)
+                    return
+            else:
+                completion_mark = os.path.join(self.run_folder, self.settings.complete_token_file_name)
+                if not os.path.isfile(completion_mark):
+                    Logger.info('Completion token is not present for machine run %s. Skipping processing.'
+                                % self.machine_run, task_name=self.machine_run)
+                    return
+                Logger.info('Completion token is present for machine run %s.' % self.machine_run,
+                            task_name=self.machine_run)
+
             sample_sheets = self.find_sample_sheet(self.run_folder)
             trigger_run = len(sample_sheets) == 0
             if len(sample_sheets) == 0:
@@ -143,6 +153,77 @@ class MachineRun(object):
                         task_name=self.machine_run)
             self.notifications.append(
                 Event(self.machine_run, 'Metadata Created', EVENT_FAILURE, message=str(e.message)))
+
+    def validate_illumina_folder(self):
+        Logger.info("Validating Illumina folder structure for path %s" % self.run_folder, task_name=self.machine_run)
+        required_files = ["RunInfo.xml", "RunParameters.xml", "Data/Intensities/s.locs"]
+        for f in required_files:
+            full_path = os.path.join(self.run_folder, f)
+            if not os.path.isfile(full_path):
+                Logger.info("Missing required file %s" % full_path, task_name=self.machine_run)
+                return False
+        run_info = ET.parse(os.path.join(self.run_folder, "RunInfo.xml")).getroot()
+        cycle_count = self.get_attribute_sum(run_info, "Run/Reads/Read", "NumCycles")
+        lane_count = self.get_attribute_sum(run_info, "Run/FlowcellLayout", "LaneCount")
+
+        surfaces = set()
+        tiles = {}
+
+        for tile in run_info.findall("Run/FlowcellLayout/TileSet/Tiles/Tile"):
+            tile_id = tile.text.split("_")
+            lane = int(tile_id[0])
+            name = tile_id[1]
+            if lane not in tiles:
+                tiles[lane] = []
+            tiles[lane].append(tile.text)
+            surfaces.add(int(name[0:1]))
+
+        Logger.info("[%s] Cycles count: %d" % (self.run_folder, cycle_count), task_name=self.machine_run)
+        Logger.info("[%s] Lane count: %d" % (self.run_folder, lane_count), task_name=self.machine_run)
+        Logger.info("[%s] Surfaces list: %s" % (self.run_folder, str(surfaces)), task_name=self.machine_run)
+        Logger.info("[%s] Tiles count:" % self.run_folder, task_name=self.machine_run)
+
+        for lane, tile in tiles.items():
+            Logger.info("[%s] Lane %d: %d" % (self.run_folder, lane, len(tile)), task_name=self.machine_run)
+
+        if not self.check_filter_files(tiles):
+            return False
+        else:
+            Logger.info("All filter files are present for %s" % self.run_folder, task_name=self.machine_run)
+
+        if not self.check_cbcl_files(lane_count, cycle_count, surfaces):
+            return False
+        else:
+            Logger.info("All cbcl files are present for %s" % self.run_folder, task_name=self.machine_run)
+        return True
+
+    def check_filter_files(self, tiles):
+        for lane, tiles in tiles.items():
+            for tile in tiles:
+                filter_file = os.path.join(self.run_folder,
+                                           "Data/Intensities/BaseCalls/L00%d" % lane,
+                                           "s_%s.filter" % tile)
+                if not os.path.isfile(filter_file):
+                    Logger.warn("Filter file %s is not present. Folder %s is incomplete." % (filter_file, self.run_folder))
+                    return False
+        return True
+
+    def check_cbcl_files(self, lane_count, cycle_count, surfaces):
+        for lane in range(1, lane_count + 1):
+            for cycle in range(1, cycle_count + 1):
+                for surface in surfaces:
+                    cbcl_file = os.path.join(self.run_folder,
+                                             "Data/Intensities/BaseCalls/L00%d/C%d.1/L00%d_%d.cbcl" % (lane, cycle, lane, surface))
+                    if not os.path.isfile(cbcl_file):
+                        Logger.warn("Cbcl file %s is not present. Folder %s is incomplete." % (cbcl_file, self.run_folder))
+                        return False
+        return True
+
+    def get_attribute_sum(self, root, name, attribute):
+        count = 0
+        for node in root.findall(name):
+            count = count + int(node.get(attribute, default=0))
+        return count
 
     def find_sample_sheet(self, run_folder):
         return [os.path.basename(s) for s in glob.glob(os.path.join(run_folder, self.settings.sample_sheet_glob))]
@@ -477,11 +558,13 @@ def main():
     sample_sheet_prefix = os.getenv('NGS_SYNC_SAMPLE_SHEET_PREFIX', 'SampleSheet')
     demultiplex_config_prefix = os.getenv('NGS_SYNC_DEMU_CONFIG_PREFIX', 'demu_config')
     connection_timeout = int(os.getenv('NGS_SYNC_CONNECTION_TIMEOUT', '20'))
+    validate_illumina = os.getenv('NGS_SYNC_VALIDATE_ILLUMINA', 'false') == 'true'
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs', connection_timeout=connection_timeout)
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
                         deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
-                        'true' == estimate_size.lower(), sample_sheet_prefix, demultiplex_config_prefix)
+                        'true' == estimate_size.lower(), sample_sheet_prefix, demultiplex_config_prefix,
+                        validate_illumina)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 
