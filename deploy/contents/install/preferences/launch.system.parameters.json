@@ -626,5 +626,12 @@
         "description": "Specifies run network policy type. Allowed values are: common and internal.",
         "defaultValue": "common",
         "passToWorkers": true
+    },
+    {
+        "name": "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES",
+        "type": "Indicates how many minutes node will be in running state with NODE_UNAVAILABLE state.",
+        "description": ".",
+        "defaultValue": "30",
+        "passToWorkers": true
     }
 ]
