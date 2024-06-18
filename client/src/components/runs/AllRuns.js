@@ -17,7 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Card, Col, Menu, Popover, Row} from 'antd';
+import {Alert, Card, Col, Menu, Popover, Row} from 'antd';
 import classNames from 'classnames';
 import {Link} from 'react-router';
 import RunTable, {Columns} from './run-table';
@@ -29,6 +29,8 @@ import {RunCountDefault} from '../../models/pipelines/RunCount';
 import continuousFetch from '../../utils/continuous-fetch';
 import styles from './AllRuns.css';
 import RunsFilterDescription from './run-table/runs-filter-description';
+import RunsInfo from './runs-info';
+import ActiveRunsFilterDescription from './runs-info/filter-description';
 
 const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
@@ -57,6 +59,9 @@ const DEFAULT_COMPLETED_FILTERS = {
   showPersonalRuns: false
 };
 
+const CHARTS_INFO_TAB = 'info';
+const CHARTS_INFO_DETAILS = 'details';
+
 @roleModel.authenticationInfo
 @inject('counter', 'preferences')
 @inject(({routing}, {params}) => {
@@ -73,7 +78,9 @@ const DEFAULT_COMPLETED_FILTERS = {
 @observer
 class AllRuns extends React.Component {
   state = {
-    counters: {}
+    counters: {},
+    details: undefined,
+    chartsFilters: undefined
   };
 
   countersManagementToken = 0;
@@ -83,10 +90,24 @@ class AllRuns extends React.Component {
     (this.manageCounters)();
   }
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.status !== this.props.status &&
+      this.props.status !== CHARTS_INFO_TAB && this.props.status !== CHARTS_INFO_DETAILS) {
+      this.clearFilters();
+    }
+  }
+
   componentWillUnmount () {
     this.countersManagementToken += 1;
     this.stopCounters();
   }
+
+  clearFilters = () => {
+    this.setState({
+      chartsFilters: undefined
+    });
+  };
 
   manageCounters = async () => {
     this.countersManagementToken += 1;
@@ -171,6 +192,17 @@ class AllRuns extends React.Component {
       ];
     }
     return runsFilters;
+  }
+
+  @computed
+  get runsInfoChartsAvailable () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
   }
 
   get currentFilters () {
@@ -279,11 +311,79 @@ class AllRuns extends React.Component {
     );
   };
 
+  renderRunsInfoChartsDetailsTable = () => {
+    const {
+      details
+    } = this.state;
+    if (!details) {
+      return null;
+    }
+    const filters = {
+      ...details,
+      onlyMasterJobs: false
+    };
+    return (
+      <div style={{paddingTop: 5}}>
+        <div style={{margin: 5}}>
+          <ActiveRunsFilterDescription filters={details} postfix={'. '} />
+          <Link
+            to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+          >
+            Back to active runs info
+          </Link>
+        </div>
+        <RunTable
+          filters={filters}
+          autoUpdate={false}
+          disableFilters={[]}
+        />
+      </div>
+    );
+  };
+
+  onRunsChartsApplyFilters = (filters) => {
+    const {
+      owners,
+      dockerImages,
+      instanceTypes,
+      tags = [],
+      statuses
+    } = filters || {};
+    this.setState({details: {
+      owners,
+      instanceTypes,
+      dockerImages,
+      tags: Object.fromEntries(tags.map(tag => ([tag, true]))),
+      statuses
+    }});
+    this.navigateToRuns(CHARTS_INFO_DETAILS);
+  };
+
+  onChangeChartsFilters = (newFilters) => {
+    this.setState({
+      chartsFilters: newFilters
+    });
+  };
+
   render () {
     const current = this.currentFilters;
     const {
-      counters = {}
+      status
+    } = this.props;
+    const {
+      counters = {},
+      details
     } = this.state;
+    const isRunsInfoChartsDetailsPage = /^details$/i.test(status) && details;
+    const isRunsInfoChartsPage = /^info$/i.test(status) || (/^details$/i.test(status) && !details);
+    let selectedKeys = [];
+    if (current) {
+      selectedKeys = [current.key];
+    } else if (this.runsInfoChartsAvailable && isRunsInfoChartsPage) {
+      selectedKeys = [CHARTS_INFO_TAB];
+    } else if (this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage) {
+      selectedKeys = [CHARTS_INFO_DETAILS];
+    }
     return (
       <Card
         className={
@@ -301,7 +401,7 @@ class AllRuns extends React.Component {
             <Row type="flex" justify="center">
               <Menu
                 mode="horizontal"
-                selectedKeys={current ? [current.key] : []}
+                selectedKeys={selectedKeys}
                 className={styles.tabsMenu}
               >
                 {
@@ -331,6 +431,30 @@ class AllRuns extends React.Component {
                     </Menu.Item>
                   ))
                 }
+                {
+                  this.runsInfoChartsAvailable && (
+                    <Menu.Item key="info">
+                      <Link
+                        id={`runs-info-charts-button`}
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                      >
+                        Info
+                      </Link>
+                    </Menu.Item>
+                  )
+                }
+                {
+                  this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
+                    <Menu.Item key="details">
+                      <Link
+                        id={`runs-info-charts-details-button`}
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                      >
+                        Details
+                      </Link>
+                    </Menu.Item>
+                  )
+                }
               </Menu>
             </Row>
           </Col>
@@ -347,7 +471,28 @@ class AllRuns extends React.Component {
           </Col>
         </Row>
         {
-          this.renderTable()
+          !isRunsInfoChartsPage && !isRunsInfoChartsDetailsPage && this.renderTable()
+        }
+        {
+          isRunsInfoChartsPage && this.runsInfoChartsAvailable && (
+            <RunsInfo
+              onApplyFilters={this.onRunsChartsApplyFilters}
+              style={{paddingTop: 5}}
+              filters={this.state.chartsFilters}
+              onFiltersChange={this.onChangeChartsFilters}
+            />
+          )
+        }
+        {
+          isRunsInfoChartsDetailsPage &&
+          this.runsInfoChartsAvailable &&
+          this.renderRunsInfoChartsDetailsTable()
+        }
+        {
+          (isRunsInfoChartsPage || isRunsInfoChartsDetailsPage) &&
+          !this.runsInfoChartsAvailable && (
+            <Alert message="Access denied" type="warning" />
+          )
         }
       </Card>
     );

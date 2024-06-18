@@ -34,6 +34,30 @@ function getAttribute (attributes, ...attribute) {
   return result;
 }
 
+export function getUserDisplayName (user) {
+  const {
+    attributes = {},
+    name,
+    userName
+  } = user;
+  const firstName = getAttribute(attributes, 'FirstName', 'First Name');
+  const lastName = getAttribute(attributes, 'LastName', 'Last Name');
+  const attrName = getAttribute(attributes, 'name');
+  if (firstName && lastName && firstName !== lastName) {
+    return `${lastName} ${firstName}`;
+  }
+  if (firstName && lastName) {
+    return firstName;
+  }
+  if (attrName) {
+    return attrName;
+  }
+  if (name) {
+    return name;
+  }
+  return (userName || '').toLowerCase();
+}
+
 @inject('usersInfo')
 @observer
 export default class UserName extends React.Component {
@@ -78,27 +102,7 @@ export default class UserName extends React.Component {
   };
 
   renderUserName = (user) => {
-    const {
-      attributes = {},
-      name,
-      userName
-    } = user;
-    const firstName = getAttribute(attributes, 'FirstName', 'First Name');
-    const lastName = getAttribute(attributes, 'LastName', 'Last Name');
-    const attrName = getAttribute(attributes, 'name');
-    if (firstName && lastName && firstName !== lastName) {
-      return `${lastName} ${firstName}`;
-    }
-    if (firstName && lastName) {
-      return firstName;
-    }
-    if (attrName) {
-      return attrName;
-    }
-    if (name) {
-      return name;
-    }
-    return (userName || '').toLowerCase();
+    return getUserDisplayName(user);
   };
 
   render () {

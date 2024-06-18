@@ -334,7 +334,10 @@ class RunTable extends localization.LocalizedReactComponent {
         runs: [],
         error: undefined
       };
-      const tags = extractTagsFromFilter(additionalFilters);
+      const tags = {
+        ...(filters.tags || {}),
+        ...extractTagsFromFilter(additionalFilters)
+      };
       if (search) {
         if (searchFilters) {
           fetchRunsPromise = () => new Promise((resolve, reject) => {
@@ -805,6 +808,7 @@ RunTable.propTypes = {
     startDateFrom: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     endDateTo: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
     owners: PropTypes.arrayOf(PropTypes.string),
+    instanceTypes: PropTypes.arrayOf(PropTypes.string),
     roles: PropTypes.arrayOf(PropTypes.string),
     onlyMasterJobs: PropTypes.bool,
     tags: PropTypes.object
