@@ -79,13 +79,15 @@ class RunsInfo extends React.Component {
       owners,
       instanceTypes,
       tags,
-      dockerImages
+      dockerImages,
+      statuses
     } = this.state.filters;
     return [
       owners,
       instanceTypes,
       tags,
-      dockerImages
+      dockerImages,
+      statuses
     ].some(filter => filter.length > 0);
   }
 
