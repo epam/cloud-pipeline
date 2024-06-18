@@ -15,6 +15,8 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {
@@ -33,8 +35,6 @@ import {
   formatUserName,
   extractDatasets
 } from './utils';
-import PropTypes from "prop-types";
-import classNames from "classnames";
 
 const LABELS_THRESHOLD = 25;
 
