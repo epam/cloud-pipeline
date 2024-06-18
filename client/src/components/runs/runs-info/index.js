@@ -33,6 +33,8 @@ import {
   formatUserName,
   extractDatasets
 } from './utils';
+import PropTypes from "prop-types";
+import classNames from "classnames";
 
 const LABELS_THRESHOLD = 25;
 
@@ -277,11 +279,16 @@ class RunsInfo extends React.Component {
         'RESUMING'
       ];
     }
-    // todo: navigate to active runs page with `detailsFilters` applied
+    const {
+      onApplyFilters
+    } = this.props;
+    if (typeof onApplyFilters === 'function') {
+      onApplyFilters(detailsFilters);
+    }
   }
 
   render () {
-    const {reportThemes} = this.props;
+    const {reportThemes, className, style} = this.props;
     const {
       owners,
       dockerImages,
@@ -310,8 +317,8 @@ class RunsInfo extends React.Component {
     }];
     return (
       <div
-        className="cp-panel cp-panel-transparent"
-        style={{display: 'flex', flexDirection: 'column'}}
+        className={classNames('cp-panel', 'cp-panel-transparent', className)}
+        style={{...(style || {}), display: 'flex', flexDirection: 'column'}}
       >
         {this.renderFilters()}
         <div style={{display: 'flex', flexWrap: 'wrap'}}>
@@ -350,6 +357,12 @@ class RunsInfo extends React.Component {
     );
   }
 }
+
+RunsInfo.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  onApplyFilters: PropTypes.func
+};
 
 const RunsInfoWithThemes = (props) => {
   return (
