@@ -153,11 +153,7 @@ output "cp_cloud_network_config" {
       {
       "name": "${data.aws_region.current.name}",
       "default": true,
-      "networks": {
-        "${data.aws_region.current.name}a": "${local.az_to_subnet["${data.aws_region.current.name}a"]}",
-        "${data.aws_region.current.name}b": "${local.az_to_subnet["${data.aws_region.current.name}b"]}",
-        "${data.aws_region.current.name}c": "${local.az_to_subnet["${data.aws_region.current.name}c"]}"
-      },
+      "networks": ${jsonencode(local.az_to_subnet)},
       "proxies": [
         $${CP_PREF_CLUSTER_PROXIES}
       ],

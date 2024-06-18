@@ -310,7 +310,7 @@ Resources:
               }
 
               provider "aws" {
-                region = "eu-west-1"
+                region = "${AWS::Region}"
               }
 
               provider "kubernetes" {

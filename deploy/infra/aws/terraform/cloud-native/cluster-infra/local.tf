@@ -94,9 +94,7 @@ locals {
   cp_filesystem_exec_role = var.deploy_filesystem_type == "efs" ? module.efs_csi_irsa.iam_role_arn : module.fsx_csi_irsa.iam_role_arn
   cp_filesystem_mountname = var.deploy_filesystem_type == "fsx" ? aws_fsx_lustre_file_system.fsx[0].mount_name : ""
 
-  az_to_subnet = {
-    for s in data.aws_subnet.selected : s.availability_zone => s.id
-  }
+  az_to_subnet = {for s in data.aws_subnet.info : s.availability_zone => s.id}
   
   deploy_idp = var.cp_idp_host != null ? [
     "-s cp-idp",
