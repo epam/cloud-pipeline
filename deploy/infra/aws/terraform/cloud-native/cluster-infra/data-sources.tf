@@ -36,9 +36,9 @@ data "aws_subnets" "this" {
   }
 }
 
-data "aws_subnet" "selected" {
-  count = length(var.subnet_ids)
-  id    = var.subnet_ids[count.index]
+data "aws_subnet" "info" {
+  for_each = toset(data.aws_subnets.this.ids)
+  id       = each.value
 }
 
 /*
