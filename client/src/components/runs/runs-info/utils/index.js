@@ -30,7 +30,8 @@ function getDatasetStyles (key, reportThemes, b) {
     stack: 'DEFAULT',
     showDataLabel (item) {
       return typeof item === 'number' && item !== 0;
-    }
+    },
+    maxBarThickness: 50
   };
   if (key === 'RUNNING') {
     return {
