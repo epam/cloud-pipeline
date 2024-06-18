@@ -461,6 +461,7 @@ public class ScaleDownHandler {
                 .filter(StringUtils::isNotBlank)
                 .filter(StringUtils::isNumeric)
                 .map(NumberUtils::toInt)
+                .filter(intValue -> intValue >= 0)
                 .map(Duration::ofMinutes)
                 .orElse(defaultDuration);
     }
