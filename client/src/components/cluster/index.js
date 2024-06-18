@@ -47,6 +47,12 @@ const Tabs = [
     path: '/cluster/usage',
     title: 'Pools Usage',
     available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'runs-info',
+    path: '/cluster/runs-info',
+    title: 'Runs info',
+    available: (user) => user ? user.admin : false
   }
 ];
 

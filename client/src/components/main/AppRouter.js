@@ -43,6 +43,7 @@ import CoreNodes from '../cluster/core-nodes';
 import HotCluster from '../cluster/hot-node-pool';
 import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
+import RunsInfo from '../cluster/runs-info';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
 import ClusterNodeMonitor from '../cluster/ClusterNodeMonitor';
@@ -136,6 +137,7 @@ function AppRouterComponent ({history, uiNavigation}) {
           <Route path="core-nodes" component={CoreNodes} />
           <Route path="hot" component={HotCluster} />
           <Route path="usage" component={HotClusterUsage} />
+          <Route path="runs-info" component={RunsInfo} />
         </Route>
         <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
         <Route path="/cluster/:nodeName" component={ClusterNode}>
