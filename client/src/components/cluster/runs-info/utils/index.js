@@ -16,6 +16,7 @@
 
 import {colors} from '../../../billing/reports/charts';
 import {fadeout} from '../../../../themes/utilities/color-utilities';
+import {getUserDisplayName} from '../../../special/UserName';
 
 const STATUSES = {
   PAUSED: 'PAUSED',
@@ -25,35 +26,50 @@ const STATUSES = {
 };
 
 function getDatasetStyles (key, reportThemes, b) {
+  const common = {
+    stack: 'DEFAULT',
+    showDataLabel (item) {
+      return typeof item === 'number' && item !== 0;
+    }
+  };
   if (key === 'RUNNING') {
     return {
       backgroundColor: reportThemes.lightCurrent,
-      flagColor: reportThemes.current
+      flagColor: reportThemes.current,
+      ...common
     };
   }
   if (key === 'PAUSED') {
     return {
       backgroundColor: fadeout(reportThemes.lightBlue, 0.65),
-      flagColor: reportThemes.lightBlue
+      flagColor: reportThemes.lightBlue,
+      ...common
     };
   }
   return {
     backgroundColor: fadeout(colors.grey, 0.65),
-    flagColor: colors.grey
+    flagColor: colors.grey,
+    ...common
   };
-};
+}
 
 function formatDockerImage (docker = '') {
   // eslint-disable-next-line no-unused-vars
   const [_r, g, iv] = docker.split('/');
   const image = iv.split(':').slice(0, -1).join(':');
-  const dockerImage = [g, image].join('/').toLowerCase();
-  return dockerImage;
-};
+  return [g, image].join('/').toLowerCase();
+}
 
 function formatDockerImages (images = []) {
   return images.map(formatDockerImage);
-};
+}
+
+function formatUserName (user, users = []) {
+  const userInstance = users
+    .find((u) => (u.name || '').toLowerCase() === user.toLowerCase() ||
+      (u.name || '').toLowerCase().split('@')[0] === user.toLowerCase().split('@')[0]);
+  return (userInstance ? getUserDisplayName(userInstance) : undefined) || user;
+}
 
 function extractDatasetByField (field, data = {}) {
   const dataField = data[field];
@@ -75,7 +91,7 @@ function extractDatasetByField (field, data = {}) {
     labels,
     ...dataSets
   };
-};
+}
 
 function extractDatasets (data = {}) {
   return {
@@ -84,12 +100,13 @@ function extractDatasets (data = {}) {
     instanceTypes: extractDatasetByField('instanceTypes', data),
     tags: extractDatasetByField('tags', data)
   };
-};
+}
 
 export {
   getDatasetStyles,
   STATUSES,
   formatDockerImages,
   formatDockerImage,
+  formatUserName,
   extractDatasets
 };

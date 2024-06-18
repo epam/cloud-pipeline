@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Icon, Spin} from 'antd';
 import Chart from 'chart.js';
-import {BarchartDataLabelPlugin} from '../../billing/reports/charts/extensions';
+import {BarchartDataLabelPlugin, ChartClickPlugin} from '../../billing/reports/charts/extensions';
 import ThemedReport from '../../billing/reports/themed-report';
 import 'chart.js/dist/Chart.css';
 
@@ -14,15 +14,38 @@ class RunsInfoChart extends Component {
     loading: PropTypes.bool,
     title: PropTypes.string,
     data: PropTypes.object,
-    style: PropTypes.object
+    style: PropTypes.object,
+    onEntryClick: PropTypes.func
   };
 
   chart;
   ctx;
 
-  componentWillReceiveProps (nextProps, nextContext) {
+  componentDidUpdate (prevProps) {
     if (this.ctx) {
-      this.chartRef(this.ctx, nextProps);
+      const {
+        data: prevData,
+        options: prevOptions,
+        title: prevTitle,
+        displayEmptyTitleRow: prevDisplayEmptyTitleRow,
+        onEntryClick: prevOnEntryClick
+      } = prevProps;
+      const {
+        data,
+        options,
+        title,
+        displayEmptyTitleRow,
+        onEntryClick
+      } = this.props;
+      if (
+        data !== prevData ||
+        options !== prevOptions ||
+        title !== prevTitle ||
+        displayEmptyTitleRow !== prevDisplayEmptyTitleRow ||
+        onEntryClick !== prevOnEntryClick
+      ) {
+        this.chartRef(this.ctx, this.props);
+      }
     }
   }
 
@@ -38,7 +61,8 @@ class RunsInfoChart extends Component {
         data,
         options = {},
         title,
-        displayEmptyTitleRow
+        displayEmptyTitleRow,
+        onEntryClick
       } = props || this.props;
       const opts = {
         animation: {duration: 0},
@@ -51,6 +75,7 @@ class RunsInfoChart extends Component {
         },
         scales: {
           xAxes: [{
+            id: 'x-axis',
             stacked: true,
             gridLines: {
               display: false
@@ -61,7 +86,8 @@ class RunsInfoChart extends Component {
               stacked: true,
               ticks: {
                 beginAtZero: true,
-                stepSize: 1
+                stepSize: 1,
+                maxTicksLimit: 5
               }
             }
           ]
@@ -70,7 +96,28 @@ class RunsInfoChart extends Component {
         plugins: {
           [BarchartDataLabelPlugin.id]: {
             valueFormatter: (value) => value
+          },
+          [ChartClickPlugin.id]: {
+            handler: index => {
+              const {entries = []} = data || {};
+              if (typeof onEntryClick === 'function') {
+                onEntryClick(entries[index]);
+              }
+            },
+            axis: 'x-axis'
           }
+        },
+        hover: {
+          onHover: function (e) {
+            const point = this.getElementsAtXAxis(e);
+            e.target.style.cursor = point.length > 0
+              ? 'pointer'
+              : 'default';
+          }
+        },
+        tooltips: {
+          intersect: false,
+          mode: 'index'
         },
         ...options
       };
@@ -83,7 +130,7 @@ class RunsInfoChart extends Component {
           type: 'bar',
           data,
           options: opts,
-          plugins: [BarchartDataLabelPlugin.plugin]
+          plugins: [BarchartDataLabelPlugin.plugin, ChartClickPlugin.plugin]
         });
       }
       this.chart.resize();

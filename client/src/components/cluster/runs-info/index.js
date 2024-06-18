@@ -30,12 +30,13 @@ import {
   STATUSES,
   formatDockerImages,
   formatDockerImage,
+  formatUserName,
   extractDatasets
 } from './utils';
 
 const LABELS_THRESHOLD = 25;
 
-@inject('reportThemes')
+@inject('reportThemes', 'usersInfo')
 @observer
 class RunsInfo extends React.Component {
   _initialFilters = {
@@ -72,6 +73,15 @@ class RunsInfo extends React.Component {
   @computed
   get pending () {
     return this._pending;
+  }
+
+  @computed
+  get users () {
+    const {usersInfo} = this.props;
+    if (usersInfo.loaded) {
+      return usersInfo.value || [];
+    }
+    return [];
   }
 
   get filtersApplied () {
@@ -181,7 +191,7 @@ class RunsInfo extends React.Component {
           >
             {owners.map(owner => (
               <Select.Option key={owner} value={owner}>
-                {owner}
+                {formatUserName(owner, this.users)}
               </Select.Option>
             ))}
           </Select>
@@ -253,6 +263,23 @@ class RunsInfo extends React.Component {
     );
   };
 
+  onEntryClick (entry, field) {
+    const {filters} = this.state;
+    const detailsFilters = {
+      ...(filters || {}),
+      [field]: [entry]
+    };
+    if (!detailsFilters.statuses || detailsFilters.statuses.length === 0) {
+      detailsFilters.statuses = [
+        'RUNNING',
+        'PAUSING',
+        'PAUSED',
+        'RESUMING'
+      ];
+    }
+    // todo: navigate to active runs page with `detailsFilters` applied
+  }
+
   render () {
     const {reportThemes} = this.props;
     const {
@@ -297,18 +324,24 @@ class RunsInfo extends React.Component {
                 data: dataset,
                 ...getDatasetStyles(key, reportThemes, {title, data, key})
               }));
+            let formattedLabels = labels;
+            if (key === 'dockerImages') {
+              formattedLabels = formatDockerImages(labels);
+            } else if (key === 'owners') {
+              formattedLabels = labels.map((user) => formatUserName(user, this.users));
+            }
             return (
               <RunsInfoChart
                 key={key}
                 loading={this.pending}
                 title={title}
                 data={{
-                  labels: key === 'dockerImages'
-                    ? formatDockerImages(labels)
-                    : labels,
-                  datasets: dataSets
+                  labels: formattedLabels,
+                  datasets: dataSets,
+                  entries: labels
                 }}
                 style={{width: determineWidth(labels)}}
+                onEntryClick={(entry) => this.onEntryClick(entry, key)}
               />
             );
           })}
