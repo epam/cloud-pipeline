@@ -103,6 +103,17 @@ variable "eks_additional_role_mapping" {
   description = "List of additional roles mapping for aws_auth map."
 }
 
+
+variable "eks_additional_user_mapping" {
+  type = list(object({
+    iam_user_arn  = string
+    eks_role_name = string
+    eks_groups    = list(string)
+  }))
+  default     = []
+  description = "List of IAM user mapping for aws_auth map."
+}
+
 variable "eks_cloudwatch_logs_retention_in_days" {
   type        = number
   default     = 30

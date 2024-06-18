@@ -105,6 +105,14 @@ module "eks-aws-auth" {
     ],
     local.sso_additional_role_mapping
   )
+
+  aws_auth_users = [
+    for user_mapping in var.eks_additional_user_mapping : {
+      rolearn  = user_mapping.iam_user_arn
+      username = user_mapping.eks_role_name
+      groups   = user_mapping.eks_groups
+    }
+  ]
 }
 
 ##############################################################

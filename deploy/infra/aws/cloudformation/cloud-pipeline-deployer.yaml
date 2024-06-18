@@ -51,11 +51,16 @@ Parameters:
     Type: String
     Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information
     Default: "1.29"
-  EKSAdminRoleArns:
+  EKSAdminIAMRoleArns:
     Type: String
     Description: > 
       (Optional) Set of roles ARNs which will get admin access in EKS cluster. 
       Could be useful if DeploymentAWSCredentialsSecretId is not provided. Then here user can provide ARN of his role to get access to the cluster.
+    Default: ""
+  EKSAdminIAMUserArns:
+    Type: String
+    Description: >
+      (Optional) Set of IAM user ARNs which will get admin access in EKS cluster.
     Default: ""
   IAMRolePermissionsBoundaryArn:
     Type: String
@@ -80,6 +85,7 @@ Parameters:
   CPAccessPrefixLists:
     Type: String
     Description: (Optional) AWS Prefix Lists to which access to Cloud Pipeline will be granted
+    Default: ""
   CPExternalAccessSecurityGroupIds:
     Type: String
     Description: (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. 
@@ -231,9 +237,6 @@ Resources:
       Properties:
         GroupDescription: !Sub "${DeploymentName}-${DeploymentEnv}-jumpserver-sg"
         VpcId: !Ref VpcId
-        SecurityGroupIngress:
-          - IpProtocol: '-1'
-            CidrIp: 10.0.0.0/21
         SecurityGroupEgress:
           - IpProtocol: '-1'
             CidrIp: 0.0.0.0/0
@@ -345,7 +348,8 @@ Resources:
               }
             
               locals {
-                additional_role_arns_for_cluster_admin = trimspace("${EKSAdminRoleArns}") != "" ? tolist(split(",", trimspace("${EKSAdminRoleArns}"))) : []
+                additional_role_arns_for_cluster_admin = trimspace("${EKSAdminIAMRoleArns}") != "" ? tolist(split(",", trimspace("${EKSAdminIAMRoleArns}"))) : []
+                additional_user_arns_for_cluster_admin = trimspace("${EKSAdminIAMUserArns}") != "" ? tolist(split(",", trimspace("${EKSAdminIAMUserArns}"))) : []
               }
 
 
@@ -358,7 +362,7 @@ Resources:
                 cp_api_access_prefix_lists         = trimspace("${CPAccessPrefixLists}") != "" ? [trimspace("${CPAccessPrefixLists}")] : []
                 external_access_security_group_ids = trimspace("${CPExternalAccessSecurityGroupIds}") != "" ?  tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)]) : []
                 subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
-                iam_role_permissions_boundary_arn  = trimspace("${IAMRolePermissionsBoundaryArn}")
+                iam_role_permissions_boundary_arn  = trimspace("${IAMRolePermissionsBoundaryArn}") != "" ? trimspace("${IAMRolePermissionsBoundaryArn}") : null
                 eks_system_node_group_subnet_ids   = [trimspace("${CPSystemSubnetId}")]
                 deploy_filesystem_type             = trimspace("${CPNetworkFileSystemType}")
                 cp_deployment_id                   = trimspace("${CPDeploymentId}")
@@ -370,21 +374,31 @@ Resources:
                 cp_docker_host                     = trimspace("${CPDockerHost}")
                 cp_edge_host                       = trimspace("${CPEdgeHost}")
                 cp_gitlab_host                     = trimspace("${CPGitlabHost}")
-                eks_additional_role_mapping        = concat([
-                  {
-                    iam_role_arn  = "${JumpServerIAMRole.Arn}"
-                    eks_role_name = "system:node:{{EC2PrivateDNSName}}"
-                    eks_groups    = ["system:bootstrappers", "system:nodes"]
-                  }
+                
+                eks_additional_role_mapping        = concat(
+                  [
+                    {
+                      iam_role_arn  = "${JumpServerIAMRole.Arn}"
+                      eks_role_name = "system:node:{{EC2PrivateDNSName}}"
+                      eks_groups    = ["system:bootstrappers", "system:nodes"]
+                    }
                   ],
                   [
-                  for role_arn in local.additional_role_arns_for_cluster_admin : {
-                  iam_role_arn  = role_arn
-                  eks_role_name = "user-defined:cluster-admin"
-                  eks_groups    = ["cluster-admin"]
-                }
+                    for role_arn in local.additional_role_arns_for_cluster_admin : {
+                      iam_role_arn  = role_arn
+                      eks_role_name = "user-defined:cluster-admin"
+                      eks_groups    = ["cluster-admin"]
+                    }
+                  ]
+                )
+            
+                eks_additional_user_mapping        = [
+                  for user_arn in local.additional_user_arns_for_cluster_admin : {
+                    iam_user_arn  = user_arn
+                    eks_role_name = "user-defined:cluster-admin"
+                    eks_groups    = ["cluster-admin"]
+                  }
                 ]
-               )
               }
 
 
