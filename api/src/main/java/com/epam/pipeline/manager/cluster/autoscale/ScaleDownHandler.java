@@ -460,7 +460,7 @@ public class ScaleDownHandler {
                 .map(run -> MapUtils.emptyIfNull(run.getEnvVars()).get(NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES))
                 .filter(StringUtils::isNotBlank)
                 .filter(StringUtils::isNumeric)
-                .map(Integer::valueOf)
+                .map(NumberUtils::toInt)
                 .map(Duration::ofMinutes)
                 .orElse(defaultDuration);
     }
