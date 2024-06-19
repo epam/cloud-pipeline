@@ -311,6 +311,7 @@ variable "cp_api_srv_host" {
   type        = string
   description = "API SRV service domain name address"
 }
+
 variable "cp_idp_host" {
   type        = string
   default     = null
@@ -330,6 +331,12 @@ variable "cp_edge_host" {
 variable "cp_gitlab_host" {
   type        = string
   description = "GITLAB service domain name address"
+}
+
+variable "cp_default_admin_name" {
+  type        = string
+  default     = null
+  description = "Default administrator of the Cloud-Pipeline"
 }
 
 variable "cp_api_srv_saml_user_attr" {
