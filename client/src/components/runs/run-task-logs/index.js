@@ -178,6 +178,7 @@ class RunTaskLogs extends React.Component {
       this.props.runId !== prevProps.runId ||
       this.props.autoUpdate !== prevProps.autoUpdate ||
       this.props.taskName !== prevProps.taskName ||
+      this.props.fetchAllLogs !== prevProps.fetchAllLogs ||
       this.props.taskParameters !== prevProps.taskParameters ||
       this.props.taskInstance !== prevProps.taskInstance ||
       this.props.logs !== prevProps.logs
@@ -262,7 +263,8 @@ class RunTaskLogs extends React.Component {
       taskParameters,
       taskInstance,
       autoUpdate,
-      logs: logsProps
+      logs: logsProps,
+      fetchAllLogs = true
     } = this.props;
     if (logsProps && typeof logsProps === 'string' && !runId) {
       this.setState({logs: logsProps.split('\n').map(text => ({
@@ -281,25 +283,27 @@ class RunTaskLogs extends React.Component {
         followLog: autoUpdate,
         pending: true
       }, () => {
-        const request = new PipelineRunLog(
+        const request = (taskName || fetchAllLogs) ? (new PipelineRunLog(
           runId,
           taskName,
           {
             parameters: taskParameters,
             instance: taskInstance
           }
-        );
+        )) : undefined;
         const call = async () => {
-          await request.fetch();
-          if (request.networkError) {
-            throw new Error(request.networkError);
+          if (request) {
+            await request.fetch();
+            if (request.networkError) {
+              throw new Error(request.networkError);
+            }
           }
         };
         const after = () => {
           const {scrolledDown} = this;
           const firstLogs = !this.state.logs || this.state.logs.length === 0;
           const currentLine = this.getCurrentLine();
-          const logs = (request.value || [])
+          const logs = (request ? (request.value || []) : [])
             .filter((log) => log.logText && log.logText.length)
             .map((log) => log.logText.split('\n').map((line) => ({
               date: displayDate(log.date),
@@ -926,7 +930,8 @@ RunTaskLogs.propTypes = {
   fileName: PropTypes.string,
   onExpandClicked: PropTypes.func,
   scrollToLine: PropTypes.number,
-  scrollToLineToken: PropTypes.number
+  scrollToLineToken: PropTypes.number,
+  fetchAllLogs: PropTypes.bool
 };
 
 RunTaskLogs.defaultProps = {
