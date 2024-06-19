@@ -735,6 +735,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             clausesCount++;
         }
 
+        if (CollectionUtils.isNotEmpty(filter.getInstanceTypes())) {
+            appendAnd(whereBuilder, clausesCount);
+            buildInstanceTypesClause(params, whereBuilder, filter.getInstanceTypes());
+            clausesCount++;
+        }
+
         if (filter.getStartDateFrom() != null) {
             appendAnd(whereBuilder, clausesCount);
             whereBuilder.append(" r.start_date >= :").append(PipelineRunParameters.START_DATE_FROM.name());

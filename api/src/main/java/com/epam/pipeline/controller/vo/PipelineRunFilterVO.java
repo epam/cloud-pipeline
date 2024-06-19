@@ -50,6 +50,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private List<Long> projectIds;
     private List<String> dockerImages;
     private String prettyUrl;
+    private List<String> instanceTypes;
 
     private boolean userModified = true;
     private boolean eagerGrouping = true;
