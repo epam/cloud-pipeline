@@ -1055,6 +1055,7 @@ class Logs extends localization.LocalizedReactComponent {
                 taskParameters={this.props.task ? this.props.task.parameters : undefined}
                 taskInstance={this.props.task ? this.props.task.instance : undefined}
                 autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+                fetchAllLogs={false}
               />
             </div>
           </SplitPane>
@@ -1157,6 +1158,7 @@ class Logs extends localization.LocalizedReactComponent {
               taskParameters={this.props.task ? this.props.task.parameters : undefined}
               taskInstance={this.props.task ? this.props.task.instance : undefined}
               autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+              fetchAllLogs={false}
             />
           </div>
         </SplitPane>
@@ -2392,10 +2394,17 @@ class Logs extends localization.LocalizedReactComponent {
       this.updateFromProps();
     }
     const {
-      pending
+      pending,
+      runTasks
     } = this.state;
     if (!pending && this.graph) {
       this.graph.updateData();
+    }
+    if (!this.props.task && runTasks && runTasks.length > 0) {
+      // navigate to first task
+      const taskUrl = this.getTaskUrl(runTasks[0]);
+      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      this.props.router.push(url);
     }
   }
 }
