@@ -108,7 +108,7 @@ module "eks-aws-auth" {
 
   aws_auth_users = [
     for user_mapping in var.eks_additional_user_mapping : {
-      rolearn  = user_mapping.iam_user_arn
+      userarn  = user_mapping.iam_user_arn
       username = user_mapping.eks_role_name
       groups   = user_mapping.eks_groups
     }
