@@ -429,6 +429,10 @@ public class SystemPreferences {
         "cluster.kill.not.matching.nodes", true, CLUSTER_GROUP, pass);
     public static final BooleanPreference CLUSTER_ENABLE_AUTOSCALING = new BooleanPreference(
         "cluster.enable.autoscaling", true, CLUSTER_GROUP, pass);
+    /**
+     * Configures a grace period in minutes after which unavailable nodes are terminated.
+     * This value can be specified directly for run using NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES system parameter.
+     */
     public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
         "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
 
