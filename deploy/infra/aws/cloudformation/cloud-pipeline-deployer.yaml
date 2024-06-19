@@ -387,7 +387,7 @@ Resources:
                     for role_arn in local.additional_role_arns_for_cluster_admin : {
                       iam_role_arn  = role_arn
                       eks_role_name = "user-defined:cluster-admin"
-                      eks_groups    = ["cluster-admin"]
+                      eks_groups    = ["system:masters"]
                     }
                   ]
                 )
@@ -396,7 +396,7 @@ Resources:
                   for user_arn in local.additional_user_arns_for_cluster_admin : {
                     iam_user_arn  = user_arn
                     eks_role_name = "user-defined:cluster-admin"
-                    eks_groups    = ["cluster-admin"]
+                    eks_groups    = ["system:masters"]
                   }
                 ]
               }
