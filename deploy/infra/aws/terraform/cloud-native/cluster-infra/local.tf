@@ -133,6 +133,8 @@ locals {
       : ["-env CP_EDGE_AWS_ELB_PRIVATE_IPS=\"${var.cp_edge_elb_ip}\"", "-env CP_EDGE_KUBE_SERVICES_TYPE=elb-internal"]
   )
 
+  default_admin_name = var.cp_default_admin_name != null ? ["-env CP_DEFAULT_ADMIN_NAME=${var.cp_default_admin_name}"] : []
+
   deploy_script = join(" \\\n", concat([
     "./pipectl install",
     "-dt aws-native",
@@ -217,7 +219,8 @@ locals {
     ],
     local.deploy_idp,
     local.aws_omics_specific_envs,
-    local.cp_edge_elb_envs
+    local.cp_edge_elb_envs,
+    local.default_admin_name
   ))
   
 }

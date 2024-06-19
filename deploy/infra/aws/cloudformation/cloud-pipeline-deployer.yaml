@@ -144,6 +144,10 @@ Parameters:
   CPPipectlUrl:
     Type: String
     Description: (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline
+  CPDefaultAdmin:
+    Type: String
+    Default: ""
+    Description: (Optional) Default administrator of the Cloud-Pipeline
 
 Conditions:
     IsSecretNotEntered: !Equals [!Ref DeploymentAWSCredentialsSecretId, ""]
@@ -374,7 +378,8 @@ Resources:
                 cp_docker_host                     = trimspace("${CPDockerHost}")
                 cp_edge_host                       = trimspace("${CPEdgeHost}")
                 cp_gitlab_host                     = trimspace("${CPGitlabHost}")
-                
+                cp_default_admin_name              = trimspace("${CPDefaultAdmin}") != "" ? trimspace("${CPDefaultAdmin}") : null
+            
                 eks_additional_role_mapping        = concat(
                   [
                     {
