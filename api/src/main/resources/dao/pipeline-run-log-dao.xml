@@ -81,13 +81,14 @@
             <value>
                 <![CDATA[
                     SELECT
-                        tasks.task_name,
-                        tasks.status,
-                        tasks.instance,
-                        start.created,
-                        run.started,
-                        tasks.log_date as finished
-                    FROM(
+                        last_task.task_name,
+                        last_task.status,
+                        last_task.instance,
+                        first_task.log_date as created,
+                        NULL as started,
+                        last_task.log_date as finished
+                    FROM
+                    (
                         SELECT DISTINCT ON(task_name)
                             task_name,
                             status,
@@ -99,28 +100,22 @@
                         WHERE
                             run_id = :RUN_ID
                         ORDER BY task_name, log_date DESC
-                    ) as tasks
-                     LEFT JOIN
-                      (SELECT DISTINCT ON (task_name)
-                         task_name,
-                         run_id,
-                         log_date AS created
-                       FROM pipeline.pipeline_run_log
-                       WHERE
-                         run_id = :RUN_ID
-                       ORDER BY task_name, log_date)
-                        AS start ON tasks.run_id = start.run_id AND tasks.task_name = start.task_name
-                      LEFT JOIN
-                      (SELECT DISTINCT ON (task_name)
-                         task_name,
-                         run_id,
-                         log_date AS started
-                       FROM pipeline.pipeline_run_log
-                       WHERE
-                         run_id = :RUN_ID AND log_text LIKE '%Started container with docker%'
-                       ORDER BY task_name, log_date DESC)
-                        AS run ON tasks.run_id = run.run_id AND tasks.task_name = run.task_name
-                    ORDER BY tasks.log_date;
+                    ) as last_task
+                    LEFT JOIN
+                    (
+                        SELECT DISTINCT ON (task_name)
+                            task_name,
+                            run_id,
+                            log_date
+                        FROM
+                            pipeline.pipeline_run_log
+                        WHERE
+                            run_id = :RUN_ID
+                        ORDER BY task_name, log_date
+                    ) AS first_task
+                    ON
+                        last_task.task_name = first_task.task_name
+                    ORDER BY finished;
                 ]]>
             </value>
         </property>
