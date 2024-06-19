@@ -626,5 +626,12 @@
         "description": "Specifies run network policy type. Allowed values are: common and internal.",
         "defaultValue": "common",
         "passToWorkers": true
+    },
+    {
+        "name": "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES",
+        "type": "int",
+        "description": "Configures a grace period in minutes after which unavailable nodes are terminated.",
+        "defaultValue": "30",
+        "passToWorkers": true
     }
 ]

@@ -68,7 +68,7 @@ public class ScaleDownHandler {
     private static final Duration FALLBACK_CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD = Duration.ofMinutes(30);
     private static final String NODE_UNAVAILABLE_TAG = "NODE_UNAVAILABLE";
     private static final String NODE_AVAILABILITY_MONITOR = "NodeAvailabilityMonitor";
-    public static final String EMPTY_TERMINATION_STATE = "empty";
+    private static final String NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES";
 
     private final AutoscalerService autoscalerService;
     private final CloudFacade cloudFacade;
@@ -164,16 +164,21 @@ public class ScaleDownHandler {
         return kubernetesManager.isNodeUnavailable(node);
     }
 
-    private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration grace) {
+    private void processUnavailableNode(final KubernetesClient client, final Node node, final Duration defaultGrace) {
         final LocalDateTime now = DateUtils.nowUTC();
         final LocalDateTime timestamp = kubernetesManager.getLastConditionDateTime(node).orElse(now);
+
+        final Optional<PipelineRun> pipelineRun = findRun(node);
+        final Duration grace = findNodeUnavailableGraceDuration(pipelineRun, defaultGrace);
+
         if (now.minus(grace).isBefore(timestamp)) {
             if (isUnavailableNodeLabeled(client, node)) {
                 return;
             }
             log.debug("Marking unavailable node {} #{}", getNodeName(node), getNodeLabel(node));
             labelUnavailableNode(node, timestamp);
-            findRun(node).ifPresent(run -> {
+
+            pipelineRun.ifPresent(run -> {
                 labelUnavailableNodeRun(run, timestamp);
                 logUnavailableNodeRun(run, timestamp);
             });
@@ -447,5 +452,17 @@ public class ScaleDownHandler {
                 .map(preferenceManager::getPreference)
                 .filter(StringUtils::isNotEmpty)
                 .map(suffix -> name + suffix);
+    }
+
+    private Duration findNodeUnavailableGraceDuration(final Optional<PipelineRun> pipelineRun,
+                                                      final Duration defaultDuration) {
+        return pipelineRun
+                .map(run -> MapUtils.emptyIfNull(run.getEnvVars()).get(NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES))
+                .filter(StringUtils::isNotBlank)
+                .filter(StringUtils::isNumeric)
+                .map(NumberUtils::toInt)
+                .filter(intValue -> intValue >= 0)
+                .map(Duration::ofMinutes)
+                .orElse(defaultDuration);
     }
 }
