@@ -88,6 +88,7 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
                 && CollectionUtils.isEmpty(projectIds)
                 && MapUtils.isEmpty(tags)
+                && CollectionUtils.isEmpty(instanceTypes)
                 && prettyUrl == null;
     }
 

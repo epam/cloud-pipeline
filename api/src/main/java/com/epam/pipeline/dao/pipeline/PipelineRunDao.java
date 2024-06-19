@@ -596,7 +596,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return Strings.EMPTY;
         }
         params.addValue(PipelineRunParameters.TAGS.name(), tags);
-        return " WHERE tags.key IN (:" + PipelineRunParameters.TAGS.name() + ")";
+        return "AND tags.key IN (:" + PipelineRunParameters.TAGS.name() + ")";
     }
 
     private String makeChartFilterCondition(final RunChartFilterVO filter, final MapSqlParameterSource params) {
