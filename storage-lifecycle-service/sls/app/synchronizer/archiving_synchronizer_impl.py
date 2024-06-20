@@ -324,7 +324,6 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                             object_item.path,
                             str(object_item.creation_date),
                             str(object_item.size)])
-                print(row)
                 storage_sheet.append(row)
             
         wb.save(self.config.dry_run_report_path)

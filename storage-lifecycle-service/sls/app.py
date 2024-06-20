@@ -38,7 +38,7 @@ def main():
     parser.add_argument("--log-backup-days", type=int, default=31, required=False)
     parser.add_argument("--max-execution-running-days", default=2)
     # Dry run params
-    parser.add_argument("--storage-id", required=False, type=int)
+    parser.add_argument("--storage-id", required=False)
     parser.add_argument("--estimate-for-date", required=False, type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date())
     parser.add_argument("--rules-spec-file", required=False)
     parser.add_argument("--dry-run", required=False, action='store_true')
@@ -53,12 +53,18 @@ def run_application(args):
     pipeline_api_client = configure_pipeline_api(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
     cloud_adapter = PlatformToCloudOperationsAdapter(pipeline_api_client, logger)
+
+    if ',' in args.storage_id:
+        storage_id = [ int(x) for x in args.storage_id.split(',') ]
+    else:
+        storage_id = [ int(args.storage_id) ]
+
     config = SynchronizerConfig(args.command,
                                 args.mode,
                                 args.start_at,
                                 args.start_each,
                                 int(args.max_execution_running_days),
-                                args.storage_id,
+                                storage_id,
                                 args.estimate_for_date,
                                 args.rules_spec_file,
                                 args.dry_run,
