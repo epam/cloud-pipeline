@@ -78,7 +78,8 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             return
 
         file_listing_cache = {}
-        self.cloud_bridge.prepare_bucket_if_needed(storage)
+        if not self.config.dry_run:
+            self.cloud_bridge.prepare_bucket_if_needed(storage)
         for rule in rules:
             self.logger.log("Storage: {}. Rule: {}. [Starting]".format(storage.id, rule.rule_id))
             try:
@@ -483,7 +484,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     @staticmethod
     def _rule_is_not_valid(rule):
-        if not rule.notification:
+        if not rule.notification and not self.config.dry_run:
             raise RuntimeError("Rule: {}. No notification defined!".format(rule.rule_id))
         if rule.notification.enabled:
             if not rule.notification.body or not rule.notification.subject:

@@ -86,7 +86,7 @@ class StorageLifecycleRuleExecution:
 
 class LifecycleRuleParser:
 
-    def parse_rule(self, rule_json_dict, default_lifecycle_notification):
+    def parse_rule(self, rule_json_dict, default_lifecycle_notification, dry_run=False):
         if not rule_json_dict:
             return None
 
@@ -99,13 +99,18 @@ class LifecycleRuleParser:
         transition_criterion = self._parse_transition_criterion(rule_json_dict["transitionCriterion"]) \
             if "transitionCriterion" in rule_json_dict \
             else StorageLifecycleTransitionCriterion("DEFAULT", None)
-        notification = self._parse_notification(rule_json_dict["notification"], default_lifecycle_notification) \
-            if "notification" in rule_json_dict \
-            else default_lifecycle_notification
+        if dry_run:
+            notification = None
+            datastorage_id = None
+        else:
+            notification = self._parse_notification(rule_json_dict["notification"], default_lifecycle_notification) \
+                if "notification" in rule_json_dict \
+                else default_lifecycle_notification
+            datastorage_id = rule_json_dict["datastorageId"]
 
         return StorageLifecycleRule(
             rule_id=rule_json_dict["id"],
-            datastorage_id=rule_json_dict["datastorageId"],
+            datastorage_id=datastorage_id,
             path_glob=rule_json_dict["pathGlob"],
             object_glob=rule_json_dict["objectGlob"] if "objectGlob" in rule_json_dict else None,
             transitions=transitions,

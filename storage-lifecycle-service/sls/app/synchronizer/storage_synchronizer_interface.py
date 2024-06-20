@@ -25,7 +25,7 @@ class StorageLifecycleSynchronizer:
         try:
             self.logger.log("Starting object lifecycle synchronization process...")
             if self.config.storage_id:
-                available_storages = [ self.pipeline_api_client.load_storage(self.config.storage_id) ]
+                available_storages = [ self.pipeline_api_client.load_storage(str(self.config.storage_id)) ]
             else:
                 available_storages = [s for s in self.pipeline_api_client.load_available_storages() if s.storage_type != "NFS"]
             self.logger.log("{} storages loaded.".format(len(available_storages)))
