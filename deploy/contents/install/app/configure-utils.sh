@@ -757,7 +757,8 @@ read -r -d '' payload <<-EOF
         "batch_operation_job_report_bucket": "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}",
         "batch_operation_job_report_bucket_prefix": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_REPORT_BUCKET_PREFIX:-storage-lifecycle-service/tagging-job-reports}",
         "batch_operation_job_poll_status_retry_count": 30,
-        "batch_operation_job_poll_status_sleep_sec": 5
+        "batch_operation_job_poll_status_sleep_sec": 5,
+        "storage_skip_archiving_tag": "disable_storage_lifecycle"
       }
     }
 }
