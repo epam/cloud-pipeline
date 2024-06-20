@@ -569,10 +569,10 @@ Outputs:
   InstanceConnect:
     Description: "SSM connect to JumpBox command"
     Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}" 
-  TF_State_S3_Bucket:
+  TFStateS3Bucket:
     Description: S3 Bucket name where terraform state stored
     Value: !Ref TerraformS3Bucket
-  TF_State_DynamoDB_Table: 
+  TFStateDynamoDBTable: 
     Description: DynamoDB table name where terraform state lock stored     
     Value: !Ref TerraformDynamoDBTable
 
