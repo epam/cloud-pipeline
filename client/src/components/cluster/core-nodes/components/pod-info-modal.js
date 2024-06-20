@@ -169,6 +169,7 @@ export default class PodInfoModal extends React.Component {
       }}>
         <CodeEditor
           readOnly
+          delayedUpdate
           language="javascript"
           lineWrapping
           code={description}

@@ -30,17 +30,24 @@ function filterPods (pods = [], filters = {}) {
         .toLowerCase()
         .includes(filters.globalSearch.toLowerCase()));
   };
-  const byStatus = entity => filters.status
-    ? entity.phase.toLowerCase() === filters.status.toLowerCase()
+  const byStatus = pod => filters.status
+    ? pod.phase?.toLowerCase() === filters.status.toLowerCase()
     : true;
-  const byNodeName = entity => filters.nodeName
-    ? entity.nodeName === filters.nodeName
+  const byNodeName = pod => filters.nodeName
+    ? pod.nodeName === filters.nodeName
     : true;
-  const byName = entity => filters.name
-    ? entity.name.toLowerCase().includes(filters.name.toLowerCase())
-    : true;
-  const byNamespace = entity => filters.namespace
-    ? entity.namespace.toLowerCase() === filters.namespace.toLowerCase()
+  const byName = pod => {
+    const podEligible = pod.name?.toLowerCase().includes(filters.name.toLowerCase());
+    const containersEligible = (pod.containers || [])
+      .some(container => container.name?.toLowerCase()
+        .includes(filters.name.toLowerCase())
+      );
+    return filters.name
+      ? podEligible || containersEligible
+      : true;
+  };
+  const byNamespace = pod => filters.namespace
+    ? pod.namespace?.toLowerCase() === filters.namespace.toLowerCase()
     : true;
   const podMatchers = [
     byNodeName,
@@ -49,12 +56,7 @@ function filterPods (pods = [], filters = {}) {
     byNamespace
   ];
   return pods
-    .filter(pod => {
-      const podEligible = podMatchers.every(matchFn => matchFn(pod));
-      const podContainersEligible = pod.containers
-        .some(container => filters.name && byName(container));
-      return podEligible || podContainersEligible;
-    })
+    .filter(pod => podMatchers.every(matchFn => matchFn(pod)))
     .filter(pod => {
       const podEligible = byGlobalSearch(pod);
       const podContainersEligible = pod.containers
