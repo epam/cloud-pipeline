@@ -66,12 +66,6 @@ Parameters:
     Type: String
     Description: (Optional) Account specific role boundaries, this value will be used for all created IAM Roles.
     Default: ""
-  TFstateBucketName:
-    Type: String
-    Description: (Required) S3 Bucket name, that will be created where terraform state file for Cloud-Pipeline Infrastructure module will be stored
-  TFStateLockTableName:
-    Type: String
-    Description: (Required) Name of the DynamoDB table, that will be created, for terraform state lock
   CPSystemSubnetId:
     Type: String
     Description: (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created
@@ -158,7 +152,7 @@ Resources:
     TerraformS3Bucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: !Ref TFstateBucketName
+        BucketName: !Sub "${AWS::AccountId}-${DeploymentName}-${DeploymentEnv}-tfstate"
         VersioningConfiguration:
           Status: Enabled
         BucketEncryption:
@@ -169,7 +163,7 @@ Resources:
     TerraformDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: !Ref TFStateLockTableName
+        TableName: !Sub "${AWS::AccountId}-${DeploymentName}-${DeploymentEnv}-tfstate"
         AttributeDefinitions:
         - AttributeName: LockID
           AttributeType: S
@@ -224,7 +218,7 @@ Resources:
         RoleName: !Sub "${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role"
         Path: /
         PermissionsBoundary: !If [IsBoundaryNotEntered, !Ref AWS::NoValue, !Ref IAMRolePermissionsBoundaryArn ]
-        MaxSessionDuration: 7200
+        MaxSessionDuration: 21600
         AssumeRolePolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -447,6 +441,7 @@ Resources:
                  $(aws sts assume-role \
                  --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
                  --role-session-name TFDeploy \
+                 --duration-seconds 21600 \
                  --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
                  --output text))
               fi   
@@ -472,6 +467,7 @@ Resources:
                   \$(aws sts assume-role \
                   --role-arn arn:aws:iam::${AWS::AccountId}:role/${DeploymentName}-${DeploymentEnv}-tf-deploy-infra-role \
                   --role-session-name TFDeploy \
+                  --duration-seconds 21600 \
                   --query "Credentials.[AccessKeyId,SecretAccessKey,SessionToken]" \
                   --output text))
               fi
@@ -572,8 +568,13 @@ Outputs:
     Value: !Ref CloudPipelineDeployerInstance
   InstanceConnect:
     Description: "SSM connect to JumpBox command"
-    Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}"  
-
+    Value: !Sub "aws ssm start-session --target ${CloudPipelineDeployerInstance} --region ${AWS::Region}" 
+  TFStateS3Bucket:
+    Description: S3 Bucket name where terraform state stored
+    Value: !Ref TerraformS3Bucket
+  TFStateDynamoDBTable: 
+    Description: DynamoDB table name where terraform state lock stored     
+    Value: !Ref TerraformDynamoDBTable
 
 
 
