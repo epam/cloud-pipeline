@@ -168,6 +168,8 @@ class RunTaskLogs extends React.Component {
    */
   consoleElement;
 
+  token = {};
+
   componentDidMount () {
     this.loadData();
     this.registerSearchHotKeys();
@@ -258,6 +260,8 @@ class RunTaskLogs extends React.Component {
 
   loadData = () => {
     this.stopAutoUpdate();
+    this.token = {};
+    const {token} = this;
     const {
       runId,
       taskName,
@@ -342,7 +346,11 @@ class RunTaskLogs extends React.Component {
           call,
           afterInvoke: after
         });
-        this.stop = stop;
+        if (token !== this.token) {
+          stop();
+        } else {
+          this.stop = stop;
+        }
       });
     } else {
       this.setState({
@@ -355,6 +363,7 @@ class RunTaskLogs extends React.Component {
   };
 
   stopAutoUpdate = () => {
+    this.token = {};
     if (typeof this.stop === 'function') {
       this.stop();
       this.stop = undefined;
