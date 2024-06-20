@@ -18,6 +18,7 @@ import datetime
 import json
 import os
 import re
+import traceback
 
 from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
@@ -83,7 +84,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         for rule in rules:
             self.logger.log("Storage: {}. Rule: {}. [Starting]".format(storage.id, rule.rule_id))
             try:
-                if self._rule_is_not_valid(rule):
+                if self._rule_is_not_valid(rule, self.config.dry_run):
                     continue
 
                 path_prefix = path_utils.determinate_prefix_from_glob(rule.path_glob)
@@ -96,8 +97,11 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix)
                     file_listing_cache[path_prefix] = files
 
-                running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
-                    rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
+                if self.config.dry_run:
+                    running_executions = set()
+                else:
+                    running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
+                        rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
                 subject_folders = set(self._identify_subject_folders(files, rule.path_glob))
                 subject_folders.update(e.path for e in running_executions)
                 self.logger.log(
@@ -137,7 +141,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             except Exception as e:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Problems to apply the rule. "
-                    "Cause: {}".format(storage.id, rule.rule_id, str(e)))
+                    "Cause: {}\n{}".format(storage.id, rule.rule_id, str(e), traceback.format_exc()))
 
     def _process_files(self, storage, folder, file_listing, rule_subject_files, rule):
         transition_method = rule.transition_method
@@ -185,8 +189,11 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
     def _build_action_items_for_folder(self, storage, path, files_listing, subject_files_listing, rule):
         result = StorageLifecycleRuleActionItems().with_folder(path).with_rule_id(rule.rule_id)
 
-        rule_executions = self.pipeline_api_client.load_lifecycle_rule_executions(
-            rule.datastorage_id, rule.rule_id, path=path)
+        if self.config.dry_run:
+            rule_executions = []
+        else:
+            rule_executions = self.pipeline_api_client.load_lifecycle_rule_executions(
+                rule.datastorage_id, rule.rule_id, path=path)
 
         storage_class_transition_map = self.cloud_bridge.get_storage_class_transition_map(storage, rule)
 
@@ -247,7 +254,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
             # Check if notification is needed
             notification = rule.notification
-            if self._notification_should_be_sent(notification, transition_execution, transition_date, today):
+            if not self.config.dry_run and self._notification_should_be_sent(notification, transition_execution, transition_date, today):
                 self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Transition: {}. Notification will be sent.".format(
                     rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_files)))
                 result.with_notification(path, transition_class, str(transition_date), notification.prolong_days)
@@ -282,18 +289,40 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     def _apply_action_items(self, storage, rule, action_items, dry_run=False):
         if dry_run:
-            _apply_action_items_dry_run(storage, rule, action_item)
+            self._apply_action_items_dry_run(storage, rule, action_items)
         else:
-            _apply_action_items_real(storage, rule, action_item)
+            self._apply_action_items_real(storage, rule, action_items)
 
     def _apply_action_items_dry_run(self, storage, rule, action_items):
-        # with open(self.config.dry_run_report_path, "a") as dry_run_report_path_file:
-        #     pass
-        print(storage)
-        print('---------------------------------------------')
-        print(rule)
-        print('---------------------------------------------')
-        print(action_items)
+        # Just a report
+        import openpyxl
+        wb = openpyxl.Workbook()
+        if storage.name in wb.sheetnames:
+            wb.create_sheet(storage.name)
+        storage_sheet = workbook[storage.name]
+        storage_sheet.append(['Storage ID',
+                              'Storage Name',
+                              'Source Tier',
+                              'Destination Tier',
+                              'Folder',
+                              'File Path',
+                              'File Version',
+                              'File Creation Date',
+                              'File Size'])
+        
+        static_cols = [ str(storage.id), storage.name ]
+        for dest_tier in action_items.destination_transitions_queues.keys():
+            object_item = action_items.destination_transitions_queues[dest_tier]
+            row = static_cols.extend([object_item.storage_class,
+                                      dest_tier,
+                                      action_items.folder,
+                                      object_item.path,
+                                      object_item.version_id,
+                                      str(object_item.creation_date),
+                                      str(object_item.size)])
+            storage_sheet.append(row)
+            
+        workbook.save(self.config.dry_run_report_path)
 
     def _apply_action_items_real(self, storage, rule, action_items):
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Performing action items."
@@ -483,12 +512,13 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         return True
 
     @staticmethod
-    def _rule_is_not_valid(rule):
-        if not rule.notification and not self.config.dry_run:
-            raise RuntimeError("Rule: {}. No notification defined!".format(rule.rule_id))
-        if rule.notification.enabled:
-            if not rule.notification.body or not rule.notification.subject:
-                raise RuntimeError("Rule: {}. Enabled notification should have subject and body!".format(rule.rule_id))
+    def _rule_is_not_valid(rule, dry_run=False):
+        if not dry_run:
+            if not rule.notification:
+                raise RuntimeError("Rule: {}. No notification defined!".format(rule.rule_id))
+            if rule.notification.enabled:
+                if not rule.notification.body or not rule.notification.subject:
+                    raise RuntimeError("Rule: {}. Enabled notification should have subject and body!".format(rule.rule_id))
         if not rule.transitions:
             raise RuntimeError("Rule: {}. Transitions cannot be None or empty!".format(rule.rule_id))
         if not rule.transition_criterion:

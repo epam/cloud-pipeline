@@ -39,10 +39,10 @@ def main():
     parser.add_argument("--max-execution-running-days", default=2)
     # Dry run params
     parser.add_argument("--storage-id", required=False, type=int)
-    parser.add_argument("--estimate-for-date", required=False, type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
+    parser.add_argument("--estimate-for-date", required=False, type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d').date())
     parser.add_argument("--rules-spec-file", required=False)
     parser.add_argument("--dry-run", required=False, action='store_true')
-    parser.add_argument("--dry-run-report-path", required=False, default='sls-dry-run-report.csv')
+    parser.add_argument("--dry-run-report-path", required=False, default='sls-dry-run-report.xlsx')
 
     args = parser.parse_args()
     run_application(args)

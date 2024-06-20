@@ -36,8 +36,8 @@ class SynchronizerConfig:
 
         self._validate()
 
-    def get_estimate_for_date():
-        return estimate_for_date if estimate_for_date else datetime.datetime.now(datetime.timezone.utc).date()
+    def get_estimate_for_date(self):
+        return self.estimate_for_date if self.estimate_for_date else datetime.datetime.now(datetime.timezone.utc).date()
 
     def to_json(self):
         return {
