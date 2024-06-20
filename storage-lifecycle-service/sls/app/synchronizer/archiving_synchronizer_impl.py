@@ -23,7 +23,7 @@ from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
 from sls.app.model.sync_event_model import StorageLifecycleRuleActionItems
 from sls.cloud import cloud_utils
-from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
+from sls.pipelineapi.model.archive_rule_model import LifecycleRuleParser, StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
 from sls.util import path_utils, date_utils
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
@@ -56,7 +56,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 return
             try:
                 with open(self.config.rules_spec_file) as spec_file:
-                    rules = json.load(spec_file)
+                    rules_json = json.load(spec_file)
+                    rules_parser = LifecycleRuleParser()
+                    rules = [rules_parser.parse_rule(rule, None) for rule in rules_json if rules_json]
+
             except:
                 self.logger.log("Failed reading custom rules file {}, skipping".format(self.config.rules_spec_file))
                 return
