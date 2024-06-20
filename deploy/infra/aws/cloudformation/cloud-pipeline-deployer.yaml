@@ -14,10 +14,7 @@
 
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Deploy Cloud-Pipeline solution on top of AWS infrastructure. 
-  As a first step this stack will spin up EC2 instance that will work as a Jump Server to deploy Cloud-Pipeline solution itself. 
-  On the second step EC2 instance will run terraform deployment to deploy all required AWS infrastructure to host Cloud-Pipeline. 
-  During the final, third step, pipectl deployment command will be executed on top of the created AWS infrastructure to finally deploy all EKS resource and configure Cloud-Pipeline. 
+  Deploys Cloud-Pipeline solution on top of AWS infrastructure. 
 
 Metadata: 
   AWS::CloudFormation::Interface: 
@@ -58,7 +55,8 @@ Metadata:
       - 
         Label: 
           default: "Application configuration"
-        Parameters: 
+        Parameters:
+          - CPApplicationName
           - CPApiSrvHost
           - CPEdgeHost
           - CPDockerHost
@@ -70,7 +68,7 @@ Metadata:
           - CPNetworkFileSystemType  
     ParameterLabels: 
       DeploymentName: 
-        default: "Application name"
+        default: "Deployment name"
       DeploymentEnv: 
         default: "Environment name"
       DeploymentAWSCredentialsSecretId: 
@@ -84,9 +82,9 @@ Metadata:
       CPEdgeAwsELBSchema: 
         default: "Application network schema"
       CPEdgeAwsELBIP: 
-        default: "Elastic IP/Private IP or the ELB"
+        default: "Private IP/Elastic IP for the ELB"
       CPEdgeAwsELBSubnet: 
-        default: "ID of the ELB subnet"
+        default: "ID of the subnet for Elastic Load Balancer"
       CPSystemSubnetId: 
         default: "Application subnet ID"
       SubnetIds: 
@@ -103,35 +101,40 @@ Metadata:
         default: "List of EKS admin IAM users"
       IAMRolePermissionsBoundaryArn: 
         default: "IAM Role permissions boundary ARN"
+      CPApplicationName:
+        default: "Application name"
       CPApiSrvHost: 
-        default: "Application host domain name"
+        default: "Application domain name"
       CPEdgeHost: 
         default: "Edge service domain name"
       CPDockerHost: 
-        default: "Internal Docker service domain name"
+        default: "Internal Docker Registry service domain name"
       CPGitlabHost: 
         default: "Internal GitLab service domain name"
       CPIdpHost: 
         default: "Internal IdP service domain name"
       CPAssetsS3Url: 
-        default: "Link to S3 bucket with certificates for IdP"
-      CPPipectlUrl: 
-        default: "Link to pipectl binnary"
-      CPDefaultAdmin: 
-        default: "Cloud Pipeline Default Admin name"
+        default: "Link to the file on S3 bucket with deployment assets"
+      CPPipectlUrl:
+        default: "Link to the pipectl binary"
+      CPDefaultAdmin:
+        default: "Application admin account"
       CPNetworkFileSystemType: 
-        default: "NFS type"
-
-
-
+        default: "Application File System type"
 
 Parameters:
   DeploymentName:
     Type: String
-    Description: (Required) Name of the deployment. Will be used as resources name prefix
+    AllowedPattern: "^[a-z0-9]+$"
+    ConstraintDescription: Malformed input parameter, must match pattern [a-z0-9]+
+    MaxLength: 16
+    Description: (Required) Name of the deployment. Will be used as resources name prefix. Pattern [a-z0-9]+
   DeploymentEnv:
     Type: String
-    Description: (Required) Environment name. Will be used as resources name prefix
+    AllowedPattern: "^[a-z0-9]+$"
+    ConstraintDescription: Malformed input parameter, must match pattern [a-z0-9]+
+    MaxLength: 8
+    Description: (Required) Environment name. Will be used as resources name prefix. Pattern [a-z0-9]+
   DeploymentAWSCredentialsSecretId:
     Type: String
     Description: >
@@ -151,29 +154,32 @@ Parameters:
     Description: (Required) Id of the VPC where all resources will be created
   SubnetIds:
     Type: String
-    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified
+    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.
   EKSVersion:
     Type: String
-    Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information
+    Description: (Optional) Version of the installed AWS EKS Cluster. See README.md for more information
     Default: "1.29"
   EKSAdminIAMRoleArns:
     Type: String
     Description: > 
-      (Optional) Set of roles ARNs which will get admin access in EKS cluster. 
-      Could be useful if DeploymentAWSCredentialsSecretId is not provided. Then here user can provide ARN of his role to get access to the cluster.
+      (Optional) List of roles ARNs which will gain cluster admin access to the EKS cluster. 
+      Could be useful if DeploymentAWSCredentialsSecretId is not provided. In this case administrator can provide ARN of his role to get admin access to the cluster.
     Default: ""
   EKSAdminIAMUserArns:
     Type: String
     Description: >
       (Optional) Set of IAM user ARNs which will get admin access in EKS cluster.
+      Could be useful if DeploymentAWSCredentialsSecretId is not provided. In this case administrator can provide ARN of his IAM User to get admin access to the cluster.
     Default: ""
   IAMRolePermissionsBoundaryArn:
     Type: String
-    Description: (Optional) Account specific role boundaries, this value will be used for all created IAM Roles.
+    Description: (Optional) Account specific role boundaries, this value will be used for all created IAM Roles during deployment.
     Default: ""
   CPSystemSubnetId:
     Type: String
-    Description: (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created
+    Description: >
+      (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (to host Cloud-Pipeline internal components) will be created
+      Must be in the same Availability Zone (AZ) as the 'ID of the subnet for Elastic Load Balancer'
   CPNetworkFileSystemType:
     Type: String
     Description: (Optional) Network FileSystem type that will be created. Can be efs or fsx. Default efs
@@ -193,23 +199,27 @@ Parameters:
     Type: String
     Description: >
       (Required) The ID of the public subnet for the Load Balancer to be created. 
-      Must be in the same Availability Zone (AZ) as the CPSystemSubnetId
+      Must be in the same Availability Zone (AZ) as the 'Application subnet ID'
   CPEdgeAwsELBIP:
     Type: String
     Description: >
-      (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB. 
-      See README.md for more information
+      (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP from private subnet CIDR allocation in case of internal ELB. 
+      See README.md for more information.
   CPEdgeAwsELBSchema:
     Type: String
     Description: >
-      (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.
-    Default: "internet-facing"
+      (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internal'.
+    Default: "internal"
     AllowedValues:
       - "internet-facing"
       - "internal"
+  CPApplicationName:
+    Type: String
+    Default: "Cloud-Pipeline"
+    Description: (Required) This name will be displayed on some of the UI elements of the application.
   CPApiSrvHost:
     Type: String
-    Description: (Required) API service domain name address. See README.md for more information
+    Description: (Required) API Service domain name address. See README.md for more information
   CPDockerHost:
     Type: String
     Description: (Required) Internal Docker registry service domain name address. See README.md for more information
@@ -218,7 +228,7 @@ Parameters:
     Description: (Required) EDGE service domain name address. See README.md for more information
   CPGitlabHost:
     Type: String 
-    Description: (Required) Internal GITLAB service domain name address. See README.md for more information
+    Description: (Required) Internal GitLab service domain name address. See README.md for more information
   CPIdpHost:
     Type: String
     Description: > 
@@ -230,11 +240,12 @@ Parameters:
   CPAssetsS3Url:
     Type: String
     Description: >
-      (Optional) Link to zip archive with additional assets on AWS S3 bucket. For example s3://<bucket-name>/<filename.zip>. 
-      See README.md for more information
+      (Optional) Link to zip archive with additional assets on AWS S3 bucket (SSL certificates, SSO metadata, etc.). For example s3://<bucket-name>/<filename.zip>. 
+      See README.md for more information of the achive file
     Default: ""
   CPPipectlUrl:
     Type: String
+    Default: "https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/0.19/pipectl.0.19.0.16665.692f8f33a46e395423fb0ee5e792c064cdf84d6e"
     Description: (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline
   CPDefaultAdmin:
     Type: String
@@ -250,7 +261,21 @@ Resources:
     TerraformS3Bucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: !Sub "${AWS::AccountId}-${DeploymentName}-${DeploymentEnv}-tfstate"
+
+        BucketName: !Join
+        - "-"
+        - - !Ref "AWS::AccountId"
+          - !Ref "AWS::Region"
+          - !Select
+            - 0
+            - !Split
+              - "-"
+              - !Select
+                - 2
+                - !Split
+                  - "/"
+                  - !Ref "AWS::StackId"
+          - "tfstate"
         VersioningConfiguration:
           Status: Enabled
         BucketEncryption:
@@ -261,7 +286,20 @@ Resources:
     TerraformDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: !Sub "${AWS::AccountId}-${DeploymentName}-${DeploymentEnv}-tfstate"
+        TableName: !Join
+          - "-"
+          - - !Ref "AWS::AccountId"
+            - !Ref "AWS::Region"
+            - !Select
+              - 0
+              - !Split
+                - "-"
+                - !Select
+                  - 2
+                  - !Split
+                    - "/"
+                    - !Ref "AWS::StackId"
+            - "tflock"
         AttributeDefinitions:
         - AttributeName: LockID
           AttributeType: S
@@ -461,7 +499,7 @@ Resources:
                 iam_role_permissions_boundary_arn  = trimspace("${IAMRolePermissionsBoundaryArn}") != "" ? trimspace("${IAMRolePermissionsBoundaryArn}") : null
                 eks_system_node_group_subnet_ids   = [trimspace("${CPSystemSubnetId}")]
                 deploy_filesystem_type             = trimspace("${CPNetworkFileSystemType}")
-                cp_deployment_id                   = trimspace("${DeploymentName}")
+                cp_deployment_id                   = trimspace("${CPApplicationName}")
                 cp_edge_elb_schema                 = trimspace("${CPEdgeAwsELBSchema}")
                 cp_edge_elb_subnet                 = trimspace("${CPEdgeAwsELBSubnet}")
                 cp_edge_elb_ip                     = trimspace("${CPEdgeAwsELBIP}")
