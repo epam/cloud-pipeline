@@ -296,33 +296,38 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
     def _apply_action_items_dry_run(self, storage, rule, action_items):
         # Just a report
         import openpyxl
-        wb = openpyxl.Workbook()
+        if os.path.isfile(self.config.dry_run_report_path):
+            wb = openpyxl.load_workbook(self.config.dry_run_report_path)
+        else:
+            wb = openpyxl.Workbook()
+            if 'Sheet' in wb.sheetnames:
+                del wb['Sheet']
         if storage.name in wb.sheetnames:
-            wb.create_sheet(storage.name)
-        storage_sheet = workbook[storage.name]
-        storage_sheet.append(['Storage ID',
-                              'Storage Name',
-                              'Source Tier',
-                              'Destination Tier',
-                              'Folder',
-                              'File Path',
-                              'File Version',
-                              'File Creation Date',
-                              'File Size'])
+            storage_sheet = wb[storage.name]
+        else:
+            storage_sheet = wb.create_sheet(storage.name)
+            storage_sheet.append(['Storage ID',
+                                'Storage Name',
+                                'Source Tier',
+                                'Destination Tier',
+                                'Folder',
+                                'File Path',
+                                'File Creation Date',
+                                'File Size'])
         
-        static_cols = [ str(storage.id), storage.name ]
         for dest_tier in action_items.destination_transitions_queues.keys():
-            object_item = action_items.destination_transitions_queues[dest_tier]
-            row = static_cols.extend([object_item.storage_class,
-                                      dest_tier,
-                                      action_items.folder,
-                                      object_item.path,
-                                      object_item.version_id,
-                                      str(object_item.creation_date),
-                                      str(object_item.size)])
-            storage_sheet.append(row)
+            for object_item in action_items.destination_transitions_queues[dest_tier]:
+                row = [ str(storage.id), storage.name ]
+                row.extend([object_item.storage_class,
+                            dest_tier,
+                            action_items.folder,
+                            object_item.path,
+                            str(object_item.creation_date),
+                            str(object_item.size)])
+                print(row)
+                storage_sheet.append(row)
             
-        workbook.save(self.config.dry_run_report_path)
+        wb.save(self.config.dry_run_report_path)
 
     def _apply_action_items_real(self, storage, rule, action_items):
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Performing action items."
