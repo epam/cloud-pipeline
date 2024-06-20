@@ -220,24 +220,25 @@ class RunTaskLogs extends React.Component {
       searchResults = [],
       searchResultIndex
     } = this.state;
-    const logsWithIndex = logs.map((log, index) => ({...log, index}));
-    return logsWithIndex
+    return logs
       .slice(Math.max(0, logs.length - this.maxLinesToDisplay))
-      .map((log) => {
+      .map((log, index) => {
         const lineSearchResult = searchResults.filter((aResult) => aResult.lineIndex === log.index);
         if (lineSearchResult.length === 0) {
-          return log;
+          return {...log, index};
         }
         const current = lineSearchResult.find((aLine) => aLine.index === searchResultIndex);
         if (current) {
           return {
             ...log,
+            index,
             logHTML: current.activeLogHTML
           };
         }
         const [any] = lineSearchResult;
         return {
           ...log,
+          index,
           logHTML: any.logHTML
         };
       });
@@ -657,7 +658,8 @@ class RunTaskLogs extends React.Component {
       autoUpdate,
       runId,
       downloadCurrentLog,
-      onDownloadCompleteLogClick
+      onDownloadCompleteLogClick,
+      alwaysShowDownloadCompleteLog = false
     } = this.props;
     const {
       followLog,
@@ -670,6 +672,12 @@ class RunTaskLogs extends React.Component {
     } = this.state;
     const logs = this.currentLogs;
     const lineNumberLength = Math.max(3, Math.floor(Math.log10(logs.length) + 1));
+    const showExpandMore = !pending && this.logsTruncated;
+    const showDownloadComplete = !pending &&
+      (runId || onDownloadCompleteLogClick) &&
+      (this.logsTruncated || alwaysShowDownloadCompleteLog);
+    const showDownloadCurrentLog = !pending && this.logsTruncated && downloadCurrentLog;
+    const showControls = showExpandMore || showDownloadComplete || showDownloadCurrentLog;
     return (
       <div
         className={
@@ -691,27 +699,37 @@ class RunTaskLogs extends React.Component {
           onScroll={this.handleScroll}
         >
           {
-            this.logsTruncated && (
+            showControls && (
               <div
                 className={styles.expandMore}
               >
-                The last {logs.length} lines of the log are shown.
-                <a
-                  style={{marginLeft: 5}}
-                  onClick={this.onExpandClicked}
-                >
-                  Expand more
-                </a>
-                {(runId || onDownloadCompleteLogClick) && (
-                  <p>
-                    <span
-                      style={{
-                        marginLeft: 5,
-                        marginRight: 5
-                      }}
-                    >
-                      or
+                {
+                  showExpandMore && (
+                    <span>
+                      The last {logs.length} lines of the log are shown.
+                      <a
+                        style={{marginLeft: 5}}
+                        onClick={this.onExpandClicked}
+                      >
+                        Expand more
+                      </a>
                     </span>
+                  )
+                }
+                {showDownloadComplete && (
+                  <p>
+                    {
+                      showExpandMore && (
+                        <span
+                          style={{
+                            marginLeft: 5,
+                            marginRight: 5
+                          }}
+                        >
+                          or
+                        </span>
+                      )
+                    }
                     <a
                       onClick={() => {
                         onDownloadCompleteLogClick
@@ -719,24 +737,32 @@ class RunTaskLogs extends React.Component {
                           : this.onDownloadClicked();
                       }}
                     >
-                      download complete log
+                      {showExpandMore ? 'download complete log' : 'Download complete log'}
                     </a>
                   </p>
                 )}
-                {downloadCurrentLog && (
+                {showDownloadCurrentLog && (
                   <p>
-                    <span
-                      style={{
-                        marginLeft: 5,
-                        marginRight: 5
-                      }}
-                    >
-                      or
-                    </span>
+                    {
+                      (showExpandMore || showDownloadComplete) && (
+                        <span
+                          style={{
+                            marginLeft: 5,
+                            marginRight: 5
+                          }}
+                        >
+                          or
+                        </span>
+                      )
+                    }
                     <a
                       onClick={this.onDownloadClicked}
                     >
-                      download current log
+                      {
+                        showExpandMore || showDownloadComplete
+                          ? 'download current log'
+                          : 'Download current log'
+                      }
                     </a>
                   </p>
                 )}
@@ -926,6 +952,7 @@ RunTaskLogs.propTypes = {
   showDate: PropTypes.bool,
   searchAvailable: PropTypes.bool,
   downloadCurrentLog: PropTypes.bool,
+  alwaysShowDownloadCompleteLog: PropTypes.bool,
   onDownloadCompleteLogClick: PropTypes.func,
   fileName: PropTypes.string,
   onExpandClicked: PropTypes.func,

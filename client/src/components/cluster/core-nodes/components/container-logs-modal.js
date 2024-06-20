@@ -161,6 +161,7 @@ export default class ContainerLogsModal extends React.Component {
             maxLinesToDisplay={page * LIMIT_PER_PAGE}
             scrollToLine={LIMIT_PER_PAGE + 2}
             scrollToLineToken={scrollToLineToken}
+            alwaysShowDownloadCompleteLog
           />
         </Spin>
       </Modal>
