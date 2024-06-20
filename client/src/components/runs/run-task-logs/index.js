@@ -168,6 +168,8 @@ class RunTaskLogs extends React.Component {
    */
   consoleElement;
 
+  token = {};
+
   componentDidMount () {
     this.loadData();
     this.registerSearchHotKeys();
@@ -220,25 +222,27 @@ class RunTaskLogs extends React.Component {
       searchResults = [],
       searchResultIndex
     } = this.state;
+    const sliceFrom = Math.max(0, logs.length - this.maxLinesToDisplay);
     return logs
-      .slice(Math.max(0, logs.length - this.maxLinesToDisplay))
+      .slice(sliceFrom)
       .map((log, index) => {
-        const lineSearchResult = searchResults.filter((aResult) => aResult.lineIndex === log.index);
+        const realIndex = index + sliceFrom;
+        const lineSearchResult = searchResults.filter((aResult) => aResult.lineIndex === realIndex);
         if (lineSearchResult.length === 0) {
-          return {...log, index};
+          return {...log, index: realIndex};
         }
         const current = lineSearchResult.find((aLine) => aLine.index === searchResultIndex);
         if (current) {
           return {
             ...log,
-            index,
+            index: realIndex,
             logHTML: current.activeLogHTML
           };
         }
         const [any] = lineSearchResult;
         return {
           ...log,
-          index,
+          index: realIndex,
           logHTML: any.logHTML
         };
       });
@@ -258,6 +262,8 @@ class RunTaskLogs extends React.Component {
 
   loadData = () => {
     this.stopAutoUpdate();
+    this.token = {};
+    const {token} = this;
     const {
       runId,
       taskName,
@@ -342,7 +348,11 @@ class RunTaskLogs extends React.Component {
           call,
           afterInvoke: after
         });
-        this.stop = stop;
+        if (token !== this.token) {
+          stop();
+        } else {
+          this.stop = stop;
+        }
       });
     } else {
       this.setState({
@@ -355,6 +365,7 @@ class RunTaskLogs extends React.Component {
   };
 
   stopAutoUpdate = () => {
+    this.token = {};
     if (typeof this.stop === 'function') {
       this.stop();
       this.stop = undefined;
