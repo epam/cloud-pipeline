@@ -1,4 +1,4 @@
-# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,12 @@ def main():
     parser.add_argument("--log-dir", default="logs")
     parser.add_argument("--log-backup-days", type=int, default=31, required=False)
     parser.add_argument("--max-execution-running-days", default=2)
+    # Dry run params
+    parser.add_argument("--storage-id", required=False, type=int)
+    parser.add_argument("--estimate-for-date", required=False, type=lambda s: datetime.datetime.strptime(s, '%Y-%m-%d'))
+    parser.add_argument("--rules-spec-file", required=False)
+    parser.add_argument("--dry-run", required=False, action='store_true')
+    parser.add_argument("--dry-run-report-path", required=False, default='sls-dry-run-report.csv')
 
     args = parser.parse_args()
     run_application(args)
@@ -46,7 +52,16 @@ def run_application(args):
     pipeline_api_client = configure_pipeline_api(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
     cloud_adapter = PlatformToCloudOperationsAdapter(pipeline_api_client, logger)
-    config = SynchronizerConfig(args.command, args.mode, args.start_at, args.start_each, int(args.max_execution_running_days))
+    config = SynchronizerConfig(args.command,
+                                args.mode,
+                                args.start_at,
+                                args.start_each,
+                                int(args.max_execution_running_days),
+                                args.storage_id,
+                                args.estimate_for_date,
+                                args.rules_spec_file,
+                                args.dry_run,
+                                args.dry_run_report_path)
     logger.log("Running application with config: {}".format(config.to_json()))
 
     lifecycle_storage_synchronizer = StorageLifecycleRestoringSynchronizer(config, pipeline_api_client, cloud_adapter, logger) \

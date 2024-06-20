@@ -16,7 +16,8 @@ import re
 
 class SynchronizerConfig:
 
-    def __init__(self, command, mode="single", start_at=None, start_each=None, execution_max_running_days=2):
+    def __init__(self, command, mode="single", start_at=None, start_each=None, execution_max_running_days=2,
+                storage_id=None, estimate_for_date=None, rules_spec_file=None, dry_run=False, dry_run_report_path=None):
         self.command = command
         self.mode = mode
         self.start_at = None
@@ -25,7 +26,17 @@ class SynchronizerConfig:
             self.start_at = start_at
             self.start_each = int(start_each) if start_each else None
         self.execution_max_running_days = execution_max_running_days
+        # Dry run args
+        self.storage_id = storage_id
+        self.estimate_for_date = estimate_for_date
+        self.rules_spec_file = rules_spec_file
+        self.dry_run = dry_run
+        self.dry_run_report_path = dry_run_report_path
+
         self._validate()
+
+    def get_estimate_for_date():
+        return estimate_for_date if estimate_for_date else datetime.datetime.now(datetime.timezone.utc).date()
 
     def to_json(self):
         return {

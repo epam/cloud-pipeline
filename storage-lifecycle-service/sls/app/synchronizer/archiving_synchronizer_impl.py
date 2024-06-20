@@ -1,4 +1,4 @@
-#  Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+#  Copyright 2022-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #  #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 #
 
 import datetime
+import json
 import os
 import re
 
@@ -49,7 +50,18 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         if storage.shared:
             self.logger.log("Storage {} marked as shared, skipping".format(storage.path))
 
-        rules = self.pipeline_api_client.load_lifecycle_rules_for_storage(storage.id)
+        if self.config.rules_spec_file:
+            if not os.path.isfile(self.config.rules_spec_file):
+                self.logger.log("Custom rules file is specified but does not exist {}, skipping".format(self.config.rules_spec_file))
+                return
+            try:
+                with open(self.config.rules_spec_file) as spec_file:
+                    rules = json.load(spec_file)
+            except:
+                self.logger.log("Failed reading custom rules file {}, skipping".format(self.config.rules_spec_file))
+                return
+        else:
+            rules = self.pipeline_api_client.load_lifecycle_rules_for_storage(storage.id)
 
         # No rules for storage exist - just skip it
         if not rules:
@@ -137,7 +149,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Done with building action items."
                         .format(rule.datastorage_id, rule.rule_id, folder))
 
-        self._apply_action_items(storage, rule, resulted_action_items)
+        self._apply_action_items(storage, rule, resulted_action_items, dry_run=self.config.dry_run)
 
     def _build_action_items_for_files(self, folder, rule_subject_files, rule):
         result = StorageLifecycleRuleActionItems().with_folder(folder)\
@@ -150,7 +162,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             transition_class, transition_date = None, None
             for transition in effective_transitions:
                 date_of_action = self._calculate_transition_date(file, transition)
-                today = datetime.datetime.now(datetime.timezone.utc).date()
+                today = self.config.get_estimate_for_date()
 
                 storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
                 if date_utils.is_date_after_that(date_of_action, today):
@@ -201,7 +213,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 execution.updated = updated_execution.updated
                 result.with_execution(updated_execution)
 
-        today = datetime.datetime.now(datetime.timezone.utc).date()
+        today = self.config.get_estimate_for_date()
 
         transitions_by_dates = []
         for transition in effective_transitions:
@@ -264,7 +276,22 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
         return trn_subject_files
 
-    def _apply_action_items(self, storage, rule, action_items):
+    def _apply_action_items(self, storage, rule, action_items, dry_run=False):
+        if dry_run:
+            _apply_action_items_dry_run(storage, rule, action_item)
+        else:
+            _apply_action_items_real(storage, rule, action_item)
+
+    def _apply_action_items_dry_run(self, storage, rule, action_items):
+        # with open(self.config.dry_run_report_path, "a") as dry_run_report_path_file:
+        #     pass
+        print(storage)
+        print('---------------------------------------------')
+        print(rule)
+        print('---------------------------------------------')
+        print(action_items)
+
+    def _apply_action_items_real(self, storage, rule, action_items):
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Performing action items."
                         .format(rule.datastorage_id, rule.rule_id, action_items.folder))
 
