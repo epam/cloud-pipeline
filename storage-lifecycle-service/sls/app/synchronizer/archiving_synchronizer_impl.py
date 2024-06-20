@@ -58,7 +58,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 with open(self.config.rules_spec_file) as spec_file:
                     rules_json = json.load(spec_file)
                     rules_parser = LifecycleRuleParser()
-                    rules = [rules_parser.parse_rule(rule, None) for rule in rules_json if rules_json]
+                    rules = [rules_parser.parse_rule(rule, None, self.config.dry_run) for rule in rules_json if rules_json]
 
             except:
                 self.logger.log("Failed reading custom rules file {}, skipping".format(self.config.rules_spec_file))
