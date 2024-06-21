@@ -1,5 +1,5 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "1.2.4"
+    id "com.github.johnrengelman.shadow" version "5.2.0"
     id "org.sonarqube" version "2.6.1"
 }
 
@@ -36,6 +36,9 @@ dependencies {
     testCompile 'junit:junit:4.12'
 }
 
+//shadowJar {
+//    archiveFileName = "jwt-generator.${extension}"
+//}
 shadowJar {
     archiveName = "jwt-generator.${extension}"
 }

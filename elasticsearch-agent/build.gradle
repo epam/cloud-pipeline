@@ -62,6 +62,8 @@ dependencies {
     implementation group: "org.apache.commons", name: "commons-collections4", version: apacheCommonsCollectionsVersion
 
     //Lombok
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
+    testAnnotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit

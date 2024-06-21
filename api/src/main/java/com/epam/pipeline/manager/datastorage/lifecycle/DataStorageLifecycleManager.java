@@ -200,7 +200,7 @@ public class DataStorageLifecycleManager {
         final StorageLifecycleRule loaded = loadStorageLifecyclePolicyRule(datastorageId, ruleId);
         if (loaded != null) {
             dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(ruleId);
-            dataStorageLifecycleRuleRepository.delete(loaded.getId());
+            dataStorageLifecycleRuleRepository.deleteById(loaded.getId());
             log.info("Storage lifecycle rule was deleted. Rule: {}", loaded.toDescriptionString());
             return loaded;
         } else {
@@ -216,7 +216,7 @@ public class DataStorageLifecycleManager {
                 false
         ).collect(Collectors.toList());
         loaded.forEach(rule -> dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(rule.getId()));
-        dataStorageLifecycleRuleRepository.delete(loaded);
+        dataStorageLifecycleRuleRepository.deleteAll(loaded);
         loaded.stream().map(lifecycleEntityMapper::toDto)
                 .forEach(r -> log.info("Storage lifecycle rule was deleted. Rule: {}", r.toDescriptionString()));
         dataStorageLifecycleRuleRepository.flush();
@@ -241,7 +241,7 @@ public class DataStorageLifecycleManager {
     public StorageLifecycleRuleExecution updateStorageLifecycleRuleExecutionStatus(
             final Long executionId, final StorageLifecycleRuleExecutionStatus status) {
         final StorageLifecycleRuleExecutionEntity executionEntity =
-                dataStorageLifecycleRuleExecutionRepository.findOne(executionId);
+                dataStorageLifecycleRuleExecutionRepository.findById(executionId).orElse(null);
         Assert.notNull(executionEntity,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND,
                         executionId));
@@ -260,8 +260,9 @@ public class DataStorageLifecycleManager {
     @Transactional
     public StorageLifecycleRuleExecution deleteStorageLifecycleRuleExecution(final Long executionId) {
         final StorageLifecycleRuleExecutionEntity execution =
-                dataStorageLifecycleRuleExecutionRepository.findOne(executionId);
-        dataStorageLifecycleRuleExecutionRepository.delete(execution.getId());
+                dataStorageLifecycleRuleExecutionRepository.findById(executionId)
+                        .orElse(new StorageLifecycleRuleExecutionEntity());
+        dataStorageLifecycleRuleExecutionRepository.deleteById(execution.getId());
         return lifecycleEntityMapper.toDto(execution);
     }
 
@@ -324,7 +325,7 @@ public class DataStorageLifecycleManager {
     }
 
     private StorageLifecycleRuleEntity loadLifecycleRuleEntity(final Long ruleId) {
-        return Optional.ofNullable(dataStorageLifecycleRuleRepository.findOne(ruleId))
+        return dataStorageLifecycleRuleRepository.findById(ruleId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND, ruleId)));
     }

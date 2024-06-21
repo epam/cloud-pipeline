@@ -55,7 +55,8 @@ dependencies {
     compile group: 'org.apache.commons', name: "commons-collections4", version: "4.0"
     compile group: "org.apache.commons", name: "commons-text", version: "1.4"
 
-    compileOnly "org.projectlombok:lombok:1.16.16"
+    annotationProcessor "org.projectlombok:lombok:1.18.4"
+    compileOnly "org.projectlombok:lombok:1.18.4"
 
     compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'
 
@@ -74,6 +75,8 @@ dependencies {
     // Map struct
     compile 'org.mapstruct:mapstruct-jdk8:1.2.0.Final'
     compile 'org.mapstruct:mapstruct-processor:1.2.0.Final'
+
+    implementation group: 'jakarta.annotation', name: 'jakarta.annotation-api', version: '1.3.5'
 }
 
 dependencyManagement {

@@ -324,7 +324,7 @@ public class ServerlessConfigurationManager {
         final HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();
         requestFactory.setHttpClient(httpClient);
         return builder
-                .requestFactory(requestFactory)
+                .requestFactory(() -> requestFactory)
                 .setConnectTimeout(REQUEST_TIMEOUT)
                 .build();
     }

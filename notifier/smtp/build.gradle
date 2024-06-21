@@ -26,7 +26,8 @@ dependencies {
     }
     compile project(':core')
 
-    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.16'
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: '1.18.4'
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.4'
 
     // Logging
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'

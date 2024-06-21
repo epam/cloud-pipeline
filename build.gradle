@@ -204,8 +204,8 @@ task distTar(type: Tar, dependsOn: installDist) {
     include "**/**"
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '4.10.2'
+wrapper {
+    gradleVersion = '5.0'
     distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
 }
 

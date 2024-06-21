@@ -102,12 +102,12 @@ public class QuotaService {
     }
 
     public Quota get(final Long id) {
-        return quotaMapper.quotaToDto(quotaRepository.findOne(id));
+        return quotaMapper.quotaToDto(quotaRepository.findById(id).orElse(null));
     }
 
     @Transactional
     public Quota update(final Long id, final Quota quota) {
-        final QuotaEntity loaded = quotaRepository.findOne(id);
+        final QuotaEntity loaded = quotaRepository.findById(id).orElse(null);
         Assert.notNull(loaded, messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
         Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
         validateQuotaName(quota, loaded.getType());
@@ -126,10 +126,10 @@ public class QuotaService {
 
     @Transactional
     public void delete(final Long id) {
-        Assert.state(quotaRepository.exists(id),
+        Assert.state(quotaRepository.existsById(id),
                 messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
         appliedQuotaRepository.deleteAllByAction_Quota_Id(id);
-        quotaRepository.delete(id);
+        quotaRepository.deleteById(id);
     }
 
     @Transactional
@@ -158,14 +158,14 @@ public class QuotaService {
 
     @Transactional
     public void deleteAppliedQuota(final Long id) {
-        Assert.state(appliedQuotaRepository.exists(id),
+        Assert.state(appliedQuotaRepository.existsById(id),
                 messageHelper.getMessage(MessageConstants.ERROR_APPLIED_QUOTA_NOT_FOUND_BY_ID, id));
-        appliedQuotaRepository.delete(id);
+        appliedQuotaRepository.deleteById(id);
     }
 
     @Transactional
     public void deleteAppliedQuotas(final List<AppliedQuota> quotas) {
-        appliedQuotaRepository.delete(ListUtils.emptyIfNull(quotas).stream()
+        appliedQuotaRepository.deleteAll(ListUtils.emptyIfNull(quotas).stream()
                 .map(quotaMapper::appliedQuotaToEntity)
                 .collect(Collectors.toList()));
     }
@@ -254,7 +254,7 @@ public class QuotaService {
 
     private void deleteAction(final Long actionId) {
         appliedQuotaRepository.deleteAllByAction_Id(actionId);
-        quotaActionRepository.delete(actionId);
+        quotaActionRepository.deleteById(actionId);
     }
 
     private void validateQuotaAction(final List<QuotaActionType> allowedActions,

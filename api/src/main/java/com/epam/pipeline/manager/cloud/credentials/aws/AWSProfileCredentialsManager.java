@@ -86,7 +86,7 @@ public class AWSProfileCredentialsManager implements CloudProfileCredentialsMana
     }
 
     private AWSProfileCredentialsEntity findEntity(final Long id) {
-        final AWSProfileCredentialsEntity entity = repository.findOne(id);
+        final AWSProfileCredentialsEntity entity = repository.findById(id).orElse(null);
         Assert.notNull(entity, messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ID_NOT_FOUND, id));
         return entity;
     }

@@ -102,7 +102,7 @@ public class DataStorageLifecycleRestoreManager {
                     return buildStoragePathRestoreAction(storage, path, restoreMode, effectiveDays,
                             restoreVersions, force, notification);
                 }).collect(Collectors.toList());
-        final List<StorageRestoreAction> created = dataStoragePathRestoreActionRepository.save(actions).stream()
+        final List<StorageRestoreAction> created = dataStoragePathRestoreActionRepository.saveAll(actions).stream()
                 .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
         created.forEach(a ->
                 log.info(String.format(
@@ -113,7 +113,8 @@ public class DataStorageLifecycleRestoreManager {
 
     @Transactional
     public StorageRestoreAction updateStorageRestoreAction(final StorageRestoreAction action) {
-        final StorageRestoreActionEntity loaded = dataStoragePathRestoreActionRepository.findOne(action.getId());
+        final StorageRestoreActionEntity loaded = dataStoragePathRestoreActionRepository.findById(action.getId())
+                .orElse(null);
         Assert.notNull(loaded,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE,
                         action.getId()));

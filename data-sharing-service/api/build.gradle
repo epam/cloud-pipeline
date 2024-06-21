@@ -70,8 +70,9 @@ dependencies {
 
 
     //Lombok
-    compileOnly "org.projectlombok:lombok:1.16.20"
-    testCompileOnly "org.projectlombok:lombok:1.16.20"
+    annotationProcessor "org.projectlombok:lombok:1.18.4"
+    compileOnly "org.projectlombok:lombok:1.18.4"
+    testCompileOnly "org.projectlombok:lombok:1.18.4"
 
     // Swagger
     compile group: 'io.springfox', name: 'springfox-swagger2', version: '2.6.1'

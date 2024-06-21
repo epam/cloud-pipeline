@@ -19,7 +19,7 @@ package com.epam.pipeline.hibernate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.SerializationException;
 import org.hibernate.usertype.UserType;
 
@@ -58,9 +58,8 @@ public class JsonDataUserType implements UserType {
         }
         return x.hashCode();
     }
-
     @Override
-    public Object nullSafeGet(final ResultSet rs, final String[] names, final SessionImplementor session,
+    public Object nullSafeGet(final ResultSet rs, final String[] names, final SharedSessionContractImplementor session,
                               final Object owner) throws HibernateException, SQLException {
         final Object o = rs.getObject(names[0]);
         if (o != null) {
@@ -75,7 +74,7 @@ public class JsonDataUserType implements UserType {
 
     @Override
     public void nullSafeSet(final PreparedStatement st, final Object value, final int index,
-                            final SessionImplementor session) throws HibernateException, SQLException {
+                            final SharedSessionContractImplementor session) throws HibernateException, SQLException {
         if (value == null) {
             st.setNull(index, Types.OTHER);
             return;

@@ -59,6 +59,7 @@ dependencies {
     implementation group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
 
     //Lombok
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit

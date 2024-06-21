@@ -78,11 +78,11 @@ public class OntologyManager {
                     String.format("Ontology '%d' cannot be deleted: children were found.", id));
         }
         if (!recursive || CollectionUtils.isEmpty(children)) {
-            ontologyRepository.delete(id);
+            ontologyRepository.deleteById(id);
             return ontology;
         }
         children.forEach(this::deleteRecursive);
-        ontologyRepository.delete(id);
+        ontologyRepository.deleteById(id);
         return ontology;
     }
 
@@ -143,7 +143,7 @@ public class OntologyManager {
     }
 
     private OntologyEntity findEntity(final Long id) {
-        final OntologyEntity ontology = ontologyRepository.findOne(id);
+        final OntologyEntity ontology = ontologyRepository.findById(id).orElse(null);
         Assert.notNull(ontology, String.format("Ontology with id %s wasn't found.", id));
         return ontology;
     }
@@ -183,11 +183,11 @@ public class OntologyManager {
     private void deleteRecursive(final OntologyEntity ontology) {
         final List<OntologyEntity> children = findChildren(ontology.getId());
         if (CollectionUtils.isEmpty(children)) {
-            ontologyRepository.delete(ontology.getId());
+            ontologyRepository.deleteById(ontology.getId());
             return;
         }
         children.forEach(this::deleteRecursive);
-        ontologyRepository.delete(ontology.getId());
+        ontologyRepository.deleteById(ontology.getId());
     }
 
     private List<OntologyEntity> findChildren(final Long id) {

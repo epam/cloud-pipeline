@@ -285,7 +285,7 @@ public class UserManager implements SecuredEntityManager {
     }
 
     public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
-        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+        return StreamSupport.stream(userRepository.findAllById(userIds).spliterator(), false)
                 .collect(Collectors.toList());
     }
 

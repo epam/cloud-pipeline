@@ -99,7 +99,7 @@ public class CloudProfileCredentialsManagerProvider {
         Assert.state(CollectionUtils.isEmpty(entity.getUsers())
                         && CollectionUtils.isEmpty(entity.getRoles()),
                 messageHelper.getMessage(MessageConstants.ERROR_PROFILE_HAS_LINKS, id));
-        repository.delete(id);
+        repository.deleteById(id);
         return mapper.toDto(entity);
     }
 
@@ -155,7 +155,7 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     private CloudProfileCredentialsEntity findEntity(final Long id) {
-        final CloudProfileCredentialsEntity entity = repository.findOne(id);
+        final CloudProfileCredentialsEntity entity = repository.findById(id).orElse(null);
         Assert.notNull(entity, messageHelper.getMessage(MessageConstants.ERROR_PROFILE_ID_NOT_FOUND, id));
         return entity;
     }
@@ -193,13 +193,13 @@ public class CloudProfileCredentialsManagerProvider {
     }
 
     private PipelineUser findUserEntity(final Long userId) {
-        final PipelineUser userEntity = userRepository.findOne(userId);
+        final PipelineUser userEntity = userRepository.findById(userId).orElse(null);
         Assert.notNull(userEntity, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, userId));
         return userEntity;
     }
 
     private Role findRoleEntity(final Long roleId) {
-        final Role roleEntity = roleRepository.findOne(roleId);
+        final Role roleEntity = roleRepository.findById(roleId).orElse(null);
         Assert.notNull(roleEntity, messageHelper.getMessage(MessageConstants.ERROR_ROLE_ID_NOT_FOUND, roleId));
         return roleEntity;
     }

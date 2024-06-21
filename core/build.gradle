@@ -34,7 +34,8 @@ dependencies {
     compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.7'
     compile group: 'org.apache.commons', name: "commons-collections4", version: "4.0"
     compile('org.springframework.boot:spring-boot-starter-data-jpa')
-    compileOnly "org.projectlombok:lombok:1.16.16"
+    annotationProcessor "org.projectlombok:lombok:1.18.4"
+    compileOnly "org.projectlombok:lombok:1.18.4"
     testCompile('org.springframework.boot:spring-boot-starter-test')
 }
 

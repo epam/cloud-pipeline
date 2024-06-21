@@ -428,7 +428,7 @@ public class DockerClient {
                 .additionalMessageConverters(new RestTemplate().getMessageConverters());
 
         if (StringUtils.isNotBlank(caCert)) {
-            builder = builder.requestFactory(getHttpRequestFactory(caCert));
+            builder = builder.requestFactory(() -> getHttpRequestFactory(caCert));
         }
         if (mapper != null) {
             builder = builder.additionalMessageConverters(getMessageConverters(mapper));

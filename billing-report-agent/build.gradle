@@ -66,6 +66,7 @@ dependencies {
     implementation group:'com.google.apis', name:'google-api-services-cloudbilling', version: gcpBillingSdkVersion
 
     //Lombok
+    annotationProcessor group: "org.projectlombok", name: "lombok", version: lombokVersion
     implementation group: "org.projectlombok", name: "lombok", version: lombokVersion
 
     // Retrofit

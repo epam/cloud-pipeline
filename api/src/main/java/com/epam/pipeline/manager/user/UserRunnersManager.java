@@ -69,7 +69,7 @@ public class UserRunnersManager {
     }
 
     private PipelineUser getUserOrThrow(final Long id) {
-        final PipelineUser user = pipelineUserRepository.findOne(id);
+        final PipelineUser user = pipelineUserRepository.findById(id).orElse(null);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         return user;
     }
