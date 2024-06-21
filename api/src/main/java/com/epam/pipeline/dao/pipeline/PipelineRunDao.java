@@ -596,7 +596,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             return Strings.EMPTY;
         }
         params.addValue(PipelineRunParameters.TAGS.name(), tags);
-        return " WHERE tags.key IN (:" + PipelineRunParameters.TAGS.name() + ")";
+        return "AND tags.key IN (:" + PipelineRunParameters.TAGS.name() + ")";
     }
 
     private String makeChartFilterCondition(final RunChartFilterVO filter, final MapSqlParameterSource params) {
@@ -732,6 +732,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         if (CollectionUtils.isNotEmpty(filter.getStatuses())) {
             appendAnd(whereBuilder, clausesCount);
             buildStatusesClause(params, whereBuilder, filter.getStatuses());
+            clausesCount++;
+        }
+
+        if (CollectionUtils.isNotEmpty(filter.getInstanceTypes())) {
+            appendAnd(whereBuilder, clausesCount);
+            buildInstanceTypesClause(params, whereBuilder, filter.getInstanceTypes());
             clausesCount++;
         }
 

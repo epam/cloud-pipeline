@@ -2138,7 +2138,7 @@
                            tags.key as value,
                            COUNT(*) as count
                     FROM filtered, jsonb_each(filtered.tags) AS tags
-                    @WHERE_TAGS@
+                    WHERE lower(tags.value::text) = '"true"' @WHERE_TAGS@
                     GROUP BY status, tags.key
                 ]]>
             </value>
