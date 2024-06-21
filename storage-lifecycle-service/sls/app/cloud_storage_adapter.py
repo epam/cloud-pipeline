@@ -16,6 +16,11 @@ from sls.cloud.cloud import CloudPipelineStorageContainer
 from sls.cloud.s3_cloud import S3StorageOperations
 from sls.util import path_utils
 
+# This property contains key of the metadata tag of the storage
+# If the metadata with such key is present on the storage,
+# StorageLifecycleArchivingSynchronizer will skip such storage
+SKIP_ARCHIVING_TAG = "storage_skip_archiving_tag"
+
 
 def _verify_s3_sls_properties(sls_properties, logger):
 
@@ -100,6 +105,14 @@ class PlatformToCloudOperationsAdapter:
 
     def is_support(self, storage):
         return storage.storage_type in self.cloud_operations
+
+    def should_be_skipped(self, storage):
+        tag_to_skip_storage = self._fetch_skipping_tag_from_region(storage)
+        metadata = self.pipeline_api_client.load_entity_metadata(storage.id, "DATA_STORAGE")
+
+        if not metadata or not tag_to_skip_storage:
+            return False
+        return tag_to_skip_storage in metadata
 
     def prepare_bucket_if_needed(self, storage):
         region = self.fetch_region(storage.region_id)
@@ -213,3 +226,7 @@ class PlatformToCloudOperationsAdapter:
                 invalid_region_ids.append(region_id)
         [_regions_by_id.pop(rid, None) for rid in invalid_region_ids]
         return _regions_by_id
+
+    def _fetch_skipping_tag_from_region(self, storage):
+        region = self.fetch_region(storage.region_id)
+        return region.storage_lifecycle_service_properties.get(SKIP_ARCHIVING_TAG) if region else None
