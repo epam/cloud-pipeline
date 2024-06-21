@@ -62,7 +62,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             )
             return
 
-        if not self.cloud_bridge.should_be_skipped(storage):
+        if self.cloud_bridge.should_be_skipped(storage):
             self.logger.log(
                 "Lifecycle rules are disabled for the storage {} with id {}, skipping.".format(storage.path, storage.id)
             )
