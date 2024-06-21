@@ -139,6 +139,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TEST_REGION = "region";
     private static final String NODE_TYPE = "m5.xlarge";
     private static final String NODE_TYPE_2 = "r5.2xlarge";
+    private static final String TRUE = "True";
 
     private static final BigDecimal INITIAL_CLUSTER_PRICE_1 = BigDecimal.valueOf(1.9511111);
     private static final BigDecimal INITIAL_CLUSTER_PRICE_2 = BigDecimal.valueOf(123456.5666);
@@ -1152,7 +1153,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
 
     @Test
     public void shouldLoadRunsChartsWithStatusFilter() {
-        final Map<String, String> tags = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+        final Map<String, String> tags = Collections.singletonMap(TAG_KEY_1, TRUE);
 
         final PipelineRun running = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
         pipelineRunDao.createPipelineRun(running);
@@ -1172,8 +1173,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldLoadRunsChartsWithFullFilter() {
         final HashMap<String, String> tags = new HashMap<>();
-        tags.put(TAG_KEY_1, TAG_VALUE_1);
-        tags.put(TAG_KEY_2, TAG_VALUE_2);
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
 
         final PipelineRun run1 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
         pipelineRunDao.createPipelineRun(run1);
@@ -1186,7 +1187,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun run5 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null);
         pipelineRunDao.createPipelineRun(run5);
         final PipelineRun run6 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER,
-                Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2));
+                Collections.singletonMap(TAG_KEY_2, TRUE));
         pipelineRunDao.createPipelineRun(run6);
 
         final RunChartFilterVO filter = new RunChartFilterVO();
@@ -1205,8 +1206,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Test
     public void shouldLoadRunsChartsWithFilterWithAclOwner() {
         final HashMap<String, String> tags = new HashMap<>();
-        tags.put(TAG_KEY_1, TAG_VALUE_1);
-        tags.put(TAG_KEY_2, TAG_VALUE_2);
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
 
         final PipelineRun run1 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
         pipelineRunDao.createPipelineRun(run1);
@@ -1219,7 +1220,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final PipelineRun run5 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null);
         pipelineRunDao.createPipelineRun(run5);
         final PipelineRun run6 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER,
-                Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2));
+                Collections.singletonMap(TAG_KEY_2, TRUE));
         pipelineRunDao.createPipelineRun(run6);
         final PipelineRun run7 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags);
         pipelineRunDao.createPipelineRun(run7);
@@ -1244,8 +1245,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         final Long notAllowedPipelineId = getPipeline().getId();
 
         final HashMap<String, String> tags = new HashMap<>();
-        tags.put(TAG_KEY_1, TAG_VALUE_1);
-        tags.put(TAG_KEY_2, TAG_VALUE_2);
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
 
         final PipelineRun run1 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags,
                 allowedPipelineId);
@@ -1279,6 +1280,22 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         filter.setAllowedPipelines(Collections.singletonList(allowedPipelineId));
         final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
         assertEquals(4, charts.size());
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithoutNonBooleanTags() {
+        final Map<String, String> tags = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+
+        final PipelineRun running = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(running);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(charts.size(), 3);
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
                 .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
