@@ -62,6 +62,12 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             )
             return
 
+        if not self.cloud_bridge.should_be_skipped(storage):
+            self.logger.log(
+                "Lifecycle rules are disabled for the storage {} with id {}, skipping.".format(storage.path, storage.id)
+            )
+            return
+
         file_listing_cache = {}
         self.cloud_bridge.prepare_bucket_if_needed(storage)
         for rule in rules:
