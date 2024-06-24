@@ -321,9 +321,17 @@ class AllRuns extends React.Component {
     const {
       owners,
       dockerImages,
+      instanceTypes,
+      tags = [],
       statuses
     } = filters || {};
-    this.setState({details: {owners, dockerImages, statuses}});
+    this.setState({details: {
+      owners,
+      instanceTypes,
+      dockerImages,
+      tags: Object.fromEntries(tags.map(tag => ([tag, true]))),
+      statuses
+    }});
     this.navigateToRuns('details');
   };
 
