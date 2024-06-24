@@ -27,6 +27,37 @@ import MetadataLoad from '../metadata/MetadataLoad';
 const DEFAULT_DELIMITER = '/';
 const PAGE_SIZE = 40;
 
+const SORTING_ORDER = {
+  ascend: 'ascend',
+  descend: 'descend'
+};
+
+const SORTERS = {
+  name: (a, b, order) => {
+    const aName = a.name || '';
+    const bName = b.name || '';
+    if (order === SORTING_ORDER.ascend) {
+      return aName.localeCompare(bName);
+    }
+    return bName.localeCompare(aName);
+  },
+  changed: (a, b, order) => {
+    const aDate = moment(a.changed);
+    const bDate = moment(b.changed);
+    if (order === SORTING_ORDER.ascend) {
+      return aDate - bDate;
+    }
+    return bDate - aDate;
+  },
+  size: (a, b, order) => {
+    if (order === SORTING_ORDER.ascend) {
+      return a.size - b.size;
+    }
+    return b.size - a.size;
+  }
+};
+
+
 const mbToBytes = mb => {
   if (isNaN(mb)) {
     return;
@@ -262,6 +293,10 @@ class DataStorageListing {
   @observable showVersions;
   @observable showArchives;
   @observable markers = {};
+  @observable clientPaging = {
+    page: 0
+  };
+  @observable _metadataRequest;
   /**
    * Storage info (DataStorage request)
    */
@@ -269,7 +304,7 @@ class DataStorageListing {
   @observable pagePending = false;
   @observable pageLoaded = false;
   @observable pageError = undefined;
-  @observable pageElements = [];
+  @observable _pageElements = [];
   /**
    * Current page path. Leading & trailing slashes are removed.
    * "undefined" is returned if current path is root
@@ -289,6 +324,11 @@ class DataStorageListing {
     dateAfter: undefined,
     dateBefore: undefined
   };
+  @observable defaultSortedPageSize;
+  @observable _sorter = {
+    field: undefined,
+    order: undefined
+  };
   @observable resultsTruncated = false;
   @observable filtersApplied = false;
 
@@ -303,13 +343,21 @@ class DataStorageListing {
       pageSize = PAGE_SIZE
     } = options;
     this.keepPagesHistory = keepPagesHistory;
-    this.pageSize = pageSize;
+    this._pageSize = pageSize;
   }
 
   destroy () {
     this._increaseUniqueToken();
     this.storageRequest = undefined;
     this.markers = undefined;
+  }
+
+  @computed
+  get pageSize () {
+    if (this.sortingApplied) {
+      return this.defaultSortedPageSize;
+    }
+    return this._pageSize;
   }
 
   @computed
@@ -353,6 +401,14 @@ class DataStorageListing {
   }
 
   @computed
+  get metadata () {
+    if (this._metadataRequest.loaded) {
+      return (this._metadataRequest.value || [])[0];
+    }
+    return {};
+  }
+
+  @computed
   get readAllowed () {
     return this.info && roleModel.readAllowed(this.info);
   }
@@ -381,6 +437,18 @@ class DataStorageListing {
       currentPage = 0,
       markers = [undefined]
     } = getPathMarkers(this.path, this.markers);
+    if (this.sortingApplied) {
+      const {page} = this.clientPaging;
+      const totalPages = this.sortingApplied
+        ? Math.ceil(this._pageElements.length / PAGE_SIZE)
+        : undefined;
+      return {
+        page,
+        first: page > 0,
+        previous: page > 0,
+        next: page + 1 < totalPages
+      };
+    }
     return {
       page: currentPage,
       first: currentPage > 0,
@@ -413,6 +481,30 @@ class DataStorageListing {
     return this.resultsFiltered && this.resultsTruncated;
   }
 
+  @computed
+  get pageElements () {
+    const sorterFn = SORTERS[this.currentSorter.field];
+    if (this.sortingApplied && sorterFn) {
+      const from = this.currentPagination.page * PAGE_SIZE;
+      const sorted = [...this._pageElements]
+        .sort((a, b) => sorterFn(a, b, this.currentSorter.order));
+      return this.filtersApplied
+        ? sorted
+        : sorted.slice(from, from + PAGE_SIZE);
+    }
+    return this._pageElements;
+  }
+
+  @computed
+  get currentSorter () {
+    return this._sorter;
+  }
+
+  @computed
+  get sortingApplied () {
+    return !!(this.currentSorter.field && this.currentSorter.order);
+  }
+
   _increaseUniqueToken = () => {
     this.token = (this.token || 0) + 1;
     return this.token;
@@ -440,6 +532,11 @@ class DataStorageListing {
   @action
   clearMarkers = () => {
     this.markers = resetMarkersForPath();
+  };
+
+  @action
+  clearClientPaging = () => {
+    this.clientPaging.total = undefined;
   };
 
   @action
@@ -492,7 +589,7 @@ class DataStorageListing {
     }
     this._increaseUniqueToken();
     this._increaseUniqueNgbSettingsToken();
-    this.pageElements = [];
+    this._pageElements = [];
     this.pagePath = undefined;
     this.pageError = undefined;
     this.pagePending = false;
@@ -506,40 +603,48 @@ class DataStorageListing {
       .catch((error) => console.warn(
         `Error fetching storage #${storageId || '<unknown>'}: ${error.message}`
       ));
-    this.initializeDownloadableAttribute();
+    this.initializeMetadataAndSorting();
     return true;
   };
 
-  initializeDownloadableAttribute = () => {
+  initializeMetadataAndSorting = () => {
     this.downloadEnabled = false;
     if (this.storageId && this.storageRequest) {
-      const metadata = new MetadataLoad(this.storageId, 'DATA_STORAGE');
+      this._metadataRequest = new MetadataLoad(this.storageId, 'DATA_STORAGE');
       Promise.all([
         authenticatedUserInfo.fetchIfNeededOrWait(),
         preferences.fetchIfNeededOrWait(),
-        metadata.fetch(),
+        this._metadataRequest.fetchIfNeededOrWait(),
         this.storageRequest.fetchIfNeededOrWait()
       ])
         .then(() => {
           if (
+            preferences.storageSortingPageSize &&
+            preferences.storageSortingPageSize !== this.defaultSortedPageSize
+          ) {
+            this.defaultSortedPageSize = preferences.storageSortingPageSize;
+          }
+          if (this._metadataRequest.loaded) {
+            this.resetSorting();
+          }
+          if (
             authenticatedUserInfo.loaded &&
             preferences.loaded &&
             preferences.storageDownloadAttribute &&
-            metadata.loaded
+            this._metadataRequest.loaded
           ) {
-            const [currentStorageMetadata] = metadata.value || [];
             if (
               !authenticatedUserInfo.value.admin &&
               !this.isOwner &&
-              currentStorageMetadata &&
-              currentStorageMetadata.data &&
-              currentStorageMetadata.data[preferences.storageDownloadAttribute]
+              this.metadata &&
+              this.metadata.data &&
+              this.metadata.data[preferences.storageDownloadAttribute]
             ) {
               const userGroups = new Set([
                 ...(authenticatedUserInfo.value.groups || []).map((group) => group.toLowerCase()),
                 ...(authenticatedUserInfo.value.roles || []).map((role) => role.name.toLowerCase())
               ]);
-              const value = currentStorageMetadata.data[preferences.storageDownloadAttribute].value;
+              const value = this.metadata.data[preferences.storageDownloadAttribute].value;
               return checkStorageDownloadEnabledAttributeValue(
                 value,
                 userGroups
@@ -610,6 +715,51 @@ class DataStorageListing {
   };
 
   @action
+  setSorter = (sorter = {}) => {
+    if (
+      this.currentSorter.field === sorter.field &&
+      this.currentSorter.order === sorter.order
+    ) {
+      return;
+    }
+    if (!Object.keys(sorter).length && !this.filtersApplied) {
+      this.clearClientPaging();
+      this.resetSorting(false);
+      return this.refreshCurrentPath(false, true);
+    }
+    let skipFetch = this.filtersApplied || this.sortingApplied;
+    this._sorter.field = sorter.field;
+    this._sorter.order = sorter.order;
+    if (skipFetch) {
+      return;
+    }
+    this.refreshCurrentPath(false, true);
+  };
+
+  @action
+  resetSorting = (toDefaults = true) => {
+    let defaults;
+    try {
+      const sortingConfiguration = (this.metadata.data || {})['default-sorting'] || {};
+      defaults = JSON.parse(sortingConfiguration.value);
+    } catch (e) {}
+    const getOrder = (order) => {
+      if (['asc', 'ascend', 'ascending'].includes(order)) {
+        return SORTING_ORDER.ascend;
+      }
+      if (['desc', 'descend', 'descending'].includes(order)) {
+        return SORTING_ORDER.descend;
+      }
+    };
+    this._sorter = {
+      field: defaults && toDefaults ? defaults.field : undefined,
+      order: defaults && toDefaults
+        ? getOrder(defaults.order)
+        : undefined
+    };
+  };
+
+  @action
   changeFilterField = (key, value, applyChanges = true) => {
     this.currentFilter[key] = value;
     if (applyChanges) {
@@ -670,11 +820,11 @@ class DataStorageListing {
       const {results = [], nextPageMarker} = request.value || {};
       this.resultsTruncated = !!nextPageMarker;
       this.filtersApplied = true;
-      this.pageElements = results;
+      this._pageElements = results;
       this.pageLoaded = true;
       this.pagePath = pathCorrected;
     } catch (error) {
-      this.pageElements = [];
+      this._pageElements = [];
       this.pageError = error.message;
       this.pageLoaded = false;
       this.pagePath = pathCorrected;
@@ -687,6 +837,12 @@ class DataStorageListing {
 
   @action
   fetchCurrentPage = async () => {
+    await Promise.all([
+      authenticatedUserInfo.fetchIfNeededOrWait(),
+      preferences.fetchIfNeededOrWait(),
+      this._metadataRequest.fetchIfNeededOrWait(),
+      this.storageRequest.fetchIfNeededOrWait()
+    ]);
     const token = this._increaseUniqueToken();
     const submitChanges = (fn) => {
       if (token === this.token && typeof fn === 'function') {
@@ -725,15 +881,21 @@ class DataStorageListing {
         nextPageMarker
       } = request.value || {};
       submitChanges(() => {
-        this.pageElements = results;
+        this._pageElements = results;
         this.pageLoaded = true;
         this.pagePath = pathCorrected;
-        this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
+        if (this.sortingApplied) {
+          this.clientPaging.page = 0;
+          this.clearMarkers();
+        } else {
+          this.markers = insertNextPageMarker(this.path, nextPageMarker, this.markers);
+          this.clearClientPaging();
+        }
         this.filtersApplied = false;
       });
     } catch (error) {
       submitChanges(() => {
-        this.pageElements = [];
+        this._pageElements = [];
         this.pageError = error.message;
         this.pageLoaded = false;
         this.pagePath = pathCorrected;
@@ -764,7 +926,8 @@ class DataStorageListing {
       }
     );
     ngbSettingsFile = ngbSettingsFile.concat('ngb.settings');
-    const fileExistsOnPage = !!this.pageElements.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+    const fileExistsOnPage = !!this.pageElements
+      .find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
     if (fileExistsOnPage) {
       submitChanges(() => {
         this.ngbSettingsFileExists = true;
@@ -783,7 +946,7 @@ class DataStorageListing {
         decodeURIComponent(ngbSettingsFile),
         false,
         false,
-        100,
+        100
       );
       await request.fetchPage(undefined);
       if (request.error) {
@@ -793,10 +956,11 @@ class DataStorageListing {
         throw new Error('Error loading page');
       }
       const {
-        results = [],
+        results = []
       } = request.value || {};
       submitChanges(() => {
-        this.ngbSettingsFileExists = !!results.find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
+        this.ngbSettingsFileExists = !!results
+          .find((o) => o.path.toLowerCase() === ngbSettingsFile.toLowerCase());
       });
     } catch (error) {
       submitChanges(() => {
@@ -807,6 +971,10 @@ class DataStorageListing {
 
   @action
   navigateToNextPage = () => {
+    if (this.sortingApplied && this.currentPagination.next) {
+      this.clientPaging.page += 1;
+      return;
+    }
     if (this.currentPagination.next) {
       const newMarkers = setCurrentPage(
         this.path,
@@ -815,7 +983,9 @@ class DataStorageListing {
       );
       if (newMarkers) {
         this.markers = newMarkers;
-        return this.fetchCurrentPage();
+        if (!this.sortingApplied) {
+          return this.fetchCurrentPage();
+        }
       }
     }
     return Promise.resolve();
@@ -824,6 +994,10 @@ class DataStorageListing {
   @action
   navigateToPreviousPage = () => {
     if (this.currentPagination.previous) {
+      if (this.sortingApplied && this.currentPagination.previous) {
+        this.clientPaging.page -= 1;
+        return;
+      }
       const newMarkers = setCurrentPage(
         this.path,
         (currentPage) => currentPage - 1,
@@ -831,7 +1005,9 @@ class DataStorageListing {
       );
       if (newMarkers) {
         this.markers = newMarkers;
-        return this.fetchCurrentPage();
+        if (!this.sortingApplied) {
+          return this.fetchCurrentPage();
+        }
       }
     }
     return Promise.resolve();
@@ -839,6 +1015,10 @@ class DataStorageListing {
 
   @action
   navigateToFirstPage = () => {
+    if (this.sortingApplied && this.currentPagination.next) {
+      this.clientPaging.page = 0;
+      return;
+    }
     if (this.currentPagination.first) {
       const newMarkers = setCurrentPage(
         this.path,
@@ -847,18 +1027,20 @@ class DataStorageListing {
       );
       if (newMarkers) {
         this.markers = newMarkers;
-        return this.fetchCurrentPage();
+        if (!this.sortingApplied) {
+          return this.fetchCurrentPage();
+        }
       }
     }
     return Promise.resolve();
   };
 
   @action
-  refreshCurrentPath = (keepCurrentPage = false) => {
+  refreshCurrentPath = (keepCurrentPage = false, keepFilters = false) => {
     if (!keepCurrentPage) {
       this.clearMarkersForCurrentPath();
     }
-    if (!this.filtersEmpty) {
+    if (!this.filtersEmpty && !keepFilters) {
       this.resetFilter();
     }
     return this.fetchCurrentPage();
