@@ -487,4 +487,7 @@ if [ "$DOCKERS_INCLUDE_TESTS" == "yes" ]; then
     # empty-settings-test
     build_and_push_tool $E2E_TESTS_DOCKERS_SOURCES_PATH/e2e-empty "$CP_DIST_REPO_NAME:tools-tests-e2e-empty-${DOCKERS_VERSION}" "tests/e2e-empty:latest"
 
+    # ldap-e2e-test
+    build_and_push_tool $E2E_TESTS_DOCKERS_SOURCES_PATH/e2e-ldap "$CP_DIST_REPO_NAME:tools-tests-e2e-ldap-${DOCKERS_VERSION}" "tests/e2e-ldap:latest"
+
 fi
