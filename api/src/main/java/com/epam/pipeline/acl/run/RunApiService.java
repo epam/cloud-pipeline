@@ -20,6 +20,7 @@ import com.epam.pipeline.aspect.run.QuotaLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
@@ -27,6 +28,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
@@ -149,8 +151,8 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public List<RunLog> loadAllLogsByRunId(Long runId) {
-        return logManager.loadAllLogsByRunId(runId);
+    public List<RunLog> loadLogsByRunId(Long runId, OffsetPagingFilter filter) {
+        return logManager.loadLogsByRunId(runId, filter);
     }
 
     @PreAuthorize(RUN_ID_READ)
@@ -159,8 +161,8 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public String downloadLogs(Long runId) {
-        return logManager.downloadLogs(runCRUDService.loadRunById(runId));
+    public ResultWriter exportLogs(Long runId) {
+        return logManager.exportLogs(runId);
     }
 
     @PreAuthorize(RUN_ID_READ)
@@ -181,8 +183,9 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public List<RunLog> loadAllLogsForTask(Long runId, String taskName, String parameters) {
-        return logManager.loadAllLogsForTask(runId, taskName, parameters);
+    public List<RunLog> loadLogsForTask(Long runId, String taskName, String parameters,
+                                        OffsetPagingFilter filter) {
+        return logManager.loadLogsForTask(runId, taskName, parameters, filter);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
