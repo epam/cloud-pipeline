@@ -824,26 +824,35 @@ def terminate_instance(ins_id):
 
 
 def delete_all_by_run_id(run_id):
-    resources = []
-    resources.extend(resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"))
-    if len(resources) > 0:
-        # we need to sort resources to be sure that vm and nic will be deleted first,
-        # because it has attached resorces(disks and ip)
-        resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].lower().startswith('virtualmachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-        if str(resources[0].type).split('/')[-1].lower() == 'virtualmachines':
-            detach_disks_and_nic(vm_name)
-        for resource in resources:
-            resource_client.resources.delete(
-                resource_group_name=resource.id.split('/')[4],
-                resource_provider_namespace=resource.id.split('/')[6],
-                parent_resource_path='',
-                resource_type=str(resource.type).split('/')[-1],
-                resource_name=resource.name,
-                api_version=resolve_azure_api(resource),
-                parameters=resource
-            ).wait()
-
+    delete_retry_count = 20
+    delete_retry_wait_sec = 30
+    try:
+        resources = []
+        resources.extend(resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"))
+        if len(resources) > 0:
+            # we need to sort resources to be sure that vm and nic will be deleted first,
+            # because it has attached resorces(disks and ip)
+            resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
+            vm_name = resources[0].name if str(resources[0].type).split('/')[-1].lower().startswith('virtualmachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+            if str(resources[0].type).split('/')[-1].lower() == 'virtualmachines':
+                detach_disks_and_nic(vm_name)
+            for resource in resources:
+                for i in range(delete_retry_count):
+                    try:
+                        resource_client.resources.delete(
+                            resource_group_name=resource.id.split('/')[4],
+                            resource_provider_namespace=resource.id.split('/')[6],
+                            parent_resource_path='',
+                            resource_type=str(resource.type).split('/')[-1],
+                            resource_name=resource.name,
+                            api_version=resolve_azure_api(resource),
+                            parameters=resource
+                        ).wait()
+                    except Exception as e:
+                        pipe_log('[ERROR] Resource deletion failed ({}/{}): {}'.format(i, delete_retry_count, str(resource.id)), status=TaskStatus.FAILURE)
+                        sleep(delete_retry_wait_sec)
+    except Exception as e:
+        pipe_log('[ERROR] delete_all_by_run_id failed: {}'.format(str(e)), status=TaskStatus.FAILURE)
 
 def detach_disks_and_nic(vm_name):
     compute_client.virtual_machines.delete(resource_group_name, vm_name).wait()
@@ -1118,9 +1127,9 @@ def main():
 
         pipe_log('{} task finished'.format(NODEUP_TASK), status=TaskStatus.SUCCESS)
     except Exception as e:
+        pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         delete_all_by_run_id(run_id)
         delete_scale_set_nodes_from_kube(kube_api=api, scale_set_name=resource_name)
-        pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
 
 
