@@ -1,0 +1,159 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "S3Allow",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetLifecycleConfiguration",
+                "s3:GetBucketTagging",
+                "s3:DeleteObjectVersion",
+                "s3:GetObjectVersionTagging",
+                "s3:ListBucketVersions",
+                "s3:RestoreObject",
+                "s3:CreateBucket",
+                "s3:ListBucket",
+                "s3:GetBucketPolicy",
+                "s3:GetObjectAcl",
+                "s3:AbortMultipartUpload",
+                "s3:PutBucketTagging",
+                "s3:PutLifecycleConfiguration",
+                "s3:PutBucketAcl",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging",
+                "s3:*Delete*",
+                "s3:PutBucketVersioning",
+                "s3:PutObjectAcl",
+                "s3:DeleteObjectTagging",
+                "s3:ListBucketMultipartUploads",
+                "s3:PutObjectVersionTagging",
+                "s3:DeleteObjectVersionTagging",
+                "s3:GetBucketVersioning",
+                "s3:PutBucketCORS",
+                "s3:GetBucketAcl",
+                "s3:ListMultipartUploadParts",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:GetBucketCORS",
+                "s3:PutBucketPolicy",
+                "s3:GetBucketLocation",
+                "s3:GetObjectVersion",
+                "s3:PutEncryptionConfiguration",
+                "s3:GetEncryptionConfiguration",
+                "s3:ListAllMyBuckets"
+            ],
+            "Resource": [
+                "arn:aws:s3:::*"
+            ]
+        },
+        {
+            "Sid": "EFSAllow",
+            "Effect": "Allow",
+            "Action": [
+                "elasticfilesystem:*"
+            ],
+            "Resource": [
+                "arn:aws:elasticfilesystem:${cp_region}:*:file-system/*"
+            ]
+        },
+        {
+            "Sid": "FSxAllowListing",
+            "Effect": "Allow",
+            "Action": [
+                "fsx:DescribeFileSystems",
+                "fsx:DescribeBackups",
+                "fsx:DescribeDataRepositoryTasks"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "FSxAllowRW",
+            "Effect": "Allow",
+            "Action": "fsx:*",
+            "Resource": [
+                "arn:aws:fsx:::task/*",
+                "arn:aws:fsx:::backup/*",
+                "arn:aws:fsx:::file-system/*"
+            ]
+        },
+        {
+            "Sid": "FSxAllowFullControl",
+            "Effect": "Allow",
+            "Action": [
+                "fsx:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "OtherAllow",
+            "Effect": "Allow",
+            "Action": [
+                "ec2:AttachVolume",
+                "ec2:DeregisterImage",
+                "kms:Decrypt",
+                "ec2:DeleteSnapshot",
+                "ec2:RequestSpotInstances",
+                "ec2:DeleteTags",
+                "elasticfilesystem:CreateFileSystem",
+                "ec2:CancelSpotFleetRequests",
+                "ec2:CreateKeyPair",
+                "ec2:CreateImage",
+                "ec2:RequestSpotFleet",
+                "ec2:DeleteVolume",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:StartInstances",
+                "kms:Encrypt",
+                "ec2:CreateSnapshot",
+                "kms:ReEncryptTo",
+                "kms:DescribeKey",
+                "ec2:ModifyInstanceAttribute",
+                "ec2:DescribeInstanceStatus",
+                "ec2:DetachVolume",
+                "ec2:ReleaseAddress",
+                "ec2:RebootInstances",
+                "iam:GetRole",
+                "ec2:TerminateInstances",
+                "ec2:CreateTags",
+                "ec2:RegisterImage",
+                "iam:ListRoles",
+                "ec2:RunInstances",
+                "ec2:StopInstances",
+                "kms:ReEncryptFrom",
+                "ec2:CreateVolume",
+                "ec2:CreateNetworkInterface",
+                "ec2:CancelSpotInstanceRequests",
+                "ec2:Describe*",
+                "kms:GenerateDataKey",
+                "ec2:DescribeSubnets",
+                "ec2:DeleteKeyPair",
+                "cloudwatch:GetMetricStatistics",
+                "cloudwatch:ListMetrics",
+                "cloudwatch:PutMetricData",
+                "cloudwatch:GetMetricData",
+                "savingsplans:DescribeSavingsPlans",
+                "savingsplans:DescribeSavingsPlanRates"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "STSAllow",
+            "Effect": "Allow",
+            "Action": [
+                "sts:AssumeRole"
+            ],
+            "Resource": [
+                "arn:aws:iam::*:role/${cp_project}-*"
+            ]
+        },
+        {
+            "Action": [
+                "iam:PassRole"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:iam::*:role/CloudPipeline*"
+            ],
+            "Sid": "NiceDCV"
+        }
+    ]
+}
