@@ -1635,10 +1635,23 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
+    const renderTitle = (key, title) => {
+      return (
+        <span
+          style={{cursor: 'pointer'}}
+          className={classNames({
+            'cp-primary': this.storage.currentSorter.field === key
+          })}
+          onClick={() => this.storage.toggleSorter(key)}
+        >
+          {title}
+        </span>
+      );
+    };
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
-      title: 'Name',
+      title: renderTitle('name', 'Name'),
       sorter: true,
       sortOrder: this.storage.currentSorter.field === 'name' &&
         this.storage.currentSorter.order,
@@ -1673,7 +1686,7 @@ export default class DataStorage extends React.Component {
     const sizeColumn = {
       dataIndex: 'size',
       key: 'size',
-      title: 'Size',
+      title: renderTitle('size', 'Size'),
       sorter: true,
       sortOrder: this.storage.currentSorter.field === 'size' &&
         this.storage.currentSorter.order,
@@ -1696,7 +1709,7 @@ export default class DataStorage extends React.Component {
     const changedColumn = {
       dataIndex: 'changed',
       key: 'changed',
-      title: 'Date changed',
+      title: renderTitle('changed', 'Date changed'),
       sorter: true,
       sortOrder: this.storage.currentSorter.field === 'changed' &&
         this.storage.currentSorter.order,

@@ -44,19 +44,22 @@ const SORTERS = {
   changed: (a, b, order) => {
     const aDate = moment(a.changed);
     const bDate = moment(b.changed);
+    if (!a.changed) return 1;
+    if (!b.changed) return -1;
     if (order === SORTING_ORDER.ascend) {
       return aDate - bDate;
     }
     return bDate - aDate;
   },
   size: (a, b, order) => {
+    if (a.size === undefined) return 1;
+    if (b.size === undefined) return -1;
     if (order === SORTING_ORDER.ascend) {
       return a.size - b.size;
     }
     return b.size - a.size;
   }
 };
-
 
 const mbToBytes = mb => {
   if (isNaN(mb)) {
@@ -712,6 +715,27 @@ class DataStorageListing {
     this.clearMarkers();
     this.showArchives = showArchives;
     return true;
+  };
+
+  toggleSorter = (field) => {
+    const currentColumnOrder = this.currentSorter.field === field
+      ? this.currentSorter.order
+      : undefined;
+    let nextOrder;
+    switch (currentColumnOrder) {
+      case SORTING_ORDER.ascend:
+        nextOrder = SORTING_ORDER.descend;
+        break;
+      case SORTING_ORDER.descend:
+        nextOrder = undefined;
+        break;
+      default:
+        nextOrder = SORTING_ORDER.ascend;
+    }
+    this.setSorter({
+      order: nextOrder,
+      field: nextOrder ? field : undefined
+    });
   };
 
   @action
