@@ -108,9 +108,9 @@ Metadata:
       CPEdgeHost: 
         default: "Edge service domain name"
       CPDockerHost: 
-        default: "Internal Docker service domain name"
+        default: "Internal Docker registry domain name"
       CPGitlabHost: 
-        default: "Internal GitLab service domain name"
+        default: "Internal GitLab platform domain name"
       CPIdpHost: 
         default: "Internal IdP service domain name"
       CPAssetsS3Url: 
@@ -144,17 +144,17 @@ Parameters:
     Default: t3.large
   JumpServerAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Description: (Optional) EKS based Image id that will be used for Jump-Server, by default will be latest version for EKS 1.29. See README.md for more information
+    Description: (Optional) EKS based Image id that will be used for Jump-Server, by default will be latest version for EKS 1.29. See README.md for more information.
     Default: /aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id
   VpcId:
     Type: String
     Description: (Required) Id of the VPC where all resources will be created
   SubnetIds:
     Type: String
-    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified
+    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified.
   EKSVersion:
     Type: String
-    Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information
+    Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information.
     Default: "1.29"
   EKSAdminIAMRoleArns:
     Type: String
@@ -173,7 +173,7 @@ Parameters:
     Default: ""
   CPSystemSubnetId:
     Type: String
-    Description: (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created
+    Description: (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created.
   CPNetworkFileSystemType:
     Type: String
     Description: (Optional) Network FileSystem type that will be created. Can be efs or fsx. Default efs
@@ -235,7 +235,7 @@ Parameters:
     Default: ""
   CPPipectlUrl:
     Type: String
-    Description: (Required) Link to the pipectl binary file that will be used to deploy Cloud Pipeline
+    Description: (Required) URL for the binary file located in a remote S3 bucket. This file will be downloaded during deployment to install the Cloud Pipeline on the target environment.
   CPDefaultAdmin:
     Type: String
     Default: ""
