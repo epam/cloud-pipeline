@@ -733,9 +733,12 @@ class DataStorageListing {
       default:
         nextOrder = SORTING_ORDER.ascend;
     }
+    if (!nextOrder) {
+      return this.setSorter({});
+    }
     this.setSorter({
       order: nextOrder,
-      field: nextOrder ? field : undefined
+      field: field
     });
   };
 
