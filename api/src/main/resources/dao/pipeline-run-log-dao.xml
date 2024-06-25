@@ -39,7 +39,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadAllLogsByRunIdQuery">
+        <property name="loadLogsByRunIdQueryDesc">
             <value>
                 <![CDATA[
                     SELECT
@@ -52,13 +52,15 @@
                     FROM
                         pipeline.pipeline_run_log
                     WHERE
-                        run_id = ?
+                        run_id = :RUN_ID
                     ORDER BY
-                        log_date
+                        log_date DESC
+                    LIMIT :LIMIT
+                    OFFSET :OFFSET
                 ]]>
             </value>
         </property>
-        <property name="loadAllLogsForTaskQuery">
+        <property name="loadLogsByRunIdQueryAsc">
             <value>
                 <![CDATA[
                     SELECT
@@ -71,9 +73,53 @@
                     FROM
                         pipeline.pipeline_run_log
                     WHERE
-                        run_id = ? and task_name = ?
+                        run_id = :RUN_ID
                     ORDER BY
-                        log_date
+                        log_date ASC
+                    LIMIT :LIMIT
+                    OFFSET :OFFSET
+                ]]>
+            </value>
+        </property>
+        <property name="loadLogsForTaskQueryDesc">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = :RUN_ID and task_name = :TASK_NAME
+                    ORDER BY
+                        log_date DESC
+                    LIMIT :LIMIT
+                    OFFSET :OFFSET
+                ]]>
+            </value>
+        </property>
+        <property name="loadLogsForTaskQueryAsc">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        log_date,
+                        status,
+                        log_text,
+                        task_name,
+                        instance
+                    FROM
+                        pipeline.pipeline_run_log
+                    WHERE
+                        run_id = :RUN_ID and task_name = :TASK_NAME
+                    ORDER BY
+                        log_date ASC
+                    LIMIT :LIMIT
+                    OFFSET :OFFSET
                 ]]>
             </value>
         </property>

@@ -16,15 +16,11 @@
 
 package com.epam.pipeline.manager.pipeline;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.Writer;
 
-import com.epam.pipeline.dao.pipeline.RunLogDao;
+import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-import com.epam.pipeline.entity.pipeline.PipelineTask;
-import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import org.junit.Assert;
 import org.junit.Before;
@@ -33,17 +29,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.stubbing.Answer;
+
+import static org.mockito.Matchers.any;
 
 public class RunLogManagerTest extends AbstractManagerTest {
-
-    private static final String FIRST_TASK = "Task1(param=1)";
-    private static final String SECOND_TASK = "Task2";
 
     @Mock
     private PipelineRunCRUDService runCRUDServiceMock;
 
     @Mock
-    private RunLogDao logDao;
+    private RunLogExporter logExporter;
 
     @InjectMocks
     private RunLogManager logManager;
@@ -56,16 +52,18 @@ public class RunLogManagerTest extends AbstractManagerTest {
     @Test
     public void downloadLogs() throws Exception {
         PipelineRun run = new PipelineRun(1L, "");
-        List<RunLog> logs = new ArrayList<>();
-        logs.add(RunLog.builder().date(Date.from(Instant.now())).task(new PipelineTask(FIRST_TASK))
-                .logText("First task Log1").build());
-        logs.add(RunLog.builder().date(Date.from(Instant.now())).task(new PipelineTask(SECOND_TASK))
-                .logText("Second task Log1").build());
-        logs.add(RunLog.builder().date(Date.from(Instant.now())).task(new PipelineTask(FIRST_TASK))
-                .logText("First task Log2").build());
-        Mockito.when(runCRUDServiceMock.loadRunById(run.getId())).thenReturn(run);
-        Mockito.when(logDao.loadAllLogsForRun(run.getId())).thenReturn(logs);
-        String result = logManager.downloadLogs(run);
+        Mockito.doReturn(run).when(runCRUDServiceMock).loadRunById(run.getId());
+        Mockito.doAnswer((Answer<Void>) invocation -> {
+            final Writer writer = invocation.getArgumentAt(1, Writer.class);
+            writer.write("First task Log1");
+            writer.write("Second task Log1");
+            writer.write("First task log2");
+            return null;
+        }).when(logExporter).export(any(), any());
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        ResultWriter writer = logManager.exportLogs(run.getId());
+        writer.write(os);
+        String result = os.toString();
         Assert.assertNotNull(result);
         Assert.assertTrue(!result.isEmpty());
     }

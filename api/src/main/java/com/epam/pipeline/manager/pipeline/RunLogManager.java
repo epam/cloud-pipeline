@@ -16,20 +16,29 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.ResultWriter;
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
+import com.epam.pipeline.controller.vo.run.OffsetPagingOrder;
 import com.epam.pipeline.dao.pipeline.RunLogDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.utils.LogsFormatter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +51,7 @@ import org.springframework.util.Assert;
 import javax.annotation.PostConstruct;
 
 @Service
+@Slf4j
 public class RunLogManager {
 
     @Autowired
@@ -62,9 +72,10 @@ public class RunLogManager {
     @Autowired
     private PipelineRunCRUDService runCRUDService;
 
-    private RunLogManager self;
+    @Autowired
+    private RunLogExporter runLogExporter;
 
-    private LogsFormatter logsFormatter = new LogsFormatter();
+    private RunLogManager self;
 
     @Value("${runs.console.log.task:Console}")
     private String consoleLogTask;
@@ -115,24 +126,25 @@ public class RunLogManager {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<RunLog> loadAllLogsByRunId(Long runId) {
+    public List<RunLog> loadLogsByRunId(Long runId, OffsetPagingFilter filter) {
         runCRUDService.loadRunById(runId);
-        return runLogDao.loadAllLogsForRun(runId);
+        return runLogDao.loadLogsForRun(runId, normalize(filter));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<RunLog> loadAllLogsForTask(Long runId, String taskName, String parameters) {
-        PipelineRun run = runCRUDService.loadRunById(runId);
-        if (consoleLogTask.equals(taskName)) {
-            return getPodLogs(run);
-        }
-        String taskId = PipelineTask.buildTaskId(taskName, parameters);
-        return runLogDao.loadAllLogsForTask(runId, taskId);
+    public List<RunLog> loadLogsForTask(Long runId, String taskName) {
+        return loadLogsForTask(runId, taskName, null, OffsetPagingFilter.builder().build());
     }
 
-    public List<RunLog> loadAllLogsForTask(final Long runId, final String taskName) {
-        String taskId = PipelineTask.buildTaskId(taskName, null);
-        return runLogDao.loadAllLogsForTask(runId, taskId);
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public List<RunLog> loadLogsForTask(Long runId, String taskName, String parameters,
+                                        OffsetPagingFilter filter) {
+        PipelineRun run = runCRUDService.loadRunById(runId);
+        if (consoleLogTask.equals(taskName)) {
+            return getPodLogs(run, normalize(filter));
+        }
+        String taskId = PipelineTask.buildTaskId(taskName, parameters);
+        return runLogDao.loadLogsForTask(runId, taskId, normalize(filter));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -190,24 +202,56 @@ public class RunLogManager {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public String downloadLogs(PipelineRun run) {
-        List<RunLog> logs = loadAllLogsByRunId(run.getId());
-        StringBuilder builder = new StringBuilder();
-        logs.forEach(log -> builder.append(logsFormatter.formatLog(log)).append('\n'));
-        return builder.toString();
+    public ResultWriter exportLogs(Long runId) {
+        PipelineRun run = runCRUDService.loadRunById(runId);
+        return ResultWriter.unchecked(getTitle(run), out -> exportLogs(run, out));
     }
 
-    private List<RunLog> getPodLogs(PipelineRun run) {
-        int logLimit = preferenceManager.getPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES);
-        String logText = StringUtils.isBlank(run.getPodIP()) ?
-                "Node initialization in progress." : kubernetesManager.getPodLogs(run.getPodId(), logLimit);
-        RunLog log = new RunLog();
-        log.setRunId(run.getId());
-        log.setStatus(TaskStatus.RUNNING);
-        log.setDate(run.getCreatedDate());
-        log.setTask(new PipelineTask(consoleLogTask));
-        log.setLogText(logText);
+    private String getTitle(final PipelineRun run) {
+        String pipelineName = Optional.ofNullable(run.getPipelineName())
+                .filter(StringUtils::isNotBlank)
+                .orElse(PipelineRun.DEFAULT_PIPELINE_NAME);
+        String pipelineVersion = Optional.ofNullable(run.getVersion())
+                .filter(StringUtils::isNotBlank)
+                .orElse(StringUtils.EMPTY);
+        return String.format("%s_%s_%d.log", pipelineName, pipelineVersion, run.getId());
+    }
+
+    private void exportLogs(PipelineRun run, OutputStream out) {
+        try (OutputStreamWriter outputStreamWriter = new OutputStreamWriter(out);
+             BufferedWriter bufferedWriter = new BufferedWriter(outputStreamWriter)) {
+            runLogExporter.export(run, bufferedWriter);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    private List<RunLog> getPodLogs(PipelineRun run, OffsetPagingFilter filter) {
+        String logText = Optional.ofNullable(run.getPodId())
+                .filter(StringUtils::isNotBlank)
+                .map(podIp -> kubernetesManager.getPodLogs(podIp, filter.getLimit()))
+                .orElse("Node initialization in progress.");
+        RunLog log = RunLog.builder()
+                .runId(run.getId())
+                .status(TaskStatus.RUNNING)
+                .date(run.getCreatedDate())
+                .task(new PipelineTask(consoleLogTask))
+                .logText(logText)
+                .build();
         return Collections.singletonList(log);
     }
 
+    private OffsetPagingFilter normalize(OffsetPagingFilter filter) {
+        return OffsetPagingFilter.builder()
+                .offset(Optional.ofNullable(filter.getOffset()).orElse(0))
+                .limit(Optional.ofNullable(filter.getLimit()).orElseGet(this::getRunLogDefaultLimit))
+                .order(Optional.ofNullable(filter.getOrder()).orElse(OffsetPagingOrder.DESC))
+                .build();
+    }
+
+    private int getRunLogDefaultLimit() {
+        return preferenceManager.findPreference(SystemPreferences.SYSTEM_LIMIT_LOG_LINES)
+                .orElseGet(SystemPreferences.SYSTEM_LIMIT_LOG_LINES::getDefaultValue);
+    }
 }
