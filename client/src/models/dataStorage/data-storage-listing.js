@@ -485,6 +485,14 @@ class DataStorageListing {
   }
 
   @computed
+  get resultsSortedAndTruncated () {
+    if (this.filtersApplied) {
+      return false;
+    }
+    return this.sortingApplied && this.pageElements.length === this.pageSize;
+  }
+
+  @computed
   get pageElements () {
     const sorterFn = SORTERS[this.currentSorter.field];
     if (this.sortingApplied && sorterFn) {
