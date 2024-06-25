@@ -115,6 +115,11 @@ public class ToolApiService {
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)
+    public String loadDockerFile(final Long id, final String tag, final String baseImage) {
+        return toolManager.loadDockerFile(id, tag, baseImage);
+    }
+
+    @PreAuthorize(AclExpressions.TOOL_READ)
     public String getImageDefaultCommand(final Long id, final String tag) {
         return toolManager.loadToolDefaultCommand(id, tag);
     }

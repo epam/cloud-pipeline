@@ -70,6 +70,7 @@ public class ToolController extends AbstractRestController {
     private static final Set<String> ALLOWED_ICON_EXTENSIONS = new HashSet<>(
         Arrays.asList("jpg", "jpeg", "png", "gif"));
     private static final String VERSION = "version";
+    private static final String BASE_IMAGE = "baseImage";
 
     @Autowired
     private ToolApiService toolApiService;
@@ -195,6 +196,21 @@ public class ToolController extends AbstractRestController {
     public Result<List<ImageHistoryLayer>> loadImageHistory(@PathVariable final Long id,
                                                             @RequestParam(value = VERSION) final String version) {
         return Result.success(toolApiService.getImageHistory(id, version));
+    }
+
+    @RequestMapping(value = "/tool/{id}/dockerfile", method= RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+        value = "Returns a dockerfile of a tool, specified by ID and version.",
+        notes = "Returns a dockerfile of a tool, which contains list of commands by layers of the image.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+        value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+        })
+    public Result<String> loadDockerFile(@PathVariable final Long id,
+                                         @RequestParam(value = VERSION) final String version,
+                                         @RequestParam(value = BASE_IMAGE) final String baseImage) {
+        return Result.success(toolApiService.loadDockerFile(id, version, baseImage));
     }
 
     @RequestMapping(value = "/tool/{id}/defaultCmd", method= RequestMethod.GET)

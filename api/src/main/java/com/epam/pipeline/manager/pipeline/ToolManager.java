@@ -519,6 +519,12 @@ public class ToolManager implements SecuredEntityManager {
         return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
     }
 
+    public String loadDockerFile(final Long id, final String tag, final String baseImage) {
+        final Tool tool = load(id);
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadDockerFile(tool.getLink(), tag, baseImage) : loadDockerFile(tool, tag, baseImage);
+    }
+
     public String loadToolDefaultCommand(final Long id, final String tag) {
         return toolVulnerabilityDao.loadToolVersionScan(id, tag)
                 .map(ToolVersionScanResult::getDefaultCmd)
@@ -579,6 +585,11 @@ public class ToolManager implements SecuredEntityManager {
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
+    }
+
+    private String loadDockerFile(final Tool tool, final String tag, final String baseImage) {
+        return dockerRegistryManager.getDockerFile(
+                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag, baseImage);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
