@@ -717,7 +717,8 @@ class DataStorageListing {
     return true;
   };
 
-  toggleSorter = (field) => {
+  toggleSorter = (field = '') => {
+    field = field.toLowerCase();
     const currentColumnOrder = this.currentSorter.field === field
       ? this.currentSorter.order
       : undefined;
@@ -740,8 +741,9 @@ class DataStorageListing {
 
   @action
   setSorter = (sorter = {}) => {
+    const field = (sorter.field || '').toLowerCase();
     if (
-      this.currentSorter.field === sorter.field &&
+      this.currentSorter.field === field &&
       this.currentSorter.order === sorter.order
     ) {
       return;
@@ -752,7 +754,7 @@ class DataStorageListing {
       return this.refreshCurrentPath(false, true);
     }
     let skipFetch = this.filtersApplied || this.sortingApplied;
-    this._sorter.field = sorter.field;
+    this._sorter.field = field;
     this._sorter.order = sorter.order;
     if (skipFetch) {
       return;
@@ -762,11 +764,11 @@ class DataStorageListing {
 
   @action
   resetSorting = (toDefaults = true) => {
-    let defaults;
-    try {
-      const sortingConfiguration = (this.metadata.data || {})['default-sorting'] || {};
-      defaults = JSON.parse(sortingConfiguration.value);
-    } catch (e) {}
+    const sortingConfiguration = (this.metadata.data || {})['default-sorting'] || {};
+    const [
+      column,
+      order = SORTING_ORDER.descend
+    ] = (sortingConfiguration.value || '').toLowerCase().split(':');
     const getOrder = (order) => {
       if (['asc', 'ascend', 'ascending'].includes(order)) {
         return SORTING_ORDER.ascend;
@@ -776,9 +778,9 @@ class DataStorageListing {
       }
     };
     this._sorter = {
-      field: defaults && toDefaults ? defaults.field : undefined,
-      order: defaults && toDefaults
-        ? getOrder(defaults.order)
+      field: column && toDefaults ? column.toLowerCase() : undefined,
+      order: column && toDefaults
+        ? getOrder(order)
         : undefined
     };
   };

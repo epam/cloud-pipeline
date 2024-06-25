@@ -1635,19 +1635,18 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
-    const renderTitle = (key, title) => {
-      return (
-        <span
-          style={{cursor: 'pointer'}}
-          className={classNames({
-            'cp-primary': this.storage.currentSorter.field === key
-          })}
-          onClick={() => this.storage.toggleSorter(key)}
-        >
-          {title}
-        </span>
-      );
-    };
+    const renderTitle = (key = '', title) => (
+      <span
+        style={{cursor: 'pointer'}}
+        className={classNames({
+          'cp-primary': (this.storage.currentSorter.field || '')
+            .toLowerCase() === key.toLowerCase()
+        })}
+        onClick={() => this.storage.toggleSorter(key)}
+      >
+        {title}
+      </span>
+    );
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
