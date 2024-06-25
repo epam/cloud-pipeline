@@ -712,6 +712,8 @@ export default class DataStorage extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     this.storage.clearMarkersForPath(path, clearPathMarkers);
+    this.storage.resetSorting();
+    this.storage.clearClientPaging();
     const params = [
       path ? `path=${encodeURIComponent(path)}` : false,
       this.versionControlsEnabled
@@ -1633,10 +1635,25 @@ export default class DataStorage extends React.Component {
         return apps;
       }
     };
+    const renderTitle = (key = '', title) => (
+      <span
+        style={{cursor: 'pointer'}}
+        className={classNames({
+          'cp-primary': (this.storage.currentSorter.field || '')
+            .toLowerCase() === key.toLowerCase()
+        })}
+        onClick={() => this.storage.toggleSorter(key)}
+      >
+        {title}
+      </span>
+    );
     const nameColumn = {
       dataIndex: 'name',
       key: 'name',
-      title: 'Name',
+      title: renderTitle('name', 'Name'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'name' &&
+        this.storage.currentSorter.order,
       className: styles.nameCell,
       render: (text, item) => {
         const search = this.storage.currentFilter[FILTER_FIELDS.name];
@@ -1668,7 +1685,10 @@ export default class DataStorage extends React.Component {
     const sizeColumn = {
       dataIndex: 'size',
       key: 'size',
-      title: 'Size',
+      title: renderTitle('size', 'Size'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'size' &&
+        this.storage.currentSorter.order,
       className: styles.sizeCell,
       render: size => displaySize(size),
       filterDropdown: (
@@ -1688,7 +1708,10 @@ export default class DataStorage extends React.Component {
     const changedColumn = {
       dataIndex: 'changed',
       key: 'changed',
-      title: 'Date changed',
+      title: renderTitle('changed', 'Date changed'),
+      sorter: true,
+      sortOrder: this.storage.currentSorter.field === 'changed' &&
+        this.storage.currentSorter.order,
       className: styles.changedCell,
       render: (date) => date ? displayDate(date) : '',
       filterDropdown: (
@@ -2232,6 +2255,10 @@ export default class DataStorage extends React.Component {
     );
   };
 
+  onTableChange = (pagination, filters, sorter) => {
+    this.storage.setSorter(sorter);
+  };
+
   renderContent = () => {
     if (this.storage.pageError) {
       return (
@@ -2364,6 +2391,7 @@ export default class DataStorage extends React.Component {
           [styles[item.type.toLowerCase()]]: true,
           'cp-storage-deleted-row': !!item.deleteMarker
         })}
+        onChange={this.onTableChange}
         locale={{emptyText: 'Folder is empty'}}
         size="small"
       />
@@ -2641,7 +2669,7 @@ export default class DataStorage extends React.Component {
                 navigate={this.navigate}
                 navigateFull={this.navigateFull} />
             </Row>
-            {this.storage.resultsFilteredAndTruncated ? (
+            {this.storage.resultsFilteredAndTruncated || this.storage.resultsSortedAndTruncated ? (
               <Alert
                 style={{marginBottom: 3}}
                 message={`Current folder contains too many objects.
@@ -2956,6 +2984,8 @@ export default class DataStorage extends React.Component {
     );
     if (changed) {
       this.storage.resetFilter();
+      this.storage.resetSorting();
+      this.storage.clearClientPaging();
     }
   };
 

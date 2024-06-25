@@ -436,6 +436,16 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get storageSortingPageSize () {
+    const defaultLimit = 1000;
+    const value = this.getPreferenceValue('storage.listing.filter.items.limit');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return defaultLimit;
+  }
+
+  @computed
   get systemMaintenanceMode () {
     return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
       `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
