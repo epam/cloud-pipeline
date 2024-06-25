@@ -334,10 +334,6 @@ class RunTable extends localization.LocalizedReactComponent {
         runs: [],
         error: undefined
       };
-      console.log('FETCH', {
-        additionalFilters,
-        filters
-      })
       const tags = {
         ...(filters.tags || {}),
         ...extractTagsFromFilter(additionalFilters)

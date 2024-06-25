@@ -30,6 +30,7 @@ import continuousFetch from '../../utils/continuous-fetch';
 import styles from './AllRuns.css';
 import RunsFilterDescription from './run-table/runs-filter-description';
 import RunsInfo from './runs-info';
+import ActiveRunsFilterDescription from './runs-info/filter-description';
 
 const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
@@ -306,6 +307,7 @@ class AllRuns extends React.Component {
     return (
       <div style={{paddingTop: 5}}>
         <div style={{margin: 5}}>
+          <ActiveRunsFilterDescription filters={details} postfix={'. '} />
           <Link to={SessionStorageWrapper.getRunsLink('info')}>Back to active runs info</Link>
         </div>
         <RunTable
