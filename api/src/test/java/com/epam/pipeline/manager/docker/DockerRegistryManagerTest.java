@@ -142,13 +142,13 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         commands.add("ADD file:file2 in /");
         commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
         commands.add("CMD cmd1");
-        commands.add("ENDPOINT endpoint1");
+        commands.add("ENTRYPOINT entrypoint1");
         commands.add("/bin/sh -c yum install -y wget bzip2 gcc zlib-devel bzip2-devel xz-devel make ncurses-devel unzip git curl cairo epel-release nfs-utils && yum clean all && curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -");
         commands.add("ENV ANACONDA_HOME=/opt/local/anaconda");
         commands.add("ARG ANACONDA_VERSION=2-latest");
         commands.add("ARG INSTALL_TEMP=/tmp/");
         commands.add("CMD cmd2");
-        commands.add("ENDPOINT endpoint2");
+        commands.add("ENTRYPOINT entrypoint2");
         commands.add("ENV PATH=/opt/local/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
         commands.add("ADD multi:db8a2a5f608acf2bb5634642f8cc134bbcc9b3b8c6727a2255c779e6a7183d5a in /tmp//");
         commands.add("|2 ANACONDA_VERSION=3-py37_4.9.2 INSTALL_TEMP=/tmp/ /bin/sh -c mkdir -p $ANACONDA_HOME");
