@@ -354,7 +354,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
         }
         final List<String> podLaunchPatterns = getPodLaunchPatterns();
         final List<Integer> cmdIndexes = new ArrayList<>();
-        final List<Integer> endpointIndexes = new ArrayList<>();
+        final List<Integer> entrypointIndexes = new ArrayList<>();
         final Map<String, List<String>> args = new HashMap<>();
         for (int i = 0; i < commands.size(); i++) {
             String command = commands.get(i);
@@ -369,13 +369,13 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 }
             } else if (command.startsWith("CMD ")) {
                 cmdIndexes.add(i);
-            } else if (command.startsWith("ENDPOINT ")) {
-                endpointIndexes.add(i);
+            } else if (command.startsWith("ENTRYPOINT ")) {
+                entrypointIndexes.add(i);
             }
         }
         final int lastCmdIndex = CollectionUtils.isEmpty(cmdIndexes) ? -1 : cmdIndexes.get(cmdIndexes.size() - 1);
-        final int lastEndpointIndex = CollectionUtils.isEmpty(endpointIndexes) ? -1 :
-                endpointIndexes.get(endpointIndexes.size() - 1);
+        final int lastEntrypointIndex = CollectionUtils.isEmpty(entrypointIndexes) ? -1 :
+                entrypointIndexes.get(entrypointIndexes.size() - 1);
 
         final int startIndex = commands.get(0).startsWith("ADD file:") ? 1 : 0;
 
@@ -396,8 +396,8 @@ public class DockerRegistryManager implements SecuredEntityManager {
                 if (i == lastCmdIndex) {
                     result.add(command);
                 }
-            } else if (command.startsWith("ENDPOINT ")) {
-                if (i == lastEndpointIndex) {
+            } else if (command.startsWith("ENTRYPOINT ")) {
+                if (i == lastEntrypointIndex) {
                     result.add(command);
                 }
             } else if (COMMANDS.stream().noneMatch(command::startsWith)
