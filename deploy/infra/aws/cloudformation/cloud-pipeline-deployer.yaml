@@ -110,7 +110,7 @@ Metadata:
       CPDockerHost: 
         default: "Internal Docker Registry service domain name"
       CPGitlabHost: 
-        default: "Internal GitLab platform domain name"
+        default: "Internal GitLab service domain name"
       CPIdpHost: 
         default: "Internal IdP service domain name"
       CPAssetsS3Url: 
@@ -154,10 +154,10 @@ Parameters:
     Description: (Required) Id of the VPC where all resources will be created
   SubnetIds:
     Type: String
-    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least one subnet id in list must be specified.
+    Description: (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.
   EKSVersion:
     Type: String
-    Description: (Optional) This refers to the version of the installed AWS EKS Cluster.See README.md for more information.
+    Description: (Optional) Version of the AWS EKS Cluster to install. See README.md for more information.
     Default: "1.29"
   EKSAdminIAMRoleArns:
     Type: String
@@ -260,7 +260,6 @@ Resources:
     TerraformS3Bucket:
       Type: AWS::S3::Bucket
       Properties:
-
         BucketName: !Join
         - "-"
         - - !Ref "AWS::AccountId"
