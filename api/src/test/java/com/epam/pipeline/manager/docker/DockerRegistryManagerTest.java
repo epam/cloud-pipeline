@@ -140,10 +140,13 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         final List<String> commands = new ArrayList<>();
         commands.add("ADD file:file1 in /");
         commands.add("ADD file:file2 in /");
-        commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
+        commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image " +
+                "org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
         commands.add("CMD cmd1");
         commands.add("ENTRYPOINT entrypoint1");
-        commands.add("/bin/sh -c yum install -y wget bzip2 gcc zlib-devel bzip2-devel xz-devel make ncurses-devel unzip git curl cairo epel-release nfs-utils && yum clean all && curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -");
+        commands.add("/bin/sh -c yum install -y wget bzip2 gcc zlib-devel bzip2-devel xz-devel make ncurses-devel " +
+                "unzip git curl cairo epel-release nfs-utils && yum clean all && curl " +
+                "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -");
         commands.add("ENV ANACONDA_HOME=/opt/local/anaconda");
         commands.add("ARG ANACONDA_VERSION=2-latest");
         commands.add("ARG INSTALL_TEMP=/tmp/");
@@ -152,10 +155,14 @@ public class DockerRegistryManagerTest extends AbstractManagerTest {
         commands.add("ENV PATH=/opt/local/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
         commands.add("ADD multi:db8a2a5f608acf2bb5634642f8cc134bbcc9b3b8c6727a2255c779e6a7183d5a in /tmp//");
         commands.add("|2 ANACONDA_VERSION=3-py37_4.9.2 INSTALL_TEMP=/tmp/ /bin/sh -c mkdir -p $ANACONDA_HOME");
-        commands.add("|2 ANACONDA_VERSION=3-py37_4.9.2 INSTALL_TEMP=/tmp/ /bin/sh -c chmod +x $INSTALL_TEMP/*.sh && $INSTALL_TEMP/anaconda_install.sh $ANACONDA_HOME $ANACONDA_VERSION");
+        commands.add("|2 ANACONDA_VERSION=3-py37_4.9.2 INSTALL_TEMP=/tmp/ /bin/sh -c chmod +x $INSTALL_TEMP/*.sh && " +
+                "$INSTALL_TEMP/anaconda_install.sh $ANACONDA_HOME $ANACONDA_VERSION");
         commands.add("COPY file:file3 in /start.sh");
         commands.add("1d");
-        commands.add("set -o pipefail; command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'");
+        commands.add("set -o pipefail; command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate " +
+                "-q -O - '$linuxLaunchScriptUrl'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl " +
+                "-s -k '$linuxLaunchScriptUrl'\"; }; eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" " +
+                "'$gitRevisionName' '$pipelineCommand'");
         final List<String> result = dockerRegistryManager.processCommands("BASE_IMAGE", commands);
         Assert.assertEquals(10, result.size());
     }
