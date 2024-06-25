@@ -264,7 +264,7 @@ public class PipelineRunDockerOperationManager {
         if (!lastStatusUpdateDate.isPresent()) {
             return false;
         }
-        final List<RunLog> runLogs = runLogManager.loadAllLogsForTask(run.getId(),
+        final List<RunLog> runLogs = runLogManager.loadLogsForTask(run.getId(),
                 DockerContainerOperationManager.PAUSE_RUN_TASK);
         final Optional<Date> lastSuccessTaskDate = ListUtils.emptyIfNull(runLogs).stream()
                 .filter(log -> TaskStatus.SUCCESS.equals(log.getStatus()))

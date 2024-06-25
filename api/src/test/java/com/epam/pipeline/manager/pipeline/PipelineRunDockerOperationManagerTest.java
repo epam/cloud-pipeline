@@ -197,13 +197,13 @@ public class PipelineRunDockerOperationManagerTest {
         when(runStatusManager.loadRunStatus(RUN_ID)).thenReturn(Arrays.asList(
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1)),
                 pausingRunStatus(convertDateToLocalDateTime(DATE_2))));
-        when(runLogManager.loadAllLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Arrays.asList(
+        when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Arrays.asList(
                 pauseRunLog(DATE_1, TaskStatus.SUCCESS), pauseRunLog(DATE_3, TaskStatus.SUCCESS)));
     }
 
     private void mockNoNeedToRerunPauseSituation() {
         when(runStatusManager.loadRunStatus(RUN_ID)).thenReturn(Collections.singletonList(
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1))));
-        when(runLogManager.loadAllLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
+        when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
     }
 }

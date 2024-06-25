@@ -22,10 +22,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
+import com.epam.pipeline.exception.pipeline.RunLogException;
+import com.epam.pipeline.utils.CommonUtils;
+import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -35,12 +40,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 public class RunLogDao extends NamedParameterJdbcDaoSupport {
 
-    private String createPipelineLogQuery;
-    private String loadAllLogsByRunIdQuery;
-    private String loadAllLogsForTaskQuery;
-    private String loadTasksByRunIdQuery;
-    private String loadTaskForInstanceQuery;
-    private String loadTaskStatusQuery;
+    @Setter(onMethod_={@Required}) private String createPipelineLogQuery;
+    @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryDesc;
+    @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryAsc;
+    @Setter(onMethod_={@Required}) private String loadLogsForTaskQueryDesc;
+    @Setter(onMethod_={@Required}) private String loadLogsForTaskQueryAsc;
+    @Setter(onMethod_={@Required}) private String loadTasksByRunIdQuery;
+    @Setter(onMethod_={@Required}) private String loadTaskForInstanceQuery;
+    @Setter(onMethod_={@Required}) private String loadTaskStatusQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {
@@ -49,24 +56,51 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<RunLog> loadAllLogsForRun(Long runId) {
-        return getJdbcTemplate().query(loadAllLogsByRunIdQuery,
-                PipelineLogParameters.getRowMapper(), runId);
+    public List<RunLog> loadLogsForRun(Long runId, OffsetPagingFilter filter) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineLogParameters.RUN_ID.name(), runId);
+        params.addValue(PipelineLogParameters.OFFSET.name(), filter.getOffset());
+        params.addValue(PipelineLogParameters.LIMIT.name(), filter.getLimit());
+        switch (filter.getOrder()) {
+            case ASC:
+                return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                        .query(loadLogsByRunIdQueryAsc, params, PipelineLogParameters.getRowMapper()));
+            case DESC:
+                return CommonUtils.reversed(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                        .query(loadLogsByRunIdQueryDesc, params, PipelineLogParameters.getRowMapper())));
+            default:
+                throw new RunLogException("Unsupported order");
+        }
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
-    public List<RunLog> loadAllLogsForTask(Long runId, String taskName) {
-        return getJdbcTemplate().query(loadAllLogsForTaskQuery,
-                PipelineLogParameters.getRowMapper(), runId, taskName);
+    public List<RunLog> loadLogsForTask(Long runId, String taskName, OffsetPagingFilter filter) {
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineLogParameters.RUN_ID.name(), runId);
+        params.addValue(PipelineLogParameters.TASK_NAME.name(), taskName);
+        params.addValue(PipelineLogParameters.OFFSET.name(), filter.getOffset());
+        params.addValue(PipelineLogParameters.LIMIT.name(), filter.getLimit());
+        switch (filter.getOrder()) {
+            case ASC:
+                return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                        .query(loadLogsForTaskQueryAsc, params, PipelineLogParameters.getRowMapper()));
+            case DESC:
+                return CommonUtils.reversed(ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                        .query(loadLogsForTaskQueryDesc, params, PipelineLogParameters.getRowMapper())));
+            default:
+                throw new RunLogException("Unsupported order");
+        }
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineTask> loadTasksForRun(Long runId) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(PipelineLogParameters.RUN_ID.name(), runId);
-        List<PipelineTask> result =  getNamedParameterJdbcTemplate().query(loadTasksByRunIdQuery,
-                params, PipelineLogParameters.getTaskRowMapper(true));
-        return result.stream().filter(Objects::nonNull).collect(Collectors.toList());
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadTasksByRunIdQuery, params, PipelineLogParameters.getTaskRowMapper(true)))
+                .stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -89,6 +123,8 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
         LOG_TEXT,
         TASK_NAME,
         INSTANCE,
+        OFFSET,
+        LIMIT,
         CREATED,
         STARTED,
         FINISHED;
@@ -158,35 +194,4 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
             };
         }
     }
-
-    @Required
-    public void setCreatePipelineLogQuery(String createPipelineLogQuery) {
-        this.createPipelineLogQuery = createPipelineLogQuery;
-    }
-
-    @Required
-    public void setLoadAllLogsByRunIdQuery(String loadAllLogsByRunIdQuery) {
-        this.loadAllLogsByRunIdQuery = loadAllLogsByRunIdQuery;
-    }
-
-    @Required
-    public void setLoadTasksByRunIdQuery(String loadTasksByRunIdQuery) {
-        this.loadTasksByRunIdQuery = loadTasksByRunIdQuery;
-    }
-
-    @Required
-    public void setLoadAllLogsForTaskQuery(String loadAllLogsForTaskQuery) {
-        this.loadAllLogsForTaskQuery = loadAllLogsForTaskQuery;
-    }
-
-    @Required
-    public void setLoadTaskForInstanceQuery(String loadTaskForInstanceQuery) {
-        this.loadTaskForInstanceQuery = loadTaskForInstanceQuery;
-    }
-
-    @Required
-    public void setLoadTaskStatusQuery(String loadTaskStatusQuery) {
-        this.loadTaskStatusQuery = loadTaskStatusQuery;
-    }
-
 }
