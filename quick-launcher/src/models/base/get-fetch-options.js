@@ -21,7 +21,7 @@ export default function getFetchOptions(settings, options = {}) {
   }
   return {
     mode: CPAPI ? 'cors' : undefined,
-    credentials: settings.isAnonymous ? 'omit' : credentials,
+    credentials: settings.isAnonymous && !settings.anonymousAccess?.includeCredentials ? 'omit' : credentials,
     headers: {
       'Content-Type': 'application/json',
       ...headers,

@@ -177,7 +177,8 @@ const defaultSettings = {
     token: undefined,
     shareWithGroups: undefined,
     originalUserNameParameter: undefined,
-    anonymousAccessParameter: undefined
+    anonymousAccessParameter: undefined,
+    includeCredentials: false
   },
   checkDefaultUserStorageStatus: false,
   defaultUserStorageReadOnlyWarning: undefined,
