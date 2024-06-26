@@ -116,8 +116,6 @@ locals {
     ",",
     concat(
       var.external_access_security_group_ids,
-      # Get https access sg if was configured or empty list
-      try([module.https_access_sg[0].security_group_id], []),
       [module.internal_cluster_access_sg.security_group_id]
     )
   )

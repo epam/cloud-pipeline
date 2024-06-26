@@ -38,12 +38,8 @@ Metadata:
           - CPEdgeAwsELBSubnet
           - CPSystemSubnetId
           - SubnetIds
-      - 
-        Label: 
-          default: "User-access network configuration"
-        Parameters: 
-          - CPAccessPrefixList
           - CPExternalAccessSecurityGroupIds
+  
       - 
         Label: 
           default: "Infrastructure configuration"
@@ -89,8 +85,6 @@ Metadata:
         default: "Application subnet ID"
       SubnetIds: 
         default: "Private application subnet IDs"
-      CPAccessPrefixList: 
-        default: "AWS Prefix List ID"
       CPExternalAccessSecurityGroupIds: 
         default: "List of AWS Security Groups IDs"
       EKSVersion: 
@@ -187,10 +181,6 @@ Parameters:
     AllowedValues:
       - efs
       - fsx
-  CPAccessPrefixList:
-    Type: String
-    Description: (Optional) The ID of the AWS Prefix List that will be used during the creation of the security group to grant users access to the Cloud Pipeline.
-    Default: ""
   CPExternalAccessSecurityGroupIds:
     Type: String
     Description: (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. 
@@ -491,7 +481,6 @@ Resources:
                 deployment_env                     = trimspace("${DeploymentEnv}")
                 vpc_id                             = trimspace("${VpcId}")
                 eks_cluster_version                = trimspace("${EKSVersion}")
-                cp_api_access_prefix_lists         = trimspace("${CPAccessPrefixList}") != "" ? [trimspace("${CPAccessPrefixList}")] : []
                 external_access_security_group_ids = trimspace("${CPExternalAccessSecurityGroupIds}") != "" ?  tolist([for sgid in split(",", "${CPExternalAccessSecurityGroupIds}"): trimspace(sgid)]) : []
                 subnet_ids                         = tolist([for subnet in split(",", "${SubnetIds}"): trimspace(subnet)]) 
                 iam_role_permissions_boundary_arn  = trimspace("${IAMRolePermissionsBoundaryArn}") != "" ? trimspace("${IAMRolePermissionsBoundaryArn}") : null
