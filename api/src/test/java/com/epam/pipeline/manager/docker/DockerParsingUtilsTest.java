@@ -37,7 +37,27 @@ public class DockerParsingUtilsTest {
     private static final String SHORT_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:58:48.784338Z\"}";
     private static final int EARLIEST_MINUTES = 57;
     private static final int LATEST_MINUTES = 59;
-    private static final int COMMANDS_NUM_EXPECTED = 13;
+    private static final String POD_LAUNCH_CMD = "set -o pipefail; command -v wget >/dev/null 2>&1 && { " +
+            "LAUNCH_CMD=\"wget --no-check-certificate " +
+            "-q -O - 'var1'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl " +
+            "-s -k 'var2'\"; }; eval var3 | bash /dev/stdin \"var4\" 'var5' 'var6'";
+    private static final String WITH_ARGS_CMD = "|4 CELL_PROFILER_VERSION=4.2.1 CYTHON_VERSION=0.29.30 " +
+            "NUMPY_VERSION=1.23.1 PYTHON_3_DISTRIBUTION_URL=https://www.python.org/ftp/python/3.8.13" +
+            "/Python-3.8.13.tgz /bin/sh -c python3.8 -m pip install wheel && wget " +
+            "\"https://files.pythonhosted.org/packages/61/c7" +
+            "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
+            "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
+            "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
+            "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
+            "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
+
+    private static final String WITHOUT_ARGS_CMD = "RUN /bin/sh -c " +
+            "python3.8 -m pip install wheel && wget \"https://files.pythonhosted.org/packages/61/c7" +
+            "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
+            "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
+            "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
+            "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
+            "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
 
     @Test
     public void shouldCalculateLatestAndEarliestDateTimeProperly() {
@@ -85,7 +105,6 @@ public class DockerParsingUtilsTest {
                 "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
                 "python .\\launch.py";
         commands.add("ADD file:file1 in /");
-        commands.add("ADD file:file2 in /");
         commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image " +
                 "org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
         commands.add("CMD cmd1");
@@ -101,22 +120,36 @@ public class DockerParsingUtilsTest {
         commands.add("CMD cmd2");
         commands.add("ENTRYPOINT entrypoint2");
         commands.add("ENV PATH=/opt/local/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+        commands.add("ADD file:file2 in /");
         commands.add("ADD multi:db8a2a5f608acf2bb5634642f8cc134bbcc9b3b8c6727a2255c779e6a7183d5a in /tmp//");
-        commands.add("|4 CELL_PROFILER_VERSION=4.2.1 CYTHON_VERSION=0.29.30 NUMPY_VERSION=1.23.1 " +
-                "PYTHON_3_DISTRIBUTION_URL=https://www.python.org/ftp/python/3.8.13/Python-3.8.13.tgz /bin/sh -c " +
-                "python3.8 -m pip install wheel && wget \"https://files.pythonhosted.org/packages/61/c7" +
-                "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
-                "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
-                "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
-                "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
-                "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*");
+        commands.add(WITH_ARGS_CMD);
         commands.add("COPY file:file3 in /start.sh");
+        commands.add("COPY dir:dir in /start.sh");
         commands.add("1d");
-        commands.add("set -o pipefail; command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate " +
-                "-q -O - 'var1'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl " +
-                "-s -k 'var2'\"; }; eval var3 | bash /dev/stdin \"var4\" 'var5' 'var6'");
+        commands.add(POD_LAUNCH_CMD);
         final List<String> result = processCommands("BASE_IMAGE", commands,
                 podLaunchTemplatesLinux, podLaunchTemplatesWin);
-        Assert.assertEquals(COMMANDS_NUM_EXPECTED, result.size());
+
+        Assert.assertEquals("FROM BASE_IMAGE", result.get(0));
+
+        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("CMD ")).count());
+        Assert.assertEquals("CMD cmd2", result.get(result.size() - 2));
+
+        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("ENTRYPOINT ")).count());
+        Assert.assertEquals("ENTRYPOINT entrypoint2", result.get(result.size() - 1));
+
+        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("ARG ")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("LABEL ")));
+
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-file> .+")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-file> .+")));
+
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD file:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD multi:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY file:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
+
+        Assert.assertTrue(result.contains(WITHOUT_ARGS_CMD));
+        Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
     }
 }
