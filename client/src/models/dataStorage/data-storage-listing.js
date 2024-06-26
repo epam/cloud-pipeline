@@ -406,7 +406,7 @@ class DataStorageListing {
   @computed
   get metadata () {
     if (this._metadataRequest.loaded) {
-      return (this._metadataRequest.value || [])[0];
+      return (this._metadataRequest.value || [])[0] || {};
     }
     return {};
   }
@@ -775,7 +775,7 @@ class DataStorageListing {
 
   @action
   resetSorting = (toDefaults = true) => {
-    const sortingConfiguration = (this.metadata.data || {})['default-sorting'] || {};
+    const sortingConfiguration = (this.metadata?.data || {})['default-sorting'] || {};
     const [
       column,
       order = SORTING_ORDER.descend
