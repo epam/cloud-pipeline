@@ -206,7 +206,7 @@ public class ToolController extends AbstractRestController {
     @ApiOperation(
         value = "Returns a dockerfile of a tool, specified by ID and version.",
         notes = "Returns a dockerfile of a tool, which contains list of commands by layers of the image.",
-        produces = MediaType.APPLICATION_JSON_VALUE)
+        produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
