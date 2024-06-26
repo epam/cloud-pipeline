@@ -1,0 +1,170 @@
+import React, {useCallback} from 'react';
+import classNames from 'classnames';
+import useAppExtendedSettings from './utilities/use-app-extended-settings';
+import ApplicationSettings from './shared/application-settings';
+import './components.css';
+import {launchOptionsContainSensitiveMounts} from "../models/pre-run-checks/check-sensitive-storages";
+import {useSettings} from './use-settings';
+import Star from "./shared/star";
+
+export default function ApplicationCard(
+  {
+    application,
+    onClick,
+    options,
+    onFavouriteClick,
+    displayFavourite = true,
+    isFavourite,
+    isHidden,
+    onShowHideCallback
+  }
+) {
+  const settings = useSettings();
+  const {
+    appendDefault,
+    getSettingValue,
+    getSettingDependencyValues,
+    onChange,
+    onDependencyChange,
+    options: extendedOptions,
+  } = useAppExtendedSettings(application);
+  const {
+    readOnly
+  } = application || {};
+  const sensitive = launchOptionsContainSensitiveMounts(extendedOptions);
+  const onLaunch = useCallback(() => {
+    if (!readOnly) {
+      onClick && onClick(appendDefault(extendedOptions));
+    }
+  }, [extendedOptions, appendDefault, readOnly]);
+  const onFavouriteClickCallback = useCallback((e) => {
+    if (onFavouriteClick) {
+      e.stopPropagation();
+      e.preventDefault();
+      onFavouriteClick(application);
+    }
+  }, [application, onFavouriteClick]);
+  return (
+    <div
+      className={
+        classNames(
+          'app',
+          {
+            dark: settings?.darkMode,
+            sensitive,
+            latest: application.latest,
+            disabled: application.readOnly,
+            hidden: isHidden
+          }
+        )
+      }
+      onClick={onLaunch}
+    >
+      {
+        application.background && (
+          <div
+            className="background"
+            style={
+              Object.assign(
+                {
+                  backgroundImage: `url("${application.background}")`
+                },
+                application.backgroundStyle || {}
+              )
+            }
+          >
+            {'\u00A0'}
+          </div>
+        )
+      }
+      <div className="header">
+        {
+          application.icon && (
+            <img
+              src={application.icon}
+              className="icon"
+            />
+          )
+        }
+        {
+          !application.icon && application.iconData && (
+            <img
+              src={application.iconData}
+              className="icon"
+            />
+          )
+        }
+        <span className="name">
+            {application.name}
+          </span>
+        {
+          application.version && (
+            <span className="version">
+                {application.version}
+              </span>
+          )
+        }
+      </div>
+      <div className="app-description">
+        {application.description}
+      </div>
+      <ApplicationSettings
+        className="app-settings"
+        application={application}
+        options={options}
+        appendDefault={appendDefault}
+        getSettingValue={getSettingValue}
+        getSettingDependencyValues={getSettingDependencyValues}
+        onChange={onChange}
+        onDependencyChange={onDependencyChange}
+        extendedOptions={extendedOptions}
+        onShowHideCallback={() => onShowHideCallback(application)}
+        isHidden={isHidden}
+      />
+      {
+        (application.deprecated || application.readOnly || application.disablePackages || isHidden) && (
+          <span
+            className="labels"
+          >
+            {
+              (application.deprecated || application.readOnly || application.disablePackages) && (
+                <span
+                  className="deprecated"
+                >
+                  {
+                    (application.readOnly || application.disablePackages) ? 'READ ONLY' : 'DEPRECATED'
+                  }
+                </span>
+              )
+            }
+            {
+              isHidden && (
+                <span
+                  className="hidden-label"
+                >
+                  HIDDEN
+                </span>
+              )
+            }
+          </span>
+        )
+      }
+      {
+        displayFavourite && (
+          <Star
+            className={
+              classNames(
+                'app-action',
+                'app-star',
+                {
+                  'favourite': isFavourite
+                }
+              )
+            }
+            onClick={onFavouriteClickCallback}
+          />
+        )
+      }
+    </div>
+  );
+}

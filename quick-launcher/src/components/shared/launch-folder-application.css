@@ -1,0 +1,107 @@
+.launch-folder-application {
+  width: 50vw;
+  color: #bbb;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.launch-folder-application-icon {
+  float: left;
+  height: 125px;
+  margin: 0 5px 5px 0;
+  border-radius: 5px;
+}
+
+.launch-folder-application-info {
+  display: block;
+  max-height: 75vh;
+  overflow: auto;
+}
+
+.launch-folder-application-info .version-deprecated {
+  margin-left: 5px;
+  font-size: x-small;
+  color: #e44d4d;
+}
+
+.launch-folder-application-launch-a {
+  float: right;
+}
+
+.launch-folder-application-launch {
+  float: right;
+  display: inline-block;
+  padding: 10px;
+  margin: 0 5px;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  color: black;
+  font-weight: bold;
+}
+
+.launch-folder-application-launch:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+.launch-folder-application-row {
+  margin-bottom: 5px;
+  font-size: smaller;
+}
+
+.launch-folder-application-title {
+  font-size: x-large;
+  color: #eee;
+  padding: 5px;
+}
+
+.launch-folder-application-author {
+
+}
+
+.launch-folder-application-attributes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.launch-folder-application-user-attribute {
+  margin-right: 5px;
+}
+
+.launch-folder-application-property .key {
+  min-width: 75px;
+  display: inline-block;
+}
+
+.launch-folder-application-property .value {
+  margin-left: 5px;
+}
+
+.launch-folder-application-tags {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.launch-folder-application-tags .launch-folder-application-tag {
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.launch-folder-application-short-description,
+.launch-folder-application-description {
+  color: #ddd;
+  border: 1px solid #333;
+  border-right: none;
+  border-left: none;
+  padding: 10px 0;
+  max-height: 30vh;
+  overflow: auto;
+}
+
+.launch-folder-application-description {
+  border-bottom: none;
+}
