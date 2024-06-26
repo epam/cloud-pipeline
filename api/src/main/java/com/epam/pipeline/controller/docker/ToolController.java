@@ -19,11 +19,7 @@ package com.epam.pipeline.controller.docker;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
-import com.epam.pipeline.entity.docker.ImageDescription;
-import com.epam.pipeline.entity.docker.ImageHistoryLayer;
-import com.epam.pipeline.entity.docker.ToolDescription;
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.docker.*;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResultView;
@@ -36,6 +32,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -70,7 +67,8 @@ public class ToolController extends AbstractRestController {
     private static final Set<String> ALLOWED_ICON_EXTENSIONS = new HashSet<>(
         Arrays.asList("jpg", "jpeg", "png", "gif"));
     private static final String VERSION = "version";
-    private static final String BASE_IMAGE = "baseImage";
+    private static final String FROM = "from";
+    private static final String DOCKERFILE = "Dockerfile";
 
     @Autowired
     private ToolApiService toolApiService;
@@ -207,10 +205,13 @@ public class ToolController extends AbstractRestController {
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<String> loadDockerFile(@PathVariable final Long id,
+    public void loadDockerFile(@PathVariable final Long id,
                                          @RequestParam(value = VERSION) final String version,
-                                         @RequestParam(value = BASE_IMAGE) final String baseImage) {
-        return Result.success(toolApiService.loadDockerFile(id, version, baseImage));
+                                         @RequestParam(value = FROM) final String from,
+                                         HttpServletResponse response) throws IOException {
+        final ToolImageDockerfile dockerfile = toolApiService.loadDockerFile(id, version, from);
+        byte[] bytes = StringUtils.join(dockerfile.getContent(), "\n").getBytes();
+        writeFileToResponse(response, bytes, DOCKERFILE);
     }
 
     @RequestMapping(value = "/tool/{id}/defaultCmd", method= RequestMethod.GET)

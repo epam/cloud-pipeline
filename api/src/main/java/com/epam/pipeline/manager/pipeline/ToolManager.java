@@ -23,12 +23,7 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
-import com.epam.pipeline.entity.docker.ImageDescription;
-import com.epam.pipeline.entity.docker.ImageHistoryLayer;
-import com.epam.pipeline.entity.docker.ManifestV2;
-import com.epam.pipeline.entity.docker.ToolDescription;
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.docker.*;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -519,10 +514,10 @@ public class ToolManager implements SecuredEntityManager {
         return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
     }
 
-    public String loadDockerFile(final Long id, final String tag, final String baseImage) {
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
         final Tool tool = load(id);
         validateToolNotNull(tool, id);
-        return tool.isSymlink() ? loadDockerFile(tool.getLink(), tag, baseImage) : loadDockerFile(tool, tag, baseImage);
+        return tool.isSymlink() ? loadDockerFile(tool.getLink(), tag, from) : loadDockerFile(tool, tag, from);
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
@@ -587,9 +582,14 @@ public class ToolManager implements SecuredEntityManager {
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
     }
 
-    private String loadDockerFile(final Tool tool, final String tag, final String baseImage) {
-        return dockerRegistryManager.getDockerFile(
-                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag, baseImage);
+    private ToolImageDockerfile loadDockerFile(final Tool tool, final String tag, final String from) {
+        final List<String> content = dockerRegistryManager.getDockerFile(
+                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag, from);
+        return ToolImageDockerfile.builder()
+                .toolId(tool.getId())
+                .toolVersion(tag)
+                .content(content)
+                .build();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

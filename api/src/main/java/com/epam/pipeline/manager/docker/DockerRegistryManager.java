@@ -74,16 +74,15 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -91,10 +90,6 @@ import java.util.stream.Collectors;
 public class DockerRegistryManager implements SecuredEntityManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DockerRegistryManager.class);
-    private static final String NEW_LINE = "\n";
-    private static final List<String> COMMANDS = Arrays.asList("ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV",
-            "EXPOSE", "FROM", "HEALTHCHECK", "LABEL", "MAINTAINER", "ONBUILD", "RUN", "SHELL", "STOPSIGNAL", "USER",
-            "VOLUME", "WORKDIR");
 
     /**
      * Specifies path to template script for generation docket client login script
@@ -337,75 +332,16 @@ public class DockerRegistryManager implements SecuredEntityManager {
         return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
     }
 
-    public String getDockerFile(final DockerRegistry registry, final String imageName,
-                                final String tag, final String baseImage) {
+    public List<String> getDockerFile(final DockerRegistry registry, final String imageName,
+                                      final String tag, final String from) {
         final String token = getImageToken(registry, imageName);
         final List<String> commands = dockerClientFactory.getDockerClient(registry, token)
                 .getCommands(registry, imageName, tag);
-        final List<String> result = processCommands(baseImage, commands);
-        return StringUtils.join(result, NEW_LINE);
-    }
-
-    public List<String> processCommands(final String baseImage, final List<String> commands) {
-        final List<String> result = new ArrayList<>();
-        result.add(String.format("FROM %s", baseImage));
-        if (CollectionUtils.isEmpty(commands)) {
-            return result;
-        }
-        final List<String> podLaunchPatterns = getPodLaunchPatterns();
-        final List<Integer> cmdIndexes = new ArrayList<>();
-        final List<Integer> entrypointIndexes = new ArrayList<>();
-        final Map<String, List<String>> args = new HashMap<>();
-        for (int i = 0; i < commands.size(); i++) {
-            String command = commands.get(i);
-            if (command.startsWith("ARG ")) {
-                String[] parts = command.split("=");
-                String key = parts[0].replace("ARG ", "");
-                String value = parts[1];
-                if (args.containsKey(key)) {
-                    args.get(key).add(value);
-                } else {
-                    args.put(key, Collections.singletonList(value));
-                }
-            } else if (command.startsWith("CMD ")) {
-                cmdIndexes.add(i);
-            } else if (command.startsWith("ENTRYPOINT ")) {
-                entrypointIndexes.add(i);
-            }
-        }
-        final int lastCmdIndex = CollectionUtils.isEmpty(cmdIndexes) ? -1 : cmdIndexes.get(cmdIndexes.size() - 1);
-        final int lastEntrypointIndex = CollectionUtils.isEmpty(entrypointIndexes) ? -1 :
-                entrypointIndexes.get(entrypointIndexes.size() - 1);
-
-        final int startIndex = commands.get(0).startsWith("ADD file:") ? 1 : 0;
-
-        for (int i = startIndex; i < commands.size(); i++) {
-            String command = commands.get(i);
-            for (Map.Entry<String, List<String>> entry : args.entrySet()) {
-                for (String v : entry.getValue()) {
-                    if (!command.startsWith(String.format("ARG %s", entry.getKey()))){
-                        command = command.replace(v, String.format("$%s", entry.getKey()));
-                    }
-                }
-            }
-            if (command.startsWith("ADD file:") || command.startsWith("ADD multi:")) {
-                result.add("ADD <source-file>");
-            } else if (command.startsWith("COPY file:")) {
-                result.add("COPY <source-file>");
-            } else if (command.startsWith("CMD ")) {
-                if (i == lastCmdIndex) {
-                    result.add(command);
-                }
-            } else if (command.startsWith("ENTRYPOINT ")) {
-                if (i == lastEntrypointIndex) {
-                    result.add(command);
-                }
-            } else if (COMMANDS.stream().noneMatch(command::startsWith)
-                    && podLaunchPatterns.stream().noneMatch(command::matches)) {
-                result.add(String.format("RUN %s", command));
-            }
-        }
-        return result;
+        final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
+        final String podLaunchTemplatesWin = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS);
+        return processCommands(from, commands, podLaunchTemplatesLinux, podLaunchTemplatesWin);
     }
 
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {
@@ -765,31 +701,5 @@ public class DockerRegistryManager implements SecuredEntityManager {
                         .anyMatch(gpuTypes::contains))
                 .map(ToolVersion::getToolId)
                 .collect(Collectors.toSet());
-    }
-
-    private static String escapeSpecialCharacters(String input) {
-        final String[] specialCharacters = { ".", "\\", "*", "?", "[", "^", "]", "+", "(", ")", "{", "}",
-            "=", "!", "<", ">", "|", ":", "-" };
-        for (String ch : specialCharacters) {
-            input = input.replace(ch, "\\" + ch);
-        }
-        return input;
-    }
-
-    private List<String> getPodLaunchPatterns() {
-        final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
-        final String podLaunchTemplatesWin = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS);
-        final List<String> result = podLaunchTemplatesLinux.stream()
-                .map(r -> getLaunchPodPattern(r.getCommand()))
-                .collect(Collectors.toList());
-        result.add(getLaunchPodPattern(podLaunchTemplatesWin));
-        return result;
-    }
-
-    private String getLaunchPodPattern(final String command) {
-        final String result = escapeSpecialCharacters(command).replaceAll("\\$[a-zA-Z0-9_]*", ".+");
-        return result.replaceAll("\\$", "\\\\$");
     }
 }

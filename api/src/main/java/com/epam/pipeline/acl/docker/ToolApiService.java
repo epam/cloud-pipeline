@@ -17,11 +17,7 @@
 package com.epam.pipeline.acl.docker;
 
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
-import com.epam.pipeline.entity.docker.ImageDescription;
-import com.epam.pipeline.entity.docker.ImageHistoryLayer;
-import com.epam.pipeline.entity.docker.ToolDescription;
-import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.docker.*;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolScanResult;
@@ -115,8 +111,8 @@ public class ToolApiService {
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)
-    public String loadDockerFile(final Long id, final String tag, final String baseImage) {
-        return toolManager.loadDockerFile(id, tag, baseImage);
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
+        return toolManager.loadDockerFile(id, tag, from);
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)
