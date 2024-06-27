@@ -35,8 +35,8 @@ chmod +x /pipe
                  --timezone local \
                  --proxy ''
 
-export CP_NODE_LOGGER_SYNC_MODE=${CP_NODE_LOGGER_SYNC_MODE:-"copy"}
-export CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED=${CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED:-true}
+export CP_NODE_LOGGER_SYNC_MODE=${CP_NODE_LOGGER_SYNC_MODE:-"mount"}
+export CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED=${CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED:-false}
 if [ "$CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED" == "false" ]; then
     # Disable audit for pipe-fuse
     export CP_PIPE_FUSE_AUDIT_BUFFER_TTL="-1"
@@ -87,7 +87,7 @@ while : ; do
 
         if [ "$CP_NODE_LOGGER_SYNC_MODE" == "mount" ]; then
           CP_LOGGER_COPY_CMD="cp -uf \$(find $CP_LOGGER_SOURCE_DIRECTORY -name 'kubelet.*.log.*') \
-                                        \"$CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\""
+                              \"$CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\""
         else
           CP_LOGGER_COPY_CMD="/pipe storage cp \"$CP_LOGGER_SOURCE_DIRECTORY/\" \
                               \"$CP_PREF_STORAGE_SCHEMA://$CP_LOGGER_SYSTEM_STORAGE_NAME/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\" \
