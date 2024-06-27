@@ -69,15 +69,15 @@ dependencies {
     implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jaksonVersion
 
     // RxJava
-    compile group: "io.reactivex.rxjava2", name: "rxjava", version: rxjavaVersion
+    implementation group: "io.reactivex.rxjava2", name: "rxjava", version: rxjavaVersion
 
     //K8s
     implementation group: "io.fabric8", name: "kubernetes-client", version: k8sLibraryVersion
 
     // Elasticsearch
-    compile group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
-    compile group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
-    testCompile group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
+    implementation group: "org.elasticsearch", name: "elasticsearch", version: elasticsearchVersion
+    implementation group: "org.elasticsearch.client", name: "elasticsearch-rest-high-level-client", version: elasticsearchVersion
+    testImplementation group: "org.elasticsearch.client", name: "transport", version: elasticsearchVersion
 
     //Tests
     testImplementation group: "org.springframework.boot", name: "spring-boot-starter-test", version: springBootVersion

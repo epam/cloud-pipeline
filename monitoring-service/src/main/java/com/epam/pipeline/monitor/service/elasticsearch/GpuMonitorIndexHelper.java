@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 @SuppressWarnings({"HideUtilityClassConstructor"})
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class NodeGpuUsagesIndexHelper {
+public final class GpuMonitorIndexHelper {
 
     private static final String INDEX_TYPE = "gpu";
     private static final String TIMESTAMP_FIELD = "GpuMetricsTimestamp";

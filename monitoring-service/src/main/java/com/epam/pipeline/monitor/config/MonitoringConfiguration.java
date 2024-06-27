@@ -17,7 +17,7 @@
 package com.epam.pipeline.monitor.config;
 
 import com.epam.pipeline.monitor.monitoring.SchedulingService;
-import com.epam.pipeline.monitor.monitoring.node.NodeGpuUsageMonitoringService;
+import com.epam.pipeline.monitor.monitoring.node.GpuUsageMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolUsageCleanerService;
 import com.epam.pipeline.monitor.monitoring.user.OnlineUsersCleanerService;
@@ -78,12 +78,12 @@ public class MonitoringConfiguration {
     }
 
     @Bean
-    public SchedulingService nodeGpuUsageMonitor(final TaskScheduler scheduler,
-                                                 final NodeGpuUsageMonitoringService monitoringService,
-                                                 final CloudPipelineAPIClient client,
-                                                 @Value("${preference.name.usage.node.gpu.delay}")
+    public SchedulingService gpuUsageMonitor(final TaskScheduler scheduler,
+                                             final GpuUsageMonitoringService monitoringService,
+                                             final CloudPipelineAPIClient client,
+                                             @Value("${preference.name.usage.node.gpu.delay}")
                                                  final String monitorDelayPreferenceName,
-                                                 final PreferencesService preferencesService) {
+                                             final PreferencesService preferencesService) {
         return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
                 preferencesService, "NodeGpuUsageMonitor");
     }

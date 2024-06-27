@@ -1,0 +1,125 @@
+{
+  "mappings": {
+    "gpu": {
+      "properties": {
+        "GpuMetricsTimestamp": {
+          "type": "date"
+        },
+        "Metrics": {
+          "properties": {
+            "gpu/utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "float"
+                }
+              }
+            },
+            "gpu/utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "float"
+                }
+              }
+            }
+          }
+        },
+        "MetricsTags": {
+          "properties": {
+            "index": {
+              "type": "text"
+            },
+            "cluster_name": {
+              "type": "keyword"
+            },
+            "container_base_image": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "container_name": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "host_id": {
+              "type": "keyword"
+            },
+            "hostname": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "labels": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "namespace_id": {
+              "type": "keyword"
+            },
+            "namespace_name": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "nodename": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "pod_id": {
+              "type": "keyword"
+            },
+            "pod_name": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "resource_id": {
+              "type": "keyword"
+            },
+            "schedulable": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "type": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}

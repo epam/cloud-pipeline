@@ -16,12 +16,14 @@
 
 package com.epam.pipeline.entity.reporter;
 
+import lombok.Builder;
 import lombok.Value;
 
 @Value
+@Builder
 public class NodeReporterGpuUsages {
     String name;
-    Integer index;
+    String index;
     Double utilizationMemory;
     Double utilizationGpu;
 }

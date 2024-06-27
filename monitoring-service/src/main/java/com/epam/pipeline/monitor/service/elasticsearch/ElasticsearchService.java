@@ -16,15 +16,17 @@
 
 package com.epam.pipeline.monitor.service.elasticsearch;
 
-import com.epam.pipeline.monitor.model.node.NodeGpuUsages;
+import io.swagger.models.HttpMethod;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.rest.RestStatus;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,8 +35,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -42,30 +42,38 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class MonitoringElasticseachService {
-
-    private static final DateTimeFormatter INDEX_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+public class ElasticsearchService {
 
     private final RestHighLevelClient elasticsearchClient;
-    private final String indexNamePrefix;
     private final int bulkSize;
 
-    public MonitoringElasticseachService(final RestHighLevelClient elasticsearchClient,
-                                         @Value("${es.index.prefix:heapster-}") final String indexNamePrefix,
-                                         @Value("${es.index.bulk.size:1000}") final int bulkSize) {
+    public ElasticsearchService(final RestHighLevelClient elasticsearchClient,
+                               @Value("${es.index.bulk.size:1000}") final int bulkSize) {
         this.elasticsearchClient = elasticsearchClient;
-        this.indexNamePrefix = indexNamePrefix;
         this.bulkSize = bulkSize;
     }
 
-    public void saveGpuUsages(final List<NodeGpuUsages> usages) {
-        if (CollectionUtils.isEmpty(usages)) {
-            return;
+    public void createIndexIfNotExists(final String indexName, final String source) {
+        log.debug("Start to create Elasticsearch index ...");
+        try {
+            if (isIndexExists(indexName)) {
+                log.debug("Index with name {} already exists", indexName);
+                return;
+            }
+            final Request request = new Request(HttpMethod.PUT.name(), indexName);
+            request.setJsonEntity(source);
+
+            final Response response = elasticsearchClient.getLowLevelClient().performRequest(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            Assert.isTrue(statusCode == RestStatus.OK.getStatus(),
+                    "Create Elasticsearch index: " + response);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to create index request: " + e.getMessage(), e);
         }
-        final String indexName = indexNamePrefix + LocalDateTime.now().format(INDEX_FORMATTER);
-        final List<IndexRequest> indexRequests = ListUtils.emptyIfNull(usages).stream()
-                .flatMap(usage -> NodeGpuUsagesIndexHelper.buildIndexRequests(indexName, usage).stream())
-                .collect(Collectors.toList());
+        log.debug("Elasticsearch index with name {} was created.", indexName);
+    }
+
+    public void insertBulkDocuments(final List<IndexRequest> indexRequests) {
         ListUtils.partition(indexRequests, bulkSize).forEach(this::insertDocuments);
     }
 
@@ -73,8 +81,7 @@ public class MonitoringElasticseachService {
         try {
             final BulkRequest request = new BulkRequest();
             indexRequests.forEach(request::add);
-            final BulkResponse response = elasticsearchClient.bulk(request, RequestOptions.DEFAULT);
-            // Thread.sleep(insertTimeout);
+            final BulkResponse response = elasticsearchClient.bulk(request);
             validateBulkResponse(response);
         } catch (IOException e) {
             log.error("Partial error during index sync: {}.", e.getMessage());
@@ -96,6 +103,23 @@ public class MonitoringElasticseachService {
         if (CollectionUtils.isNotEmpty(failed)) {
             failed.forEach(item -> log.error(
                     "Error for doc {} index {}: {}.", item.getId(), item.getIndex(), item.getFailureMessage()));
+        }
+    }
+
+    private boolean isIndexExists(final String indexName) {
+        try {
+            final Request request = new Request(HttpMethod.HEAD.name(), indexName);
+            final Response response = elasticsearchClient.getLowLevelClient().performRequest(request);
+            final int statusCode = response.getStatusLine().getStatusCode();
+            if (statusCode == RestStatus.NOT_FOUND.getStatus()) {
+                return false;
+            }
+            if (statusCode == RestStatus.OK.getStatus()) {
+                return true;
+            }
+            throw new ElasticsearchException("Failed to send the request to checks index " + response);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to send the request to checks index " + e.getMessage(), e);
         }
     }
 }

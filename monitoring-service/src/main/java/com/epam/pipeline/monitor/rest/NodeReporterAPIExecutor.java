@@ -53,7 +53,7 @@ public class NodeReporterAPIExecutor {
         this.port = port;
     }
 
-    public List<NodeReporterGpuUsages> getGpuStats(final String host) {
+    public List<NodeReporterGpuUsages> loadGpuStats(final String host) {
         return executor.execute(getClient(host).loadGpuStats());
     }
 
