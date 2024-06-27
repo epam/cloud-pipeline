@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
 import {
@@ -28,10 +29,10 @@ import {
 import clusterNodes from '../../../models/cluster/ClusterNodes';
 import nodesFilter from '../../../models/cluster/FilterClusterNodes';
 import pools from '../../../models/cluster/HotNodePools';
-import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
 import localization from '../../../utils/localization';
 import displayDate from '../../../utils/displayDate';
+import nodeRoles, {parseLabel, testRole} from '../node-roles';
 import parseQueryParameters from '../../../utils/queryParameters';
 import {renderNodeLabels} from '../renderers';
 import styles from '../Cluster.css';
@@ -91,7 +92,15 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
   get nodes () {
     const {clusterNodes} = this.props;
     if (clusterNodes.loaded) {
-      return (clusterNodes.value || []).filter(node => !node.runId);
+      return (clusterNodes.value || []).filter(node => {
+        const masterNode = Object
+          .entries(node.labels)
+          .some(([label, value]) => {
+            const {role = 0} = parseLabel(label, value);
+            return testRole(role, nodeRoles.master);
+          });
+        return !node.runId && masterNode;
+      });
     }
     return [];
   }
