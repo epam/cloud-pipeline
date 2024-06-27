@@ -18,11 +18,17 @@ package com.epam.pipeline.manager.docker;
 
 import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.RawImageDescription;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DockerParsingUtilsTest {
@@ -31,6 +37,27 @@ public class DockerParsingUtilsTest {
     private static final String SHORT_DATE_ENTRY_JSON = "{\"created\":\"2017-10-02T18:58:48.784338Z\"}";
     private static final int EARLIEST_MINUTES = 57;
     private static final int LATEST_MINUTES = 59;
+    private static final String POD_LAUNCH_CMD = "set -o pipefail; command -v wget >/dev/null 2>&1 && { " +
+            "LAUNCH_CMD=\"wget --no-check-certificate " +
+            "-q -O - 'var1'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl " +
+            "-s -k 'var2'\"; }; eval var3 | bash /dev/stdin \"var4\" 'var5' 'var6'";
+    private static final String WITH_ARGS_CMD = "|4 CELL_PROFILER_VERSION=4.2.1 CYTHON_VERSION=0.29.30 " +
+            "NUMPY_VERSION=1.23.1 PYTHON_3_DISTRIBUTION_URL=https://www.python.org/ftp/python/3.8.13" +
+            "/Python-3.8.13.tgz /bin/sh -c python3.8 -m pip install wheel && wget " +
+            "\"https://files.pythonhosted.org/packages/61/c7" +
+            "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
+            "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
+            "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
+            "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
+            "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
+
+    private static final String WITHOUT_ARGS_CMD = "RUN /bin/sh -c " +
+            "python3.8 -m pip install wheel && wget \"https://files.pythonhosted.org/packages/61/c7" +
+            "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
+            "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
+            "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
+            "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
+            "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
 
     @Test
     public void shouldCalculateLatestAndEarliestDateTimeProperly() {
@@ -47,5 +74,82 @@ public class DockerParsingUtilsTest {
                 .isEqualTo(EARLIEST_MINUTES);
         assertThat(DockerParsingUtils.getLatestDate(description).toInstant().atZone(ZoneOffset.UTC).getMinute())
                 .isEqualTo(LATEST_MINUTES);
+    }
+
+    @Test
+    public void testProcessCommands() {
+        final List<String> commands = new ArrayList<>();
+        final OSSpecificLaunchCommandTemplate template = OSSpecificLaunchCommandTemplate.builder()
+                .command("set -o pipefail; command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget " +
+                        "--no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; command -v " +
+                        "curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; " +
+                        "eval $LAUNCH_CMD | bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'")
+                .build();
+        final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = Collections.singletonList(template);
+        final String podLaunchTemplatesWin = "Add-Type @\"\n" +
+                "using System.Net;\n" +
+                "using System.Security.Cryptography.X509Certificates;\n" +
+                "public class TrustAllCertsPolicy : ICertificatePolicy {\n" +
+                "    public bool CheckValidationResult(\n" +
+                "        ServicePoint srvPoint, X509Certificate certificate,\n" +
+                "        WebRequest request, int certificateProblem) {\n" +
+                "            return true;\n" +
+                "        }\n" +
+                " }\n" +
+                "\"@\n" +
+                "[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy\n" +
+                "Invoke-WebRequest %s -Outfile .\\launch.py\n" +
+                "@\"\n" +
+                "%s\n" +
+                "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
+                "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
+                "python .\\launch.py";
+        commands.add("ADD file:file1 in /");
+        commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image " +
+                "org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
+        commands.add("CMD cmd1");
+        commands.add("ENTRYPOINT entrypoint1");
+        commands.add("/bin/sh -c yum install -y wget bzip2 gcc zlib-devel bzip2-devel xz-devel make ncurses-devel " +
+                "unzip git curl cairo epel-release nfs-utils && yum clean all && curl " +
+                "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -");
+        commands.add("ENV ANACONDA_HOME=/opt/local/anaconda");
+        commands.add("ARG PYTHON_3_DISTRIBUTION_URL=https://www.python.org/ftp/python/3.8.13/Python-3.8.13.tgz");
+        commands.add("ARG CELL_PROFILER_VERSION=4.2.1");
+        commands.add("ARG NUMPY_VERSION=1.23.1");
+        commands.add("ARG CYTHON_VERSION=0.29.30");
+        commands.add("CMD cmd2");
+        commands.add("ENTRYPOINT entrypoint2");
+        commands.add("ENV PATH=/opt/local/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+        commands.add("ADD file:file2 in /");
+        commands.add("ADD multi:db8a2a5f608acf2bb5634642f8cc134bbcc9b3b8c6727a2255c779e6a7183d5a in /tmp//");
+        commands.add(WITH_ARGS_CMD);
+        commands.add("COPY file:file3 in /start.sh");
+        commands.add("COPY dir:dir in /start.sh");
+        commands.add("1d");
+        commands.add(POD_LAUNCH_CMD);
+        final List<String> result = processCommands("BASE_IMAGE", commands,
+                podLaunchTemplatesLinux, podLaunchTemplatesWin);
+
+        Assert.assertEquals("FROM BASE_IMAGE", result.get(0));
+
+        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("CMD ")).count());
+        Assert.assertEquals("CMD cmd2", result.get(result.size() - 2));
+
+        Assert.assertEquals(1, result.stream().filter(r -> r.startsWith("ENTRYPOINT ")).count());
+        Assert.assertEquals("ENTRYPOINT entrypoint2", result.get(result.size() - 1));
+
+        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("ARG ")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("LABEL ")));
+
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-location> .+")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-location> .+")));
+
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD file:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD multi:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY file:.+")));
+        Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
+
+        Assert.assertTrue(result.contains(WITHOUT_ARGS_CMD));
+        Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
     }
 }

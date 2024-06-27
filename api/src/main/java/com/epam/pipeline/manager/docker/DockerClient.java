@@ -207,6 +207,11 @@ public class DockerClient {
             }).collect(Collectors.toList());
     }
 
+    public List<String> getCommands(final DockerRegistry registry, final String imageName, final String tag) {
+        final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
+        return DockerParsingUtils.getBuildHistory(rawImage);
+    }
+
     public Map<String, String> getImageLabels(final DockerRegistry registry, final String imageName, final String tag) {
         final RawImageDescription rawImage = getRawImageDescription(registry, imageName, tag, getAuthHeaders());
         return DockerParsingUtils.getLabels(rawImage);
