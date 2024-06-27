@@ -97,7 +97,8 @@ export default class CoreNodesTable extends localization.LocalizedReactComponent
           .entries(node.labels)
           .some(([label, value]) => {
             const {role = 0} = parseLabel(label, value);
-            return testRole(role, nodeRoles.master);
+            return testRole(role, nodeRoles.master) ||
+              testRole(masterNode, nodeRoles.cloudPipelineRole);
           });
         return !node.runId && masterNode;
       });
