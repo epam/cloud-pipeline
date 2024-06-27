@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolDescription;
+import com.epam.pipeline.entity.docker.ToolImageDockerfile;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -519,6 +520,12 @@ public class ToolManager implements SecuredEntityManager {
         return tool.isSymlink() ? loadToolHistory(tool.getLink(), tag) : loadToolHistory(tool, tag);
     }
 
+    public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
+        final Tool tool = load(id);
+        validateToolNotNull(tool, id);
+        return tool.isSymlink() ? loadDockerFile(tool.getLink(), tag, from) : loadDockerFile(tool, tag, from);
+    }
+
     public String loadToolDefaultCommand(final Long id, final String tag) {
         return toolVulnerabilityDao.loadToolVersionScan(id, tag)
                 .map(ToolVersionScanResult::getDefaultCmd)
@@ -579,6 +586,16 @@ public class ToolManager implements SecuredEntityManager {
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
+    }
+
+    private ToolImageDockerfile loadDockerFile(final Tool tool, final String tag, final String from) {
+        final List<String> content = dockerRegistryManager.getDockerFile(
+                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag, from);
+        return ToolImageDockerfile.builder()
+                .toolId(tool.getId())
+                .toolVersion(tag)
+                .content(content)
+                .build();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

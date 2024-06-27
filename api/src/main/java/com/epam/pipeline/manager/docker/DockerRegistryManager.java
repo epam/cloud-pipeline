@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
@@ -46,6 +47,8 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -78,6 +81,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 
 @SuppressWarnings("unchecked")
 @Service
@@ -130,6 +135,9 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     @Autowired
     private CloudFacade cloudFacade;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public DockerRegistry create(DockerRegistryVO dockerRegistryVO) {
@@ -322,6 +330,18 @@ public class DockerRegistryManager implements SecuredEntityManager {
                                                    final String tag) {
         final String token = getImageToken(registry, imageName);
         return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
+    }
+
+    public List<String> getDockerFile(final DockerRegistry registry, final String imageName,
+                                      final String tag, final String from) {
+        final String token = getImageToken(registry, imageName);
+        final List<String> commands = dockerClientFactory.getDockerClient(registry, token)
+                .getCommands(registry, imageName, tag);
+        final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
+        final String podLaunchTemplatesWin = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS);
+        return processCommands(from, commands, podLaunchTemplatesLinux, podLaunchTemplatesWin);
     }
 
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {
