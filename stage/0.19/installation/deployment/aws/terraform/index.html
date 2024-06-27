@@ -717,7 +717,6 @@ module &quot;cluster-infra&quot; {
   deployment_name                    = &quot;xxxxxxxxxxxx&quot;
   deployment_env                     = &quot;xxxxxxxxxxxx&quot;
   vpc_id                             = &quot;vpc-xxxxxxxxxxxx&quot;
-  cp_api_access_prefix_lists         = [&quot;pl-xxxxxxxxxxxx&quot;]
   external_access_security_group_ids = [&quot;xxxxxxxxxxxx&quot;]
   subnet_ids                         = [&quot;subnet-xxxxxxxxxxxx&quot;, &quot;subnet-xxxxxxxxxxxx&quot;, &quot;subnet-xxxxxxxxxxxx&quot;]
   iam_role_permissions_boundary_arn  = &quot;arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary&quot;
@@ -776,14 +775,6 @@ output &quot;cp_pipectl_script&quot; {
 </thead>
 <tbody>
 <tr>
-<td><code>bucket</code></td>
-<td>Name of the created S3 bucket to store terraform state file. See the <a href="#prerequisites">prerequisites</a></td>
-</tr>
-<tr>
-<td><code>dynamodb_table</code></td>
-<td>Name of the created DynamoDB table for terraform. See the <a href="#prerequisites">prerequisites</a></td>
-</tr>
-<tr>
 <td><code>deployment_name</code></td>
 <td>Name of the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)</td>
 </tr>
@@ -798,6 +789,10 @@ output &quot;cp_pipectl_script&quot; {
 <tr>
 <td><code>subnet_ids</code></td>
 <td>Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc.</td>
+</tr>
+<tr>
+<td><code>external_access_security_group_ids</code></td>
+<td>Ids of the SGs to be attached to the ELB to allow traffic from users to the platform. Created as prerequisites by administrator who is deploying the system, with regard to organisational network policies and best practices.</td>
 </tr>
 <tr>
 <td><code>eks_system_node_group_subnet_ids</code></td>
