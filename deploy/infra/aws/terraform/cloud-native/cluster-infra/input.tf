@@ -37,12 +37,6 @@ variable "subnet_ids" {
   }
 }
 
-variable "cp_api_access_prefix_lists" {
-  default     = []
-  type        = list(string)
-  description = "Id of the AWS Prefix Lists that will be used during the creation of the security group to grant users access"
-}
-
 variable "iam_role_permissions_boundary_arn" {
   type        = string
   default     = null

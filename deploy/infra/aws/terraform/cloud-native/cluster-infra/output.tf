@@ -137,11 +137,6 @@ output "eks_cluster_primary_security_group_id" {
   value       = try(module.internal_cluster_access_sg.security_group_id, null)
 }
 
-output "https_access_security_group" {
-  description = "Security group that used by load balancer with https public access"
-  value       = try(module.https_access_sg[0].security_group_id, null)
-}
-
 output "cp_deploy_script" {
   value = local.deploy_script
 }
