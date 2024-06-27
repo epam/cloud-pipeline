@@ -23,7 +23,6 @@ Follow the outlined steps below to execute the deployment process: <br>
       - [Stack Parameters Description](#stack-parameters-description)
         - [General configuration](#general-configuration)
         - [Network Configuration](#network-configuration)
-        - [User application access configuration](#user-application-access-configuration)
         - [Infrastructure configuration](#infrastructure-configuration)
         - [Application configuration](#application-configuration)
       - [Deploy Cloud Pipeline using AWS Console](#deploy-cloud-pipeline-using-aws-console)
@@ -51,7 +50,7 @@ To create VPC navigate to the VPC service:
   * NAT Gateway: For this guide, select "in 1 AZ" or "1 per AZ". A NAT gateway allows instances in a private subnet to access the internet but prevents the internet from initiating a connection with those instances.
   * VPC Endpoints: Choose variant based on your requirements. The Amazon VPC endpoint for Amazon S3 provides a private connection between your VPC and S3, without involving internet access.
 
->  If you will follow this instructions, it will provide you with VPC for the `internet-facing` model of the deployment (see section Elastic Load Balancer for more details). It doesn't cover any organization-specific custom requirements (f.e. access the platform through the VPN, etc.). 
+>  If you follow these instructions, it will provide you with VPC for the `internet-facing` model of the deployment (see section Elastic Load Balancer for more details). It doesn't cover any organization-specific custom requirements (f.e. access the platform through the VPN, etc.). 
 
 #### AWS Elastic Load Balancer 
 
@@ -59,30 +58,18 @@ During the deployment process, an Elastic Load Balancer (ELB) will be created. B
 
 Internet-facing: This option requires the creation of an Elastic IP to redirect internet traffic to Cloud Pipeline applications. 
 
->This EIP should also be used when requesting the creation of DNS records from your DNS provider.
+> This EIP should also be used when requesting the creation of DNS records from your DNS provider.
 
-Internal: If you require more secure way to access to application (VPN access or other organization-internal network capabilities) you can use Private IP from a reserved private CIDR block.
+Internal: If you require more restricted way to access the platform (VPN access or other organization-internal network capabilities) you can use Private IP from a reserved private CIDR block.
+
+> This Private IP should also be used when requesting the creation of DNS records from your DNS provider.
 
 #### (Optional) Managing access to the platform 
-There are two options managing access to the Cloud Pipeline platform:  
 
-Provide ID of the created prefix list that will be used in created during deployment security group.
-
-Follow these steps to create a Prefix List in AWS:
-1. Open the Amazon VPC console from your AWS Management Console.
-2. In the navigation pane, choose 'Managed Prefix Lists'.
-3. Choose 'Create Prefix List'.
-4. In the 'Prefix list name' field, give your prefix list a unique name.
-5. You can also add an optional description in the 'Description' field.
-6. Specify the maximum number of CIDR blocks the prefix list will contain under 'Max entries'.
-7. Choose between IPv4 and IPv6 for the 'Address family' based on your requirements.
-8. Click 'Add new entry' under 'Prefix list entries' and input the specific CIDR block.
-9. Click 'Create prefix list'.
-With these steps, your new managed prefix list is ready to be used while creating a security group.
-
-Provide Security group ID that created manually. For example there can be few ways of the security group access:
-1. Security group with inbound access from 0.0.0.0/0 to open all access from anywhere.
-2. Security group with inbound access with IP addresses or prefix list which will get access to application. 
+To manage access to the Cloud Pipeline provide Security group ID(s) that you can create beforehand and with regard to organisation network policies and best practices. These groups will be attached to created ELB to allow to route traffic from end users to the platform and backwards. 
+Examples of the security groups:
+1. Security group with inbound access with IP addresses or prefix list which will get access to https port 443 to the Platform. 
+2. Security group with inbound access from 0.0.0.0/0 on https port 443 to open access from anywhere to the Platform. 
 
 #### Credentials to Create Infrastructure Resources
 
@@ -210,7 +197,7 @@ the AWS console, or the AWS Command Line Interface (CLI).
 | `Environment name`                    | (Required) Environment name. Will be used as resources name prefix                                                                                                                                                                                                                             | 
 |  `Name of the AWS Secret with AWS credentials` |  (Optional) Name of the aws secret with secret key and access key of the user that will be used on JumpServer to run Terraform to deploy infrastructure.If not set the TFDeployRole will be created with full administrator access and assumed to Jump-Server role. |   
 |  `Jump Server EC2 instance type` |  (Optional) Jump-server EC2 instance type. By default, instance type of the Jump server is t3.large |  
-|   `Jump Server EC2 instance image` |  (Optional) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.29. If version of the EKS version other than 1.29 it is important to use AMI same version as EKS cluster. Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2: aws ssm get-parameters --names /aws/service/eks/optimized-ami/<eks version number>/amazon-linux-2/recommended. For more information read official documentation https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html  |
+|  `Jump Server EC2 instance image` |  (Optional) EKS based Image id that will be used for Jump-Server, by default will be the latest version for EKS 1.29. If version of the EKS version other than 1.29 it is important to use AMI same version as EKS cluster. Use the following command to view the name of the latest Amazon EKS optimized AMI for Amazon Linux 2: aws ssm get-parameters --names /aws/service/eks/optimized-ami/<eks version number>/amazon-linux-2/recommended. For more information read official documentation https://docs.aws.amazon.com/systems-manager/latest/userguide/parameter-store-public-parameters-eks.html  |
 
 
 ##### Network Configuration
@@ -222,12 +209,7 @@ the AWS console, or the AWS Command Line Interface (CLI).
 | `ID of the ELB subnet` |  (Optional) (Required) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId |  
 | `Application subnet ID` |  (Required) Subnet where JumpServer instance and Cloud-Pipeline system EKS node group (where Cloud-Pipeline internal components will be deployed) will be created   |
 | `Private application subnet IDs` |  (Required) Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc. At least two subnet IDs must be specified. Comma separated list.  |
-
-##### User application access configuration
-| Name                               | Description                                                                                                                                                                                                                                                                                    |
-|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `AWS Prefix List ID`                   | (Optional) The ID of the AWS Prefix List that will be used during the creation of the security group to grant users access to the Cloud Pipeline. |
-| `List of AWS Security Groups IDs`                    | (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. | 
+| `List of AWS Security Groups IDs` | (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services. | 
 
 
 ##### Infrastructure configuration
@@ -308,10 +290,6 @@ parameter.
         "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
     {
-        "ParameterKey": "CPAccessPrefixLists",  
-        "ParameterValue": "pl-xxxxxxxxxxxxxxx" 
-    },
-    {
         "ParameterKey": "CPDeploymentId",  
         "ParameterValue": "xxxxxxxxxxxxxxx" 
     },
@@ -388,8 +366,7 @@ aws cloudformation describe-stacks --stack-name <stack-name> --query "Stacks[].{
 | `CPSystemSubnetId`                 | (Required) Subnet where JumpServer instance and EKS node group will be created. See [Create VPC](#create-vpc)                                                                                                                                                                                  |
 | `EKSAdminRoleArns`                 | (Optional) Set additional role ARNs that will be added as administartors in EKS cluster. For example in case when additional deploy role created for Jump Server and need to add additional role as EKS Administrator(By default admin role is that role which deploys EKS cluster)            |
 | `IAMrolePermissionsBoundaryArn`    | (Optional) Account specific role boundaries, that can be used during creating AMI Roles with organization specific restrictions.                                                                                                                                                               |
-| `CPNetworkFileSystemType`          | (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.                                                                                                                                                                                                               |
-| `CPApiAccessPrefixLists`           | (Optional) Prefix Lists to which access to Cloud Pipeline API will be granted                                                                                                                                                                                                                  |
+| `CPNetworkFileSystemType`          | (Optional) FileSystem type that will be created. Can be efs or fsx. Default efs.                                 |
 | `CPExternalAccessSecurityGroupIds` | (Optional) List of one or more AWS Security Groups that will be used for access to Cloud Pipeline services.                                                                                                                                                                                    |
 | `CPDeploymentId`                   | (Optional) Specify unique ID of the deployment. It will be used to name cloud entities (e.g. path within a docker registry object container). Must contain only letters, digits, underscore or horizontal bar.                                                                                 |
 | `CPEdgeAwsELBSubnet`               | (Required) The ID of the public subnet for the Load Balancer. Must be in the same Availability Zone (AZ) as the `CPInfraSubnetIdNode`.   |
