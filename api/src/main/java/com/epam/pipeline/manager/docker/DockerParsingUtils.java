@@ -121,10 +121,12 @@ public final class DockerParsingUtils {
         }
 
         final List<String> podLaunchPatterns = getPodLaunchPatterns(podLaunchTemplatesLinux, podLaunchTemplatesWin);
-        String lastCmd = "";
-        String lastEntrypoint = "";
+        String lastCmd = StringUtils.EMPTY;
+        String lastEntrypoint = StringUtils.EMPTY;
         final List<String> args = new ArrayList<>();
-        for (String command : commands) {
+
+        for (int i = startIndex; i < commands.size(); i++) {
+            String command = commands.get(i);
             if (command.startsWith(ARG)) {
                 args.add(command.replace(ARG, ""));
             } else if (command.startsWith(CMD)) {
@@ -132,12 +134,8 @@ public final class DockerParsingUtils {
             } else if (command.startsWith(ENTRYPOINT)) {
                 lastEntrypoint = command;
             }
-        }
-
-        for (int i = startIndex; i < commands.size(); i++) {
-            String command = commands.get(i);
             if (command.startsWith(ADD) || command.startsWith(COPY)) {
-                command = command.replaceAll("(file|multi|dir):[a-zA-Z0-9]* in", "<source-file>");
+                command = command.replaceAll("(file|multi|dir):[a-zA-Z0-9]* in", "<source-location>");
             } else if (podLaunchPatterns.stream().anyMatch(command::matches)
                     || command.startsWith(CMD) || command.startsWith(ENTRYPOINT)) {
                 continue;

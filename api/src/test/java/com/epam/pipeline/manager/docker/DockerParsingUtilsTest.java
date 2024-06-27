@@ -141,8 +141,8 @@ public class DockerParsingUtilsTest {
         Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("ARG ")));
         Assert.assertTrue(result.stream().anyMatch(r -> r.startsWith("LABEL ")));
 
-        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-file> .+")));
-        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-file> .+")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("ADD <source-location> .+")));
+        Assert.assertTrue(result.stream().anyMatch(r -> r.matches("COPY <source-location> .+")));
 
         Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD file:.+")));
         Assert.assertTrue(result.stream().noneMatch(r -> r.matches("ADD multi:.+")));
