@@ -57,6 +57,7 @@ public final class DockerParsingUtils {
             .toFormatter();
     private static final String NOP_PREFIX = "#(nop)";
     private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final String ADD_TO_FROM_COMMAND_PATTERN = "ADD (file|multi|dir):[a-zA-Z0-9]* in /";
     private static final List<String> COMMANDS = Arrays.asList("ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV",
             "EXPOSE", "FROM", "HEALTHCHECK", "LABEL", "MAINTAINER", "ONBUILD", "RUN", "SHELL", "STOPSIGNAL", "USER",
             "VOLUME", "WORKDIR");
@@ -113,8 +114,8 @@ public final class DockerParsingUtils {
         final List<String> result = new ArrayList<>();
 
         result.add(String.format(FROM_TEMPLATE, from));
-//        ONLY THE FIRST "ADD file:..." line in the file has to be changed to "FROM <from>"
-        final int startIndex = commands.get(0).startsWith(ADD) ? 1 : 0;
+        // ONLY THE FIRST "ADD file:... / " line in the file has to be changed to "FROM <from>"
+        final int startIndex = commands.get(0).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
 
         if (CollectionUtils.isEmpty(commands)) {
             return result;
@@ -128,7 +129,7 @@ public final class DockerParsingUtils {
         for (int i = startIndex; i < commands.size(); i++) {
             String command = commands.get(i);
             if (command.startsWith(ARG)) {
-                args.add(command.replace(ARG, ""));
+                args.add(command.replace(ARG, StringUtils.EMPTY));
             } else if (command.startsWith(CMD)) {
                 lastCmd = command;
             } else if (command.startsWith(ENTRYPOINT)) {
@@ -141,9 +142,9 @@ public final class DockerParsingUtils {
                 continue;
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
                 for (String arg: args) {
-                    command = command.replace(arg, "");
+                    command = command.replace(arg, StringUtils.EMPTY);
                 }
-                command = String.format(RUN_TEMPLATE, command.replaceAll("\\|[0-9]* ", "").trim());
+                command = String.format(RUN_TEMPLATE, command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim());
             }
             result.add(command);
         }
