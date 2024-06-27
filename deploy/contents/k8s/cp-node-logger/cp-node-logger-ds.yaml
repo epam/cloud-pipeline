@@ -18,6 +18,8 @@ spec:
       - name: cp-node-logger
         image: $CP_COMMON_DISTR_DOCKER_PREFIX:node-logger-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
+        securityContext:
+          privileged: true
         volumeMounts:
         - name: kubelet-log
           mountPath: /var/log/kubelet
