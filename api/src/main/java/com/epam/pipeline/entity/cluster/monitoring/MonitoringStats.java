@@ -39,6 +39,7 @@ public class MonitoringStats {
     private MemoryUsage memoryUsage;
     private DisksUsage disksUsage;
     private NetworkUsage networkUsage;
+    private GPUUsage gpuUsage;
 
     @Setter
     @Getter
@@ -89,5 +90,14 @@ public class MonitoringStats {
     public static class ContainerSpec {
         private long maxMemory;
         private int numberOfCores;
+    }
+
+    @Setter
+    @Getter
+    public static class GPUUsage {
+        private double averageGpuUsage;
+        private double maxGpuUsage;
+        private double averageMemoryUsage;
+        private double maxMemoryUsage;
     }
 }

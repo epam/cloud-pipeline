@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
-        ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
+        ELKUsageMetric.FS, ELKUsageMetric.NETWORK, ELKUsageMetric.GPU};
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
@@ -201,6 +201,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private MonitoringStats mergeStats(final MonitoringStats first, final MonitoringStats second) {
         final Optional<MonitoringStats> original = Optional.of(first);
         first.setCpuUsage(original.map(MonitoringStats::getCpuUsage).orElseGet(second::getCpuUsage));
+        first.setGpuUsage(original.map(MonitoringStats::getGpuUsage).orElseGet(second::getGpuUsage));
         first.setMemoryUsage(original.map(MonitoringStats::getMemoryUsage).orElseGet(second::getMemoryUsage));
         first.setNetworkUsage(original.map(MonitoringStats::getNetworkUsage).orElseGet(second::getNetworkUsage));
         if (first.getDisksUsage() != null && second.getDisksUsage() != null) {
@@ -232,7 +233,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return monitoringStats.getCpuUsage() != null
                 && monitoringStats.getMemoryUsage() != null
                 && monitoringStats.getDisksUsage() != null
-                && monitoringStats.getNetworkUsage() != null;
+                && monitoringStats.getNetworkUsage() != null
+                && monitoringStats.getGpuUsage() != null;
     }
 
     private LocalDateTime asMonitoringDateTime(final String dateTimeString) {

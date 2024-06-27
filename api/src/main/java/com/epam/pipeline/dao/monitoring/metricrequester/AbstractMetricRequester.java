@@ -62,7 +62,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
-    private static final String INDEX_NAME_PATTERN = "heapster-%s";
+    private static final String HEAPSTER_INDEX_NAME_PATTERN = "heapster-%s";
+    private static final String GPU_STAT_INDEX_NAME_PATTERN = "cp-gpu-monitor-%s";
 
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
 
@@ -81,6 +82,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String WORKING_SET = "working_set";
     protected static final String CPU_CAPACITY = "cpu_capacity";
     protected static final String CPU_UTILIZATION = "cpu_utilization";
+    protected static final String GPU_UTILIZATION = "gpu_utilization";
     protected static final String MEMORY_UTILIZATION = "memory_utilization";
     protected static final String MEMORY_CAPACITY = "memory_capacity";
     protected static final String LIMIT = "limit";
@@ -88,6 +90,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String DEFAULT = "default";
 
     protected static final String CPU_HISTOGRAM = "cpu_histogram";
+    protected static final String GPU_HISTOGRAM = "gpu_histogram";
     protected static final String MEMORY_HISTOGRAM = "memory_histogram";
     protected static final String NETWORK_HISTOGRAM = "network_histogram";
     protected static final String DISKS_HISTOGRAM = "disks_histogram";
@@ -151,6 +154,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
+            case GPU:
+                return new GPURequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
@@ -203,7 +208,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         return Stream.iterate(fromDate, date -> date.plusDays(1))
                 .limit(Period.between(fromDate, toDate).getDays() + 1)
                 .map(date -> date.format(DATE_FORMATTER))
-                .map(str -> String.format(INDEX_NAME_PATTERN, str))
+                .flatMap(str -> Stream.of(String.format(HEAPSTER_INDEX_NAME_PATTERN, str),
+                        String.format(GPU_STAT_INDEX_NAME_PATTERN, str)))
                 .toArray(String[]::new);
     }
 

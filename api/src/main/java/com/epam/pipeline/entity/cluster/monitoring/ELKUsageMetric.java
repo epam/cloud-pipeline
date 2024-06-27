@@ -27,7 +27,8 @@ public enum ELKUsageMetric {
     MEM("memory", "MemoryMetricsTimestamp"),
     FS("filesystem", "FilesystemMetricsTimestamp"),
     POD_FS("filesystem", "FilesystemMetricsTimestamp"),
-    NETWORK("network", "NetworkMetricsTimestamp");
+    NETWORK("network", "NetworkMetricsTimestamp"),
+    GPU("gpu", "GpuMetricsTimestamp");
 
     private final String name;
     private final String timestamp;

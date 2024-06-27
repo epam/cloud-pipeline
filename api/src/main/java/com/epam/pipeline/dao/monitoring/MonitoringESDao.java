@@ -50,7 +50,8 @@ import java.util.stream.Stream;
 public class MonitoringESDao {
     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
-    private static final String INDEX_NAME_TOKEN = "heapster-";
+    private static final String HEAPSTER_INDEX_NAME_TOKEN = "heapster-";
+    private static final String GPU_STAT_INDEX_NAME_TOKEN = "cp-gpu-monitor-";
 
     private HeapsterElasticRestHighLevelClient heapsterClient;
     private RestClient lowLevelClient;
@@ -98,7 +99,7 @@ public class MonitoringESDao {
     private Stream<String> indices(final BufferedReader reader) {
         return reader.lines()
                 .flatMap(l -> Arrays.stream(l.split(" ")))
-                .filter(str -> str.startsWith(INDEX_NAME_TOKEN));
+                .filter(str -> str.startsWith(HEAPSTER_INDEX_NAME_TOKEN) || str.startsWith(GPU_STAT_INDEX_NAME_TOKEN));
     }
 
     private ImmutablePair<String, LocalDateTime> withParsedDate(final String name) {
@@ -108,7 +109,13 @@ public class MonitoringESDao {
     }
 
     private Optional<LocalDateTime> toLocalDateTime(final String name) {
-        final String datetimeString = name.substring(INDEX_NAME_TOKEN.length());
+        if (!(name.startsWith(HEAPSTER_INDEX_NAME_TOKEN) || name.startsWith(GPU_STAT_INDEX_NAME_TOKEN))) {
+            return Optional.empty();
+        }
+        final int indexTokenLength = name.startsWith(HEAPSTER_INDEX_NAME_TOKEN)
+                ? HEAPSTER_INDEX_NAME_TOKEN.length()
+                : GPU_STAT_INDEX_NAME_TOKEN.length();
+        final String datetimeString = name.substring(indexTokenLength);
         try {
             return Optional.of(LocalDate.parse(datetimeString, DATE_FORMATTER)
                     .atStartOfDay(ZoneOffset.UTC)
