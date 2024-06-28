@@ -54,7 +54,8 @@ from pipeline.hpc.pipe import CloudPipelineAPI, \
 from pipeline.hpc.resource import ResourceSupply
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.hpc.valid import GracePeriodWorkerValidatorHandler
-from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
+from pipeline.api.api import PipelineAPI
+from pipeline.log.logger import RunLogger, TaskLogger, LevelLogger, LocalLogger, ResilientLogger
 from pipeline.utils.path import mkdir
 
 
@@ -223,6 +224,7 @@ def get_daemon():
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     # todo: Get rid of Logger usage in favor of logger
     Logger.inner = logger
