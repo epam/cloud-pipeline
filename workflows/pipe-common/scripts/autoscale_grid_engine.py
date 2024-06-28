@@ -47,8 +47,7 @@ from pipeline.hpc.instance.select import CpuCapacityInstanceSelector, NaiveCpuCa
     BackwardCompatibleInstanceSelector
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.param import GridEngineParameters, ValidationError
-from pipeline.hpc.pipe import CloudPipelineAPI, \
-    CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
+from pipeline.hpc.pipe import CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
     CloudPipelineWorkerValidator, CloudPipelineWorkerValidatorHandler, \
     CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
@@ -85,7 +84,7 @@ def get_inherited_worker_launch_params(api, run_id, inheritable_explicit_param_n
 
 
 def get_inheritable_system_param_names(api):
-    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
+    system_launch_params_string = resolve_preference(api, 'launch.system.parameters', default='[]')
     system_launch_params = json.loads(system_launch_params_string)
     params = []
     prefixes = []
@@ -103,7 +102,7 @@ def get_inheritable_system_param_names(api):
 
 
 def get_run_params(api, run_id):
-    run = api.load_run(run_id)
+    run = api.load_run_efficiently(run_id)
     return {param.get('name'): param.get('resolvedValue') for param in run.get('pipelineRunParameters', [])}
 
 
@@ -161,6 +160,16 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
         Logger.warn(traceback.format_exc())
 
 
+def resolve_preference(api, name, default):
+    try:
+        return api.get_preference_value(name) or default
+    except Exception:
+        Logger.warn('Pipeline preference %s retrieving has failed. Using default value: %s.'
+                    % (name, default))
+        Logger.warn(traceback.format_exc())
+        return default
+
+
 def get_daemon():
     params = GridEngineParameters()
 
@@ -197,8 +206,7 @@ def get_daemon():
         logging_level_run = 'DEBUG'
 
     # TODO: Git rid of CloudPipelineAPI usage in favor of PipelineAPI
-    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
-    api = CloudPipelineAPI(pipe=pipe)
+    api = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
 
     mkdir(os.path.dirname(logging_file))
 
@@ -221,7 +229,7 @@ def get_daemon():
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
-    logger = RunLogger(api=pipe, run_id=cluster_master_run_id)
+    logger = RunLogger(api=api, run_id=cluster_master_run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
@@ -266,11 +274,12 @@ def get_daemon():
     scale_up_unavail_delay = params.autoscaling.scale_up_unavail_delay.get()
     scale_up_unavail_count_insufficient = params.autoscaling.scale_up_unavail_count_insufficient.get()
     scale_up_unavail_count_failure = params.autoscaling.scale_up_unavail_count_failure.get()
-    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default=30))
-    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default=900))
+
+    scale_up_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.up.timeout', default=30))
+    scale_up_polling_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.up.polling.timeout', default=900))
 
     scale_down_batch_size = params.autoscaling.scale_down_batch_size.get()
-    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default=30))
+    scale_down_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.down.timeout', default=30))
     scale_down_idle_timeout = params.autoscaling.scale_down_idle_timeout.get()
     scale_down_invalid_timeout = params.autoscaling.scale_down_invalid_timeout.get()
 
@@ -320,7 +329,7 @@ def get_daemon():
                                                        unavail_delay=scale_up_unavail_delay,
                                                        unavail_count_insufficient=scale_up_unavail_count_insufficient,
                                                        unavail_count_failure=scale_up_unavail_count_failure)
-    cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
+    cloud_instance_provider = CloudPipelineInstanceProvider(api=api, region_id=instance_region_id,
                                                             price_type=instance_price_type)
     default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
                                                         instance_type=instance_type)
@@ -553,7 +562,7 @@ def get_daemon():
                                                           batch_size=scale_up_batch_size,
                                                           polling_delay=scale_up_polling_delay,
                                                           clock=clock)
-    scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
+    scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                     common_utils=common_utils)
     if dry_run:
         scale_down_handler = DoNothingScaleDownHandler()
@@ -582,7 +591,7 @@ def get_daemon():
                 clock=clock)
         ])
 
-    worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, host_storage=host_storage,
+    worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                     grid_engine=grid_engine, scale_down_handler=scale_down_handler,
                                                     handlers=worker_validator_handlers,
                                                     common_utils=common_utils, dry_run=dry_run)
