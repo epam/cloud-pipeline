@@ -15,6 +15,8 @@
 import logging
 import os
 import traceback
+from datetime import datetime
+from dateutil.tz import tzlocal
 
 import click
 import functools
@@ -54,6 +56,7 @@ from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
+DEFAULT_PROFILING_PATH = 'pipe-profiling-{date}.dump'
 DEFAULT_LOGGING_LEVEL = logging.ERROR
 DEFAULT_LOGGING_FORMAT = '%(asctime)s:%(levelname)s: %(message)s'
 LOGGING_LEVEL_OPTION_DESCRIPTION = 'Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. ' \
@@ -62,6 +65,7 @@ USER_OPTION_DESCRIPTION = 'The user name to perform operation from specified use
 RETRIES_OPTION_DESCRIPTION = 'Number of retries to connect to specified pipeline run. Default is 10.'
 DEBUG_OPTION_DESCRIPTION = 'Enables verbose logging.'
 TRACE_OPTION_DESCRIPTION = 'Enables verbose errors.'
+PROFILING_OPTION_DESCRIPTION = 'Enables profiling.'
 NO_CLEAN_OPTION_DESCRIPTION = 'Disables temporary resources cleanup.'
 EDGE_REGION_OPTION_DESCRIPTION = 'The edge region name. If not specified the default edge region will be used.'
 SYNC_FLAG_DESCRIPTION = 'Perform operation in a sync mode. When set - terminal will be blocked' \
@@ -165,6 +169,29 @@ def stacktracing(func, ctx, *args, **kwargs):
 
 
 @click_decorator
+def profiling(func, ctx, *args, **kwargs):
+    """
+    Enables profiling in a decorating click command.
+    """
+    profiling = (os.getenv('CP_PROFILING', 'false').lower().strip() == 'true') or ctx.params.get('profiling') or False
+    if not profiling:
+        return ctx.invoke(func, *args, **kwargs)
+    logging.debug('Initiating profiling...')
+    profiling_path = os.getenv('CP_PROFILING_PATH') or ctx.params.get('profiling_path') or DEFAULT_PROFILING_PATH
+    profiling_path = profiling_path.format(date=datetime.now(tz=tzlocal()).strftime('%Y-%m-%d-%H-%M-%S'))
+    import cProfile, pstats
+    pf = cProfile.Profile()
+    try:
+        pf.enable()
+        return ctx.invoke(func, *args, **kwargs)
+    finally:
+        pf.disable()
+        ps = pstats.Stats(pf)
+        logging.debug(u'Dumping profiling data to {}...'.format(profiling_path))
+        ps.dump_stats(profiling_path)
+
+
+@click_decorator
 def console_logging(func, ctx, *args, **kwargs):
     """
     Configures console logging in a decorating click command.
@@ -206,7 +233,7 @@ def resources_cleaning(func, ctx, *args, **kwargs):
     try:
         CleanOperationsManager().clean(quiet=ctx.params.get('quiet'))
     except Exception:
-        logging.warn('Temporary directories cleaning has failed: %s', traceback.format_exc())
+        logging.warning('Temporary directories cleaning has failed: %s', traceback.format_exc())
     ctx.invoke(func, *args, **kwargs)
 
 
@@ -245,8 +272,12 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
         @click.option('--trace', required=False, is_flag=True,
                       default=False,
                       help=TRACE_OPTION_DESCRIPTION)
+        @click.option('--profiling', required=False, is_flag=True,
+                      default=False,
+                      help=PROFILING_OPTION_DESCRIPTION)
         @stacktracing
         @console_logging
+        @profiling
         @signals_handling
         @frozen_locking
         @resources_cleaning
@@ -254,6 +285,7 @@ def common_options(_func=None, skip_user=False, skip_clean=False):
         @functools.wraps(func)
         def _wrapper(*args, **kwargs):
             kwargs.pop('trace', None)
+            kwargs.pop('profiling', None)
             kwargs.pop('noclean', None)
             return func(*args, **kwargs)
 
@@ -292,6 +324,7 @@ def cli():
       CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
       CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
       CP_TRACE=[True|False]                  Enables verbose errors.
+      CP_PROFILING=[True|False]              Enables profiling.
     """
     pass
 
@@ -1828,6 +1861,7 @@ def start_tunnel_options(decorating_func):
 @click.option('--noclean', required=False, is_flag=True, default=False, help=NO_CLEAN_OPTION_DESCRIPTION)
 @click.option('--debug', required=False, is_flag=True, default=False, help=DEBUG_OPTION_DESCRIPTION)
 @click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
+@click.option('--profiling', required=False, is_flag=True, default=False, help=PROFILING_OPTION_DESCRIPTION)
 def return_tunnel_args(*args, **kwargs):
     return kwargs
 
