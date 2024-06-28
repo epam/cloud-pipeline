@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.docker;
 import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.RawImageDescription;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.utils.StreamUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -134,8 +136,13 @@ public class DockerParsingUtilsTest {
         commands.add(POD_LAUNCH_CMD);
         commands.add("ARG TARGETARCH");
         commands.add(RUN_AND_ARG_CMD);
-        final List<String> result = processCommands("BASE_IMAGE", commands,
-                podLaunchTemplatesLinux, podLaunchTemplatesWin);
+
+        final List<String> commandsPatternsToSkip = StreamUtils.appended(
+                podLaunchTemplatesLinux.stream().map(OSSpecificLaunchCommandTemplate::getCommand),
+                podLaunchTemplatesWin
+        ).map(DockerParsingUtils::getLaunchPodPattern).collect(Collectors.toList());
+
+        final List<String> result = processCommands("BASE_IMAGE", commands, commandsPatternsToSkip);
 
         Assert.assertEquals("FROM BASE_IMAGE", result.get(0));
 

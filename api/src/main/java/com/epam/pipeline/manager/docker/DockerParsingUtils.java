@@ -109,8 +109,7 @@ public final class DockerParsingUtils {
     }
 
     public static List<String> processCommands(final String from, final List<String> commands,
-                                               final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux,
-                                               final String podLaunchTemplatesWin) {
+                                               final List<String> commandPatternsToSkip) {
         final List<String> result = new ArrayList<>();
 
         result.add(String.format(FROM_TEMPLATE, from));
@@ -121,13 +120,17 @@ public final class DockerParsingUtils {
             return result;
         }
 
-        final List<String> podLaunchPatterns = getPodLaunchPatterns(podLaunchTemplatesLinux, podLaunchTemplatesWin);
         String lastCmd = StringUtils.EMPTY;
         String lastEntrypoint = StringUtils.EMPTY;
         final List<String> args = new ArrayList<>();
 
         for (int i = startIndex; i < commands.size(); i++) {
             String command = commands.get(i);
+
+            if (commandPatternsToSkip.stream().anyMatch(command::matches)) {
+                continue;
+            }
+
             if (command.startsWith(ARG)) {
                 args.add(command.replace(ARG, StringUtils.EMPTY).split("=")[0]);
             } else if (args.stream().anyMatch(command::contains)){
@@ -140,10 +143,10 @@ public final class DockerParsingUtils {
             } else if (command.startsWith(ENTRYPOINT)) {
                 lastEntrypoint = command;
             }
+
             if (command.startsWith(ADD) || command.startsWith(COPY)) {
                 command = command.replaceAll("(file|multi|dir):[a-zA-Z0-9]* in", "<source-location>");
-            } else if (podLaunchPatterns.stream().anyMatch(command::matches)
-                    || command.startsWith(CMD) || command.startsWith(ENTRYPOINT)) {
+            } else if (command.startsWith(CMD) || command.startsWith(ENTRYPOINT)) {
                 continue;
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
                 command = String.format(RUN_TEMPLATE, command.trim());
@@ -157,6 +160,11 @@ public final class DockerParsingUtils {
             result.add(lastEntrypoint);
         }
         return result;
+    }
+
+    public static String getLaunchPodPattern(final String command) {
+        final String result = escapeSpecialCharacters(command).replaceAll("\\$[a-zA-Z0-9_]*", ".+");
+        return result.replaceAll("\\$", "\\\\$");
     }
 
     private static Stream<HistoryEntryV1> getHistoryEntryStream(final RawImageDescription rawImage) {
@@ -214,20 +222,6 @@ public final class DockerParsingUtils {
             input = input.replace(ch, "\\" + ch);
         }
         return input;
-    }
-
-    private static List<String> getPodLaunchPatterns(final List<OSSpecificLaunchCommandTemplate>
-                                                             podLaunchTemplatesLinux,
-                                                     final String podLaunchTemplatesWin) {
-        return StreamUtils.appended(
-                podLaunchTemplatesLinux.stream().map(r -> getLaunchPodPattern(r.getCommand())),
-                getLaunchPodPattern(podLaunchTemplatesWin)
-        ).collect(Collectors.toList());
-    }
-
-    private static String getLaunchPodPattern(final String command) {
-        final String result = escapeSpecialCharacters(command).replaceAll("\\$[a-zA-Z0-9_]*", ".+");
-        return result.replaceAll("\\$", "\\\\$");
     }
 
     private DockerParsingUtils() {

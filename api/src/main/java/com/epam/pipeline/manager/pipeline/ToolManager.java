@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.docker.ToolImageDockerfile;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.docker.ToolVersionAttributes;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
@@ -48,6 +49,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerConnectionException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.docker.DockerClient;
+import com.epam.pipeline.manager.docker.DockerParsingUtils;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanManager;
@@ -56,6 +58,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.utils.StreamUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -85,6 +88,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.getLaunchPodPattern;
+import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 
 @Slf4j
@@ -521,9 +526,21 @@ public class ToolManager implements SecuredEntityManager {
     }
 
     public ToolImageDockerfile loadDockerFile(final Long id, final String tag, final String from) {
-        final Tool tool = load(id);
-        validateToolNotNull(tool, id);
-        return tool.isSymlink() ? loadDockerFile(tool.getLink(), tag, from) : loadDockerFile(tool, tag, from);
+        final List<String> commands = loadToolHistory(id, tag).stream()
+                .map(ImageHistoryLayer::getCommand)
+                .collect(Collectors.toList());
+
+        final List<String> commandsPatternsToFilter = StreamUtils.appended(
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX)
+                        .stream().map(OSSpecificLaunchCommandTemplate::getCommand),
+                preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS)
+        ).map(DockerParsingUtils::getLaunchPodPattern).collect(Collectors.toList());
+
+        return ToolImageDockerfile.builder()
+                .toolId(id)
+                .toolVersion(tag)
+                .content(processCommands(from, commands, commandsPatternsToFilter))
+                .build();
     }
 
     public String loadToolDefaultCommand(final Long id, final String tag) {
@@ -586,16 +603,6 @@ public class ToolManager implements SecuredEntityManager {
     private List<ImageHistoryLayer> loadToolHistory(final Tool tool, final String tag) {
         return dockerRegistryManager.getImageHistory(
                 dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag);
-    }
-
-    private ToolImageDockerfile loadDockerFile(final Tool tool, final String tag, final String from) {
-        final List<String> content = dockerRegistryManager.getDockerFile(
-                dockerRegistryManager.load(tool.getRegistryId()), tool.getImage(), tag, from);
-        return ToolImageDockerfile.builder()
-                .toolId(tool.getId())
-                .toolVersion(tag)
-                .content(content)
-                .build();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
