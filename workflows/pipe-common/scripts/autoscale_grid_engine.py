@@ -55,6 +55,7 @@ from pipeline.hpc.resource import ResourceSupply
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
 from pipeline.hpc.valid import GracePeriodWorkerValidatorHandler
 from pipeline.api.api import PipelineAPI
+from pipeline.api.token import RefreshingToken
 from pipeline.log.logger import RunLogger, TaskLogger, LevelLogger, LocalLogger, ResilientLogger
 from pipeline.utils.path import mkdir
 
@@ -196,7 +197,7 @@ def get_daemon():
         logging_level_run = 'DEBUG'
 
     # TODO: Git rid of CloudPipelineAPI usage in favor of PipelineAPI
-    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir)
+    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
     api = CloudPipelineAPI(pipe=pipe)
 
     mkdir(os.path.dirname(logging_file))
