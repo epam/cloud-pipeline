@@ -82,8 +82,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
-
 @SuppressWarnings("unchecked")
 @Service
 @AclSync
@@ -330,18 +328,6 @@ public class DockerRegistryManager implements SecuredEntityManager {
                                                    final String tag) {
         final String token = getImageToken(registry, imageName);
         return dockerClientFactory.getDockerClient(registry, token).getImageHistory(registry, imageName, tag);
-    }
-
-    public List<String> getDockerFile(final DockerRegistry registry, final String imageName,
-                                      final String tag, final String from) {
-        final List<String> commands = getImageHistory(registry, imageName, tag).stream()
-                .map(ImageHistoryLayer::getCommand)
-                .collect(Collectors.toList());
-        final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
-        final String podLaunchTemplatesWin = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS);
-        return processCommands(from, commands, podLaunchTemplatesLinux, podLaunchTemplatesWin);
     }
 
     public List<String> loadImageTags(DockerRegistry registry, Tool tool) {
