@@ -129,7 +129,12 @@ public final class DockerParsingUtils {
         for (int i = startIndex; i < commands.size(); i++) {
             String command = commands.get(i);
             if (command.startsWith(ARG)) {
-                args.add(command.replace(ARG, StringUtils.EMPTY));
+                args.add(command.replace(ARG, StringUtils.EMPTY).split("=")[0]);
+            } else if (args.stream().anyMatch(command::contains)){
+                for (String arg: args) {
+                    command = command.replaceAll(String.format("%s=[^ ]* ", arg), StringUtils.EMPTY);
+                }
+                command = command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim();
             } else if (command.startsWith(CMD)) {
                 lastCmd = command;
             } else if (command.startsWith(ENTRYPOINT)) {
@@ -141,10 +146,7 @@ public final class DockerParsingUtils {
                     || command.startsWith(CMD) || command.startsWith(ENTRYPOINT)) {
                 continue;
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
-                for (String arg: args) {
-                    command = command.replace(arg, StringUtils.EMPTY);
-                }
-                command = String.format(RUN_TEMPLATE, command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim());
+                command = String.format(RUN_TEMPLATE, command.trim());
             }
             result.add(command);
         }

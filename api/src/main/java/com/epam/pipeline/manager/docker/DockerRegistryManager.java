@@ -334,9 +334,9 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     public List<String> getDockerFile(final DockerRegistry registry, final String imageName,
                                       final String tag, final String from) {
-        final String token = getImageToken(registry, imageName);
-        final List<String> commands = dockerClientFactory.getDockerClient(registry, token)
-                .getCommands(registry, imageName, tag);
+        final List<String> commands = getImageHistory(registry, imageName, tag).stream()
+                .map(ImageHistoryLayer::getCommand)
+                .collect(Collectors.toList());
         final List<OSSpecificLaunchCommandTemplate> podLaunchTemplatesLinux = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX);
         final String podLaunchTemplatesWin = preferenceManager.getPreference(

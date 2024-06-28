@@ -41,7 +41,7 @@ public class DockerParsingUtilsTest {
             "LAUNCH_CMD=\"wget --no-check-certificate " +
             "-q -O - 'var1'\"; }; command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl " +
             "-s -k 'var2'\"; }; eval var3 | bash /dev/stdin \"var4\" 'var5' 'var6'";
-    private static final String WITH_ARGS_CMD = "|4 CELL_PROFILER_VERSION=4.2.1 CYTHON_VERSION=0.29.30 " +
+    private static final String ARGS_CMD = "|4 CELL_PROFILER_VERSION=4.2.1 CYTHON_VERSION=0.29.30 " +
             "NUMPY_VERSION=1.23.1 PYTHON_3_DISTRIBUTION_URL=https://www.python.org/ftp/python/3.8.13" +
             "/Python-3.8.13.tgz /bin/sh -c python3.8 -m pip install wheel && wget " +
             "\"https://files.pythonhosted.org/packages/61/c7" +
@@ -51,13 +51,18 @@ public class DockerParsingUtilsTest {
             "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
             "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
 
-    private static final String WITHOUT_ARGS_CMD = "RUN /bin/sh -c " +
+    private static final String ARGS_CMD_DOCKERFILE = "RUN /bin/sh -c " +
             "python3.8 -m pip install wheel && wget \"https://files.pythonhosted.org/packages/61/c7" +
             "/e1a31b6a092a5b91952fe96801b2d3167fcb3bad8386c023dd83de4c4ab8/centrosome-1.2.0.tar.gz\" " +
             "-O /tmp/centrosome.tar.gz && cd /tmp && tar -zxf centrosome.tar.gz && cd centrosome* && sed " +
             "-i \"s/setup_requires=\\[\\\"cython\\\", \\\"numpy\\\", \\\"pytest\\\",\\],/setup_requires" +
             "=\\[\\\"cython==$CYTHON_VERSION\\\", \\\"numpy==$NUMPY_VERSION\\\", \\\"pytest\\\",\\],/g\" " +
             "setup.py && python3.8 -m pip install . && rm -rf /tmp/centrosome*";
+    private static final String RUN_AND_ARG_CMD = "RUN |1 TARGETARCH=amd64 /bin/sh -c echo \"/usr/local/nvidia/lib\" " +
+            ">> /etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
+
+    private static final String RUN_AND_ARG_CMD_DOCKERFILE = "RUN /bin/sh -c echo \"/usr/local/nvidia/lib\" >> " +
+            "/etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
 
     @Test
     public void shouldCalculateLatestAndEarliestDateTimeProperly() {
@@ -122,11 +127,13 @@ public class DockerParsingUtilsTest {
         commands.add("ENV PATH=/opt/local/anaconda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
         commands.add("ADD file:file2 in /");
         commands.add("ADD multi:db8a2a5f608acf2bb5634642f8cc134bbcc9b3b8c6727a2255c779e6a7183d5a in /tmp//");
-        commands.add(WITH_ARGS_CMD);
+        commands.add(ARGS_CMD);
         commands.add("COPY file:file3 in /start.sh");
         commands.add("COPY dir:dir in /start.sh");
         commands.add("1d");
         commands.add(POD_LAUNCH_CMD);
+        commands.add("ARG TARGETARCH");
+        commands.add(RUN_AND_ARG_CMD);
         final List<String> result = processCommands("BASE_IMAGE", commands,
                 podLaunchTemplatesLinux, podLaunchTemplatesWin);
 
@@ -149,7 +156,9 @@ public class DockerParsingUtilsTest {
         Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY file:.+")));
         Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
 
-        Assert.assertTrue(result.contains(WITHOUT_ARGS_CMD));
+        Assert.assertTrue(result.contains(ARGS_CMD_DOCKERFILE));
+        Assert.assertTrue(result.contains(RUN_AND_ARG_CMD_DOCKERFILE));
+
         Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
     }
 }
