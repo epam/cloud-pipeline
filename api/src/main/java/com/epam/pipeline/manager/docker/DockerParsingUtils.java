@@ -101,7 +101,7 @@ public final class DockerParsingUtils {
 
         result.add(String.format(FROM_TEMPLATE, from));
         // ONLY THE FIRST "ADD file:... / " line in the file has to be changed to "FROM <from>"
-        final int startIndex = commands.get(0).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
+        final int startIndex = prettifyCommand(commands.get(0)).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
 
         if (CollectionUtils.isEmpty(commands)) {
             return result;
@@ -112,7 +112,7 @@ public final class DockerParsingUtils {
         final List<String> args = new ArrayList<>();
 
         for (int i = startIndex; i < commands.size(); i++) {
-            String command = commands.get(i);
+            String command = prettifyCommand(commands.get(i));
 
             if (commandPatternsToSkip.stream().anyMatch(command::matches)) {
                 continue;
@@ -120,11 +120,10 @@ public final class DockerParsingUtils {
 
             if (command.startsWith(ARG)) {
                 args.add(command.replace(ARG, StringUtils.EMPTY).split("=")[0]);
-            } else if (args.stream().anyMatch(command::contains)){
+            } else if (args.stream().anyMatch(command::contains)) {
                 for (String arg: args) {
                     command = command.replaceAll(String.format("%s=[^ ]* ", arg), StringUtils.EMPTY);
                 }
-                command = command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim();
             } else if (command.startsWith(CMD)) {
                 lastCmd = command;
             } else if (command.startsWith(ENTRYPOINT)) {
@@ -138,7 +137,7 @@ public final class DockerParsingUtils {
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
                 command = String.format(RUN_TEMPLATE, command.trim());
             }
-            result.add(command);
+            result.add(command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim());
         }
         if (StringUtils.isNotBlank(lastCmd)) {
             result.add(lastCmd);
@@ -147,6 +146,10 @@ public final class DockerParsingUtils {
             result.add(lastEntrypoint);
         }
         return result;
+    }
+
+    private static String prettifyCommand(final String command) {
+        return command.replaceAll("\\s+", " ").trim();
     }
 
     public static String getLaunchPodPattern(final String command) {

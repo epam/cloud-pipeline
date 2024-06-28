@@ -63,6 +63,12 @@ public class DockerParsingUtilsTest {
     private static final String RUN_AND_ARG_CMD = "RUN |1 TARGETARCH=amd64 /bin/sh -c echo \"/usr/local/nvidia/lib\" " +
             ">> /etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
 
+    private static final String RUN_AND_EMPTY_ARG_CMD = "RUN |1 TARGETARCH= /bin/sh -c echo \"/usr/local/nvidia/lib\"" +
+            " >> /etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
+
+    private static final String COMMAND_WITH_OUT_RUN = "|1 /bin/sh -c echo \"/usr/local/nvidia/lib\" " +
+            ">> /etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
+
     private static final String RUN_AND_ARG_CMD_DOCKERFILE = "RUN /bin/sh -c echo \"/usr/local/nvidia/lib\" >> " +
             "/etc/ld.so.conf.d/nvidia.conf && echo \"/usr/local/nvidia/lib64\" >> /etc/ld.so.conf.d/nvidia.conf";
 
@@ -111,7 +117,7 @@ public class DockerParsingUtilsTest {
                 "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
                 "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
                 "python .\\launch.py";
-        commands.add("ADD file:file1 in /");
+        commands.add(" ADD  file:file1 in / ");
         commands.add("LABEL org.label-schema.schema-version=1.0 org.label-schema.name=CentOS Base Image " +
                 "org.label-schema.vendor=CentOS org.label-schema.license=GPLv2 org.label-schema.build-date=20191024");
         commands.add("CMD cmd1");
@@ -134,8 +140,10 @@ public class DockerParsingUtilsTest {
         commands.add("COPY dir:dir in /start.sh");
         commands.add("1d");
         commands.add(POD_LAUNCH_CMD);
-        commands.add("ARG TARGETARCH");
+        commands.add(" ARG TARGETARCH");
         commands.add(RUN_AND_ARG_CMD);
+        commands.add(RUN_AND_EMPTY_ARG_CMD);
+        commands.add(COMMAND_WITH_OUT_RUN);
 
         final List<String> commandsPatternsToSkip = StreamUtils.appended(
                 podLaunchTemplatesLinux.stream().map(OSSpecificLaunchCommandTemplate::getCommand),
@@ -164,7 +172,7 @@ public class DockerParsingUtilsTest {
         Assert.assertTrue(result.stream().noneMatch(r -> r.matches("COPY dir:.+")));
 
         Assert.assertTrue(result.contains(ARGS_CMD_DOCKERFILE));
-        Assert.assertTrue(result.contains(RUN_AND_ARG_CMD_DOCKERFILE));
+        Assert.assertEquals(3, result.stream().filter(s -> s.equals(RUN_AND_ARG_CMD_DOCKERFILE)).count());
 
         Assert.assertFalse(result.contains(POD_LAUNCH_CMD));
     }
