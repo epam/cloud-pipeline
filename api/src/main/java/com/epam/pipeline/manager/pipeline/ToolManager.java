@@ -88,7 +88,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static com.epam.pipeline.manager.docker.DockerParsingUtils.getLaunchPodPattern;
 import static com.epam.pipeline.manager.docker.DockerParsingUtils.processCommands;
 import static com.epam.pipeline.manager.pipeline.ToolUtils.getImageWithoutTag;
 

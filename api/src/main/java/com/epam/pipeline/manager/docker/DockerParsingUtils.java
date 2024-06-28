@@ -20,8 +20,6 @@ import com.epam.pipeline.entity.docker.ContainerConfig;
 import com.epam.pipeline.entity.docker.HistoryEntry;
 import com.epam.pipeline.entity.docker.HistoryEntryV1;
 import com.epam.pipeline.entity.docker.RawImageDescription;
-import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
-import com.epam.pipeline.utils.StreamUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;

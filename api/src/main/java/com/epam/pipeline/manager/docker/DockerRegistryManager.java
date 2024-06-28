@@ -31,7 +31,6 @@ import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
 import com.epam.pipeline.entity.docker.ToolVersion;
-import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
@@ -47,8 +46,6 @@ import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -134,8 +131,6 @@ public class DockerRegistryManager implements SecuredEntityManager {
     @Autowired
     private CloudFacade cloudFacade;
 
-    @Autowired
-    private PreferenceManager preferenceManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public DockerRegistry create(DockerRegistryVO dockerRegistryVO) {
