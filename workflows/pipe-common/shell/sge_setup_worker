@@ -24,7 +24,7 @@ add_worker() {
     local _MASTER_NAME=$4
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-        ssh -t "$_MASTER_NAME" bash -c "'
+        ssh $CP_SSH_EXTRA_ARGS -t "$_MASTER_NAME" bash -c "'
         # add to the execution host list
         TMPFILE=/tmp/sge.hostname-$HOSTNAME
         echo -e \"hostname $HOSTNAME\nload_scaling NONE\ncomplex_values NONE\nuser_lists NONE\nxuser_lists NONE\nprojects NONE\nxprojects NONE\nusage_scaling NONE\nreport_variables NONE\" > \$TMPFILE
@@ -51,7 +51,7 @@ add_worker() {
         '"
     elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
         cd "$SGE_ROOT"
-        ssh -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
+        ssh $CP_SSH_EXTRA_ARGS -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
         copy_qmaster_configuration $_MASTER_NAME
         run_redhat_installation "worker"
 
