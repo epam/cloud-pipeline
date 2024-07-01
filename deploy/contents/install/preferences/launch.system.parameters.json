@@ -521,5 +521,12 @@
       "description": "Configures a grace period in minutes after which unavailable nodes are terminated.",
       "defaultValue": "30",
       "passToWorkers": true
+    },
+    {
+        "name": "CP_SSH_EXTRA_ARGS",
+        "type": "string",
+        "description": "Configures ssh extra args.",
+        "defaultValue": "-o ConnectTimeout=10 -o ConnectionAttempts=30 -v",
+        "passToWorkers": true
     }
 ]
