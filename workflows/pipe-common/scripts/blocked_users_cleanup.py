@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 
 from pipeline.api import PipelineAPI
 import pipeline.common
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ResilientLogger
 
 
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -184,6 +184,7 @@ def cleanup_users():
     logger = TaskLogger(task='UsersCleanup', inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger())
 
     notify_users = os.getenv('CP_CLEANUP_NOTIFY_USERS', '').split(',')
     subject = os.getenv('CP_CLEANUP_EMAIL_SUBJECT', EMAIL_SUBJECT)
