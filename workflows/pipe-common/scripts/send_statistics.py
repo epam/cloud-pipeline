@@ -22,7 +22,7 @@ from datetime import datetime
 import json
 from enum import Enum
 from pipeline.api import PipelineAPI
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ResilientLogger
 
 
 DATE_FORMAT = "%Y-%m-%d"
@@ -234,6 +234,7 @@ def send_statistics():
     logger = TaskLogger(task='SendStat', inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger())
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--template_path', required=True)

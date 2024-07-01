@@ -30,7 +30,7 @@ import sys
 import time
 
 from pipeline.api import PipelineAPI, APIError
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ExplicitLogger, ResilientLogger
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 from scripts.generate_sge_profiles import generate_sge_profiles, \
@@ -515,6 +515,7 @@ def _get_manager():
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     logger_warning = ExplicitLogger(level='WARNING', inner=logger)
 
