@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,11 @@ public class PipelineRunDockerOperationManager {
     public Long getContainerLayers(final Long id) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         return dockerContainerOperationManager.getContainerLayers(pipelineRun);
+    }
+
+    public Long getContainerSize(final Long id) {
+        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        return dockerContainerOperationManager.getContainerSize(pipelineRun);
     }
 
     /**

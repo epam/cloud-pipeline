@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.tool.ToolSizeLimits;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -113,6 +114,21 @@ public final class PreferenceValidators {
             }
         };
     }
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidToolSizeLimits =
+            isNullOrValidJson(new TypeReference<ToolSizeLimits>() {})
+                    .and((pref, dependencies) -> {
+                        final ToolSizeLimits limits =
+                                JsonMapper.parseData(pref, new TypeReference<ToolSizeLimits>() {});
+                        final List<String> values = Arrays.asList(limits.getCommitToolSoftLimit(),
+                                limits.getCommitToolHardLimit(),
+                                limits.getRunToolSoftLimit(),
+                                limits.getRunToolHardLimit());
+                        if (!values.stream().allMatch(v -> v.trim().matches("[0-9]*([kKmMgGtTpP]?[bB])?"))) {
+                            throw new IllegalArgumentException("Incorrect tool size limit format!");
+                        }
+                        return true;
+                    });
 
     /**
      * A validator, that checks that preference value is a JSON object

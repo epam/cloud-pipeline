@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +152,9 @@ public class DockerContainerOperationManager {
     @Value("${container.layers.script.url}")
     private String containerLayersCountScriptUrl;
 
+    @Value("${container.size.script.url}")
+    private String getSizeCommandUrl;
+
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
 
@@ -265,6 +268,38 @@ public class DockerContainerOperationManager {
             throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
         }
         return layersCount;
+    }
+
+    public long getContainerSize(final PipelineRun run) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final long size;
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+            final String getSizeCommand = DockerContainerLayersCommand.builder()
+                    .runScriptUrl(getSizeCommandUrl)
+                    .containerId(containerId)
+                    .build()
+                    .getCommand();
+            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
+                    getSshPort(run));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
+                final String result = reader.lines().collect(Collectors.joining());
+                size = Long.parseLong(result);
+            }
+            boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_CONTAINER_SIZE_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            log.error(e.getMessage());
+            return -1;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return -1;
+        }
+        return size;
     }
 
     @Async("pauseRunExecutor")

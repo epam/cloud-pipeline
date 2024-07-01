@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
 import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
+import com.epam.pipeline.entity.tool.ToolSizeLimits;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -166,6 +167,12 @@ public class SystemPreferences {
     public static final IntPreference GET_LAYERS_COUNT_TIMEOUT = new IntPreference("get.layers.count.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
     public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
+            COMMIT_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<ToolSizeLimits> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
+            "commit.tool.size.limits", null, new TypeReference<ToolSizeLimits>() {},
+            COMMIT_GROUP, PreferenceValidators.isValidToolSizeLimits);
+
+    public static final IntPreference GET_CONTAINER_SIZE_TIMEOUT = new IntPreference("get.container.size.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
