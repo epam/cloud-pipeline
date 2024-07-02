@@ -245,21 +245,21 @@ public class DockerContainerOperationManager {
         try {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-            final String containerLayersCommand = DockerContainerLayersCommand.builder()
+            final String containerLayersCommand = SimpleDockerContainerCommand.builder()
                     .runScriptUrl(containerLayersCountScriptUrl)
                     .containerId(containerId)
                     .build()
                     .getCommand();
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
                     getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
                 final String result = reader.lines().collect(Collectors.joining());
                 layersCount = Long.parseLong(result);
             }
-            boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
-            Assert.state(isFinished && sshConnection.exitValue() == 0,
-                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
             log.error(e.getMessage());
             throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
@@ -277,21 +277,21 @@ public class DockerContainerOperationManager {
         try {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-            final String getSizeCommand = DockerContainerLayersCommand.builder()
+            final String getSizeCommand = SimpleDockerContainerCommand.builder()
                     .runScriptUrl(getSizeCommandUrl)
                     .containerId(containerId)
                     .build()
                     .getCommand();
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
                     getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_CONTAINER_SIZE_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_SIZE_FAILED, run.getId()));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
                 final String result = reader.lines().collect(Collectors.joining());
                 size = Long.parseLong(result);
             }
-            boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.GET_CONTAINER_SIZE_TIMEOUT), TimeUnit.SECONDS);
-            Assert.state(isFinished && sshConnection.exitValue() == 0,
-                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
             log.error(e.getMessage());
             return -1;
