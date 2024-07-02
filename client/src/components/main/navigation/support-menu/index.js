@@ -34,7 +34,8 @@ class SupportMenu extends React.Component {
     containerClassName: PropTypes.string,
     itemClassName: PropTypes.string,
     containerStyle: PropTypes.object,
-    itemStyle: PropTypes.object
+    itemStyle: PropTypes.object,
+    router: PropTypes.object
   };
 
   state = {
@@ -62,25 +63,33 @@ class SupportMenu extends React.Component {
             } else if (typeof entryValue === 'object') {
               const {
                 icon = DEFAULT_MENU_ITEM.icon,
-                content
+                content,
+                url,
+                target,
+                action,
+                hint = entryName
               } = entryValue;
               return {
                 entryName,
                 icon,
-                content
+                content,
+                url,
+                target,
+                action,
+                hint
               };
             }
             return undefined;
           })
           .filter(Boolean)
-          .filter(o => o.content);
+          .filter(o => o.content || o.url || o.action);
       } else if (typeof supportTemplate === 'string') {
         template = [{
           entryName: DEFAULT_MENU_ITEM.entryName,
           icon: DEFAULT_MENU_ITEM.icon,
           content: uiNavigation.supportTemplate
         }]
-          .filter(o => o.content);
+          .filter(o => o.content || o.url || o.action);
       }
     }
     return template;
@@ -90,24 +99,39 @@ class SupportMenu extends React.Component {
     this.setState({supportModalVisible: visible ? entryName : null});
   };
 
-  renderMenuItem = ({content, icon, entryName}) => {
+  renderMenuItem = (menuItem) => {
+    const {
+      content,
+      icon,
+      entryName,
+      action,
+      url,
+      target,
+      hint
+    } = menuItem || {};
     const {
       itemClassName,
       itemStyle
     } = this.props;
     const {supportModalVisible} = this.state;
-    if (!content || !icon) {
+    if ((!content && !url && !action) || !icon) {
       return null;
     }
     return (
       <div key={entryName}>
         <SupportMenuItem
           className={itemClassName}
+          entryName={entryName}
           style={itemStyle}
           visible={supportModalVisible === entryName}
           onVisibilityChanged={this.handleSupportModalVisible(entryName)}
           content={content}
           icon={icon}
+          action={action}
+          target={target}
+          url={url}
+          hint={hint}
+          router={this.props.router}
         />
       </div>
     );
@@ -129,7 +153,7 @@ class SupportMenu extends React.Component {
           containerClassName
         )}
       >
-        {this.template.map(menuItem => this.renderMenuItem(menuItem))}
+        {this.template.map(this.renderMenuItem)}
       </div>
     );
   }

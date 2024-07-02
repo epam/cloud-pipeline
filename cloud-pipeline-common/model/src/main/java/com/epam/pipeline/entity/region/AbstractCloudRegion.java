@@ -53,6 +53,7 @@ public abstract class AbstractCloudRegion extends AbstractSecuredEntity {
     private String regionCode;
     @JsonProperty(value = "default")
     private boolean isDefault;
+    private String globalDistributionUrl;
     private List<FileShareMount> fileShareMounts = new ArrayList<>();
     public abstract CloudProvider getProvider();
 }

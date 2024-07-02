@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.controller.vo.configuration;
 
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,4 +34,5 @@ public class RunConfigurationWithEntitiesVO extends RunConfigurationVO {
      * Folder id to search for metadata
      */
     private Long folderId;
+    private List<PipelineStartNotificationRequest> notifications;
 }

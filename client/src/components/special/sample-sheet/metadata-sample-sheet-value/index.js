@@ -19,16 +19,14 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {
-  Button,
-  Icon,
   message,
-  Modal,
-  Upload
+  Modal
 } from 'antd';
 import styles from './metadata-sample-sheet-value.css';
 import SampleSheetEditDialog from '../edit-dialog';
-import {isSampleSheetContent, buildEmptySampleSheet} from '../utilities';
+import {buildEmptySampleSheet} from '../utilities';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
+import {base64toString} from '../../../../utils/base64';
 
 function fetchSampleSheetContents (options = {}) {
   return new Promise(async (resolve, reject) => {
@@ -56,7 +54,7 @@ function fetchSampleSheetContents (options = {}) {
           if (!content) {
             throw new Error(request.error || 'Error fetching file content');
           }
-          resolve(atob(content));
+          resolve(base64toString(content));
           return;
         }
       }
@@ -64,19 +62,6 @@ function fetchSampleSheetContents (options = {}) {
     } catch (e) {
       reject(e);
     }
-  });
-}
-
-function readFileContents (file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsText(file, 'UTF-8');
-    reader.onload = function (evt) {
-      resolve(evt.target.result);
-    };
-    reader.onerror = function (evt) {
-      reject(new Error('Error reading file content'));
-    };
   });
 }
 
@@ -90,13 +75,13 @@ class MetadataSampleSheetValue extends React.Component {
 
   get sampleSheetAvailable () {
     const {value} = this.props;
-    return !!value;
+    return !!value && typeof value === 'string';
   }
 
   get sampleSheetFileName () {
     const {value} = this.props;
-    if (value) {
-      return value.split('/').pop();
+    if (value && typeof value === 'string') {
+      return value.split(/[/\\]/).pop();
     }
     return 'SampleSheet.csv';
   }
@@ -160,75 +145,35 @@ class MetadataSampleSheetValue extends React.Component {
     }
   };
 
-  onUpload = (file) => {
-    readFileContents(file)
-      .then((contents) => {
-        if (isSampleSheetContent(contents)) {
-          const {onChange} = this.props;
-          if (onChange) {
-            onChange(contents);
-          }
-        } else {
-          throw new Error(`${file.name} is not a valid SampleSheet`);
-        }
-      })
-      .catch(e => message.error(e.message, 5));
-    return false;
-  };
-
   renderEditActions () {
-    return [
-      (
-        <Button
-          key="edit"
-          className={styles.button}
-          size="small"
-          onClick={this.onEditClick}
-          style={{width: 78}}
-        >
-          <Icon type="edit" /> {this.sampleSheetAvailable ? 'Edit' : 'Create'}
-        </Button>
-      ),
-      (
-        <Upload
-          fileList={[]}
-          key="upload"
-          beforeUpload={this.onUpload}
-          multiple={false}
-        >
-          <Button
-            key="edit"
-            className={styles.button}
-            size="small"
-          >
-            <Icon type="upload" /> Upload
-          </Button>
-        </Upload>
-      )
-    ];
-  }
-
-  renderRemoveAction () {
     if (this.sampleSheetAvailable) {
       return (
-        <Button
-          key="delete"
-          className={styles.button}
-          size="small"
-          type="danger"
-          onClick={this.onRemoveClick}
+        <a
+          onClick={this.onEditClick}
         >
-          <Icon type="delete" /> Remove
-        </Button>
+          {this.sampleSheetFileName}
+        </a>
       );
     }
-    return null;
+    return (
+      <div
+        className={
+          classNames(
+            styles.hint,
+            'cp-text-not-important'
+          )
+        }
+      >
+        Double click to create or upload sample sheet
+      </div>
+    );
   }
 
   render () {
     const {
       className,
-      style
+      style,
+      children
     } = this.props;
     const {
       editDialogVisible,
@@ -246,18 +191,18 @@ class MetadataSampleSheetValue extends React.Component {
         onClick={e => e.stopPropagation()}
         onMouseDown={e => e.stopPropagation()}
         onMouseUp={e => e.stopPropagation()}
+        onDoubleClick={this.sampleSheetAvailable ? undefined : this.onEditClick}
       >
-        <div style={{marginRight: 5}}>
-          {this.renderEditActions()}
-        </div>
-        <div>
-          {this.renderRemoveAction()}
-        </div>
+        {children}
+        {this.renderEditActions()}
         <SampleSheetEditDialog
+          title={this.sampleSheetAvailable ? 'Edit SampleSheet' : 'Create SampleSheet'}
           content={sampleSheetContent}
           visible={editDialogVisible}
           onClose={this.onCloseEditDialog}
           onSave={this.onChangeSampleSheetContent}
+          removable={this.sampleSheetAvailable}
+          onRemove={this.onRemoveClick}
         />
       </div>
     );
@@ -269,7 +214,8 @@ MetadataSampleSheetValue.propTypes = {
   style: PropTypes.object,
   value: PropTypes.string,
   onRemove: PropTypes.func,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  children: PropTypes.node
 };
 
 export default MetadataSampleSheetValue;

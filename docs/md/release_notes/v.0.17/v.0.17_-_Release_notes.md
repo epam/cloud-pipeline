@@ -2,19 +2,28 @@
 
 - [Billing reports enhancements](#billing-reports-enhancements)
 - [System dictionaries](#system-dictionaries)
+- [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
 - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
-- [Export custom user's attributes](#export-custom-users-attributes)
-- [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+- [User management enhancements](#user-management-enhancements)
+    - [Allowed instance count](#allowed-instance-count)
+    - [Export custom user's attributes](#export-custom-users-attributes)
+    - [User management and export in read-only mode](#user-management-and-export-in-read-only-mode)
+    - [Batch users import](#batch-users-import)
+    - [User states](#user-states)
+    - [Usage report](#usage-report)
+    - [GUI impersonation](#gui-impersonation)
 - ["All pipelines" and "All storages" repositories](#all-pipelines-and-all-storages-repositories)
+- [Sensitive storages](#sensitive-storages)
+- [Versioned storages](#versioned-storages)
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
+- [FS quotas](#fs-quotas)
 - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
 - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
-- [Batch users import](#batch-users-import)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
 - [Updates of Metadata object](#updates-of-metadata-object)
 - [Custom node images](#custom-node-images)
@@ -25,8 +34,18 @@
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
 - [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
 - [NAT gateway](#nat-gateway)
+- [Custom Run capabilities](#custom-run-capabilities)
+- [Storage lifecycle management](#storage-lifecycle-management)
+- [Image history](#image-history)
+- [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
+- [Data access audit](#data-access-audit)
+- [System Jobs](#system-jobs)
+- [Cluster run usage](#cluster-run-usage)
+- [Cluster run estimation price](#cluster-run-estimation-price)
+- [Terminal view](#terminal-view)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
+- [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
 
 ***
 
@@ -119,6 +138,67 @@ In **`v0.17`**, it was implemented - the user can view **Billing reports** with 
 - Reports (charts and tables) will be rebuilt for the configured custom date range:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_08.png)
 
+### Spendings for old versions of object storages
+
+As object storages supports versioning, it is convenient to view spendings for the old (previous) versions of the storage data. Old versions include all non-last (previous) versions of the versioning object storage.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.
+
+At the summary chart, new dashed lines of the same colors (as for current and previous periods) appeared - these lines show summary spendings on the data usage for all _old versions_ of object storages:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_14.png)
+
+On all other object storage charts, bars are presented as stacks of _current version_ spendings / _old versions_ spendings. _Current version_ spendings are shown with solid filling, _old versions_ spendings are shown without filling, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_16.png)
+
+Also now, the detailed spendings table for object storages shows the info for spendings/usage in the format `total spendings/usage for all versions` / `spendings/usage for old versions only`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_21.png)  
+    Breakdown by versions is shown in the CSV report export as well.
+
+### Spendings for object storages' archive layers
+
+As object storages supports archiving data into different archive tiers (layers), it is convenient to view spendings separately for each layer.  
+From the current version, the **Object storages** report supports the displaying of the corresponding related information.  
+This information is shown on the separate chart - bar chart with division to different tiers (archive types). This chart does not contain any information for _previous_ period. Only layers used for data storing in the _current_ period according to selected filters are shown. Up to 4 layers can be here: `Standard`, `Glacier`, `Glacier IR`, `Deep Archive`.  
+Example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_17.png)
+
+Object storage layers chart can show the information as storages usage costs - in `$` or as average storages volumes - in `Gb`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_18.png)
+
+If data in the storage is storing in different tiers (archive types), this can be viewed in a tooltip of other object storages charts - there will be a division of spendings by the used tiers, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_19.png)  
+Breakdown by archive layers is shown in the CSV report export as well.
+
+User can select one of the object storage layers - by click it on this new chart.  
+In this case, all charts and tables will be updated - only storages, that contain files in the selected layer type, will be shown in forms.  
+Also, shown spendings/data volume will be related only to files in the selected layer, not for the whole storage(s) or other layers.  
+For example, `Glasier IR` was selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_20.png)
+
+### Spendings in runs cost layers
+
+From the current version, the **Compute instances** report (and sub-reports - for CPU/GPU) supports the displaying of the runs cost division into layers:
+
+- `Compute` - cost of compute instances used in runs
+- `Disk` - cost of EBS drives connected to runs during their performing
+
+This information is shown on the new **_Cost details_** chart - bar chart with division to these layers. This chart does not contain any information for _previous_ period - only cost of runs' layers in the _current_ period according to selected filters are shown.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_22.png)
+
+Additionally, information about cost division are shown in details tables under charts **_Instance types_**, **_Pipelines_**, **_Tools_** - as separate columns, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_23.png)
+
+User can select one of the runs cost layers - by click it in the **_Cost details_** chart.  
+In this case:
+
+- summary runs cost chart will be updated - only summary spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
+- charts **_Instance types_**, **_Pipelines_**, **_Tools_** will be updated - only spendings, that correspond to the selected layer (`Compute` or `Disk`), will be shown
+- data in tables under charts will not be changed, but the sorting column will be set the same as the selected layer
+
+For example, if the `Compute` layer of the runs cost is selected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_BillingEnhancements_24.png)
+
 ### Displaying different user's attributes in the Billing reports
 
 Previously, in all the **Billing reports**, info about users was displayed as user ID only. In some cases, it would be more convenient to display user names or emails - to take a more readable form.
@@ -129,15 +209,15 @@ It defines which user's attribute shall be used to display the users in the **Bi
 
 Possible values for described preference: _`userName`_, _`FirstName`_, _`LastName`_, etc.
 
-### Export reports in `csv` from any Billing page
+### Export reports in `CSV` from any Billing page
 
-Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `*.csv` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `*.png` image format only.
+Previously, **Cloud Pipeline** allowed to export the **Billing reports** data into the `CSV` format via the "General" section only. But in separate sections - "Storages" and "Compute Instances" - the user could export data as `PNG` image format only.
 
-Currently, `*.csv` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
+Currently, `CSV` export has been added to all the reports sections ("Storages"/"Compute instances" and all sub-sections):
 
 - reports display the same structure as in the GUI - the top 10 records of the corresponding entities (e.g. storages or instances)
 - for the reports, which contain more than one table - all the tables are exported one after another
-- export in `*.csv` from the "General" page remains the same
+- export in `CSV` from the "General" page remains the same
 
 Example of an export from the "CPU" page:
 
@@ -146,10 +226,10 @@ Example of an export from the "CPU" page:
 
 ### Breakdown the billing reports by month
 
-**Cloud Pipeline** allows exporting billing reports in the `*.csv`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
+**Cloud Pipeline** allows exporting billing reports in the `CSV`. Previously, the values were shown as aggregates for the _whole_ selected period. In some cases, it is more convenient to change this view to a breakdown by month.
 
 In the current version, this ability is implemented.  
-Now, if any period - longer than a month is selected (including a `custom` period), the `*.csv`-report contains an aggregate for each month of that period.  
+Now, if any period - longer than a month is selected (including a `custom` period), the `CSV`-report contains an aggregate for each month of that period.  
 The whole period summary is being included as well (as previously).
 
 Example of the report for a custom period:  
@@ -194,6 +274,42 @@ In the GUI, such connection is being handled in the following way:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemDictionaries_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-dictionaries).
+
+## Cloud Data application
+
+Previously, there were several ways to manage data between local workstation and Cloud data storages, including CLI, GUI, mounting data storages as a network drives, and others.  
+
+In the current version, a new Platform capability was implemented that provides a simple and convenient way to manage files, copy/move them between Cloud data storage and local workstation or even FTP-server.  
+This introduces via the new separate application that can be downloaded from the Cloud Pipeline Platform and launched at the local machine - **Cloud Data** application.
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_01.png)
+
+Cloud Data application allows you manage files/folders as in a file commander.  
+Main application form contains two panels (left and right).  
+In each panel, one of the following sources can be opened: **local workstation** / **FTP server** / **Cloud data** (datastorages).
+
+- the **_local_** content shows files and folders of the local workstation (by default, _home_ user's directory). Navigation between and inside folders is available:  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_02.png)
+- the **_Cloud data_** content includes:
+    - all FS mounts from the Cloud Pipeline environment - to which current user has permissions.  
+      They are shown as simple folders
+    - those object storages from the Cloud Pipeline environment - to which current user has permissions and "File system access" was requested.  
+      They are shown with storage icon
+    - Navigation between and inside folders/storages is available  
+   ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_03.png)
+- the **_ftp_** content shows files and folders of the FTP/SFTP server. Navigation between and inside folders is available:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_04.png)
+
+The base scenario of the application usage:
+
+1. User selects desired source and destination in panels, e.g. FTP server and object datastorage correspondingly:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_05.png)
+2. Users selects desired files/folders in the source and clicks the data management button in the source panel - according to the action user wants to perform, e.g. to copy a file:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_06.png)
+3. Action will be performed, content of the panels will be updated:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_CloudDataApp_07.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.12._Cloud_Data_app.md).
 
 ## Sending of email notifications enhancements
 
@@ -266,6 +382,29 @@ If the node type is specified in this preference, listed above notifications wil
 This preference allows a comma-separated list of the node types and wildcards, e.g.:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_07.png)
 
+### Push notifications
+
+Previously, Cloud Pipeline platform sent notifications to users via email only. For many cases it would be useful to show such notifications in the GUI as well. In the current version, such ability was implemented.
+
+Now, all email notifications, that are sending by the platform, are also duplicated as push notifications. This allows to view notifications right in the Cloud Pipeline GUI.  
+Push notifications do not require additional configuring - they are fully the same as corresponding email notifications, i.e. have the same header, content, recepients list, frequency and trigger of sending, etc.
+
+Once any system event is occurred and its trigger for sending email notification has fired, email will be sent to the configured recipients. Simultaneously, the push notification (with the same subject and body as in the email) will be "sent" to the same recipients, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_01.png)
+
+Click it to view the whole notification - it will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_02.png)
+
+Additionally, a new section appeared in the main menu - **Notifications**.  
+It allows to view all push notifications/emails sent to the current user, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_03.png)
+
+User can switch notifications lists - to display only new "unread" notifications or only "read" ones.  
+To view the notification full details, user can click it - notification will be opened in a pop-up:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_PushNotifications_04.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.9._Change_email_notification.md#push-notifications).
+
 ## Allowed price types for a cluster master node
 
 Previously, **Cloud Pipeline** allowed the user to choose whether the cluster master node be a `spot` or `on-demand` instance.  
@@ -299,7 +438,37 @@ For example:
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
 
-## Export custom user's attributes
+## User management enhancements
+
+### Allowed instance count
+
+Sometimes users' scripts may spawn hundreds of machines without a real need.  
+This could lead to different bugs on the Platform.
+
+To prevent such situation, a new setting - **Allowed instance max count** - was added to the user's options. It allows to restrict the number of instances a user can run at the same time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_1.png)
+
+Behavior is configured by the following way: for example, if this setting for the user is specified to 5 - they can launch only 5 jobs at a maximum. This includes worker nodes of the clusters.  
+
+If the user tries to launch a job, but it exceeds a current limit (e.g. limit is 5 and user starts a new instance which is going to be a 6th job), GUI will warn the user before submitting a job:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_2.png)  
+And if the user confirms a run operation - it will be rejected:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_3.png)  
+
+Even if the user will try to start a new job via `pipe` CLI - it will be rejected as well, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_4.png)
+
+Such restrictions could be set not only for a user, but on another levels too (in descending order of priority):  
+
+- **User-level** - i.e. specified for a user. This overrides any other limit for a particular user. See details [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#allowed-instance-count).
+- **User group level** - i.e. specified for a group/role. Count of jobs of each member of the group/role is summed and compared to this parameter. If a number of jobs exceeds a limit - the job submission is rejected. This level is configured via the **Allowed instance max count** setting for a group/role. See details [here](../../manual/12_Manage_Settings/12.6._Edit_a_group_role.md#allowed-instance-count).
+- globally via the system preference **`launch.max.runs.user.global`** - it can be used to set a global default restriction for all the users. I.e. if it set to 5, each Platform user can launch 5 jobs at a maximum.
+
+Additionally, a new command was added to `pipe` CLI that allows to show the count of instances running by the user at the moment, and also all possible restrictions to the allowed count of instances to launch - `pipe users instances`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_AllowedInstanceCount_5.png)  
+See details [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#instances-usage).
+
+### Export custom user's attributes
 
 Previously, user's metadata attributes couldn't be exported in an automatic way.
 
@@ -315,7 +484,7 @@ Now, before the users export, there is the ability to select which user's metada
 
 For more details about users export see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#export-users).
 
-## User management and export in read-only mode
+### User management and export in read-only mode
 
 Previously, only admins had access to the users info/metadata.
 In the current version, a new "built-in" role **_ROLE\_USER\_READER_** was added.  
@@ -328,6 +497,130 @@ This role allows:
     - export users list - **including** users' metadata
 
 For more details about user roles see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#roles).
+
+### Batch users import
+
+Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
+
+To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
+
+`CSV` format of the file for the batch import:
+
+``` csv
+UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
+<user1>,<group1>,<Value1>,<Value2>,<ValueN>
+<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
+<user3>,,<Value3>,<Value4>,<ValueN>
+<user4>,<group4>,,,
+```
+
+Where:
+
+- **UserName** - contains the user name
+- **Groups** - contains the "permission" groups, which shall be assigned to the user
+- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
+
+The import process takes a number of inputs:
+
+- `CSV` file
+- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
+    - "`create-user`"
+    - "`create-group`"
+    - "`create-<ATTRIBUTE_ITEM_NAME>`"
+
+#### Import users via GUI
+
+Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
+
+1. Click the "**Import users**" button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
+2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
+3. After the options are selected, click the **IMPORT** button, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
+4. Once the import is done - you can review the import results:  
+    - Users and groups have been created
+    - Users were assigned to the specified groups
+    - Attributes were assigned to the users as well
+
+For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
+
+#### Import users via CLI
+
+Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
+
+``` bash
+pipe users import [OPTIONS] FILE_PATH
+```
+
+Where **FILE_PATH** - defines a path to the `CSV` file with users list
+
+Possible options:
+
+- **`-cu`** / **`--create-user`** - allows the creation of new users
+- **`-cg`** / **`--create-group`** - allows the creation of new groups
+- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
+
+Results of the command execution are similar to the users import operation via GUI.
+
+For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
+
+### User states
+
+Previously, admins could monitor Platform usage, for example, by list of **ACTIVE RUNS** or via **CLUSTER STATE** pages.  
+But for some cases, it can be useful to know which users do utilize the Platform in the current moment.
+
+In the current version, the displaying of user states in the "User management" system tab was implemented - now, that state is shown as an circle icon near the user name:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_1.png)
+
+Possible states:
+
+- _Online_ (green circle) - for users who are logged in and use the Platform in the moment
+- _Offline_ (blank white circle) - for users who are not logged in at the moment/do not use the Platform for some time
+
+By hover over the _Offline_ icons - admin can know when the specific user has utilized the Platform the last time, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserStates_2.png)
+
+### Usage report
+
+It is convenient to have the ability to view Platform statistics of users activity.  
+E.g. when creating different schedulers or node pools and info about number of online users can be helpful.
+
+For that, the **Usage report** subtab, showing the Platform's statistics of users activity, was added to the "User Management" system tab.  
+At this subtab, the summary info about total count of Platform users that were online at different time moments during the certain period is displayed in a chart form:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UsageReport_1.png)
+
+User can configure the showing chart by the following ways:
+
+- select the type of period of view - day (_by default_) or month
+- select to display data for a specific day/month from the calendar
+- restrict the displayed data for specific user(s) or user group(s)/role(s) only
+
+For more details see [here](../../manual/12_Manage_Settings/12._Manage_Settings.md#usage-report).
+
+### GUI impersonation
+
+While performing administrating, it is common to help users resolve issues, which can't be reproduced from the administrative accounts.  
+This requires to perform operations on the users' behalf.  
+
+To assist with such tasks, **Cloud Pipeline** offers "Impersonation" feature. It allows admins to login as a selected user into the **Cloud Pipeline** GUI and have the same permissions/level of access as the user.
+
+To start the impersonation, admin shall:
+
+- Open the **Users** subtab of the "User Management" section of the system-level settings
+- Load the user profile on whom behalf you are going to impersonate and click the **Impersonate** button in the top-right corner, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_1.png)
+- Platform GUI will be reloaded using the selected user:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_Impersonation_2.png)
+
+While in the "Impersonation" mode, the following changes happen to the GUI:
+
+- Main menu turns orange, indicating that the impersonation mode is _ON_
+- **Logout** button is being changed to the **Stop impersonation** button
+
+To stop the "Impersonation" mode, user shall click the **Stop impersonation** button.
+
+For more details see [here](../../manual/12_Manage_Settings/12.4._Edit_delete_a_user.md#gui-impersonation).
 
 ## "All pipelines" and "All storages" repositories
 
@@ -348,6 +641,116 @@ In the current version, such ability was implemented:
     - _additionally_ for storages, **Cloud Region**/**Provider** icons for multi-provider deployments
 - if the user clicks any object in the list - its regular page is being opened
 - for each "repository", there is a search field for the quick search over objects list
+
+## Sensitive storages
+
+Previously, Cloud Pipeline platform allows performing upload/download operations for any authorized data storage.  
+But certain storages may contain sensitive data, which shall not be copied anywhere outside that storage.
+
+For storing such data, special "sensitive" storages are implemented.  
+Sensitive data from that storages can be used for calculations or different other jobs, but this data cannot be copy/download to another regular storage/local machine/via the Internet etc.  
+Viewing of the sensitive data is also partially restricted.
+
+Sensitive storage is being created similar to general object storage, user only should tick the corresponding checkbox:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_1.png)
+
+Via the GUI, the sensitive storage looks similar to the regular object storage, but there are some differences (even for admin/storage **_OWNER_**):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_3.png)  
+
+I.e. files/folders in the sensitive storage can be created/renamed/removed but can't be downloaded/viewed or edited by any user.
+
+Sensitive storages can be mounted to the run. In this case, the run will become _sensitive_ too.  
+In sensitive runs, all storages selected for the mounting including sensitive are being mounted in **readonly** mode to exclude any copy/move operations between storages.
+
+Files from the sensitive storages can be viewed **_inside_** the sensitive run and also copied into the inner instance disk, but not to any other storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_4.png)
+
+Files from the sensitive storages can't be viewed **_outside_** the sensitive run or copied/moved anywhere (for example, when using not the web-terminal version of `pipe` SSH):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SensitiveStorages_5.png)
+
+For more details and restrictions that are imposed by using of sensitive storages see [here](../../manual/08_Manage_Data_Storage/8.11._Sensitive_storages.md).
+
+## Versioned storages
+
+In some cases, users want to have a full-fledged system of the revision control of their stored data - to view revisions, history of changes, diffs between revisions.  
+So far, for separate storages types (e.g. `AWS` s3 buckets), there is the ability to enable the versioning option. But it is not enough. Such versioning allows to manage the versions of the certain file, not the revisions of the full storage, which revision can contain changes of several files or folders.  
+For the needs of full version control of the storing data, there was implemented a special storage type - **Versioned storage**.
+
+These storages are GitLab repositories under the hood, all changes performed in their data are versioned. Users can view the history of changes, diffs, etc.  
+
+Versioned storages are created via the special menu:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_01.png)
+
+The view of the versioned storage is similar to regular data storage with some differences:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_02.png)
+
+For each file/folder in the storage, additional info is displayed:
+
+- _Revision_ - latest revision (SHA-1 hash of the latest commit) touched that file/folder
+- _Date changed_ - date and time of the latest commit touched that file/folder
+- _Author_ - user name who performed the latest commit touched that file/folder
+- _Message_ - message of the latest commit touched that file/folder
+
+Moreover, there are extra controls for this storage type:
+
+- **RUN** button - allows to run the tool with cloning of the opened versioned storage into the instance
+- **Generate report** button - allows to configure and then download the report of the storage usage (commit history, diffs, etc.) as the Microsoft Word document (`docx` format)
+- **Show history** button - allows to open the panel with commit history info of the current versioned storage or selected folder
+
+Each change in a such storage - is a commit by the fact, therefore each change has its related comment message - explicit or automatic created:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_03.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_04.png)
+
+One of the important advantages of versioned storages in condition with regular object storages - ability to view commit history and all changes that were performed with the data in details.  
+Users can view the commit history of the file in the versioned storage - i.e. history of all commits that touched this file, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_06.png)
+
+Using the commit history of the file, users can:
+
+- revert the content of the file to the selected commit
+- view/download revert version of the file corresponding to the specific commit
+- view diffs between the content of the specific file in the selected commit and in the previous commit, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_07.png)
+
+Besides that, users can view the commit history of the folder or the whole versioned storage - i.e. history of all changes touched files inside that folder or its subfolders, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_08.png)  
+Using the commit history of the folder, users can view diffs between the content of the specific folder in the selected commit and in the previous commit.
+
+Versioned storages can be also mounted during the runs, data can be used for the computations and results can be comitted back to such storages - with all the benefits of a version control system.
+
+For that, new management controls were added to the menu of the active runs:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_09.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_10.png)
+
+Via this controls, users can:
+
+- clone the versioned storage(s) to the existing running instance
+- check differences between cloned and current changed versions of the versioned storage
+- save (commit) changes performed in the cloned version of the storage during the run
+- checkout revision of the cloned storage in the run
+- resolve conflicts appeared during the save or checkout operation
+
+The main scenario of using versioned storage during the run looks like:
+
+- user clones selected versioned storage to the run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_11.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_12.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_13.png)
+- cloned versioned storages are available inside the run by the path `/versioned-data/<storage_name>/`:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_14.png)
+- user works with the data, performed changes can be viewed at any moment, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_15.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_16.png)
+- user saves performed changes (i.e. creates a new commit):  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_18.png)
+- saved changes become available in the origin versioned storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_19.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_VersionedStorages_20.png)
+
+For more details about versioned storages and operations with them see [here](../../manual/08_Manage_Data_Storage/8.13._Versioned_storages.md#813-versioned-storages).
 
 ## Updates of "Limit mounts" for object storages
 
@@ -425,11 +828,72 @@ If the user starts a job in this time (_pool's schedule(s)_) and the instance re
 
 For more details and examples see [here](../../manual/09_Manage_Cluster_nodes/9.1._Hot_node_pools.md).
 
+## FS quotas
+
+In some cases, users may store lots of extra files that are not needed more for them in FS storages.  
+Such amount of extra files may lead to unnecessary storage costs.  
+To prevent extra spending in this case, in the current version a new ability was implemented - FS quotas.
+
+There is a feature that allows admins to configure quota(s) to the FS storage volume that user can occupy.
+On exceeding such quota(s), different actions can be applied - e.g., just user notifying or fully read-only mode for the storage.
+
+This allows to minimize the shared filesystem costs by limiting the amount of data being stored in them and to notify the users/admins when FS storage is running out of the specific volume.
+
+To configure notifications/quota settings for the storage, admin shall:
+
+- click the **Configure notifications** hyperlink in the Attributes panel of the storage:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_01.png)
+- in the appeared pop-up, specify the username(s) or a groupname(s) in the **Recipients** input to choose who will get the FS quota notifications via emails and push notifications, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_02.png)
+- then click the **Add notification** to configure rules/thresholds:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_03.png)
+- Put a threshold in `Gb` or `%` of the total volume and choose which action shall be performed when that threshold is reached. The following actions can be taken by the platform:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_04.png)  
+    - _Send email_ - just notify the recipients that a quota has been reached (notification will be resent each hour)
+    - _Disable mount_ - used to let the users cleanup the data:  
+        - GUI will still allow to perform the modification of this storage (`read-write` mode )
+        - In existing nodes (launched runs), FS storage mount will be switched to a `read-only` mode (if it was mounted previously)
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+    - _Make read-only_ - used to stop any data activities from the users, only admins can cleanup the data per a request:  
+        - GUI will show this FS storage in a `read-only` mode
+        - Existing nodes (launched runs) will turn this mounted FS storage in a `read-only` mode as well
+        - This FS storage will be mounted in a `read-only` mode to the new launched compute nodes
+- The notification/quota rules can be combined in any form. E.g., the following example sets three levels of the thresholds. Each level notifies the users about the threshold exceeding and also introduces a new restriction:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_05.png)
+
+For example, if admin will configure notifications/quotas for the storage as described above:
+
+- when user(s) will create/upload some files in the storage and summary FS size will exceed 5 Gb threshold - only notifications will be sent to recipients
+- when user(s) will create/upload some more files in the storage and summary FS size will exceed 10 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount becomes `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_06.png)
+    - in GUI:  
+        - permissions will not be changed. Write operations can be performed, according to the permissions
+        - "**Warning**" icon will be displayed in the storage page. It will show `MOUNT DISABLED` state:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_07.png)
+        - Storage size will be more than 10 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_08.png)
+- when user(s) will create/upload some more files in the storage (e.g. via GUI) and summary FS size will exceed 20 Gb threshold:  
+    - for active jobs (that were already launched), filesystem mount will remain `read-only` and users will not be able to perform any modification
+    - for new jobs, filesystem will be mounted as `read-only`
+    - in GUI:  
+        - storage will become `read-only`. User will not be able to perform any modification to the filesystem
+        - "Warning" icon will be still displayed. It will show `READ ONLY` state  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_09.png)
+        - Storage size will be more than 20 Gb:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_FSquotas_10.png)
+    
+Please note, these restrictions will be applied to "general" users only.  
+Admins will not be affected by the restrictions. Even if the storage is in `read-only` state - they can perform _READ_ and _WRITE_ operations.
+
+For more details about FS quotas, their settings and options see [here](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md#fs-quotas).
+
 ## Export cluster utilization in Excel format
 
-Previously, users could export **Cluster Node Monitor** reports only in **`csv`** format.
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
 
-From now, the ability to export these reports in **`xls`** format is implemented.  
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
 Users can choose the format of the report before the download:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
 
@@ -513,73 +977,6 @@ The newly created storage is being set as a "default" storage in the user's prof
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_HomeStorage_03.png)
 
 For more details and examples see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#home-storage-for-each-user).
-
-## Batch users import
-
-Previously, **Cloud Pipeline** allowed creating users only one-by-one via the GUI. If a number of users shall be created - it could be quite complicated to perform those operation multiple times.
-
-To address this, a new feature was implemented in the current version - now, admins can import users from a `CSV` file using GUI and CLI.
-
-`CSV` format of the file for the batch import:
-
-``` csv
-UserName,Groups,<AttributeItem1>,<AttributeItem2>,<AttributeItemN>
-<user1>,<group1>,<Value1>,<Value2>,<ValueN>
-<user2>,<group2>|<group3>,<Value3>,<Value4>,<ValueN>
-<user3>,,<Value3>,<Value4>,<ValueN>
-<user4>,<group4>,,,
-```
-
-Where:
-
-- **UserName** - contains the user name
-- **Groups** - contains the "permission" groups, which shall be assigned to the user
-- **`<AttributeItem1>`**, **`<AttributeItem2>`** ... **`<AttributeItemN>`** - set of optional columns, which correspond to the user attributes (they could be existing or new)
-
-The import process takes a number of inputs:
-
-- `CSV` file
-- _Users/Groups/Attributes creation options_, which control if a corresponding object shall be created if not found in the database. If a creation option is not specified - the object creation won't happen:
-    - "`create-user`"
-    - "`create-group`"
-    - "`create-<ATTRIBUTE_ITEM_NAME>`"
-
-### Import users via GUI
-
-Import users from a `CSV` file via GUI can be performed at the **USER MANAGEMENT** section of the **System Settings**.
-
-1. Click the "**Import users**" button:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_1.png)
-2. Select a `CSV` file for the import. The GUI will show the creation options selection, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_2.png)
-3. After the options are selected, click the **IMPORT** button, e.g.:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_UserImport_3.png)
-4. Once the import is done - you can review the import results:  
-    - Users and groups have been created
-    - Users were assigned to the specified groups
-    - Attributes were assigned to the users as well
-
-For more details and examples see [here](../../manual/12_Manage_Settings/12.3._Create_a_new_user.md#users-batch-import).
-
-### Import users via CLI
-
-Also in the current version, a new `pipe` command was implemented to import users from a `CSV` file via CLI:
-
-``` bash
-pipe users import [OPTIONS] FILE_PATH
-```
-
-Where **FILE_PATH** - defines a path to the `CSV` file with users list
-
-Possible options:
-
-- **`-cu`** / **`--create-user`** - allows the creation of new users
-- **`-cg`** / **`--create-group`** - allows the creation of new groups
-- **`-cm`** / **`--create-metadata` `<KEY>`** - allows the creation of a new metadata with specified key
-
-Results of the command execution are similar to the users import operation via GUI.
-
-For more details and examples see [here](../../manual/14_CLI/14.9._User_management_via_CLI.md#batch-import).
 
 ## SSH tunnel to the running compute instance
 
@@ -679,6 +1076,23 @@ In some cases, it could be convenient not to specify entity ID during import. Th
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_03.png)
 
 > **_Note_**: IDs still should be unique
+
+### Ability to add SampleSet item via GUI
+
+Now, users may create SampleSets or other "Container-like" entities from the GUI (previously it was possible via the `CSV` import only).  
+This feature could be useful, if the Samples were imported using the IDs autogeneration, as it could be complicated to grab those IDs and copy to the `CSV`.
+
+To create a new SampleSet:
+
+- Click the **+ Add instance** button in the Metadata section and choose the _SampleSet_ instance type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_16.png)
+- Provide the information for the new SampleSet and click the **Browse** button to select a list of Samples, which will be associated with the creating SampleSet:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_17.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_18.png)
+- After creation, the new SampleSet will appear in the corresponding metadata class:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_MetadataEnhancements_19.png)
+
+See details [here](../../manual/05_Manage_Metadata/5.1._Add_Delete_metadata_items.md#add-sampleset-item).
 
 ### Preselect instances for a rerun
 
@@ -873,7 +1287,7 @@ See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#r
 Previously, if the **Cloud Pipeline** Platform was being deployed in some private subnet, it could be quite difficult for the admin to expose a network endpoint for some service to use in a Platform. This required manual execution of a number of tasks on the Platform Core instance and, accordingly, might lead to errors.  
 To resolve this, in the current version, the convenient way to manage network routes (creating/removing) from the GUI was implemented.
 
-For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the System settings.  
+For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the **System Settings**.  
 The **NAT gateway** subtab allows to configure network routes:  
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_01.png)
 
@@ -889,6 +1303,249 @@ To add a route, admin shall:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_05.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.14._NAT_gateway.md).
+
+## Custom Run capabilities
+
+Previously, users might select only predefined "system" **Run capabilities** for a job.  
+In some cases or deployments, these capabilities may not be enough.  
+In the current version, the ability for admins to add custom **Run capabilities** was implemented. Use them for a job/tool run all users can.
+
+Managing of the custom capabilities is being performed via the new system preference **`launch.capabilities`**.  
+This preference contains an array of capability descriptions in `JSON`-format and has the following structure:
+
+``` json
+{
+  "<capability_name_1>": {
+    "description": "<Description of the capability>",
+    "commands": [
+        "<command_1>",
+        "<command_2>",
+        ...
+    ],
+    "params": {
+        "<parameter_1>": "<value_1>",
+        "<parameter_2>": "<value_2>",
+        ...
+    }
+  },
+  "<capability_name_2": {
+      ...
+  },
+  ...
+}
+```
+
+For example:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_1.png)
+
+Saved capability then can be used for a job/tool:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_RunCapabilities_3.png)
+
+For more details see [here](../../manual/10_Manage_Tools/10.9._Run_capabilities.md#custom-capabilities).
+
+## Storage lifecycle management
+
+Previously, users had the simplified opportunity to configure the lifecycle of data in storages - via specifying STS/LTS durations in the storage settings.  
+This way is rather primitive and does not allow to fine-tune data archiving/restoring.
+
+In the current version, the ability to configure datastorage lifecycle in details was implemented.  
+This new option allows to perform the automatical data transition from standard storage to different types of archival storages by occurance of a certain event and restore that data back as well if needed.  
+Previous functionality (STS/LTS durations) was excluded.  
+For the new one, an additional tab was included to the storage settings - **Transition rules**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_01.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_02.png)
+
+New implemented functionality includes abilities:
+
+- automatic data archiving/removing according to specified transition rule(s)
+- restoring of previously archived data for the specified period
+
+_Data archiving_ is provided by configurable set of transition rules for each separate storage. Each rule defines which files, when (specific date or by the event) and where (different types of archive) shall be automatically transferred:
+
+- firstly, user creates a rule for a storage - specifying the path and glob pattern for a file(s) name(s) which shall be transferred, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_03.png)  
+    User can select to transfer files one-by-one or in bulk-mode by the first/last appeared file in a group.  
+    Also, an additional condition for the files transition can be configured.
+- then user selects an archive class as the data destination. Here, several destinations can be added (for different dates), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_04.png)  
+    **_Note_**: archive classes depend on the Cloud Provider
+- then user defines the event by which the data shall be transferred - after certain period after the file(s) creation or at the specific date:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_05.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_06.png)
+- also, notifications can be configured for the rule events (optionally):  
+    - recipients list
+    - notification title and text
+    - ability to specify a delay for data transition - user that receive such notification will have the ability to prolong (delay) transition for some period  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_07.png)
+- created rule can be found in the **Transition rules** tab of the storage settings:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_08.png)
+- after the rule is created, it starts to work. If file matches the condition of any storage rule - it will be transferred to some archive or removed (if `Deletion` is set as data destination). Transferred file becomes disabled for changing/renaming from the GUI/CLI. At the GUI, near such file a label appears that corresponds to the transition destination, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_09.png)
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#archiving).
+
+_Data restoring_ can be applied to previously archived files. Separate files or whole folders (with sub-folders) can be restored:
+
+- user selects which files/folders shall be restored, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_10.png)
+- user defines the period for which files shall be restored and notification recipients list:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_11.png)
+- after the confirmation, the restore process begins - it is shown by the special status icon:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_12.png)
+- when file is restored - it is shown by the special status icon as well:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_StorageLifecycle_13.png)
+- once the restore period is over, files will be automatically transferred to the archive where they were before
+
+For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
+
+## Image history
+
+**Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
+
+- Available software packages
+- Possible vulnerabilities of those packages
+
+The users may leverage this feature to choose which docker image to use, depending on the needs for a specific application.  
+But this list of the software packages may not show the full list of the applications as the scanning mechanism uses only the "well-known" filesystem locations to collect the applications/versions informations. Some of the apps, might be installed into any custom location and the scanner won't be able to find it.
+
+To fulfill this gap and to address some advanced cases, in the current version, a new feature was introduced: now it's possible to view the list of the "Docker layers" and corresponding commands, which were used to generate those layers.  
+It can be viewed via the specific tab in the tool version menu - **Image history**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_1.png)
+
+This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
+
+For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
+
+## Environments synchronization via `pipectl`
+
+In some cases, admins need to synchronize two different environments of the Cloud Pipeline.  
+New special routine in the [`pipectl`](https://github.com/epam/cloud-pipeline/tree/develop/deploy/README.md) utility is implemented for that - `pipectl sync`.
+
+It allows to synchronize from the source environment to the destination one the following objects:
+
+- users / user groups / user roles
+- docker registry / tool groups / tools
+
+Synchronization can be performed with or without synchronization of attributes (metadata) for the specified Platform objects.
+
+During the synchronization, changes are being performed only in the **_destination_** environment, the **_source_** environment remains the same.
+
+For details and examples see [here](../../installation/management/environments_sync.md).
+
+## Data access audit
+
+In the current version, [System logs](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-logs) were expanded - now, all actions related to any access to the data stored in the object storages are being logged.  
+This includes logging of operations _READ_/_WRITE_/_DELETE_, listing operation is not logged.
+
+For logs of data access events, a new item was added to the "**Type**" filter of the System logs - `audit` type:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_1.png)
+
+By this type, the following data access operations are being logged:
+
+- access to the Object storages data from the Platform GUI
+- access to the Object storages data from the `pipe` CLI
+- access to the mounted Object storages' data - both from GUI and CLI
+
+Examples of logs:  
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_2.png)
+
+![CP_v.0.17_ReleaseNotes](attachments/RN017_DataAudit_3.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.12._System_logs.md#type-filter).
+
+## System Jobs
+
+Sometimes it's desirable for admin to get some statistics or system information about current Cloud Pipeline deployment state - for example, collect information about all storages that have specific size or list all unattached `EBS` volumes, or set some specific policy to all storages, etc.  
+For such purposes, specific scripts can be written and launched in some way. Number of these "admin" scripts can grow very quickly and it would be convenient to have some solution to create and run such scripts in a system, and also view results (logs) and store them.
+
+In the current version, a new solution was implemeted for "admin" scripts - **System Jobs**.  
+System jobs solution uses the existing Cloud-Pipeline infrastructure, to reduce number of preparation steps to be done to get desire output.  
+
+In a nutshell, the **System Jobs** solution includes the following:
+
+- special prepared system pipeline, that contains system jobs scripts. Admin can add new scripts or edit/delete existing ones. Also, pipeline config contains:  
+    - `Kubernetes` service account to perform `kubectl` commands from such pipeline during the system job run
+    - special assign policy that allows to assign the pipeline to one of the running system node (`MASTER` node, for example). It is convenient as no additional instances (waiting or initializing ones) are required to perform a job
+- special prepared docker image that includes pre-installed packages such as system packages (`curl`, `nano`, `git`, etc.), `kubectl`, `pipe` CLI, Cloud CLI (`AWS`/`Azure`/`GCP`), `LustreFS` client
+- separate **System Jobs** form that displays all available system job scripts, allows to run existing scripts and view results of their performing
+
+Userjourney looks like:
+
+1. Admin creates a new system job script and places it to the specific path inside the special system pipeline (_pipeline and path are defined by System Preferences_), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_1.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_2.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_3.png)
+2. Admin opens the **System Jobs** panel from the **System Settings**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_4.png)  
+    Here, there is the whole list of stored system scripts and results of their runs.
+3. To run a script - admin selects any script and launch it:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_5.png)
+4. When admin launches a system job - the system instance (`MASTER` instance, by default) is used for the job performing. At that system instance, the docker-container is launched from the special prepared docker-image for system jobs. In the launched docker-container, the system job script is being performed.
+5. At the **System jobs** form, states of the performing job are shown similar to the pipeline states, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_6.png)
+6. Once the script is performed, the state will be changed to **Success**:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_7.png)
+7. By the button **LOG**, the script performing output can be viewed:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_8.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
+
+## Cluster run usage
+
+Previously, user can view the state of the cluster run (master and its nested runs) via the **Run logs** page of the cluster master node. But this information was actual only at the specific time moment.  
+It would be convenient to view how the cluster usage has been changing over the whole cluster run duration.  
+This is especially useful information for auto-scaled clusters, as the number of worker nodes in such clusters can vary greatly over time.
+
+In **`v0.17`**, such ability was added. User can view a specific cluster's usage over time - by click the corresponding hyperlink at the **Run logs** page of the cluster's master node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_1.png)  
+The chart pop-up will be opened, e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterUsage_2.png)
+
+The chart shows a cluster usage - number of all active instances (including the master node) of the current cluster over time.
+
+For more details see [here](../../manual/11_Manage_Runs/11._Manage_Runs.md#cluster-run-usage).
+
+## Cluster run estimation price
+
+Previously, **Cloud Pipeline** allowed to view a price estimation for the single instance jobs.  
+But the clusters did not provide such information (summary). Users could see a price only for a master node.
+
+Now, **Cloud Pipeline** offers a cost estimation, when any compute instances are running:
+
+- **Standalone instance** - reports it's own cost:
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_1.png)
+    - Run's list:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_2.png)
+- **Static cluster** - reports the full cluster cost (summary for a master node and all workers), since it is started:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_3.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_4.png)
+- **Autoscaled cluster** - reports the costs, based on the workers lifetime (summary for a master node and all workers). As the workers may be created and terminated all the time - there costs are computed only for the _RUNNING_ state:  
+    - Dashboard:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_5.png)
+    - Run's list - master node's cost is reported in the brackets as well:  
+        ![CP_v.0.17_ReleaseNotes](attachments/RN017_ClusterEstimationPrice_6.png)
+
+## Terminal view
+
+From the current version, users have the ability to configure the view of the SSH terminal session:
+
+- _Dark_ (default)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_1.png)
+- _Light_  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_2.png)
+
+Required color schema can be configured in two ways:
+
+- **Persistent** - schema is being stored in the user profile and used any time SSH session is opened:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_3.png)
+- **Temporary** - schema is being used during a current SSH session only - toggling _Dark_ <-> _Light_ can be performed via the special control in the terminal frame:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_4.png)
+
+For details see [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#terminal-view).
 
 ## AWS: seamless authentication
 
@@ -947,6 +1604,30 @@ Example:
 
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_1.png)
 - ![CP_v.0.17_ReleaseNotes](attachments/RN017_TransferBetweenRegions_2.png)
+
+## AWS: switching of Cloud Regions for launched jobs in case of insufficient capacity
+
+Previously, if user started an `AWS` job and there were not enough instances of specified type to launch that job in a region - it would fail.  
+In the current version, the ability to automatically relaunch such runs in other `AWS` region(s) was implemented.  
+
+For that functionality, a new setting was added to the Cloud Region configuration - "**Run shift policy**":  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_1.png)
+
+If this setting is enabled for some `AWS region 1` and for some `AWS region 2` - then a job launched in the `AWS region 1` will automatically try to be relaunched in the `AWS region 2` in case when there are not enough instances of selected type in the `AWS region 1` (`InsufficientInstanceCapacity` error):
+
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_2.png)
+- ![CP_v.0.17_ReleaseNotes](attachments/RN017_ShiftingRegion_3.png)
+
+Original job is being automatically stopped, new job with the same instance type as in the original run but in the `AWS region 2` will be launched.  
+If a new instance is not available with a new region - relaunch will be performed in one more region as long as there are `AWS` regions in the Platform with the enabled option "**Run shift policy**".
+
+Feature is not available:
+
+- for spot runs
+- for runs that have any Cloud dependent parameter
+- for worker or cluster runs
+
+More details see [here](../../manual/12_Manage_Settings/12.11._Advanced_features.md#switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity).
 
 ***
 

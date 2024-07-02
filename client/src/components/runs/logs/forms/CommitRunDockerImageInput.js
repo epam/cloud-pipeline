@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,18 @@ import ToolGroupSelector from '../../../tools/selectors/ToolGroupSelector';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import styles from './CommitRunDockerImageInput.css';
 
+const isPersonalGroup = (group) => {
+  const {
+    name = '',
+    owner: ownerName = ''
+  } = group || {};
+  const owner = (ownerName || '')
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .toLowerCase();
+  return name.toLowerCase() === owner;
+};
+
+@roleModel.authenticationInfo
 @observer
 export default class CommitRunDockerImageInput extends React.Component {
   static propTypes = {
@@ -35,7 +47,8 @@ export default class CommitRunDockerImageInput extends React.Component {
     registries: PropTypes.array,
     visible: PropTypes.bool,
     onPressEnter: PropTypes.func,
-    onValidation: PropTypes.func
+    onValidation: PropTypes.func,
+    showOtherPersonalGroups: PropTypes.bool
   };
 
   state = {};
@@ -151,6 +164,15 @@ export default class CommitRunDockerImageInput extends React.Component {
   };
 
   @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (!authenticatedUserInfo || !authenticatedUserInfo.loaded) {
+      return false;
+    }
+    return authenticatedUserInfo.value.admin;
+  }
+
+  @computed
   get toolVersions () {
     if (this._tags && this._tags.loaded) {
       return (this._tags.value || []).map(t => t);
@@ -206,14 +228,19 @@ export default class CommitRunDockerImageInput extends React.Component {
 
   @computed
   get groups () {
+    const {showOtherPersonalGroups} = this.props;
     if (!this.currentRegistry) {
       return [];
     }
     return (this.currentRegistry.groups || [])
       .map(g => g)
-      .filter(g => roleModel.writeAllowed(g) ||
-        (g.tools || []).filter(t => roleModel.writeAllowed(t) && !t.link).length > 0
-      );
+      .filter(g => {
+        const hasToolsWithRights = (g.tools || []).filter(t => roleModel.writeAllowed(t) && !t.link).length > 0;
+        if (showOtherPersonalGroups) {
+          return roleModel.writeAllowed(g) || hasToolsWithRights;
+        }
+        return (roleModel.writeAllowed(g) || hasToolsWithRights) && (this.isAdmin || g.privateGroup || !isPersonalGroup(g));
+      });
   }
 
   @computed

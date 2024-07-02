@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .runs()
                 .completedRuns()
                 .refresh()
-                .filterBy(PIPELINE, pipeline)
+                .filterBy(PIPELINE, "", pipeline)
                 .validateRowsCount(size(1))
                 .assertLatestPipelineHasRunID(pipelineRunID)
                 .validateStatus(pipelineRunID, SUCCESS)
@@ -132,13 +132,13 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
         navigationMenu()
                 .runs()
                 .completedRuns()
-                .filterBy(DOCKER_IMAGE, nameWithoutGroup(tool))
+                .filterBy(DOCKER_IMAGE, group, nameWithoutGroup(tool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(firstToolRunID)
                 .validateStatus(firstToolRunID, STOPPED)
                 .validatePipelineOwner(firstToolRunID, user.login)
                 .resetFiltering(DOCKER_IMAGE)
-                .filterBy(DOCKER_IMAGE, nameWithoutGroup(anotherTool))
+                .filterBy(DOCKER_IMAGE, anotherGroup, nameWithoutGroup(anotherTool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(secondToolRunID)
                 .validateStatus(secondToolRunID, STOPPED)

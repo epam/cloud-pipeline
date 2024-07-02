@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base import API
-from ..model.storage_model import StorageModel
-from ..model.share_mount_model import ShareMountModel
+from internal.api.base import API
+from internal.model.share_mount_model import ShareMountModel
+from internal.model.storage_model import StorageModel
 
 
 class Storages(API):
+
     def __init__(self, config=None):
         super(Storages, self).__init__(config)
 
-    def list(self, page, page_size):
-        response_data = self.call('datastorage/permission?page={}&pageSize={}'.format(page, page_size), None)
+    def list(self, page, page_size, filter_mask):
+        response_data = self.call('datastorage/permission?page={}&pageSize={}&filterMask={}'
+                                  .format(page, page_size, filter_mask), None)
         storages = []
         total_count = 0
         if 'payload' in response_data:
@@ -35,17 +37,16 @@ class Storages(API):
                 total_count = int(response_data['payload']['totalCount'])
         return storages, total_count
 
-
     def list_share_mounts(self):
-            response_data = self.call('cloud/region', None)
-            share_mounts = {}
-            if 'payload' in response_data:
-                for region in response_data['payload']:
-                    if 'fileShareMounts' not in region:
-                        continue
+        response_data = self.call('cloud/region', None)
+        share_mounts = {}
+        if 'payload' in response_data:
+            for region in response_data['payload']:
+                if 'fileShareMounts' not in region:
+                    continue
 
-                    for share_mount_json in region['fileShareMounts']:
-                        share_mount = ShareMountModel.load(share_mount_json)
-                        if share_mount is not None:
-                            share_mounts[share_mount.identifier] = share_mount
-            return share_mounts
+                for share_mount_json in region['fileShareMounts']:
+                    share_mount = ShareMountModel.load(share_mount_json)
+                    if share_mount is not None:
+                        share_mounts[share_mount.identifier] = share_mount
+        return share_mounts

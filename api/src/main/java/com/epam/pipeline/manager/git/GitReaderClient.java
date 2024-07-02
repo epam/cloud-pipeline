@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.ResultStatus;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
-import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -65,7 +64,7 @@ public class GitReaderClient {
         this.gitReaderApi = buildGitLabApi(gitReaderUrlRoot);
     }
 
-    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> getRepositoryCommits(final GitRepositoryUrl repo,
+    public GitReaderEntryIteratorListing<GitReaderRepositoryCommit> getRepositoryCommits(final String gitlabRepoPath,
                                                                                          final Long page,
                                                                                          final Integer pageSize,
                                                                                          final GitCommitsFilter filter,
@@ -73,17 +72,17 @@ public class GitReaderClient {
         throws GitClientException {
         return callAndCheckResult(
                 gitReaderApi.listCommits(
-                        getRepositoryPath(repo), page, pageSize, toGitReaderRequestFilter(filter, ignored)
+                        gitlabRepoPath, page, pageSize, toGitReaderRequestFilter(filter, ignored)
                 )
         ).getPayload();
     }
 
-    public GitReaderDiff getRepositoryCommitDiffs(final GitRepositoryUrl repo,
+    public GitReaderDiff getRepositoryCommitDiffs(final String gitlabRepoPath,
                                                   final Boolean includeDiff,
                                                   final GitCommitsFilter filter,
                                                   final List<String> filesToIgnore) throws GitClientException {
         final Result<GitReaderRepositoryCommitDiff> result = callAndCheckResult(
-                gitReaderApi.listCommitDiffs(getRepositoryPath(repo), includeDiff,
+                gitReaderApi.listCommitDiffs(gitlabRepoPath, includeDiff,
                         toGitReaderRequestFilter(filter, filesToIgnore))
         );
         return GitReaderDiff.builder()
@@ -94,39 +93,43 @@ public class GitReaderClient {
                 .build();
     }
 
-    public GitReaderDiffEntry getRepositoryCommitDiff(final GitRepositoryUrl repo,
+    public GitReaderDiffEntry getRepositoryCommitDiff(final String gitlabRepoPath,
                                                       final String commit,
                                                       final GitReaderLogsPathFilter paths) throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getCommitDiff(getRepositoryPath(repo), commit, paths)
+                gitReaderApi.getCommitDiff(gitlabRepoPath, commit, paths)
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final GitRepositoryUrl repo,
+    public byte[] downloadAttachment(final String path) throws GitClientException {
+        return RestApiUtils.getFileContent(gitReaderApi.downloadAttachment(path));
+    }
+
+    public GitReaderEntryListing<GitReaderObject> getRepositoryTree(final String gitlabRepoPath,
                                                                     final GitReaderLogsPathFilter paths,
                                                                     final String ref, final Long page,
                                                                     final Integer pageSize) throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryTree(getRepositoryPath(repo), ref, page, pageSize, paths)
+                gitReaderApi.getRepositoryTree(gitlabRepoPath, ref, page, pageSize, paths)
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final String gitlabRepoPath,
                                                                                     final GitReaderLogsPathFilter paths,
                                                                                     final String ref, final Long page,
                                                                                     final Integer pageSize)
             throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), ref, page, pageSize, paths)
+                gitReaderApi.getRepositoryLogsTree(gitlabRepoPath, ref, page, pageSize, paths)
         ).getPayload();
     }
 
-    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final GitRepositoryUrl repo,
+    public GitReaderEntryListing<GitReaderRepositoryLogEntry> getRepositoryTreeLogs(final String gitlabRepoPath,
                                                                                     final String ref,
                                                                                     final GitReaderLogsPathFilter paths)
             throws GitClientException {
         return callAndCheckResult(
-                gitReaderApi.getRepositoryLogsTree(getRepositoryPath(repo), ref, paths)
+                gitReaderApi.getRepositoryLogsTree(gitlabRepoPath, ref, paths)
         ).getPayload();
     }
 
@@ -136,14 +139,6 @@ public class GitReaderClient {
             throw new GitClientException(result.getMessage());
         }
         return result;
-    }
-
-    private String getRepositoryPath(final GitRepositoryUrl gitRepositoryUrl) {
-        final String namespace = gitRepositoryUrl.getNamespace()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
-        final String project = gitRepositoryUrl.getProject()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
-        return Paths.get(namespace, project + ".git").toString();
     }
 
     private GitReaderApi buildGitLabApi(final String gitReaderUrlRoot) {

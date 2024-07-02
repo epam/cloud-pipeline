@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,8 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
         final String editedCode = "Edited code";
         new PipelineCodeTabAO(PIPELINE_NAME)
                 .clearAndFillPipelineFile(RENAMED_FILE_NAME, editedCode)
-                .sleep(1, SECONDS)
+                .sleep(4, SECONDS)
+                .waitUntilRenameButtonAppears(RENAMED_FILE_NAME)
                 .clickOnFile(RENAMED_FILE_NAME)
                 .shouldContainInCode(editedCode)
                 .close();
@@ -115,6 +116,7 @@ public class PipelineEditingTest extends AbstractBfxPipelineTest implements Navi
     public void deletePipelineFileTest() {
         new PipelineCodeTabAO(PIPELINE_NAME)
                 .deleteFile(RENAMED_FILE_NAME)
+                .sleep(10, SECONDS)
                 .ensure(byText(RENAMED_FILE_NAME.toLowerCase() + ".py"), not(exist));
     }
 

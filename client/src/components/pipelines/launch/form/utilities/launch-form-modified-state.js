@@ -37,6 +37,7 @@ import {
   getEnabledCapabilities,
   isCustomCapability
 } from './run-capabilities';
+import {notificationArraysAreEqual} from '../../dialogs/job-notifications/notifications-equal';
 
 function formItemInitialized (form, formName) {
   if (!formName) {
@@ -238,7 +239,7 @@ function parametersCheck (form, parameters, state, preferences) {
   const initialValue = Object.keys(parameters.parameters || {})
     .filter(key => [
       CP_CAP_LIMIT_MOUNTS,
-      ...getSkippedSystemParametersList({state})
+      ...getSkippedSystemParametersList({state, props: {preferences}})
     ].indexOf(key) === -1)
     .filter(key => !isCustomCapability(key, preferences))
     .map(key => ({key, value: parameters.parameters[key].value || ''}))
@@ -281,6 +282,19 @@ function checkRootEntityModified (props, state) {
     return convert(rootEntityId) !== convert(currentConfiguration.rootEntityId);
   }
   return false;
+}
+
+function notificationsCheck (parameters, form) {
+  if (!formItemInitialized(form, `${ADVANCED}.notifications`)) {
+    return false;
+  }
+  const formNotifications = form.getFieldValue(`${ADVANCED}.notifications`);
+  const propsNotifications = parameters ? parameters.notifications : [];
+  return !notificationArraysAreEqual(formNotifications, propsNotifications);
+}
+
+function rawEditCheck (parameters, state) {
+  return parameters.raw !== state.isRawEditEnabled;
 }
 
 export default function (props, state, options) {
@@ -329,9 +343,13 @@ export default function (props, state, options) {
     // cmd template check
     cmdTemplateCheck(state, parameters, options) ||
     // check general parameters
-    parametersCheck(form, parameters, undefined, preferences) ||
+    parametersCheck(form, parameters, state, preferences) ||
     // check additional run capabilities
     runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
-    checkRootEntityModified(props, state);
+    checkRootEntityModified(props, state) ||
+    // check notifications
+    notificationsCheck(parameters, form) ||
+    // raw mode
+    rawEditCheck(parameters, state);
 }

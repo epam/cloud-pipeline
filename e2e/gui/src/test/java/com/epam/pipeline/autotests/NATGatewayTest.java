@@ -31,10 +31,12 @@ import org.testng.internal.collections.Pair;
 
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
@@ -52,9 +54,13 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 
@@ -99,7 +105,11 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private String server2Port80InternalIPAddress;
 
     @BeforeClass
+    @AfterClass(alwaysRun = true)
     public void checkExistenceRoutes() {
+        refresh();
+        logoutIfNeeded();
+        loginAs(admin);
         final NATGatewayAO natGatewayAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
@@ -113,27 +123,25 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 Pair.of(SERVER_NAME_3, PORT_80),
                 Pair.of(SERVER_NAME_3, PORT_443),
                 Pair.of(SERVER_NAME_4, PORT_80),
-                Pair.of(SERVER_NAME_4, PORT_443)
+                Pair.of(SERVER_NAME_4, PORT_443),
+                Pair.of(SERVER_NAME_5, PORT_80),
+                Pair.of(SERVER_NAME_5, PORT_443)
                 )
-                .filter(p -> natGatewayAO.routeRecordExist(p.first(), p.second()))
+                .filter(p -> natGatewayAO
+                        .expandGroup(p.first(), p.second())
+                        .routeRecordExist(p.first(), p.second()))
                 .forEach(p -> deleteRoute(p.first(), p.second()));
-    }
-
-    @AfterClass(alwaysRun = true)
-    public void cleanup() {
-        refresh();
-        logoutIfNeeded();
-        loginAs(admin);
-        Stream.of(
-                Pair.of(SERVER_NAME_1, PORT_80),
-                Pair.of(SERVER_NAME_1, PORT_443),
-                Pair.of(SERVER_NAME_2, PORT_80),
-                Pair.of(SERVER_NAME_2, PORT_443),
-                Pair.of(SERVER_NAME_3, PORT_80),
-                Pair.of(SERVER_NAME_3, PORT_443),
-                Pair.of(SERVER_NAME_4, PORT_80),
-                Pair.of(SERVER_NAME_4, PORT_443)
-        ).forEach(p -> deleteRoute(p.first(), p.second()));
+        sleep(1, MINUTES);
+        int attempt = 0;
+        int maxAttempts = 60;
+        while (natGatewayAO.context().$$(byClassName("ant-table-row")).stream()
+                .filter(element -> element.findAll(".external-column").get(0)
+                        .find(tagName("i")).has(cssClass("anticon-clock-circle-o"))).count() > 0
+                && attempt < maxAttempts) {
+            natGatewayAO.click(REFRESH);
+            sleep(10, SECONDS);
+            attempt++;
+        }
     }
 
     @BeforeMethod
@@ -221,6 +229,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .doNotMountStoragesSelect(true)
+                .setPriceType(ON_DEMAND)
                 .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()
@@ -584,6 +593,9 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .settings()
                 .switchToSystemManagement()
                 .switchToNATGateway()
-                .deleteRouteIfExists(serverName, port);
+                .expandGroup(serverName, port)
+                .deleteRoute(serverName, port)
+                .sleep(1, SECONDS)
+                .click(SAVE);
     }
 }

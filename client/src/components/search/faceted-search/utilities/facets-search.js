@@ -19,15 +19,17 @@ import fetchFacets from './fetch-facets';
 import getItemUrl from './get-item-url';
 import getFacetFilterToken from './facet-filter-token';
 
-export default function facetsSearch ({
-  query,
-  filters,
-  sortingOrder,
-  pageSize,
-  options,
-  scrollingParameters,
-  abortSignal
-}) {
+export default function facetsSearch (fetchFacetsOptions) {
+  const {
+    query,
+    filters,
+    sortingOrder,
+    pageSize,
+    options,
+    scrollingParameters,
+    abortSignal,
+    skipFacets = false
+  } = fetchFacetsOptions;
   const {
     facets = [],
     facetsToken: currentFacetsToken,
@@ -41,7 +43,7 @@ export default function facetsSearch ({
     sortingOrder,
     pageSize: 1
   });
-  const doFetchFacets = currentFacetsToken !== facetsToken;
+  const doFetchFacets = currentFacetsToken !== facetsToken && !skipFacets;
   return new Promise((resolve) => {
     const promises = [
       doSearch({

@@ -15,7 +15,6 @@
  */
 
 export default class SessionStorageWrapper {
-
   static ACTIVE_RUNS_KEY = 'active_runs';
 
   static getItem (key, defaultValue) {
@@ -43,13 +42,23 @@ export default class SessionStorageWrapper {
     router.push(SessionStorageWrapper.getActiveRunsLink());
   }
 
-  static getActiveRunsLink () {
-    const myRuns = SessionStorageWrapper.getItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, true);
-    if (myRuns) {
-      return '/runs/active';
-    } else {
-      return '/runs/active?all';
+  static navigateToRuns (router, status = 'active') {
+    if (!router || !router.push) {
+      return;
     }
+    router.push(SessionStorageWrapper.getRunsLink(status));
   }
 
+  static getActiveRunsLink () {
+    return SessionStorageWrapper.getRunsLink('active');
+  }
+
+  static getRunsLink (status, ignoreMyRunsSetting = false) {
+    const myRuns = SessionStorageWrapper.getItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, true);
+    if (myRuns || ignoreMyRunsSetting) {
+      return `/runs/${status}`;
+    } else {
+      return `/runs/${status}?all`;
+    }
+  }
 }

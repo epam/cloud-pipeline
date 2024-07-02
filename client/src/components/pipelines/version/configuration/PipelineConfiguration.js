@@ -67,7 +67,7 @@ export default class PipelineConfiguration extends React.Component {
     pending: false
   };
 
-  componentDidMount() {
+  componentDidMount () {
     this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
@@ -79,7 +79,12 @@ export default class PipelineConfiguration extends React.Component {
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker && location.pathname !== this.allowedNavigation) {
+      if (
+        !this.isBitBucket &&
+        this.configurationModified &&
+        !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation
+      ) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);
@@ -101,7 +106,6 @@ export default class PipelineConfiguration extends React.Component {
           okText: 'Yes',
           cancelText: 'No'
         });
-
       } else {
         callback();
       }
@@ -177,8 +181,19 @@ export default class PipelineConfiguration extends React.Component {
     return undefined;
   }
 
+  @computed
+  get isBitBucket () {
+    const {pipeline} = this.props;
+    if (!pipeline || !pipeline.loaded) {
+      return false;
+    }
+    const {repositoryType} = pipeline.value || {};
+    return /^bitbucket$/i.test(repositoryType);
+  }
+
+  @computed
   get canModifySources () {
-    if (this.props.pipeline.pending) {
+    if (this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
@@ -500,7 +515,7 @@ export default class PipelineConfiguration extends React.Component {
             canExecute={false}
             canRemove={!this.state.pending && this.canModifySources && this.props.configurations.value.length > 1}
             onRemoveConfiguration={this.onRemoveConfigurationClicked(this.selectedConfiguration)}
-            editConfigurationMode={true}
+            editConfigurationMode
             currentConfigurationName={this.selectedConfigurationName}
             currentConfigurationIsDefault={this.selectedConfigurationIsDefault}
             onSetConfigurationAsDefault={this.onSetAsDefaultClicked}

@@ -131,11 +131,9 @@ export default class MetadataFolder extends React.Component {
     if (folder && folder.loaded) {
       const dataFolder = generateTreeData(
         this.props.folder.value,
-        false,
-        undefined,
-        undefined,
-        undefined,
-        this.props.hiddenObjectsTreeFilter()
+        {
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       const metadataFolder = dataFolder.find(m => m.type === ItemTypes.metadataFolder);
       return metadataFolder ? metadataFolder.children : [];
@@ -254,7 +252,7 @@ export default class MetadataFolder extends React.Component {
   navigate = (item) => {
     if (this.props.onNavigate) {
       this.props.onNavigate(item);
-    } else {
+    } else if (item && typeof item.url === 'function') {
       this.props.router.push(item.url());
     }
   };
@@ -441,6 +439,7 @@ export default class MetadataFolder extends React.Component {
               icon="appstore-o"
               iconClassName={styles.editableControl}
               subject={folder.value}
+              onNavigate={this.navigate}
             />
           </Col>
           <Col className={styles.currentFolderActions}>

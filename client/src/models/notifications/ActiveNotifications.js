@@ -15,18 +15,14 @@
  */
 
 import Remote from '../basic/Remote';
+import continuousFetch from '../../utils/continuous-fetch';
 const FETCH_INTERVAL_SECONDS = 60;
 
 class ActiveNotifications extends Remote {
   constructor () {
     super();
     this.url = '/notification/active';
-    setInterval(async () => {
-      await this.fetch();
-      if (this.onFetched) {
-        this.onFetched(this);
-      }
-    }, FETCH_INTERVAL_SECONDS * 1000);
+    continuousFetch({request: this, intervalMS: FETCH_INTERVAL_SECONDS * 1000});
   }
 
   onFetched;

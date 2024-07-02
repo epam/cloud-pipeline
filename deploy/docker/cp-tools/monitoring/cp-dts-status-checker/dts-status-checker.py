@@ -28,7 +28,12 @@ email_template_file = os.path.join(dts_path, DTS_EMAIL_TEMPLATE)
 
 
 def map_pipe_dts_output_to_dts_status(raw_dts_status):
-    return {"id": raw_dts_status["id"], "status": raw_dts_status["status"], "heartbeat": raw_dts_status["heartbeat"]}
+    return {
+        "id": raw_dts_status["id"],
+        "name": raw_dts_status["name"],
+        "status": raw_dts_status["status"],
+        "heartbeat": raw_dts_status["heartbeat"]
+    }
 
 
 def fetch_current_dts_statuses():
@@ -80,12 +85,13 @@ def generate_table(dts_to_inform):
     table = """<table>
     <tr>
 		<td><b>ID</b></td>
+		<td><b>Name</b></td>
 		<td><b>Status</b></td>
 		<td><b>Last heartbeat</b></td>
 	</tr>"""
     for status in dts_to_inform:
-        table += "<tr>" + "<td>{}</td>".format(status["id"]) + "<td>{}</td>".format(
-            status["status"]) + "<td>{}</td>".format(status["heartbeat"]) + "</td>"
+        table += "<tr>" + "<td>{}</td>".format(status["id"]) + "<td>{}</td>".format(status["name"]) \
+                        + "<td>{}</td>".format(status["status"]) + "<td>{}</td>".format(status["heartbeat"]) + "</tr>"
 
     table += "</table>"
     return table
@@ -107,10 +113,10 @@ logger = LocalLogger(inner=logger)
 new_dts_statuses = fetch_current_dts_statuses()
 logger.info("Starting to check DTS")
 
-previos_dts_statuses = {}
+previous_dts_statuses = {}
 if os.path.exists(dts_file):
     with open(dts_file) as json_file:
-        previos_dts_statuses = json.load(json_file)
+        previous_dts_statuses = json.load(json_file)
 
 dts_to_inform = []
 
@@ -119,7 +125,7 @@ for dts_id, new_dts_status in new_dts_statuses.iteritems():
     current_timestamp = new_dts_status["heartbeat"]
     logger.info("DTS with id {} has status {}. Last heartbeat: {}".format(
         dts_id, current_status, current_timestamp))
-    prev_dts_status = previos_dts_statuses.get(str(dts_id))
+    prev_dts_status = previous_dts_statuses.get(str(dts_id))
     if not prev_dts_status or prev_dts_status["status"] != current_status:
         logger.info("DTS with id {} has status: {}. Previous status: {}".format(
         dts_id, current_status, prev_dts_status["status"]))

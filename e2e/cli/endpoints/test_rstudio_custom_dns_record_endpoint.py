@@ -54,8 +54,10 @@ class TestRStudioEndpoints(object):
         tool_info = get_tool_info("library/rstudio")
         logging.info("Change endpoint settings for RStudio tool, make a SubDomain param is False")
         for i in range(0, len(tool_info["endpoints"])):
-            if i in cls.custom_dns_swap_flags:
-                tool_info["endpoints"][i] = tool_info["endpoints"][i].replace('"customDNS":true', '"customDNS":false')
+            if cls.custom_dns_swap_flags.get(i, False):
+                endpoint_config = json.loads(tool_info["endpoints"][i])
+                endpoint_config['customDNS'] = False
+                tool_info["endpoints"][i] = json.dumps(endpoint_config)
         update_tool_info(tool_info)
 
     @pipe_test

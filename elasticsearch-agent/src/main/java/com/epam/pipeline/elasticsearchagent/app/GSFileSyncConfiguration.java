@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
 import com.epam.pipeline.elasticsearchagent.service.impl.*;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -45,6 +46,15 @@ public class GSFileSyncConfiguration {
     @Value("${sync.gs-file.bulk.load.tags.size:100}")
     private Integer bulkLoadTagsSize;
 
+    @Value("${sync.gs-file.tag.value.delimiter:;}")
+    private String tagDelimiter;
+
+    @Value("${sync.gs-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.gs-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager gsFileManager() {
         return new GsBucketFileManager();
@@ -56,12 +66,15 @@ public class GSFileSyncConfiguration {
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
-            final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager) {
+            final @Qualifier("gsFileManager") ObjectStorageFileManager gsFileManager,
+            final LockService lockService) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                gsFileManager, indexPrefix + indexName,
+                gsFileManager, lockService, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.GS,
-                SearchDocumentType.GS_FILE);
+                SearchDocumentType.GS_FILE,
+                tagDelimiter, false,
+                storageExcludeKey, storageExcludeValue);
     }
 
 }

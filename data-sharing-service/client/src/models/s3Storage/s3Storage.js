@@ -17,6 +17,7 @@
 import AWS from 'aws-sdk/index';
 import Credentials from './Credentials';
 import fetchTempCredentials from './fetch-temp-credentials';
+import auditStorageAccessManager from '../../utils/audit-storage-access';
 
 const FETCH_CREDENTIALS_MAX_ATTEMPTS = 12;
 
@@ -74,7 +75,7 @@ class S3Storage {
   }
 
   set prefix (value) {
-    if (value.endsWith('/')) {
+    if (value && value.endsWith('/')) {
       this._prefix = value;
     } else {
       this._prefix = value ? `${value}/` : '';
@@ -156,27 +157,6 @@ class S3Storage {
     return this._s3.getSignedUrl('getObject', params);
   };
 
-  listObjects = () => {
-    let params = {
-      Bucket: this._storage.path,
-      Prefix: this._prefix
-    };
-    if (this._storage.delimiter) {
-      params.Delimiter = this._storage.delimiter;
-    }
-
-    return this._s3.listObjects(params).promise();
-  };
-
-  getStorageObject = async (key, startBytes, endBytes) => {
-    const params = {
-      Bucket: this._storage.path,
-      Key: key,
-      Range: `bytes=${startBytes}-${endBytes}`
-    };
-    return this._s3.getObject(params).promise();
-  };
-
   completeMultipartUploadStorageObject = (name, parts, uploadId) => {
     const params = {
       Bucket: this._storage.path,
@@ -221,6 +201,10 @@ class S3Storage {
       PartNumber: partNumber,
       UploadId: uploadId
     };
+    auditStorageAccessManager.reportWriteAccess({
+      fullPath: `s3://${this._storage.path}/${this.prefix + name}`,
+      storageId: this._storage.id
+    });
     const upload = this._s3.uploadPart(params);
     upload.on('httpUploadProgress', uploadProgress);
     return upload;

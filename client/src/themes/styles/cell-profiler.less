@@ -1,0 +1,54 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cell-profiler-module {
+  color: @application-color;
+  background-color: @card-background-color;
+  border-bottom: 1px @card-border-color solid;
+}
+
+.cell-profiler-module.expanded .cell-profiler-module-header {
+  border-bottom: 1px @card-border-color solid;
+}
+
+.cell-profiler-module:not(.empty) .cell-profiler-module-header:hover {
+  background-color: darken(@card-background-color, 5%);
+}
+
+.cell-profiler-results-table {
+  background-color: @card-background-color;
+}
+
+.cell-profiler-results-table td,
+.cell-profiler-results-table th {
+  border: 1px solid @table-border-color;
+}
+
+.cell-profiler-job:nth-child(even) {
+  background-color: @even-element-background;
+}
+
+.cell-profiler-job:hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+
+.cell-profiler-job.selected {
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
+}

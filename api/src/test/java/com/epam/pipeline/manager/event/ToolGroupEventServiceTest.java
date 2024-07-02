@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -56,6 +57,8 @@ public class ToolGroupEventServiceTest extends AbstractSpringTest {
     private ToolManager toolManager;
     @MockBean
     private EntityManager entityManager;
+    @MockBean
+    protected UserManager userManager;
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)

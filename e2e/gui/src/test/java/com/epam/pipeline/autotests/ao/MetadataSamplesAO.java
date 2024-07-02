@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,7 +221,7 @@ public class MetadataSamplesAO implements AccessObject<MetadataSamplesAO> {
         }
 
         public void ensureCellContainsHyperlink() {
-            particularCell.find(byClassName("ant-row")).shouldHave(hyperlink());
+            particularCell.findElement(tagName("a")).isDisplayed();
         }
 
         public void ensureCellContains(String substring) {

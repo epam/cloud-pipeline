@@ -33,7 +33,7 @@ from src.utilities.custom_abort_click_group import CustomAbortHandlingGroup
 from src.model.pipeline_run_filter_model import DEFAULT_PAGE_SIZE, DEFAULT_PAGE_INDEX
 from src.model.pipeline_run_model import PriceType
 from src.utilities.cluster_monitoring_manager import ClusterMonitoringManager
-from src.utilities.du_format_type import DuFormatType
+from src.utilities.datastorage_du_operation import DuOutput
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.lock_operations_manager import LockOperationsManager
 from src.utilities.pipeline_run_share_manager import PipelineRunShareManager
@@ -49,7 +49,8 @@ from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
 from src.utilities.dts_operations_manager import DtsOperationsManager
-from src.version import __version__, __bundle_info__
+from src.utilities.cloud_provider_operations import CloudProviderOperations
+from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -86,7 +87,7 @@ def print_version(ctx, param, value):
     if value is False:
         return
     silent_print_api_version()
-    click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
+    click.echo('Cloud Pipeline CLI, version {} ({})'.format(__version__, __component_version__))
     silent_print_creds_info()
     ctx.exit()
 
@@ -107,9 +108,13 @@ def enable_debug_logging(ctx, param, value):
     stream = logging.StreamHandler()
     stream.setLevel(log_level)
     # Print current configuration
-    click.echo('=====================Configuration=========================')
+    click.echo('=====================Configuration==========================')
     _current_config = Config.instance(raise_config_not_found_exception=False)
     click.echo(_current_config.__dict__ if _current_config and _current_config.initialized else 'Not configured')
+    # Print local settings
+    click.echo('=====================Settings===============================')
+    click.echo('Python.version={}'.format(sys.version))
+    click.echo('Default.encoding={}'.format(_current_config.get_encoding()))
     # Print current environment
     click.echo('=====================Environment============================')
     for k, v in sorted(os.environ.items()):
@@ -150,7 +155,10 @@ def stacktracing(func, ctx, *args, **kwargs):
     except click.Abort:
         raise
     except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if sys.version_info >= (3, 0):
+            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+        else:
+            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -479,6 +487,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
+@click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
 @common_options
 def view_runs(run_id,
               status,
@@ -490,7 +499,8 @@ def view_runs(run_id,
               top,
               node_details,
               parameters_details,
-              tasks_details):
+              tasks_details,
+              user_filter):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
@@ -498,12 +508,12 @@ def view_runs(run_id,
         view_run(run_id, node_details, parameters_details, tasks_details)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
 
 
-def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
+def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter):
     runs_table = prettytable.PrettyTable()
-    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started"]
+    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started", "Owner"]
     runs_table.align = "r"
     if date_to and not status:
         click.echo("The run status shall be specified for viewing completed before specified date runs")
@@ -537,7 +547,8 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                   pipeline_id=pipeline_id,
                                   version=pipeline_version_name,
                                   parent_id=parent_id,
-                                  custom_filter=find)
+                                  custom_filter=find,
+                                  owners=user_filter.split(",") if user_filter else None)
     if run_filter.total_count == 0:
         click.echo('No data is available for the request')
     else:
@@ -549,7 +560,8 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                 run_model.pipeline,
                                 run_model.version,
                                 state_utilities.color_state(run_model.status),
-                                run_model.scheduled_date])
+                                run_model.scheduled_date,
+                                run_model.owner])
         click.echo(runs_table)
         click.echo()
 
@@ -793,7 +805,9 @@ def view_cluster_for_node(node_name):
 @click.option('-it', '--instance-type', help='Instance disk type', type=str)
 @click.option('-di', '--docker-image', help='Docker image', type=str)
 @click.option('-cmd', '--cmd-template', help='Command template', type=str)
-@click.option('-t', '--timeout', help='Timeout (in minutes), when elapsed - run will be stopped', type=int)
+@click.option('-t', '--timeout', type=int,
+              help='Specifies run timeout in minutes. '
+                   'If a run doesn\'t finish within this period of time, than it is marked as failed and stopped.')
 @click.option('-q', '--quiet', help='Quiet mode', is_flag=True)
 @click.option('-ic', '--instance-count', help='Number of worker instances to launch in a cluster',
               type=click.IntRange(0, MAX_INSTANCE_COUNT, clamp=True), required=False)
@@ -916,11 +930,14 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('--status', required=False, default='STOPPED',
+              type=click.Choice(['FAILURE', 'STOPPED', 'SUCCESS']),
+              help='Which status to use when stopping [FAILURE/STOPPED/SUCCESS]')
 @common_options
-def stop(run_id, yes):
+def stop(run_id, yes, status):
     """Stops a running pipeline
     """
-    PipelineRunOperations.stop(run_id, yes)
+    PipelineRunOperations.stop(run_id, yes, status)
 
 
 @cli.command(name='pause')
@@ -1068,8 +1085,9 @@ def mvtodir(name, directory):
               help="Option for configuring storage summary details listing mode. Possible values: "
                    "compact - brief summary only (default); "
                    "full - show extended details, works for the storage summary listing only")
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all, output):
+def storage_list(path, show_details, show_versions, recursive, page, all, output, show_archive):
     """Lists storage contents
     """
     show_extended = False
@@ -1078,7 +1096,8 @@ def storage_list(path, show_details, show_versions, recursive, page, all, output
             click.echo('Extended output could be configured for the storage summary listing only!', err=True)
             sys.exit(1)
         show_extended = True
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended)
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended,
+                                       show_archive)
 
 
 @storage.command(name='mkdir')
@@ -1102,7 +1121,8 @@ def storage_mk_dir(folders):
               help='Include only files matching this pattern into processing')
 @common_options
 def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include):
-    """ Removes file or folder from a datastorage
+    """
+    Removes files/directories.
     """
     DataStorageOperations.storage_remove_item(path, yes, version, hard_delete, recursive, exclude, include)
 
@@ -1119,6 +1139,9 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-q', '--quiet', is_flag=True, help='Quiet mode')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
@@ -1126,28 +1149,89 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be moved. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
-@click.option('-sl', '--symlinks', required=False, default="follow",
+@click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
-              help="Describe symlinks processing strategy for local sources. Possible values: "
-              "follow - follow symlinks (default); "
-              "skip - do not follow symlinks; "
-              "filter - follow symlinks but check for cyclic links")
+              help='Describe symlinks processing strategy for local sources. '
+                   'Allowed values: \n'
+                   '[follow] follows symlinks (default); \n'
+                   '[skip] does not follow symlinks; \n'
+                   '[filter] follows symlinks but checks for cyclic links.')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-nio', '--io-threads', type=int, required=False,
               help='The number of threads to be used for a single file io operations')
+@click.option('--on-unsafe-chars', required=False, default='skip',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS',
+              type=click.Choice(['fail', 'skip', 'replace', 'remove', 'allow']),
+              help='Configure how unsafe characters in file paths should be handled. '
+                   'By default only ascii characters are safe. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately; \n'
+                   '[skip] skips paths with unsafe characters (default); \n'
+                   '[replace] replaces unsafe characters in paths; \n'
+                   '[remove] removes unsafe characters from paths; \n'
+                   '[allow] allows unsafe characters in paths.')
+@click.option('--on-unsafe-chars-replacement', required=False, default='-',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
+              help='Specify a string to replace unsafe characters with. '
+                   'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-failures', required=False, default='fail',
+              envvar='CP_CLI_TRANSFER_FAILURES',
+              type=click.Choice(['fail', 'fail-after', 'skip']),
+              help='Configure how singular file processing failures should affect overall command execution. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately (default); \n'
+                   '[fail-after] fails only after all files are processed; \n'
+                   '[skip] skips all failures.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, default='md5', type=click.Choice(['crc32', 'sha256', 'md5']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: md5, crc32, sha256. Default: md5.')
+@click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
-def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, verify_destination):
-    """ Moves a file or a folder from one datastorage to another one
-    or between the local filesystem and a datastorage (in both directions)
+def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, sync_newer,
+                      tags, file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_empty_files, on_failures, verify_destination, checksum_algorithm, checksum_skip):
+    """
+    Moves files/directories between data storages or between a local filesystem and a data storage.
+
+    Examples:
+
+    I. Examples of moving local data to a remote storage.
+
+    Upload a local file (file.txt) to a storage (s3://storage/file.txt):
+
+        pipe storage mv file.txt s3://storage/file.txt
+
+    Upload a local directory (dir) to a storage (s3://storage/dir):
+
+        pipe storage mv -r dir s3://storage/dir
+
+    II. Examples of moving remote storage data locally.
+
+    Download a storage file (s3://storage/file.txt) as a local file (file.txt):
+
+        pipe storage mv s3://storage/file.txt file.txt
+
+    Download a storage directory (/common/workdir/dir) as a local directory (dir):
+
+        pipe storage mv -r s3://storage/dir dir
+
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, io_threads, clean=True, skip_existing=skip_existing,
-                             verify_destination=verify_destination)
+                             symlinks, threads, io_threads,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
+                             clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
+                             checksum_skip=checksum_skip)
 
 
 @storage.command('cp')
@@ -1160,8 +1244,6 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
 @click.option('-q', '--quiet', is_flag=True, help='Quiet mode')
-@click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
-                                                          'size matching source')
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
@@ -1169,39 +1251,131 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be copied. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
-@click.option('-sl', '--symlinks', required=False, default="follow",
+@click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
-              help="Describe symlinks processing strategy for local sources. Possible values: "
-              "follow - follow symlinks (default); "
-              "skip - do not follow symlinks; "
-              "filter - follow symlinks but check for cyclic links")
+              help='Describe symlinks processing strategy for local sources. '
+                   'Allowed values: \n'
+                   '[follow] follows symlinks (default); \n'
+                   '[skip] does not follow symlinks; \n'
+                   '[filter] follows symlinks but checks for cyclic links.')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-nio', '--io-threads', type=int, required=False,
               help='The number of threads to be used for a single file io operations')
+@click.option('--on-unsafe-chars', required=False, default='skip',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS',
+              type=click.Choice(['fail', 'skip', 'replace', 'remove', 'allow']),
+              help='Configure how unsafe characters in file paths should be handled. '
+                   'By default only ascii characters are safe. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately; \n'
+                   '[skip] skips paths with unsafe characters (default); \n'
+                   '[replace] replaces unsafe characters in paths; \n'
+                   '[remove] removes unsafe characters from paths; \n'
+                   '[allow] allows unsafe characters in paths.')
+@click.option('--on-unsafe-chars-replacement', required=False, default='-',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
+              help='Specify a string to replace unsafe characters with. '
+                   'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-empty-files', required=False, default='allow',
+              envvar='CP_CLI_TRANSFER_EMPTY_FILES',
+              help='Configure how empty files should be handled. '
+                   'Allowed values: \n'
+                   '[allow] allows empty files transferring (default); \n'
+                   '[skip] skips empty files transferring.')
+@click.option('--on-failures', required=False, default='fail',
+              envvar='CP_CLI_TRANSFER_FAILURES',
+              type=click.Choice(['fail', 'fail-after', 'skip']),
+              help='Configure how singular file processing failures should affect overall command execution. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately (default); \n'
+                   '[fail-after] fails only after all files are processed; \n'
+                   '[skip] skips all failures.')
+@click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
+                                                          'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, default='md5', type=click.Choice(['crc32', 'sha256', 'md5']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: md5, crc32, sha256. Default: md5.')
+@click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
-def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, verify_destination):
-    """ Copies files from one datastorage to another one
-    or between the local filesystem and a datastorage (in both directions)
+def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
+                      on_failures, skip_existing, sync_newer, verify_destination, checksum_algorithm, checksum_skip):
+    """
+    Copies files/directories between data storages or between a local filesystem and a data storage.
+
+    Examples:
+
+    I. Examples of copying local data to a remote storage.
+
+    Upload a local file (file.txt) to a storage (s3://storage/file.txt):
+
+        pipe storage cp file.txt s3://storage/file.txt
+
+    Upload a local directory (dir) to a storage (s3://storage/dir):
+
+        pipe storage cp -r dir s3://storage/dir
+
+    [Linux] Upload a stream from standard input (-) to a storage (s3://storage/file.txt):
+
+        pipe storage cp - s3://storage/file.txt < file.txt
+
+        cat file.txt | pipe storage cp - s3://storage/file.txt
+
+    II. Examples of copying remote storage data locally.
+
+    Download a storage file (s3://storage/file.txt) as a local file (file.txt):
+
+        pipe storage cp s3://storage/file.txt file.txt
+
+    Download a storage directory (/common/workdir/dir) as a local directory (dir):
+
+        pipe storage cp -r s3://storage/dir dir
+
+    [Linux] Download a storage file (s3://storage/file.txt) as a stream to standard output (-):
+
+        pipe storage cp s3://storage/file.txt - > file.txt
+
+        pipe storage cp s3://storage/file.txt - | tee file.txt >/dev/null 2>&1
+
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads, skip_existing=skip_existing,
-                             verify_destination=verify_destination)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
+                             clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
+                             checksum_skip=checksum_skip)
 
 
 @storage.command('du')
 @click.argument('name', required=False)
 @click.option('-p', '--relative-path', required=False, help='Relative path')
+@click.option('-c', '--cloud', required=False, is_flag=True, default=False,
+              help='Force to get data directly from the cloud.')
+@click.option('-o', '--output-mode', help='Output mode [brief/full]. '
+                                          '"brief(b)" - reports in format Storage size/Archive size. '
+                                          '"full(f)" - reports in format divided by Storage Class.',
+              type=click.Choice(DuOutput.possible_modes()), required=False, default='brief')
+@click.option('-g', '--generation', help='File generation to inspect [all/current/old]. '
+                                         '"all(a)" - reports sum of sizes for current and old file versions. '
+                                         '"current(c)" - reports size of current file versions only. '
+                                         '"old(o)" - reports size of old file versions only. ',
+              type=click.Choice(DuOutput.possible_generations()), required=False, default='all')
 @click.option('-f', '--format', help='Format for size [G/M/K]',
-              type=click.Choice(DuFormatType.possible_types()), required=False, default='M')
+              type=click.Choice(DuOutput.possible_size_types()), required=False, default='M')
 @click.option('-d', '--depth', help='Depth level', type=int, required=False)
 @common_options
-def du(name, relative_path, format, depth):
-    DataStorageOperations.du(name, relative_path, format, depth)
+def du(name, relative_path, depth, cloud, output_mode, generation, format):
+    """
+    Displays data storage usage statistics.
+    """
+    DataStorageOperations.du(name, relative_path, depth, cloud, output_mode, generation, format)
 
 
 @storage.command('restore')
@@ -1278,10 +1452,13 @@ def storage_delete_object_tags(path, tags, version):
 @click.option('-t', '--threads', help='Enables multithreading', is_flag=True)
 @click.option('-m', '--mode', required=False, help='Default file permissions',  default=700, type=int)
 @click.option('-w', '--timeout', required=False, help='Waiting time in ms to check whether mount was successful',
-              default=1000, type=int)
+              default=10000, type=int)
+@click.option('-g', '--show-archive', is_flag=True, help='Show archived files.')
+@click.option('-p', '--fix-permissions', is_flag=True, help='Fix permission for new files uploaded using FUSE. '
+                                                            'Applied only for file system mount.')
 @common_options
 def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, log_level, quiet, threads, mode,
-                  timeout):
+                  timeout, show_archive, fix_permissions):
     """
     Mounts either all available network file systems or a single object storage to a local folder.
 
@@ -1306,7 +1483,8 @@ def mount_storage(mountpoint, file, bucket, options, custom_options, log_file, l
     """
     DataStorageOperations.mount_storage(mountpoint, file=file, log_file=log_file, log_level=log_level,
                                         bucket=bucket, options=options, custom_options=custom_options,
-                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout)
+                                        quiet=quiet, threading=threads, mode=mode, timeout=timeout,
+                                        show_archive=show_archive, fix_permissions=fix_permissions)
 
 
 @storage.command('umount')
@@ -1609,8 +1787,8 @@ def start_tunnel_options(decorating_func):
                   help='Path to .ssh directory for passwordless ssh configuration on Linux.')
     @click.option('-sh', '--ssh-host', required=False, type=str,
                   help='Host name for passwordless ssh configuration.')
-    @click.option('-su', '--ssh-user', required=False, type=str,
-                  help='User name for passwordless ssh configuration.')
+    @click.option('-su', '--ssh-user', required=False, type=str, multiple=True,
+                  help='User name for passwordless ssh configuration. Multiple options supported.')
     @click.option('-sk', '--ssh-keep', required=False, is_flag=True, default=False,
                   help='Keeps passwordless ssh configuration after tunnel stopping.')
     @click.option('-d', '--direct', required=False, is_flag=True, default=False,
@@ -1989,6 +2167,16 @@ def import_users(file_path, create_user, create_group, create_metadata):
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
 
 
+@users.command(name='instances')
+@click.option('-v', '--verbose', required=False, is_flag=True, default=False, help='Show all active limits in a table')
+@common_options
+def list_instance_limits(verbose):
+    """
+    Shows information on user's instance limits
+    """
+    UserOperationsManager().get_instance_limits(verbose)
+
+
 @cli.group()
 def dts():
     """
@@ -2163,6 +2351,43 @@ def clean(force):
     CleanOperationsManager().clean(force=force)
 
 
-# Used to run a PyInstaller "freezed" version
-if getattr(sys, 'frozen', False):
+
+@cli.group()
+def cloud():
+    """Direct cloud access operations
+    """
+    pass
+
+
+@cloud.command(name='configure')
+@click.option('-p', '--provider', required=True,
+              help='Name of the Cloud Provider (the only supported value is "aws")')
+@click.option('-c', '--config', required=False,
+              help='Path to the output configuration file, if a non-default location shall be used')
+@click.option('-d', '--default-profile', required=False,
+              help='Name of a profile to be set as a default')
+@click.option('--force', required=False, is_flag=True,
+              help='Will overwrite any existing configuration file')
+@common_options
+def cloud_provider_configure(provider, config, default_profile, force):
+    """Generates a configuration file to access the Cloud directly via native SDKs
+    """
+    if not force and CloudProviderOperations.config_exists(provider, config):
+        click.echo('Configuration file already exists. Use --force to overwrite.')
+        return
+
+    CloudProviderOperations.configure(provider, config, default_profile)
+
+@cloud.command(name='print-credentials')
+@click.option('-d', '--profile-id', required=True,
+              help='ID of a profile to generate credentials')
+@common_options
+def cloud_provider_print_credentials(profile_id):
+    """Prints temporary credentials for the Cloud Provider
+    """
+    CloudProviderOperations.generate_credentials(profile_id)
+
+if __name__ == '__main__':
+    cli(sys.argv[1:])
+elif getattr(sys, 'frozen', False):
     cli(sys.argv[1:])

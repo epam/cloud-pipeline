@@ -1,11 +1,14 @@
 import BaseBillingRequest from './base-billing-request';
 import {costMapper} from './utils';
-import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
+import GetGroupedStoragesDataWithPrevious from './get-grouped-storages-data-with-previous';
 
 export class GetGroupedStorages extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
-    super(filters, true, pagination);
+  /**
+   * @param {BaseBillingRequestOptions} [options]
+   */
+  constructor (options) {
+    super({...options, loadDetails: true});
     this.grouping = 'STORAGE';
   }
 
@@ -48,8 +51,21 @@ export class GetGroupedStorages extends BaseBillingRequest {
   }
 }
 
-export class GetGroupedStoragesWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+/**
+ * @typedef {Object} GetGroupedStoragesWithPreviousOptions
+ * @property {Object} filters
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
+
+export class GetGroupedStoragesWithPrevious extends GetGroupedStoragesDataWithPrevious {
+  /**
+   * @param {GetGroupedStoragesWithPreviousOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -64,8 +80,10 @@ export class GetGroupedStoragesWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedStorages,
-      formattedFilters,
-      pagination
+      {
+        filters: formattedFilters,
+        pagination
+      }
     );
   }
 

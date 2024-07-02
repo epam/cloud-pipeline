@@ -30,7 +30,8 @@ function TogglePresentationMode (
     className,
     mode,
     onChange,
-    style
+    style,
+    size = 'large'
   }
 ) {
   const onButtonClick = (event, mode) => {
@@ -45,7 +46,7 @@ function TogglePresentationMode (
         className
       )}
     >
-      <Button.Group size="large">
+      <Button.Group size={size}>
         <Button
           type={mode === Modes.list ? 'primary' : 'default'}
           style={{width: 80}}
@@ -69,7 +70,8 @@ TogglePresentationMode.propTypes = {
   className: PropTypes.string,
   mode: PropTypes.oneOf([Modes.list, Modes.table]),
   onChange: PropTypes.func,
-  style: PropTypes.object
+  style: PropTypes.object,
+  size: PropTypes.string
 };
 
 export {Modes as PresentationModes};

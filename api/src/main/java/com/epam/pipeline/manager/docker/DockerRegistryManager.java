@@ -23,11 +23,14 @@ import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.docker.DockerRegistryVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.DockerRegistrySecret;
 import com.epam.pipeline.entity.docker.ImageDescription;
 import com.epam.pipeline.entity.docker.ImageHistoryLayer;
 import com.epam.pipeline.entity.docker.ManifestV2;
+import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEvent;
 import com.epam.pipeline.entity.pipeline.DockerRegistryEventEnvelope;
@@ -38,6 +41,7 @@ import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.docker.DockerAuthorizationException;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
@@ -123,6 +127,10 @@ public class DockerRegistryManager implements SecuredEntityManager {
 
     @Autowired
     private ToolVersionManager toolVersionManager;
+
+    @Autowired
+    private CloudFacade cloudFacade;
+
 
     @Transactional(propagation = Propagation.REQUIRED)
     public DockerRegistry create(DockerRegistryVO dockerRegistryVO) {
@@ -411,10 +419,15 @@ public class DockerRegistryManager implements SecuredEntityManager {
      * pseudo root {@link DockerRegistryList} object
      */
     public DockerRegistryList loadAllRegistriesContent() {
-        List<DockerRegistry> registries = dockerRegistryDao.loadAllRegistriesContent();
+        final List<DockerRegistry> registries = dockerRegistryDao.loadAllRegistriesContent();
+        final Set<Long> gpuToolsIds = getGpuToolIds();
+
         registries.stream()
                 .flatMap(registry -> registry.getGroups().stream())
-                .forEach(group -> group.setPrivateGroup(toolGroupManager.isGroupPrivate(group)));
+                .peek(group -> group.setPrivateGroup(toolGroupManager.isGroupPrivate(group)))
+                .flatMap(group -> ListUtils.emptyIfNull(group.getTools()).stream())
+                .filter(tool -> gpuToolsIds.contains(tool.getId()))
+                .forEach(tool -> tool.setGpuEnabled(true));
         return new DockerRegistryList(registries);
     }
 
@@ -498,7 +511,7 @@ public class DockerRegistryManager implements SecuredEntityManager {
                     toolGroup.getName()));
             toolManager.updateToolVersionScanStatus(toolInGroup.get().getId(),
                     ToolScanStatus.NOT_SCANNED, DateUtils.now(), event.getTarget().getTag(),
-                    null, event.getTarget().getDigest(), new HashMap<>());
+                    null, event.getTarget().getDigest(), new HashMap<>(), null, null);
             return toolInGroup;
         }
         if (!permissionManager.isActionAllowedForUser(toolGroup, actor, AclPermission.WRITE)) {
@@ -648,5 +661,26 @@ public class DockerRegistryManager implements SecuredEntityManager {
     public DockerClient getDockerClient(DockerRegistry registry, String image) {
         String token = getImageToken(registry, image);
         return dockerClientFactory.getDockerClient(registry, token);
+    }
+
+    private Set<String> getGpuInstanceTypes() {
+        final List<InstanceType> allInstanceTypes = cloudFacade.getAllInstanceTypes(null, false);
+        return ListUtils.emptyIfNull(allInstanceTypes).stream()
+                .filter(instanceType -> instanceType.getGpu() > 0)
+                .map(InstanceType::getName)
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Long> getGpuToolIds() {
+        final Set<String> gpuTypes = getGpuInstanceTypes();
+        return ListUtils.emptyIfNull(toolVersionManager.loadAllLatestToolVersionSettings()).stream()
+                .filter(toolVersion -> ListUtils.emptyIfNull(toolVersion.getSettings()).stream()
+                        .map(configuration -> Optional.ofNullable(configuration.getConfiguration())
+                                .map(PipelineConfiguration::getInstanceType)
+                                .orElse(StringUtils.EMPTY))
+                        .filter(StringUtils::isNotBlank)
+                        .anyMatch(gpuTypes::contains))
+                .map(ToolVersion::getToolId)
+                .collect(Collectors.toSet());
     }
 }

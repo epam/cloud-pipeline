@@ -21,17 +21,17 @@ import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 //TODO: Move all CRUD and DB persistence methods from PipelineRunManager to this class
@@ -51,7 +51,7 @@ public class PipelineRunCRUDService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void updatePrettyUrlForFinishedRun(PipelineRun run) {
-        if (run.getStatus().isFinal() && StringUtils.hasText(run.getPrettyUrl())) {
+        if (run.getStatus().isFinal() && StringUtils.isNotBlank(run.getPrettyUrl())) {
             run.setPrettyUrl(null);
             pipelineRunDao.updateRun(run);
         }
@@ -71,9 +71,12 @@ public class PipelineRunCRUDService {
     }
 
     public PipelineRun loadRunById(final Long id) {
-        final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
-        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, id));
-        return pipelineRun;
+        return findRunByRunId(id).orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, id)));
+    }
+
+    public Optional<PipelineRun> findRunByRunId(final Long id) {
+        return Optional.ofNullable(pipelineRunDao.loadPipelineRun(id));
     }
 
     public List<PipelineRun> loadRunsForNodeName(final String nodeName) {

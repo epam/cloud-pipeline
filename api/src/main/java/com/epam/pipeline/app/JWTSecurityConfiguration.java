@@ -55,8 +55,6 @@ import java.util.stream.Collectors;
 public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     private static final String REST_API_PREFIX = "/restapi/**";
-    private static final String ROUTE_URL = "/restapi/route";
-    private static final String PROLONG_URL = "/restapi/run/**/prolong**";
 
     @Value("${jwt.key.public}")
     private String publicKey;
@@ -66,15 +64,18 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${jwt.disable.session:true}")
     private boolean disableJwtSession;
+
+    @Value("${api.security.redirected.urls:/restapi/route,/restapi/**/prolong**,/restapi/static-resources/**}")
+    private String[] redirectedResources;
     
     @Value("${api.security.anonymous.urls:/restapi/route}")
     private String[] anonymousResources;
 
-    @Value("${api.security.impersonation.operations.root.url:/restapi/user/impersonation}")
-    private String impersonationOperationsRootUrl;
-
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
+
+    @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
+    private String[] swaggerAccessRoles;
 
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
@@ -111,8 +112,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getImpersonationStartUrl())
-                     .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSwaggerResources())
+                .hasAnyAuthority(swaggerAccessRoles)
                 .antMatchers(getSecuredResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
@@ -148,27 +149,23 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected String[] getUnsecuredResources() {
         final List<String> excludePaths = Arrays.asList(
                 "/restapi/dockerRegistry/oauth",
-                "/restapi/swagger-resources/**",
-                "/restapi/swagger-ui.html",
-                "/restapi/webjars/springfox-swagger-ui/**",
-                "/restapi/v2/api-docs/**",
                 "/restapi/proxy/**",
                 "/error",
                 "/error/**");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
     }
 
+    protected String[] getSwaggerResources() {
+        final List<String> paths = Arrays.asList(
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**");
+        return paths.toArray(new String[0]);
+    }
+
     public String[] getAnonymousResources() {
         return anonymousResources;
-    }
-
-    public String getImpersonationStartUrl() {
-        return impersonationOperationsRootUrl + "/start";
-    }
-
-    //List of urls under REST that should be redirected back after authorization
-    private String[] redirectedUrls() {
-        return new String[] { ROUTE_URL, PROLONG_URL };
     }
 
     private RequestCache requestCache() {
@@ -179,7 +176,7 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     //Only one of redirectedUrls
     private RequestMatcher getRedirectRequestMatcher() {
-        return new OrRequestMatcher(Arrays.stream(redirectedUrls())
+        return new OrRequestMatcher(Arrays.stream(redirectedResources)
                 .map(AntPathRequestMatcher::new)
                 .collect(Collectors.toCollection(ArrayList::new)));
     }

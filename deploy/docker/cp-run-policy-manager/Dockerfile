@@ -16,12 +16,13 @@ FROM centos:7
 
 RUN yum install -y curl python3
 
-RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python3 - && \
-     pip3 install -I kubernetes==12.0.1
+RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/3.6/get-pip.py | python3 - && \
+     pip3 install -I kubernetes==12.0.1 \
+                     requests==2.27.1
+
 
 RUN mkdir /policy-manager
-ADD common-run-policy-template.yaml /policy-manager
-ADD sensitive-run-policy-template.yaml /policy-manager
+ADD templates /policy-manager/templates
 ADD policy_manager.py /policy-manager
 
 ADD init /policy-manager/init

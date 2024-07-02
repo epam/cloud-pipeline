@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.TEMPLATE;
 import static com.epam.pipeline.autotests.ao.Profile.profileWithName;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -47,7 +48,8 @@ public class PipelineConfigurationTabAO extends AbstractPipelineTabAO<PipelineCo
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             super.elements(),
             entry(CONFIGURATION, context().find(byId("edit-pipeline-configuration-panel"))),
-            entry(ADD_CONFIGURATION, context().find(buttonByIconClass("anticon-plus")))
+            entry(ADD_CONFIGURATION, context().find(buttonByIconClass("anticon-plus"))),
+            entry(SAVE, $(byId("save-pipeline-configuration-button")))
     );
 
     public PipelineConfigurationTabAO(final String pipelineName) {

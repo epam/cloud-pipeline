@@ -17,11 +17,11 @@
 import React from 'react';
 
 export default function highlightText (
-  text,
+  text = '',
   searchString,
   highlightStyle = {margin: 0}
 ) {
-  text = text || '';
+  text = `${text}`;
   searchString = searchString || '';
   if (!searchString.length) {
     return text;

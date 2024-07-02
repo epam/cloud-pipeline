@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,16 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.quota.RunLimitsService;
+import com.epam.pipeline.manager.security.acl.AclMask;
+import com.epam.pipeline.manager.security.acl.AclMaskList;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,10 +44,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.OR_USER_READER;
+import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_FILTER;
+import static com.epam.pipeline.security.acl.AclExpressions.USER_READ_PERMISSION;
+import static com.epam.pipeline.security.acl.AclExpressions.OR;
 
 @Service
 public class UserApiService {
@@ -59,14 +68,18 @@ public class UserApiService {
     @Autowired
     private OnlineUsersService onlineUsersService;
 
+    @Autowired
+    private RunLimitsService runLimitsService;
+
     /**
      * Registers a new user
      * @param userVO specifies user to create
      * @return created user
      */
     @PreAuthorize(ADMIN_ONLY)
+    @AclMask
     public PipelineUser createUser(PipelineUserVO userVO) {
-        return userManager.createUser(userVO);
+        return userManager.create(userVO);
     }
 
     /**
@@ -76,6 +89,7 @@ public class UserApiService {
      * @return
      */
     @PreAuthorize(ADMIN_ONLY)
+    @AclMask
     public PipelineUser updateUser(final Long id, final PipelineUserVO userVO) {
         return userManager.updateUser(id, userVO);
     }
@@ -112,19 +126,21 @@ public class UserApiService {
         return userManager.loadAllGroupsBlockingStatuses();
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public PipelineUser loadUser(Long id) {
-        return userManager.loadUserById(id);
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER + OR + USER_READ_PERMISSION)
+    @AclMask
+    public PipelineUser loadUser(Long id, final boolean quotas) {
+        return userManager.load(id, quotas);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    @PostAuthorize(ADMIN_ONLY + OR_USER_READER + OR + "hasPermission(returnObject, 'READ')")
+    @AclMask
     public PipelineUser loadUserByName(final String name) {
-        return userManager.loadUserByName(name);
+        return userManager.loadByNameOrId(name);
     }
 
     @PreAuthorize(ADMIN_ONLY)
     public void deleteUser(Long id) {
-        userManager.deleteUser(id);
+        userManager.delete(id);
     }
 
     @PreAuthorize(ADMIN_ONLY)
@@ -132,16 +148,19 @@ public class UserApiService {
         return userManager.updateUser(id, roles);
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public List<PipelineUser> loadUsers() {
-        return new ArrayList<>(userManager.loadAllUsers());
+    @PostFilter(USER_READ_FILTER)
+    @AclMaskList
+    public List<PipelineUser> loadUsers(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadAllUsers(loadQuotas));
     }
 
-    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public List<PipelineUser> loadUsersWithActivityStatus() {
-        return new ArrayList<>(userManager.loadUsersWithActivityStatus());
+    @PostFilter(USER_READ_FILTER)
+    @AclMaskList
+    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas));
     }
 
+    //TODO
     @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
         return userManager.loadUsersInfo(userNames);
@@ -156,6 +175,8 @@ public class UserApiService {
      * @param group a user group name
      * @return a loaded {@code List} of {@code PipelineUser} from the database that satisfy the group name
      */
+    @PostFilter(USER_READ_FILTER)
+    @AclMaskList
     public List<PipelineUser> loadUsersByGroup(String group) {
         return new ArrayList<>(userManager.loadUsersByGroup(group));
     }
@@ -193,6 +214,8 @@ public class UserApiService {
      * @param prefix a prefix of a user name to search
      * @return a loaded {@code List} of {@link PipelineUser} that satisfy the prefix
      */
+    @PostFilter(USER_READ_FILTER)
+    @AclMaskList
     public List<PipelineUser> findUsers(String prefix) {
         return userManager.findUsers(prefix);
     }
@@ -254,5 +277,9 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public boolean deleteExpiredOnlineUsers(final LocalDate date) {
         return onlineUsersService.deleteExpired(date);
+    }
+
+    public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
+        return runLimitsService.getCurrentUserLaunchLimits(loadAll);
     }
 }

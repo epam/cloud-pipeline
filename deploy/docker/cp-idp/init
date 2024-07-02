@@ -5,6 +5,10 @@ if [ -z "$CP_IDP_CERT_DIR" ]; then
     export CP_IDP_CERT_DIR="/opt/idp/pki"
 fi
 
+if [ -z "$CP_IDP_PROFILE_DB" ]; then
+    export CP_IDP_PROFILE_DB="/opt/idp/pdb/saml-idp-profiles.json"
+fi
+
 if [ ! -f "$CP_IDP_CERT_DIR/idp-private-key.pem" ]; then
     echo "Signing private key not found at $CP_IDP_CERT_DIR/idp-private-key.pem, but it is required to setup SSO via a Basic IdP. Exiting"
     exit 1
@@ -41,7 +45,8 @@ saml-idp add-user   "$default_admin_name" \
                     --firstName "$default_admin_name" \
                     --lastName "$default_admin_name" \
                     --email "$default_admin_email" \
-                    --groups "$default_admin_group"
+                    --groups "$default_admin_group" \
+                    --profileDatabase "$CP_IDP_PROFILE_DB"
 
 
 echo "Starting IdP:"
@@ -52,5 +57,6 @@ saml-idp    --cert  "$CP_IDP_CERT_DIR/idp-public-cert.pem" \
             --https \
             --httpsPrivateKey "$CP_IDP_CERT_DIR/ssl-private-key.pem" \
             --httpsCert "$CP_IDP_CERT_DIR/ssl-public-cert.pem" \
-            --admins "$default_admin_group"
+            --admins "$default_admin_group" \
+            --profileDatabase "$CP_IDP_PROFILE_DB"
             

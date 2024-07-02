@@ -22,6 +22,7 @@ $env:DTS_NAME = hostname
 if (-not(Test-Path "$env:DTS_DIR")) { New-Item -Path "$env:DTS_DIR" -ItemType "Directory" -Force }
 if (-not(Test-Path "$env:DTS_DIR\logs")) { New-Item -Path "$env:DTS_DIR\logs" -ItemType "Directory" -Force }
 if (-not(Test-Path "$env:DTS_DIR\logs\launcher.log")) { New-Item -Path "$env:DTS_DIR\logs\launcher.log" -Force }
+if (-not(Test-Path "$env:DTS_DIR\locks")) { New-Item -Path "$env:DTS_DIR\locks" -ItemType "Directory" -Force }
 
 Start-Transcript -Path "$env:DTS_DIR\logs\installer.log" -Append
 

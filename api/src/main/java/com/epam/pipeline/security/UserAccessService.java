@@ -110,6 +110,9 @@ public class UserAccessService {
         if (user.isBlocked()) {
             throwUserIsBlocked(user.getUserName());
         }
+        if (user.isAdmin()) {
+            return;
+        }
         quotaService.findActiveActionForUser(user, QuotaActionType.BLOCK)
                 .ifPresent(quota -> {
                     log.info("Logging of user is blocked due to quota applied {}", quota);
@@ -194,7 +197,7 @@ public class UserAccessService {
     private UserContext createUser(final String userName, final List<String> groups,
                                    final Map<String, String> attributes) {
         final List<Long> roles = roleManager.getDefaultRolesIds();
-        final PipelineUser createdUser = userManager.createUser(userName,
+        final PipelineUser createdUser = userManager.create(userName,
                 roles, groups, attributes, null);
         userManager.updateUserFirstLoginDate(createdUser.getId(), DateUtils.nowUTC());
         log.debug("Created user {} with groups {}", userName, groups);

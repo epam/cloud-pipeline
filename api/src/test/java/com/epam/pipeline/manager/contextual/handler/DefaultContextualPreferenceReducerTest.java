@@ -56,9 +56,12 @@ public class DefaultContextualPreferenceReducerTest {
     private final ContextualPreferenceReducer reducer;
 
     {
-        final Map<String, ContextualPreferenceReducer> preferenceReducerMap = new HashMap<>();
-        preferenceReducerMap.put(PREFERENCE_1, innerReducer);
-        reducer = new DefaultContextualPreferenceReducer(messageHelper, preferenceReducerMap);
+        final Map<String, ContextualPreferenceReducer> preferenceNameToReducer = new HashMap<>();
+        preferenceNameToReducer.put(PREFERENCE_1, innerReducer);
+        final Map<PreferenceType, ContextualPreferenceReducer> preferenceTypeToReducer = new HashMap<>();
+        preferenceTypeToReducer.put(PreferenceType.BOOLEAN, innerReducer);
+        reducer = new DefaultContextualPreferenceReducer(messageHelper, preferenceNameToReducer,
+                preferenceTypeToReducer);
     }
 
     @Test
@@ -125,7 +128,7 @@ public class DefaultContextualPreferenceReducerTest {
     }
 
     @Test
-    public void reduceShouldReturnEmptyOptionalIfThereIsNoReducerForTheGivenPreference() {
+    public void reduceShouldReturnEmptyOptionalIfThereIsNoReducerForTheGivenPreferenceName() {
         final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
                 RESOURCE_ID);
         final ContextualPreference preference1 = new ContextualPreference(ANOTHER_PREFERENCE, VALUE_1, resource);
@@ -143,6 +146,40 @@ public class DefaultContextualPreferenceReducerTest {
                 RESOURCE_ID);
         final ContextualPreference preference1 = new ContextualPreference(PREFERENCE_1, VALUE_1, resource);
         final ContextualPreference preference2 = new ContextualPreference(PREFERENCE_1, VALUE_2, resource);
+        final ContextualPreference expectedPreference = new ContextualPreference(PREFERENCE_1, MERGED_VALUE, resource);
+        final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
+        when(innerReducer.reduce(eq(preferences))).thenReturn(Optional.of(expectedPreference));
+
+        final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
+
+        assertTrue(reducedPreference.isPresent());
+        assertThat(reducedPreference.get(), is(expectedPreference));
+        verify(innerReducer).reduce(eq(preferences));
+    }
+
+    @Test
+    public void reduceShouldReturnEmptyOptionalIfThereIsNoReducerForTheGivenPreferenceType() {
+        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
+                RESOURCE_ID);
+        final ContextualPreference preference1 = new ContextualPreference(ANOTHER_PREFERENCE, VALUE_1,
+                PreferenceType.INTEGER, resource);
+        final ContextualPreference preference2 = new ContextualPreference(ANOTHER_PREFERENCE, VALUE_2,
+                PreferenceType.INTEGER, resource);
+        final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
+
+        final Optional<ContextualPreference> reducedPreference = reducer.reduce(preferences);
+
+        assertFalse(reducedPreference.isPresent());
+    }
+
+    @Test
+    public void reduceShouldReturnReducedPreferenceIfThereIsReducerForTheGivenPreferenceType() {
+        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(LEVEL,
+                RESOURCE_ID);
+        final ContextualPreference preference1 = new ContextualPreference(PREFERENCE_1, VALUE_1,
+                PreferenceType.BOOLEAN, resource);
+        final ContextualPreference preference2 = new ContextualPreference(PREFERENCE_1, VALUE_2,
+                PreferenceType.BOOLEAN, resource);
         final ContextualPreference expectedPreference = new ContextualPreference(PREFERENCE_1, MERGED_VALUE, resource);
         final List<ContextualPreference> preferences = Arrays.asList(preference1, preference2);
         when(innerReducer.reduce(eq(preferences))).thenReturn(Optional.of(expectedPreference));

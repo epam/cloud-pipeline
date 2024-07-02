@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,17 +21,22 @@ import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public final class CommonUtils {
 
@@ -85,10 +90,39 @@ public final class CommonUtils {
                     HashMap::new));
     }
 
+    @SafeVarargs
     public static <T> Optional<T> first(Supplier<Optional<T>>... suppliers) {
-        return Arrays.asList(suppliers).stream()
+        return Arrays.stream(suppliers)
                 .map(Supplier::get)
                 .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
                 .findFirst();
+    }
+
+    public static <T> List<T> toList(final Iterable<T> items) {
+        if (Objects.isNull(items)) {
+            return Collections.emptyList();
+        }
+        return StreamSupport.stream(items.spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
+    @SafeVarargs
+    public static <K, V> Map<K, V> toMap(final Pair<K, V>... pairs) {
+        if (Objects.isNull(pairs)) {
+            return Collections.emptyMap();
+        }
+        return Arrays.stream(pairs).collect(Collectors.toMap(Pair::getKey, Pair::getValue));
+    }
+
+    public static <T> List<T> subtract(final List<T> left, final List<T> right) {
+        final List<T> result = new ArrayList<>(left);
+        result.removeAll(right);
+        return result;
+    }
+
+    public static <T> List<T> reversed(final List<T> items) {
+        final List<T> result = new ArrayList<>(items);
+        Collections.reverse(result);
+        return result;
     }
 }

@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-git: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-git: "true"
@@ -18,7 +19,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-git
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:git-$CP_VERSION
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:git-$CP_GITLAB_VERSION-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
             - containerPort: ${CP_GITLAB_INTERNAL_PORT}

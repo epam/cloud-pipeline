@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,13 @@ delete_existing_hostlists() {
     done
 }
 
+reset_local_host_config() {
+    qconf -sconf $HOSTNAME &> /dev/null
+    if [ "$?" -eq "0" ]; then
+        qconf -dconf $HOSTNAME
+    fi
+}
+
 configure_global() {
     _MAX_PROCS_LIMIT="${MAX_PROCS_LIMIT:-65536}"
     _MAX_NOPEN_LIMIT="${MAX_NOPEN_LIMIT:-65536}"
@@ -58,6 +65,15 @@ configure_global() {
     sed -i "/execd_params/c\execd_params S_DESCRIPTORS=${_MAX_PROCS_LIMIT},H_DESCRIPTORS=${_MAX_PROCS_LIMIT},S_MAXPROC=${_MAX_NOPEN_LIMIT},H_MAXPROC=${_MAX_NOPEN_LIMIT}" ./global
     sed -i "/shell_start_mode/c\shell_start_mode $_SHELL_START_MODE" ./global
     sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
+    sed -i '/gid_range/c\gid_range 20000-30000' ./global
+
+    if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
+        mkdir -p "$COMMON_DIR/sge/logs"
+        chown sgeadmin:sgeadmin "$COMMON_DIR/sge/logs"
+        chmod 777 "$COMMON_DIR/sge/logs"
+        sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_prolog" ./global
+        sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR_MUTUAL_LOC/shell/sge_epilog" ./global
+    fi
 
     qconf -Mconf ./global
     rm -f ./global
@@ -120,7 +136,7 @@ delete_pe() {
 
 create_pe_from_file() {
     local pe_spec_file="$1"
-    local pe_queue_name="${2:-$CP_CAP_SGE_QUEUE_NAME}"
+
     if [ -z "$pe_spec_file" ]; then
         echo "PE spec file is not provided"
         return 1
@@ -137,10 +153,9 @@ create_pe_from_file() {
     fi
 
     qconf -Ap "$pe_spec_file"
-    qconf -mattr queue pe_list "$pe_name" "$pe_queue_name"
 }
 
-configure_pe() {
+create_pe() {
     local pe_name="${1:-local}"
     local pe_alloc_rule="${2:-\$pe_slots}"
     local pe_job_is_first_task="${3:-TRUE}"
@@ -393,6 +408,8 @@ qconf -ah "$HOSTNAME"
 
 pipe_log_info "Configure hostlist, global, scheduler, queue" "$SGE_MASTER_SETUP_TASK"
 
+reset_local_host_config
+check_last_exit_code $? "Local host settings were reset" "Failed to reset local host settings"
 configure_global
 check_last_exit_code $? "Global settings were configured" "Failed to configure global settings"
 
@@ -406,36 +423,24 @@ qconf -ao $OWNER_NAME
 # Delete any existing-default queues and hostlists, before adding new ones
 delete_existing_queues
 delete_existing_hostlists
+
 # - First delete all default PEs
 delete_pe all
 
 # - Add a "threaded/smp" PE, which schedules all threads to a single machine
-configure_pe "$CP_CAP_SGE_PE_NAME" \
-             "\$pe_slots" \
-             "TRUE" \
-             "$CP_CAP_SGE_PE_SLOTS"
+create_pe "$CP_CAP_SGE_PE_NAME" \
+          "\$pe_slots" \
+          "TRUE" \
+          "$CP_CAP_SGE_PE_SLOTS"
 # - Add an "mpi" PE, which allows to spread processes across nodes
-configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
-             "\$fill_up" \
-             "FALSE" \
-             "$CP_CAP_SGE_PE_MPI_SLOTS"
-
-create_execution_host
-
-"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
-
-for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*.sh; do
-    (
-        # shellcheck source=/dev/null
-        [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
-        sge_setup_queue
-    )
-done
-
+create_pe "$CP_CAP_SGE_PE_MPI_NAME" \
+          "\$fill_up" \
+          "FALSE" \
+          "$CP_CAP_SGE_PE_MPI_SLOTS"
 # - Add any other user-provided PEs
 if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
     pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
-    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
+    for _pe_spec_file in "$CP_CAP_SGE_EXTRA_PE_PATH"/*.spec; do
         pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
         create_pe_from_file "$_pe_spec_file"
     done
@@ -443,14 +448,33 @@ else
     pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
 fi
 
+create_execution_host
+
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
+
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
+    (
+        # shellcheck source=/dev/null
+        [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
+        sge_setup_queue
+    )
+done
+
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     /etc/init.d/gridengine-exec restart
 elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
 fi
 
+if [ "$CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" ]; then
+    echo "-q $CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" >> "$SGE_ROOT/$SGE_CELL/common/sge_request"
+fi
+
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
+
+# Add accounting file sync to the cloud storage
+sync_to_storage add "$SGE_ROOT/$SGE_CELL/common/accounting"
 
 pipe_log_success "SGE master node was successfully configured" "$SGE_MASTER_SETUP_TASK"
 
@@ -475,12 +499,10 @@ else
     pipe_log_success "All execution hosts are connected" "$SGE_MASTER_SETUP_TASK_WORKERS"
 fi
 
-for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
-        if check_cp_cap "CP_CAP_AUTOSCALE"; then
-            nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_sge.py" >"$LOG_DIR/.nohup.autoscaler.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
-        fi
+        nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
     )
 done

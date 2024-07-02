@@ -18,6 +18,8 @@ import {observable, isObservableArray} from 'mobx';
 import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
+import {parseInstanceMetrics, parseStorageMetrics} from './metrics';
+import {parseStorageAggregate, StorageAggregate} from './aggregate';
 
 class Filter {
   static RUNNER_SEPARATOR = '|';
@@ -26,6 +28,8 @@ class Filter {
   @observable range;
   @observable report;
   @observable runner;
+  @observable metrics;
+  @observable storageAggregate;
 
   rebuild = ({location, router}) => {
     this.router = router;
@@ -33,10 +37,18 @@ class Filter {
       period = Period.month,
       user,
       group,
+      'billing-group': billingGroup,
       range,
-      region
+      region,
+      metrics,
+      layer: storageAggregate
     } = (location || {}).query || {};
-    if (user) {
+    if (billingGroup) {
+      this.runner = {
+        type: RunnerType.billingGroup,
+        id: (billingGroup || '').split(Filter.RUNNER_SEPARATOR)
+      };
+    } else if (user) {
       this.runner = {
         type: RunnerType.user,
         id: (user || '').split(Filter.RUNNER_SEPARATOR)
@@ -53,10 +65,30 @@ class Filter {
     this.period = period;
     this.range = range;
     this.region = (region || '').split(Filter.REGION_SEPARATOR).filter(Boolean);
+    if (ReportsRouting.isStorage(this.report)) {
+      this.metrics = parseStorageMetrics(metrics);
+    } else if (ReportsRouting.isInstances(this.report)) {
+      this.metrics = parseInstanceMetrics(metrics);
+    } else {
+      this.metrics = undefined;
+    }
+    if (ReportsRouting.isObjectStorage(this.report)) {
+      this.storageAggregate = parseStorageAggregate(storageAggregate);
+    } else {
+      this.storageAggregate = undefined;
+    }
   };
 
   navigate = (navigation, strictRange = false) => {
-    let {report, runner, period, range, region} = navigation || {};
+    let {
+      report,
+      runner,
+      period,
+      range,
+      region,
+      metrics,
+      storageAggregate
+    } = navigation || {};
     if (report === undefined) {
       report = this.report;
     }
@@ -72,7 +104,25 @@ class Filter {
     if (region === undefined) {
       region = this.region;
     }
-    if (/^quotas/i.test(report)) {
+    if (metrics === undefined) {
+      metrics = this.metrics;
+    }
+    if (
+      ReportsRouting.isStorage(report) !== ReportsRouting.isStorage(this.report) ||
+      ReportsRouting.isInstances(report) !== ReportsRouting.isInstances(this.report)
+    ) {
+      metrics = undefined;
+    }
+    if (storageAggregate === undefined) {
+      storageAggregate = this.storageAggregate;
+    }
+    if (
+      !ReportsRouting.isObjectStorage(report) ||
+      storageAggregate === StorageAggregate.default
+    ) {
+      storageAggregate = undefined;
+    }
+    if (ReportsRouting.isQuota(report)) {
       runner = undefined;
       range = undefined;
       period = undefined;
@@ -93,10 +143,14 @@ class Filter {
     };
     const params = [
       runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
+      runner && runner.type === RunnerType.billingGroup &&
+        `billing-group=${mapRunnerId(runner.id)}`,
       runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
       period && `period=${period}`,
       range && `range=${range}`,
-      regions.length > 0 && `region=${mapRegionId(regions)}`
+      regions.length > 0 && `region=${mapRegionId(regions)}`,
+      metrics && `metrics=${metrics}`,
+      storageAggregate && `layer=${storageAggregate}`
     ].filter(Boolean);
     let query = '';
     if (params.length) {
@@ -174,6 +228,10 @@ class Filter {
   periodNavigation = (period, range) => this.navigate({period, range}, true);
 
   reportNavigation = (report, runner) => this.navigate({report, runner});
+
+  metricsNavigation = (metrics) => this.navigate({metrics});
+
+  storageAggregateNavigation = (aggregate) => this.navigate({storageAggregate: aggregate});
 }
 
 export default Filter;

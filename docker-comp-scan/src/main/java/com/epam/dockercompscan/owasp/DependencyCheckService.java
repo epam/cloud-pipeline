@@ -17,6 +17,7 @@
 package com.epam.dockercompscan.owasp;
 
 import com.epam.dockercompscan.owasp.analyzer.AnalyzeEnabler;
+import com.epam.dockercompscan.owasp.analyzer.AnalyzerConstants;
 import com.epam.dockercompscan.scan.domain.Dependency;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.exception.ExceptionCollection;
@@ -39,6 +40,9 @@ public class DependencyCheckService {
 
     @Value("#{'${enable.analyzers}'.split(',')}")
     private List<String> enabledAnalysers;
+
+    @Value("${base.working.dir.search.path:/**/}")
+    private String baseSearchPath;
 
     public List<Dependency> runScan(File outputFolder) {
         LOGGER.debug("Start scanning: " + outputFolder.getName());
@@ -71,6 +75,7 @@ public class DependencyCheckService {
 
     private Settings populateSettings() {
         Settings settings = new Settings();
+        settings.setString(AnalyzerConstants.BASE_SEARCH_PATH_SETTING, baseSearchPath);
         settings.setBooleanIfNotNull(Settings.KEYS.ANALYZER_EXPERIMENTAL_ENABLED, true);
         settings.setBooleanIfNotNull(Settings.KEYS.ANALYZER_RETIRED_ENABLED, true);
         settings.setBooleanIfNotNull(Settings.KEYS.ANALYZER_RETIRED_ENABLED, true);

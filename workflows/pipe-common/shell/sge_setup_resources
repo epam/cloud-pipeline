@@ -24,10 +24,11 @@ function configure_consumable_sge_resource {
     RESOURCE_DEFAULT="$3"
     RESOURCE_VALUE="$4"
     RESOURCE_CONSUMABLE_TYPE="$5"
+    RESOURCE_RELOP="$6"
 
     # Add consumable resource if it is master node, this shall be done once
     if [[ "$cluster_role" = "master" ]]; then
-        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT" "$RESOURCE_CONSUMABLE_TYPE"
+        add_consumable_sge_resource "$RESOURCE_NAME" "$RESOURCE_TYPE" "$RESOURCE_DEFAULT" "$RESOURCE_CONSUMABLE_TYPE" "$RESOURCE_RELOP"
     fi
 
     # Add consumable resource capacity for a current execution host
@@ -39,13 +40,14 @@ function add_consumable_sge_resource {
     RESOURCE_TYPE="$2"
     RESOURCE_DEFAULT="$3"
     RESOURCE_CONSUMABLE_TYPE="$4"
+    RESOURCE_RELOP="$5"
 
     _CONFIG_FILE=/tmp/complex_${_CURRENT_EXEC_NODE_NAME}.txt
     qconf -sc > "$_CONFIG_FILE"
     # First remove any line, which start with the resource name, in case it already exists
     # Otherwise - resource won't be added/modified
     sed -i "/^$RESOURCE_NAME /d" "$_CONFIG_FILE"
-    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE <= YES $RESOURCE_CONSUMABLE_TYPE $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
+    echo "$RESOURCE_NAME $RESOURCE_NAME $RESOURCE_TYPE $RESOURCE_RELOP YES $RESOURCE_CONSUMABLE_TYPE $RESOURCE_DEFAULT 0" >> "$_CONFIG_FILE"
     qconf -Mc "$_CONFIG_FILE"
     rm "$_CONFIG_FILE"
     pipe_log_info "Added GridEngine consumable resource: $RESOURCE_NAME" "$_SGE_RESOURCES_SETUP_TASK"
@@ -76,6 +78,25 @@ _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU:-gpus}
 pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
+if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_EXCLUSIVE_MODE"; then
+    nvidia-smi -e 0
+    nvidia-smi -c 3
+    nvidia-smi -pm 1
+    pipe_log_info "GPUs are set to exclusive mode via CP_CAP_SGE_GPU_EXCLUSIVE_MODE" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
+if (( _NODE_GPUS_COUNT > 0 )) && check_cp_cap "CP_CAP_SGE_GPU_RSMAP_DEVICES"; then
+    CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU="${CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU:-/tmp/sge-gpus-locks}"
+    mkdir -p "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total"
+    for DEVICE_ID in $(seq 0 "$(( _NODE_GPUS_COUNT - 1 ))"); do
+        mkdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total/$DEVICE_ID"
+    done
+    mkdir -p "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse"
+    chmod g+rw,o+rw "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse" -R
+    setfacl -d -m user::rwx -m group::rwx -m other::rwx "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse"
+    pipe_log_info "GPUs are managed as RSMAP devices via CP_CAP_SGE_GPU_RSMAP_DEVICES" "$_SGE_RESOURCES_SETUP_TASK"
+fi
+
 _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / (1024 * 1024)) "G"}')
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM:-ram}
 pipe_log_info "$_NODE_RAM_COUNT RAM found" "$_SGE_RESOURCES_SETUP_TASK"
@@ -97,6 +118,10 @@ fi
 CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU:-n_cpu}
 pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_SGE_RESOURCES_SETUP_TASK"
 
+# "exclusive" resource can be used to schedule jobs which occupy a whole node
+# See: http://web.archive.org/web/20130706011021/http://docs.oracle.com/cd/E24901_01/doc.62/e21978/management.htm#autoId61
+CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE=${CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE:-exclusive}
+
 pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_SETUP_TASK"
 
 # Changed consumable type of the "n_cpu" and "gpus" resources to "JOB" (see http://www.softpanorama.org/HPC/Grid_engine/Resources/sge_consumable_resources.shtml)
@@ -105,8 +130,14 @@ pipe_log_info "Starting GridEngine resources configuration..." "$_SGE_RESOURCES_
 # For the "ram" resource, keeping it as "YES", as it makes sense to request this resource per slot
 
 # For the CPU-only nodes, we still add "gpus" resource with value "0", so that the scripts do not fail if the request "-l gpus=N"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES"
-configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB"
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_GPU" "INT" "0" "$_NODE_GPUS_COUNT" "JOB" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_RAM" "MEMORY" "0G" "$_NODE_RAM_COUNT" "YES" "<="
+configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_CPU" "INT" "0" "$_NODE_CPU_COUNT" "JOB" "<="
+
+if [ "$CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" != "false" ]; then
+    configure_consumable_sge_resource "$CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE" "BOOL" "0" "true" "YES" "EXCL"
+else
+    pipe_log_info "Skipping $CP_CAP_GE_CONSUMABLE_RESOURCE_NAME_EXCLUSIVE configuration as CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED == $CP_CAP_GE_CONSUMABLE_RESOURCE_EXCLUSIVE_ENABLED" "$_SGE_RESOURCES_SETUP_TASK"
+fi
 
 pipe_log_success "Finished GridEngine resources configuration" "$_SGE_RESOURCES_SETUP_TASK"

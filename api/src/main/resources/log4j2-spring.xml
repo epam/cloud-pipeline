@@ -64,8 +64,9 @@
             </Policies>
             <JsonLayout complete="false" compact="true" eventEol="true" stacktraceAsString="true">
                 <KeyValuePair key="user" value="$${ctx:user:-NotAuthorized}" />
-                <KeyValuePair key="log_context" value="Security" />
+                <KeyValuePair key="log_context" value="$${ctx:log_topic:-security}" />
                 <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd'T'HH:mm:ss.SSSZ}" />
+                <KeyValuePair key="storage_id" value="$${ctx:storage_id:-}" />
             </JsonLayout>
         </RollingFile >
         <RollingFile  name="Spring-Appender" fileName="${log-path}/spring.log"
@@ -148,11 +149,21 @@
         <Logger name="org.springframework.security.saml" level="error" additivity="true">
             <AppenderRef ref="JSONSecurityLogsAppender"/>
         </Logger>
+        <Logger name="com.epam.pipeline.manager.datastorage.lifecycle" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
+        <Logger name="com.epam.pipeline.manager.audit" level="info" additivity="true">
+            <AppenderRef ref="JSONSecurityLogsAppender"/>
+        </Logger>
         <Logger name="org.springframework.security.saml" level="debug" additivity="false">
             <AppenderRef ref="Spring-Appender"/>
         </Logger>
         <Logger name="org.springframework" level="error" additivity="false">
             <AppenderRef ref="Spring-Appender"/>
+            <AppenderRef ref="Console-Appender"/>
+        </Logger>
+        <Logger name="com.mchange" level="DEBUG" additivity="false">
+            <AppenderRef ref="App-Appender"/>
             <AppenderRef ref="Console-Appender"/>
         </Logger>
         <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" additivity="false">

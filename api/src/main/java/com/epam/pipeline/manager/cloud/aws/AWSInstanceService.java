@@ -20,8 +20,10 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.InstanceStateName;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
+import com.epam.pipeline.entity.cloud.InstanceDNSRecordFormat;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
 import com.epam.pipeline.entity.cloud.CloudInstanceOperationResult;
 import com.epam.pipeline.entity.cluster.InstanceDisk;
@@ -30,6 +32,7 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.cloud.aws.AwsEc2Exception;
@@ -47,6 +50,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -55,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 @Service
@@ -63,11 +68,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     private static final String MANUAL = "manual";
     private static final String ON_DEMAND = "on_demand";
-
-    // This InstanceDNSRecord used when no operation is required, f.e.
-    // when DNS record that doesn't exist asked to be deleted
-    private static final InstanceDNSRecord NO_OP_INSTANCE_DNS_RECORD = new InstanceDNSRecord(
-            "", "", InstanceDNSRecord.DNSRecordStatus.NO_OP);
 
     private final EC2Helper ec2Helper;
     private final PreferenceManager preferenceManager;
@@ -112,8 +112,11 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     @Override
     public RunInstance scaleUpNode(final AwsRegion region,
                                    final Long runId,
-                                   final RunInstance instance) {
-        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance, Collections.emptyMap());
+                                   final RunInstance instance,
+                                   final Map<String, String> runtimeParameters,
+                                   final Map<String, String> tags) {
+        final String command = buildNodeUpCommand(region, String.valueOf(runId), instance,
+                Collections.emptyMap(), runtimeParameters, tags);
         return instanceService.runNodeUpScript(cmdExecutor, runId, instance, command, buildScriptEnvVars(region));
     }
 
@@ -122,7 +125,8 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                                        final String nodeIdLabel,
                                        final NodePool node) {
         final RunInstance instance = node.toRunInstance();
-        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, getPoolLabels(node));
+        final String command = buildNodeUpCommand(region, nodeIdLabel, instance, getPoolLabels(node),
+                Collections.emptyMap(), Collections.emptyMap());
         return instanceService.runNodeUpScript(cmdExecutor, null, instance, command, buildScriptEnvVars(region));
     }
 
@@ -139,16 +143,18 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId) {
+    public boolean reassignNode(final AwsRegion region, final Long oldId, final Long newId,
+                                final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, oldId, newId, getProvider().name());
+                nodeReassignScript, oldId, newId, getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, oldId, newId, buildScriptEnvVars(region));
     }
 
     @Override
-    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId) {
+    public boolean reassignPoolNode(final AwsRegion region, final String nodeLabel, final Long newId,
+                                    final Map<String, String> tags) {
         final String command = commandService.buildNodeReassignCommand(
-                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name());
+                nodeReassignScript, nodeLabel, String.valueOf(newId), getProvider().name(), tags);
         return instanceService.runNodeReassignScript(cmdExecutor, command, nodeLabel,
                 String.valueOf(newId), buildScriptEnvVars(region));
     }
@@ -254,9 +260,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
     }
 
     @Override
-    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request) {
+    public void attachDisk(final AwsRegion region, final Long runId, final DiskAttachRequest request,
+                           final Map<String, String> tags) {
         ec2Helper.createAndAttachVolume(String.valueOf(runId), request.getSize(), region,
-                region.getKmsKeyArn());
+                region.getKmsKeyArn(), tags);
     }
 
     @Override
@@ -266,45 +273,83 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
 
     @Override
     public CloudInstanceState getInstanceState(final AwsRegion region, final String nodeLabel) {
-        final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
-        if (Objects.isNull(aliveInstance)) {
-            return CloudInstanceState.TERMINATED;
+        try {
+            final Instance aliveInstance = ec2Helper.getAliveInstance(nodeLabel, region);
+            if (Objects.isNull(aliveInstance)) {
+                return CloudInstanceState.TERMINATED;
+            }
+            final String instanceStateName = aliveInstance.getState().getName();
+            if (InstanceStateName.Pending.toString().equals(instanceStateName)
+                    || InstanceStateName.Running.toString().equals(instanceStateName)) {
+                return CloudInstanceState.RUNNING;
+            }
+            if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPING;
+            }
+            if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
+                return CloudInstanceState.STOPPED;
+            }
+        } catch (AwsEc2Exception e) {
+            log.error("Fail to get instance state by instance label {} for regionId {}", nodeLabel, region.getId());
         }
-        final String instanceStateName = aliveInstance.getState().getName();
-        if (InstanceStateName.Pending.toString().equals(instanceStateName)
-                || InstanceStateName.Running.toString().equals(instanceStateName)) {
-            return CloudInstanceState.RUNNING;
-        }
-        if (InstanceStateName.Stopping.toString().equals(instanceStateName)
-                || InstanceStateName.Stopped.toString().equals(instanceStateName)) {
-            return CloudInstanceState.STOPPED;
-        }
-        return null;
+        return CloudInstanceState.TERMINATED;
     }
 
     @Override
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion awsRegion,
-                                                          final InstanceDNSRecord dnsRecord) {
-        if (dnsRecord.getDnsRecord().contains(
-                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
-            return route53Helper
-                    .createDNSRecord(awsRegion, preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
-        } else {
-            return NO_OP_INSTANCE_DNS_RECORD;
-        }
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AwsRegion region,
+                                                          final InstanceDNSRecord record) {
+        validate(record);
+        log.debug("Creating DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
+        return route53Helper.createDNSRecord(region, getDNSHostedZoneId(region),
+                getAbsoluteDNSRecord(record, getDNSHostedZoneBase(region)));
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion awsRegion,
-                                                     final InstanceDNSRecord dnsRecord) {
-        if (dnsRecord.getDnsRecord().contains(
-                preferenceManager.getPreference(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE))) {
-            return route53Helper
-                    .removeDNSRecord(awsRegion, preferenceManager.getPreference(
-                            SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID), dnsRecord);
-        } else {
-            return NO_OP_INSTANCE_DNS_RECORD;
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AwsRegion region,
+                                                     final InstanceDNSRecord record) {
+        validate(record);
+        log.debug("Deleting DNS record {} ({})...", record.getDnsRecord(), record.getTarget());
+        return route53Helper.removeDNSRecord(region, getDNSHostedZoneId(region),
+                getAbsoluteDNSRecord(record, getDNSHostedZoneBase(region)));
+    }
+
+    private void validate(final InstanceDNSRecord record) {
+        Assert.notNull(record, "DNS record is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getDnsRecord()), "DNS record source is missing");
+        Assert.isTrue(StringUtils.isNotBlank(record.getTarget()), "DNS record target is missing");
+        Assert.notNull(record.getFormat(), "DNS record size is missing");
+    }
+
+    private static void validate(final InstanceDNSRecord record, final String base) {
+        Assert.isTrue(StringUtils.contains(record.getDnsRecord(), base),
+                String.format("DNS record has wrong DNS hosted zone base (%s): %s", base, record.getDnsRecord()));
+    }
+
+    private String getDNSHostedZoneId(final AwsRegion region) {
+        return Optional.ofNullable(region.getDnsHostedZoneId()).map(Optional::of)
+                .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_ID)
+                        .map(preferenceManager::getPreference))
+                .orElseThrow(() -> new IllegalArgumentException("Host zone id is missing"));
+    }
+
+    private String getDNSHostedZoneBase(final AwsRegion region) {
+        return Optional.ofNullable(region.getDnsHostedZoneBase()).map(Optional::of)
+                .orElseGet(() -> Optional.of(SystemPreferences.INSTANCE_DNS_HOSTED_ZONE_BASE)
+                        .map(preferenceManager::getPreference))
+                .orElseThrow(() -> new IllegalArgumentException("Host zone base is missing"));
+    }
+
+    private InstanceDNSRecord getAbsoluteDNSRecord(final InstanceDNSRecord record, final String base) {
+        switch (record.getFormat()) {
+            case ABSOLUTE:
+                validate(record, base);
+                return record;
+            case RELATIVE:
+            default:
+                return record.toBuilder()
+                        .dnsRecord(record.getDnsRecord() + "." + base)
+                        .format(InstanceDNSRecordFormat.ABSOLUTE)
+                        .build();
         }
     }
 
@@ -313,19 +358,32 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         return ec2Helper.getInstanceImageDescription(region, imageName);
     }
 
+    @Override
+    public void adjustOfferRequest(final InstanceOfferRequestVO requestVO) {
+        final String volumeApiName = preferenceManager.getPreference(SystemPreferences.CLUSTER_AWS_EBS_TYPE);
+        requestVO.setVolumeApiName(volumeApiName);
+    }
+
+    @Override
+    public void deleteInstanceTags(final AwsRegion region, final String runId, final Set<String> tagNames) {
+        ec2Helper.deleteInstanceTags(region, runId, tagNames);
+    }
+
     private String buildNodeUpCommand(final AwsRegion region,
                                       final String nodeLabel,
                                       final RunInstance instance,
-                                      final Map<String, String> labels) {
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
-                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
-                               .sshKey(region.getSshKeyName());
+                                      final Map<String, String> labels,
+                                      final Map<String, String> runtimeParameters,
+                                      final Map<String, String> tags) {
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = commandService
+                .buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName(), runtimeParameters)
+                .sshKey(region.getSshKeyName())
+                .tags(tags);
 
         if (StringUtils.isNotBlank(region.getKmsKeyId())) {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
-        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
         commandBuilder.additionalLabels(labels);
         return commandBuilder.build().getCommand();
     }
@@ -379,6 +437,12 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
         envVars.put(AWSUtils.AWS_ACCESS_KEY_ID_VAR, credentials.getKeyId());
         envVars.put(AWSUtils.AWS_SECRET_ACCESS_KEY_VAR, credentials.getAccessKey());
         envVars.put(AWSUtils.AWS_SESSION_TOKEN_VAR, credentials.getToken());
+        envVars.put(SystemParams.GLOBAL_DISTRIBUTION_URL.name(), getGlobalDistributionUrl(region));
         return envVars;
+    }
+
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
     }
 }

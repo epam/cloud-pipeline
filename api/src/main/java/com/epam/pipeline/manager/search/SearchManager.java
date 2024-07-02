@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
+import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -28,7 +29,6 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.MultiSearchRequest;
@@ -41,8 +41,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -56,6 +58,7 @@ public class SearchManager {
     private final GlobalSearchElasticHelper globalSearchElasticHelper;
     private final SearchResultConverter resultConverter;
     private final SearchRequestBuilder requestBuilder;
+    private final SearchResultExportManager searchExportManager;
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
         validateRequest(searchRequest);
@@ -75,18 +78,20 @@ public class SearchManager {
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final Set<String> storageSizeMasks) {
-        return getStorageUsage(dataStorage, path, false, storageSizeMasks);
+                                        final Set<String> storageSizeMasks, final Set<String> storageClasses,
+                                        final boolean allowVersions) {
+        return getStorageUsage(dataStorage, path, true, storageSizeMasks, storageClasses, allowVersions);
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final boolean allowNoIndex, final Set<String> storageSizeMasks) {
+                                        final boolean allowNoIndex, final Set<String> storageSizeMasks,
+                                        final Set<String> storageClasses, final boolean allowVersions) {
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
-            final MultiSearchRequest request = requestBuilder.buildStorageSumRequest(
-                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks);
-            final MultiSearchResponse searchResponse = client.msearch(request, RequestOptions.DEFAULT);
-            final int responsesExpected = CollectionUtils.isEmpty(storageSizeMasks) ? 1 : 2;
-            return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path, responsesExpected);
+            final MultiSearchRequest searchRequest = requestBuilder.buildStorageSumRequest(
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks,
+                    storageClasses, allowVersions);
+            final MultiSearchResponse searchResponse = client.msearch(searchRequest, RequestOptions.DEFAULT);
+            return resultConverter.buildStorageUsageResponse(searchRequest, searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -111,6 +116,26 @@ public class SearchManager {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
+    }
+
+    public byte[] export(final FacetedSearchExportRequest request) {
+        Assert.notNull(request.getFacetedSearchRequest(), "Faceted search request is required");
+        if (Objects.isNull(request.getFacetedSearchRequest().getPageSize())) {
+            final Integer searchExportPageSize = Optional.ofNullable(
+                    preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE))
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            String.format("System preference %s or page size are not provided",
+                                    SystemPreferences.SEARCH_EXPORT_PAGE_SIZE.getKey())));
+            request.getFacetedSearchRequest().setPageSize(searchExportPageSize);
+        }
+        final String searchResultDisplayNameTag = preferenceManager.getPreference(
+                SystemPreferences.FACETED_FILTER_DISPLAY_NAME_TAG);
+        if (StringUtils.isNotBlank(searchResultDisplayNameTag)) {
+            Optional.ofNullable(request.getFacetedSearchRequest().getMetadataFields())
+                    .orElseGet(ArrayList::new).add(searchResultDisplayNameTag);
+        }
+        final FacetedSearchResult facetedSearchResult = facetedSearch(request.getFacetedSearchRequest());
+        return searchExportManager.export(request, facetedSearchResult);
     }
 
     private Set<String> getAclFilterFields() {

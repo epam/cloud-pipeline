@@ -48,7 +48,7 @@ public class GCPInstanceServiceTest {
     private GCPRegion region;
     private GCPRegion regionWithoutAuthFile;
     private GCPInstanceService service = new GCPInstanceService(
-            null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null);
 
     @Before
     public void setup() throws IOException {

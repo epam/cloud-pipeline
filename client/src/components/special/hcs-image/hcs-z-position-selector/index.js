@@ -17,130 +17,166 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Slider} from 'antd';
-import {inject, observer} from 'mobx-react';
-
-import {MAX_Z_POSITIONS_TO_DISPLAY} from '../utilities/constants';
+import {Checkbox} from 'antd';
+import {observer} from 'mobx-react';
 import styles from './hcs-z-position-selector.css';
-
-const SelectorType = {
-  vertical: 'vertical',
-  horizontal: 'horizontal'
-};
-
-const MAX_HEIGHT_PER_TICK = 45;
 
 function zPositionSorter (a, b) {
   return a.z - b.z;
 }
 
+function buildZPositionsArray (max, zSize, zUnit) {
+  const basePower = Math.floor(Math.log10(zSize || 1));
+  const base = 10 ** basePower;
+  const decimalDigits = 2;
+  const format = o => {
+    const rounded = Math.round(o / base * (10 ** decimalDigits)) / (10 ** decimalDigits);
+    const postfix = basePower !== 0 ? `e${basePower}` : '';
+    return [
+      `${rounded}${postfix}`,
+      zUnit
+    ].filter(Boolean).join('');
+  };
+  return (new Array(max))
+    .fill('')
+    .map((o, z) => ({
+      z,
+      title: format((z + 1) * zSize),
+      width: format((max + 1) * zSize).length
+    }));
+}
+
 function HcsZPositionSelector (props) {
   const {
     className,
-    type = SelectorType.horizontal,
-    hcsViewerState
+    image,
+    selection: rawSelection = [0],
+    onChange,
+    mergeZPlanes,
+    multiple
   } = props;
-  if (!hcsViewerState) {
+  if (!image) {
     return null;
   }
   const {
-    availableZPositions: positions = [],
-    imageZPosition: value
-  } = hcsViewerState;
-  const onChange = z => hcsViewerState.changeGlobalZPosition(z);
-  if (positions.length > 1) {
-    const sorted = positions
-      .slice()
-      .sort(zPositionSorter);
-    const tipFormatter = z => {
-      const item = sorted.find(o => o.z === z);
-      if (item) {
-        return item.title;
-      }
-      return null;
-    };
-    const [first] = sorted;
-    const last = sorted[sorted.length - 1];
-    const firstTitleLength = (first.title || '').length;
-    const lastTitleLength = (last.title || '').length;
-    const getPadding = titleLength => `${Math.ceil(titleLength / 2)}em`;
-    const max = last.z;
-    const min = first.z;
-    let marks = {
-      [first.z]: first.title,
-      [last.z]: last.title
-    };
-    if (positions.length <= MAX_Z_POSITIONS_TO_DISPLAY) {
-      marks = positions.reduce((points, {z, title}) => ({
-        ...points,
-        [z]: title
-      }), {});
-    }
-    const verticalStyle = {
-      height: positions.length * MAX_HEIGHT_PER_TICK
-    };
-    const horizontalStyle = {
-      paddingLeft: getPadding(firstTitleLength),
-      paddingRight: getPadding(lastTitleLength)
-    };
-    return (
-      <div
-        className={
-          classNames(
-            className,
-            styles.container,
-            {
-              [styles.horizontal]: type === SelectorType.horizontal
-            }
-          )}
-      >
-        <div
-          className={styles.title}
-        >
-          Z-plane
-        </div>
-        <div
-          className={styles.sliderContainer}
-          style={
-            type === SelectorType.vertical
-              ? verticalStyle
-              : horizontalStyle
-          }
-        >
-          <Slider
-            className={'cp-hcs-z-position-slider'}
-            vertical={type === SelectorType.vertical}
-            included={false}
-            dots
-            value={value}
-            marks={marks}
-            max={max}
-            min={min}
-            step={1}
-            onChange={onChange}
-            tipFormatter={tipFormatter}
-          />
-        </div>
-      </div>
-    );
+    depth = 1,
+    physicalDepthSize = 1,
+    depthUnit = ''
+  } = image;
+  const positions = buildZPositionsArray(depth, physicalDepthSize, depthUnit);
+  if (positions.length <= 1) {
+    return null;
   }
-  return null;
+  const selection = rawSelection.length > 0
+    ? rawSelection
+    : [0];
+  const isSelected = z => selection.includes(z);
+  const onChangeWrapper = (z, event) => {
+    const multiple = event && event.shiftKey;
+    let newSelection = [z];
+    let newMergeZPlanes = mergeZPlanes;
+    if (typeof onChange === 'function') {
+      if (multiple && isSelected(z)) {
+        newSelection = [...new Set(selection.filter(o => o !== z))];
+      } else if (multiple) {
+        newSelection = [...new Set([...selection, z])];
+      } else {
+        newSelection = [z];
+      }
+      newMergeZPlanes = newSelection.length > 1 ? mergeZPlanes : false;
+      onChange(newSelection, newMergeZPlanes);
+    }
+  };
+  const onSelectAll = () => {
+    if (typeof onChange === 'function') {
+      onChange(positions.map(o => o.z), mergeZPlanes);
+    }
+  };
+  const onChangeMerge = (event) => {
+    if (typeof onChange === 'function') {
+      onChange(selection, event.target.checked);
+    }
+  };
+  const sorted = positions
+    .slice()
+    .sort(zPositionSorter);
+  return (
+    <div
+      className={
+        classNames(
+          className,
+          styles.container
+        )}
+    >
+      <div
+        className={styles.title}
+      >
+        Z-planes
+        {
+          selection.length > 1 && (
+            <Checkbox
+              style={{
+                marginLeft: 'auto'
+              }}
+              onChange={onChangeMerge}
+              checked={mergeZPlanes}
+            >
+              Use planes projection
+            </Checkbox>
+          )
+        }
+      </div>
+      <div
+        className={styles.sliderContainer}
+      >
+        {
+          sorted.map(position => (
+            <div
+              key={`z-${position.z}`}
+              className={
+                classNames(
+                  styles.zItem,
+                  {
+                    [styles.active]: isSelected(position.z),
+                    'cp-timepoint-button-active': isSelected(position.z),
+                    'cp-timepoint-button': !isSelected(position.z)
+                  }
+                )
+              }
+              style={{
+                minWidth: `${position.width}em`
+              }}
+              onClick={(event) => onChangeWrapper(position.z, event)}
+            >
+              {position.title}
+            </div>
+          ))
+        }
+        {
+          positions.length > selection.length && multiple && (
+            <a
+              className={styles.zItem}
+              onClick={onSelectAll}
+            >
+              Select all
+            </a>
+          )
+        }
+      </div>
+    </div>
+  );
 }
 
 HcsZPositionSelector.propTypes = {
   className: PropTypes.string,
-  type: PropTypes.oneOf([
-    SelectorType.vertical,
-    SelectorType.horizontal
-  ])
+  image: PropTypes.object,
+  selection: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.arrayOf(PropTypes.number)
+  ]),
+  onChange: PropTypes.func,
+  multiple: PropTypes.bool,
+  mergeZPlanes: PropTypes.bool
 };
 
-HcsZPositionSelector.defaultProps = {
-  type: SelectorType.horizontal
-};
-
-const selector = inject('hcsViewerState')(observer(HcsZPositionSelector));
-
-selector.Type = SelectorType;
-
-export default selector;
+export default observer(HcsZPositionSelector);

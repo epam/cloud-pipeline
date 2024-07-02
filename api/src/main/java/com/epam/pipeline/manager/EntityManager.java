@@ -48,7 +48,7 @@ public class EntityManager {
             this.managers = managers
                     .stream()
                     .collect(Collectors.toMap(
-                            SecuredEntityManager::getSupportedClass, Function.identity()));
+                            SecuredEntityManager::getSupportedClass, Function.identity(), (s1, s2) -> s2));
         }
     }
 

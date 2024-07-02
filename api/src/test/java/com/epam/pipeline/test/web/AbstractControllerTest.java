@@ -121,6 +121,10 @@ public abstract class AbstractControllerTest {
         assertEquals(expectedResult.getPayload(), actualResult.getPayload());
     }
 
+    public void assertResponse(final MvcResult mvcResult) {
+        assertResponse(mvcResult, null, new TypeReference<Result<Object>>() {});
+    }
+
     public void assertFileResponse(final MvcResult mvcResult, final String fileName, final byte[] fileContent) {
         assertResponseHeader(mvcResult, fileName);
         assertContent(mvcResult, fileContent);

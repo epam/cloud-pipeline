@@ -29,7 +29,7 @@ yum --enablerepo=elrepo-kernel install kernel-ml \
 sed -i '/GRUB_DEFAULT=/c\GRUB_DEFAULT=0' /etc/default/grub && \
 grub2-mkconfig -o /boot/grub2/grub.cfg
 grep 'menuentry ' /boot/grub2/grub.cfg | cut -f 2 -d "'" | nl -v 0
-grub2-set-default 'CentOS Linux (5.7.7-1.el7.elrepo.x86_64) 7 (Core)'
+grub2-set-default 'CentOS Linux (6.5.9-1.el7.elrepo.x86_64) 7 (Core)'
 
 ###########
 reboot
@@ -48,7 +48,9 @@ wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-l
 chmod +x /usr/bin/jq
 
 # Install nvidia driver deps
-yum install -y  gcc
+yum install -y centos-release-scl && \
+yum install -y devtoolset-9 && \
+source /opt/rh/devtoolset-9/enable
 
 # Install Docker
 yum install -y yum-utils \
@@ -120,9 +122,9 @@ yum install -y \
             kubelet-1.15.4-0.x86_64
 
 # Install nvidia driver
-wget http://us.download.nvidia.com/XFree86/Linux-x86_64/440.100/NVIDIA-Linux-x86_64-440.100.run && \
-sh NVIDIA-Linux-x86_64-440.100.run --silent && \
-rm -f NVIDIA-Linux-x86_64-440.100.run
+wget https://us.download.nvidia.com/tesla/550.54.15/NVIDIA-Linux-x86_64-550.54.15.run && \
+sh NVIDIA-*.run --silent && \
+rm -f NVIDIA-*.run
 
 # Install nvidia docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) 
@@ -136,11 +138,8 @@ curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.re
 yum install nvidia-docker2-2.0.3-1.docker18.03* \
     nvidia-container-runtime-2.0.0-1.docker18.03* -y
 
-# According to https://aws.amazon.com/ru/premiumsupport/knowledge-center/g2-rhel-boot/ - the following shall be done for p3 instances (p2 work well)
-# 1.    Resize the instance, choosing any instance other than one in the g2 series.
-# 2.    Edit /etc/default/grub and add the following values to the GRUB_CMDLINE_LINUX line:
-#     rd.driver.blacklist=nouveau nouveau.modeset=0
-# 3.    Rebuild the grub configuration:
-# grub2-mkconfig -o /boot/grub2/grub.cfg
-sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="/GRUB_CMDLINE_LINUX_DEFAULT="rd.driver.blacklist=nouveau nouveau.modeset=0 /g' /etc/default/grub
-grub2-mkconfig -o /boot/grub2/grub.cfg
+# Install "nvidia-container-runtime-hook", otherwise every single container will fail
+# even kube containers
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.repo | sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo && \
+yum install -y nvidia-container-toolkit

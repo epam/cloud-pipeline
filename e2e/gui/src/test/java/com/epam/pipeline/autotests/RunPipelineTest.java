@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,10 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
+import static com.epam.pipeline.autotests.ao.Primitive.SHOW_TIMINGS;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
@@ -95,7 +96,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .firstVersion()
             .runPipeline()
             .ensure(byText(pipeline299), visible)
-            .ensure(byText("Estimated price per hour:"), visible)
+            .ensure(ESTIMATED_PRICE, visible)
             .ensure(button("Launch"), visible, enabled)
             .ensure(collapsiblePanel("Exec environment"), visible, expandedTab)
             .ensure(collapsiblePanel("Advanced"), visible, expandedTab)
@@ -157,7 +158,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
             .activeRuns()
             .showLog(runId)
-            .ensure(runId(), have(text(String.format("Run #%s", runId))))
+            .ensure(runId(), have(text(String.format("#%s", runId))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
@@ -188,9 +189,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         final String[] mountDataTexts = prepareExpectedLogMessages(mountStorageTaskName, getLastRunId(),
                 "expectedRunLogMountDataStoragesTask.txt").toArray(String[]::new);
         Set<String> mountMessages = onRunPage()
-                .click(taskWithName("Task1"))
+                .clickTaskWithName("Task1")
                 .ensure(log(), containsMessage("Running python pipeline"))
-                .click(taskWithName(mountStorageTaskName))
+                .clickTaskWithName(mountStorageTaskName)
                 .ensure(STATUS, SUCCESS.reached)
                 .logMessages()
                 .collect(toSet());
@@ -198,7 +199,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
                 .map(String::trim)
                 .forEach(t -> onRunPage().logContainsMessage(mountMessages, t));
         Set<String> pipelineLog = onRunPage()
-                .click(taskWithName(pipeline100))
+                .clickTaskWithName(pipeline100)
                 .logMessages()
                 .collect(toSet());
         Arrays.stream(texts)
@@ -210,7 +211,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @TestCase("EPMCMBIBPC-310")
     public void timingsShouldBeValid() {
         onRunPage()
-            .click(byText("SHOW TIMINGS"))
+            .click(SHOW_TIMINGS)
             .ensureAll(task(), contains(timeInfo("Scheduled"), timeInfo("Started"), timeInfo("Finished")));
     }
 

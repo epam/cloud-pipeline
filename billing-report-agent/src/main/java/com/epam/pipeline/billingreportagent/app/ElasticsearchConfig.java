@@ -34,6 +34,9 @@ public class ElasticsearchConfig {
     @Value("${elasticsearch.client.scheme:http}")
     private String elasticsearchScheme;
 
+    @Value("${elasticsearch.client.timeout:60000}")
+    private Integer socketTimeout;
+
     @Bean
     public RestHighLevelClient elasticsearchClient() {
         return new RestHighLevelClient(getRestClientBuilder());
@@ -45,7 +48,9 @@ public class ElasticsearchConfig {
     }
 
     private RestClientBuilder getRestClientBuilder() {
-        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
+        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
+                .setRequestConfigCallback(requestConfigBuilder ->
+                        requestConfigBuilder.setSocketTimeout(socketTimeout));
     }
 }
 

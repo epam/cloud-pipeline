@@ -118,7 +118,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         "/restapi/**"
     };
 
-    private static final int MAX_AUTHENTICATION_AGE = 93600;
     private static final int RESPONSE_SKEW = 1200;
     private static final int LOGOUT_RESPONSE_SKEW = 120;
 
@@ -145,6 +144,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Value("${saml.login.failure.redirect:/error}")
     private String loginFailureRedirect;
+
+    @Value("${saml.authn.max.authentication.age:93600}")
+    private Long maxAuthentificationAge;
 
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
@@ -431,7 +433,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Bean
     public WebSSOProfileConsumer webSSOprofileConsumer() {
         WebSSOProfileConsumerImpl profileConsumer = new WebSSOProfileConsumerImpl();
-        profileConsumer.setMaxAuthenticationAge(MAX_AUTHENTICATION_AGE);
+        profileConsumer.setMaxAuthenticationAge(maxAuthentificationAge);
         profileConsumer.setResponseSkew(RESPONSE_SKEW);
         return profileConsumer;
     }

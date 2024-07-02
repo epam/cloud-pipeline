@@ -20,6 +20,7 @@ import com.epam.pipeline.aspect.run.QuotaLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.FilterFieldVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
@@ -27,6 +28,8 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.filter.FilterRunParameters;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
@@ -42,6 +45,8 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
@@ -62,6 +67,7 @@ import com.epam.pipeline.manager.security.acl.AclMaskPage;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -145,8 +151,8 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public List<RunLog> loadAllLogsByRunId(Long runId) {
-        return logManager.loadAllLogsByRunId(runId);
+    public List<RunLog> loadLogsByRunId(Long runId, OffsetPagingFilter filter) {
+        return logManager.loadLogsByRunId(runId, filter);
     }
 
     @PreAuthorize(RUN_ID_READ)
@@ -155,8 +161,8 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public String downloadLogs(Long runId) {
-        return logManager.downloadLogs(runCRUDService.loadRunById(runId));
+    public ResultWriter exportLogs(Long runId) {
+        return logManager.exportLogs(runId);
     }
 
     @PreAuthorize(RUN_ID_READ)
@@ -177,8 +183,9 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public List<RunLog> loadAllLogsForTask(Long runId, String taskName, String parameters) {
-        return logManager.loadAllLogsForTask(runId, taskName, parameters);
+    public List<RunLog> loadLogsForTask(Long runId, String taskName, String parameters,
+                                        OffsetPagingFilter filter) {
+        return logManager.loadLogsForTask(runId, taskName, parameters, filter);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @runPermissionManager.runStatusPermission(#runId, #status, 'EXECUTE')")
@@ -204,6 +211,12 @@ public class RunApiService {
     @AclMask
     public PipelineRun updatePrettyUrl(Long runId, String url) {
         return runManager.updatePrettyUrl(runId, url);
+    }
+
+    @PostAuthorize("hasRole('ADMIN') OR @runPermissionManager.runPermission(returnObject, 'READ')")
+    @AclMask
+    public PipelineRun getRunByPrettyUrl(final String url) {
+        return runManager.loadRunByPrettyUrl(url);
     }
 
     @PreAuthorize(RUN_ID_EXECUTE)
@@ -263,6 +276,12 @@ public class RunApiService {
                                  boolean stopPipeline, boolean checkSize) {
         return pipelineRunDockerOperationManager
                 .commitRun(runId, registryId, imageName, deleteFiles, stopPipeline, checkSize);
+    }
+
+    @PreAuthorize("@runPermissionManager.runPermission(#runId, 'EXECUTE')")
+    @AclMask
+    public Long getContainerLayersCount(final Long runId) {
+        return pipelineRunDockerOperationManager.getContainerLayers(runId);
     }
 
     @PreAuthorize(RUN_ID_WRITE)
@@ -351,5 +370,15 @@ public class RunApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return runManager.loadRunsByPoolId(poolId);
+    }
+
+    @PreAuthorize(RUN_ID_READ)
+    public List<RunInfo> loadRunsByParentId(final Long runId) {
+        return runManager.loadRunsByParentId(runId);
+    }
+
+    @AclFilter
+    public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
+        return runManager.loadActiveRunsCharts(filter);
     }
 }

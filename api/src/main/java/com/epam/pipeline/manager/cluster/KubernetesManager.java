@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
-
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -36,11 +34,14 @@ import io.fabric8.kubernetes.api.model.EndpointAddress;
 import io.fabric8.kubernetes.api.model.EndpointPort;
 import io.fabric8.kubernetes.api.model.EndpointSubset;
 import io.fabric8.kubernetes.api.model.Endpoints;
+import io.fabric8.kubernetes.api.model.Event;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.IntOrString;
 import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.NodeCondition;
 import io.fabric8.kubernetes.api.model.NodeList;
+import io.fabric8.kubernetes.api.model.NodeStatus;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodCondition;
 import io.fabric8.kubernetes.api.model.PodList;
@@ -71,6 +72,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -82,6 +84,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
+
 @Slf4j
 @Component
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -92,10 +96,9 @@ public class KubernetesManager {
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
-    private static final int NODE_READY_TIMEOUT = 5000;
     private static final int MILLIS_TO_SECONDS = 1000;
     private static final int CONNECTION_TIMEOUT_MS = 2 * MILLIS_TO_SECONDS;
-    private static final int ATTEMPTS_STATUS_NODE = 60;
+    private static final int NODE_READY_POLLING_DELAY = 5000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
     private static final int NODE_PULL_TIMEOUT = 200;
@@ -124,7 +127,7 @@ public class KubernetesManager {
     @Value("${kube.default.service.target.port:1000}")
     private Integer defaultKubeServiceTargetPort;
 
-    @Value("${kube.deployment.refresh.timeout.sec:3}")
+    @Value("${kube.deployment.refresh.timeout:3}")
     private Integer deploymentRefreshTimeoutSec;
 
     @Value("${kube.deployment.refresh.retries:15}")
@@ -289,13 +292,31 @@ public class KubernetesManager {
         }
     }
 
+    public String getPodContainerLogs(final String podId, final String containerId, final int limit) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withName(podId)
+                    .inContainer(containerId)
+                    .tailingLines(limit + 1)
+                    .getLog();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
     public Pod findPodById(final String podId) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return client.pods().inNamespace(kubeNamespace).withName(podId).get();
+            return findPodById(client, podId);
         } catch (KubernetesClientException e) {
             LOGGER.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    public Pod findPodById(final KubernetesClient client, final String podId) {
+        return client.pods().inNamespace(kubeNamespace).withName(podId).get();
     }
 
     private boolean isLogTruncated(final String tail, final int limit) {
@@ -628,6 +649,48 @@ public class KubernetesManager {
         modifyNodeLabel(nodeName, labelName, labels -> labels.remove(labelName));
     }
 
+    private void modifyNodeLabel(String nodeName, String labelName, Consumer<Map<String, String>> actionOnLabel) {
+        if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
+            return;
+        }
+        try (KubernetesClient client = getKubernetesClient()) {
+            Node node = getNode(client, nodeName);
+
+            Map<String, String> labels = node.getMetadata().getLabels();
+
+            actionOnLabel.accept(labels);
+
+            node.getMetadata().setLabels(labels);
+            client.nodes().createOrReplace(node);
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+        }
+    }
+
+    public Map<String, String> getNodeLabels(final KubernetesClient client, final String nodeName) {
+        if (StringUtils.isBlank(nodeName)) {
+            return Collections.emptyMap();
+        }
+        try {
+            return findNode(client, nodeName)
+                    .map(Node::getMetadata)
+                    .map(ObjectMeta::getLabels)
+                    .orElseGet(Collections::emptyMap);
+        } catch (KubernetesClientException e) {
+            LOGGER.error(e.getMessage(), e);
+            return Collections.emptyMap();
+        }
+    }
+
+    private Node getNode(final KubernetesClient client, final String nodeName) {
+        return findNode(client, nodeName).orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.ERROR_NODE_NOT_FOUND, nodeName)));
+    }
+
+    private Optional<Node> findNode(final KubernetesClient client, final String nodeName) {
+        return Optional.ofNullable(client.nodes().withName(nodeName).get());
+    }
+
     /**
      * Waits until node will be removed from Kubernetes cluster.
      *
@@ -656,36 +719,18 @@ public class KubernetesManager {
         }
     }
 
-    private void modifyNodeLabel(String nodeName, String labelName, Consumer<Map<String, String>> actionOnLabel) {
-        if (StringUtils.isBlank(nodeName) || StringUtils.isBlank(labelName)) {
-            return;
-        }
-        try (KubernetesClient client = getKubernetesClient()) {
-            Node node = client.nodes().withName(nodeName).get();
-            Assert.notNull(node, messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND,
-                    node.getMetadata().getName()));
-
-            Map<String, String> labels = node.getMetadata().getLabels();
-
-            actionOnLabel.accept(labels);
-
-            node.getMetadata().setLabels(labels);
-            client.nodes().createOrReplace(node);
-        } catch (KubernetesClientException e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-    }
-
     public void waitForNodeReady(String nodeName, String runId, String cloudRegion) throws InterruptedException {
         KubernetesClient client = getKubernetesClient();
-        int attempts = ATTEMPTS_STATUS_NODE;
+        final int nodeReadyTimeout = preferenceManager.getPreference(SystemPreferences.CLUSTER_NODE_READY_TIMEOUT);
+        final int attemptsStatusNode = nodeReadyTimeout / NODE_READY_POLLING_DELAY;
+        int attempts = attemptsStatusNode;
         while (!isReadyNode(nodeName, client)) {
             LOGGER.debug("Waiting for node {} is ready.", nodeName);
             attempts -= 1;
-            Thread.sleep(NODE_READY_TIMEOUT);
+            Thread.sleep(NODE_READY_POLLING_DELAY);
             if (attempts <= 0) {
                 throw new IllegalStateException(String.format(
-                        "Node %s doesn't match the ready status over than %d times.", nodeName, attempts));
+                        "Node %s doesn't match the ready status over than %d times.", nodeName, attemptsStatusNode));
             }
         }
         LOGGER.debug("Labeling node with run id {}", runId);
@@ -929,25 +974,41 @@ public class KubernetesManager {
     }
 
     public boolean isNodeAvailable(final Node node) {
-        if (node == null) {
-            return false;
-        }
-        List<NodeCondition> conditions = node.getStatus().getConditions();
-        if (CollectionUtils.isEmpty(conditions)) {
-            return true;
-        }
-        String lastReason = conditions.get(0).getReason();
-        for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
-            if (lastReason.contains(reason)) {
-                log.debug("Node is out of order: {}", conditions);
-                return false;
-            }
-        }
-        return true;
+        return !isLastConditionUnavailable(node);
     }
 
     public boolean isNodeUnavailable(final Node node) {
-        return !isNodeAvailable(node);
+        return isLastConditionUnavailable(node);
+    }
+
+    private boolean isLastConditionUnavailable(final Node node) {
+        return getLastCondition(node)
+                .map(NodeCondition::getReason)
+                .map(lastReason -> {
+                    for (String reason : KubernetesConstants.NODE_OUT_OF_ORDER_REASONS) {
+                        if (lastReason.contains(reason)) {
+                            log.debug("Node is out of order: {}", node.getStatus().getConditions());
+                            return true;
+                        }
+                    }
+                    return false;
+                })
+                .orElse(true);
+    }
+
+    public Optional<LocalDateTime> getLastConditionDateTime(final Node node) {
+        return getLastCondition(node)
+                .map(NodeCondition::getLastHeartbeatTime)
+                .map(dateTime -> LocalDateTime.parse(dateTime, KubernetesConstants.KUBE_DATE_FORMATTER));
+    }
+
+    private Optional<NodeCondition> getLastCondition(final Node node) {
+        return Optional.ofNullable(node)
+                .map(Node::getStatus)
+                .map(NodeStatus::getConditions)
+                .orElseGet(Collections::emptyList)
+                .stream()
+                .findFirst();
     }
 
     public void createNodeService(final RunInstance instance) {
@@ -1149,6 +1210,27 @@ public class KubernetesManager {
             }
             deleteEndpoints(client, endpoints.get());
         }
+    }
+
+    public List<Pod> getPodsByLabel(final String labelName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.pods()
+                    .inNamespace(kubeNamespace)
+                    .withLabel(labelName)
+                    .list()
+                    .getItems();
+        } catch (KubernetesClientException e) {
+            log.error(e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Event> getEvents(final KubernetesClient client, final String objectId) {
+        return client.events()
+                .inNamespace(kubeNamespace)
+                .withField(KubernetesConstants.EVENT_SELECTOR, objectId)
+                .list()
+                .getItems();
     }
 
     private boolean deleteEndpoints(final KubernetesClient client, final Endpoints endpoints) {

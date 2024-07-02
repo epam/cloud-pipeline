@@ -39,6 +39,7 @@ public class ToolVersionScanResult {
     private Long toolId;
     private String version;
     private ToolOSVersion toolOSVersion;
+    private boolean cudaAvailable;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;
@@ -47,6 +48,8 @@ public class ToolVersionScanResult {
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
     private Date gracePeriod;
+    private String defaultCmd;
+    private Integer layersCount;
     private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
 
     @JsonIgnore
@@ -81,7 +84,7 @@ public class ToolVersionScanResult {
 
     public ToolVersionScanResult(String version,  ToolOSVersion toolOSVersion, List<Vulnerability> vulnerabilities,
                                  List<ToolDependency> dependencies, ToolScanStatus status,
-                                 String lastLayerRef, String digest) {
+                                 String lastLayerRef, String digest, String defaultCmd, Integer layersCount) {
         this.version = version;
         this.vulnerabilities = new ArrayList<>(vulnerabilities);
         this.lastLayerRef = lastLayerRef;
@@ -93,5 +96,7 @@ public class ToolVersionScanResult {
         if (status == ToolScanStatus.COMPLETED) {
             this.successScanDate = scanDate;
         }
+        this.defaultCmd = defaultCmd;
+        this.layersCount = layersCount;
     }
 }

@@ -56,21 +56,24 @@
   align-items: center;
 }
 
-.color-presenter {
-  cursor: pointer;
-  width: 2em;
-  height: 1.5em;
-  display: inline-block;
-  border: 1px solid currentColor;
-}
-
-.color-presenter .fill {
-  background-color: currentColor;
-  width: 100%;
-  height: 100%;
-}
-
 .lens-container {
   display: flex;
   align-items: center;
+}
+
+.video-settings {
+  margin: 5px 0;
+  padding: 5px 0;
+}
+
+.video-settings .header {
+  font-weight: bold;
+}
+
+.video-generation-mode-toggle {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
 }

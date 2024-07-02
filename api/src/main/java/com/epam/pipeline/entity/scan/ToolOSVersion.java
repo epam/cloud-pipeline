@@ -16,12 +16,34 @@
 
 package com.epam.pipeline.entity.scan;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Arrays;
 
 @Data
+@Builder
 @RequiredArgsConstructor
 public class ToolOSVersion {
     private final String distribution;
     private final String version;
+
+    public boolean isMatched(final String patternsToMatch) {
+        if (StringUtils.isBlank(patternsToMatch)) {
+            return false;
+        }
+        return Arrays.stream(patternsToMatch.split(",")).anyMatch(os -> {
+            String[] distroVersion = os.split(":");
+            // if distro name is not equals allowed return false (allowed: centos, actual: ubuntu)
+            if (!distroVersion[0].equalsIgnoreCase(this.distribution)) {
+                return false;
+            }
+            // return false only if version of allowed exists (e.g. centos:6)
+            // and actual version contains allowed (e.g. : allowed centos:6, actual centos:6.10)
+            return distroVersion.length != 2 || this.version.toLowerCase()
+                    .startsWith(distroVersion[1].toLowerCase());
+        });
+    }
 }

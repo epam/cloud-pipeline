@@ -73,7 +73,7 @@ public class RunMountService {
         final String folderPattern = Optional.ofNullable(
                 preferenceManager.getPreference(SystemPreferences.DATA_STORAGE_RUN_SHARED_FOLDER_PATTERN))
                 .orElse(DEFAULT_PATTERN);
-        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId, false);
         final List<PipelineRunParameter> resolved = pipelineRunManager.replaceParametersWithEnvVars(
                 Collections.singletonList(new PipelineRunParameter("path", folderPattern)), pipelineRun.getEnvVars());
         return resolved.get(0).getResolvedValue();

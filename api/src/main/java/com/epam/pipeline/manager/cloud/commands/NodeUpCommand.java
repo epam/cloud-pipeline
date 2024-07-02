@@ -50,6 +50,8 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final String cloud;
     private final Map<String, String> additionalLabels;
     private final Set<String> prePulledImages;
+    private final Map<String, String> runtimeParameters;
+    private final Map<String, String> tags;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -99,6 +101,14 @@ public class NodeUpCommand extends AbstractClusterCommand {
         SetUtils.emptyIfNull(prePulledImages).forEach(image -> {
             commands.add("--image");
             commands.add(image);
+        });
+        MapUtils.emptyIfNull(runtimeParameters).forEach((argName, argValue) -> {
+            commands.add(argName);
+            commands.add(argValue);
+        });
+        MapUtils.emptyIfNull(tags).forEach((key, value) -> {
+            commands.add("--tags");
+            commands.add(key + "=" + value);
         });
         return commands;
     }

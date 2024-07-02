@@ -21,7 +21,6 @@ import click
 import requests
 import platform
 import zipfile
-import subprocess
 import uuid
 from datetime import datetime
 
@@ -29,6 +28,7 @@ from src.config import Config
 from src.utilities.version_utils import need_to_update_version
 
 PERMISSION_DENIED_ERROR = "Permission denied: the user has no permissions to modify '%s'"
+WRAPPER_SUPPORT_ONLY_ERROR = "Update operation is not available."
 
 
 class UpdateCLIVersionManager(object):
@@ -118,11 +118,17 @@ class WindowsUpdater(CLIVersionUpdater):
     WINDOWS_SRC_ZIP = 'pipe.zip'
     ATTEMPTS_COUNT = 10
     LOG_FILE = 'update.log'
+    WRAPPER_BAT = 'pipe.bat' # a static pipe executable, this file shall not be updated
+    WRAPPER_UPDATE_ENV = 'CP_CLI_UPDATE_WRAPPER'
+    UPDATE_SCRIPT = 'pipe-cli-update.bat'
 
     def get_download_suffix(self):
         return self.WINDOWS_SRC_ZIP
 
     def update_version(self, path):
+        if os.environ.get(self.WRAPPER_UPDATE_ENV) != "true":
+            raise RuntimeError(WRAPPER_SUPPORT_ONLY_ERROR)
+
         random_prefix = str(uuid.uuid4()).replace("-", "")
 
         tmp_folder = self.get_tmp_folder()
@@ -132,7 +138,11 @@ class WindowsUpdater(CLIVersionUpdater):
         self.check_write_permissions(path_to_src_dir, random_prefix)
 
         tmp_src_dir = self.download_new_src(path, random_prefix)
-        path_to_bat = os.path.join(tmp_folder, "pipe-update-%s.bat" % random_prefix)
+        pipe_bat = os.path.join(tmp_src_dir, self.WRAPPER_BAT)
+        if os.path.isfile(pipe_bat):
+            os.remove(pipe_bat)
+
+        path_to_update_bat = os.path.join(path_to_src_dir, self.UPDATE_SCRIPT)
 
         log_file_path = os.path.join(tmp_folder, self.LOG_FILE)
         with open(log_file_path, 'a') as log_file:
@@ -150,16 +160,22 @@ class WindowsUpdater(CLIVersionUpdater):
                     )
                 )
                 echo The source subfolders were deleted >> "{log_file}"
-                del /q "{src_dir}" >> "{log_file}" 2>>&1 || (
-                    echo Failed to delete src files by path "{log_file}" >> "{log_file}"
-                    goto fail
-                )
+                for %%a in ("{src_dir}\\*") do (
+	                if /i not "%%~nxa" == "{pipe_bat}" (
+	                    if /i not "%%~nxa" == "{update_bat}" (
+                            del /q "%%a" >> "{log_file}" 2>>&1 || (
+                                echo Failed to delete src file "%%a" >> "{log_file}"
+                                goto fail
+                            )
+                        )    
+	                )
+	            )
                 echo The source files were deleted >> "{log_file}"
                 xcopy "{tmp_dir}\\pipe" "{src_dir}" /y /s /i > nul 2>> "{log_file}" || (
-                    echo Failed to copy files from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
+                    echo Failed to copy files from "{tmp_dir}\\pipe" to "{src_dir}" >> "{log_file}"
                     goto fail
                 )
-                echo Files successfully copied from "{tmp_dir}/pipe" to "{src_dir}" >> "{log_file}"
+                echo Files successfully copied from "{tmp_dir}\\pipe" to "{src_dir}" >> "{log_file}"
                 rd /s /q "{tmp_dir}" || (
                     echo Failed to delete tmp directory '{tmp_dir}' >> "{log_file}"
                     goto fail
@@ -187,15 +203,17 @@ class WindowsUpdater(CLIVersionUpdater):
                    log_file=log_file_path,
                    pipe_pid=os.getpid(),
                    src_dir=path_to_src_dir,
-                   tmp_dir=tmp_src_dir)
-        with open(path_to_bat, 'a') as bat_file:
+                   tmp_dir=tmp_src_dir,
+                   pipe_bat=self.WRAPPER_BAT,
+                   update_bat=self.UPDATE_SCRIPT)
+        if os.path.exists(path_to_update_bat):
+            os.remove(path_to_update_bat)
+        with open(path_to_update_bat, 'a') as bat_file:
             bat_file.write(bat_file_content)
-
-        subprocess.Popen("{}".format(path_to_bat))
 
     def download_new_src(self, path, prefix):
         tmp_folder = self.get_tmp_folder()
-        path_to_zip = os.path.join(tmp_folder, self.WINDOWS_SRC_ZIP)
+        path_to_zip = os.path.join(tmp_folder, "%s-%s" % (prefix, self.WINDOWS_SRC_ZIP))
         request = requests.get(path, verify=False)
         open(path_to_zip, 'wb').write(request.content)
         tmp_src_dir = os.path.join(tmp_folder, prefix)

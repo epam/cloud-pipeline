@@ -17,17 +17,16 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 
-import Discounts from '../discounts';
 import PeriodFilter from './period-filter';
 import RunnerFilter from './runner-filter';
 import ProviderFilter from './provider-filter';
 
-import {RestoreButton} from '../layout';
 import ExportReports from '../export';
 import BillingNavigation from '../../navigation';
 import roleModel from '../../../../utils/roleModel';
 import Divider from '../../../special/reports/divider';
 import {Period} from '../../../special/periods';
+import SettingsButton from './settings-button';
 import styles from '../reports.css';
 
 const periods = [Period.custom, Period.year, Period.quarter, Period.month];
@@ -48,14 +47,7 @@ function Filters ({children}) {
           <ProviderFilter />
         </div>
         <div className={styles.actionsBlock}>
-          {
-            roleModel.manager.billing(
-              <Discounts.Button className={styles.discountsButton} />,
-              'discounts button'
-            )
-          }
-          <RestoreButton className={styles.restoreLayoutButton} />
-          <ExportReports className={styles.exportReportsButton} />
+          <SettingsButton />
         </div>
       </div>
       <div className={styles.dataContainer}>

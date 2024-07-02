@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,10 +22,17 @@ import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.log.PageMarker;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.search.SearchRequestBuilder;
+import com.epam.pipeline.manager.search.SearchResultConverter;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import com.epam.pipeline.utils.ElasticsearchUtils;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -33,15 +40,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -50,7 +59,6 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -60,9 +68,12 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,11 +106,17 @@ public class LogManager {
     private static final String DEFAULT_SEVERITY = "INFO";
     private static final String ID = "event_id";
     private static final String SERVICE_ACCOUNT = "service_account";
+    private static final String STORAGE_ID = "storage_id";
     private static final String KEYWORD = ".keyword";
     private static final Period FILEBEAT_TRANSITION_PERIOD = Period.ofDays(1);
+    private static final String INDEX_TYPE = "_doc";
 
     private final GlobalSearchElasticHelper elasticHelper;
+    private final AuthManager authManager;
     private final MessageHelper messageHelper;
+    private final SearchRequestBuilder searchRequestBuilder;
+    private final SearchResultConverter searchResultConverter;
+    private final PreferenceManager preferenceManager;
 
     @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
@@ -140,11 +157,11 @@ public class LogManager {
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(getLogIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indices(getReadIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
-        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
         final SearchHits hits = response.getHits();
 
         final List<LogEntry> entries = Arrays.stream(hits.getHits())
@@ -159,30 +176,137 @@ public class LogManager {
                 .build();
     }
 
-    private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
+    public Map<String, Long> group(final LogRequest logRequest) {
+        final String groupBy = logRequest.getGroupBy();
+        Assert.isTrue(StringUtils.isNotBlank(groupBy), "Group by field not provided.");
+
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(constructQueryFilter(logRequest.getFilter()));
+        searchRequestBuilder.addTermAggregationToSource(source, groupBy,
+                preferenceManager.getPreference(SystemPreferences.SEARCH_LOGS_AGGS_MAX_COUNT));
+
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getAllIndices())
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
+
+        final Map<String, Long> result = new LinkedHashMap<>();
+        if (Objects.isNull(response.getAggregations())) {
+            return result;
+        }
+        final Terms terms = response.getAggregations().get(groupBy);
+        for (Terms.Bucket termBucket : terms.getBuckets()) {
+            result.put(termBucket.getKeyAsString(), termBucket.getDocCount());
+        }
+        return result;
+    }
+
+    public LogFilter getFilters() {
+        final LogFilter result = new LogFilter();
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery())
+                .size(0)
+                .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
+                .aggregation(AggregationBuilders.terms(SERVICE_NAME)
+                        .field(SERVICE_NAME + KEYWORD))
+                .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getAllIndices())
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = ElasticsearchUtils.verifyResponse(executeRequest(request));
+        response.getAggregations()
+                .asList()
+                .stream()
+                .map(Terms.class::cast)
+                .forEach(terms -> {
+                    List<String> values = terms.getBuckets().stream()
+                            .map(MultiBucketsAggregation.Bucket::getKey)
+                            .map(Object::toString)
+                            .collect(Collectors.toList());
+
+                    if (HOSTNAME.equals(terms.getName())) {
+                        result.setHostnames(values);
+                    } else if (SERVICE_NAME.equals(terms.getName())) {
+                        result.setServiceNames(values);
+                    } else if (TYPE.equals(terms.getName())) {
+                        result.setTypes(values);
+                    }
+                });
+
+        return result;
+    }
+
+    public void save(final List<LogEntry> logEntries) {
+        log.debug("Saving log entries ({})...", logEntries.size());
+        final String index = getWriteIndex();
+        final BulkRequest bulkRequest = new BulkRequest();
+        final List<IndexRequest> indexRequests = logEntries.stream()
+                .map(e -> getIndexRequest(e, index))
+                .collect(Collectors.toList());
+        indexRequests.forEach(bulkRequest::add);
+        try (RestHighLevelClient client = elasticHelper.buildClient()){
+            client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+    }
+
+    private IndexRequest getIndexRequest(final LogEntry logEntry, final String index) {
+        final XContentBuilder builder;
+        try {
+            builder = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .field(ID, logEntry.getEventId())
+                    .field(MESSAGE_TIMESTAMP, logEntry.getMessageTimestamp().format(DATE_TIME_FORMATTER))
+                    .field(HOSTNAME, logEntry.getHostname())
+                    .field(SERVICE_NAME, logEntry.getServiceName())
+                    .field(TYPE, logEntry.getType())
+                    .field(USER, logEntry.getUser())
+                    .field(MESSAGE, logEntry.getMessage())
+                    .field(SEVERITY, logEntry.getSeverity())
+                    .field(SERVICE_ACCOUNT, authManager.isServiceUser(logEntry.getUser()))
+                    .field(STORAGE_ID, logEntry.getStorageId())
+                    .endObject();
+        } catch (IOException e) {
+            throw new PipelineException(e);
+        }
+        return new IndexRequest(index, INDEX_TYPE).source(builder);
+    }
+
+    private String[] getAllIndices() {
+        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
+    }
+
+    private String getWriteIndex() {
+        return getIndexName(indexPrefix);
+    }
+
+    /**
+     * Returns system logs day indices taking into consideration filebeat transition period.
+     * <p>
+     * The transition period includes adjacent indices which may contain required documents.
+     */
+    private String[] getReadIndices(final LocalDateTime from, final LocalDateTime to) {
         final LocalDate toDate = Optional.ofNullable(to)
                 .orElseGet(DateUtils::nowUTC)
                 .toLocalDate();
         return Optional.ofNullable(from)
                 .map(LocalDateTime::toLocalDate)
-                .map(fromDate -> getLogDayIndices(fromDate, toDate))
-                .orElseGet(this::getLogIndices);
+                .map(fromDate -> getReadIndices(fromDate, toDate))
+                .orElseGet(this::getAllIndices);
     }
 
-    private String[] getLogIndices() {
-        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
-    }
-
-    /**
-     * Returns system logs day indices taking into consideration filebeat transition period.
-     *
-     * The transition period includes adjacent indices which may contain required documents.
-     */
-    private String[] getLogDayIndices(final LocalDate from, final LocalDate to) {
+    private String[] getReadIndices(final LocalDate from, final LocalDate to) {
         final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
         final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
         return Stream.iterate(actualFrom, date -> date.plusDays(1))
-                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .limit(ChronoUnit.DAYS.between(actualFrom, actualTo) + 1)
                 .map(date -> date.format(ELASTIC_DATE_FORMATTER))
                 .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
                 .toArray(String[]::new);
@@ -226,52 +350,9 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
-                logFilter.getMessageTimestampTo());
+        ElasticsearchUtils.addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
+                logFilter.getMessageTimestampTo(), MESSAGE_TIMESTAMP);
         return boolQuery;
-    }
-
-    private void addRangeFilter(final BoolQueryBuilder boolQuery,
-                                final LocalDateTime from, final LocalDateTime to) {
-        if (from == null && to == null) {
-            return;
-        }
-
-        final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
-
-        if (from != null) {
-            rangeQueryBuilder.from(from.toInstant(ZoneOffset.UTC));
-        }
-        if (to != null) {
-            rangeQueryBuilder.to(to.toInstant(ZoneOffset.UTC));
-        }
-
-        boolQuery.filter(rangeQueryBuilder);
-    }
-
-    private SearchResponse verifyResponse(final SearchResponse logsResponse) {
-        if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
-            throw new IllegalStateException(String.format("Search request has failed with HTTP status %s (%s).",
-                    logsResponse.status().name(), logsResponse.status().getStatus()));
-        }
-
-        log.debug("Search request has finished with {} successful, {} skipped and {} failed shards of {} total.",
-                logsResponse.getSuccessfulShards(), logsResponse.getSkippedShards(),
-                logsResponse.getFailedShards(), logsResponse.getTotalShards());
-        final ShardSearchFailure[] failures = logsResponse.getShardFailures();
-        if (failures.length > 0) {
-            final List<Throwable> errors = Arrays.stream(failures)
-                    .map(ShardSearchFailure::getCause)
-                    .collect(Collectors.toList());
-            final String errorMessages = errors.stream()
-                    .map(Throwable::getMessage)
-                    .collect(Collectors.joining("\n"));
-            log.error("Search request has finished with the following shard failures: {}", errorMessages);
-            throw new IllegalStateException("Search request has failed because some shards failed. ",
-                    failures[0].getCause());
-        }
-
-        return logsResponse;
     }
 
     private LogEntry mapHitToLogEntry(SearchHit searchHit) {
@@ -285,6 +366,11 @@ public class LogManager {
                 .user((String) hit.get(USER))
                 .message((String) hit.get(MESSAGE))
                 .severity((String) hit.getOrDefault(SEVERITY, DEFAULT_SEVERITY))
+                .storageId(Optional.ofNullable(hit.get(STORAGE_ID))
+                        .map(Object::toString)
+                        .filter(StringUtils::isNotBlank)
+                        .map(Long::valueOf)
+                        .orElse(null))
                 .build();
     }
 
@@ -294,43 +380,5 @@ public class LogManager {
         } catch (IOException e) {
             throw new PipelineException(e);
         }
-    }
-
-    public LogFilter getFilters() {
-        final LogFilter result = new LogFilter();
-        final SearchSourceBuilder source = new SearchSourceBuilder()
-                .query(QueryBuilders.boolQuery())
-                .size(0)
-                .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
-                .aggregation(AggregationBuilders.terms(SERVICE_NAME)
-                        .field(SERVICE_NAME + KEYWORD))
-                .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
-        final SearchRequest request = new SearchRequest()
-                .source(source)
-                .indices(getLogIndices())
-                .indicesOptions(INDICES_OPTIONS);
-        log.debug("Logs request: {} ", request);
-
-        final SearchResponse response = verifyResponse(executeRequest(request));
-        response.getAggregations()
-                .asList()
-                .stream()
-                .map(Terms.class::cast)
-                .forEach(terms -> {
-                    List<String> values = terms.getBuckets().stream()
-                            .map(MultiBucketsAggregation.Bucket::getKey)
-                            .map(Object::toString)
-                            .collect(Collectors.toList());
-
-                    if (HOSTNAME.equals(terms.getName())) {
-                        result.setHostnames(values);
-                    } else if (SERVICE_NAME.equals(terms.getName())) {
-                        result.setServiceNames(values);
-                    } else if (TYPE.equals(terms.getName())) {
-                        result.setTypes(values);
-                    }
-                });
-
-        return result;
     }
 }

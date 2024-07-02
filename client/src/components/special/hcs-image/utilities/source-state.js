@@ -15,41 +15,25 @@
  */
 
 import {action, observable} from 'mobx';
+import HCSBaseState from './base-state';
 
-class SourceState {
+class SourceState extends HCSBaseState {
   @observable pending = false;
+  @observable selectedAnnotation;
   constructor (viewer) {
-    this.attachToViewer(viewer);
-  }
-
-  attachToViewer (viewer) {
-    this.detachFromViewer();
-    if (viewer) {
-      this.viewer = viewer;
-      this.viewer.addEventListener(
-        this.viewer.Events.stateChanged,
-        this.onStateChanged
-      );
-    }
-  }
-
-  detachFromViewer () {
-    if (this.viewer) {
-      this.viewer.removeEventListener(
-        this.viewer.Events.stateChanged,
-        this.onStateChanged
-      );
-    }
+    super(viewer, 'stateChanged');
   }
 
   @action
-  onStateChanged = (viewer, newState) => {
+  onStateChanged (viewer, newState) {
     const {
       imagePending = false,
-      sourcePending: pending = false
+      sourcePending: pending = false,
+      selectedAnnotation
     } = newState || {};
     this.pending = pending || imagePending;
-  };
+    this.selectedAnnotation = selectedAnnotation;
+  }
 }
 
 export default SourceState;

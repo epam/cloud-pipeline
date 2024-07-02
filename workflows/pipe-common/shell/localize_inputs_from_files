@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,19 +24,49 @@ if [ -z "$CP_LOCALIZE_FROM_FILES" ]; then
     exit 0
 fi
 
-pipe_log_info "Will localize any remotes from the config files, defined by the following parameters: $CP_LOCALIZE_FROM_FILES" "$LOCALIZE_FROM_FILES_TASK_NAME"
+# Check if the CP_LOCALIZE_FROM_FILES is defined as a JSON or B64 string
+if [[ $CP_LOCALIZE_FROM_FILES = "{"* ]]; then
+    pipe_log_info "CP_LOCALIZE_FROM_FILES is JSON, parsing it" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    _env_var_list=$(echo "$CP_LOCALIZE_FROM_FILES" | jq -r 'keys  | join(" ")')
+    _localize_json_config=true
+elif [[ "$CP_LOCALIZE_FROM_FILES" =~ ^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{3}=|[A-Za-z0-9+/]{2}==)?$ ]]; then
+    pipe_log_info "CP_LOCALIZE_FROM_FILES is a BASE64 JSON, parsing it" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    CP_LOCALIZE_FROM_FILES=$(echo "$CP_LOCALIZE_FROM_FILES" | base64 -d)
+    _env_var_list=$(echo "$CP_LOCALIZE_FROM_FILES" | jq -r 'keys  | join(" ")')
+    _localize_json_config=true
+elif [ "${CP_LOCALIZE_FROM_FILES,,}" = "all" ]; then
+    CP_LOCALIZE_FROM_FILES_ALL_PATTERN="${CP_LOCALIZE_FROM_FILES_ALL_PATTERN:-.*.manifest.csv}"
+    pipe_log_info "CP_LOCALIZE_FROM_FILES is set to ALL, will find any parameter which value matches '$CP_LOCALIZE_FROM_FILES_ALL_PATTERN'" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    while IFS= read -r _env_var_candidate; do
+        _env_var_candidate_value="${!_env_var_candidate}"
+        if echo "$_env_var_candidate_value" | grep -qe "$CP_LOCALIZE_FROM_FILES_ALL_PATTERN"; then
+            _env_var_list="$_env_var_list $_env_var_candidate"
+        fi
+    done <<< "$(env | grep "_PARAM_TYPE=input\|_PARAM_TYPE=common\|_PARAM_TYPE=metadata" | sed -e 's/\(_PARAM_TYPE=input\|_PARAM_TYPE=common\|_PARAM_TYPE=metadata\)//g')"
+    if [ -z "$_env_var_list" ]; then
+        pipe_log_fail "Unable to find any parameters matching '$CP_LOCALIZE_FROM_FILES_ALL_PATTERN', no configs will be localized" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        exit 1
+    fi
+else
+    pipe_log_info "CP_LOCALIZE_FROM_FILES is a PLAIN list, parsing it" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    _env_var_list="${CP_LOCALIZE_FROM_FILES//,/ }"
+    _localize_json_config=false
+fi
+
+pipe_log_info "Will localize any remotes from the config files, defined by the following parameters: $_env_var_list" "$LOCALIZE_FROM_FILES_TASK_NAME"
 
 CP_LOCALIZE_FROM_FILES_EXT="${CP_LOCALIZE_FROM_FILES_EXT:-*}"
 CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX="${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX:-_PARAM_TYPE_FROM_FILE}"
 CP_LOCALIZE_FROM_FILES_RE_PATTERN="${CP_LOCALIZE_FROM_FILES_RE_PATTERN:-((s3|gs|az):\/\/.*(,|;|$))}"
+CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE="${CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE:-1000}"
 
 pipe_log_info "--> Files extensions: $CP_LOCALIZE_FROM_FILES_EXT" "$LOCALIZE_FROM_FILES_TASK_NAME"
 pipe_log_info "--> Env vars suffix: $CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX" "$LOCALIZE_FROM_FILES_TASK_NAME"
-pipe_log_info "--> RE pattern: $CP_LOCALIZE_FROM_FILES_RE_PATTERN" "$LOCALIZE_FROM_FILES_TASK_NAME"
+pipe_log_info "--> Default RE pattern: $CP_LOCALIZE_FROM_FILES_RE_PATTERN" "$LOCALIZE_FROM_FILES_TASK_NAME"
 
 # Collect files, which may contain "localizable" values
 pipe_log_info "Collecting files, which may contain 'localizable' values" "$LOCALIZE_FROM_FILES_TASK_NAME"
-_env_var_list="${CP_LOCALIZE_FROM_FILES//,/ }"
+
 _files_to_localize=()
 for _x in $_env_var_list; do
     _param_value=${!_x}
@@ -47,9 +77,9 @@ for _x in $_env_var_list; do
             continue
         fi
         if [ -d "$_path" ]; then
-            _files_list=$(find ${_path}/ -name "$CP_LOCALIZE_FROM_FILES_EXT" -type f)
+            _files_list=$(find ${_path}/ -name "$CP_LOCALIZE_FROM_FILES_EXT" -type f -printf "${_x}:%p\n")
         elif [ -f "$_path" ]; then
-            _files_list="$_path"
+            _files_list="${_x}:${_path}"
         else
             pipe_log_warn "Path(s) defined by '$_x' parameter do not exist: $_path" "$LOCALIZE_FROM_FILES_TASK_NAME"
             continue
@@ -68,16 +98,30 @@ fi
 # Search for the matching remote URLs in a file and export them as env vars
 pipe_log_info "Searching for the matching remote URLs in the files" "$LOCALIZE_FROM_FILES_TASK_NAME"
 _has_something_to_localize=false
+_files_to_recursive_localize=""
 for _path in ${_files_to_localize[@]}; do
-    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_path")
+    _env_name=$(echo "$_path" | cut -f1 -d':')
+    _real_path=$(echo "$_path" | cut -f2 -d':')
+    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_real_path")
+
+    if [ "$_localize_json_config" == "true" ]; then
+        _localize_re_pattern=$(echo "$CP_LOCALIZE_FROM_FILES" | jq -r ".${_env_name}")
+    else
+        _localize_re_pattern="$CP_LOCALIZE_FROM_FILES_RE_PATTERN"
+    fi
+    
     i=1
     while IFS= read -r _match; do
         _match_env_var_name="${_file_as_env_var}_${i}"
         declare -x "${_match_env_var_name}"="$_match"
         declare -x "${_match_env_var_name}${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX}"="input"
+        if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
+            _files_to_recursive_localize="${_files_to_recursive_localize} ${_match_env_var_name}"
+            pipe_log_info "Adding file ${_match_env_var_name} for recursive localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        fi
         i=$((i+1))
         _has_something_to_localize=true
-    done <<< "$(grep -oP "$CP_LOCALIZE_FROM_FILES_RE_PATTERN" "$_path")"
+    done <<< "$(grep -oP "$_localize_re_pattern" "$_real_path")"
 done
 
 if [ "$_has_something_to_localize" != "true" ]; then
@@ -113,8 +157,11 @@ pipe_log_info "--> Remotes were localized fine, see output above" "$LOCALIZE_FRO
 # Replace remote URLs with the localized
 pipe_log_info "Replacing remote URLs with the localized path across the files" "$LOCALIZE_FROM_FILES_TASK_NAME"
 for _path in ${_files_to_localize[@]}; do
-    pipe_log_info "--> Processing: $_path" "$LOCALIZE_FROM_FILES_TASK_NAME"
-    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_path")
+    _env_name=$(echo "$_path" | cut -f1 -d':')
+    _real_path=$(echo "$_path" | cut -f2 -d':')
+    
+    pipe_log_info "--> Processing: $_real_path" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_real_path")
     i=1
     while true; do
         _local_path="${_file_as_env_var}_${i}"
@@ -128,16 +175,26 @@ for _path in ${_files_to_localize[@]}; do
 
         # Escape any special symbols (e.g. asterisk) as they confuse 'sed'
         _remote_path=$(printf '%s\n' "$_remote_path" | sed -e 's/[]\/$*.^[]/\\&/g')
-        sed -i "s|$_remote_path|$_local_path|g" "$_path"
+        sed -i "s|$_remote_path|$_local_path|g" "$_real_path"
 
         i=$((i+1))
 
-        if (($i>1000)); then
-            pipe_log_want "Looks like we've ran into an endless loop for ${_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        if (($i>$CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE)); then
+            pipe_log_warn "Looks like we've ran into an endless loop for ${_real_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
             break
         fi
     done
 done
 pipe_log_info "--> Replacement is done" "$LOCALIZE_FROM_FILES_TASK_NAME"
+
+if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
+    if [ ! -z "${_files_to_recursive_localize}" ]; then
+        echo $_files_to_recursive_localize
+        pipe_log_info "--> Starting recursive file localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
+        unset CP_LOCALIZE_FROM_FILES_RECURSIVE
+        export CP_LOCALIZE_FROM_FILES="${_files_to_recursive_localize}"
+        localize_inputs_from_files "$LOCALIZE_GENERAL_TASK_NAME" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    fi
+fi
 
 pipe_log_success "Config file based localization is done" "$LOCALIZE_FROM_FILES_TASK_NAME"

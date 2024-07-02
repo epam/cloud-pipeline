@@ -34,7 +34,10 @@ export function extractFileShareMountList (regions) {
       region.fileShareMounts.forEach(fileShareMount => {
         if ((fileShareMount.mountRoot || '').trim()) {
           let separator = '';
-          if (fileShareMount.mountType === 'NFS' && SERVER_PORT_MASK.test(fileShareMount.mountRoot)) {
+          if (
+            fileShareMount.mountType === 'NFS' &&
+            SERVER_PORT_MASK.test(fileShareMount.mountRoot)
+          ) {
             separator = ':';
           }
           const mountPathMask = new RegExp(`^${fileShareMount.mountRoot}${separator}(.*)$`, 'i');
@@ -59,7 +62,7 @@ export function parseFSMountPath (pathInfo, fileShareMountsList) {
     return {
       execResult,
       mount: fs
-    }
+    };
   }).filter(r => !!r.execResult);
   if (fileShareMountParseResult) {
     return {
@@ -76,7 +79,6 @@ export function parseFSMountPath (pathInfo, fileShareMountsList) {
 @inject('preferences')
 @observer
 export class DataStoragePathInput extends React.Component {
-
   static propTypes = {
     value: PropTypes.object,
     onChange: PropTypes.func,
@@ -171,19 +173,26 @@ export class DataStoragePathInput extends React.Component {
     this.validatePath();
   };
 
-  displayFileShareHostName = (fileShareMount) => {
+  displayFileShareHostName = (fileShareMount, showMountType = false) => {
+    const mountType = showMountType && fileShareMount.mountType
+      ? `${fileShareMount.mountType} `
+      : '';
     return (
-      <Tooltip title={`${fileShareMount.regionName}: ${fileShareMount.mountRoot}`}>
-        <Row type="flex" style={{
-          flexFlow: 'nowrap'
-        }}>
+      <Tooltip title={`${fileShareMount.regionName}: ${mountType}${fileShareMount.mountRoot}`}>
+        <Row
+          type="flex"
+          align="middle"
+          style={{flexFlow: 'nowrap'}}
+        >
           <AWSRegionTag regionId={fileShareMount.regionId} displayName />
-          <div style={{
+          <p style={{
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             textAlign: 'left'
-          }}>: {fileShareMount.mountRoot}</div>
+          }}>
+            : {mountType}{fileShareMount.mountRoot}
+          </p>
         </Row>
       </Tooltip>
     );
@@ -247,12 +256,12 @@ export class DataStoragePathInput extends React.Component {
             height: 32,
             maxWidth: '50%'
           }}>
-          {
-            this.props.disabled || this.fileShareMountsList
-              .filter(
-                r => !this.currentFileShareMount || r.id !== this.currentFileShareMount.id
-              ).length === 0
-              ? <Button
+          {this.props.disabled || this.fileShareMountsList
+            .filter(r => !this.currentFileShareMount ||
+              r.id !== this.currentFileShareMount.id
+            ).length === 0
+            ? (
+              <Button
                 id="edit-storage-storage-path-nfs-mount"
                 size="small"
                 style={{
@@ -261,15 +270,17 @@ export class DataStoragePathInput extends React.Component {
                   backgroundColor: 'transparent',
                   width: '100%'
                 }}
-                onClick={null}>
+                onClick={null}
+              >
                 {
                   this.currentFileShareMount
-                    ? this.displayFileShareHostName(this.currentFileShareMount)
+                    ? this.displayFileShareHostName(this.currentFileShareMount, true)
                     : (this.state.path && this.state.path.split(':')[0]) ||
                     'None'
                 }
               </Button>
-              : <Dropdown
+            ) : (
+              <Dropdown
                 id="edit-storage-storage-path-nfs-mount"
                 overlay={
                   <div
@@ -285,8 +296,9 @@ export class DataStoragePathInput extends React.Component {
                             <Row key={fileShareMount.id} type="flex">
                               <Button
                                 style={{textAlign: 'left', width: '100%', border: 'none'}}
-                                onClick={() => this.onSelectFileShareMount(fileShareMount)}>
-                                {this.displayFileShareHostName(fileShareMount)}
+                                onClick={() => this.onSelectFileShareMount(fileShareMount)}
+                              >
+                                {this.displayFileShareHostName(fileShareMount, true)}
                               </Button>
                             </Row>
                           );
@@ -304,12 +316,13 @@ export class DataStoragePathInput extends React.Component {
                   }}>
                   {
                     this.currentFileShareMount
-                      ? this.displayFileShareHostName(this.currentFileShareMount)
+                      ? this.displayFileShareHostName(this.currentFileShareMount, true)
                       : (this.state.path && this.state.path.split(':')[0]) ||
                       'None'
                   }
                 </Button>
               </Dropdown>
+            )
           }
         </div>
         <Input
@@ -367,7 +380,9 @@ export class DataStoragePathInput extends React.Component {
       return parse();
     } else {
       return {
-        fileShareMountId: this.fileShareMountsList.length > 0 ? this.fileShareMountsList[0].id : undefined,
+        fileShareMountId: this.fileShareMountsList.length > 0
+          ? this.fileShareMountsList[0].id
+          : undefined,
         regionId: undefined,
         storagePath: undefined,
         path: undefined

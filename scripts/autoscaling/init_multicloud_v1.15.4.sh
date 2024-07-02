@@ -1,4 +1,8 @@
 #!/bin/bash
+
+launch_token="/etc/user_data_launched"
+if [[ -f "$launch_token" ]]; then exit 0; fi
+
 user_data_log="/var/log/user_data.log"
 exec > "$user_data_log" 2>&1
 
@@ -38,6 +42,46 @@ function update_nameserver {
   fi
 }
 
+function wait_device_uuid {
+    local device_name="$1"
+    local attempts="$2"
+
+    export DEVICE_UUID=""
+    echo "Waiting for device uuid $device_name..."
+    for i in $(seq 1 "$attempts"); do
+        export DEVICE_UUID="$(lsblk -sdrpn -o NAME,UUID | awk -F'[ ]' '$1 ~ device_name { print $2 }' device_name="$device_name" | head -n 1)"
+        if [ "$DEVICE_UUID" ]; then
+            echo "Device uuid is ready $device_name ($DEVICE_UUID)"
+            return 0
+        fi
+        echo "Waiting for device uuid..."
+        sleep 1
+    done
+
+    echo "Device uuid is NOT ready after $attempts seconds"
+    return 1
+}
+
+function wait_device_part {
+    local device_prefix="$1"
+    local attempts="$2"
+
+    export DEVICE_NAME=""
+    echo "Waiting for device part $device_prefix..."
+    for i in $(seq 1 "$attempts"); do
+        export DEVICE_NAME="$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk -F'[ ]' '$1 ~ device_prefix && $2 == "part" && $3 == "" { print $1 }' device_prefix="$device_prefix" | head -n 1)"
+        if [ "$DEVICE_NAME" ]; then
+            echo "Device part is ready $DEVICE_NAME"
+            return 0
+        fi
+        echo "Waiting for device part..."
+        sleep 1
+    done
+
+    echo "Device part is NOT ready after $attempts seconds"
+    return 1
+}
+
 function setup_swap_device {
     local swap_size="${1:-0}"
     if [[ "${swap_size}" == "@"*"@" ]]; then
@@ -73,17 +117,36 @@ function setup_swap_device {
             echo "Unable to swapon at $swap_drive_name"
             return 1
         fi
-        swap_drive_uuid=$(lsblk -sdrpn -o NAME,UUID | awk '$1 == "'"$swap_drive_name"'" { print $2 }')
-        echo "UUID=$swap_drive_uuid none swap sw 0 0" >> /etc/fstab
+        wait_device_uuid "$swap_drive_name" 10
+        echo "UUID=$DEVICE_UUID none swap sw 0 0" >> /etc/fstab
     fi
 }
+
+GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+export GLOBAL_DISTRIBUTION_URL
+
+_WO="--timeout=10 --waitretry=1 --tries=10"
+wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
+gzip -d /bin/nvme.gz && \
+chmod +x /bin/nvme
 
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
 FS_TYPE="@FS_TYPE@"
 
+_ds=()
+if [[ -x /bin/nvme ]]; then
+  _ds=($(nvme list | grep 'Instance Storage' | awk '{ print $1 }'))
+fi
 UNMOUNTED_DRIVES=($(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }'))
+_dsc=( $({ printf "%s\n" "${UNMOUNTED_DRIVES[@]}" | sort -u; printf "%s\n" "${_ds[@]}" "${_ds[@]}"; } | sort | uniq -u) )
+if [[ ${#_dsc[@]} > 0 ]]; then
+  UNMOUNTED_DRIVES=("${_dsc[@]}")
+fi
 if [[ ${#UNMOUNTED_DRIVES[@]} > 1 ]]; then
   pvcreate ${UNMOUNTED_DRIVES[@]}
   vgcreate nvmevg ${UNMOUNTED_DRIVES[@]}
@@ -94,13 +157,14 @@ elif [[ ${#UNMOUNTED_DRIVES[@]} == 1 ]]; then
   PARTITION_RESULT=$(sfdisk -d $DRIVE_NAME 2>&1)
   if [[ $PARTITION_RESULT == "" ]]; then
       (echo o; echo n; echo p; echo; echo; echo; echo w) | fdisk $DRIVE_NAME
-      DRIVE_NAME="${DRIVE_NAME}1"
+      wait_device_part "$DRIVE_NAME" 10
+      DRIVE_NAME="$DEVICE_NAME"
   elif [[ $PARTITION_RESULT == *"No such device or address"* ]]; then
       echo "Cannot create partition for ${DRIVE_NAME}, falling back to root volume"
       unset DRIVE_NAME
   fi
 else
-  echo "No unmounted drives found. Root volume is used as for the /ebs"
+  echo "No unmounted drives found. Root volume is used for the /ebs"
 fi
 
 MOUNT_POINT="/ebs"
@@ -121,16 +185,22 @@ mkdir -p $MOUNT_POINT/runs
 mkdir -p $MOUNT_POINT/reference
 rm -rf $MOUNT_POINT/lost+found
 
+ssh_node_port="@NODE_SSH_PORT@"
+
+if [ "$ssh_node_port" ]  && [[ "$ssh_node_port" != "@"*"@" ]]; then
+  sed -i "/#Port/c\Port $ssh_node_port" /etc/ssh/sshd_config
+  systemctl restart sshd
+fi
+
 systemctl stop docker
 
 _DOCKER_SYS_IMGS="/ebs/docker-system-images"
 rm -rf $_DOCKER_SYS_IMGS
 _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
 if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
-  _KUBE_SYSTEM_PODS_DISTR="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
+  _KUBE_SYSTEM_PODS_DISTR="${GLOBAL_DISTRIBUTION_URL}tools/kube/1.15.4/docker"
 fi
 mkdir -p $_DOCKER_SYS_IMGS
-_WO="--timeout=10 --waitretry=1 --tries=10"
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
@@ -211,6 +281,7 @@ if [[ $cloud == *"EC2"* ]]; then
     _CLOUD_INSTANCE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceId | cut -d\" -f4)
     _CLOUD_INSTANCE_TYPE=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep instanceType | cut -d\" -f4)
     _CLOUD_INSTANCE_IMAGE_ID=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | grep imageId | cut -d\" -f4)
+    _CI_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
     _CLOUD_PROVIDER=AWS
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
 
@@ -225,6 +296,7 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     _CLOUD_INSTANCE_AZ=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/zone?api-version=2018-10-01&format=text')
     _CLOUD_INSTANCE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/name?api-version=2018-10-01&format=text')"
     _CLOUD_INSTANCE_TYPE=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/vmSize?api-version=2018-10-01&format=text')
+    _CI_IP=$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/ipv4/Ipaddress?api-version=2018-10-01&format=text')
     _KUBE_NODE_NAME=$(echo "$_CLOUD_INSTANCE_ID" | grep -xE "[a-zA-Z0-9\-]{1,256}" &> /dev/null && echo $_CLOUD_INSTANCE_ID || hostname)
 
     _CLOUD_INSTANCE_IMAGE_ID="$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/publisher?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/product?api-version=2018-10-01&format=text'):$(curl -H Metadata:true -s 'http://169.254.169.254/metadata/instance/compute/plan/name?api-version=2018-10-01&format=text')"
@@ -238,13 +310,22 @@ elif [[ $cloud == *"Microsoft"* ]]; then
     crontab -l | { cat ; echo -e "* * * * * $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 20 && $CHECK_AZURE_EVENTS_COMMAND \n* * * * * sleep 40 && $CHECK_AZURE_EVENTS_COMMAND" ; } | crontab -
 
 elif [[ $gcloud_header == *"Google"* ]]; then
-    _CLOUD_INSTANCE_AZ=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
+    _gcp_h='-H Metadata-Flavor:Google -s'
+    _CLOUD_INSTANCE_AZ=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/zone | grep zones | cut -d/ -f4)
     _CLOUD_REGION=${_CLOUD_INSTANCE_AZ}
-    _CLOUD_INSTANCE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/name)
-    _CLOUD_INSTANCE_TYPE=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
-    _CLOUD_INSTANCE_IMAGE_ID=$(curl -H "Metadata-Flavor:Google"  http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
+    _CLOUD_INSTANCE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/name)
+    _CLOUD_INSTANCE_TYPE=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/machine-type | grep machineTypes | cut -d/ -f4)
+    _CLOUD_INSTANCE_IMAGE_ID=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/image | cut -d/ -f5)
+    _CI_IP=$(curl $_gcp_h http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip)
     _CLOUD_PROVIDER=GCP
     _KUBE_NODE_NAME="$_CLOUD_INSTANCE_ID"
+fi
+
+mtu="@mtu@"
+if [ "$mtu" ] && [[ "$mtu" != "@"*"@" ]]; then
+  [ "$_CI_IP" ] && _iname=$(ifconfig | grep -B1 "$_CI_IP" | grep -o "^\w*")
+  [ -z "$_iname" ] && _iname="eth0"
+  ip link set dev $_iname mtu $mtu
 fi
 
 @WELL_KNOWN_HOSTS@
@@ -299,24 +380,42 @@ _KUBE_LOG_ARGS="--logtostderr=false --log-dir=$_KUBELET_LOG_PATH"
 _KUBE_NODE_NAME="${_KUBE_NODE_NAME:-$(hostname)}"
 _KUBE_NODE_NAME_ARGS="--hostname-override $_KUBE_NODE_NAME"
 
+_KUBE_PULL_TIMEOUT="@kube_pull_deadline@"
+if [ -z "$_KUBE_PULL_TIMEOUT" ] || [[ "$_KUBE_PULL_TIMEOUT" == "@"*"@" ]]; then
+  _KUBE_PULL_TIMEOUT="10m"
+fi
+_KUBE_OTHER_ARGS="--image-pull-progress-deadline $_KUBE_PULL_TIMEOUT"
+_KUBE_OTHER_ARGS="--enable-cadvisor-json-endpoints $_KUBE_OTHER_ARGS"
+
 # FIXME: use the .NodeRegistration.KubeletExtraArgs object in the configuration files
 _KUBELET_INITD_DROPIN_PATH="/etc/sysconfig/kubelet"
 rm -f $_KUBELET_INITD_DROPIN_PATH
 
-## FIXME: shall be moved to the preferences
-_KUBE_RESERVED_RATIO=5
-_KUBE_RESERVED_MIN_MB=500
-_KUBE_RESERVED_MAX_MB=2000
-_KUBE_NODE_MEM_TOTAL_MB=$(awk '/MemTotal/ { printf "%.0f", $2/1024 }' /proc/meminfo)
-_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_TOTAL_MB * $_KUBE_RESERVED_RATIO / 100 / 2 ))
-_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB > $_KUBE_RESERVED_MAX_MB ? $_KUBE_RESERVED_MAX_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
-_KUBE_NODE_MEM_RESERVED_MB=$(( $_KUBE_NODE_MEM_RESERVED_MB < $_KUBE_RESERVED_MIN_MB ? $_KUBE_RESERVED_MIN_MB : $_KUBE_NODE_MEM_RESERVED_MB ))
-_KUBE_RESERVED_ARGS="--kube-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
-_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=300m,memory=${_KUBE_NODE_MEM_RESERVED_MB}Mi,ephemeral-storage=1Gi"
+KUBE_RESERVED_CPU="300m"
+KUBE_RESERVED_DISK="1Gi"
+KUBE_RESERVED_MEM="@KUBE_RESERVED_MEM@"
+if [ ! "$KUBE_RESERVED_MEM" ] || [[ "$KUBE_RESERVED_MEM" == "@"*"@" ]]; then
+    KUBE_RESERVED_MEM="250Mi"
+fi
+
+SYSTEM_RESERVED_CPU="300m"
+SYSTEM_RESERVED_DISK="1Gi"
+SYSTEM_RESERVED_MEM="@SYSTEM_RESERVED_MEM@"
+if [ ! "$SYSTEM_RESERVED_MEM" ] || [[ "$SYSTEM_RESERVED_MEM" == "@"*"@" ]]; then
+    SYSTEM_RESERVED_MEM="250Mi"
+fi
+
+_KUBE_RESERVED_ARGS="--kube-reserved cpu=${KUBE_RESERVED_CPU},memory=${KUBE_RESERVED_MEM},ephemeral-storage=${KUBE_RESERVED_DISK}"
+_KUBE_SYS_RESERVED_ARGS="--system-reserved cpu=${SYSTEM_RESERVED_CPU},memory=${SYSTEM_RESERVED_MEM},ephemeral-storage=${SYSTEM_RESERVED_DISK}"
 _KUBE_EVICTION_ARGS="--eviction-hard= --eviction-soft= --eviction-soft-grace-period= --pod-max-pids=-1"
 _KUBE_FAIL_ON_SWAP_ARGS="--fail-swap-on=false"
 
-echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
+_KUBELET_VERSION=$(kubelet --version | cut -f2 -d'.')
+if (( "$_KUBELET_VERSION" >=  19)); then
+  _KUBE_OTHER_ARGS="$_KUBE_OTHER_ARGS --feature-gates CSIMigration=false"
+fi
+
+echo "KUBELET_EXTRA_ARGS=$_KUBE_NODE_INSTANCE_LABELS $_KUBE_LOG_ARGS $_KUBE_NODE_NAME_ARGS $_KUBE_RESERVED_ARGS $_KUBE_SYS_RESERVED_ARGS $_KUBE_EVICTION_ARGS $_KUBE_FAIL_ON_SWAP_ARGS $_KUBE_OTHER_ARGS" >> $_KUBELET_INITD_DROPIN_PATH
 chmod +x $_KUBELET_INITD_DROPIN_PATH
 
 systemctl enable docker
@@ -390,14 +489,22 @@ EOF
 
 _PRE_PULL_DOCKERS="@PRE_PULL_DOCKERS@"
 _API_USER="@API_USER@"
-if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
+if [[ ! -z "${_PRE_PULL_DOCKERS}" ]] && [[ "${_PRE_PULL_DOCKERS}" != "@"*"@" ]] ; then
   echo "Pre-pulling requested docker images ${_PRE_PULL_DOCKERS}"
   IFS=',' read -ra DOCKERS <<< "$_PRE_PULL_DOCKERS"
   for _DOCKER in "${DOCKERS[@]}"; do
     _REGISTRY="${_DOCKER%%/*}"
-    docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
+    for i in $(seq 1 10); do
+        echo "Trying $_REGISTRY"
+        docker login -u "$_API_USER" -p "$_API_TOKEN" "${_REGISTRY}"
+        _r=$?
+        [ $_r -eq 0 ] && break
+        sleep 3
+    done
+    [ $_r -ne 0 ] && echo "Cannot login to $_REGISTRY" && continue
     docker pull "$_DOCKER"
   done
 fi
 
+touch "$launch_token"
 nc -l -k 8888 &

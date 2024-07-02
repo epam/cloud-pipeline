@@ -54,6 +54,14 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import CloneForm from './forms/CloneForm';
 import styles from './Browser.css';
 
+const LATEST_VERSION_PLACEHOLDER = {
+  id: 'latest',
+  key: 'latest',
+  name: 'latest',
+  commitId: 'latest',
+  type: ItemTypes.version
+};
+
 @connect({
   pipelinesLibrary,
   folders,
@@ -91,7 +99,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     onReloadTree: PropTypes.func,
     selectedVersion: PropTypes.string,
     selectedConfiguration: PropTypes.string,
-    configurationSelectionMode: PropTypes.bool
+    configurationSelectionMode: PropTypes.bool,
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   state = {
@@ -113,6 +122,16 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         roleModel.readAllowed(this.props.pipeline.value);
     }
     return !!this.state.metadata;
+  }
+
+  @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
   }
 
   columns = [
@@ -142,6 +161,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: `${styles.treeItemName}`,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {
@@ -208,6 +230,9 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       key: 'createdDate',
       className: styles.treeItemName,
       render: (text, item) => {
+        if (item.id === LATEST_VERSION_PLACEHOLDER.id) {
+          return null;
+        }
         return this.renderTreeItemText(
           <span>
             Last updated: {item.author && 'by '}
@@ -286,7 +311,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           const configurations = this.state.configurations[item.id].list;
           return (
             <Select
-              style={{width: '100%'}}
+              style={{width: '100%', minWidth: '70px'}}
               value={this.state.configurations[item.id].selected}
               onSelect={this.onSelectConfiguration(item)}>
               {
@@ -309,6 +334,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end">
               {
                 roleModel.writeAllowed(this.props.pipeline.value) &&
+                this.props.pipeline.loaded &&
+                !/^BITBUCKET$/i.test(this.repositoryType) &&
                   roleModel.manager.pipeline(
                     <Button
                       id={`folder-item-${item.key}-release-button`}
@@ -396,13 +423,49 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
-    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, -1);
+  reload = async () => {
+    const {
+      parentFolderId
+    } = this.props.pipeline.value || {};
+    await Promise.all([
+      this.props.pipeline.fetch(),
+      this.props.versions.fetch()
+    ]);
+    if (this.props.onReloadTree) {
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
+      } else {
+        this.props.pipelinesLibrary.invalidateCache();
+      }
+      this.props.onReloadTree(
+        !parentFolderId,
+        parentFolderId
+      );
+    }
+  };
+
+  editPipeline = async (values) => {
+    const {
+      name,
+      description,
+      token,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
+    } = values || {};
+    const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
       description: description,
-      parentFolderId: this.props.pipeline.value.parentFolderId
+      parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -419,29 +482,28 @@ export default class Pipeline extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          this.props.pipeline.fetch();
-          if (this.props.onReloadTree) {
-            this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-          }
+          (this.reload)();
         }
       } else {
         hide();
         this.closeEditPipelineDialog();
-        this.props.pipeline.fetch();
-        if (this.props.onReloadTree) {
-          this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-        }
+        (this.reload)();
       }
     }
   };
 
   renamePipeline = async (name) => {
-    const hide = message.loading(`Renaming ${this.localizedString('pipeline')} ${name}...`, -1);
+    const hide = message.loading(`Renaming ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
       description: this.props.pipeline.value.description,
-      parentFolderId: this.props.pipeline.value.parentFolderId
+      parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch: this.props.pipeline.value.branch,
+      configurationPath: this.props.pipeline.value.configurationPath,
+      visibility: this.props.pipeline.value.visibility,
+      codePath: this.props.pipeline.value.codePath,
+      docsPath: this.props.pipeline.value.docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -455,10 +517,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       } else {
         this.props.pipelinesLibrary.invalidateCache();
       }
-      await this.props.pipeline.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 
@@ -481,7 +540,10 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         this.props.pipelinesLibrary.invalidateCache();
       }
       if (this.props.onReloadTree) {
-        this.props.onReloadTree(!parentFolderId);
+        this.props.onReloadTree(
+          !parentFolderId,
+          parentFolderId
+        );
       }
       if (parentFolderId) {
         this.props.router.push(`/folder/${parentFolderId}`);
@@ -515,11 +577,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       message.error(request.error, 5);
     } else {
       this.closeRegisterVersionDialog();
-      await this.props.pipeline.fetch();
-      await this.props.versions.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 
@@ -665,28 +723,31 @@ export default class Pipeline extends localization.LocalizedReactComponent {
         </MenuItem>
       );
     }
-    return (
-      <Dropdown
-        placement="bottomRight"
-        overlay={
-          <Menu
-            selectedKeys={[]}
-            onClick={onClick}
-            style={{width: 100}}
-          >
-            {actions}
-          </Menu>
-        }
-        key="edit">
-        <Button
-          key="edit"
-          id="edit-pipeline-menu-button"
-          style={{lineHeight: 1}}
-          size="small">
-          <Icon type="setting" />
-        </Button>
-      </Dropdown>
-    );
+    if (actions.length > 0) {
+      return (
+        <Dropdown
+          placement="bottomRight"
+          overlay={
+            <Menu
+              selectedKeys={[]}
+              onClick={onClick}
+              style={{width: 100}}
+            >
+              {actions}
+            </Menu>
+          }
+          key="edit">
+          <Button
+            key="edit"
+            id="edit-pipeline-menu-button"
+            style={{lineHeight: 1}}
+            size="small">
+            <Icon type="setting"/>
+          </Button>
+        </Dropdown>
+      );
+    }
+    return null;
   };
 
   render () {
@@ -706,12 +767,18 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     if (this.props.versions.loaded) {
       this._versions = generateTreeData(
         {versions: this.props.versions.value},
-        true,
-        {id: this.props.pipelineId},
-        undefined,
-        undefined,
-        this.props.hiddenObjectsTreeFilter()
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.pipelineId},
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
+      if (this.props.allowSelectLatestVersion) {
+        this._versions = [
+          LATEST_VERSION_PLACEHOLDER,
+          ...this._versions
+        ];
+      }
       versionsContent = (
         <Table
           key={CONTENT_PANEL_KEY}
@@ -780,12 +847,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                 this.renderConfigAction()
               }
               {
-                !this.props.listingMode
+                !this.props.listingMode && this.props.pipeline.value
                   ? (
                     <GitRepositoryControl
                       overlayClassName={styles.gitRepositoryPopover}
                       https={this.props.pipeline.value.repository}
-                      ssh={this.props.pipeline.value.repositorySsh} />
+                      ssh={this.props.pipeline.value.repositorySsh}
+                      repositoryType={this.repositoryType}
+                    />
                   ) : undefined
               }
             </Col>
@@ -840,7 +909,13 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   }
 
   loadConfigurations = async () => {
-    const versions = this.props.versions.value.map(v => v);
+    let versions = this.props.versions.value.map(v => v);
+    if (this.props.allowSelectLatestVersion) {
+      versions = [
+        LATEST_VERSION_PLACEHOLDER,
+        ...versions
+      ];
+    }
     const configurations = {};
     for (let i = 0; i < versions.length; i++) {
       const version = versions[i];

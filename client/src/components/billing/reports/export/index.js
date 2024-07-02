@@ -15,16 +15,12 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
-import {inject, observer, Provider as MobxProvider} from 'mobx-react';
-import {Button, Icon} from 'antd';
-import Menu, {MenuItem, Divider} from 'rc-menu';
-import Dropdown from 'rc-dropdown';
-import ExportConsumer from './export-consumer';
-import ExportImageConsumer from './export-image-consumer';
+import {Provider as MobxProvider} from 'mobx-react';
+import Menu, {MenuItem, Divider, SubMenu} from 'rc-menu';
+import Consumer from './export-consumer';
+import ImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
 import ExportFormat from './export-formats';
-import BillingNavigation from '../../navigation';
 
 const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
@@ -34,111 +30,109 @@ const ExportFormatName = {
   [ExportFormat.rawCsv]: 'Export raw data'
 };
 
-class ExportReports extends React.Component {
-  static Provider = ({children}) => (
-    <MobxProvider export={exportStore}>
-      {children}
-    </MobxProvider>
-  );
+const Provider = ({children}) => (
+  <MobxProvider export={exportStore}>
+    {children}
+  </MobxProvider>
+);
 
-  static Consumer = ExportConsumer;
-
-  static ImageConsumer = ExportImageConsumer;
-
-  onExport = (format) => {
-    const {
-      filters = {},
-      users,
-      cloudRegionsInfo,
-      discounts
-    } = this.props;
-    const {getDescription} = filters;
-    const documentName = typeof getDescription === 'function'
-      ? getDescription({
-        users,
-        cloudRegionsInfo,
-        discounts
-      })
-      : undefined;
-    const title = typeof documentName === 'function' ? documentName() : documentName;
-    switch (format) {
-      case ExportFormat.image:
-        exportStore.doImageExport(title, {format});
-        break;
-      default:
-      case ExportFormat.csv:
-      case ExportFormat.csvCostCenters:
-      case ExportFormat.csvUsers:
-      case ExportFormat.rawCsv:
-        exportStore.doCsvExport(title, {format});
-        break;
-    }
-  };
-
-  renderExportMenu = () => {
-    const {filters: filterStore = {}} = this.props;
-    let formats = [ExportFormat.csv, ExportFormat.image];
-    if (/^general$/i.test(filterStore.report)) {
-      formats = [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image];
-    } else if (/^instances$/i.test(filterStore.report)) {
-      formats = [
-        ExportFormat.csv,
-        ExportFormat.image,
-        ExportFormat.divider,
-        ExportFormat.rawCsv
-      ];
-    }
-    if (!formats || formats.length === 0) {
-      return null;
-    }
+function renderExportMenu (filterStore, options = {}) {
+  if (!filterStore) {
+    return null;
+  }
+  const {
+    subMenu = true,
+    exportKeyPrefix = '',
+    onSelect
+  } = options;
+  let formats = [ExportFormat.csv, ExportFormat.image];
+  if (/^general$/i.test(filterStore.report)) {
+    formats = [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image];
+  } else if (/^instances$/i.test(filterStore.report)) {
+    formats = [
+      ExportFormat.csv,
+      ExportFormat.image,
+      ExportFormat.divider,
+      ExportFormat.rawCsv
+    ];
+  }
+  if (!formats || formats.length === 0) {
+    return null;
+  }
+  const getItemKey = key => [exportKeyPrefix, key].filter(o => o && o.length).join('-');
+  const items = formats.map((format, index) => (
+    format === ExportFormat.divider
+      ? (<Divider key={`${format}-${index}`} />)
+      : (<MenuItem key={getItemKey(format)}>{ExportFormatName[format]}</MenuItem>)
+  ));
+  if (subMenu) {
     return (
-      <Menu
-        onClick={({key: format}) => this.onExport(format)}
+      <SubMenu
+        key="export menu"
+        title="Export"
         style={{cursor: 'pointer'}}
         selectedKeys={[]}
       >
-        {
-          formats.map((format, index) => (
-            format === ExportFormat.divider
-              ? (<Divider key={`${format}-${index}`} />)
-              : (<MenuItem key={format}>{ExportFormatName[format]}</MenuItem>)
-          ))
-        }
-      </Menu>
+        {items}
+      </SubMenu>
     );
-  };
+  }
+  return (
+    <Menu
+      onClick={onSelect}
+      style={{cursor: 'pointer'}}
+      selectedKeys={[]}
+    >
+      {items}
+    </Menu>
+  );
+}
 
-  render () {
-    const {className} = this.props;
-    return (
-      <Dropdown
-        overlay={this.renderExportMenu()}
-        trigger={['click']}
-      >
-        <Button
-          id="export-reports"
-          className={className}
-        >
-          <Icon type="export" />
-          Export
-        </Button>
-      </Dropdown>
-    );
+function onExport (format, stores) {
+  const {
+    filters = {},
+    users,
+    cloudRegionsInfo,
+    discounts
+  } = stores;
+  const {getDescription} = filters;
+  const documentName = typeof getDescription === 'function'
+    ? getDescription({
+      users,
+      cloudRegionsInfo,
+      discounts
+    })
+    : undefined;
+  const title = typeof documentName === 'function' ? documentName() : documentName;
+  switch (format) {
+    case ExportFormat.image:
+      exportStore.doImageExport(title, {format});
+      break;
+    default:
+    case ExportFormat.csv:
+    case ExportFormat.csvCostCenters:
+    case ExportFormat.csvUsers:
+    case ExportFormat.rawCsv:
+      exportStore.doCsvExport(title, {format});
+      break;
   }
 }
 
-ExportReports.propTypes = {
-  className: PropTypes.string
+const exportStores = ['users', 'cloudRegionsInfo', 'discounts', 'filters'];
+
+const Exports = {
+  Provider,
+  Consumer,
+  ImageConsumer
 };
 
-ExportReports.defaultProps = {
-  documentName: 'Billing report',
-  formats: [ExportFormat.csv, ExportFormat.image]
+export {
+  exportStores,
+  ExportFormat,
+  Provider,
+  Consumer,
+  ImageConsumer,
+  renderExportMenu,
+  onExport
 };
-
-export default inject('users', 'cloudRegionsInfo', 'discounts')(
-  BillingNavigation.attach(
-    observer(ExportReports)
-  )
-);
-export {ExportFormat};
+export default Exports;

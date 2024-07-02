@@ -11,6 +11,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-search-srv: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-search-srv: "true"
@@ -59,6 +60,14 @@ spec:
               value: "true"
             - name: CP_SEARCH_DISABLE_CONFIGURATION
               value: "true"
+            - name: CP_SEARCH_DISABLE_PIPELINE
+              value: "true"
+            - name: CP_SEARCH_DISABLE_NFS_FILE
+              value: "false"
+            - name: CP_SEARCH_DISABLE_NFS_OBSERVER_SYNC
+              value: "true"
+            - name: LANG
+              value: en_US.UTF-8
           envFrom:
             - configMapRef:
                 name: cp-config-global

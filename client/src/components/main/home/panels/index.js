@@ -23,3 +23,4 @@ export {default as PersonalToolsPanel} from './PersonalToolsPanel';
 export {default as MyPipelinesPanel} from './MyPipelinesPanel';
 export {default as MyProjectsPanel} from './MyProjectsPanel';
 export {default as RecentlyCompletedRunsPanel} from './RecentlyCompletedRunsPanel';
+export {default as UserCostsPanel} from './UserCostsPanel';

@@ -166,6 +166,12 @@ const plugin = {
       return null;
     }
     const {data, ...datasetConfig} = dataset.controller.getDataset();
+    if (type === SummaryChart.quota) {
+      const quotaElement = (data || [])
+        .filter(Boolean)
+        .filter(dItem => dItem.quota !== undefined).pop();
+      index = Math.max(0, (data || []).indexOf(quotaElement));
+    }
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
     const element = elements && elements.length > index ? elements[index] : null;
@@ -180,7 +186,17 @@ const plugin = {
       left: xAxis.left,
       right: xAxis.right
     };
-    const labelText = costTickFormatter(dataItem);
+    const value = typeof dataItem === 'number' ? dataItem : dataItem.y;
+    if (value === undefined) {
+      return null;
+    }
+    let labelText = costTickFormatter(value);
+    if (type === SummaryChart.quota && dataItem.quota) {
+      labelText = costTickFormatter(dataItem.quota);
+      if (datasetConfig.label) {
+        labelText = `${datasetConfig.label}: ${labelText}`;
+      }
+    }
     ctx.font = `bold 9pt sans-serif`;
     ctx.textBaseline = 'middle';
     const labelWidth = ctx.measureText(labelText).width;

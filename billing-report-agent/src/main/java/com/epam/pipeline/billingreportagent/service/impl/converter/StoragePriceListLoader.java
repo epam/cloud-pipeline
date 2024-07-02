@@ -25,7 +25,10 @@ public interface StoragePriceListLoader {
 
     int CENTS_IN_DOLLAR = 100;
     int BYTES_TO_GB = 1 << (Integer.SIZE - 2);
+    int GB_TO_BYTES = 1024 * 1024 * 1024;
     int PRECISION = 5;
+
+    String DEFAULT_STORAGE_CLASS = "STANDARD";
 
     Map<String, StoragePricing> loadFullPriceList() throws Exception;
 

@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.ResolvedConfiguration;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.manager.pipeline.ParameterMapper;
 import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -69,7 +70,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         checkRunsNumber(configuration.getEntries(), configuration.getEntitiesIds());
         return parameterMapper.resolveConfigurations(configuration)
                 .stream()
-                .map(conf -> runConfiguration(configuration.getConfigurationId(), configuration.getEntries(), conf))
+                .map(conf -> runConfiguration(configuration.getConfigurationId(),
+                        configuration.getEntries(), conf, configuration.getNotifications()))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
     }
@@ -91,7 +93,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
 
     private List<PipelineRun> runConfiguration(Long configurationId,
                                                List<RunConfigurationEntry> entries,
-                                               ResolvedConfiguration resolvedConfigurations) {
+                                               ResolvedConfiguration resolvedConfigurations,
+                                               List<PipelineStartNotificationRequest> notifications) {
 
         SplitConfig splitConfig = new SplitConfig(entries);
         RunConfigurationEntry mainEntry = splitConfig.getMain();
@@ -126,7 +129,8 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
         //create master run
         List<PipelineRun> masterRun =
                 runConfigurationEntry(mainEntry, mainConfiguration, 1, null,
-                        isMasterNFSServer, resolvedConfigurations.getAllAssociatedIds(), configurationId);
+                        isMasterNFSServer, resolvedConfigurations.getAllAssociatedIds(), configurationId,
+                        notifications);
         List<PipelineRun> launched = new ArrayList<>(masterRun);
         String clusterId = String.valueOf(masterRun.get(0).getId());
         //create master workers
@@ -135,7 +139,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
             launched.addAll(
                     runConfigurationEntry(mainEntry, mainConfiguration,
                             masterNodeCount, clusterId, false,
-                            resolvedConfigurations.getAllAssociatedIds(), configurationId));
+                            resolvedConfigurations.getAllAssociatedIds(), configurationId, notifications));
         }
         //create all other workers
         for (int i = 0; i < childConfigurations.size(); i++) {
@@ -147,7 +151,7 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
             launched.addAll(
                     runConfigurationEntry(childEntries.get(i),
                             childConfig, copies, clusterId, startNFS,
-                            resolvedConfigurations.getAllAssociatedIds(), configurationId));
+                            resolvedConfigurations.getAllAssociatedIds(), configurationId, null));
         }
         return launched;
     }
@@ -155,32 +159,43 @@ public class CloudPlatformRunner implements ExecutionRunner<RunConfigurationEntr
     private List<PipelineRun> runConfigurationEntry(RunConfigurationEntry entry,
                                                     PipelineConfiguration configuration,
                                                     int copies, String clusterId, boolean startNFS,
-                                                    List<Long> entityIds, Long configurationId) {
+                                                    List<Long> entityIds, Long configurationId,
+                                                    List<PipelineStartNotificationRequest> notifications) {
 
         PipelineStart startVO = entry.toPipelineStart();
-        if (!StringUtils.hasText(clusterId)) {
-            log.debug("Launching master entry {}", entry.getName());
-            pipelineConfigurationManager.updateMasterConfiguration(configuration, startNFS);
-        } else {
-            log.debug("Launching worker entry {}", entry.getName());
-            pipelineConfigurationManager.updateWorkerConfiguration(clusterId, startVO, configuration, startNFS, true);
-        }
+        startVO.setNotifications(notifications);
         Pipeline pipeline = entry.getPipelineId() != null ? pipelineManager.load(entry.getPipelineId()) : null;
         List<PipelineRun> result = new ArrayList<>();
         log.debug("Launching total {} copies of entry {}", copies, entry.getName());
+        final PipelineConfiguration runConfigurationTemplate =
+                buildRunConfiguration(entry, configuration, clusterId, startNFS, startVO);
         for (int i = 0; i < copies; i++) {
+            final PipelineConfiguration runConfiguration = runConfigurationTemplate.clone();
             //only first node may be a NFS server
             if (i != 0) {
-                configuration.setCmdTemplate(WORKER_CMD_TEMPLATE);
-                configuration.getParameters().remove(NFS_CLUSTER_ROLE);
-                configuration.buildEnvVariables();
+                runConfiguration.setCmdTemplate(WORKER_CMD_TEMPLATE);
+                runConfiguration.getParameters().remove(NFS_CLUSTER_ROLE);
+                runConfiguration.buildEnvVariables();
             }
-            result.add(pipelineRunManager.launchPipeline(configuration, pipeline, entry.getPipelineVersion(),
-                    startVO.getInstanceType(), startVO.getParentNodeId(),
-                    startVO.getConfigurationName(), clusterId, null, entityIds, configurationId, startVO.getRunSids(),
-                    startVO.getNotifications()));
+            result.add(pipelineRunManager.launchPipeline(runConfiguration, pipeline, entry.getPipelineVersion(),
+                    startVO.getInstanceType(), startVO.getConfigurationName(), clusterId,
+                    null, entityIds, configurationId, startVO.getRunSids(), startVO.getNotifications()));
         }
         return result;
+    }
+
+    private PipelineConfiguration buildRunConfiguration(final RunConfigurationEntry entry,
+                                                        final PipelineConfiguration configuration,
+                                                        final String clusterId, final boolean startNFS,
+                                                        final PipelineStart startVO) {
+        if (!StringUtils.hasText(clusterId)) {
+            log.debug("Launching master entry {}", entry.getName());
+            return pipelineConfigurationManager.generateMasterConfiguration(configuration, startNFS);
+        } else {
+            log.debug("Launching worker entry {}", entry.getName());
+            return pipelineConfigurationManager
+                    .generateWorkerConfiguration(clusterId, startVO, configuration, startNFS, true);
+        }
     }
 
     @Data

@@ -1,0 +1,126 @@
+/*
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.console {
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
+.search-placeholder {
+  height: 30px;
+}
+
+.search-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  line-height: 24px;
+  min-height: 24px;
+  padding: 2px 25px 2px 2px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.follow-log-container {
+  position: absolute;
+  top: 0;
+  line-height: 30px;
+  height: 30px;
+}
+
+.scroll-down-container {
+  position: absolute;
+  bottom: 20px;
+  padding: 5px;
+  width: 30px;
+  height: 30px;
+  border-radius: 15px;
+  line-height: 30px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.follow-log-container,
+.scroll-down-container {
+  right: 25px;
+  opacity: 0.5;
+}
+
+.follow-log-container:hover,
+.scroll-down-container:hover {
+  opacity: 1;
+}
+
+.expand-more {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  line-height: 24px;
+}
+
+.pending-container,
+.empty-logs {
+  line-height: 20px;
+  min-height: 24px;
+  padding: 2px 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+}
+
+.pending-container {
+  opacity: 1;
+}
+
+.console-line {
+  word-break: break-all;
+  line-height: 20px;
+  padding: 2px 0;
+  font-family: Proggy, Courier, monospace;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.console-line-info-data {
+  user-select: none;
+  margin-right: 5px;
+  font-family: Proggy, Courier, monospace;
+  white-space: nowrap;
+}
+
+.console-line-info-data.no-accent {
+  opacity: 0.25;
+}
+
+.search-container .search-input {
+  flex: 0 1 300px;
+}

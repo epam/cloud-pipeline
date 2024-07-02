@@ -17,12 +17,16 @@
 package com.epam.pipeline.manager.datastorage.providers.azure;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -30,7 +34,9 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -45,6 +51,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -57,6 +64,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     private final CloudRegionManager cloudRegionManager;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
+    private final StorageEventCollector azEvents;
 
     @Override
     public DataStorageType getStorageType() {
@@ -97,6 +105,16 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
                                        final Integer pageSize, final String marker) {
         return getAzureStorageHelper(dataStorage).getItems(dataStorage, path, pageSize, marker);
+    }
+
+    @Override
+    public DataStorageListing getItems(final AzureBlobStorage dataStorage, final String path, final Boolean showVersion,
+                                       final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        if (Objects.nonNull(restoredListing)) {
+            throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker);
     }
 
     @Override
@@ -274,10 +292,36 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
         return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyRestoreActionSupported() {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final AzureBlobStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        throw new UnsupportedOperationException();
+    }
+
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);
-        return new AzureStorageHelper(region, credentials, messageHelper);
+        return new AzureStorageHelper(region, credentials, azEvents, messageHelper);
     }
 }
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {discounts} from '../discounts';
 import {getCurrentDate} from '../../../special/periods';
+import getQuotaDatasets from './get-quotas-datasets';
 import moment from 'moment-timezone';
 
 const Display = {
@@ -35,7 +36,16 @@ const Display = {
 };
 
 function dataIsEmpty (data) {
-  return !data || data.filter((d) => !isNaN(d)).length === 0;
+  const itemIsEmpty = item => {
+    if (item === undefined) {
+      return true;
+    }
+    if (!Number.isNaN(Number(item))) {
+      return false;
+    }
+    return Number.isNaN(Number(item.y));
+  };
+  return !data || data.filter((d) => !itemIsEmpty(d)).length === 0;
 }
 
 function generateEmptySet (filters) {
@@ -52,6 +62,7 @@ function generateEmptySet (filters) {
   let unit = 'day';
   if (tick === '1M') {
     unit = 'M';
+    start = moment(start).startOf('M');
   }
   while (start <= end) {
     emptySet.push({
@@ -137,6 +148,27 @@ function generateLabels (data, filters = {}) {
   };
 }
 
+/**
+ * @typedef {Object} DatasetOptions
+ * @property {boolean} [showPoints=true]
+ * @property {number} currentDateIndex
+ * @property {number} [borderWidth=2]
+ * @property {boolean} [dashed=false]
+ * @property {boolean} [fill=false]
+ * @property {string} [borderColor]
+ * @property {string} [backgroundColor=transparent]
+ * @property {boolean} [isPrevious=false]
+ * @property {boolean} [showTooltip=true]
+ */
+
+/**
+ * @param {number[]|{x: number, y: number}[]} data
+ * @param {string} title
+ * @param {string} type
+ * @param {string} color
+ * @param {DatasetOptions} options
+ * @returns {*|boolean}
+ */
 function extractDataSet (data, title, type, color, options = {}) {
   if (dataIsEmpty(data)) {
     return false;
@@ -148,42 +180,113 @@ function extractDataSet (data, title, type, color, options = {}) {
     fill = false,
     borderColor = color,
     backgroundColor = 'transparent',
-    isPrevious = false
+    isPrevious = false,
+    showTooltip = true,
+    dashed = false,
+    ...restOptions
   } = options;
+  const mapItem = (item, index) => {
+    if (typeof item === 'number') {
+      return {y: item, x: index};
+    }
+    return item;
+  };
   return {
+    ...restOptions,
     [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
     isPrevious,
-    data,
+    showTooltip,
+    data: (data || []).map(mapItem),
     fill,
     backgroundColor,
     borderColor,
     borderWidth,
+    borderDash: dashed ? [4, 4] : undefined,
     pointRadius: data.map((e, index) => showPoints && index === currentDateIndex ? 2 : 0),
     pointBackgroundColor: color,
     cubicInterpolationMode: 'monotone'
   };
 }
 
-function parse (values, quota) {
-  const data = (values || [])
-    .map(d => ({
-      date: d.dateValue,
-      value: d.value || NaN,
-      cost: d.cost || NaN,
-      previous: d.previous || NaN,
-      previousCost: d.previousCost || NaN,
-      quota: quota
-    }));
-  return {
-    quota: data.map(d => d.quota),
-    currentData: data.map(d => d.cost),
-    previousData: data.map(d => d.previousCost),
-    currentAccumulativeData: data.map(d => d.value),
-    previousAccumulativeData: data.map(d => d.previous)
+function extractDatasetData (dataset, data) {
+  const mapValue = (value) => {
+    if (value === undefined || value === null || Number.isNaN(Number(value))) {
+      return Number.NaN;
+    }
+    return Number(value);
   };
+  return (data || [])
+    .map(item => typeof dataset.value === 'function' ? dataset.value(item) : undefined)
+    .map(mapValue);
 }
+
+function getProcessedDatasetIsPrevious (dataset = {}) {
+  const {
+    isPrevious = false
+  } = dataset.options || {};
+  return isPrevious;
+}
+
+function getProcessedDatasetTitle (dataset = {}) {
+  const {
+    isPrevious = false,
+    title = !isPrevious ? 'Current period' : 'Previous period',
+    subTitle
+  } = dataset.options || {};
+  if (!subTitle) {
+    return title;
+  }
+  return `${title} (${subTitle})`;
+}
+
+function getProcessedDatasetType (dataset = {}) {
+  const {
+    isPrevious = false,
+    datasetType = isPrevious ? SummaryChart.previous : SummaryChart.current
+  } = dataset.options || {};
+  return datasetType;
+}
+
+function getProcessedDatasetColor (dataset = {}, reportThemes = {}) {
+  const {
+    isPrevious = false,
+    color = (isPrevious ? reportThemes.previous : reportThemes.current)
+  } = dataset.options || {};
+  return color;
+}
+
+const DefaultCurrentDataset = {
+  accumulative: {
+    value: (item) => item.value,
+    options: {
+      borderWidth: 3
+    }
+  },
+  fact: {
+    value: (item) => item.cost,
+    options: {
+      subTitle: 'cost'
+    }
+  }
+};
+
+const DefaultPreviousDataset = {
+  accumulative: {
+    value: (item) => item.previous,
+    options: {
+      isPrevious: true
+    }
+  },
+  fact: {
+    value: (item) => item.previousCost,
+    options: {
+      isPrevious: true,
+      subTitle: 'cost'
+    }
+  }
+};
 
 function Summary (
   {
@@ -193,9 +296,11 @@ function Summary (
     storages,
     computeDiscounts,
     storagesDiscounts,
+    quotas,
     quota: showQuota = true,
     display = Display.accumulative,
-    reportThemes
+    reportThemes,
+    datasets = [DefaultCurrentDataset, DefaultPreviousDataset]
   }
 ) {
   const pending = compute?.pending || storages?.pending;
@@ -207,71 +312,59 @@ function Summary (
     [computeDiscounts, storagesDiscounts]
   );
   const data = summary ? fillSet(filters, summary.values || []) : [];
-  const quotaValue = showQuota && summary
-    ? summary.quota
-    : undefined;
   const {labels, currentDateIndex} = generateLabels(data, filters);
-  const {
-    currentData,
-    previousData,
-    currentAccumulativeData,
-    previousAccumulativeData,
-    quota
-  } = parse(data, quotaValue);
-  const disabled = currentData.length === 0 && previousData.length === 0;
+  const processedDatasets = datasets
+    .map((aDataset) => display === Display.accumulative ? aDataset.accumulative : aDataset.fact)
+    .map((aDataset) => ({
+      dataset: aDataset,
+      current: !aDataset.options || !aDataset.options.isPrevious,
+      data: extractDatasetData(aDataset, data)
+    }));
+  const maximum = Math.max(
+    ...processedDatasets.map((aDataset) => Math.max(
+      ...(aDataset.data || []).filter((anItem) => !Number.isNaN(Number(anItem))),
+      0
+    )),
+    0
+  );
+  const shouldDisplayQuotas = display === Display.accumulative && showQuota;
+  const quotaDatasets = shouldDisplayQuotas
+    ? getQuotaDatasets(compute, storages, quotas, data, maximum)
+    : [];
+  const disabled = !processedDatasets.some(aDataset => aDataset.data.length > 0);
   const loading = pending && !loaded;
+  const chartDatasets = [
+    ...processedDatasets.map((processed, index) => extractDataSet(
+      processed.data,
+      getProcessedDatasetTitle(processed.dataset),
+      display === Display.fact ? 'bar' : getProcessedDatasetType(processed.dataset),
+      getProcessedDatasetColor(processed.dataset, reportThemes),
+      {
+        currentDateIndex,
+        borderWidth: 2,
+        backgroundColor: display === Display.fact
+          ? getProcessedDatasetColor(processed.dataset, reportThemes)
+          : 'transparent',
+        stack: `stack-${index}`,
+        ...(processed.dataset.options || {}),
+        isPrevious: getProcessedDatasetIsPrevious(processed.dataset)
+      }
+    )),
+    ...quotaDatasets.map(quotaDataset => extractDataSet(
+      quotaDataset.data,
+      quotaDataset.title,
+      SummaryChart.quota,
+      reportThemes.quota,
+      {
+        showPoints: false,
+        currentDateIndex,
+        [DataLabelPlugin.noDataIgnoreOption]: true
+      }
+    ))
+  ].filter(Boolean);
   const dataConfiguration = {
     labels: labels.map(l => l.text),
-    datasets: [
-      display === Display.accumulative ? extractDataSet(
-        currentAccumulativeData,
-        'Current period',
-        SummaryChart.current,
-        reportThemes.current,
-        {currentDateIndex, borderWidth: 3}
-      ) : false,
-      display === Display.fact ? extractDataSet(
-        currentData,
-        'Current period (cost)',
-        'bar',
-        reportThemes.current,
-        {
-          backgroundColor: reportThemes.current,
-          currentDateIndex,
-          borderWidth: 1
-        }
-      ) : false,
-      display === Display.accumulative ? extractDataSet(
-        previousAccumulativeData,
-        'Previous period',
-        SummaryChart.previous,
-        reportThemes.previous,
-        {currentDateIndex}
-      ) : false,
-      display === Display.fact ? extractDataSet(
-        previousData,
-        'Previous period (cost)',
-        'bar',
-        reportThemes.previous,
-        {
-          backgroundColor: reportThemes.previous,
-          currentDateIndex,
-          borderWidth: 1,
-          isPrevious: true
-        }
-      ) : false,
-      quotaValue ? extractDataSet(
-        quota,
-        'Quota',
-        SummaryChart.quota,
-        reportThemes.quota,
-        {
-          showPoints: false,
-          currentDateIndex,
-          [DataLabelPlugin.noDataIgnoreOption]: true
-        }
-      ) : false
-    ].filter(Boolean)
+    datasets: chartDatasets
   };
   const options = {
     animation: {duration: 0},
@@ -302,10 +395,12 @@ function Summary (
           zeroLineColor: reportThemes.lineColor
         },
         ticks: {
+          min: 0,
           display: !disabled,
           callback: o => costTickFormatter(o),
           fontColor: reportThemes.textColor
-        }
+        },
+        stacked: display === Display.fact
       }]
     },
     legend: {
@@ -322,20 +417,37 @@ function Summary (
         title: function () {
           return undefined;
         },
-        label: function (tooltipItem, data) {
-          let {label, type, isPrevious} = data.datasets[tooltipItem.datasetIndex];
-          const value = costTickFormatter(tooltipItem.yLabel);
+        label: function (tooltipItem, chartData) {
+          const {
+            label,
+            type,
+            isPrevious,
+            data: items,
+            showTooltip,
+            tooltipValue = (o) => o
+          } = chartData.datasets[tooltipItem.datasetIndex];
+          if (!showTooltip) {
+            return undefined;
+          }
+          let value = costTickFormatter(tooltipItem.yLabel);
+          if (type === SummaryChart.quota) {
+            const {quota} = (items || [])[tooltipItem.index || 0];
+            value = quota ? costTickFormatter(quota) : value;
+            return `${label || 'Quota'}: ${value}`;
+          }
           const {xLabel: defaultTitle, index} = tooltipItem;
+          let displayLabel = label;
           if (index >= 0 && index < labels.length) {
             const {tooltip, previousTooltip} = labels[index];
             if (type === SummaryChart.previous || isPrevious) {
-              label = previousTooltip || defaultTitle;
+              displayLabel = previousTooltip || defaultTitle;
             } else {
-              label = tooltip || defaultTitle;
+              displayLabel = tooltip || defaultTitle;
             }
           }
-          if (label) {
-            return `${label}: ${value}`;
+          value = tooltipValue(value, data[index]);
+          if (displayLabel) {
+            return `${displayLabel}: ${value}`;
           }
           return value;
         }
@@ -373,5 +485,5 @@ function Summary (
   );
 }
 
-export default inject('reportThemes')(observer(Summary));
+export default inject('reportThemes', 'quotas')(observer(Summary));
 export {Display};

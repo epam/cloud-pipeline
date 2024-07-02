@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -57,9 +57,9 @@ if [ -f $CP_VNC_CAPS_FILE ]; then
 fi
 
 
-nohup python /etc/nomachine/serve_nxs.py    --local-port "${CP_NM_LOCAL_PORT}" \
-                                            --nomachine-port "${CP_NM_NOMACHINE_PORT}" \
-                                            --proxy "${CP_NM_PROXY_HOST}" \
-                                            --proxy-port "${CP_NM_PROXY_PORT}" > /etc/nomachine/serve_nxs.log 2>&1 &
+nohup $CP_PYTHON2_PATH /etc/nomachine/serve_nxs.py  --local-port "${CP_NM_LOCAL_PORT}" \
+                                                    --nomachine-port "${CP_NM_NOMACHINE_PORT}" \
+                                                    --proxy "${CP_NM_PROXY_HOST}" \
+                                                    --proxy-port "${CP_NM_PROXY_PORT}" > /etc/nomachine/serve_nxs.log 2>&1 &
 /etc/NX/nxserver --startup
 tail -f /usr/NX/var/log/nxserver.log

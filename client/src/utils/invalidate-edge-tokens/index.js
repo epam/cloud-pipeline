@@ -33,6 +33,28 @@ function getEdgeUrl (regionId) {
   });
 }
 
+function fetchWithTimeout (url, timeoutMS = 2000) {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.withCredentials = true;
+    request.onreadystatechange = function () {
+      if (request.readyState !== 4) return;
+      if (request.status !== 200) {
+        const error = request.statusText || `error code: ${request.status}`;
+        reject(new Error(error));
+      } else {
+        resolve();
+      }
+    };
+    request.open('GET', url);
+    request.timeout = timeoutMS;
+    request.ontimeout = function () {
+      reject(new Error('Timeout'));
+    };
+    request.send();
+  });
+}
+
 function invalidateToken (edgeUrl) {
   if (!edgeUrl) {
     return Promise.resolve();
@@ -43,7 +65,7 @@ function invalidateToken (edgeUrl) {
   const invalidateUrl = edgeUrl.concat('/invalidate');
   return new Promise(async (resolve) => {
     try {
-      await fetch(invalidateUrl, {mode: 'cors', credentials: 'include'});
+      await fetchWithTimeout(invalidateUrl);
     } catch (e) {
       console.warn(`${invalidateUrl} error: ${e.message}`);
     } finally {

@@ -70,7 +70,11 @@ public class TransferController extends AbstractRestController {
         TransferTask task = transferService.runTransferTask(
                 storageItemMapper.dtoToModel(taskCreationDTO.getSource()),
                 storageItemMapper.dtoToModel(taskCreationDTO.getDestination()),
-                taskCreationDTO.getIncluded());
+                taskCreationDTO.getIncluded(),
+                taskCreationDTO.isDeleteSource(),
+                taskCreationDTO.isLogEnabled(),
+                taskCreationDTO.getPipeCmd(),
+                taskCreationDTO.getPipeCmdSuffix());
         return Result.success(taskMapper.modelToDto(task));
     }
 

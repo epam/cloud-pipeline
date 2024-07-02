@@ -266,7 +266,6 @@ public class DataStorageControllerTest extends AbstractDataStorageControllerTest
         Mockito.doReturn(storageUsage).when(mockStorageApiService).getStorageUsage(TEST, TEST);
 
         final MvcResult mvcResult = performRequest(get(PATH_USAGE_URL).params(params));
-
         Mockito.verify(mockStorageApiService).getStorageUsage(TEST, TEST);
         assertResponse(mvcResult, storageUsage, DatastorageCreatorUtils.STORAGE_USAGE_TYPE);
     }

@@ -46,7 +46,7 @@ public class AzureBlobStoragePriceListLoader extends AbstractAzureStoragePriceLi
             .filter(meter -> meter.getMeterSubCategory().contains(blobStorageCategory))
             .filter(meter -> meter.getMeterName().startsWith(String.format(DATA_STORE_METER_TEMPLATE, redundancyType)))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
-                    pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
+                pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
 }

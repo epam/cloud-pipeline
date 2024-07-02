@@ -36,6 +36,7 @@ import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
@@ -67,7 +68,9 @@ public class ApiBuilder<T> {
                 .baseUrl(normalizeUrl(apiHost))
                 .addConverterFactory(JacksonConverterFactory
                         .create(new JsonMapper()
-                                .setDateFormat(new SimpleDateFormat(dateFormat))
+                                .setDateFormat(Optional.ofNullable(dateFormat)
+                                        .map(SimpleDateFormat::new)
+                                        .orElse(null))
                                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)))
                 .client(buildHttpClient(token))
                 .build()

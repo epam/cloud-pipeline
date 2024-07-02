@@ -18,6 +18,8 @@ package com.epam.pipeline.controller.vo.region;
 
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.region.MountStorageRule;
+import com.epam.pipeline.entity.region.RunRegionShiftPolicy;
+import com.epam.pipeline.entity.region.StorageLifecycleServiceProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -36,7 +38,8 @@ import lombok.Setter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = AWSRegionDTO.class, name = "AWS"),
         @JsonSubTypes.Type(value = AzureRegionDTO.class, name = "AZURE"),
-        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP")})
+        @JsonSubTypes.Type(value = GCPRegionDTO.class, name = "GCP"),
+        @JsonSubTypes.Type(value = LocalRegionDTO.class, name = "LOCAL")})
 @JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class AbstractCloudRegionDTO {
 
@@ -46,8 +49,15 @@ public abstract class AbstractCloudRegionDTO {
     private String name;
     @JsonProperty(value = "default")
     private boolean isDefault;
-    private MountStorageRule mountStorageRule = MountStorageRule.NONE;
+    private String globalDistributionUrl;
+    private String dnsHostedZoneId;
+    private String dnsHostedZoneBase;
+    @JsonProperty(value = "mountStorageRule")
+    private MountStorageRule mountObjectStorageRule = MountStorageRule.NONE;
+    private MountStorageRule mountFileStorageRule = MountStorageRule.NONE;
     private MountStorageRule mountCredentialsRule = MountStorageRule.NONE;
+    private StorageLifecycleServiceProperties storageLifecycleServiceProperties;
+    private RunRegionShiftPolicy runShiftPolicy;
 
     public abstract CloudProvider getProvider();
     public abstract void setProvider(CloudProvider provider);

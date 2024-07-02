@@ -57,7 +57,7 @@ public class RunScheduleJob implements Job {
 
         final Long runId = context.getMergedJobDataMap().getLongValue("SchedulableId");
         Assert.notNull(runId, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
-        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId, false);
         Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
 
 

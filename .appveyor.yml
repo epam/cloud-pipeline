@@ -8,17 +8,20 @@ branches:
 
 skip_tags: true
 max_jobs: 1
-stack: node 10, jdk 8
+stack: node 14, jdk 8
 matrix:
   fast_finish: true
 
 environment:
   matrix:
     - job_name: CLI_MacOS
-      appveyor_build_worker_image: macOS
+      appveyor_build_worker_image: macos-catalina
+    - job_name: Publish_Docs
+      appveyor_build_worker_image: Ubuntu1604
     - job_name: Build_All
       job_depends_on: CLI_MacOS
       appveyor_build_worker_image: Ubuntu1604
+
 for:
 
   -
@@ -39,9 +42,15 @@ for:
     - |-
       sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/node" "/usr/local/bin/node"
       sudo ln -s "$NVM_DIR/versions/node/$(nvm version)/bin/npm" "/usr/local/bin/npm"
-      sudo -E bash -s <<EOF
-        python2 -m pip install awscli==1.14.56 mkdocs
-        bash deploy/appveyor/appveyor_pack_dist.sh
-      EOF
+      sudo -E bash deploy/appveyor/appveyor_pack_dist.sh
 
+  -
+    matrix:
+      only:
+        - job_name: Publish_Docs
+
+    build_script:
+    - |-
+      sudo pip install mkdocs
+      sudo -E bash deploy/appveyor/appveyor_publish_docs.sh
 test: off

@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,29 +13,25 @@
 # limitations under the License.
 
 Start-Job {
-    python ${env:CP_DESKTOP_DIR}\serve_desktop.py --serving-port "${env:CP_NOMACHINE_SERVING_PORT}" `
-                                                  --desktop-port "${env:CP_NOMACHINE_DESKTOP_PORT}" `
-                                                  --proxy-host "${env:CP_DESKTOP_PROXY_HOST}" `
-                                                  --proxy-port "${env:CP_DESKTOP_PROXY_PORT}" `
-                                                  --template-path ${env:CP_DESKTOP_DIR}\template.nxs `
-                                                  *>> ${env:CP_DESKTOP_DIR}\serve_nxs.log
+    python ${env:COMMON_REPO_DIR}\scripts\serve_desktop.py --serving-port "${env:CP_NOMACHINE_SERVING_PORT}" `
+                                                           --desktop-port "${env:CP_NOMACHINE_DESKTOP_PORT}" `
+                                                           --template-path "${env:COMMON_REPO_DIR}\resources\windows\template.nxs" `
+                                                           *>> "${env:CP_DESKTOP_DIR}\nomachine_desktop.log"
 }
 
 Start-Job {
-    python ${env:CP_DESKTOP_DIR}\serve_desktop.py --serving-port "${env:CP_NICE_DCV_SERVING_PORT}" `
-                                                  --desktop-port "${env:CP_NICE_DCV_DESKTOP_PORT}" `
-                                                  --proxy-host "${env:CP_DESKTOP_PROXY_HOST}" `
-                                                  --proxy-port "${env:CP_DESKTOP_PROXY_PORT}" `
-                                                  --template-path ${env:CP_DESKTOP_DIR}\template.dcv `
-                                                  *>> ${env:CP_DESKTOP_DIR}\serve_nice_dcv.log
+    python ${env:COMMON_REPO_DIR}\scripts\serve_desktop.py --serving-port "${env:CP_NICE_DCV_SERVING_PORT}" `
+                                                           --desktop-port "${env:CP_NICE_DCV_DESKTOP_PORT}" `
+                                                           --template-path "${env:COMMON_REPO_DIR}\resources\windows\template.dcv" `
+                                                           *>> "${env:CP_DESKTOP_DIR}\nice_dcv_desktop.log"
 }
 
 Start-Job {
     & ${env:PIPE_DIR}\pipe tunnel start --direct `
                                         -lp "${env:CP_NOMACHINE_DESKTOP_PORT}" `
                                         -rp "${env:CP_NOMACHINE_DESKTOP_PORT}" `
+                                        -l "${env:CP_DESKTOP_DIR}\nomachine_proxy.log" `
                                         --trace `
-                                        -l ${env:CP_DESKTOP_DIR}\proxy_nxs.log `
                                         "${env:NODE_IP}"
 }
 
@@ -43,8 +39,8 @@ Start-Job {
     & ${env:PIPE_DIR}\pipe tunnel start --direct `
                                         -lp "${env:CP_NICE_DCV_DESKTOP_PORT}" `
                                         -rp "${env:CP_NICE_DCV_DESKTOP_PORT}" `
+                                        -l "${env:CP_DESKTOP_DIR}\nice_dcv_proxy.log" `
                                         --trace `
-                                        -l ${env:CP_DESKTOP_DIR}\proxy_nice_dcv.log `
                                         "${env:NODE_IP}"
 }
 

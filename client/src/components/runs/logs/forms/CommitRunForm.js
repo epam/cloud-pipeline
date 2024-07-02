@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,37 +23,18 @@ import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
 import LoadToolTags from '../../../../models/tools/LoadToolTags';
 import CommitRunDockerImageInput from './CommitRunDockerImageInput';
-import {
-  PIPELINE_RUN_COMMIT_CHECK_FAILED
-} from '../../../../models/pipelines/PipelineRunCommitCheck';
 import HiddenObjects from '../../../../utils/hidden-objects';
+import LayersCheckProvider from '../../actions/check/layers/provider';
+import CommitCheckProvider from '../../actions/check/commit/provider';
 
 @Form.create()
 @localization.localizedComponent
-@inject('dockerRegistries')
+@CommitCheckProvider.inject
+@LayersCheckProvider.inject
+@inject('dockerRegistries', 'preferences')
 @HiddenObjects.injectToolsFilters
 @observer
-export default class CommitRunForm extends localization.LocalizedReactComponent {
-  static propTypes = {
-    onInitialized: PropTypes.func,
-    onPressEnter: PropTypes.func,
-    onCancel: PropTypes.func,
-    onSubmit: PropTypes.func,
-    pending: PropTypes.bool,
-    visible: PropTypes.bool,
-    commitCheck: PropTypes.bool,
-    defaultDockerImage: PropTypes.string,
-    deleteRuntimeFiles: PropTypes.bool,
-    stopPipeline: PropTypes.bool,
-    displayDeleteRuntimeFilesSelector: PropTypes.bool,
-    displayStopPipelineSelector: PropTypes.bool
-  };
-
-  static defaultProps = {
-    displayDeleteRuntimeFilesSelector: true,
-    displayStopPipelineSelector: true
-  };
-
+class CommitRunForm extends localization.LocalizedReactComponent {
   formItemLayout = {
     labelCol: {
       xs: {span: 24},
@@ -73,6 +54,19 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
   get toolValid () {
     return this.state.toolValid;
   }
+
+  @computed
+  get layersCheckPassed () {
+    return LayersCheckProvider.getCheckResult(this.props);
+  }
+
+  @computed
+  get allowCommitToOtherPersonalGroups () {
+    return this.props.preferences.loaded
+      ? this.props.preferences.allowCommitToOtherPersonalGroups
+      : false;
+  }
+
 
   validate = async () => {
     return new Promise((resolve) => {
@@ -279,20 +273,16 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
 
   render () {
     const {getFieldDecorator} = this.props.form;
+    const {pending: layersCheckPending} = LayersCheckProvider.getCheckInfo(this.props);
+    const {pending: commitCheckPending} = CommitCheckProvider.getCheckInfo(this.props);
+    const pending = this.props.pending || layersCheckPending || commitCheckPending;
 
     return (
-      <Spin spinning={this.props.pending}>
+      <Spin spinning={pending}>
         {this.canCommitIntoRegistry ? (
           <Form className="commit-pipeline-run-form">
-            {
-              `${this.props.commitCheck}`.toLowerCase() === 'false' &&
-              <Row>
-                <Alert
-                  type="error"
-                  message={PIPELINE_RUN_COMMIT_CHECK_FAILED} />
-                <br />
-              </Row>
-            }
+            <CommitCheckProvider.Warning />
+            <LayersCheckProvider.Warning />
             <Form.Item
               style={{marginBottom: 5}}
               key="Image name"
@@ -317,7 +307,9 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
                   visible={this.props.visible}
                   onPressEnter={this.props.onPressEnter}
                   registries={this.registries}
-                  disabled={this.props.pending} />
+                  disabled={pending}
+                  showOtherPersonalGroups={this.allowCommitToOtherPersonalGroups}
+                />
               )}
             </Form.Item>
             {
@@ -332,7 +324,7 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
                       valuePropName: 'checked',
                       initialValue: this.props.deleteRuntimeFiles
                     })(
-                      <Checkbox disabled={this.props.pending}>
+                      <Checkbox disabled={pending}>
                         Delete runtime files
                       </Checkbox>
                     )}
@@ -352,7 +344,7 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
                       valuePropName: 'checked',
                       initialValue: this.props.stopPipeline
                     })(
-                      <Checkbox disabled={this.props.pending}>
+                      <Checkbox disabled={pending}>
                         Stop {this.localizedString('pipeline')}
                       </Checkbox>
                     )}
@@ -376,3 +368,34 @@ export default class CommitRunForm extends localization.LocalizedReactComponent 
     this.props.onInitialized && this.props.onInitialized(this);
   }
 }
+
+function CommitRunFormHOC (props) {
+  const {
+    runId,
+    visible
+  } = props;
+  return (
+    <LayersCheckProvider runId={runId} active={visible}>
+      <CommitCheckProvider runId={runId} active={visible}>
+        <CommitRunForm {...props} />
+      </CommitCheckProvider>
+    </LayersCheckProvider>
+  );
+}
+
+CommitRunFormHOC.propTypes = {
+  runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onCancel: PropTypes.func,
+  onSubmit: PropTypes.func,
+  pending: PropTypes.bool,
+  visible: PropTypes.bool,
+  defaultDockerImage: PropTypes.string
+};
+CommitRunFormHOC.defaultProps = {
+  displayDeleteRuntimeFilesSelector: true,
+  displayStopPipelineSelector: true
+};
+CommitRunForm.propTypes = CommitRunFormHOC.propTypes;
+CommitRunForm.defaultProps = CommitRunFormHOC.defaultProps;
+
+export default CommitRunFormHOC;

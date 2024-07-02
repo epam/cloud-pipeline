@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.Utils.LATEST_VERSION;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
@@ -66,22 +69,23 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
     }
 
     public RunsMenuAO run(final AbstractSinglePipelineRunningTest test) {
-        runToolWithDefaultSettings();
+        runToolWithDefaultSettings(toolName, LATEST_VERSION);
         test.setRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
     public RunsMenuAO run(final AbstractSeveralPipelineRunningTest test) {
-        runToolWithDefaultSettings();
+        runToolWithDefaultSettings(toolName, LATEST_VERSION);
         test.addRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
-    private RunsMenuAO runToolWithDefaultSettings() {
+    private RunsMenuAO runToolWithDefaultSettings(final String tool, final String version) {
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensureLaunchTitleIs(format("Are you sure you want to launch %s:%s with default settings?",
+                        nameWithoutGroup(tool), version))
                 .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }

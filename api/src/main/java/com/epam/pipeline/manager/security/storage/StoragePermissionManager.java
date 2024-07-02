@@ -19,28 +19,51 @@ import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagInsertRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertBatchRequest;
+import com.epam.pipeline.entity.datastorage.tag.DataStorageTagUpsertRequest;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.datastorage.DataStoragePathLoader;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
+import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -54,6 +77,9 @@ public class StoragePermissionManager {
     private final PermissionsService permissionsService;
     private final QuotaService quotaService;
     private final AuthManager authManager;
+    private final DataStoragePathLoader storagePathLoader;
+    private final PreferenceManager preferenceManager;
+    private final ContextualPreferenceManager contextualPreferenceManager;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -96,6 +122,62 @@ public class StoragePermissionManager {
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
+    public boolean storagePermissionByPath(final String path,
+                                           final String permissionName) {
+        try {
+            final Optional<AbstractDataStorage> storage = storagePathLoader.findDataStorage(path);
+            return storage.map(s -> grantPermissionManager.storagePermission(s, permissionName)).orElse(false);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    public boolean storageMgmtPermission(final Long id, final String permission) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, id);
+        return storageMgmtPermission(storage, permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final DataStorageTagInsertBatchRequest request,
+                                         final String permission) {
+        return storageTagsPermission(id, toTags(request), permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final DataStorageTagUpsertBatchRequest request,
+                                         final String permission) {
+        return storageTagsPermission(id, toTags(request), permission);
+    }
+
+    private List<String> toTags(final DataStorageTagInsertBatchRequest request) {
+        return Optional.ofNullable(request)
+                .map(DataStorageTagInsertBatchRequest::getRequests)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(DataStorageTagInsertRequest::getKey)
+                .collect(Collectors.toList());
+    }
+
+    private List<String> toTags(final DataStorageTagUpsertBatchRequest request) {
+        return Optional.ofNullable(request)
+                .map(DataStorageTagUpsertBatchRequest::getRequests)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .map(DataStorageTagUpsertRequest::getKey)
+                .collect(Collectors.toList());
+    }
+
+    public boolean storageTagsPermission(final Long id, final Map<String, String> tags, final String permission) {
+        return storageTagsPermission(id, MapUtils.emptyIfNull(tags).keySet(), permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final Set<String> tags, final String permission) {
+        return storageTagsPermission(id, new ArrayList<>(SetUtils.emptyIfNull(tags)), permission);
+    }
+
+    public boolean storageTagsPermission(final Long id, final List<String> tags, final String permission) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, id);
+        return storageTagsPermission(storage, tags, permission);
+    }
+
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames) {
         filterStorage(storages, permissionNames, false);
@@ -104,7 +186,7 @@ public class StoragePermissionManager {
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames,
                               final boolean allPermissions) {
-        if (permissionHelper.isAdmin()) {
+        if (permissionHelper.isAdmin() || grantPermissionManager.isStorageAdmin()) {
             return;
         }
         final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
@@ -126,6 +208,20 @@ public class StoragePermissionManager {
         }
     }
 
+    public boolean storageArchiveReadPermissions(final AbstractDataStorage storage) {
+        return grantPermissionManager.isOwnerOrAdmin(storage) || grantPermissionManager.isStorageAdmin()
+                || permissionHelper.isAllowed(READ, storage) && checkStorageArchiveRoles();
+    }
+
+    private boolean checkStorageArchiveRoles() {
+        final GrantedAuthoritySid archiveManager = new GrantedAuthoritySid(
+                DefaultRoles.ROLE_STORAGE_ARCHIVE_MANAGER.getName());
+        final GrantedAuthoritySid archiveReader = new GrantedAuthoritySid(
+                DefaultRoles.ROLE_STORAGE_ARCHIVE_READER.getName());
+        return permissionHelper.getSids().stream()
+                .anyMatch(sid -> sid.equals(archiveManager) || sid.equals(archiveReader));
+    }
+
     private boolean checkPermissions(final List<AclPermission> permissions,
                                      final AbstractDataStorage storage,
                                      final boolean allPermissions) {
@@ -137,5 +233,69 @@ public class StoragePermissionManager {
         return permissions.stream()
                 .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
                         permission.getSimpleMask()));
+    }
+
+    private boolean storageMgmtPermission(final AbstractSecuredEntity storage, final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                || !isRestrictedMgmtAccessEnabled(storage));
+    }
+
+    private boolean isRestrictedMgmtAccessEnabled(final AbstractSecuredEntity storage) {
+        final ContextualPreferenceExternalResource resource = storageResource(storage);
+        return getPreferenceValueAsBoolean(resource);
+    }
+
+    private Boolean getPreferenceValueAsBoolean(final ContextualPreferenceExternalResource resource) {
+        final ContextualPreference preference = getPreference(resource,
+                SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED);
+        return Optional.ofNullable(preference)
+                .map(ContextualPreference::getValue)
+                .map(BooleanUtils::toBoolean)
+                .orElse(false);
+    }
+
+    private ContextualPreferenceExternalResource storageResource(final AbstractSecuredEntity storage) {
+        return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.STORAGE, storage.getId().toString());
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final AbstractSystemPreference.BooleanPreference... preferences) {
+        final List<String> preferenceNames = Arrays.stream(preferences)
+                .map(AbstractSystemPreference::getKey)
+                .collect(Collectors.toList());
+        return getPreference(resource, preferenceNames);
+    }
+
+    private ContextualPreference getPreference(final ContextualPreferenceExternalResource resource,
+                                               final List<String> preferences) {
+        return contextualPreferenceManager.search(preferences, resource);
+    }
+
+    private boolean storageTagsPermission(final AbstractSecuredEntity storage, final List<String> tags,
+                                          final String permission) {
+        return grantPermissionManager.storagePermission(storage, permission)
+                && (grantPermissionManager.isAdmin() || grantPermissionManager.isStorageAdmin()
+                || !isRestrictedTagsAccessEnabled()
+                || !hasRestrictedTags(tags)
+                || permissionHelper.hasAnyRole(
+                DefaultRoles.ROLE_STORAGE_MANAGER, DefaultRoles.ROLE_STORAGE_TAG_MANAGER));
+    }
+
+    private boolean isRestrictedTagsAccessEnabled() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED)
+                .map(preferenceManager::getPreference)
+                .orElse(false);
+    }
+
+    private boolean hasRestrictedTags(final List<String> tags) {
+        return CollectionUtils.isNotEmpty(CommonUtils.subtract(ListUtils.emptyIfNull(tags),
+                getRestrictedTagsExcludeKeys()));
+    }
+
+    private List<String> getRestrictedTagsExcludeKeys() {
+        return Optional.of(SystemPreferences.DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS)
+                .map(preferenceManager::getPreference)
+                .orElseGet(Collections::emptyList);
     }
 }

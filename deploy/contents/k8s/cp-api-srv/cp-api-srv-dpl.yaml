@@ -10,12 +10,21 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-api-srv: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchLabels:
+                cloud-pipeline/cp-api-srv: "true"
+            topologyKey: kubernetes.io/hostname
       nodeSelector:
         cloud-pipeline/cp-api-srv: "true"
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      terminationGracePeriodSeconds: 50
       containers:
         - name: cp-api-srv-leader-elector
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
@@ -97,21 +106,31 @@ spec:
               mountPath: "/etc/cp_ssh"
               readOnly: true
           readinessProbe:
-            httpGet:
-              path: /pipeline/launch.sh
-              port: 8080
-              scheme: HTTPS
-            initialDelaySeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
+            initialDelaySeconds: 180
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /pipeline/launch.sh
-              port: 8080
-              scheme: HTTPS
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-api-srv.sh
             # 5 min delay to make sure API is up and running and drop pod after 60 seconds (4*15s) if API didn't respond
-            initialDelaySeconds: 150
+            initialDelaySeconds: 180
             periodSeconds: 15
             failureThreshold: 4
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       volumes:
         - name: api-pki
           hostPath:

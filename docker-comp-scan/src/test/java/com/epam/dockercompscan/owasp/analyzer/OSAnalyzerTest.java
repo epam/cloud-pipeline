@@ -35,7 +35,7 @@ public class OSAnalyzerTest {
     public void analyzeDependencyTestPositiveOsRelease() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/positive/os/os-case1/os-release").getPath());
+                "owasp/analyzer/positive/os/os-case1/etc/os-release").getPath());
         osVersionAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertEquals(OSVersionAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
@@ -47,7 +47,7 @@ public class OSAnalyzerTest {
     public void analyzeDependencyTestPositiveOsRelease2() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/positive/os/os-case2/os-release").getPath());
+                "owasp/analyzer/positive/os/os-case2/etc/os-release").getPath());
         osVersionAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertEquals(OSVersionAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
@@ -59,7 +59,7 @@ public class OSAnalyzerTest {
     public void analyzeDependencyTestPositiveCentosRelease() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/positive/os/centos-release").getPath());
+                "owasp/analyzer/positive/os/etc/centos-release").getPath());
         osVersionAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertEquals(OSVersionAnalyzer.DEPENDENCY_ECOSYSTEM, dependency.getEcosystem());
@@ -71,7 +71,7 @@ public class OSAnalyzerTest {
     public void analyzeDependencyTestNegativeOsRelease() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/negative/os-release").getPath());
+                "owasp/analyzer/negative/etc/os-release").getPath());
         osVersionAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertNull(dependency.getEcosystem());
@@ -81,7 +81,7 @@ public class OSAnalyzerTest {
     public void analyzeDependencyTestNegativeCentosRelease() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/negative/centos-release").getPath());
+                "owasp/analyzer/negative/etc/centos-release").getPath());
         osVersionAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertNull(dependency.getEcosystem());

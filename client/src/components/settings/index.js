@@ -41,7 +41,20 @@ const SettingsTabs = [
     key: 'user',
     path: '/settings/user',
     title: 'User management',
-    available: (user) => user ? roleModel.userHasRole(user, 'ROLE_USER_READER') : false
+    available: (user, props) => {
+      if (!user) {
+        return false;
+      }
+      if (roleModel.userHasRole(user, 'ROLE_USER_READER')) {
+        return true;
+      }
+      const {users} = props || {};
+      if (users.pending && !users.loaded) {
+        return false;
+      }
+      const list = users.value || [];
+      return list.some((user) => roleModel.readAllowed(user));
+    }
   },
   {
     key: 'email',
@@ -71,7 +84,7 @@ const SettingsTabs = [
     key: 'system',
     path: '/settings/system',
     title: 'System Management',
-    available: (user) => user ? user.admin : false
+    available: (user) => user ? user.admin || roleModel.userIs.dtsManager(user) : false
   },
   {
     key: 'profile',
@@ -84,6 +97,7 @@ const SettingsTabs = [
 @inject(() => ({
   pipelineGitCredentials: new PipelineGitCredentials()
 }))
+@inject('users')
 @roleModel.authenticationInfo
 @observer
 export default class extends React.Component {
@@ -96,7 +110,7 @@ export default class extends React.Component {
 
   renderSettingsNavigation = () => {
     const {router: {location}} = this.props;
-    const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser));
+    const tabs = SettingsTabs.filter(tab => tab.available(this.currentUser, this.props));
     const activeTab = location.pathname.split('/').filter(Boolean)[1];
     return (
       <Row

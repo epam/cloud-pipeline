@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
+import static org.openqa.selenium.By.className;
 import org.openqa.selenium.WebElement;
 
 import java.util.*;
@@ -65,8 +67,9 @@ public class LogAO implements AccessObject<LogAO> {
             entry(ENDPOINT, $(withText("Endpoint")).closest("tr").find("a")),
             entry(INSTANCE, context().find(byXpath("//*[.//*[text()[contains(.,'Instance')]] and contains(@class, 'ant-collapse')]"))),
             entry(PARAMETERS, context().find(byXpath("//*[.//*[text()[contains(.,'Parameters')]] and contains(@class, 'ant-collapse')]"))),
-            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find("a")),
-            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a"))
+            entry(NESTED_RUNS, $(withText("Nested runs:")).closest("tr").find(".log__nested-run")),
+            entry(SHARE_WITH, $(withText("Share with:")).closest("tr").find("a")),
+            entry(SHOW_TIMINGS, $(byClassName("log__timing-btn")))
     );
 
     public LogAO waitForCompletion() {
@@ -82,6 +85,16 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForSshLink() {
         get(SSH_LINK).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
+    }
+
+    private void openRegionSelector() {
+        get(SSH_LINK).parent().find(className("ultizone-url__expander")).click();
+    }
+
+    public String getBestRegion() {
+        openRegionSelector();
+        return $$(className("rc-dropdown-menu-item")).get(0).find("a")
+                .text().replace("(best)", "");
     }
 
     public ShellAO clickOnSshLink() {
@@ -109,16 +122,16 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public Stream<String> logMessages() {
-        $(byClassName("log__logs-table")).shouldBe(visible);
-        Utils.scrollElementToPosition(".log__logs-table", 0);
+        $(byClassName("cp-console-output")).shouldBe(visible);
+        Utils.scrollElementToPosition(".cp-console-output", 0);
         Set<String> lines = new LinkedHashSet<>();
         boolean keepScrolling = true;
         int offset = 0;
         while (keepScrolling) {
-            ElementsCollection messages = $(byClassName("log__logs-table")).findAll(byClassName("log__log-row"));
+            ElementsCollection messages = $(byClassName("cp-console-output")).findAll(byClassName("un-task-logs__console-line"));
             keepScrolling = lines.addAll(messages.texts());
             offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
-            Utils.scrollElementToPosition(".log__logs-table", offset);
+            Utils.scrollElementToPosition(".cp-console-output", offset);
         }
         return lines.stream();
     }
@@ -171,9 +184,9 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO pause(final String pipelineName) {
         clickOnPauseButton();
-        new ConfirmationPopupAO<>(this)
-                .ensureTitleIs(
-                        format("Do you want to pause %s?", pipelineName))
+        $(byClassName("ause-confirmation__body")).shouldBe(visible);
+        ensure(byClassName("ause-confirmation__title"),
+                matchText(format("Do you want to pause%s", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button(PAUSE.name()));
         return this;
@@ -275,7 +288,15 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public String getNestedRunID(int childNum) {
-        return $(withText("Nested runs:")).closest("tr").find(byXpath(format("td/a[%s]/b", childNum))).getText();
+        return $(withText("Nested runs:")).closest("tr")
+                .find(byXpath(format("td/div[2]/a[%s]/b", childNum))).getText();
+    }
+
+    public LogAO waitForNestedRunWorking(String childRunID) {
+        $(byAttribute("href", format("#/run/%s", childRunID)))
+                .$(byXpath(".//i[contains(@class, 'anticon')]"))
+                .waitUntil(cssClass("anticon-play-circle-o"), COMPLETION_TIMEOUT);
+        return this;
     }
 
     public LogAO shareWithGroup(final String groupName) {
@@ -308,7 +329,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public LogAO validateException(final String exception) {
-        $(byClassName("ant-alert-error")).shouldHave(text(exception));
+        $(byClassName("ant-alert-message")).shouldHave(text(exception));
         return this;
     }
 
@@ -329,6 +350,11 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public LogAO waitForTaskStatus(final String task, Status status) {
+        $(taskWithName(task)).waitUntil(status.reached, COMPLETION_TIMEOUT);
+        return this;
+    }
+
     public LogAO instanceParameters(final Consumer<InstanceParameters> action) {
         expandTab(INSTANCE);
         action.accept(new InstanceParameters());
@@ -344,6 +370,8 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
+        ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"),
+                        exist);
         return this;
     }
 
@@ -376,9 +404,9 @@ public class LogAO implements AccessObject<LogAO> {
         if (!get(PARAMETERS).exists()) {
             return this;
         }
-        $(byXpath(format(
+        ensure(byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
-                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+                        "and contains(.//text(), '%s')]]", name)), not(Condition.exist));
         return this;
     }
 
@@ -402,7 +430,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public static By runId() {
-        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(text(), 'Run #')]");
+        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(@class, 'cp-run-name editable')]");
     }
 
     public static By pipelineLink() {
@@ -428,28 +456,38 @@ public class LogAO implements AccessObject<LogAO> {
         return Combiners.confine(taskQualifier, taskList(), format("task with name %s", name));
     }
 
+    public LogAO clickTaskWithName(final String name) {
+        return click(taskWithName(name))
+               .ensure(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"), exist);
+    }
+
     public static By parameterWithName(final String name, final String value) {
         Objects.requireNonNull(name);
         return byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') and contains(.//text(), '%s')] and " +
-                        ".//td[contains(., '%s')]]", name, value));
+                ".//td[contains(., '%s')]]", name, value));
+    }
+
+    private SelenideElement cpCapLimitMountsParameter(String storage) {
+        return $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
+                .shouldHave(text(storage));
     }
 
     public LogAO checkMountLimitsParameter(String...storages) {
         Arrays.stream(storages)
-                .forEach(storage -> $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
-                        .shouldHave(text(storage)));
+                .forEach(storage -> cpCapLimitMountsParameter(storage));
         return this;
     }
 
     public StorageContentAO openStorageFromLimitMountsParameter(String storage) {
-        $(byText("CP_CAP_LIMIT_MOUNTS")).$(By.xpath("following::td"))
-                .shouldHave(text(storage)).click();
+        cpCapLimitMountsParameter(storage).click();
         return new StorageContentAO();
     }
 
     public static By log() {
-        return byClassName("ReactVirtualized__List");
+        $(byXpath(".//div[contains(@class,'cp-console-output')]/div[contains(@class,'un-task-logs__console-line')]"))
+                .waitUntil(exist, DEFAULT_TIMEOUT);
+        return byClassName("cp-console-output");
     }
 
     public LogAO logContainsMessage(Set<String> logMess, final String message) {
@@ -475,7 +513,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public static By logMessage(final String text) {
         Objects.requireNonNull(text);
-        final String messageClass = "log__log-row";
+        final String messageClass = "un-task-logs__console-line";
         final By messageQualifier = byXpath(format(
                 "//*[contains(concat(' ', @class, ' '), ' %s ') and .//*[contains(., \"%s\")]]",
                 messageClass, text
@@ -495,7 +533,7 @@ public class LogAO implements AccessObject<LogAO> {
         Objects.requireNonNull(text);
         return new Condition(format("contains message {%s}", text)) {
 
-            private static final String container = ".log__logs-table";
+            private static final String container = ".cp-console-output";
             private final By message = logMessage(text);
 
             @Override
@@ -507,7 +545,7 @@ public class LogAO implements AccessObject<LogAO> {
                     int offset = 0;
                     Utils.scrollElementToPosition(container, 0);
                     while (!seen && keepScrolling) {
-                        final ElementsCollection messages = $(container).findAll(byClassName("log__log-row"));
+                        final ElementsCollection messages = $(container).findAll(byClassName("un-task-logs__console-line"));
                         seen = $(message).is(visible);
                         keepScrolling = lines.addAll(messages.texts());
                         offset += messages.stream().mapToInt(element -> element.getSize().getHeight()).sum();
@@ -633,7 +671,7 @@ public class LogAO implements AccessObject<LogAO> {
             click(ADD_USER);
             SelenideElement selectUserPopup = Utils.getPopupByTitle("Select user");
             setValue(selectUserPopup.$(byClassName("ant-select-search__field")), userName);
-            $(byXpath(format("//div[.='%s']", userName))).click();
+            $(byClassName("ant-select-dropdown-menu")).$(byText(userName)).click();
             selectUserPopup.find(button("OK")).shouldBe(visible).click();
             if (sshConnection) {
                 checkEnableSShConnection(userName);

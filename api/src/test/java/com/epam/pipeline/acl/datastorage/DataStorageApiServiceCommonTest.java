@@ -18,6 +18,9 @@ package com.epam.pipeline.acl.datastorage;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.entity.contextual.ContextualPreference;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
+import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequest;
@@ -31,11 +34,14 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
+import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
@@ -89,6 +95,9 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Autowired
     private TemporaryCredentialsManager mockTemporaryCredentialsManager;
+
+    @Autowired
+    private ContextualPreferenceManager contextualPreferenceManager;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -233,42 +242,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnReadOnlyDataStorageWithShareWhenPermissionIsGrantedAndMountStatusReadOnly() {
-        initializeNfsStorageForUser(NFSStorageMountStatus.READ_ONLY);
-
-        final List<DataStorageWithShareMount> returnedDataStorages =
-            dataStorageApiService.getAvailableStoragesWithShareMount(ID);
-        assertThat(returnedDataStorages).hasSize(1);
-        assertThat(returnedDataStorages.get(0).getStorage().getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnReadOnlyDataStorageWithShareWhenPermissionIsGrantedAndMountStatusDisabled() {
-        initializeNfsStorageForUser(NFSStorageMountStatus.MOUNT_DISABLED);
-        final List<DataStorageWithShareMount> returnedDataStorages =
-            dataStorageApiService.getAvailableStoragesWithShareMount(ID);
-        assertThat(returnedDataStorages).hasSize(1);
-        assertThat(returnedDataStorages.get(0).getStorage().getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnDataStoragesWithReadPermissionsWhenPermissionIsGrantedAndMountStatusReadOnly() {
-        final NFSDataStorage nfsDataStorage =
-            DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.READ_ONLY, OWNER_USER);
-        initAclEntity(nfsDataStorage, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                    new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        initUserAndEntityMocks(SIMPLE_USER, nfsDataStorage, context);
-        doReturn(mutableListOf(nfsDataStorage)).when(mockDataStorageManager).getDataStorages();
-
-        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getDataStorages();
-        assertThat(returnedDataStorages).hasSize(1).contains(nfsDataStorage);
-        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnWritableDataStoragesWhichPermissionIsGranted() {
         initAclEntity(s3bucket, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
                 new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
@@ -318,16 +291,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
 
         assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).hasSize(1).contains(storageShareMount);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnEmptyAvailableStoragesWithShareMountWhenPermissionIsNotGranted() {
-        initAclEntity(s3bucket);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
-
-        assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).isEmpty();
     }
 
     @Test
@@ -506,18 +469,39 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     }
 
     @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldUpdateDataStorageForOwnerWhenRestrictedModeIsDisabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(dataStorageVO);
+
+        assertThat(dataStorageApiService.update(dataStorageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyUpdateDataStorageForOwnerWhenRestrictedModeIsEnabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(true, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).update(dataStorageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldUpdateDataStorageWhenPermissionIsGranted() {
+    public void shouldDenyUpdateDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
         mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).update(dataStorageVO);
 
-        final AbstractDataStorage returnedStorage = dataStorageApiService.update(dataStorageVO);
-
-        assertThat(returnedStorage).isEqualTo(s3bucket);
-        assertThat(returnedStorage.getMask()).isEqualTo(WRITE_PERMISSION);
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.update(dataStorageVO));
     }
 
     @Test
@@ -538,6 +522,28 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(s3bucket).when(mockDataStorageManager).updatePolicy(dataStorageVO);
 
         assertThat(dataStorageApiService.updatePolicy(dataStorageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldUpdatePolicyForOwnerWhenRestrictedModeIsDisabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        doReturn(s3bucket).when(mockDataStorageManager).updatePolicy(dataStorageVO);
+
+        assertThat(dataStorageApiService.updatePolicy(dataStorageVO)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER)
+    public void shouldDenyUpdatePolicyForOwnerWhenRestrictedModeIsEnabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(true, s3bucket);
+        doReturn(s3bucket).when(mockDataStorageManager).updatePolicy(dataStorageVO);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.updatePolicy(dataStorageVO));
     }
 
     @Test
@@ -572,15 +578,38 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     }
 
     @Test
+    @WithMockUser(username = OWNER_USER, roles = STORAGE_MANAGER_ROLE)
+    public void shouldDeleteDataStorageForOwnerWhenRestrictedModeIsDisabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(false, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).delete(ID, true);
+
+        assertThat(dataStorageApiService.delete(ID, true)).isEqualTo(s3bucket);
+    }
+
+    @Test
+    @WithMockUser(username = OWNER_USER, roles = STORAGE_MANAGER_ROLE)
+    public void shouldDenyDeleteDataStorageForOwnerWhenRestrictedModeIsEnabled() {
+        initAclEntity(s3bucket);
+        initUserAndEntityMocks(OWNER_USER, s3bucket, context);
+        mockDataStorageMgmtRestrictedMode(true, s3bucket);
+        final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
+        doReturn(s3bucket).when(target).delete(ID, true);
+
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.delete(ID, true));
+    }
+
+    @Test
     @WithMockUser(username = SIMPLE_USER, roles = STORAGE_MANAGER_ROLE)
-    public void shouldDeleteDataStorageWhenPermissionIsGranted() {
+    public void shouldDenyDeleteDataStorageWhenPermissionIsGranted() {
         initAclEntity(s3bucket, AclPermission.WRITE);
         mockStorage(s3bucket);
         mockAuthUser(SIMPLE_USER);
         final DataStorageManager target = AopTestUtils.getUltimateTargetObject(mockDataStorageManager);
         doReturn(s3bucket).when(target).delete(ID, true);
-
-        assertThat(dataStorageApiService.delete(ID, true)).isEqualTo(s3bucket);
+        assertThrows(AccessDeniedException.class, () -> dataStorageApiService.delete(ID, true));
     }
 
     @Test
@@ -827,15 +856,13 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
                 dataStorageApiService.generateCredentials(dataStorageActionList));
     }
 
-    private void initializeNfsStorageForUser(NFSStorageMountStatus mountDisabled) {
-        final NFSDataStorage nfsDataStorage =
-            DatastorageCreatorUtils.getNfsDataStorage(mountDisabled, OWNER_USER);
-        initAclEntity(nfsDataStorage, Arrays.asList(new UserPermission(SIMPLE_USER, AclPermission.READ.getMask()),
-                                                    new UserPermission(SIMPLE_USER, AclPermission.WRITE.getMask())));
-        initUserAndEntityMocks(SIMPLE_USER, nfsDataStorage, context);
-        final DataStorageWithShareMount storageWithShareMount =
-            new DataStorageWithShareMount(nfsDataStorage, new FileShareMount());
-        doReturn(mutableListOf(storageWithShareMount)).when(mockDataStorageManager)
-            .getDataStoragesWithShareMountObject(eq(ID));
+    private void mockDataStorageMgmtRestrictedMode(final boolean enabled, final AbstractDataStorage storage) {
+        final ContextualPreference preference = new ContextualPreference(
+                SystemPreferences.DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED.getKey(), enabled ? "true" : "false",
+                PreferenceType.BOOLEAN);
+        final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
+                ContextualPreferenceLevel.STORAGE, storage.getId().toString());
+        doReturn(preference).when(contextualPreferenceManager)
+                .search(eq(Collections.singletonList(preference.getName())), eq(resource));
     }
 }

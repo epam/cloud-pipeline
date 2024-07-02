@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.CmdExecutionException;
@@ -49,32 +50,35 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DockerContainerOperationManager {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DockerContainerOperationManager.class);
 
     private static final Pattern GROUP_AND_IMAGE = Pattern.compile("^(.*)\\/(.*)$");
 
@@ -85,14 +89,20 @@ public class DockerContainerOperationManager {
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
-    private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occured during to pause pipeline run";
-    private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occured during to resume pipeline run";
+    private static final String CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION =
+            "ssh session to get docker container layers count";
+    private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occurred during to pause pipeline run";
+    private static final String REJOIN_COMMAND_DESCRIPTION = "Error is occurred during to resume pipeline run";
     private static final String EMPTY = "";
     private static final String RESUME_RUN_TASK = "ResumePipelineRun";
+    private static final String DELIMITER = "/";
+    private static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
+    private static final String NONE = "NONE";
+    private static final String SSH_PORT_OPTION = "-p ";
+    private static final int SSH_DEFAULT_PORT = 22;
+    private static final String CP_NODE_SSH_PORT = "CP_NODE_SSH_PORT";
+
     public static final String PAUSE_RUN_TASK = "PausePipelineRun";
-    public static final String DELIMITER = "/";
-    public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
-    public static final String NONE = "NONE";
 
     @Autowired
     private PipelineRunManager runManager;
@@ -139,6 +149,9 @@ public class DockerContainerOperationManager {
     @Value("${commit.run.script.starter.url}")
     private String commitRunStarterScriptUrl;
 
+    @Value("${container.layers.script.url}")
+    private String containerLayersCountScriptUrl;
+
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
 
@@ -146,6 +159,8 @@ public class DockerContainerOperationManager {
 
     public PipelineRun commitContainer(PipelineRun run, DockerRegistry registry,
                                        String newImageName, boolean clearContainer, boolean stopPipeline) {
+        final RunInstance instance = run.getInstance();
+        final AbstractCloudRegion region = regionManager.load(instance.getCloudRegionId());
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(), 
                 run.getActualDockerImage());
 
@@ -182,6 +197,7 @@ public class DockerContainerOperationManager {
                     .apiToken(apiToken)
                     .commitDistributionUrl(commitScriptsDistributionsUrl)
                     .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                    .globalDistributionUrl(getGlobalDistributionUrl(region))
                     .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
                     .cleanUp(String.valueOf(clearContainer))
@@ -200,13 +216,14 @@ public class DockerContainerOperationManager {
                     .build()
                     .getCommand();
 
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), commitContainerCommand);
+            Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), commitContainerCommand,
+                    getSshPort(run));
             boolean isFinished = sshConnection.waitFor(
                     preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT), TimeUnit.SECONDS);
             Assert.state(isFinished && sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_COMMIT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
-            LOGGER.error(e.getMessage());
+            log.error(e.getMessage());
             updatePipelineRunCommitStatus(run, CommitStatus.FAILURE);
             throw new CmdExecutionException(COMMIT_COMMAND_DESCRIPTION, e);
         } catch (InterruptedException e) {
@@ -216,6 +233,38 @@ public class DockerContainerOperationManager {
         }
         updatePipelineRunCommitStatus(run, CommitStatus.COMMITTING);
         return run;
+    }
+
+    public long getContainerLayers(final PipelineRun run) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final long layersCount;
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+            final String containerLayersCommand = DockerContainerLayersCommand.builder()
+                    .runScriptUrl(containerLayersCountScriptUrl)
+                    .containerId(containerId)
+                    .build()
+                    .getCommand();
+            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
+                    getSshPort(run));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
+                final String result = reader.lines().collect(Collectors.joining());
+                layersCount = Long.parseLong(result);
+            }
+            boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            log.error(e.getMessage());
+            throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
+        }
+        return layersCount;
     }
 
     @Async("pauseRunExecutor")
@@ -237,7 +286,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.PAUSED);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), PAUSE_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(PAUSE_COMMAND_DESCRIPTION, e);
@@ -264,7 +313,7 @@ public class DockerContainerOperationManager {
             run.setStatus(TaskStatus.RUNNING);
             runManager.updatePipelineStatus(run);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            log.error(e.getMessage(), e);
             addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
@@ -283,8 +332,7 @@ public class DockerContainerOperationManager {
         try {
             if (Objects.isNull(kubernetesManager.findPodById(run.getPodId()))) {
                 final PipelineConfiguration configuration = getResumeConfiguration(run);
-                launcher.launch(run, configuration, endpoints,  run.getId().toString(),
-                        true, run.getPodId(), null, ImagePullPolicy.NEVER);
+                launcher.launch(run, configuration, endpoints, true, run.getPodId(), null, ImagePullPolicy.NEVER);
             }
         } finally {
             resumeLock.unlock();
@@ -295,6 +343,14 @@ public class DockerContainerOperationManager {
         final PipelineConfiguration configuration = configurationManager.getConfigurationFromRun(run);
         final Map<String, String> envs = getResumeRunEnvVars(configuration);
         configuration.setEnvironmentParams(envs);
+        configuration.setPodAssignPolicy(
+                RunAssignPolicy.builder()
+                        .selector(
+                                RunAssignPolicy.PodAssignSelector.builder()
+                                        .label(KubernetesConstants.RUN_ID_LABEL)
+                                        .value(run.getId().toString()).build())
+                        .build()
+        );
         return configuration;
     }
 
@@ -313,7 +369,7 @@ public class DockerContainerOperationManager {
         final String msg = messageHelper.getMessage(MessageConstants.WARN_RESUME_RUN_FAILED,
                 startInstanceResult.getMessage());
         addRunLog(run, msg, RESUME_RUN_TASK);
-        LOGGER.warn(msg);
+        log.warn(msg);
         run.setStatus(TaskStatus.PAUSED);
         // set stateReasonMessage here only for NotificationAspect, this status won't be persisted in DB,
         // but would be passed to aspect and used for RunStatus update
@@ -321,12 +377,13 @@ public class DockerContainerOperationManager {
         runManager.updatePipelineStatus(run);
     }
 
-    Process submitCommandViaSSH(String ip, String commandToExecute) throws IOException {
+    Process submitCommandViaSSH(String ip, String commandToExecute, int port) throws IOException {
         String kubePipelineNodeUserName = preferenceManager.getPreference(SystemPreferences.COMMIT_USERNAME);
         String pemKeyPath = preferenceManager.getPreference(SystemPreferences.COMMIT_DEPLOY_KEY);
 
-        String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s",
+        String sshCommand = String.format("%s %s %s %s %s %s %s %s %s %s %s %s",
                 SSH_COMMAND,
+                SSH_PORT_OPTION + port,
                 SSH_CMD_OPTION, STRICT_HOST_KEY_CHECKING_NO,
                 SSH_CMD_OPTION, GLOBAL_KNOWN_HOSTS_FILE,
                 SSH_CMD_OPTION, USER_KNOWN_HOSTS_FILE,
@@ -334,7 +391,7 @@ public class DockerContainerOperationManager {
                 kubePipelineNodeUserName + "@" + ip,
                 commandToExecute
         );
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_EXECUTE_COMMIT_RUN_PIPELINES, sshCommand));
+        log.info(messageHelper.getMessage(MessageConstants.INFO_EXECUTE_COMMIT_RUN_PIPELINES, sshCommand));
         return Runtime.getRuntime().exec(sshCommand);
     }
 
@@ -345,11 +402,11 @@ public class DockerContainerOperationManager {
     }
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
-        LOGGER.error(e.getMessage());
-        nodesManager.terminateNode(run.getInstance().getNodeName(), false);
+        log.error(e.getMessage());
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
+        nodesManager.terminateRun(run);
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
@@ -370,8 +427,11 @@ public class DockerContainerOperationManager {
     }
 
     private void removeUtilizationLevelTags(final PipelineRun run) {
+        final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH)
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix)
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }
@@ -386,32 +446,46 @@ public class DockerContainerOperationManager {
             case TERMINATED:
                 throw new IllegalStateException(messageHelper
                         .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "stop"));
+            case STOPPING:
             default:
                 break;
         }
     }
 
     private boolean startInstanceIfNeed(final PipelineRun run, final String nodeId, final Long regionId) {
-        final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
-        validateInstanceState(cloudInstanceState);
-        switch (cloudInstanceState) {
-            case STOPPED:
-                final CloudInstanceOperationResult startInstanceResult = cloudFacade.startInstance(regionId, nodeId);
-                if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
-                    rollbackRunToPausedState(run, startInstanceResult);
+        try {
+            final CloudInstanceState cloudInstanceState = cloudFacade.getInstanceState(run.getId());
+            validateInstanceState(cloudInstanceState);
+            switch (cloudInstanceState) {
+                case STOPPED:
+                    final CloudInstanceOperationResult startInstanceResult =
+                            cloudFacade.startInstance(regionId, nodeId);
+                    if (startInstanceResult.getStatus() != CloudInstanceOperationResult.Status.OK) {
+                        rollbackRunToPausedState(run, startInstanceResult);
+                        return false;
+                    }
+                    break;
+                case STOPPING:
+                    rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
+                            messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
                     return false;
-                }
-                break;
-            case TERMINATED:
-                throw new IllegalStateException(messageHelper
-                        .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
-            default:
-                break;
+                case TERMINATED:
+                    throw new IllegalStateException(messageHelper
+                            .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
+                default:
+                    break;
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("An error occurred during cloud instance start: " + e.getMessage(), e);
+            addRunLog(run, e.getMessage(), RESUME_RUN_TASK);
+            return false;
         }
-        return true;
     }
 
     private boolean launchPauseRunScript(final PipelineRun run) throws IOException, InterruptedException {
+        final RunInstance instance = run.getInstance();
+        final AbstractCloudRegion region = regionManager.load(instance.getCloudRegionId());
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
                 run.getActualDockerImage());
         final String apiToken = authManager.issueTokenForCurrentUser().getToken();
@@ -424,6 +498,7 @@ public class DockerContainerOperationManager {
                 .apiToken(apiToken)
                 .pauseDistributionUrl(commitScriptsDistributionsUrl)
                 .distributionUrl(preferenceManager.getPreference(SystemPreferences.BASE_PIPE_DISTR_URL))
+                .globalDistributionUrl(getGlobalDistributionUrl(region))
                 .runId(String.valueOf(run.getId()))
                 .containerId(containerId)
                 .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
@@ -431,10 +506,11 @@ public class DockerContainerOperationManager {
                 .defaultTaskName(run.getTaskName())
                 .preCommitCommand(preferenceManager.getPreference(SystemPreferences.PRE_COMMIT_COMMAND_PATH))
                 .postCommitCommand(preferenceManager.getPreference(SystemPreferences.POST_COMMIT_COMMAND_PATH))
+                .squashLayersCount(String.valueOf(
+                    preferenceManager.getPreference(SystemPreferences.PAUSE_LAYERS_COUNT_TO_SQUASH)))
                 .build()
                 .getCommand();
 
-        final RunInstance instance = run.getInstance();
         kubernetesManager.addNodeLabel(instance.getNodeName(), KubernetesConstants.PAUSED_NODE_LABEL,
                 TaskStatus.PAUSED.name());
 
@@ -443,7 +519,7 @@ public class DockerContainerOperationManager {
         runManager.updateRunInfo(run);
         serviceUrlManager.clear(run.getId());
 
-        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand);
+        final Process sshConnection = submitCommandViaSSH(instance.getNodeIP(), pauseRunCommand, getSshPort(run));
 
         //TODO: change SystemPreferences.COMMIT_TIMEOUT in according to
         // f_EPMCMBIBPC-2025_add_lastStatusUpdate_time branch
@@ -462,7 +538,19 @@ public class DockerContainerOperationManager {
         return true;
     }
 
+    private String getGlobalDistributionUrl(final AbstractCloudRegion region) {
+        return Optional.ofNullable(region.getGlobalDistributionUrl())
+                .orElseGet(() -> preferenceManager.getPreference(SystemPreferences.BASE_GLOBAL_DISTRIBUTION_URL));
+    }
+
     private void validateInstanceState(final CloudInstanceState state) {
         Assert.notNull(state, "Cannot determine instance state");
+    }
+
+    private int getSshPort(final PipelineRun run) {
+        return run.getParameterValue(CP_NODE_SSH_PORT)
+                .filter(NumberUtils::isDigits)
+                .map(Integer::parseInt)
+                .orElse(SSH_DEFAULT_PORT);
     }
 }

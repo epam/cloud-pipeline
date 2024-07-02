@@ -4,21 +4,40 @@ import GetDataWithPrevious from './get-data-with-previous';
 import join from './join-periods';
 import moment from 'moment-timezone';
 
+/**
+ * @typedef {Object} GetGroupedBillingCentersOptions
+ * @property {Object} filters
+ * @property {BaseBillingRequestPagination|boolean} [pagination]
+ */
+
 export class GetGroupedBillingCenters extends BaseBillingRequest {
-  constructor (filters, pagination = null) {
-    const {resourceType, fetchLastDay, ...rest} = filters || {};
-    super(rest, true, pagination);
+  /**
+   * @param {GetGroupedBillingCentersOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
+    const {resourceType, fetchLastDay, ...rest} = filters;
+    super({filters: rest, loadDetails: true, pagination});
     this.resourceType = resourceType;
     this.fetchLastDay = fetchLastDay;
-    if (this.filters && this.filters.group && this.filters.group.length === 1) {
+    if (
+      this.filters &&
+      (
+        this.filters.billingGroup?.length === 1 ||
+        this.filters.adGroup?.length === 1
+      )
+    ) {
       this.grouping = 'USER';
     } else {
       this.grouping = 'BILLING_CENTER';
     }
   }
 
-  async prepareBody () {
-    await super.prepareBody();
+  prepareBody () {
+    super.prepareBody();
     if (this.fetchLastDay && this.filters && this.filters.endStrict) {
       this.body.from = moment(this.filters.endStrict).startOf('d');
       this.body.to = moment(this.filters.endStrict).endOf('d');
@@ -36,7 +55,10 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
   prepareBillingCentersData (raw) {
     const res = {};
     (raw && raw.length ? raw : []).forEach(i => {
-      if (this.filters && this.filters.group) {
+      if (
+        this.filters &&
+        (this.filters.billingGroup || this.filters.adGroup)
+      ) {
         const name = i.groupingInfo[this.grouping];
         if (name && name !== 'unknown') {
           res[name] = {
@@ -64,7 +86,14 @@ export class GetGroupedBillingCenters extends BaseBillingRequest {
 }
 
 export class GetGroupedBillingCentersWithPrevious extends GetDataWithPrevious {
-  constructor (filters, pagination = null) {
+  /**
+   * @param {GetGroupedBillingCentersOptions} options
+   */
+  constructor (options = {}) {
+    const {
+      filters = {},
+      pagination
+    } = options;
     const {
       end,
       endStrict,
@@ -79,8 +108,7 @@ export class GetGroupedBillingCentersWithPrevious extends GetDataWithPrevious {
     };
     super(
       GetGroupedBillingCenters,
-      formattedFilters,
-      pagination
+      {filters: formattedFilters, pagination}
     );
   }
 

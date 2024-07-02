@@ -78,7 +78,10 @@ def get_aws_region(api, nodename):
 
 
 def get_kube_api():
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
+    try:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+    except Exception:
+        api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
     api.session.verify = False
     return api
 

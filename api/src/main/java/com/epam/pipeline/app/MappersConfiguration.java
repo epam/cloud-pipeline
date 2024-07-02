@@ -18,10 +18,14 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
+import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
+import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
+import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -37,7 +41,6 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 
 @Configuration
 public class MappersConfiguration {
@@ -108,6 +111,11 @@ public class MappersConfiguration {
     }
 
     @Bean
+    public StorageLifecycleEntityMapper datastorageLifecycleMapper() {
+        return Mappers.getMapper(StorageLifecycleEntityMapper.class);
+    }
+
+    @Bean
     public CloudProfileCredentialsMapper cloudProfileCredentialsMapper() {
         return Mappers.getMapper(CloudProfileCredentialsMapper.class);
     }
@@ -115,6 +123,11 @@ public class MappersConfiguration {
     @Bean
     public ContextualNotificationMapper contextualNotificationMapper() {
         return Mappers.getMapper(ContextualNotificationMapper.class);
+    }
+
+    @Bean
+    public UserNotificationMapper userNotificationMapper() {
+        return Mappers.getMapper(UserNotificationMapper.class);
     }
 
     @Bean
@@ -130,5 +143,15 @@ public class MappersConfiguration {
     @Bean
     public NodePoolUsageMapper nodePoolUsageMapper() {
         return Mappers.getMapper(NodePoolUsageMapper.class);
+    }
+
+    @Bean
+    public BitbucketMapper bitbucketRepositoryMapper() {
+        return Mappers.getMapper(BitbucketMapper.class);
+    }
+
+    @Bean
+    public KubernetesMapper kubernetesMapper() {
+        return Mappers.getMapper(KubernetesMapper.class);
     }
 }

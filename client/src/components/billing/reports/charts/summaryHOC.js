@@ -16,10 +16,11 @@
 
 import React from 'react';
 import {Radio} from 'antd';
+import {observer} from 'mobx-react';
 import Summary, {Display} from './summary';
 
 const SummaryHOC = WrappedComponent => {
-  return class extends React.Component {
+  class SummaryWrappedComponent extends React.Component {
     state= {
       display: Display.accumulative
     };
@@ -71,7 +72,8 @@ const SummaryHOC = WrappedComponent => {
         </div>
       );
     }
-  };
+  }
+  return observer(SummaryWrappedComponent);
 };
 
 export default SummaryHOC(Summary);

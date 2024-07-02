@@ -48,7 +48,7 @@ public class AzureNetAppStoragePriceListLoader extends AbstractAzureStoragePrice
             .filter(meter -> meter.getMeterName().equals(String.format(AZURE_CAPACITY_METER_TEMPLATE, netAppTier)))
             .filter(meter -> StringUtils.isNotEmpty(meter.getMeterRegion()))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
-                    pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
+                pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Users")
@@ -173,8 +174,9 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<PipelineUser> loadUser(@PathVariable Long id) {
-        return Result.success(userApiService.loadUser(id));
+    public Result<PipelineUser> loadUser(@PathVariable Long id,
+                                         @RequestParam(defaultValue = FALSE) final boolean quotas) {
+        return Result.success(userApiService.loadUser(id, quotas));
     }
 
     @GetMapping(value = "/user")
@@ -226,10 +228,11 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<PipelineUser>> loadUsers(@RequestParam(defaultValue = "false") final boolean activity) {
+    public Result<List<PipelineUser>> loadUsers(@RequestParam(defaultValue = FALSE) final boolean activity,
+                                                @RequestParam(defaultValue = FALSE) final boolean quotas) {
         return Result.success(activity
-                ? userApiService.loadUsersWithActivityStatus()
-                : userApiService.loadUsers());
+                ? userApiService.loadUsersWithActivityStatus(quotas)
+                : userApiService.loadUsers(quotas));
     }
 
     @GetMapping(value = "/users/info")
@@ -404,8 +407,8 @@ public class UserController extends AbstractRestController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineUserEvent>> importUsersFromCsv(
-            @RequestParam(defaultValue = "false") final boolean createUser,
-            @RequestParam(defaultValue = "false") final boolean createGroup,
+            @RequestParam(defaultValue = FALSE) final boolean createUser,
+            @RequestParam(defaultValue = FALSE) final boolean createGroup,
             @RequestParam(required = false) final List<String> createMetadata,
             final HttpServletRequest request) throws FileUploadException {
         final MultipartFile file = consumeMultipartFile(request);
@@ -467,5 +470,17 @@ public class UserController extends AbstractRestController {
     public Result<Boolean> deleteOnlineUsers(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
                                                  final LocalDate date) {
         return Result.success(userApiService.deleteExpiredOnlineUsers(date));
+    }
+
+    @GetMapping("/user/launchLimits")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads launch limits for a user.",
+            notes = "Loads a map of launch limits, configured via contextual preferences.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Map<String, Integer>> getCurrentUserLaunchLimits(
+        @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
+        return Result.success(userApiService.getCurrentUserLaunchLimits(loadAll));
     }
 }

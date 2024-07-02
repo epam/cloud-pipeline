@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import platform
 import shutil
 import stat
 import subprocess
@@ -26,9 +27,14 @@ from src.utilities.platform_utilities import is_windows
 from src.version import __bundle_info__
 
 import click
+import psutil
 
 from src.api.preferenceapi import PreferenceAPI
 from src.config import Config, is_frozen
+from src.utilities.ssh_operations import is_ssh_default_root_user_enabled
+
+if platform.system() == 'Windows':
+    import win32api
 
 MS_IN_SEC = 1000
 
@@ -37,20 +43,26 @@ class AbstractMount(object):
     __metaclass__ = ABCMeta
 
     def get_mount_webdav_cmd(self, config, mountpoint, options, custom_options, web_dav_url, mode, threading=False,
-                             log_level=None):
-        additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options)
+                             log_level=None, show_archive=False, fix_permissions=False):
+        additional_args = self._append_arguments(['--webdav', web_dav_url], threading, log_level, custom_options,
+                                                 show_archive, fix_permissions=fix_permissions)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
     def get_mount_storage_cmd(self, config, mountpoint, options, custom_options, bucket, mode, threading=False,
-                              log_level=None):
-        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options)
+                              log_level=None, show_archive=False):
+        additional_args = self._append_arguments(['--bucket', bucket], threading, log_level, custom_options,
+                                                 show_archive)
         return self._get_mount_cmd(config, mountpoint, options, additional_args, mode)
 
-    def _append_arguments(self, args, threading, log_level, custom_options):
+    def _append_arguments(self, args, threading, log_level, custom_options, show_archive, fix_permissions=False):
         if threading:
             args.append('--threads')
         if log_level:
             args.extend(['--logging-level', log_level])
+        if show_archive:
+            args.append('--show-archive')
+        if fix_permissions:
+            args.append('--fix-permissions')
         if custom_options:
             args.extend(self._build_custom_option_arguments(custom_options))
         return args
@@ -67,6 +79,9 @@ class AbstractMount(object):
     @abstractmethod
     def _get_mount_cmd(self, config, mountpoint, options, additional_arguments, mode):
         pass
+
+    def get_python_path(self):
+        return None
 
 
 class FrozenMount(AbstractMount):
@@ -130,22 +145,30 @@ class SourceMount(AbstractMount):
             mount_cmd.extend(['-o', options])
         return mount_cmd
 
+    def get_python_path(self):
+        return dirname(Config.get_base_source_dir())
+
 
 class Mount(object):
+    PIPE_FUSE_FS_NAME = 'PIPE_FUSE'
 
     def mount_storages(self, mountpoint, file=False, bucket=None, options=None, custom_options=None, quiet=False,
-                       log_file=None, log_level=None, threading=False, mode=700, timeout=1000):
+                       log_file=None, log_level=None, threading=False, mode=700, timeout=10*MS_IN_SEC,
+                       show_archive=False, fix_permissions=False):
         config = Config.instance()
         username = self.normalize_username(config.get_current_user())
         mount = FrozenMount() if is_frozen() else SourceMount()
         if file:
             web_dav_url = PreferenceAPI.get_preference('base.dav.auth.url').value
+            fix_permissions = not is_ssh_default_root_user_enabled() or fix_permissions
             web_dav_url = web_dav_url.replace('auth-sso/', username + '/')
             self.mount_dav(mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
+                           log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
+                           show_archive=show_archive, fix_permissions=fix_permissions)
         else:
             self.mount_storage(mount, config, mountpoint, options, custom_options, bucket, mode,
-                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout)
+                               log_file=log_file, log_level=log_level, threading=threading, timeout=timeout,
+                               show_archive=show_archive)
 
     # Split username by @ to get only first part of the user name,
     # because webdav trail user name as well to get get user folder name
@@ -153,23 +176,30 @@ class Mount(object):
         return username.split('@')[0]
 
     def mount_dav(self, mount, config, mountpoint, options, custom_options, web_dav_url, mode,
-                  log_file=None, log_level=None, threading=False, timeout=1000):
+                  log_file=None, log_level=None, threading=False, timeout=10*MS_IN_SEC, show_archive=False,
+                  fix_permissions=False):
         mount_cmd = mount.get_mount_webdav_cmd(config, mountpoint, options, custom_options, web_dav_url, mode,
-                                               log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+                                               log_level=log_level, threading=threading,
+                                               show_archive=show_archive, fix_permissions=fix_permissions)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, mountpoint, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
     def mount_storage(self, mount, config, mountpoint, options, custom_options, bucket, mode,
-                      log_file=None, log_level=None, threading=False, timeout=1000):
+                      log_file=None, log_level=None, threading=False, timeout=10*MS_IN_SEC, show_archive=False):
         mount_cmd = mount.get_mount_storage_cmd(config, mountpoint, options, custom_options, bucket, mode,
-                                                log_level=log_level, threading=threading)
-        self.run(config, mount_cmd, log_file=log_file, mount_timeout=timeout)
+                                                log_level=log_level, threading=threading, show_archive=show_archive)
+        python_path = mount.get_python_path()
+        self.run(config, mount_cmd, mountpoint, python_path=python_path, log_file=log_file, mount_timeout=timeout)
 
-    def run(self, config, mount_cmd, mount_timeout=5*MS_IN_SEC, log_file=None):
+    def run(self, config, mount_cmd, mountpoint, mount_timeout=10*MS_IN_SEC, python_path=None, log_file=None):
         output_file = log_file if log_file else os.devnull
         with open(output_file, 'w') as output:
             mount_environment = os.environ.copy()
             mount_environment['API'] = config.api
             mount_environment['API_TOKEN'] = config.get_token()
+            mount_environment['CP_PIPE_FUSE_FS_NAME'] = self.PIPE_FUSE_FS_NAME
+            if python_path:
+                mount_environment['PYTHONPATH'] = python_path
             if config.proxy:
                 mount_environment['http_proxy'] = config.proxy
                 mount_environment['https_proxy'] = config.proxy
@@ -178,8 +208,59 @@ class Mount(object):
                                               stdout=output,
                                               stderr=subprocess.STDOUT,
                                               env=mount_environment)
-            time.sleep(mount_timeout / MS_IN_SEC)
-            if mount_aps_proc.poll() is not None:
-                click.echo('Failed to mount storages. Mount command exited with return code: %d'
-                           % mount_aps_proc.returncode, err=True)
-                sys.exit(1)
+            self._wait_mount_point(mount_timeout, mount_aps_proc, mountpoint)
+
+    def _wait_mount_point(self, mount_timeout, mount_aps_proc, mountpoint):
+        pooling_delay = int(os.environ.get('CP_PIPE_FUSE_MOUNT_DELAY', 500))
+        max_init_try = int(mount_timeout / pooling_delay) or 1
+        pooling_delay = float(pooling_delay) / MS_IN_SEC
+        for iteration in range(0, max_init_try):
+            time.sleep(pooling_delay)
+            self._check_mount_proc_is_alive(mount_aps_proc)
+            if os.path.ismount(mountpoint):
+                self._validate_fs_name(mountpoint)
+                return
+        click.echo('Failed to mount storages: timeout expired.', err=True)
+        if mount_aps_proc.poll() is None:
+            mount_aps_proc.terminate()
+        sys.exit(1)
+
+    def _validate_fs_name(self, mountpoint):
+        mountpoint = os.path.realpath(mountpoint)
+        fs_name = self._get_fs_name(mountpoint)
+        if fs_name == self.PIPE_FUSE_FS_NAME:
+            return
+        click.echo('Failed to mount storages: unexpected FS name: {}; expected: {}.', fs_name, self.PIPE_FUSE_FS_NAME,
+                   err=True)
+        sys.exit(1)
+
+    @staticmethod
+    def _get_fs_name_linux(mountpoint):
+        if str(mountpoint).endswith(os.path.sep):
+            mountpoint = mountpoint[:-1]
+        for partition in psutil.disk_partitions(all=True):
+            if mountpoint == partition.mountpoint:
+                return partition.device
+        return None
+
+    @staticmethod
+    def _get_fs_name_windows(mountpoint):
+        if not str(mountpoint).endswith(os.path.sep):
+            mountpoint = mountpoint + os.path.sep
+        volume_info = win32api.GetVolumeInformation(mountpoint)
+        return volume_info[4] if volume_info and len(volume_info) == 5 else None
+
+    def _get_fs_name(self, mountpoint):
+        fs_name = self._get_fs_name_windows(mountpoint) if platform.system() == 'Windows' else \
+            self._get_fs_name_linux(mountpoint)
+        if fs_name:
+            return fs_name
+        click.echo('Failed to mount storages: failed to determine FS name.', err=True)
+        sys.exit(1)
+
+    @staticmethod
+    def _check_mount_proc_is_alive(mount_aps_proc):
+        if mount_aps_proc.poll() is not None:
+            click.echo('Failed to mount storages. Mount command exited with return code: %d'
+                       % mount_aps_proc.returncode, err=True)
+            sys.exit(1)

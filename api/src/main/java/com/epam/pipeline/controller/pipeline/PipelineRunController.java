@@ -30,6 +30,9 @@ import com.epam.pipeline.controller.vo.RunCommitVO;
 import com.epam.pipeline.controller.vo.RunStatusVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationWithEntitiesVO;
+import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
+import com.epam.pipeline.controller.vo.run.OffsetPagingOrder;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.entity.cluster.PipelineRunPrice;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
@@ -42,6 +45,8 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
+import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
@@ -55,7 +60,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,10 +68,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -138,8 +140,11 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<RunLog>> loadLogs(@PathVariable(value = RUN_ID) Long runId) {
-        return Result.success(runApiService.loadAllLogsByRunId(runId));
+    public Result<List<RunLog>> loadLogs(@PathVariable(value = RUN_ID) Long runId,
+                                         @RequestParam(required = false) Integer offset,
+                                         @RequestParam(required = false) Integer limit,
+                                         @RequestParam(required = false) OffsetPagingOrder order) {
+        return Result.success(runApiService.loadLogsByRunId(runId, new OffsetPagingFilter(offset, limit, order)));
     }
 
     @GetMapping(value = "/run/{runId}/price")
@@ -163,21 +168,9 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public void downloadLogs(@PathVariable(value = RUN_ID) Long runId, HttpServletResponse response)
-            throws IOException {
-        PipelineRun run = runApiService.loadPipelineRun(runId);
-        byte[] logs = runApiService.downloadLogs(runId).getBytes(Charset.defaultCharset());
-        response.setContentType(MediaType.TEXT_PLAIN_VALUE);
-        String pipelineName = !StringUtils.isEmpty(run.getPipelineName())
-                ? run.getPipelineName() : PipelineRun.DEFAULT_PIPELINE_NAME;
-        String pipelineVersion = !StringUtils.isEmpty(run.getVersion()) ? run.getVersion() : "";
-        response.setHeader("Content-Disposition", String.format("attachment;filename=%s_%s_%d.log",
-                        pipelineName, pipelineVersion, run.getId()));
-        response.setContentLengthLong(logs.length);
-        try (ServletOutputStream stream = response.getOutputStream()) {
-            stream.write(logs);
-            stream.flush();
-        }
+    public void exportLogs(@PathVariable(value = RUN_ID) Long runId,
+                           HttpServletResponse response) throws IOException {
+        writeToResponse(response, runApiService.exportLogs(runId));
     }
 
     @GetMapping(value = "/run/{runId}/tasks")
@@ -199,9 +192,13 @@ public class PipelineRunController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<RunLog>> loadTaskLogs(@PathVariable(value = RUN_ID) Long runId,
-            @RequestParam(value = "taskName") String taskName,
-            @RequestParam(value = "parameters", required = false) String parameters) {
-        return Result.success(runApiService.loadAllLogsForTask(runId, taskName, parameters));
+                                             @RequestParam(value = "taskName") String taskName,
+                                             @RequestParam(value = "parameters", required = false) String parameters,
+                                             @RequestParam(required = false) Integer offset,
+                                             @RequestParam(required = false) Integer limit,
+                                             @RequestParam(required = false) OffsetPagingOrder order) {
+        return Result.success(runApiService.loadLogsForTask(runId, taskName, parameters,
+                new OffsetPagingFilter(offset, limit, order)));
     }
 
     @PostMapping(value = "/run/{runId}/status")
@@ -244,6 +241,16 @@ public class PipelineRunController extends AbstractRestController {
         );
     }
 
+    @GetMapping(value = "/run/{runId}/layers")
+    @ApiOperation(
+        value = "Gets run docker container layers count.",
+        notes = "Gets run docker container layers count.",
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Long> getContainerLayersCount(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.getContainerLayersCount(runId));
+    }
+
     @GetMapping(value = "/run/{runId}/commit/check")
     @ApiOperation(
             value = "Checks if free disk space is available.",
@@ -283,9 +290,19 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Updates pipeline run pretty url.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun> updateRunServiceUrl(@PathVariable(value = RUN_ID) Long runId,
-                                                   @RequestParam String url) {
+    public Result<PipelineRun> updateRunPrettyUrl(@PathVariable(value = RUN_ID) Long runId,
+                                                  @RequestParam String url) {
         return Result.success(runApiService.updatePrettyUrl(runId, url));
+    }
+
+    @GetMapping(value = "/run/prettyUrl")
+    @ApiOperation(
+            value = "Finds pipeline run by pretty url.",
+            notes = "Finds pipeline run by pretty url.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<PipelineRun> getRunByPrettyUrl(@RequestParam String url) {
+        return Result.success(runApiService.getRunByPrettyUrl(url));
     }
 
     @GetMapping(value = "/run/{runId}")
@@ -554,5 +571,25 @@ public class PipelineRunController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineRun>> loadRunsByPoolId(@PathVariable("id") final Long poolId) {
         return Result.success(runApiService.loadRunsByPoolId(poolId));
+    }
+
+    @GetMapping("/run/parents/{runId}")
+    @ApiOperation(
+            value = "Loads a compact representation of child runs of a cluster by parent run ID",
+            notes = "Loads a compact representation of child runs of a cluster by parent run ID",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<RunInfo>> loadRunsByParentId(@PathVariable(RUN_ID) final Long parentId) {
+        return Result.success(runApiService.loadRunsByParentId(parentId));
+    }
+
+    @PostMapping("/runs/charts")
+    @ApiOperation(
+            value = "Loads active runs charts info",
+            notes = "Loads active runs charts info",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<RunChartInfo> loadActiveRunsCharts(@RequestBody final RunChartFilterVO filter) {
+        return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
 }

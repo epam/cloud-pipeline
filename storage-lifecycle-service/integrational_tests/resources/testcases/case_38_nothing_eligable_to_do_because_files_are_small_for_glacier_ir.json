@@ -1,0 +1,61 @@
+{
+  "cloud": {
+    "storages": [
+      {
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "files": [
+          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD", "size": 127},
+          {"key": "data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD", "size": 127},
+          {"key": "data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD", "size": 127}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
+        "id": 1,
+        "storageProvider": "S3",
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
+          {
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data/",
+            "objectGlob": "*.txt",
+            "transitionMethod": "EARLIEST_FILE",
+            "transitionCriterion": {
+              "type": "DEFAULT"
+            },
+            "transitions": [
+              {
+                "transitionAfterDays": 5,
+                "storageClass": "GLACIER_IR"
+              }
+            ]
+          }
+        ],
+        "executions": []
+      }
+    ]
+  },
+  "result": {
+    "platform": {
+      "storages": []
+    },
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "storageProvider": "S3",
+          "files": [
+            {"key": "data/file1.txt", "tags": {}},
+            {"key": "data/file2.txt", "tags": {}},
+            {"key": "data/file3.txt", "tags": {}}
+          ]
+        }
+      ]
+    }
+  }
+}

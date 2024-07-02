@@ -326,11 +326,18 @@
   overflow: hidden;
 }
 
+.ome-tiff-content-preview {
+  max-width: 100%;
+  height: calc(100vh - 150px);
+  overflow: hidden;
+}
+
 .vsi-sa-view.read-only img[class~="saEditToggle"] {
   display: none !important;
 }
 
-.wsi-page .vsi-content-preview {
+.wsi-page .vsi-content-preview,
+.wsi-page .ome-tiff-content-preview {
   width: 100vw;
 }
 
@@ -344,7 +351,8 @@
   height: 100vh;
 }
 
-.vsi-content-preview.fullscreen {
+.vsi-content-preview.fullscreen,
+.ome-tiff-content-preview.fullscreen {
   width: 100vw;
   height: 100vh;
   position: fixed;
@@ -353,10 +361,18 @@
   bottom: 0;
   top: 0;
   z-index: 1001;
+}
+
+.vsi-content-preview.fullscreen {
   padding: 20px;
 }
 
-.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button {
+.ome-tiff-content-preview.fullscreen {
+  padding: 0;
+}
+
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button,
+.ome-tiff-content-preview.fullscreen .ome-tiff-preview-fullscreen-button {
   position: absolute;
   top: 5px;
   right: 5px;
@@ -365,7 +381,8 @@
   cursor: pointer;
 }
 
-.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button:hover {
+.vsi-content-preview.fullscreen .vsi-preview-fullscreen-button:hover,
+.ome-tiff-content-preview.fullscreen .ome-tiff-preview-fullscreen-button:hover {
   color: #333;
 }
 

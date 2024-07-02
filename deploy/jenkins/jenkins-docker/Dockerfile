@@ -23,7 +23,8 @@ RUN apt-get update && \
                         curl \
                         apt-transport-https \
                         lsb-release \
-                        gpg
+                        gpg \
+                        wget
 
 RUN wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq && \
     chmod +x /usr/bin/jq
@@ -47,4 +48,4 @@ ADD checkout_url.sh /usr/local/bin/checkout_url
 RUN chmod +x /usr/local/bin/checkout_url
 
 COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
-RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt

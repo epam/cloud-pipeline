@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,17 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.ElementsCollection;
+import static com.codeborne.selenide.Selectors.withText;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxDropdown;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
@@ -75,43 +79,78 @@ public class SystemManagementAO extends SettingsPageAO {
 
     public class SystemLogsAO implements AccessObject<SystemLogsAO> {
 
-        private final ElementsCollection containerLogs = $(byClassName("ystem-logs__container"))
-                .$(byClassName("ant-table-tbody"))
-                .should(exist)
-                .findAll(byClassName("ant-table-row"));
-
-        public SelenideElement getInfoRow(final String message, final String user, final String type) {
-            return containerLogs.stream()
-                    .filter(r -> r.has(matchText(message)) && r.has(text(type)))
-                    .findFirst()
-                    .orElseThrow(() -> {
-                        String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
-                        screenshot(screenshotName);
-                        return new NoSuchElementException(format("Supposed log info '%s' is not found.",
-                                format("%s message for %s with %s type. Screenshot: %s", message, user, type,
-                                        screenshotName)));
-                    });
+        private ElementsCollection containerLogs() {
+            return $(byClassName("ystem-logs__container"))
+                    .$(byClassName("ant-table-tbody"))
+                    .should(exist)
+                    .findAll(byClassName("ant-table-row"));
         }
 
-        public SystemLogsAO filterByUser(final String user) {
-            selectValue(combobox("User"), user);
+        public SelenideElement getInfoRow(final String message, final String user, final String type) {
+            int attempt = 0;
+            int maxAttempts = 10;
+            List<String> userFilters = getMultiSelectFilterValues("User");
+            List<String> serviceFilters = getMultiSelectFilterValues("Service");
+            List<String> typeFilters = getMultiSelectFilterValues("Type");
+            String messageFilter = getMessageFilter();
+            while (containerLogs().stream().filter(r ->
+                    r.has(matchText(message)) && r.has(text(type))).count() == 0
+                    && attempt < maxAttempts) {
+                sleep(3, SECONDS);
+                refresh();
+                attempt ++;
+                setIncludeServiceAccountEventsOption();
+                filterBySelectedValues("User", userFilters);
+                filterBySelectedValues("Service", serviceFilters);
+                filterBySelectedValues("Type", typeFilters);
+                filterByMessage(messageFilter);
+            }
+            return containerLogs().stream()
+                .filter(r -> r.has(matchText(message)) && r.has(text(type)))
+                .findFirst()
+                .orElseThrow(() -> {
+                    String screenshotName = format("SystemLogsFor%s_%s", user, Utils.randomSuffix());
+                    screenshot(screenshotName);
+                    return new NoSuchElementException(format("Supposed log info '%s' is not found.",
+                            format("%s message for %s with %s type. Screenshot: %s", message, user, type,
+                                    screenshotName)));
+                });
+        }
+
+        public List<String> getMultiSelectFilterValues(String filterName) {
+            return $(filterBy(filterName))
+                    .$$(By.className("ant-select-selection__choice")).texts();
+        }
+
+        public String getMessageFilter() {
+            return $(filterBy("Message")).$(byXpath("./input"))
+                    .getAttribute("value");
+        }
+
+        public SystemLogsAO filterByField(final String fieldName, final String value) {
+            selectValue(combobox(fieldName), value);
+            click(byText(fieldName));
+            return this;
+        }
+
+        public SystemLogsAO filterBySelectedValues(final String filterName, final List<String> list) {
+            if (list.isEmpty()) {
+                return this;
+            }
+            context().find(combobox(filterName)).shouldBe(visible).click();
+            list.stream()
+                    .map(value -> value.contains(" ") ? value.substring(0, value.indexOf(" ")) : value)
+                    .forEach(value -> $(comboboxDropdown()).find(withText(value)).shouldBe(visible).click());
+            click(byText(filterName));
             return this;
         }
 
         public SystemLogsAO filterByMessage(final String message) {
+            if (StringUtils.isBlank(message)) {
+                return this;
+            }
             setValue(inputOf(filterBy("Message")), message);
             pressEnter();
-            return this;
-        }
-
-        public SystemLogsAO filterByService(final String service) {
-            selectValue(combobox("Service"), service);
-            click(byText("Service"));
-            return this;
-        }
-
-        public SystemLogsAO clearUserFilters() {
-            clearFiltersBy("User");
             return this;
         }
 
@@ -149,20 +188,19 @@ public class SystemManagementAO extends SettingsPageAO {
         }
 
         private By filterBy(final String name) {
-            return byXpath(format("(//*[contains(@class, '%s') and .//*[contains(text(), '%s')]])[last()]",
-                    "ilters__filter", name
-            ));
+            return byXpath(format("(//*[contains(@class, 'ilters__filter') and .//*[text()='%s']])[last()]", name));
         }
 
         private String getMessage(final SelenideElement element) {
             return element.findAll("td").get(2).getText();
         }
 
-        public void clearFiltersBy(final String name) {
+        public SystemLogsAO clearFiltersBy(final String name) {
             actions().moveToElement($(combobox(name))).build().perform();
             if ($(filterBy(name)).find(byClassName("ant-select-selection__clear")).isDisplayed()) {
                 $(filterBy(name)).find(byClassName("ant-select-selection__clear")).shouldBe(visible).click();
             }
+            return this;
         }
 
         public SystemLogsAO setIncludeServiceAccountEventsOption() {

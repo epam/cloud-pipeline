@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import {Period as ReportPeriod} from '../../../special/periods';
+
 const periods = {
   month: 'MONTH',
   quarter: 'QUARTER',
@@ -26,5 +28,22 @@ const periodNames = {
   [periods.year]: 'Year'
 };
 
-export {periodNames};
+const periodNamesAdjective = {
+  [periods.month]: 'Monthly',
+  [periods.quarter]: 'Quarterly',
+  [periods.year]: 'Annual'
+};
+
+export function getQuotaPeriodForReportPeriod (reportPeriod) {
+  switch (reportPeriod) {
+    case ReportPeriod.quarter:
+      return periods.quarter;
+    case ReportPeriod.year:
+      return periods.year;
+    default:
+      return periods.month;
+  }
+}
+
+export {periodNames, periodNamesAdjective};
 export default periods;

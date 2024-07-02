@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class StorageRulesTest extends AbstractAutoRemovingPipelineRunningTest {
                 .editFile(code -> Utils.readResourceFully(LAUNCH_SCRIPT))
                 .saveAndCommitWithMessage("test: Prepare pipeline script")
                 .sleep(2, SECONDS)
+                .waitUntilRenameButtonAppears(getPipelineName().toLowerCase() + ".sh")
                 .clickOnFile("config.json")
                 .sleep(5, SECONDS)
                 .editFile(transferringJsonToObject(profiles -> {

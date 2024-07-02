@@ -17,9 +17,10 @@
 @application-background-color: #ececec;
 @application-dark-background-color: #000;
 @application-color: rgba(0, 0, 0, 0.65);
+@application-color-tooltip: #ececec;
 @application-color-faded: fadeout(@application-color, 20%);
 @application-color-disabled: fadeout(@application-color, 40%);
-@application-color-accent: fadein(@application-color, 20%);
+@application-color-accent: fadein(@application-color, 20%);  ;
 
 @primary-color: #108ee9;
 @primary-hover-color: #49a9ee;
@@ -48,6 +49,10 @@
 @color-pink-light: #fef0ef;
 @color-blue-dimmed: #458;
 @color-grey: #777;
+@color-grey-semi-transparent: fadeout(@color-grey, 90%);
+
+@color-green-soft: #7dccc0;
+@color-blue-soft: #4db4d9;
 
 @spinner: @primary-color;
 
@@ -103,6 +108,8 @@
 @gcp-icon-contrast: url('@{icons-root}/providers/gcp-light.svg');
 @azure-icon: url('@{icons-root}/providers/azure.svg');
 @azure-icon-contrast: url('@{icons-root}/providers/azure.svg');
+@local-icon: url('@{icons-root}/providers/local.svg');
+@local-icon-contrast: url('@{icons-root}/providers/local-ligh.svg');
 
 @eu-region-icon: url('@{icons-root}/regions/eu.svg');
 @us-region-icon: url('@{icons-root}/regions/us.svg');
@@ -159,7 +166,8 @@
 @card-background-color-not-faded: fade(@card-background-color, 100%);
 
 @search-highlight-text-color: @application-color;
-@search-highlight-text-background-color: yellow;
+@search-highlight-text-background-color: #ffff00;
+@search-highlight-text-inactive-background-color: fadeout(#ffff00, 50%);
 
 @background-image: none;
 @navigation-background-image: none;
@@ -177,3 +185,11 @@
 @vs-color-change-background: rgba(252, 230, 162, 0.4);
 @vs-color-change-border: #f5e3aa;
 @vs-color-change-applied-background: @vs-color-change-background;
+
+@application-console-background-color: #222222;
+@application-console-color: #ececec;
+@application-console-color-details: #aaaaaa;
+
+@application-tooltip-background-color: #222222;
+@application-tooltip-border-color: #333333;
+@application-tooltip-color: #ececec;

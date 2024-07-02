@@ -73,17 +73,41 @@ commit_file() {
     pipe_exec "docker commit --pause=false ${CONTAINER_ID} $image_name > /dev/null" "$TASK_NAME"
 }
 
+configure_pip() {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
 install_pip() {
     pip --version
     if [[ "$?" -ne 0 ]]; then
         echo "Installing pip"
-        curl "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py" -o "get-pip.py"
+        curl "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" -o "get-pip.py"
         python get-pip.py
     fi
+    configure_pip
 }
 
 install_pipeline_code() {
-    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
     echo "Installing pipeline packages and code"
     pip install $CP_PIP_EXTRA_ARGS -I -q setuptools==44.1.1
     mkdir $COMMON_REPO_DIR

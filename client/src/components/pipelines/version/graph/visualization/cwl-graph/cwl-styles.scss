@@ -1,0 +1,51 @@
+svg.cwl-workflow .label {
+  fill: #3e3e3e;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node .outer {
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node .inner {
+  stroke: rgb(154, 154, 154);
+  stroke-width: 2px;
+}
+
+svg.cwl-workflow .node.input .outer {
+  stroke: #35763fd4;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node.output .inner {
+  fill: #c3c3c3;
+  stroke: #35763fd4;
+  stroke-width: 4px;
+}
+
+svg.cwl-workflow .node.step .inner {
+  fill: #35763fd4;
+  stroke-width: 0px;
+}
+
+svg.cwl-workflow .node:hover .port .label{
+  fill: rgb(248, 136, 16);
+}
+
+svg.cwl-workflow .node .port {
+  fill: rgb(248, 136, 16);
+}
+
+svg.cwl-workflow .edge:hover .inner {
+  stroke: #35763fd4;
+}
+
+svg.cwl-workflow .edge .inner {
+  stroke-width: 2px;
+  stroke: rgb(154, 154, 154);
+}
+
+svg.cwl-workflow .edge .outer {
+  stroke-width: 5px;
+  stroke: white;
+}

@@ -33,7 +33,8 @@ public class AzurePriceListLoaderTest {
 
     @Test
     public void azureNetAppPriceListLoaderTest() {
-        final AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(null, null, null, "Standard");
+        final AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(
+                null, null, null, "Standard");
         final Float azureApiPrice = 2f;
         final AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
                 .unit(THOUSAND + " GiB/Hour")
@@ -48,7 +49,8 @@ public class AzurePriceListLoaderTest {
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() * AbstractAzureStoragePriceListLoader.HRS_PER_MONTH
                 / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION)
+                        .getPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS).get(0).getPriceCentsPerGb()
         );
     }
 
@@ -70,7 +72,8 @@ public class AzurePriceListLoaderTest {
                 ));
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION)
+                        .getPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS).get(0).getPriceCentsPerGb()
         );
     }
 
@@ -93,7 +96,8 @@ public class AzurePriceListLoaderTest {
                 ));
         Assert.assertEquals(BigDecimal.valueOf(
                 azureApiPrice.doubleValue() / THOUSAND * StoragePriceListLoader.CENTS_IN_DOLLAR),
-                storagePricing.get(TEST_REGION).getPrices().get(0).getPriceCentsPerGb()
+                storagePricing.get(TEST_REGION)
+                        .getPrices(StoragePriceListLoader.DEFAULT_STORAGE_CLASS).get(0).getPriceCentsPerGb()
         );
     }
 

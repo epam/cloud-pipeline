@@ -1,0 +1,19 @@
+setup.template.name: "security_log_template"
+setup.template.pattern: "security_log*"
+setup.tempalte.enabled: false
+output.elasticsearch:
+  hosts: ["http://${CP_SEARCH_ELK_INTERNAL_HOST}:${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}"]
+  pipeline: "tiny_proxy"
+  index: "security_log"
+filebeat:
+  inputs:
+    - paths:
+        - $CP_TP_NGINX_SMTP_AUTH_SRV_LOG_FILE
+      fields:
+        service: tiny-proxy
+        type: smtp
+      include_lines: ['AUTH']
+
+processors:
+  - drop_fields:
+      fields: ["log", "offset", "beat", "agent", "log.offset", "esc" ]

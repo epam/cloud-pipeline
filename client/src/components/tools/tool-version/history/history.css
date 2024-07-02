@@ -49,3 +49,25 @@
 .code pre {
   white-space: pre-line;
 }
+
+.generate-dockerfile-footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.generate-dockerfile-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.generate-dockerfile-row .generate-dockerfile-title {
+  margin-right: 5px;
+}
+
+.generate-dockerfile-row .generate-dockerfile-input {
+  flex: 1;
+}

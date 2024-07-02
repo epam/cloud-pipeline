@@ -14,4 +14,5 @@ public class BillingExportRequest {
     Map<String, List<String>> filters;
     List<BillingExportType> types;
     BillingDiscount discount;
+    BillingExportProperties properties;
 }

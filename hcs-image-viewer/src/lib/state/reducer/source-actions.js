@@ -24,6 +24,9 @@ export function setSourceInitializing(state) {
     sourceError: undefined,
     sourcePending: true,
     imagePending: false,
+    overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -44,6 +47,9 @@ export function setSourceError(state, action) {
     sourceError: error,
     sourcePending: false,
     sourceCallback: undefined,
+    overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -67,6 +73,9 @@ export function setSource(state, action) {
     sourceError: undefined,
     sourcePending: false,
     sourceCallback: undefined,
+    overlayImages: [],
+    annotations: [],
+    selectedAnnotation: undefined,
   };
 }
 
@@ -79,8 +88,11 @@ export function setImage(state, action) {
     imageTimePosition = 0,
     imageZPosition = 0,
     mesh,
+    overlayImages = [],
+    annotations = [],
+    selectedAnnotation = undefined,
   } = action;
-  const { metadata = [] } = state;
+  const { metadata = [], imageIndex: currentImageIndex } = state;
   let metadataItem;
   if (index !== undefined && index !== null) {
     metadataItem = metadata[index];
@@ -93,15 +105,22 @@ export function setImage(state, action) {
     const regExp = new RegExp(`^\\s*well\\s+${well}\\s*,\\s*field\\s+${field}\\s*$`, 'i');
     metadataItem = metadata.find((o) => regExp.test(o.Name || o.name));
   }
+  if (!metadataItem && metadata.length === 1) {
+    // eslint-disable-next-line prefer-destructuring
+    metadataItem = metadata[0];
+  }
   if (metadataItem) {
     const imageIndex = metadata.indexOf(metadataItem);
     return {
       ...state,
       imageIndex,
-      imagePending: true,
+      imagePending: currentImageIndex !== imageIndex,
       imageTimePosition,
       imageZPosition,
       mesh,
+      overlayImages,
+      annotations,
+      selectedAnnotation,
     };
   }
   return state;
@@ -112,9 +131,33 @@ export function setMesh(state, action) {
   return { ...state, mesh };
 }
 
-export function setImageViewportLoaded(state) {
+export function setOverlayImages(state, action) {
+  const { overlayImages = [] } = action;
+  return { ...state, overlayImages };
+}
+
+export function setAnnotations(state, action) {
+  const { annotations = [] } = action;
+  const { selectedAnnotation } = state;
+  const selected = annotations.find((annotation) => annotation.identifier === selectedAnnotation);
   return {
     ...state,
-    imagePending: false,
+    annotations,
+    selectedAnnotation: selected ? selected.identifier : undefined,
   };
+}
+
+export function setSelectedAnnotation(state, action) {
+  const { selectedAnnotation } = action;
+  return { ...state, selectedAnnotation };
+}
+
+export function setImageViewportLoaded(state) {
+  if (state.imagePending) {
+    return {
+      ...state,
+      imagePending: false,
+    };
+  }
+  return state;
 }

@@ -32,6 +32,9 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzurePolicy;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
+import com.epam.pipeline.entity.datastorage.access.DataAccessType;
+import com.epam.pipeline.entity.datastorage.access.DataAccessEvent;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.FlatIterator;
 import com.epam.pipeline.manager.datastorage.providers.azure.AbstractListingIterator.HierarchyIterator;
@@ -106,17 +109,20 @@ public class AzureStorageHelper {
     private static final Duration FALLBACK_EXPIRATION_DURATION = Duration.ofDays(1);
     static final int MAX_PAGE_SIZE = 5000;
 
-    private final AzureRegion azureRegion;
-    private final AzureRegionCredentials azureRegionCredentials;
+    private final AzureRegion region;
+    private final AzureRegionCredentials credentials;
     private final MessageHelper messageHelper;
     private final DateFormat dateFormat;
     private final HttpPipelineLogger httpLogger;
+    private final StorageEventCollector events;
 
-    public AzureStorageHelper(final AzureRegion azureRegion,
-                              final AzureRegionCredentials azureRegionCredentials,
+    public AzureStorageHelper(final AzureRegion region,
+                              final AzureRegionCredentials credentials,
+                              final StorageEventCollector events,
                               final MessageHelper messageHelper) {
-        this.azureRegion = azureRegion;
-        this.azureRegionCredentials = azureRegionCredentials;
+        this.region = region;
+        this.credentials = credentials;
+        this.events = events;
         this.messageHelper = messageHelper;
         final TimeZone tz = TimeZone.getTimeZone("UTC");
         this.dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -183,6 +189,7 @@ public class AzureStorageHelper {
     public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
                                       final String owner) {
         validatePath(path);
+        events.put(new DataAccessEvent(path, DataAccessType.WRITE, dataStorage));
         unwrap(getBlobUrl(dataStorage, path)
                 .upload(Flowable.just(ByteBuffer.wrap(contents)), contents.length, null,
                         StringUtils.isBlank(owner) ? null
@@ -290,6 +297,7 @@ public class AzureStorageHelper {
         validateBlob(dataStorage, path, true);
         final Long fileSize = getDataStorageFile(dataStorage, path).getSize();
         final BlobRange blobRange = new BlobRange().withCount(maxDownloadSize);
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
         return unwrap(getBlobUrl(dataStorage, path).download(blobRange, null, false, null)
                         .flatMap(response -> FlowableUtil.collectBytesInArray(response.body(null))
                                 .map(bytes -> {
@@ -306,6 +314,7 @@ public class AzureStorageHelper {
     public DataStorageStreamingContent getStream(final AzureBlobStorage dataStorage, final String path) {
         //TODO: can be reason of error
         validateBlob(dataStorage, path, true);
+        events.put(new DataAccessEvent(path, DataAccessType.READ, dataStorage));
         return unwrap(getBlobUrl(dataStorage, path).download()
                         .map(r -> r.body(null))
                         .flatMap(FlowableUtil::collectBytesInArray)
@@ -380,7 +389,7 @@ public class AzureStorageHelper {
     }
 
     private String blobUrl(final String resourcePath, final String sasToken) {
-        return String.format(BLOB_URL_FORMAT + "/%s%s", azureRegion.getStorageAccount(), resourcePath, sasToken);
+        return String.format(BLOB_URL_FORMAT + "/%s%s", region.getStorageAccount(), resourcePath, sasToken);
     }
 
     private DataStorageDownloadFileUrl responseWith(final String blobUrl) {
@@ -391,7 +400,7 @@ public class AzureStorageHelper {
     }
 
     public void addIPRangeToSASValue(final ServiceSASSignatureValues values) {
-        final AzurePolicy policy = azureRegion.getAzurePolicy();
+        final AzurePolicy policy = region.getAzurePolicy();
         if (policy != null &&
                 (StringUtils.isNotBlank(policy.getIpMin()) || StringUtils.isNotBlank(policy.getIpMax()))) {
             if (StringUtils.isNotBlank(policy.getIpMin()) && StringUtils.isNotBlank(policy.getIpMax())) {
@@ -444,16 +453,17 @@ public class AzureStorageHelper {
     }
 
     private void deleteBlob(final AzureBlobStorage dataStorage, final String path) {
+        events.put(new DataAccessEvent(path, DataAccessType.DELETE, dataStorage));
         unwrap(getBlobUrl(dataStorage, path).delete());
     }
 
     public SharedKeyCredentials getStorageCredential() {
         try {
-            return new SharedKeyCredentials(azureRegion.getStorageAccount(),
-                    azureRegionCredentials.getStorageAccountKey());
+            return new SharedKeyCredentials(region.getStorageAccount(),
+                    credentials.getStorageAccountKey());
         } catch (InvalidKeyException e) {
             throw new DataStorageException(messageHelper.getMessage(
-                    MessageConstants.ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY, azureRegion.getStorageAccount()), e);
+                    MessageConstants.ERROR_DATASTORAGE_AZURE_INVALID_ACCOUNT_KEY, region.getStorageAccount()), e);
         }
     }
 
@@ -461,7 +471,7 @@ public class AzureStorageHelper {
         final SharedKeyCredentials credential = getStorageCredential();
 
         final ServiceURL serviceURL = new ServiceURL(
-                url(String.format(BLOB_URL_FORMAT, azureRegion.getStorageAccount())),
+                url(String.format(BLOB_URL_FORMAT, region.getStorageAccount())),
                 StorageURL.createPipeline(credential, new PipelineOptions()
                         .withLogger(httpLogger)));
         return serviceURL.createContainerURL(storage.getPath());
@@ -624,7 +634,9 @@ public class AzureStorageHelper {
     }
 
     private void copyBlob(final AzureBlobStorage storage, final String sourcePath, final String destinationPath) {
-        final String sourceBlobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s", azureRegion.getStorageAccount(),
+        events.put(new DataAccessEvent(sourcePath, DataAccessType.READ, storage),
+                new DataAccessEvent(destinationPath, DataAccessType.WRITE, storage));
+        final String sourceBlobUrl = String.format(BLOB_URL_FORMAT + "/%s/%s", region.getStorageAccount(),
                 storage.getPath(), sourcePath);
         unwrap(getBlobUrl(storage, destinationPath).toPageBlobURL().startCopyFromURL(url(sourceBlobUrl)));
     }

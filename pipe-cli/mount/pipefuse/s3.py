@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,9 +20,11 @@ from datetime import datetime
 
 from boto3 import Session
 from botocore.config import Config
-from botocore.credentials import RefreshableCredentials
+from botocore.credentials import RefreshableCredentials, Credentials
 from botocore.session import get_session
 from dateutil.tz import tzlocal
+import requests
+requests.urllib3.disable_warnings()
 
 from pipefuse import fuseutils
 from pipefuse.fsclient import File
@@ -120,11 +122,12 @@ class S3MultipartUpload(MultipartUpload):
 
 class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
-    def __init__(self, bucket, pipe, chunk_size, storage_path):
+    def __init__(self, bucket, bucket_object, pipe, chunk_size):
         """
         AWS S3 storage low level file system client operations.
 
         :param bucket: Name of the AWS S3 bucket.
+        :param bucket_object: AWS S3 bucket object.
         :param pipe: Cloud Pipeline API client.
         :param chunk_size: Multipart upload chunk size.
         """
@@ -132,21 +135,22 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         self._delimiter = '/'
         self._is_read_only = False
         self.bucket = bucket
-        self._s3 = self._generate_s3_client(storage_path, pipe)
+        self.bucket_object = bucket_object
+        self._s3 = self._generate_s3_client(pipe)
         self._chunk_size = chunk_size
         self._min_chunk = 1
         self._max_chunk = 10000
         self._min_part_size = 5 * MB
         self._max_part_size = 5 * GB
 
-    def _generate_s3_client(self, bucket, pipe):
-        bucket_object = pipe.get_storage(bucket)
-        session = self._generate_aws_session(bucket, pipe, bucket_object)
-        return session.client('s3', config=Config(), region_name=bucket_object.region_name)
+    def _generate_s3_client(self, pipe):
+        session = self._generate_aws_session(pipe, self.bucket_object)
+        custom_endpoint = self.bucket_object.endpoint
+        return session.client('s3', config=Config(), region_name=self.bucket_object.region_name,
+                              endpoint_url=custom_endpoint, verify=False if custom_endpoint else None)
 
-    def _generate_aws_session(self, bucket, pipe, bucket_object):
+    def _generate_aws_session(self, pipe, bucket_object):
         def refresh():
-            logging.info('Refreshing temporary credentials for data storage %s' % bucket)
             credentials = pipe.get_temporary_credentials(bucket_object)
             return dict(
                 access_key=credentials.access_key_id,
@@ -159,10 +163,13 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
 
         self._is_read_only = not fresh_metadata['write_allowed']
 
-        session_credentials = RefreshableCredentials.create_from_metadata(
-            metadata=fresh_metadata,
-            refresh_using=refresh,
-            method='sts-assume-role')
+        if 'token' not in fresh_metadata or not fresh_metadata['token']:
+            session_credentials = Credentials(fresh_metadata['access_key'], fresh_metadata['secret_key'])
+        else:
+            session_credentials = RefreshableCredentials.create_from_metadata(
+                metadata=fresh_metadata,
+                refresh_using=refresh,
+                method='sts-assume-role')
 
         s = get_session()
         s._credentials = session_credentials
@@ -213,7 +220,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     mtime=time.mktime(datetime.now(tz=tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
-                    is_dir=True)
+                    is_dir=True,
+                    storage_class=None)
 
     def get_file_name(self, file, prefix, recursive):
         return file['Key'] if recursive else fuseutils.get_item_name(file['Key'], prefix=prefix)
@@ -224,7 +232,8 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                     mtime=time.mktime(file['LastModified'].astimezone(tzlocal()).timetuple()),
                     ctime=None,
                     contenttype='',
-                    is_dir=False)
+                    is_dir=False,
+                    storage_class=file['StorageClass'])
 
     def upload(self, buf, path):
         with io.BytesIO(bytearray(buf)) as body:
@@ -292,3 +301,36 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
         mpu = SplittingMultipartCopyUpload(mpu, min_part_size=self._min_part_size, max_part_size=self._max_part_size)
         mpu = TruncatingMultipartCopyUpload(mpu, length=length, min_part_number=self._min_chunk)
         return mpu
+
+    def download_xattrs(self, path):
+        logging.info('Downloading tags for %s...' % path)
+        try:
+            response = self._s3.get_object_tagging(Bucket=self.bucket, Key=path) or {}
+            return {tag.get('Key'): tag.get('Value') for tag in response.get('TagSet', [])}
+        except Exception:
+            logging.debug('No tags have been found for %s' % path, exc_info=True)
+            return {}
+
+    def upload_xattrs(self, path, xattrs):
+        logging.info('Uploading tags for %s...' % path)
+        self._s3.put_object_tagging(Bucket=self.bucket, Key=path, Tagging={
+            'TagSet': [{'Key': name, 'Value': value} for name, value in xattrs.items()]
+        })
+
+    def upload_xattr(self, path, name, value):
+        logging.info('Uploading tag %s for %s...' % (name, path))
+        tags = self.download_xattrs(path)
+        tags[name] = value
+        self.upload_xattrs(path, tags)
+
+    def remove_xattrs(self, path):
+        logging.info('Removing tags for %s...' % path)
+        self._s3.delete_object_tagging(Bucket=self.bucket, Key=path)
+
+    def remove_xattr(self, path, name):
+        logging.info('Removing tag %s for %s...' % (name, path))
+        tags = self.download_xattrs(path)
+        if name in tags:
+            del tags[name]
+        self.remove_xattrs(path)
+        self.upload_xattrs(path, tags)

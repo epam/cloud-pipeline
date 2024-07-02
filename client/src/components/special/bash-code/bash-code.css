@@ -29,6 +29,10 @@
   white-space: pre-wrap;
 }
 
+.sh-code.nowrap pre {
+  white-space: nowrap;
+}
+
 .sh-code p {
   margin: 5px 0;
 }

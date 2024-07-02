@@ -76,14 +76,19 @@
   outline: none;
 }
 
-.cp-runs-advanced-filter-input {
+.cp-runs-advanced-filter-input .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @input-border;
 }
 
-.cp-runs-advanced-filter-input-error {
+.cp-runs-advanced-filter-input-error .CodeMirror-wrap {
   background-color: @input-background;
   border: 1px solid @color-red;
+}
+
+.cp-runs-advanced-filter-input-error .CodeMirror-line span,
+.cp-runs-advanced-filter-input .CodeMirror-line span {
+  color: @application-color !important;
 }
 
 .cp-run-instance-tag {
@@ -91,8 +96,22 @@
   border: 1px solid @card-border-color;
 }
 
-.cp-run-nested-run-link {
+.cp-run-nested-run-link,
+.cp-run-nested-run-link:active,
+.cp-run-nested-run-link:focus,
+.cp-run-nested-run-link:visited {
   color: @application-color-accent;
+}
+
+.ant-tooltip-inner .cp-run-nested-run-link,
+.ant-tooltip-inner .cp-run-nested-run-link:active,
+.ant-tooltip-inner .cp-run-nested-run-link:focus,
+.ant-tooltip-inner .cp-run-nested-run-link:visited {
+  color: @application-color-tooltip;
+}
+
+.tooltip-text {
+  color: @application-color-tooltip;
 }
 
 .cp-wdl-task[data-type=VisualStep] rect,
@@ -187,4 +206,30 @@
 .cp-run-name.editable:hover {
   outline: 1px solid @panel-border-color;
   background-color: @element-selected-background-color !important;
+}
+
+.cp-run-timeline-table td,
+.cp-run-timeline-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border: 1px solid @panel-border-color;
+}
+
+.cp-console-output {
+  background-color: @application-console-background-color;
+  color: @application-console-color;
+}
+
+.cp-console-output-details {
+  color: @application-console-color-details
+}
+
+.cp-console-follow-log {
+  color: @application-console-color;
+}
+
+.cp-console-scroll-down-indicator {
+  background-color: @panel-background-color;
+  border: 1px solid @panel-border-color;
+  color: @application-color;
 }

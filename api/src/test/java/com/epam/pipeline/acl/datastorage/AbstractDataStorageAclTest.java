@@ -23,6 +23,7 @@ import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -63,6 +64,9 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     @Autowired
     protected EntityManager mockEntityManager;
+
+    @Autowired
+    protected PreferenceManager preferenceManager;
 
     protected void initUserAndEntityMocks(final String user,
                                           final AbstractDataStorage entity,

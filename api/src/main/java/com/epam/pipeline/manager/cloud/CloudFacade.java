@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloud;
 
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.entity.cloud.CloudInstanceState;
 import com.epam.pipeline.entity.cloud.InstanceDNSRecord;
 import com.epam.pipeline.entity.cloud.InstanceTerminationState;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.cluster.InstanceDisk;
 import com.epam.pipeline.entity.cluster.InstanceImage;
 import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.cluster.NodeRegionLabels;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -32,9 +34,11 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface CloudFacade {
-    RunInstance scaleUpNode(Long runId, RunInstance instance);
+    RunInstance scaleUpNode(Long runId, RunInstance instance, Map<String, String> runtimeParameters,
+                            Map<String, String> tags);
 
     RunInstance scaleUpPoolNode(String nodeId, NodePool node);
 
@@ -46,9 +50,9 @@ public interface CloudFacade {
 
     boolean isNodeExpired(Long runId);
 
-    boolean reassignNode(Long oldId, Long newId);
+    boolean reassignNode(Long oldId, Long newId, Map<String, String> tags);
 
-    boolean reassignPoolNode(String nodeLabel, Long newId);
+    boolean reassignPoolNode(String nodeLabel, Long newId, Map<String, String> tags);
 
     /**
      * Fills in provider related data for running instance associated with run,
@@ -88,7 +92,7 @@ public interface CloudFacade {
     /**
      * Creates and attaches new disk by the given request to an instance associated with run.
      */
-    void attachDisk(Long regionId, Long runId, DiskAttachRequest request);
+    void attachDisk(Long regionId, Long runId, DiskAttachRequest request, Map<String, String> tags);
 
     /**
      * Loads all disks attached to an instance associated with run including os, data and swap disks.
@@ -97,9 +101,17 @@ public interface CloudFacade {
 
     CloudInstanceState getInstanceState(Long runId);
 
-    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    CloudInstanceState getInstanceState(NodeRegionLabels nodeRegion, String instanceLabel);
 
-    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord dnsRecord);
+    InstanceDNSRecord createDNSRecord(Long regionId, InstanceDNSRecord record);
+
+    InstanceDNSRecord removeDNSRecord(Long regionId, InstanceDNSRecord record);
 
     InstanceImage getInstanceImageDescription(Long regionId, String imageId);
+
+    void adjustOfferRequest(Long regionId, InstanceOfferRequestVO requestVO);
+
+    boolean instanceScalingSupported(Long cloudRegionId);
+
+    void deleteInstanceTags(Long regionId, String runId, Set<String> tagNames);
 }

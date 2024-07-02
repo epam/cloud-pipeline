@@ -20,6 +20,7 @@ export default {
   setLoaded: 'set-loaded',
   setError: 'set-error',
   setChannelProperties: 'set-channel-properties',
+  setDefaultChannelsColors: 'set-default-channels-colors',
   setColorMap: 'set-color-map',
   setLensChannel: 'set-lens-channel',
   setLensEnabled: 'set-lens-enabled',

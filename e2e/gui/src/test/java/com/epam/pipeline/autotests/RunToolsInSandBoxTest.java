@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,13 +210,14 @@ public class RunToolsInSandBoxTest
     public void validationOfDinDLaunchAndFunctionality() {
         tools()
                 .perform(registry, group, tool, runTool())
-                .selectValue(RUN_CAPABILITIES, "DinD")
+                .selectRunCapability("DinD")
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_DIND_CONTAINER", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("docker --version")
                         .assertOutputContains("Docker version", ", build ")
                         .execute(format("docker pull %s", testDockerImage))
@@ -237,13 +238,14 @@ public class RunToolsInSandBoxTest
     public void validationOfSingularityLaunchAndFunctionality() {
         tools()
                 .perform(registry, group, tool, runTool())
-                .selectValue(RUN_CAPABILITIES, "Singularity")
+                .selectRunCapability("Singularity")
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter("CP_CAP_SINGULARITY", "true"), exist)
                 .waitForSshLink()
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("singularity help version")
                         .assertOutputContains("Show the version for Singularity")
                         .execute(format("singularity build %s.sif library://%s", testDockerImage, testDockerImage))

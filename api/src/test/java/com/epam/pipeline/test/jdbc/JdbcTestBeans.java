@@ -19,6 +19,7 @@ package com.epam.pipeline.test.jdbc;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -98,6 +99,9 @@ public class JdbcTestBeans {
 
     @MockBean
     protected RunStatusManager mockRunStatusManager;
+
+    @MockBean
+    protected PipelineRepositoryService pipelineRepositoryService;
 
     @SpyBean
     protected PipelineManager spyPipelineManager;

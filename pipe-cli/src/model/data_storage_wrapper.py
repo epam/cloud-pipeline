@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
+import time
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
 
 from future.standard_library import install_aliases
+
+from ..utilities.encoding_utilities import to_unicode, to_string
 
 install_aliases()
 
@@ -37,8 +41,19 @@ import shutil
 from bs4 import BeautifulSoup, SoupStrainer
 import posixpath
 
+try:
+    from urllib.request import urlopen  # Python 3
+except ImportError:
+    from urllib2 import urlopen  # Python 2
+
 FILE = 'File'
 FOLDER = 'Folder'
+
+
+class DefectiveFileSystemError(RuntimeError):
+
+    def __init__(self, *args):
+        super().__init__(*args)
 
 
 class AllowedSymlinkValues(object):
@@ -47,14 +62,56 @@ class AllowedSymlinkValues(object):
     FILTER = 'filter'
 
 
+class LocationWrapper(object):
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def get_type(self):
+        pass
+
+    @abstractmethod
+    def get_path(self):
+        pass
+
+    @abstractmethod
+    def is_file(self):
+        pass
+
+    @abstractmethod
+    def get_input_stream(self, path):
+        pass
+
+    @abstractmethod
+    def get_output_stream(self, path):
+        pass
+
+    @abstractmethod
+    def exists(self):
+        pass
+
+    @abstractmethod
+    def is_empty(self, relative=None):
+        pass
+
+    @abstractmethod
+    def get_items(self, quiet=False):
+        pass
+
+    @abstractmethod
+    def delete_item(self, relative_path):
+        pass
+
+
 class DataStorageWrapper(object):
 
     _transfer_manager_suppliers = {
         (WrapperType.S3, WrapperType.S3): S3BucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.S3, WrapperType.LOCAL): S3BucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.S3): S3BucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.S3): S3BucketOperations.get_upload_stream_manager,
+        (WrapperType.S3, WrapperType.STREAM): S3BucketOperations.get_download_stream_manager,
 
         (WrapperType.AZURE, WrapperType.AZURE): AzureBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.AZURE, WrapperType.LOCAL): AzureBucketOperations.get_download_manager,
@@ -65,8 +122,10 @@ class DataStorageWrapper(object):
         (WrapperType.GS, WrapperType.GS): GsBucketOperations.get_transfer_between_buckets_manager,
         (WrapperType.GS, WrapperType.LOCAL): GsBucketOperations.get_download_manager,
         (WrapperType.LOCAL, WrapperType.GS): GsBucketOperations.get_upload_manager,
-        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
-        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_transfer_from_http_or_ftp_manager,
+        (WrapperType.FTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.HTTP, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.STREAM, WrapperType.GS): GsBucketOperations.get_upload_stream_manager,
+        (WrapperType.GS, WrapperType.STREAM): GsBucketOperations.get_download_stream_manager,
 
         (WrapperType.FTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager,
         (WrapperType.HTTP, WrapperType.LOCAL): LocalOperations.get_transfer_from_http_or_ftp_manager
@@ -79,16 +138,18 @@ class DataStorageWrapper(object):
 
     @classmethod
     def get_wrapper(cls, uri, symlinks=None):
+        if uri == '-':
+            return StandardStreamWrapper()
         parsed = urlparse(uri)
         if not parsed.scheme or not parsed.netloc:
             return LocalFileSystemWrapper(uri, symlinks)
-        if parsed.scheme.lower() == 'ftp' or parsed.scheme.lower() == 'ftps':
-            return HttpSourceWrapper(uri) if os.getenv("ftp_proxy") \
-                else FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
-        if parsed.scheme.lower() == 'http' or parsed.scheme.lower() == 'https':
+        if parsed.scheme.lower() in ['ftp', 'ftps'] and os.getenv('ftp_proxy'):
             return HttpSourceWrapper(uri)
-        else:
-            return cls.get_cloud_wrapper(uri)
+        if parsed.scheme.lower() in ['ftp', 'ftps']:
+            return FtpSourceWrapper(parsed.scheme, parsed.netloc, parsed.path, uri)
+        if parsed.scheme.lower() in ['http', 'https']:
+            return HttpSourceWrapper(uri)
+        return cls.get_cloud_wrapper(uri)
 
     @classmethod
     def get_cloud_wrapper(cls, uri, versioning=False):
@@ -114,11 +175,11 @@ class DataStorageWrapper(object):
             raise RuntimeError('There is no data storage wrapper for %s storage type.' % bucket.type)
 
     @classmethod
-    def get_operation_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_operation_manager(cls, source_wrapper, destination_wrapper, events, command):
         manager_types = source_wrapper.get_type(), destination_wrapper.get_type()
         if manager_types in DataStorageWrapper._transfer_manager_suppliers:
             supplier = DataStorageWrapper._transfer_manager_suppliers[manager_types]
-            return supplier(source_wrapper, destination_wrapper, command)
+            return supplier(source_wrapper, destination_wrapper, events, command)
         else:
             raise RuntimeError('Transferring files between the following storage types %s -> %s is not supported.'
                                % manager_types)
@@ -166,8 +227,17 @@ class DataStorageWrapper(object):
     def get_type(self):
         return None
 
+    def get_path(self):
+        return self.path
+
     def is_file(self):
         return False
+
+    def get_input_stream(self, path):
+        return urlopen(path)
+
+    def get_output_stream(self, path):
+        raise RuntimeError('Output stream is not supported for {}'.format(self.get_type()))
 
     def exists(self):
         return False
@@ -176,12 +246,12 @@ class DataStorageWrapper(object):
         return False
 
     def is_local(self):
-        return self.get_type() == WrapperType.LOCAL
+        return self.get_type() in [WrapperType.LOCAL, WrapperType.STREAM]
 
     def fetch_items(self):
         self.items = self.get_items()
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return []
 
     def get_folders_list(self):
@@ -230,7 +300,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def exists(self):
         return self.exists_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self.get_list_manager().get_items(self.path)
 
     def get_paging_items(self, start_token, page_size):
@@ -253,7 +323,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
         pass
 
     @abstractmethod
-    def get_restore_manager(self):
+    def get_restore_manager(self, events):
         pass
 
     @abstractmethod
@@ -261,7 +331,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
         pass
 
     @abstractmethod
-    def get_delete_manager(self, versioning):
+    def get_delete_manager(self, events, versioning):
         pass
 
 
@@ -302,14 +372,14 @@ class S3BucketWrapper(CloudDataStorageWrapper):
     def delete_item(self, relative_path):
         S3BucketOperations.delete_item(self, relative_path, session=self.session)
 
-    def get_restore_manager(self):
-        return S3BucketOperations.get_restore_manager(self)
+    def get_restore_manager(self, events):
+        return S3BucketOperations.get_restore_manager(self, events)
 
     def get_list_manager(self, show_versions=False):
         return S3BucketOperations.get_list_manager(self, show_versions=show_versions)
 
-    def get_delete_manager(self, versioning):
-        return S3BucketOperations.get_delete_manager(self, versioning)
+    def get_delete_manager(self, events, versioning):
+        return S3BucketOperations.get_delete_manager(self, events, versioning)
 
 
 class AzureBucketWrapper(CloudDataStorageWrapper):
@@ -330,7 +400,7 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
     def get_type(self):
         return WrapperType.AZURE
 
-    def get_restore_manager(self):
+    def get_restore_manager(self, events):
         raise RuntimeError('Versioning is not supported by AZURE cloud provider')
 
     def get_list_manager(self, show_versions=False):
@@ -338,10 +408,10 @@ class AzureBucketWrapper(CloudDataStorageWrapper):
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         return AzureListingManager(self._blob_service(read=True, write=False), self.bucket)
 
-    def get_delete_manager(self, versioning):
+    def get_delete_manager(self, events, versioning):
         if versioning:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
-        return AzureDeleteManager(self._blob_service(read=True, write=True), self.bucket)
+        return AzureDeleteManager(self._blob_service(read=True, write=True), events, self.bucket)
 
     def _blob_service(self, read, write):
         if write or not self.service:
@@ -361,17 +431,60 @@ class GsBucketWrapper(CloudDataStorageWrapper):
     def get_type(self):
         return WrapperType.GS
 
-    def get_restore_manager(self):
-        return GsRestoreManager(self._storage_client(write=True, versioning=True), self)
+    def get_restore_manager(self, events):
+        return GsRestoreManager(self._storage_client(write=True, versioning=True), events, self)
 
     def get_list_manager(self, show_versions=False):
         return GsListingManager(self._storage_client(versioning=show_versions), self.bucket, show_versions)
 
-    def get_delete_manager(self, versioning):
-        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), self.bucket)
+    def get_delete_manager(self, events, versioning):
+        return GsDeleteManager(self._storage_client(write=True, versioning=versioning), events, self.bucket)
 
     def _storage_client(self, read=True, write=False, versioning=False):
         return GsBucketOperations.get_client(self.bucket, read=read, write=write, versioning=versioning)
+
+
+class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
+
+    def __init__(self):
+        super(StandardStreamWrapper, self).__init__('-')
+
+    def get_type(self):
+        return WrapperType.STREAM
+
+    def get_path(self):
+        return self.path
+
+    def is_file(self):
+        return True
+
+    def get_input_stream(self, path):
+        try:
+            # python 3
+            return sys.stdin.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdin
+
+    def get_output_stream(self, path):
+        try:
+            # python 3
+            return sys.stdout.buffer
+        except AttributeError:
+            # python 2
+            return sys.stdout
+
+    def exists(self):
+        return True
+
+    def is_empty(self, relative=None):
+        return True
+
+    def get_items(self, quiet=False):
+        return [(FILE, self.path, self.path, 0, None)]
+
+    def delete_item(self, relative_path):
+        pass
 
 
 class LocalFileSystemWrapper(DataStorageWrapper):
@@ -384,6 +497,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             self.path = os.path.join(os.path.expanduser('~'), self.path.strip("~/"))
         self.symlinks = symlinks
         self.path_separator = os.sep
+        self.listing_retry_attempts = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_ATTEMPTS', '3'))
+        self.listing_retry_delay = int(os.getenv('CP_CLI_TRANSFER_LISTING_FAILURES_RETRY_DELAY', '10'))
 
     def exists(self):
         return os.path.exists(self.path)
@@ -403,46 +518,99 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             return not os.path.exists(os.path.join(self.path, relative))
         return not os.listdir(self.path)
 
-    def get_items(self):
-
-        def leaf_path(source_path):
-            head, tail = os.path.split(source_path)
-            return tail or os.path.basename(head)
+    def get_items(self, quiet=False):
+        logging.debug(u'Listing paths...')
 
         self.path = os.path.abspath(self.path)
 
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
                 return []
-            return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
-        else:
-            result = list()
-            visited_symlinks = set()
+            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path), None)]
 
-            def list_items(path, parent, symlinks, visited_symlinks, root=False):
-                for item in os.listdir(path):
-                    absolute_path = os.path.join(path, item)
-                    symlink_target = None
-                    if os.path.islink(absolute_path) and symlinks != AllowedSymlinkValues.FOLLOW:
-                        if symlinks == AllowedSymlinkValues.SKIP:
-                            continue
-                        if symlinks == AllowedSymlinkValues.FILTER:
-                            symlink_target = os.readlink(absolute_path)
-                            if symlink_target in visited_symlinks:
-                                continue
-                            else:
-                                visited_symlinks.add(symlink_target)
-                    relative_path = item
-                    if not root and parent is not None:
-                        relative_path = os.path.join(parent, item)
-                    if os.path.isfile(absolute_path):
-                        result.append((FILE, absolute_path, relative_path, os.path.getsize(absolute_path)))
-                    elif os.path.isdir(absolute_path):
-                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
-                    if symlink_target and os.path.islink(path) and symlink_target in visited_symlinks:
-                        visited_symlinks.remove(symlink_target)
-            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
-            return result
+        return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
+                                root=True, quiet=quiet)
+
+    def _leaf_path(self, source_path):
+        head, tail = os.path.split(source_path)
+        return tail or os.path.basename(head)
+
+    def _list_items(self, path, parent, result, visited_symlinks, root, quiet):
+        logging.debug(u'Listing directory {}...'.format(path))
+        path = to_unicode(path)
+        parent = to_unicode(parent)
+
+        for item in self._os_listdir(path):
+            attempts = self.listing_retry_attempts
+            while attempts > 0:
+                attempts -= 1
+                try:
+                    self._collect_item(path, parent, item, result, visited_symlinks, root, quiet)
+                    break
+                except DefectiveFileSystemError:
+                    if attempts > 0:
+                        logging.warning(u'Retrying due to defective file system in {} seconds...'
+                                        .format(self.listing_retry_delay))
+                        time.sleep(self.listing_retry_delay)
+                    else:
+                        raise
+
+        return result
+
+    def _os_listdir(self, path):
+        try:
+            return os.listdir(to_string(path))
+        except OSError as e:
+            if hasattr(e, 'winerror') and getattr(e, 'winerror') == 59:
+                err_msg = u'Defective file system has been detected for path {}'.format(path)
+                logging.warning(err_msg, exc_info=True)
+                raise DefectiveFileSystemError(err_msg)
+            raise
+
+    def _collect_item(self, path, parent, item, result, visited_symlinks, root, quiet):
+        safe_item = to_unicode(item, replacing=True)
+        safe_absolute_path = os.path.join(path, safe_item)
+
+        logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
+
+        try:
+            item = to_unicode(item)
+            absolute_path = os.path.join(path, item)
+        except UnicodeDecodeError:
+            err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
+            logging.warning(err_msg)
+            if not quiet:
+                click.echo(err_msg)
+            return
+
+        relative_path = item
+        if not root and parent is not None:
+            relative_path = os.path.join(parent, item)
+
+        symlink_target = None
+        if os.path.islink(to_string(absolute_path)):
+            logging.debug(u'Collected symlink {}...'.format(safe_absolute_path))
+            if self.symlinks == AllowedSymlinkValues.FOLLOW:
+                logging.debug(u'Following symlink {}...'.format(safe_absolute_path))
+            elif self.symlinks == AllowedSymlinkValues.SKIP:
+                logging.debug(u'Skipping symlink {}...'.format(safe_absolute_path))
+                return
+            elif self.symlinks == AllowedSymlinkValues.FILTER:
+                symlink_target = os.readlink(to_string(absolute_path))
+                if symlink_target in visited_symlinks:
+                    logging.debug(u'Skipping visited symlink {}...'.format(safe_absolute_path))
+                    return
+                logging.debug(u'Following unvisited symlink {}...'.format(safe_absolute_path))
+                visited_symlinks.add(symlink_target)
+
+        if os.path.isfile(to_string(absolute_path)):
+            logging.debug(u'Collected file {}.'.format(safe_absolute_path))
+            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path)), None))
+        elif os.path.isdir(to_string(absolute_path)):
+            self._list_items(absolute_path, relative_path, result, visited_symlinks, root=False, quiet=quiet)
+
+        if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
+            visited_symlinks.remove(symlink_target)
 
     def create_folder(self, relative_path):
         absolute_path = os.path.join(self.path, relative_path)
@@ -524,7 +692,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                     progress_bar.update(estimated_bytes)
 
     def delete_item(self, relative_path):
-        path = os.path.join(self.path, relative_path)
+        path = to_string(os.path.join(self.path, relative_path))
         if os.path.isfile(path) and os.path.exists(path):
             os.remove(path)
         else:
@@ -559,7 +727,7 @@ class FtpSourceWrapper(DataStorageWrapper):
         self.is_file_flag = len(self.ftp.nlst(self.relative_path)) == 1
         return self.is_file_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self._get_files([], self.relative_path)
 
     def _get_files(self, files, path):
@@ -567,7 +735,7 @@ class FtpSourceWrapper(DataStorageWrapper):
         if len(remote_files) == 1:
             self.ftp.voidcmd('TYPE I')  # change ftp connection to binary mode to get file size
             files.append((FILE, "%s://%s%s" % (self.scheme, self.host, path),
-                          self._get_relative_path(path).strip("/"), self.ftp.size(path)))
+                          self._get_relative_path(path).strip("/"), self.ftp.size(path), None))
         else:
             for file_path in remote_files:
                 self._get_files(files, file_path)
@@ -604,7 +772,7 @@ class HttpSourceWrapper(DataStorageWrapper):
         self.is_file_flag = self._is_downloadable()
         return self.is_file_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self._get_files(self.path, [], [])
 
     def _head(self, path):
@@ -631,7 +799,7 @@ class HttpSourceWrapper(DataStorageWrapper):
             head = self._head(path)
             content_length = head.headers.get('Content-Length')
             files.append((FILE, str(path), self._get_relative_path(path).strip("/"),
-                          content_length if content_length is None else int(content_length)))
+                          content_length if content_length is None else int(content_length), None))
         else:
             response = self._get(path)
             soup = BeautifulSoup(response.content, "html.parser", parse_only=SoupStrainer('a'))

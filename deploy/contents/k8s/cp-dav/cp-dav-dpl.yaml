@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-dav: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-dav: "true"
@@ -32,6 +33,9 @@ spec:
             - name: cp-region-creds
               mountPath: "/root/.cloud/regioncreds"
               readOnly: true
+            - mountPath: /opt/api/pki
+              name: api-pki
+              readOnly: true
           livenessProbe:
             exec:
               command:
@@ -52,6 +56,9 @@ spec:
         - name: dav-logs
           hostPath:
             path: /opt/dav/logs
+        - name: api-pki
+          hostPath:
+            path: /opt/api/pki
         - name: cp-region-creds
           secret:
             secretName: cp-region-creds-secret

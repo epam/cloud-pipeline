@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -157,6 +158,10 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public MetadataSamplesAO metadataSamples(String metadataFolder) {
+        sleep(5, SECONDS);
+        $(byId("pipelines-library-tree-container")).shouldBe(visible)
+                .find(titleOfTreeItem(treeItem("Metadata"))).parent().parent()
+                .should(cssClass("ant-tree-node-content-wrapper-open"));
         $(byId("pipelines-library-tree-container")).shouldBe(visible)
                 .find(withText(metadataFolder)).shouldBe(visible).click();
         sleep(1, SECONDS);
@@ -229,6 +234,8 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         $(byId("edit-storage-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
@@ -274,6 +281,16 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public PipelinesLibraryAO collapseItem(String item) {
         $(byText(item)).closest("li")
                 .find(byCssSelector(".ant-tree-switcher.ant-tree-switcher_open")).shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelinesLibraryAO waitUntilPipelineVersionsOpened(String item) {
+        $(treeItem(item)).find(".ant-tree-child-tree").has(cssClass("ant-tree-child-tree-open"));
+        return this;
+    };
+
+    public PipelinesLibraryAO scrollToItem(String item) {
+        $(treeItem(item)).scrollIntoView(true);
         return this;
     }
 

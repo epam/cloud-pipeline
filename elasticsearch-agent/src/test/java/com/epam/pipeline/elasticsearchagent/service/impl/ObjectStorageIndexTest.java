@@ -17,20 +17,17 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.elasticsearchagent.service.ObjectStorageFileManager;
-import com.epam.pipeline.elasticsearchagent.service.ObjectStorageIndex;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.GSBucketStorage;
-import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
+import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.vo.EntityPermissionVO;
 import org.apache.commons.io.FilenameUtils;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,17 +36,24 @@ import java.util.function.Supplier;
 
 import static com.epam.pipeline.elasticsearchagent.TestConstants.TEST_NAME;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ObjectStorageIndexTest {
-    
+
     private static final String TEST_BLOB_NAME_1 = "1";
     private static final String TEST_BLOB_NAME_2 = "2";
+    private static final int BULK_SIZE = 1000;
+    private static final String EXCLUDE_KEY = "key";
+    private static final String EXCLUDE_VALUE = "value";
 
-    private final AbstractDataStorage dataStorage = new GSBucketStorage();
-    private final Supplier<TemporaryCredentials> temporaryCredentials = TemporaryCredentials::new;
+    private final AbstractDataStorage dataStorage = new GSBucketStorage(
+            1L, "storage", "storage", new StoragePolicy(), null
+    );
+    private final Supplier<TemporaryCredentials> temporaryCredentials = () ->
+            TemporaryCredentials.builder().region("").build();
     
     @Mock
     private IndexRequestContainer requestContainer;
@@ -61,19 +65,31 @@ public class ObjectStorageIndexTest {
     private ElasticsearchServiceClient elasticsearchServiceClient;
     @Mock
     private ElasticIndexService elasticIndexService;
+    @Mock
+    private LockService lockService;
     
-    @Spy
-    private final ObjectStorageIndex objectStorageIndex = new ObjectStorageIndexImpl(
-            cloudPipelineAPIClient, 
-            elasticsearchServiceClient,
-            elasticIndexService,
-            fileManager,
-            TEST_NAME,
-            TEST_NAME,
-            1000,
-            1000,
-            DataStorageType.GS,
-            SearchDocumentType.GS_FILE);
+    private ObjectStorageIndexImpl objectStorageIndex;
+
+    @BeforeEach
+    public void init() {
+        objectStorageIndex = spy(
+            new ObjectStorageIndexImpl(
+                cloudPipelineAPIClient,
+                elasticsearchServiceClient,
+                elasticIndexService,
+                fileManager,
+                lockService,
+                TEST_NAME,
+                TEST_NAME,
+                BULK_SIZE,
+                BULK_SIZE,
+                DataStorageType.GS,
+                SearchDocumentType.GS_FILE,
+                ";", false,
+                EXCLUDE_KEY, EXCLUDE_VALUE)
+        );
+    }
+
 
     @Test
     public void shouldAddZeroFilesToRequestContainer() {
@@ -94,9 +110,17 @@ public class ObjectStorageIndexTest {
     }
 
     private void setUpReturnValues(final List<DataStorageFile> files) {
+        Mockito.doAnswer(i -> temporaryCredentials.get())
+                .when(cloudPipelineAPIClient).generateTemporaryCredentials(any());
+
+        Mockito.doAnswer(i -> requestContainer)
+                .when(objectStorageIndex).getRequestContainer(any(String.class), any(Integer.class));
+
+        Mockito.doAnswer(i -> new EntityPermissionVO())
+                .when(cloudPipelineAPIClient).loadPermissionsForEntity(any(), any());
+
         Mockito.doAnswer(i -> files.stream())
-               .when(fileManager)
-               .files(any(), any(), temporaryCredentials);
+               .when(fileManager).files(any(), any(), any());
     }
 
     private void verifyNumberOfInsertions(final int numberOfInvocation) {

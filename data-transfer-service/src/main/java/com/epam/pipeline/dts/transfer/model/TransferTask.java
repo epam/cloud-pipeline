@@ -72,4 +72,6 @@ public class TransferTask {
     @ElementCollection
     private List<String> included;
     private String user;
+
+    private boolean deleteSource;
 }

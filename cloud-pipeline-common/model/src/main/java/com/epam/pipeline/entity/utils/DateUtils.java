@@ -16,9 +16,10 @@
 
 package com.epam.pipeline.entity.utils;
 
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 
@@ -39,7 +40,20 @@ public final class DateUtils {
         return LocalDateTime.now(Clock.systemUTC());
     }
 
-    public static LocalDateTime toLocalDateTime(final Date date) {
-        return date.toInstant().atZone(ZoneId.of("Z")).toLocalDateTime();
+    public static LocalDateTime convertDateToLocalDateTime(final Date date) {
+        return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    public static Date convertLocalDateTimeToDate(final LocalDateTime dateTime) {
+        return new Date(dateTime.toInstant(ZoneOffset.UTC).toEpochMilli());
+    }
+
+    public static LocalDateTime parse(final DateFormat format, final String dateString) {
+        try {
+            return convertDateToLocalDateTime(format.parse(dateString));
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(
+                    String.format("Filed to parse date: %s with format: %s", dateString, format), e);
+        }
     }
 }

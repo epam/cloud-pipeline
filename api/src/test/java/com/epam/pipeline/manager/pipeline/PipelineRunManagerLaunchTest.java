@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.REGION;
 import static com.epam.pipeline.entity.contextual.ContextualPreferenceLevel.TOOL;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI;
 import static com.epam.pipeline.manager.preference.SystemPreferences.CLUSTER_INSTANCE_HDD_EXTRA_MULTI;
@@ -164,6 +165,9 @@ public class PipelineRunManagerLaunchTest {
     private RunStatusManager runStatusManager;
 
     @Mock
+    private PipelineVersionManager pipelineVersionManager;
+
+    @Mock
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
     private final Tool tool = getTool(IMAGE, DEFAULT_COMMAND);
@@ -176,8 +180,15 @@ public class PipelineRunManagerLaunchTest {
     private final InstancePrice price = new InstancePrice(configuration.getInstanceType(),
             parseInt(configuration.getInstanceDisk()), PRICE_PER_HOUR, COMPUTE_PRICE_PER_HOUR, DISK_PRICE_PER_HOUR);
     private final PipelineRun parentRun = getPipelineRunWithInstance(PARENT_RUN_ID, TEST_USER, NON_DEFAULT_REGION_ID);
-    private final ContextualPreferenceExternalResource resource = new ContextualPreferenceExternalResource(
+    private final ContextualPreferenceExternalResource toolResource = new ContextualPreferenceExternalResource(
             TOOL, tool.getId().toString());
+    private final ContextualPreferenceExternalResource defaultRegionResource =
+            new ContextualPreferenceExternalResource(REGION, defaultAwsRegion.getId().toString());
+    private final ContextualPreferenceExternalResource nonAllowedRegionResource =
+            new ContextualPreferenceExternalResource(REGION, nonAllowedAwsRegion.getId().toString());
+    private final List<ContextualPreferenceExternalResource> defaultRegionResources =
+            singletonList(defaultRegionResource);
+    private final List<ContextualPreferenceExternalResource> resources = asList(toolResource, defaultRegionResource);
     public static final PipelineStartNotificationRequest NOTIFICATION_REQUEST = new PipelineStartNotificationRequest(
             NotificationType.PIPELINE_RUN_STATUS, emptyList(), emptyList(), TEST_STRING, TEST_STRING);
     public static final List<PipelineStartNotificationRequest> NOTIFICATION_REQUESTS =
@@ -200,31 +211,36 @@ public class PipelineRunManagerLaunchTest {
         mock(notDefaultAwsRegion);
         doReturn(defaultAwsRegion).when(cloudRegionManager).loadDefaultRegion();
 
+        doReturn(true).when(instanceOfferManager)
+                .isInstanceAllowed(anyString(), any(), any(), anyBoolean());
         doReturn(true).when(instanceOfferManager).isPriceTypeAllowed(anyString(), any(), anyBoolean());
         doReturn(true).when(permissionHelper).isAllowed(any(), any());
+        doReturn(Optional.empty()).when(pipelineVersionManager).resolvePipelineVersion(any(), any());
     }
 
     @Test
     public void launchPipelineShouldValidateToolInstanceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(resources), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePriceType() {
         launchTool(configuration, INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(resource), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(resources), eq(false));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedToolInstanceType() {
         doReturn(false).when(instanceOfferManager)
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resources), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
-        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager)
+                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resources), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -240,31 +256,37 @@ public class PipelineRunManagerLaunchTest {
         configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
 
         assertThrows(() -> launchTool(configuration, INSTANCE_TYPE));
-        verify(instanceOfferManager)
-                .isToolInstanceAllowed(eq(INSTANCE_TYPE), eq(resource), eq(NON_ALLOWED_REGION_ID), eq(true));
+        verify(instanceOfferManager).isToolInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(asList(toolResource, nonAllowedRegionResource)), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePipelineInstanceType() {
         launchPipeline(configuration, INSTANCE_TYPE);
 
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(defaultRegionResources), eq(REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldValidatePipelineInstanceTypeInTheSpecifiedRegion() {
         configuration.setCloudRegionId(NON_ALLOWED_REGION_ID);
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(singletonList(nonAllowedRegionResource)), eq(NON_ALLOWED_REGION_ID), eq(true));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(NON_ALLOWED_REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(singletonList(nonAllowedRegionResource)), eq(NON_ALLOWED_REGION_ID), eq(true));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedInstanceType() {
-        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        doReturn(false).when(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(defaultRegionResources), eq(REGION_ID), eq(true));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE), eq(REGION_ID), eq(true));
+        verify(instanceOfferManager).isInstanceAllowed(eq(INSTANCE_TYPE),
+                eq(defaultRegionResources), eq(REGION_ID), eq(true));
     }
 
     @Test
@@ -279,15 +301,16 @@ public class PipelineRunManagerLaunchTest {
         configuration.setIsSpot(null);
 
         launchPipeline(configuration, INSTANCE_TYPE);
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(null), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(ON_DEMAND), eq(defaultRegionResources), eq(false));
     }
 
     @Test
     public void launchPipelineShouldFailOnNotAllowedPriceType() {
-        doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+        doReturn(false).when(instanceOfferManager).isPriceTypeAllowed(eq(SPOT),
+                eq(defaultRegionResources), eq(false));
 
         assertThrows(() -> launchPipeline(configuration, INSTANCE_TYPE));
-        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(null), eq(false));
+        verify(instanceOfferManager).isPriceTypeAllowed(eq(SPOT), eq(defaultRegionResources), eq(false));
     }
 
     @Test
@@ -456,7 +479,7 @@ public class PipelineRunManagerLaunchTest {
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final Pipeline pipeline,
                                        final String instanceType, final Long parentRunId,
                                        final List<PipelineStartNotificationRequest> notificationRequests) {
-        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType, null,
+        return pipelineRunManager.launchPipeline(configuration, pipeline, null, instanceType,
                 null, null, parentRunId, null, null, null,
                 notificationRequests);
     }

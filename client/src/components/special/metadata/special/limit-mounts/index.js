@@ -23,6 +23,12 @@ import {LimitMountsInput} from '../../../../pipelines/launch/form/LimitMountsInp
 import {CP_CAP_LIMIT_MOUNTS} from '../../../../pipelines/launch/form/utilities/parameters';
 
 class LimitMountsUserPreference extends React.Component {
+  get doNotMountStorages () {
+    const {metadata = {}} = this.props;
+    const {value = undefined} = metadata;
+    return /^none$/i.test(value);
+  }
+
   onChangeLimitMounts = (value) => {
     const {
       metadata = {}
@@ -51,13 +57,40 @@ class LimitMountsUserPreference extends React.Component {
     }
   };
 
+  renderSummary = () => {
+    const {metadata = {}} = this.props;
+    const {value = undefined} = metadata;
+    return (
+      <div
+        className={styles.limitMountsRow}
+      >
+        {this.doNotMountStorages ? (
+          <span>
+            Do not mount storages
+          </span>
+        ) : (
+          <LimitMountsInput
+            showOnlySummary
+            disabled
+            value={value}
+            allowSensitive={false}
+            className={styles.summaryContainer}
+          />
+        )}
+      </div>
+    );
+  };
+
   render () {
     const {
       readOnly,
-      metadata = {}
+      metadata = {},
+      showOnlySummary
     } = this.props;
     const {value = undefined} = metadata;
-    const doNotMountStorages = /^none$/i.test(value);
+    if (showOnlySummary) {
+      return this.renderSummary();
+    }
     return (
       <div>
         <div
@@ -74,14 +107,14 @@ class LimitMountsUserPreference extends React.Component {
         <div className={styles.limitMountsRow}>
           <Checkbox
             disabled={readOnly}
-            checked={doNotMountStorages}
+            checked={this.doNotMountStorages}
             onChange={this.onChangeDoNotMountStorages}
           >
             Do not mount storages
           </Checkbox>
         </div>
         {
-          !doNotMountStorages && (
+          !this.doNotMountStorages && (
             <div
               className={
                 classNames(
@@ -108,6 +141,7 @@ LimitMountsUserPreference.metatadaKey = CP_CAP_LIMIT_MOUNTS;
 LimitMountsUserPreference.propTypes = {
   metadata: PropTypes.object,
   readOnly: PropTypes.bool,
+  disabled: PropTypes.bool,
   onChange: PropTypes.func,
   onRemove: PropTypes.func,
   info: PropTypes.object

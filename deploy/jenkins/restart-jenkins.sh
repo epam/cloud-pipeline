@@ -44,14 +44,12 @@ docker run  -d \
             -e SQS_QUEUE=$SQS_QUEUE \
             -e SQS_POLL_SEC=$SQS_POLL_SEC \
             -e JENKINS_USER=$JENKINS_USER \
-            -e JENKINS_PASS=$JENKINS_USER \
+            -e JENKINS_PASS=$JENKINS_PASS \
             -e JENKINS_API_TOKEN= \
             -e JENKINS_HOST=$JENKINS_HOST \
             -e JENKINS_PORT=$JENKINS_PORT \
             -e JENKINS_JOB_NAME=cloud-pipeline-build-pipectl \
             -e JENKINS_JOB_TOKEN=$JENKINS_JOB_TOKEN \
-            -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
-            -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
             -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
             --name cp-sqs-trigger \
             cp-sqs-trigger

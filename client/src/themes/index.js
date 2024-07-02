@@ -97,9 +97,13 @@ class CloudPipelineThemes {
     this.listeners = [];
     (this.initialize)();
     if (window.matchMedia) {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        this.applyTheme();
-      });
+      const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
+      if (matchMedia && typeof matchMedia.addEventListener === 'function') {
+        matchMedia.addEventListener('change', this.applyTheme.bind(this));
+      } else if (matchMedia && typeof matchMedia.addListener === 'function') {
+        // IE support
+        matchMedia.addListener(this.applyTheme.bind(this));
+      }
     }
     if (DEBUG) {
       window.addEventListener('keydown', e => {
@@ -121,10 +125,12 @@ class CloudPipelineThemes {
         const prev = () => {
           shiftTheme(-1);
         };
-        if (e.key === ']') {
-          next();
-        } else if (e.key === '[') {
-          prev();
+        if (!/^input$/i.test(e.target.tagName)) {
+          if (e.key === ']') {
+            next();
+          } else if (e.key === '[') {
+            prev();
+          }
         }
       });
     }

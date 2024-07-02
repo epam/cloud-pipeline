@@ -108,6 +108,14 @@ export default [
     isLink: true
   },
   {
+    key: Pages.notifications,
+    title: 'Notifications',
+    icon: 'mail',
+    path: '/notifications',
+    isDefault: false,
+    isLink: true
+  },
+  {
     key: 'divider',
     isDivider: true,
     static: true

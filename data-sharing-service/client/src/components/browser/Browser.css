@@ -292,6 +292,14 @@ th.metadata-column-value {
   cursor: default;
 }
 
+.document-preview .name-cell {
+  color: #108ee9;
+}
+
+.document-preview:hover .name-cell {
+  text-decoration: underline;
+}
+
 .modal-container {
   height: 500px;
 }

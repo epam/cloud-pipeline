@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,78 @@
  *  limitations under the License.
  */
 
+.storage-size-container {
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+}
+
 .storage-size {
   padding: 4px 6px;
 }
 
-.storage-size span + .refresh-button {
-  margin-left: 5px;
+.controls-button:not(:first-child) {
+  margin-left: 10px;
 }
 
-.storage-size .refresh-button:hover {
+.controls-button:hover {
   text-decoration: underline;
+}
+
+.details-container {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.standard-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.standard-detail-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detail {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailed-info-grid-row {
+  display: grid;
+  grid: "class size previous total" 30px
+        / 1fr 120px 120px 100px;
+}
+
+.detailed-info-grid-row .cell,
+.detailed-info-grid-row .heading-cell {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detailed-info-grid-row .storage-class {
+  grid-area: class;
+}
+
+.detailed-info-grid-row .size {
+  grid-area: size;
+}
+
+.detailed-info-grid-row .previous {
+  grid-area: previous;
+}
+
+.detailed-info-grid-row .total {
+  grid-area: total;
 }

@@ -38,10 +38,14 @@ public class TransferServiceImpl implements TransferService {
     @Override
     public TransferTask runTransferTask(@NonNull StorageItem source,
                                         @NonNull StorageItem destination,
-                                        List<String> included) {
-        TransferTask transferTask = taskService.createTask(source, destination, included);
+                                        List<String> included,
+                                        boolean deleteSource,
+                                        boolean logEnabled,
+                                        String pipeCmd,
+                                        String pipeCmdSuffix) {
+        TransferTask transferTask = taskService.createTask(source, destination, included, null, deleteSource);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
-        dataUploaderProviderManager.transferData(transferTask);
+        dataUploaderProviderManager.transferData(transferTask, logEnabled, pipeCmd, pipeCmdSuffix);
         return transferTask;
     }
 

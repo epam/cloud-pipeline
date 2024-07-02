@@ -39,9 +39,6 @@ class StorageLowLevelFileSystemClient(FileSystemClient):
     def upload_range(self, fh, buf, path, offset):
         pass
 
-    def flush(self, fh, path):
-        pass
-
     @abstractmethod
     def new_mpu(self, path, file_size, download, mv):
         pass
@@ -185,6 +182,12 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
         self.upload(modified_bytes, path)
 
     def flush(self, fh, path):
+        try:
+            self._flush_mpu(fh, path)
+        finally:
+            self._inner.flush(fh, path)
+
+    def _flush_mpu(self, fh, path):
         mpu = self._mpus.get(path, None)
         if mpu:
             try:
@@ -200,3 +203,33 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
     def truncate(self, fh, path, length):
         source_path = path.lstrip(self._delimiter)
         self._inner.truncate(fh, source_path, length)
+
+    def download_xattrs(self, path):
+        source_path = path.lstrip(self._delimiter)
+        if not source_path:
+            return {}
+        return self._inner.download_xattrs(source_path)
+
+    def upload_xattrs(self, path, xattrs):
+        source_path = path.lstrip(self._delimiter)
+        if not source_path:
+            return
+        self._inner.upload_xattrs(source_path, xattrs)
+
+    def upload_xattr(self, path, name, value):
+        source_path = path.lstrip(self._delimiter)
+        if not source_path:
+            return
+        self._inner.upload_xattr(source_path, name, value)
+
+    def remove_xattrs(self, path):
+        source_path = path.lstrip(self._delimiter)
+        if not source_path:
+            return
+        self._inner.remove_xattrs(source_path)
+
+    def remove_xattr(self, path, name):
+        source_path = path.lstrip(self._delimiter)
+        if not source_path:
+            return
+        self._inner.remove_xattr(source_path, name)

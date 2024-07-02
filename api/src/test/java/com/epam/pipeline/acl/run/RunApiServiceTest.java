@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipeRunCmdStartVO;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.preference.PreferenceType;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
@@ -34,7 +35,6 @@ import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -183,6 +183,38 @@ public class RunApiServiceTest extends AbstractAclTest {
     }
 
     @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER)
+    public void shouldLoadPipelineRunWithPipelineInheritVisibilityEnabled() {
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+
+        final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
+        pipeline.setVisibility(RunVisibilityPolicy.INHERIT);
+        doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        initAclEntity(pipelineRun, AclPermission.READ);
+        initAclEntity(pipeline, AclPermission.READ);
+        mockSecurityContext();
+
+        assertThat(runApiService.loadPipelineRun(ID)).isEqualTo(pipelineRun);
+    }
+
+    @Test
+    @WithMockUser(username = ANOTHER_SIMPLE_USER)
+    public void shouldNotInheritPermissionsLoadPipelineRunWithPipelineOwnerVisibilityEnabled() {
+        enableVisibilityPolicy(RunVisibilityPolicy.INHERIT);
+
+        final Pipeline pipeline = getPipeline(ANOTHER_SIMPLE_USER);
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        doReturn(pipelineRun).when(mockRunCRUDService).loadRunById(ID);
+        doReturn(pipeline).when(mockRunManager).loadRunParent(pipelineRun);
+        initAclEntity(pipeline, AclPermission.READ);
+        mockSecurityContext();
+
+        assertThrows(AccessDeniedException.class, () -> runApiService.loadPipelineRun(ID));
+    }
+
+    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadPipelineRunForAdmin() {
         doReturn(pipelineRun).when(mockRunManager).loadPipelineRun(ID);
@@ -220,6 +252,44 @@ public class RunApiServiceTest extends AbstractAclTest {
         assertThat(filter.getAllowedPipelines()).contains(ID);
         assertThat(result.getTotalCount()).isEqualTo(1);
         assertThat(result.getElements()).contains(pipelineRun);
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldNotIncludePipelinesWhenPipelineOwnerVisibilityAndGlobalInherit() {
+        final Pipeline pipeline = getPipeline(SIMPLE_USER);
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(eq(false));
+        initAclEntity(pipeline);
+        mockAuthUser(SIMPLE_USER);
+
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(pipelineRun), 1))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+        runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter()).isEqualToIgnoringCase(SIMPLE_USER);
+        assertThat(filter.getAllowedPipelines()).isEmpty();
+    }
+
+    @Test
+    @WithMockUser(username = SIMPLE_USER)
+    public void shouldIncludePipelinesWhenPipelineInheritVisibilityAndGlobalOwner() {
+        enableVisibilityPolicy(RunVisibilityPolicy.OWNER);
+
+        final Pipeline pipeline = getPipeline(SIMPLE_USER);
+        pipeline.setVisibility(RunVisibilityPolicy.INHERIT);
+        doReturn(mutableListOf(pipeline)).when(mockPipelineManager).loadAllPipelines(eq(false));
+        initAclEntity(pipeline);
+        mockAuthUser(SIMPLE_USER);
+
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        doReturn(new PagedResult<>(Collections.singletonList(pipelineRun), 1))
+                .when(mockRunManager).searchPipelineRuns(eq(filter), eq(false));
+        runApiService.searchPipelineRuns(filter, false);
+
+        assertThat(filter.getOwnershipFilter()).isEqualToIgnoringCase(SIMPLE_USER);
+        assertThat(filter.getAllowedPipelines()).contains(ID);
     }
 
     @Test

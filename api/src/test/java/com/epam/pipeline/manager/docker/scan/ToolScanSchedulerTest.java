@@ -74,6 +74,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
     private static final String TEST_LAYER_DIGEST = "testDigest";
     public static final long DOCKER_SIZE = 123456L;
     public static final String PREFERENCE_MANAGER = "preferenceManager";
+    private static final String DEFAULT_COMMAND = "default_command";
+    private static final int LAYERS_COUNT = 10;
 
     private ToolScanScheduler toolScanScheduler;
 
@@ -156,7 +158,7 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
             .thenReturn(new ToolVersionScanResult(LATEST_VERSION, new ToolOSVersion("test", "0.1"),
                     Collections.singletonList(vulnerability),
                     Collections.singletonList(dependency),
-                    ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST));
+                    ToolScanStatus.COMPLETED, TEST_LAYER_REF, TEST_LAYER_DIGEST, DEFAULT_COMMAND, LAYERS_COUNT));
 
         doNothing().when(toolVersionManager).updateOrCreateToolVersion(Mockito.anyLong(), Mockito.anyString(),
                 Mockito.anyString(), Mockito.any(DockerRegistry.class), Mockito.any(DockerClient.class));
@@ -280,7 +282,8 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         @Override
         public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
                                                 ToolOSVersion toolOSVersion, String layerRef, String digest,
-                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
+                                                String defaultCmd, Integer layersCount, boolean cudaAvailable) {
             Assert.assertNotNull(version);
 
             ToolVersionScanResult versionScan = new ToolVersionScanResult();
@@ -304,9 +307,10 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
         @Override
         public void updateToolVersionScanStatus(long toolId, ToolScanStatus newStatus, Date scanDate, String version,
                                                 String layerRef, String digest,
-                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount) {
+                                                Map<VulnerabilitySeverity, Integer> vulnerabilityCount,
+                                                String defaultCmd, Integer layersCount) {
             updateToolVersionScanStatus(toolId, newStatus, scanDate, version, null, layerRef,
-                    digest, vulnerabilityCount);
+                    digest, vulnerabilityCount, defaultCmd, layersCount, false);
         }
 
         @Override
@@ -344,6 +348,5 @@ public class ToolScanSchedulerTest extends AbstractSpringTest {
                     .computeIfAbsent(toolId, key -> new HashMap<>());
             return Optional.ofNullable(versionScanMap.get(version));
         }
-
     }
 }

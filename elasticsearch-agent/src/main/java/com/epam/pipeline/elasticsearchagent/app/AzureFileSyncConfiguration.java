@@ -23,6 +23,7 @@ import com.epam.pipeline.elasticsearchagent.service.impl.AzureBlobManager;
 import com.epam.pipeline.elasticsearchagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.elasticsearchagent.service.impl.ElasticIndexService;
 import com.epam.pipeline.elasticsearchagent.service.impl.ObjectStorageIndexImpl;
+import com.epam.pipeline.elasticsearchagent.service.lock.LockService;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -49,6 +50,15 @@ public class AzureFileSyncConfiguration {
     @Value("${sync.az-blob.index.name}")
     private String indexName;
 
+    @Value("${sync.az-file.tag.value.delimiter:;}")
+    private String tagDelimiter;
+
+    @Value("${sync.az-file.storage.exclude.metadata.key:Billing status}")
+    private String storageExcludeKey;
+
+    @Value("${sync.az-file.storage.exclude.metadata.value:Exclude}")
+    private String storageExcludeValue;
+
     @Bean
     public ObjectStorageFileManager azFileManager() {
         return new AzureBlobManager();
@@ -60,11 +70,14 @@ public class AzureFileSyncConfiguration {
             final CloudPipelineAPIClient apiClient,
             final ElasticsearchServiceClient esClient,
             final ElasticIndexService indexService,
-            final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager) {
+            final @Qualifier("azFileManager") ObjectStorageFileManager azFileManager,
+            final LockService lockService) {
         return new ObjectStorageIndexImpl(apiClient, esClient, indexService,
-                azFileManager, indexPrefix + indexName,
+                azFileManager, lockService, indexPrefix + indexName,
                 indexSettingsPath, bulkInsertSize, bulkLoadTagsSize,
                 DataStorageType.AZ,
-                SearchDocumentType.AZ_BLOB_FILE);
+                SearchDocumentType.AZ_BLOB_FILE,
+                tagDelimiter, false,
+                storageExcludeKey, storageExcludeValue);
     }
 }

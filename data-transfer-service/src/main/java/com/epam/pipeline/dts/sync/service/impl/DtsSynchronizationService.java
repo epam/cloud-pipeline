@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.sync.service.impl;
 
+import com.epam.pipeline.dts.common.service.CloudPipelineAPIClient;
 import com.epam.pipeline.dts.sync.model.AutonomousSyncCronDetails;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.service.ShutdownService;
@@ -26,11 +27,14 @@ import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.dts.transfer.repository.TaskRepository;
 import com.epam.pipeline.dts.transfer.service.TransferService;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,49 +45,67 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 
 @Service
 @Slf4j
 @EnableScheduling
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class DtsSynchronizationService {
 
     private static final String SCHEMA_DELIMITER = "://";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     private final TaskRepository taskRepository;
     private final TransferService transferService;
     private final PreferenceService preferenceService;
     private final ShutdownService shutdownService;
     private final PipelineCredentials pipeCredentials;
+    private final DtsRuleExpanderService dtsRuleExpander;
     private final Map<AutonomousSyncRule, AutonomousSyncCronDetails> activeSyncRules;
     private final Map<AutonomousSyncRule, TransferTask> activeTransferTasks;
     private final String defaultCronExpression;
+    private final String syncToken;
+    private final CloudPipelineAPIClient apiClient;
+    private final IlluminaValidator illuminaValidator;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
                                      final @Value("${dts.api.token}") String pipeApiToken,
                                      final @Value("${dts.autonomous.sync.cron}") String defaultCronExpression,
+                                     final @Value("${dts.sync.token.name:dts-sync-complete}") String syncToken,
                                      final TransferService autonomousTransferService,
                                      final TaskRepository taskRepository,
                                      final PreferenceService preferenceService,
-                                     final ShutdownService shutdownService) {
+                                     final ShutdownService shutdownService,
+                                     final DtsRuleExpanderService dtsRuleExpander,
+                                     final CloudPipelineAPIClient apiClient,
+                                     final IlluminaValidator illuminaValidator) {
+        this.apiClient = apiClient;
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
         this.taskRepository = taskRepository;
         this.transferService = autonomousTransferService;
         this.shutdownService = shutdownService;
         this.preferenceService = preferenceService;
-        this.activeSyncRules = new ConcurrentHashMap<>();
-        this.activeTransferTasks = new ConcurrentHashMap<>();
+        this.activeSyncRules = Collections.synchronizedMap(new LinkedHashMap<>());
+        this.activeTransferTasks = Collections.synchronizedMap(new LinkedHashMap<>());
+        this.dtsRuleExpander = dtsRuleExpander;
+        this.illuminaValidator = illuminaValidator;
+        this.syncToken = syncToken;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
             .orElseThrow(() -> new IllegalStateException("Default FS sync cron is invalid!"));
@@ -120,7 +142,9 @@ public class DtsSynchronizationService {
     }
 
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
-        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null);
+        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
+                rule.getDeleteSource(), ListUtils.emptyIfNull(rule.getTransferTriggers()),
+                rule.getCheckSyncToken(), rule.getCheckIllumina());
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
@@ -148,15 +172,28 @@ public class DtsSynchronizationService {
     }
 
     private void processActiveTasks() {
-        activeTransferTasks.values()
-            .removeIf(task -> taskRepository.findById(task.getId())
-                .filter(loadedTask -> loadedTask.getStatus().isFinalStatus())
-                .isPresent());
+        final List<AutonomousSyncRule> completed = activeTransferTasks
+                .entrySet()
+                .stream()
+                .filter(entry -> taskRepository.findById(entry.getValue().getId())
+                        .filter(loadedTask -> {
+                            final boolean finished = loadedTask.getStatus().isFinalStatus();
+                            if (finished && shouldCheckToken(entry.getKey(), entry.getValue().getDestination())) {
+                                createSyncToken(loadedTask);
+                            }
+                            return finished;
+                        })
+                        .isPresent())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        completed.forEach(activeTransferTasks::remove);
     }
 
     private void submitTasksForAwaitingRules() {
         final Date now = getCurrentDate();
         final Map<AutonomousSyncRule, TransferTask> newSubmittedTasks = activeSyncRules.entrySet().stream()
+            .filter(this::syncSourceExists)
+            .flatMap(dtsRuleExpander::expandSyncEntry)
             .filter(entry -> shouldBeTriggered(now, entry))
             .filter(entry -> noMatchingActiveTransferTask(entry.getKey()))
             .map(Map.Entry::getKey)
@@ -164,10 +201,21 @@ public class DtsSynchronizationService {
             .filter(entry -> Objects.nonNull(entry.getValue()))
             .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         newSubmittedTasks.keySet().stream()
-            .map(activeSyncRules::get)
+            .map(task -> {
+                final AutonomousSyncRule keyRule = Optional.ofNullable(task.getParentRule()).orElse(task);
+                return activeSyncRules.get(keyRule);
+            })
             .map(AutonomousSyncCronDetails::getLastExecution)
             .forEach(execution -> execution.setTime(now.getTime()));
         activeTransferTasks.putAll(newSubmittedTasks);
+    }
+
+    private boolean syncSourceExists(final Map.Entry<AutonomousSyncRule, ?> entry) {
+        return Optional.of(entry.getKey())
+            .map(AutonomousSyncRule::getSource)
+            .map(Paths::get)
+            .filter(Files::exists)
+            .isPresent();
     }
 
     private boolean shouldBeTriggered(final Date now,
@@ -203,7 +251,18 @@ public class DtsSynchronizationService {
 
     private TransferTask runTransferTask(final AutonomousSyncRule rule) {
         return buildTransferDestination(rule)
-            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination))
+            .map(transferDestination -> {
+                if (shouldCheckToken(rule, transferDestination) && isSyncTokenPresent(transferDestination)) {
+                    log.info("Skipping transfer from {} to {} as synchronisation token is present.",
+                            rule.getSource(), rule.getDestination());
+                    return null;
+                }
+                if (!runAdditionalChecks(rule)) {
+                    return null;
+                }
+                return trySubmitTransferTask(buildTransferSource(rule), transferDestination,
+                        rule.getDeleteSource());
+            })
             .map(submittedTask -> {
                 log.info("Transfer task from `{}` to `{}` submitted successfully [id=`{}`]!",
                          rule.getSource(), rule.getDestination(), submittedTask.getId());
@@ -212,12 +271,24 @@ public class DtsSynchronizationService {
             .orElse(null);
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private boolean runAdditionalChecks(final AutonomousSyncRule key) {
+        if (Boolean.TRUE.equals(key.getCheckIllumina())) {
+            return illuminaValidator.validateIlluminaFolder(key.getSource());
+        }
+        return true;
+    }
+
     private TransferTask trySubmitTransferTask(final StorageItem transferSource,
-                                               final StorageItem transferDestination) {
+                                               final StorageItem transferDestination,
+                                               final Boolean deleteTransferSource) {
         try {
             transferDestination.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList());
+            return transferService.runTransferTask(transferSource, transferDestination,
+                    Collections.emptyList(),
+                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()),
+                    preferenceService.isLogEnabled(),
+                    preferenceService.getPipeCmd(),
+                    preferenceService.getPipeCmdSuffix());
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {
@@ -233,7 +304,6 @@ public class DtsSynchronizationService {
             .map(path -> path.split(SCHEMA_DELIMITER, 2)[0])
             .map(StringUtils::upperCase)
             .map(schema -> EnumUtils.getEnum(StorageType.class, schema))
-            .filter(Objects::nonNull)
             .map(type -> {
                 final StorageItem destinationItem = new StorageItem();
                 destinationItem.setType(type);
@@ -254,5 +324,49 @@ public class DtsSynchronizationService {
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         return mapper.writeValueAsString(pipeCredentials);
+    }
+
+    private boolean shouldCheckToken(final AutonomousSyncRule rule, final StorageItem destination) {
+        return Boolean.TRUE.equals(rule.getCheckSyncToken()) &&
+                !StorageType.LOCAL.equals(destination.getType());
+    }
+
+    private void createSyncToken(final TransferTask task) {
+        final StorageItem destination = task.getDestination();
+        final String tokenPath = buildTokenPath(destination);
+        log.info("Creating synchronisation token {}", tokenPath);
+        try {
+            final URI uri = new URI(tokenPath);
+            final AbstractDataStorage storage = findStorage(uri);
+            apiClient.createStorageItem(storage.getId(), uri.getPath().replaceFirst("/", ""),
+                    DATE_FORMATTER.format(task.getStarted()));
+        } catch (Exception e) {
+            log.warn("Failed to create synchronisation token {}: {}", tokenPath, e.getMessage());
+        }
+    }
+
+    private boolean isSyncTokenPresent(final StorageItem destination) {
+        final String tokenPath = buildTokenPath(destination);
+        log.info("Checking synchronisation token {}", tokenPath);
+        try {
+            final URI uri = new URI(tokenPath);
+            final AbstractDataStorage storage = findStorage(uri);
+            return apiClient.getStorageItemContent(storage.getId(),
+                    uri.getPath().replaceFirst("/", "")) != null;
+        } catch (Exception e) {
+            log.warn("Failed to find synchronisation token {}: {}", tokenPath, e.getMessage());
+            return false;
+        }
+    }
+
+    @SneakyThrows
+    private AbstractDataStorage findStorage(final URI destination) {
+        final String path = destination.getHost() + destination.getPath();
+        return apiClient.findStorageByPath(path);
+    }
+
+    final String buildTokenPath(final StorageItem destination) {
+        final String delimiter = destination.getPath().endsWith("/") ? "" : "/";
+        return destination.getPath() + delimiter + syncToken;
     }
 }

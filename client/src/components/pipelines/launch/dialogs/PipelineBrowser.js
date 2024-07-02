@@ -33,7 +33,8 @@ import {
   getTreeItemByKey,
   getExpandedKeys,
   expandItem,
-  search
+  search,
+  formatTreeItems
 } from '../../model/treeStructureFunctions';
 
 import styles from './Browser.css';
@@ -43,7 +44,7 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 @connect({
   pipelinesLibrary
 })
-@inject('fireCloudMethods')
+@inject('fireCloudMethods', 'preferences')
 @inject(() => ({
   library: pipelinesLibrary
 }))
@@ -65,7 +66,8 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     fireCloudMethodConfigurationSnapshot: PropTypes.string,
     visible: PropTypes.bool,
     onSelect: PropTypes.func,
-    onCancel: PropTypes.func
+    onCancel: PropTypes.func,
+    allowSelectLatestVersion: PropTypes.bool
   };
 
   rootItems = [];
@@ -202,27 +204,28 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     if (!items) {
       return [];
     }
-    return items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    return formatTreeItems(items, {preferences: this.props.preferences})
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf} />
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}>
+              {this.generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
@@ -266,11 +269,10 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
     if (!this.rootItems) {
       this.rootItems = generateTreeData(
         {...this.libraryItems, fireCloud: {methods: this.fireCloudItems}},
-        false,
-        null,
-        [],
-        [ItemTypes.pipeline, ItemTypes.fireCloud],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          types: [ItemTypes.pipeline, ItemTypes.fireCloud],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
     }
     return (
@@ -476,6 +478,7 @@ export default class PipelineBrowser extends localization.LocalizedReactComponen
             listingMode
             configurationSelectionMode
             readOnly
+            allowSelectLatestVersion={!!this.props.allowSelectLatestVersion}
           />
         );
       } else {

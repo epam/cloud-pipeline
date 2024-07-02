@@ -53,7 +53,8 @@ public class ToolPageAO implements AccessObject<ToolPageAO> {
         sleep(3, SECONDS);
         if (!title().contains(expectedTitle)) {
             screenshot("page-title");
-            throw new RuntimeException("Page title is not the same as expected");
+            throw new RuntimeException(format("Page title ('%s') is not the same as expected ('%s')",
+                    title(), expectedTitle));
         }
         return this;
     }

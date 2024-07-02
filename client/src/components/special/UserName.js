@@ -19,6 +19,45 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Icon, Row, Tooltip} from 'antd';
+import {compareUserNames, compareUserNamesWithoutDomain} from '../../utils/users-filters';
+
+function getAttribute (attributes, ...attribute) {
+  const variants = attribute.map((attr) => ([
+    attr,
+    attr.toLowerCase(),
+    attr.toUpperCase(),
+    attr.slice(0, 1).toUpperCase().concat(attr.slice(1)),
+    attr.slice(0, 1).toLowerCase().concat(attr.slice(1))
+  ])).reduce((r, c) => ([...r, ...c]), []);
+  const [result] = variants
+    .map((variant) => (attributes || {})[variant])
+    .filter((value) => value !== undefined);
+  return result;
+}
+
+export function getUserDisplayName (user) {
+  const {
+    attributes = {},
+    name,
+    userName
+  } = user;
+  const firstName = getAttribute(attributes, 'FirstName', 'First Name');
+  const lastName = getAttribute(attributes, 'LastName', 'Last Name');
+  const attrName = getAttribute(attributes, 'name');
+  if (firstName && lastName && firstName !== lastName) {
+    return `${lastName} ${firstName}`;
+  }
+  if (firstName && lastName) {
+    return firstName;
+  }
+  if (attrName) {
+    return attrName;
+  }
+  if (name) {
+    return name;
+  }
+  return (userName || '').toLowerCase();
+}
 
 @inject('usersInfo')
 @observer
@@ -27,15 +66,20 @@ export default class UserName extends React.Component {
     className: PropTypes.string,
     userName: PropTypes.string,
     style: PropTypes.object,
-    showIcon: PropTypes.bool
+    showIcon: PropTypes.bool,
+    tooltipPlacement: PropTypes.string
   };
 
   @computed
   get user () {
     if (this.props.usersInfo.loaded && this.props.userName) {
-      const [user] = (this.props.usersInfo.value || [])
-        .filter(u => u.name.toLowerCase() === this.props.userName.toLowerCase());
-      return user;
+      const user = (this.props.usersInfo.value || [])
+        .find(u => compareUserNames(u.name, this.props.userName));
+      if (user) {
+        return user;
+      }
+      return (this.props.usersInfo.value || [])
+        .find(u => compareUserNamesWithoutDomain(u.name, this.props.userName));
     }
     return null;
   }
@@ -64,22 +108,22 @@ export default class UserName extends React.Component {
   };
 
   renderUserName = (user) => {
-    if (user.attributes && user.attributes.Name) {
-      return <span>{user.attributes.Name}</span>;
-    } else {
-      return <span>{(user.name || '').toLowerCase()}</span>;
-    }
+    return getUserDisplayName(user);
   };
 
   render () {
     const {
       className,
       showIcon,
-      style = {}
+      style = {},
+      tooltipPlacement
     } = this.props;
     if (this.user) {
       return (
-        <Tooltip overlay={this.renderUserAttributes(this.user)}>
+        <Tooltip
+          overlay={this.renderUserAttributes(this.user)}
+          placement={tooltipPlacement}
+        >
           <span
             className={className}
             style={Object.assign({cursor: 'default'}, style)}

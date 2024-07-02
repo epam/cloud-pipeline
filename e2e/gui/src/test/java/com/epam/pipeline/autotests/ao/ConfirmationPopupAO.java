@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,10 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
+import static java.lang.String.format;
+import static java.lang.String.join;
 import static org.openqa.selenium.By.className;
+import static org.testng.Assert.assertEquals;
 
 public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<PARENT_AO>, PARENT_AO> {
     private final SelenideElement element = $$(className("ant-confirm")).findBy(visible);
@@ -58,7 +61,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
     @Override
     public PARENT_AO ok() {
         if (!messageIsChecked) {
-            throw new RuntimeException(String.format(
+            throw new RuntimeException(format(
                     "You have tried to confirm something without checking the title that is: \"%s\"", title.text()
             ));
         }
@@ -94,16 +97,25 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
         return this;
     }
 
+    public ConfirmationPopupAO<PARENT_AO> ensureLaunchTitleIs(String expectedTitle) throws RuntimeException {
+        String actualTitle = join(" ", element.find(className("cp-run-name-title"))
+                .findAll(byXpath("./span")).texts());
+        assertEquals(actualTitle, expectedTitle,
+                format("Expected title is '%s', but actual is '%s'", expectedTitle, actualTitle));
+        this.messageIsChecked = true;
+        return this;
+    }
+
     public static Consumer<ConfirmationPopupAO<LogAO>> confirmCommittingToExistingTool(final String registryIp,
                                                                                        final String tool
     ) {
-        return log -> log.ensureTitleIs(String.format("%s/%s already exists. Overwrite?", registryIp, tool)).ok();
+        return log -> log.ensureTitleIs(format("%s/%s already exists. Overwrite?", registryIp, tool)).ok();
     }
 
     public static Consumer<ConfirmationPopupAO<LogAO>> confirmCommittingToExistingTool(final String registryIp,
                                                                                        final String tool,
                                                                                        final String version
     ) {
-        return log -> log.ensureTitleIs(String.format("%s/%s:%s already exists. Overwrite?", registryIp, tool, version)).ok();
+        return log -> log.ensureTitleIs(format("%s/%s:%s already exists. Overwrite?", registryIp, tool, version)).ok();
     }
 }

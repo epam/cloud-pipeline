@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.contextual;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.ContextualPreferenceVO;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -34,7 +35,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -68,9 +73,18 @@ public class ContextualPreferenceManager {
     public ContextualPreference load(final String name, final ContextualPreferenceExternalResource resource) {
         validateName(name);
         validateResource(resource);
-        return contextualPreferenceDao.load(name, resource)
+        return find(name, resource)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, name, resource)));
+    }
+
+    public List<ContextualPreference> load(final String name) {
+        return contextualPreferenceDao.load(name);
+    }
+
+    public Optional<ContextualPreference> find(final String name,
+                                               final ContextualPreferenceExternalResource resource) {
+        return contextualPreferenceDao.load(name, resource);
     }
 
     private void validateName(final String name) {
@@ -92,7 +106,7 @@ public class ContextualPreferenceManager {
      *
      * Returns a first found preference from the list of preferences.
      *
-     * Methods takes into account the context preference was searched in. It includes
+     * Method takes into account the context preference was searched in. It includes
      * user, its role, requested resource, etc.
      *
      * @param preferences List of preference names.
@@ -106,8 +120,6 @@ public class ContextualPreferenceManager {
         }
         validateNames(preferences);
         validateResource(resource);
-        Assert.isTrue(resource.getLevel() == ContextualPreferenceLevel.TOOL, messageHelper.getMessage(
-                MessageConstants.ERROR_SEARCH_CONTEXTUAL_PREFERENCE_EXTERNAL_RESOURCE_LEVEL_INVALID));
         return contextualPreferenceHandler.search(preferences, resources(resource))
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, resource)));
@@ -115,10 +127,37 @@ public class ContextualPreferenceManager {
 
     /**
      * Searches for a contextual preference with the given parameters
+     * Returns a first found preference from the list of preferences.
+     * Method takes into account the context preference was searched in. It includes
+     * user, its role, requested resource, etc.
+     *
+     * @param preferences List of preference names.
+     * @param resources List of external resource preferences.
+     * @throws IllegalArgumentException if preference with such parameters wasn't found.
+     */
+    public ContextualPreference searchList(final List<String> preferences,
+                                           final List<ContextualPreferenceExternalResource> resources) {
+        if (CollectionUtils.isEmpty(resources)) {
+            return search(preferences);
+        }
+        validateNames(preferences);
+        resources.forEach(this::validateResource);
+        final List<ContextualPreferenceExternalResource> allResources = userAndRolesResources();
+        allResources.addAll(resources);
+        return contextualPreferenceHandler.search(preferences, allResources)
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, resources.stream()
+                                .map(resource -> String.format("%s=%s",
+                                        resource.getLevel().toString(), resource.getResourceId()))
+                                .collect(Collectors.toList()))));
+    }
+
+    /**
+     * Searches for a contextual preference with the given parameters
      *
      * Returns a first found preference from the list of preferences.
      *
-     * Methods takes into account the context preference was searched in. It includes
+     * Method takes into account the context preference was searched in. It includes
      * user, its role, etc.
      *
      * @param preferences List of preference names.
@@ -129,6 +168,14 @@ public class ContextualPreferenceManager {
         return contextualPreferenceHandler.search(preferences, resources())
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, preferences, "no resource")));
+    }
+
+    public static <T> T parse(final ContextualPreference preference,
+                              final TypeReference<T> type) {
+        if (preference == null || StringUtils.isBlank(preference.getValue())) {
+            return null;
+        }
+        return JsonMapper.parseData(preference.getValue(), type);
     }
 
     private void validateNames(final List<String> names) {
@@ -143,22 +190,27 @@ public class ContextualPreferenceManager {
     }
 
     private List<ContextualPreferenceExternalResource> resources(final ContextualPreferenceExternalResource resource) {
-        final Optional<PipelineUser> currentUser = retrieveCurrentUser();
-        final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
-        currentUser.map(this::userResource).ifPresent(allResources::add);
-        currentUser.map(PipelineUser::getRoles).map(this::rolesResources).ifPresent(allResources::addAll);
+        final List<ContextualPreferenceExternalResource> allResources = userAndRolesResources();
         if (resource != null) {
             allResources.add(resource);
         }
         return allResources;
     }
 
+    private List<ContextualPreferenceExternalResource> userAndRolesResources() {
+        final Optional<PipelineUser> currentUser = retrieveCurrentUser();
+        final List<ContextualPreferenceExternalResource> allResources = new ArrayList<>();
+        currentUser.map(this::userResource).ifPresent(allResources::add);
+        currentUser.map(PipelineUser::getRoles).map(this::rolesResources).ifPresent(allResources::addAll);
+        return allResources;
+    }
+
     private Optional<PipelineUser> retrieveCurrentUser() {
         final Optional<PipelineUser> authorizedUser = Optional.ofNullable(authManager.getCurrentUser());
         final Optional<PipelineUser> pipelineUserById = authorizedUser.map(PipelineUser::getId)
-                .map(userManager::loadUserById);
+                .map(userManager::load);
         final Optional<PipelineUser> pipelineUserByUserName = authorizedUser.map(PipelineUser::getUserName)
-                .map(userManager::loadUserByName);
+                .map(userManager::loadByNameOrId);
         return pipelineUserById.isPresent()
                 ? pipelineUserById
                 : pipelineUserByUserName;

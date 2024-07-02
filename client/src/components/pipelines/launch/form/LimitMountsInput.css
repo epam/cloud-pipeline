@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,4 +34,18 @@
   border: 1px solid transparent;
   border-radius: 2px;
   margin-right: 2px;
+}
+
+.limit-mounts-input.summary {
+  cursor: pointer;
+  padding: 0;
+  border: none !important;
+  background: inherit !important;
+  color: inherit !important;
+}
+
+.limit-mounts-input.summary p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

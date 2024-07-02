@@ -41,6 +41,7 @@ import {
 import Metadata, {ApplyChanges} from '../../special/metadata/Metadata';
 import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
+import {CP_CAP_RUN_CAPABILITIES} from '../../pipelines/launch/form/utilities/parameters';
 
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles')
@@ -737,8 +738,17 @@ class EditRoleDialog extends React.Component {
                 REVERT
               </Button>
               <Button
+                onClick={() => {
+                  this.revertChanges();
+                  this.onClose();
+                }}
+              >
+                CANCEL
+              </Button>
+              <Button
                 id="close-edit-user-form"
                 type="primary"
+                disabled={!this.modified}
                 onClick={this.operationWrapper(this.saveChanges)}
               >
                 OK
@@ -884,6 +894,7 @@ class EditRoleDialog extends React.Component {
               value={metadata}
               applyChanges={ApplyChanges.callback}
               onChange={this.onChangeMetadata}
+              extraKeys={[CP_CAP_RUN_CAPABILITIES]}
             />
             <div
               key="INSTANCE_MANAGEMENT"

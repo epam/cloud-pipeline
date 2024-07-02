@@ -17,8 +17,10 @@
 package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.InstanceOfferRequestVO;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
+import com.epam.pipeline.entity.cluster.InstanceOffer;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
@@ -37,6 +39,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -60,6 +63,8 @@ public class InstanceOfferManagerUnitTest {
     private static final Long ANOTHER_REGION_ID = 2L;
     private static final ContextualPreferenceExternalResource TOOL_RESOURCE =
             new ContextualPreferenceExternalResource(ContextualPreferenceLevel.TOOL, TOOL_ID.toString());
+    private static final List<ContextualPreferenceExternalResource> TOOL_RESOURCES =
+            Collections.singletonList(TOOL_RESOURCE);
     private static final String ALLOWED_INSTANCE_TYPES_PREFERENCE =
             SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES.getKey();
     private static final String ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE =
@@ -93,7 +98,6 @@ public class InstanceOfferManagerUnitTest {
     private final InstanceType m4InstanceType = instanceType(M4_LARGE, defaultRegion);
     private final InstanceType m5InstanceType = instanceType(M5_LARGE, defaultRegion);
     private final InstanceType t2InstanceType = instanceType(T2_LARGE, defaultRegion);
-    private final InstanceType dv3InstanceType = instanceType(DV3, anotherRegion);
 
     private final InstanceOfferDao instanceOfferDao = mock(InstanceOfferDao.class);
     private final PipelineVersionManager versionManager = mock(PipelineVersionManager.class);
@@ -112,8 +116,14 @@ public class InstanceOfferManagerUnitTest {
         when(cloudRegionManager.loadDefaultRegion()).thenReturn(defaultRegion);
         when(cloudRegionManager.load(defaultRegion.getId())).thenReturn(defaultRegion);
         when(cloudRegionManager.load(anotherRegion.getId())).thenReturn(anotherRegion);
-        instanceOfferManager.updateOfferedInstanceTypes(Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType,
-                dv3InstanceType));
+        final List<InstanceOffer> offersDefault = Arrays.asList(
+                instanceOffer(M4_LARGE, defaultRegion),
+                instanceOffer(M5_LARGE, defaultRegion),
+                instanceOffer(T2_LARGE, defaultRegion));
+        when(instanceOfferDao.loadInstanceOffers(argThat(new InstanceRequestByRegion(defaultRegion.getId()))))
+                .thenReturn(offersDefault);
+        when(instanceOfferDao.loadInstanceOffers(argThat(new InstanceRequestByRegion(anotherRegion.getId()))))
+                .thenReturn(Collections.singletonList(instanceOffer(DV3, anotherRegion)));
     }
 
     @Test
@@ -122,16 +132,16 @@ public class InstanceOfferManagerUnitTest {
         final List<InstanceType> allInstanceTypes = Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType);
         final List<InstanceType> allowedInstanceTypes = Arrays.asList(m4InstanceType, m5InstanceType);
         final List<InstanceType> allowedInstanceDockerTypes = Collections.singletonList(m4InstanceType);
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
-        when(contextualPreferenceManager.search(eq(Arrays.asList(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE,
+        when(contextualPreferenceManager.searchList(eq(Arrays.asList(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE,
                 ALLOWED_INSTANCE_TYPES_PREFERENCE)), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_PATTERN));
-        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
+        when(contextualPreferenceManager.searchList(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
                 eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
-                eq(null)))
+        when(contextualPreferenceManager.searchList(eq(
+                Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
         when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
@@ -149,16 +159,16 @@ public class InstanceOfferManagerUnitTest {
         final List<InstanceType> allInstanceTypes = Arrays.asList(m4InstanceType, m5InstanceType, t2InstanceType);
         final List<InstanceType> allowedInstanceTypes = Arrays.asList(m4InstanceType, m5InstanceType);
         final List<InstanceType> allowedInstanceDockerTypes = Collections.singletonList(m4InstanceType);
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
-        when(contextualPreferenceManager.search(eq(Arrays.asList(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE,
-                ALLOWED_INSTANCE_TYPES_PREFERENCE)), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(Arrays.asList(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE,
+                ALLOWED_INSTANCE_TYPES_PREFERENCE)), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_PATTERN));
-        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
-                eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(Collections.singletonList(ALLOWED_PRICE_TYPES_PREFERENCE)),
+                eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
-        when(contextualPreferenceManager.search(eq(Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)),
-                eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(
+                Collections.singletonList(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES)), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_MASTER_PRICE_TYPES_PREFERENCES, SPOT_AND_ON_DEMAND_TYPES));
         when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(allInstanceTypes);
 
@@ -173,7 +183,7 @@ public class InstanceOfferManagerUnitTest {
     @Test
     public void getAllowedInstanceAndPriceTypesShouldLoadInstanceTypesForSingleRegionIfItIsSpecified() {
         when(cloudFacade.getAllInstanceTypes(any(), anyBoolean())).thenReturn(Collections.emptyList());
-        when(contextualPreferenceManager.search(any(), any()))
+        when(contextualPreferenceManager.searchList(any(), any()))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         instanceOfferManager.getAllowedInstanceAndPriceTypes(null, REGION_ID, false);
@@ -186,148 +196,150 @@ public class InstanceOfferManagerUnitTest {
 
     @Test
     public void isInstanceAllowedShouldReturnTrueIfInstanceTypeMatchesOneOfTheAllowedPatterns() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
         assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isInstanceAllowedShouldReturnFalseIfInstanceTypeDoesNotMatchAnyOfTheAllowedPatterns() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
         assertFalse(instanceOfferManager.isInstanceAllowed(T2_LARGE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isInstanceAllowedShouldReturnFalseIfInstanceTypeIsNotOffered() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, S2_PATTERN));
 
         assertFalse(instanceOfferManager.isInstanceAllowed(S2_LARGE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isInstanceAllowedShouldReturnFalseIfInstanceTypeIsNotAllowedInTheSpecifiedRegion() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         assertFalse(instanceOfferManager.isInstanceAllowed(DV3, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isInstanceAllowedShouldReturnTrueIfInstanceTypeIsAllowedInTheSpecifiedRegion() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         assertTrue(instanceOfferManager.isInstanceAllowed(DV3, ANOTHER_REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isInstanceAllowedShouldCheckInstanceTypesAllowedInDefaultRegionIfNoRegionIsSpecified() {
-        when(contextualPreferenceManager.search(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
         assertFalse(instanceOfferManager.isInstanceAllowed(DV3, null, false));
         assertTrue(instanceOfferManager.isInstanceAllowed(M4_LARGE, null, false));
-        verify(contextualPreferenceManager, times(2)).search(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager, times(2))
+                .searchList(eq(INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isToolInstanceAllowedShouldReturnTrueIfInstanceTypeMatchesOneOfTheAllowedPatterns() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCES, REGION_ID, false));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isToolInstanceAllowedShouldReturnFalseIfInstanceTypeDoesNotMatchAnyOfTheAllowedPatterns() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(T2_LARGE, TOOL_RESOURCE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(T2_LARGE, TOOL_RESOURCES, REGION_ID, false));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isToolInstanceAllowedReturnResultIfResourceIsNull() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, M4_M5_PATTERNS));
 
         assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, null, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(null));
     }
 
     @Test
     public void isToolInstanceAllowedShouldReturnFalseIfInstanceTypeIsNotOffered() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, S2_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(S2_LARGE, TOOL_RESOURCE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(S2_LARGE, TOOL_RESOURCES, REGION_ID, false));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isToolInstanceAllowedShouldReturnFalseIfInstanceTypeIsNotAllowedInTheSpecifiedRegion() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCES, REGION_ID, false));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isToolInstanceAllowedShouldReturnTrueIfInstanceTypeIsAllowedInTheSpecifiedRegion() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, ANOTHER_REGION_ID, false));
-        verify(contextualPreferenceManager).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCES, ANOTHER_REGION_ID, false));
+        verify(contextualPreferenceManager).searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isToolInstanceAllowedShouldCheckInstanceTypesAllowedInDefaultRegionIfNoRegionIsSpecified() {
-        when(contextualPreferenceManager.search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_DOCKER_INSTANCE_TYPES_PREFERENCE, ANY_PATTERN));
 
-        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCE, null, false));
-        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCE, null, false));
-        verify(contextualPreferenceManager, times(2)).search(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertFalse(instanceOfferManager.isToolInstanceAllowed(DV3, TOOL_RESOURCES, null, false));
+        assertTrue(instanceOfferManager.isToolInstanceAllowed(M4_LARGE, TOOL_RESOURCES, null, false));
+        verify(contextualPreferenceManager, times(2))
+                .searchList(eq(DOCKER_INSTANCE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isPriceTypeAllowedShouldReturnTrueIfGivenPriceTypeEqualsToOneOfTheAllowedPriceTypes() {
-        when(contextualPreferenceManager.search(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
 
-        assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT, TOOL_RESOURCE));
-        verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT, TOOL_RESOURCES, false));
+        verify(contextualPreferenceManager).searchList(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isPriceTypeAllowedShouldReturnFalseIfGivenPriceTypeDoesNotEqualToAnyOfTheAllowedPriceTypes() {
-        when(contextualPreferenceManager.search(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCE)))
+        when(contextualPreferenceManager.searchList(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCES)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, ON_DEMAND));
 
-        assertFalse(instanceOfferManager.isPriceTypeAllowed(SPOT, TOOL_RESOURCE));
-        verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCE));
+        assertFalse(instanceOfferManager.isPriceTypeAllowed(SPOT, TOOL_RESOURCES, false));
+        verify(contextualPreferenceManager).searchList(eq(PRICE_TYPES_PREFERENCES), eq(TOOL_RESOURCES));
     }
 
     @Test
     public void isPriceTypeAllowedShouldReturnResultIfResourceIsNull() {
-        when(contextualPreferenceManager.search(eq(PRICE_TYPES_PREFERENCES), eq(null)))
+        when(contextualPreferenceManager.searchList(eq(PRICE_TYPES_PREFERENCES), eq(null)))
                 .thenReturn(new ContextualPreference(ALLOWED_PRICE_TYPES_PREFERENCE, SPOT_AND_ON_DEMAND_TYPES));
 
-        assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT, null));
-        verify(contextualPreferenceManager).search(eq(PRICE_TYPES_PREFERENCES), eq(null));
+        assertTrue(instanceOfferManager.isPriceTypeAllowed(SPOT));
+        verify(contextualPreferenceManager).searchList(eq(PRICE_TYPES_PREFERENCES), eq(null));
     }
 
     private InstanceType instanceType(final String name, final AbstractCloudRegion region) {
@@ -338,10 +350,36 @@ public class InstanceOfferManagerUnitTest {
         return instanceType;
     }
 
+    private InstanceOffer instanceOffer(final String name, final AbstractCloudRegion region) {
+        final InstanceOffer instanceOffer = new InstanceOffer();
+        instanceOffer.setInstanceType(name);
+        instanceOffer.setTermType(TERM_TYPE);
+        instanceOffer.setCloudProvider(region.getProvider());
+        instanceOffer.setRegionId(region.getId());
+        return instanceOffer;
+    }
+
     private AwsRegion region(final Long id) {
         final AwsRegion region = new AwsRegion();
         region.setId(id);
         region.setProvider(CloudProvider.AWS);
         return region;
     }
+
+    class InstanceRequestByRegion extends ArgumentMatcher<InstanceOfferRequestVO> {
+        private long regionId;
+
+        InstanceRequestByRegion(long id) {
+            this.regionId = id;
+        }
+
+        @Override
+        public boolean matches(Object argument) {
+            if (!(argument instanceof InstanceOfferRequestVO)) {
+                return false;
+            }
+            return ((InstanceOfferRequestVO) argument).getRegionId().equals(regionId);
+        }
+    }
+
 }

@@ -34,6 +34,7 @@ import {
   getSharedStorageItemInfo
 } from '../../../../../utils/share-storage-item';
 import UserName from '../../../../special/UserName';
+import copyTextToClipboard from '../../../../special/copy-text-to-clipboard';
 import getCommonRootFolder from './get-common-root-folder';
 import styles from './SharedItemInfo.css';
 import roleModel from '../../../../../utils/roleModel';
@@ -268,14 +269,14 @@ class SharedItemInfo extends React.Component {
 
   copyUrlToClipboard = (event) => {
     event && event.stopPropagation();
-    if (navigator?.clipboard?.writeText) {
-      const {
-        sharedLink = ''
-      } = this.state;
-      navigator.clipboard.writeText(sharedLink).then(() => {
-        message.info('Share link copied to clipboard', 3);
-      });
-    }
+    const {
+      sharedLink = ''
+    } = this.state;
+    copyTextToClipboard(sharedLink).then(() => {
+      message.info('Share link copied to clipboard', 3);
+    }).catch((error) => {
+      message.error(error.message, 3);
+    });
   };
 
   closeShareDialog = () => {

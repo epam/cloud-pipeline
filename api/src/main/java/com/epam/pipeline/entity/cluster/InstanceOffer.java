@@ -41,12 +41,14 @@ public class InstanceOffer {
     private String operatingSystem;
     private String productFamily;
     private String volumeType;
+    private String volumeApiName;
     private Date priceListPublishDate;
     private int vCPU;
     private double memory;
     private String memoryUnit;
     private String instanceFamily;
     private int gpu;
+    private GpuDevice gpuDevice;
     private Long regionId;
     private CloudProvider cloudProvider;
 }

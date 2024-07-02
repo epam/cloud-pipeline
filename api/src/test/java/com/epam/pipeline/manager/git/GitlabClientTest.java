@@ -46,7 +46,8 @@ public class GitlabClientTest {
 
     private void testBuildCloneUrl(String user, String url) throws GitClientException {
         GitlabClient client =
-                GitlabClient.initializeGitlabClientFromRepositoryAndToken(user, url, TOKEN, null, null, false);
+                GitlabClient.initializeGitlabClientFromRepositoryAndToken(
+                        user, url, TOKEN, null, null, false, "v3");
         GitCredentials credentials = client.buildCloneCredentials(true, DURATION);
         Assert.assertNotNull(credentials);
         Assert.assertEquals(USER, credentials.getUserName());

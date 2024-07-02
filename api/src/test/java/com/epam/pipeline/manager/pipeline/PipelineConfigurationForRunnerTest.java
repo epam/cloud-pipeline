@@ -28,6 +28,8 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +42,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
@@ -82,6 +85,16 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
     @MockBean
     @SuppressWarnings("PMD.UnusedPrivateField")
     private PipelineRunManager pipelineRunManager;
+    @MockBean
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private CloudRegionManager regionManager;
+
+    @Mock
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    private PreferenceManager preferenceManager;
 
     private ConfigurationEntry configurationEntry;
 
@@ -106,6 +119,7 @@ public class PipelineConfigurationForRunnerTest extends AbstractManagerTest {
         when(toolVersionManagerMock.loadToolVersionSettings(anyLong(), anyString()))
                 .thenReturn(Collections.singletonList(ToolVersion.builder()
                         .settings(Collections.singletonList(configurationEntry)).build()));
+        when(launchCapabilitiesProcessor.process(any())).thenReturn(Collections.emptyMap());
     }
 
     @Test

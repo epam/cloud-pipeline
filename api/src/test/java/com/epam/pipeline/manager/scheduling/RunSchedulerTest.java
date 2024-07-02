@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -84,6 +85,9 @@ public class RunSchedulerTest extends AbstractSpringTest {
     @MockBean
     private ConfigurationRunner configurationRunner;
 
+    @MockBean
+    protected InstanceOfferManager instanceOfferManager;
+
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
@@ -92,7 +96,8 @@ public class RunSchedulerTest extends AbstractSpringTest {
         final RunConfiguration runConfiguration = createRunConfiguration();
 
         Mockito.when(pipelineRunDao.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
-        Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong())).thenReturn(pipelineRun);
+        Mockito.when(pipelineRunManager.loadPipelineRun(Mockito.anyLong(), Mockito.eq(false)))
+                .thenReturn(pipelineRun);
         Mockito.when(pipelineRunDockerOperationManager.pauseRun(Mockito.anyLong(), Mockito.anyBoolean()))
                 .thenReturn(pipelineRun);
         Mockito.when(configurationManager.load(Mockito.anyLong())).thenReturn(runConfiguration);

@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.Data;
@@ -69,19 +70,20 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     /**
      * Creates billing requests for given run
      *
-     * @param runContainer Pipeline run to build request
+     * @param container Pipeline run to build request
      * @param indexPrefix common billing prefix for index to insert requests into
      * @param previousSync nullable time point, where the previous synchronization was started
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
-    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRunWithType> runContainer,
+    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRunWithType> container,
                                                          final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
-        return convertRunToBillings(runContainer, previousSync, syncStart).stream()
-            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(), billingInfo))
+        return convertRunToBillings(container, previousSync, syncStart).stream()
+            .map(billingInfo -> getDocWriteRequest(indexPrefix, container.getOwner(), container.getRegion(),
+                    billingInfo))
             .collect(Collectors.toList());
     }
 
@@ -91,16 +93,14 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         final LocalDateTime syncStart) {
         final PipelineRun pipelineRun = runContainer.getEntity().getPipelineRun();
         if (previousSync != null && pipelineRun.getStatus().isFinal() &&
-                pipelineRun.getEndDate() != null &&
-                getEnd(pipelineRun).isBefore(previousSync)) {
+                getEnd(pipelineRun).orElse(LocalDateTime.MAX).isBefore(previousSync)) {
             log.debug("Run {} [{} - {}] was not active in period {} - {}.",
                     pipelineRun.getId(), pipelineRun.getStartDate(),
                     pipelineRun.getEndDate(), previousSync, syncStart);
             return Collections.emptyList();
         }
         final RunPrice price = getPrice(runContainer);
-        final List<RunStatus> statuses = adjustStatuses(pipelineRun,
-                previousSync, syncStart);
+        final List<RunStatus> statuses = adjustStatuses(pipelineRun, previousSync, syncStart);
 
         return createBillingsForPeriod(runContainer.getEntity(), price, statuses).stream()
             .filter(this::isNotEmpty)
@@ -115,32 +115,48 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     }
 
     protected List<RunStatus> adjustStatuses(final PipelineRun run,
-                                             final LocalDateTime previousSync,
-                                             final LocalDateTime syncStart) {
+                                             final LocalDateTime prevSync,
+                                             final LocalDateTime currSync) {
+        final LocalDateTime syncStart = toStartOfDay(prevSync).orElse(LocalDateTime.MIN);
+        final LocalDateTime syncEnd = toStartOfDay(currSync).orElseThrow(this::throwMissingSyncEnd);
+        final LocalDateTime runStart = getStart(run).orElse(LocalDateTime.MAX);
+        final LocalDateTime runEnd = getEnd(run).orElse(LocalDateTime.MAX);
+        if (runEnd.isBefore(syncStart) || runEnd.isBefore(runStart)
+                || syncEnd.isBefore(syncStart) || syncEnd.isBefore(runStart)) {
+            return getInactiveStatuses(run, syncStart);
+        }
+        final LocalDateTime start = max(syncStart, runStart);
+        final LocalDateTime end = min(syncEnd, runEnd);
         final List<RunStatus> statuses = run.getRunStatuses();
-        final LocalDateTime start = getBillingPeriodStart(previousSync);
-        final LocalDateTime end = getBillingPeriodEnd(syncStart);
-        return CollectionUtils.isNotEmpty(statuses) 
-                ? getAdjustedStatuses(run, statuses, start, end) 
-                : getDefaultStatuses(run, start, end);
+        if (CollectionUtils.isEmpty(statuses)) {
+            return getActiveStatuses(run, start, end);
+        }
+        return getAdjustedStatuses(run, statuses, start, end);
     }
 
-    private LocalDateTime getBillingPeriodStart(final LocalDateTime periodStart) {
-        return toStartOfDay(periodStart).orElse(LocalDateTime.MIN);
+    private List<RunStatus> getInactiveStatuses(final PipelineRun run, final LocalDateTime start) {
+        return Collections.singletonList(
+                new RunStatus(run.getId(), TaskStatus.STOPPED, start));
     }
 
-    private LocalDateTime getBillingPeriodEnd(final LocalDateTime periodEnd) {
-        return toStartOfDay(periodEnd)
-                .orElseThrow(() -> new IllegalArgumentException("Billing period end date should be provided."));
+    private List<RunStatus> getActiveStatuses(final PipelineRun run,
+                                              final LocalDateTime start,
+                                              final LocalDateTime end) {
+        return Arrays.asList(
+                new RunStatus(run.getId(), TaskStatus.RUNNING, start),
+                new RunStatus(run.getId(), TaskStatus.STOPPED, end));
+    }
+    private IllegalArgumentException throwMissingSyncEnd() {
+        return new IllegalArgumentException("Billing period end date should be provided.");
     }
 
-    private Optional<LocalDateTime> toStartOfDay(final LocalDateTime previousSync) {
-        return Optional.ofNullable(previousSync)
+    private Optional<LocalDateTime> toStartOfDay(final LocalDateTime date) {
+        return Optional.ofNullable(date)
                 .map(LocalDateTime::toLocalDate)
                 .map(LocalDate::atStartOfDay);
     }
 
-    private List<RunStatus> getAdjustedStatuses(final PipelineRun run, final List<RunStatus> statuses, 
+    private List<RunStatus> getAdjustedStatuses(final PipelineRun run, final List<RunStatus> statuses,
                                                 final LocalDateTime start, final LocalDateTime end) {
         final List<RunStatus> sortedStatuses = statuses.stream()
                 .sorted(Comparator.comparing(RunStatus::getTimestamp))
@@ -183,28 +199,28 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 .orElse(sortedStatuses.size() - 1);
     }
 
-    private RunStatus getSyntheticFirstRunningStatus(final PipelineRun run, final LocalDateTime start) {
-        return new RunStatus(run.getId(), TaskStatus.RUNNING, max(start, getStart(run)));
+    private RunStatus getSyntheticFirstRunningStatus(final PipelineRun run, final LocalDateTime date) {
+        return new RunStatus(run.getId(), TaskStatus.RUNNING, date);
     }
 
-    private RunStatus getSyntheticLastStoppedStatus(final PipelineRun run, final LocalDateTime end) {
-        return new RunStatus(run.getId(), TaskStatus.STOPPED, min(end, getEnd(run)));
+    private RunStatus getSyntheticLastStoppedStatus(final PipelineRun run, final LocalDateTime date) {
+        return new RunStatus(run.getId(), TaskStatus.STOPPED, date);
     }
 
     private RunStatus getAdjustedStatus(final RunStatus status, final LocalDateTime date) {
         return new RunStatus(status.getRunId(), status.getStatus(), date);
     }
 
-    private LocalDateTime getStart(final PipelineRun run) {
-        return getDate(run, PipelineRun::getStartDate).orElse(LocalDateTime.MIN);
+    private Optional<LocalDateTime> getStart(final PipelineRun run) {
+        return getDate(run, PipelineRun::getInstanceStartDate);
     }
 
-    private LocalDateTime getEnd(final PipelineRun run) {
-        return getDate(run, PipelineRun::getEndDate).orElse(LocalDateTime.MAX);
+    private Optional<LocalDateTime> getEnd(final PipelineRun run) {
+        return getDate(run, PipelineRun::getEndDate);
     }
 
     private Optional<LocalDateTime> getDate(final PipelineRun run, final Function<PipelineRun, Date> function) {
-        return Optional.ofNullable(run).map(function).map(DateUtils::toLocalDateTime);
+        return Optional.ofNullable(run).map(function).map(DateUtils::convertDateToLocalDateTime);
     }
 
     private LocalDateTime min(final LocalDateTime first, final LocalDateTime second) {
@@ -213,17 +229,6 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private LocalDateTime max(final LocalDateTime first, final LocalDateTime second) {
         return second.isAfter(first) ? second : first;
-    }
-
-    private List<RunStatus> getDefaultStatuses(final PipelineRun run, final LocalDateTime start, 
-                                               final LocalDateTime end) {
-        final LocalDateTime runStart = getStart(run);
-        final LocalDateTime runEnd = getEnd(run);
-        return runEnd.isBefore(start) || runStart.isAfter(end)
-                ? Collections.singletonList(new RunStatus(run.getId(), TaskStatus.STOPPED, start))
-                : Arrays.asList(
-                new RunStatus(run.getId(), TaskStatus.RUNNING, max(start, runStart)),
-                new RunStatus(run.getId(), TaskStatus.STOPPED, min(end, runEnd)));
     }
 
     private RunPrice getPrice(final EntityContainer<PipelineRunWithType> runContainer) {
@@ -275,6 +280,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         billing1.setCost(billing1.getCost() + billing2.getCost());
         billing1.setUsageMinutes(billing1.getUsageMinutes() + billing2.getUsageMinutes());
         billing1.setPausedMinutes(billing1.getPausedMinutes() + billing2.getPausedMinutes());
+        billing1.setComputeCost(billing1.getComputeCost() + billing2.getComputeCost());
+        billing1.setDiskCost(billing1.getDiskCost() + billing2.getDiskCost());
         return billing1;
     }
 
@@ -305,10 +312,18 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
             final Duration duration = Duration.between(pointStart, pointEnd);
             final Long disk = getDisksSize(run, pointStart);
             final Long durationMinutes = minutesOf(duration);
+            final boolean oldFashioned = price.isOldFashioned();
+            final Long diskCosts = oldFashioned ? 0L : getDiskCosts(duration, disk, price);
+            final Long computeCosts = oldFashioned ? 0L : getComputeCosts(duration, price, active);
+            final Long totalCosts = oldFashioned
+                    ? getOldFashionedCosts(duration, price, active)
+                    : (diskCosts + computeCosts);
             billings.add(PipelineRunBillingInfo.builder()
                              .date(pointStart.toLocalDate())
                              .run(run)
-                             .cost(getCosts(duration, disk, price, active))
+                             .cost(totalCosts)
+                             .computeCost(computeCosts)
+                             .diskCost(diskCosts)
                              .usageMinutes(active ? durationMinutes : 0L)
                              .pausedMinutes(active ? 0L : durationMinutes)
                              .build());
@@ -347,12 +362,6 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
                 .map(NodeDisk::getCreatedDate);
     }
 
-    private Long getCosts(final Duration duration, final Long disk, final RunPrice price, final boolean active) {
-        return price.isOldFashioned() 
-                ? getOldFashionedCosts(duration, price, active)
-                : getNewFashionedCosts(duration, disk, price, active);
-    }
-
     private long getOldFashionedCosts(final Duration duration, final RunPrice price, final boolean active) {
         return active ? getOldFashionedCosts(duration, price) : 0L;
     }
@@ -361,13 +370,8 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
         return calculateCostsForPeriod(duration.getSeconds(), price.getOldFashionedPricePerHour());
     }
 
-    private long getNewFashionedCosts(final Duration duration, final Long disk, final RunPrice price, 
-                                      final boolean active) {
-        return getDiskCosts(duration, disk, price) + (active ? getComputeCosts(duration, price) : 0L);
-    }
-
-    private Long getComputeCosts(final Duration duration, final RunPrice price) {
-        return calculateCostsForPeriod(duration.getSeconds(), price.getComputePricePerHour());
+    private Long getComputeCosts(final Duration duration, final RunPrice price, final boolean active) {
+        return active ? calculateCostsForPeriod(duration.getSeconds(), price.getComputePricePerHour()) : 0L;
     }
 
     private Long getDiskCosts(final Duration duration, final Long disk, final RunPrice price) {
@@ -407,10 +411,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private DocWriteRequest getDocWriteRequest(final String indexPrefix,
                                                final EntityWithMetadata<PipelineUser> owner,
+                                               final AbstractCloudRegion region,
                                                final PipelineRunBillingInfo billing) {
         final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
             .owner(owner)
             .entity(billing)
+            .region(region)
             .build();
         final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         final String docId = billing.getEntity().getPipelineRun().getId().toString();

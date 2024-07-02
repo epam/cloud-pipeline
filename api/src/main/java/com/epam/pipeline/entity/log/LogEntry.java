@@ -32,4 +32,5 @@ public class LogEntry {
     private String type;
     private String user;
     private String severity;
+    private Long storageId;
 }

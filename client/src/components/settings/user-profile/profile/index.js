@@ -16,6 +16,7 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
 import roleModel from '../../../../utils/roleModel';
@@ -23,9 +24,13 @@ import LoadingView from '../../../special/LoadingView';
 import Metadata from '../../../special/metadata/Metadata';
 import UserName from '../../../special/UserName';
 import {METADATA_KEY as LIMIT_MOUNTS_USER_PREFERENCE}
-from '../../../special/metadata/special/limit-mounts';
+  from '../../../special/metadata/special/limit-mounts';
+import {METADATA_KEY as RUN_CAPABILITIES}
+  from '../../../pipelines/launch/form/utilities/run-capabilities';
 import displayDate from '../../../../utils/displayDate';
 import styles from './profile.css';
+import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
+import SshThemeSelect from '../../../special/metadata/special/ssh-theme-select';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 
 function renderRoleName (role) {
@@ -48,6 +53,15 @@ class ProfileSettings extends React.Component {
 
   componentWillUnmount () {
     this.props.currentUserAttributes.refresh(true);
+  }
+
+  @computed
+  get notificationsEnabled () {
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.userNotificationsEnabled;
+    }
+    return false;
   }
 
   render () {
@@ -190,7 +204,14 @@ class ProfileSettings extends React.Component {
           entityClass="PIPELINE_USER"
           removeAllAvailable={userInfo.admin}
           restrictedKeys={userInfo.admin ? [] : metadataKeys}
-          extraKeys={[LIMIT_MOUNTS_USER_PREFERENCE]}
+          extraKeys={[
+            LIMIT_MOUNTS_USER_PREFERENCE,
+            RUN_CAPABILITIES,
+            SshThemeSelect.metadataKey,
+            this.notificationsEnabled
+              ? MuteEmailNotifications.metadataKey
+              : undefined
+          ].filter(Boolean)}
         />
       </div>
     );

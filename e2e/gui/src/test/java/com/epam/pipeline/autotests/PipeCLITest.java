@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -74,7 +75,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem(C.PIPE_OPERATION_SYSTEM)
+                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY.getByName(C.PIPE_OPERATION_SYSTEM))
                 .checkOperationSystemInstallationContent(installationContent);
     }
 
@@ -90,7 +91,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .settings()
                 .switchToCLI()
                 .switchPipeCLI()
-                .selectOperationSystem("Linux-Binary")
+                .selectOperationSystem(CliAO.OperationSystem.LINUX_BINARY)
                 .generateAccessKey()
                 .getCLIConfigureCommand();
         final String cliConfigureCommandConfigStore = format("%s --config-store install-dir", cliConfigureCommand);

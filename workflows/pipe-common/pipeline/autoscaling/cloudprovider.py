@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LIMIT_EXCEEDED_EXIT_CODE = 6
+LIMIT_EXCEEDED_ERROR_MESSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
+
+INSUFFICIENT_CAPACITY_EXIT_CODE = 7
+INSUFFICIENT_CAPACITY_ERROR_MESSAGE = 'Insufficient instance capacity.'
 
 
 class AbstractInstanceProvider(object):
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token):
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
         pass
 
     def find_and_tag_instance(self, old_id, new_id):

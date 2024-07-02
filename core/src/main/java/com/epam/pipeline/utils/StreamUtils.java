@@ -2,8 +2,12 @@ package com.epam.pipeline.utils;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -39,4 +43,21 @@ public final class StreamUtils {
                 .flatMap(item -> Stream.of(separator, item))
                 .skip(1L);
     }
+
+    public static <T> Stream<T> appended(final Stream<T> stream, final T item) {
+        return Stream.concat(stream, Stream.of(item));
+    }
+
+    /**
+     * Provides predicate that helps to filter objects in a stream distinctly by key
+     * */
+    public static <T> Predicate<T> distinctByKeyPredicate(final Function<? super T, ?> keyExtractor) {
+        final Set<Object> seen = ConcurrentHashMap.newKeySet();
+        return t -> seen.add(keyExtractor.apply(t));
+    }
+
+    public static <T> Stream<T> takeWhile(final Stream<T> stream, final Predicate<T> predicate) {
+        return from(IteratorUtils.takeWhile(stream.iterator(), predicate));
+    }
+
 }

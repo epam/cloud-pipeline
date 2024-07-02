@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -184,6 +185,14 @@ public class CloudRegionManager implements SecuredEntityManager {
         return (AzureRegionCredentials) loadCredentials((AbstractCloudRegion) region);
     }
 
+    public AwsRegionCredentials loadCredentials(final AwsRegion region) {
+        return cloudRegionDao.loadCredentials(region.getId())
+                .map(credentials -> {
+                    validateProvider(credentials.getProvider(), region.getProvider());
+                    return (AwsRegionCredentials) credentials;
+                }).orElse(null);
+    }
+
     public AbstractCloudRegionCredentials loadCredentials(final AbstractCloudRegion region) {
         return cloudRegionDao.loadCredentials(region.getId())
                 .map(credentials -> {
@@ -331,8 +340,10 @@ public class CloudRegionManager implements SecuredEntityManager {
     private void validateRegion(final AbstractCloudRegion region, final AbstractCloudRegionCredentials credentials) {
         Assert.isTrue(StringUtils.isNotBlank(region.getName()),
                 messageHelper.getMessage(MessageConstants.ERROR_REGION_NAME_MISSING));
-        Assert.notNull(region.getMountStorageRule(),
-                messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_RULE_MISSING));
+        Assert.notNull(region.getMountObjectStorageRule(),
+                messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_OBJECT_STORAGE_RULE_MISSING));
+        Assert.notNull(region.getMountFileStorageRule(),
+                messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_FILE_STORAGE_RULE_MISSING));
         Assert.notNull(region.getMountCredentialsRule(),
                 messageHelper.getMessage(MessageConstants.ERROR_REGION_MOUNT_CREDENTIALS_RULE_MISSING));
         getHelper(region.getProvider()).validateRegion(region, credentials);

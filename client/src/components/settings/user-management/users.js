@@ -44,6 +44,8 @@ import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
+import {QuotasDisclaimerComponent} from './quota-info';
+import MarkedToBeBlockedInfo from './marked-to-be-blocked-info';
 
 const PAGE_SIZE = 20;
 
@@ -60,9 +62,9 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
-  notBlocked: 'notBlocked',
+  markedToBeBlocked: 'marked-to-be-blocked',
   online: 'online',
-  offline: 'offline'
+  quota: 'quota'
 };
 
 @roleModel.authenticationInfo
@@ -100,6 +102,15 @@ export default class UsersManagement extends React.Component {
   get isReader () {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
+
+  @computed
+  get userHasReadPermissions () {
+    const {
+      users
+    } = this.props;
+    const list = users.loaded ? users.value : [];
+    return list.some((user) => roleModel.readAllowed(user));
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -210,14 +221,14 @@ export default class UsersManagement extends React.Component {
           case USERS_FILTERS.blocked: {
             return user.blocked;
           }
-          case USERS_FILTERS.notBlocked: {
-            return !user.blocked;
+          case USERS_FILTERS.markedToBeBlocked: {
+            return !!user.externalBlockDate;
           }
           case USERS_FILTERS.online: {
             return user.online;
           }
-          case USERS_FILTERS.offline: {
-            return !user.online;
+          case USERS_FILTERS.quota: {
+            return (user.activeQuotas || []).length > 0;
           }
         }
       });
@@ -280,39 +291,40 @@ export default class UsersManagement extends React.Component {
           value={this.state.filterUsers}
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
+          dropdownMatchSelectWidth={false}
         >
           <Select.Option
             key={USERS_FILTERS.all}
             value={USERS_FILTERS.all}
           >
-            Show all users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.notBlocked}
-            value={USERS_FILTERS.notBlocked}
-          >
-            Show not blocked users
+            All
           </Select.Option>
           <Select.Option
             key={USERS_FILTERS.blocked}
             value={USERS_FILTERS.blocked}
           >
-            Show blocked users
+            Blocked
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.markedToBeBlocked}
+            value={USERS_FILTERS.markedToBeBlocked}
+          >
+            Marked to be blocked
           </Select.Option>
           { this.isAdmin && (
             <Select.Option
               key={USERS_FILTERS.online}
               value={USERS_FILTERS.online}
             >
-              Show online users
+              Online
             </Select.Option>)
           }
           { this.isAdmin && (
             <Select.Option
-              key={USERS_FILTERS.offline}
-              value={USERS_FILTERS.offline}
+              key={USERS_FILTERS.quota}
+              value={USERS_FILTERS.quota}
             >
-              Show offline users
+              Exceeded quotas
             </Select.Option>)
           }
         </Select>
@@ -421,6 +433,7 @@ export default class UsersManagement extends React.Component {
         className: styles.userNameColumn,
         render: (name, user) => {
           let blockedSpan;
+          let blockInfo;
           const offlineInfo = (
             <div
               style={{
@@ -452,6 +465,18 @@ export default class UsersManagement extends React.Component {
               >
                 - blocked
               </span>
+            );
+          }
+          if (user.externalBlockDate) {
+            blockInfo = (
+              <MarkedToBeBlockedInfo
+                className="cp-error"
+                style={{
+                  cursor: 'pointer',
+                  fontSize: 'smaller'
+                }}
+                externalBlockDate={user.externalBlockDate}
+              />
             );
           }
           const userStatus = this.isAdmin
@@ -496,11 +521,23 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
+                  <QuotasDisclaimerComponent
+                    style={{fontSize: 'smaller', cursor: 'pointer'}}
+                    quotas={user.activeQuotas || []}
+                  />
                 </Row>
+                {
+                  blockInfo && (
+                    <Row>
+                      {blockInfo}
+                    </Row>
+                  )
+                }
               </Row>
             );
-          } else {
-            return (
+          }
+          return (
+            <Row type="flex" style={{flexDirection: 'column'}}>
               <Row>
                 <span className={styles.lineBreak}>
                   {userStatus}
@@ -510,8 +547,15 @@ export default class UsersManagement extends React.Component {
                   </span>
                 </span>
               </Row>
-            );
-          }
+              {
+                blockInfo && (
+                  <Row>
+                    {blockInfo}
+                  </Row>
+                )
+              }
+            </Row>
+          );
         }
       },
       {
@@ -632,10 +676,19 @@ export default class UsersManagement extends React.Component {
   };
 
   render () {
-    if (!this.props.authenticatedUserInfo.loaded && this.props.authenticatedUserInfo.pending) {
+    if (
+      !this.props.authenticatedUserInfo.loaded &&
+      this.props.authenticatedUserInfo.pending
+    ) {
       return null;
     }
-    if (!this.isReader && !this.isAdmin) {
+    if (
+      !this.props.users.loaded &&
+      this.props.users.pending
+    ) {
+      return null;
+    }
+    if (!this.isReader && !this.isAdmin && !this.userHasReadPermissions) {
       return (
         <Alert type="error" message="Access is denied" />
       );
@@ -654,7 +707,6 @@ export default class UsersManagement extends React.Component {
           onUserDelete={this.deleteUser}
           onClose={this.closeEditUserRolesDialog}
           user={this.state.editableUser}
-          readOnly={!this.isAdmin}
         />
         <ExportUserForm
           visible={exportUserDialogVisible}

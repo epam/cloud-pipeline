@@ -37,7 +37,10 @@ public class Launch_PipelineRunTimeoutTest extends AbstractAutoRemovingPipelineR
                 .firstVersion()
                 .codeTab()
                 .clearAndFillPipelineFile("config.json", Utils.readResourceFully(CONFIG_JSON)
+                        .replace("{{file_name}}",
+                                Utils.getFileNameFromPipelineName(getPipelineName(), "sh"))
                         .replace("{{instance_type}}", C.DEFAULT_INSTANCE))
+                .sleep(2, SECONDS)
                 .runPipeline();
     }
 

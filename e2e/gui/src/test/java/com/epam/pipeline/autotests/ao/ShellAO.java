@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.lang.String.format;
@@ -98,7 +99,8 @@ public class ShellAO implements AccessObject<ShellAO> {
 
     public ShellAO assertPageAfterCommandContainsStrings(String command, String... messages) {
         Arrays.stream(messages)
-                .forEach(message -> assertTrue(lastCommandResult(command).contains(message)));
+                .forEach(message -> assertTrue(lastCommandResult(command).contains(message),
+                        format("'%s doesn't contain %s", lastCommandResult(command), message)));
         return this;
     }
 
@@ -108,9 +110,18 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
+    public ShellAO assertPageContainsStringsWithRegex(String command, String ... messages) {
+        String log = lastCommandResult(command);
+        Arrays.stream(messages)
+                .forEach(message ->
+                        assertTrue(Pattern.compile(message).matcher(log).find(),
+                                format("Message '%s' isn't found", message)));
+        return this;
+    }
+
     public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
         String results = lastCommandResult(command)
-                .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
+                .replace(format("[root@pipeline-%s ~]#", runID), "");
         assertEquals(results.split("\\s+").length, expectedCount);
         return this;
     }
@@ -126,6 +137,10 @@ public class ShellAO implements AccessObject<ShellAO> {
     public String lastCommandResult(String command) {
         return context().text().substring(context().text().indexOf(command))
                 .replace("\n", "").replace(command, "");
+    }
+
+    public String getFirstLine() {
+        return context().getText().substring(0, context().getText().indexOf("\n"));
     }
 
     public ShellAO assertPageContainsString(String str) {
@@ -156,9 +171,14 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public ShellAO waitUntilTextAppears(final String runId) {
+        waitUntilTextAppears("pipeline", runId);
+        return this;
+    }
+
+    public ShellAO waitUntilTextAppears(final String pipeName, final String runId) {
         for (int i = 0; i < 2; i++) {
             sleep(10, SECONDS);
-            if ($(withText(format("pipeline-%s", runId))).exists()) {
+            if ($(withText(format("%s-%s", pipeName.toLowerCase(), runId))).exists()) {
                 break;
             }
             sleep(1, MINUTES);
@@ -179,6 +199,17 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(1, MINUTES);
             refresh();
             sleep(5, SECONDS);
+        }
+        return this;
+    }
+
+    public ShellAO waitUntilTextAppearsSeveralTimes(final String runId, final int textNumberTimes) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($$(withText(format("root@pipeline-%s", runId))).size() >= textNumberTimes) {
+                break;
+            }
+            sleep(1, MINUTES);
         }
         return this;
     }

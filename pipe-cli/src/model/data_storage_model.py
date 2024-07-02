@@ -29,12 +29,15 @@ class DataStorageModel(DataStorageItemModel):
         self.region = None
         self.mount_status = None
         self.tools_to_mount = set()
+        self.owner = None
+        self.root = None
 
     @classmethod
     def load(cls, json):
         instance = DataStorageModel()
         instance.initialize(json)
         instance.identifier = json['id']
+        instance.root = json.get('root')
         if 'description' in json:
             instance.description = json['description']
         if 'type' in json:
@@ -52,6 +55,8 @@ class DataStorageModel(DataStorageItemModel):
             cls.parse_policy(instance.policy, json['storagePolicy'])
         if 'toolsToMount' in json:
             cls.parse_tool_to_mount(instance, json)
+        if 'owner' in json:
+            instance.owner = json['owner']
         cls.parse_mount_status(instance, json)
         return instance
 
@@ -60,6 +65,7 @@ class DataStorageModel(DataStorageItemModel):
         instance = DataStorageModel()
         instance.initialize(json)
         instance.identifier = json['id']
+        instance.root = json.get('root')
         if 'description' in json:
             instance.description = json['description']
         if 'type' in json:
@@ -74,6 +80,7 @@ class DataStorageModel(DataStorageItemModel):
             instance.mask = json['mask']
         if 'regionId' in json:
             instance.region = cls._find_region_code(json['regionId'], region_data)
+            instance.endpoint = cls._find_endpoint(json['regionId'], region_data)
         instance.policy = StoragePolicy()
         if 'storagePolicy' in json:
             cls.parse_policy(instance.policy, json['storagePolicy'])
@@ -129,6 +136,13 @@ class DataStorageModel(DataStorageItemModel):
         for region in region_data:
             if int(region.get('id', 0)) == int(region_id):
                 return region.get('regionId', None)
+        return None
+
+    @staticmethod
+    def _find_endpoint(region_id, region_data):
+        for region in region_data:
+            if int(region.get('id', 0)) == int(region_id):
+                return region.get('endpoint', None)
         return None
 
 

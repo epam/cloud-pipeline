@@ -1,3 +1,19 @@
+/*
+ * Copyright 2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.config.Constants;
@@ -8,6 +24,12 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
+import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
+import org.elasticsearch.search.aggregations.pipeline.ParsedSimpleValue;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -57,14 +79,26 @@ public final class BillingUtils {
     public static final String STORAGES_COSTS_COLUMN = "Storage costs ($)";
     public static final String DURATION_COLUMN = "Duration (hours)";
     public static final String COST_COLUMN = "Cost ($)";
+    public static final String DETAILED_COST_COLUMN = "Cost, %s ($)";
+    public static final String DETAILED_OV_COST_COLUMN = "Cost, %s Old Versions ($)";
+    public static final String DISK_COST_COLUMN = "Disk cost ($)";
+    public static final String COMPUTE_COST_COLUMN = "Compute cost ($)";
     public static final String AVERAGE_VOLUME_COLUMN = "Average Volume (GB)";
+    public static final String DETAILED_AVERAGE_VOLUME_COLUMN = "Average Volume, %s (GB)";
+    public static final String DETAILED_OV_AVERAGE_VOLUME_COLUMN = "Average Volume, %s Old Versions (GB)";
     public static final String CURRENT_VOLUME_COLUMN = "Current Volume (GB)";
+    public static final String DETAILED_CURRENT_VOLUME_COLUMN = "Current Volume, %s (GB)";
+    public static final String DETAILED_OV_CURRENT_VOLUME_COLUMN = "Current Volume, %s Old Versions (GB)";
 
     public static final String SYNTHETIC_TOTAL_BILLING = "Grand total";
     public static final String MISSING_VALUE = "unknown";
     public static final String DOC_TYPE = "doc_type";
     public static final String COST_FIELD = "cost";
+    public static final String DISK_COST_FIELD = "disk_cost";
+    public static final String COMPUTE_COST_FIELD = "compute_cost";
     public static final String ACCUMULATED_COST = "accumulatedCost";
+    public static final String ACCUMULATED_DISK_COST = "accumulatedDiskCost";
+    public static final String ACCUMULATED_COMPUTE_COST = "accumulatedComputeCost";
     public static final String RUN_USAGE_AGG = "usage_runs";
     public static final String STORAGE_USAGE_AGG = "usage_storages";
     public static final String RUN_USAGE_FIELD = "usage_minutes";
@@ -74,8 +108,12 @@ public final class BillingUtils {
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
     public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
+    public static final String CLOUD_REGION_ID_FIELD = "cloud_region_id";
+    public static final String CLOUD_REGION_PROVIDER_FIELD = "cloud_region_provider";
     public static final String RUN_ID_FIELD = "run_id";
     public static final String STORAGE_ID_FIELD = "storage_id";
+    public static final String STORAGE_NAME_FIELD = "storage_name";
+    public static final String STORAGE_CREATED_FIELD = "storage_created_date";
     public static final String PAGE = "page";
     public static final String TOTAL_PAGES = "totalPages";
     public static final String BILLING_DATE_FIELD = "created_date";
@@ -112,6 +150,9 @@ public final class BillingUtils {
     public static final String PROVIDER_FIELD = "provider";
     public static final String SORT_AGG = "sort";
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
+    public static final String RESOURCE_TYPE = "resource_type";
+    public static final String COMPUTE_GROUP = "COMPUTE";
+    public static final String SORT_AGG_POSTFIX = "_sort_order";
 
     private BillingUtils() {
     }
@@ -174,6 +215,30 @@ public final class BillingUtils {
                 .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
                 .flatMap(value -> Optional.ofNullable(value.getValue()))
                 .orElse(StringUtils.EMPTY);
+    }
+
+    public static Long parseSum(final Aggregations aggregations, final String field) {
+        final ParsedSum sumAggResult = aggregations.get(field);
+        return Optional.ofNullable(sumAggResult)
+                .map(result -> new Double(result.getValue()).longValue())
+                .orElse(null);
+    }
+
+    public static Long parseAccumulatedSum(final Aggregations aggregations, final String field) {
+        final ParsedSimpleValue accumulatedSumAggResult = aggregations.get(field);
+        return Optional.ofNullable(accumulatedSumAggResult)
+                .map(result -> new Double(result.getValueAsString()).longValue())
+                .orElse(null);
+    }
+
+    public static SumAggregationBuilder aggregateDiscountCostSum(final String field, final long discount) {
+        final SumAggregationBuilder aggregation = AggregationBuilders.sum(field).field(field);
+        if (discount != 0) {
+            aggregation.script(new Script(String.format(
+                    DISCOUNT_SCRIPT_TEMPLATE, asPercentToDecimalString(discount)))
+            );
+        }
+        return aggregation;
     }
 
     private static long tenInPowerOf(final int scale) {

@@ -32,15 +32,17 @@ from src.api.pipeline import Pipeline
 
 ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
+GPU_WITHOUT_CUDA_WARN_MSG = 'WARN: A tool without a CUDA toolkit using a GPU-enabled node.'
+CPU_WITH_CUDA_WARN_MSG = 'WARN: A tool with a CUDA toolkit using a CPU-only node.'
 
 
 class PipelineRunOperations(object):
 
     @classmethod
-    def stop(cls, run_id, yes):
+    def stop(cls, run_id, yes, status):
         if not yes:
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
-        pipeline_run_model = Pipeline.stop_pipeline(run_id)
+        pipeline_run_model = Pipeline.stop_pipeline(run_id, status=status)
         pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
         click.echo('RunID {} of "{}" stopped'.format(
             run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
@@ -135,6 +137,7 @@ class PipelineRunOperations(object):
                         price_table.align = "l"
                         price_table.set_style(12)
                         price_table.header = False
+                        instance_type = instance_type or run_price.instance_type
 
                         price_table.add_row(['Price per hour ({}, hdd {})'.format(run_price.instance_type,
                                                                                   run_price.instance_disk),
@@ -152,6 +155,11 @@ class PipelineRunOperations(object):
                         click.echo()
                         click.echo(price_table)
                         click.echo()
+
+                    if not quiet:
+                        cls._check_gpu_and_cuda_compatibility(instance_type,
+                                                              pipeline_run_parameters=pipeline_run_parameters)
+
                     # Checking if user provided required parameters:
                     wrong_parameters = False
                     for parameter in pipeline_run_parameters.parameters:
@@ -239,6 +247,9 @@ class PipelineRunOperations(object):
                     click.echo(', '.join(required_parameters))
                     sys.exit(1)
             else:
+                if not quiet:
+                    cls._check_gpu_and_cuda_compatibility(instance_type, docker_image=docker_image)
+
                 if not yes:
                     click.confirm('Are you sure you want to schedule a run?', abort=True)
 
@@ -435,7 +446,7 @@ class PipelineRunOperations(object):
         if ROLE_ADMIN in all_user_roles:
             return
         default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
-        for run_param_name, run_param_value in run_params_dict.iteritems():
+        for run_param_name, run_param_value in run_params_dict.items():
             if run_param_name in default_system_parameters_dict:
                 default_system_parameter = default_system_parameters_dict[run_param_name]
                 if default_system_parameter.value != run_param_value:
@@ -444,3 +455,37 @@ class PipelineRunOperations(object):
                         click.echo('An error has occurred while starting a job: "{}" parameter'
                                    ' is not permitted for overriding'.format(run_param_name), err=True)
                         sys.exit(1)
+
+    @classmethod
+    def _trim_docker_registry_path(cls, docker_image):
+        parts = docker_image.split('/')
+        if len(parts) == 3:
+            return parts[1] + '/' + parts[2]
+        return docker_image
+
+    @classmethod
+    def _is_cuda_available_for_tool(cls, docker_image):
+        if not docker_image:
+            return False
+        image_name, image_tag = cls.parse_image(cls._trim_docker_registry_path(docker_image))
+        tool_scan = Tool().load_tool_scan(docker_image)
+        tool_version_scan = tool_scan.results.get(image_tag)
+        return False if not tool_version_scan else tool_version_scan.cuda_available
+
+    @classmethod
+    def _is_cuda_available_for_pipeline(cls, pipeline_run_parameters):
+        if not pipeline_run_parameters:
+            return False
+        return cls._is_cuda_available_for_tool(pipeline_run_parameters.docker_image)
+
+    @classmethod
+    def _check_gpu_and_cuda_compatibility(cls, instance_type, pipeline_run_parameters=None, docker_image=None):
+        gpu_enabled = ClusterManager.is_gpu_instance(instance_type)
+        if docker_image:
+            cuda_available = cls._is_cuda_available_for_tool(docker_image)
+        else:
+            cuda_available = cls._is_cuda_available_for_pipeline(pipeline_run_parameters)
+        if gpu_enabled and not cuda_available:
+            click.echo(GPU_WITHOUT_CUDA_WARN_MSG)
+        if not gpu_enabled and cuda_available:
+            click.echo(CPU_WITH_CUDA_WARN_MSG)

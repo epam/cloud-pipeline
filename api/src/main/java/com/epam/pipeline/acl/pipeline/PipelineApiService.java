@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.report.GitDiffReportFilter;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiff;
 import com.epam.pipeline.entity.git.gitreader.GitReaderDiffEntry;
 import com.epam.pipeline.entity.git.gitreader.GitReaderEntryIteratorListing;
@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -66,6 +67,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_COPY;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_CREATE;
+import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_MANAGE;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_ID_WRITE;
 import static com.epam.pipeline.security.acl.AclExpressions.PIPELINE_VO_WRITE;
@@ -97,9 +101,10 @@ public class PipelineApiService {
     @Autowired
     private GrantPermissionManager permissionManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR "
-            + "(#pipeline.parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
-            + "hasPermission(#pipeline.parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
+
+    @PreAuthorize(PIPELINE_CREATE)
     public Pipeline create(final PipelineVO pipeline) throws GitClientException {
         return pipelineManager.create(pipeline);
     }
@@ -149,8 +154,7 @@ public class PipelineApiService {
         return pipelineManager.loadAllPipelines(false);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('PIPELINE_MANAGER') "
-            + "AND hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE'))")
+    @PreAuthorize(PIPELINE_ID_MANAGE)
     public Pipeline delete(Long id, boolean keepRepository) {
         return pipelineManager.delete(id, keepRepository);
     }
@@ -168,7 +172,7 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_READ)
     public GitTagEntry loadRevision(Long id, String version) throws GitClientException {
-        return gitManager.loadRevision(pipelineManager.load(id), version);
+        return pipelineRepositoryService.loadRevision(pipelineManager.load(id), version);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
@@ -216,13 +220,14 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getPipelineFileContents(Long id, String version, String path)
             throws GitClientException {
-        return gitManager.getPipelineFileContents(pipelineManager.load(id), version, path);
+        return pipelineRepositoryService.getFileContents(pipelineManager.load(id), version, path);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getTruncatedPipelineFileContent(final Long id, final String version, final String path,
                                                   final Integer byteLimit) throws GitClientException {
-        return gitManager.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path, byteLimit);
+        return pipelineRepositoryService.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path,
+                byteLimit);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
@@ -237,21 +242,22 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry modifyFiles(Long id, PipelineSourceItemsVO sourceItemsVO) throws GitClientException {
-        return gitManager.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
+        return pipelineRepositoryService.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry uploadFiles(Long id, String folder, List<UploadFileMetadata> files)
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id, true);
-        return gitManager.uploadFiles(pipeline, folder, files,
+        return pipelineRepositoryService.uploadFiles(pipeline, folder, files,
                 pipeline.getCurrentVersion().getCommitId(), null);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry deleteFile(Long id, String filePath, String lastCommitId, String commitMessage)
             throws GitClientException {
-        return gitManager.deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
+        return pipelineRepositoryService
+                .deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
@@ -306,8 +312,7 @@ public class PipelineApiService {
         return pipelineManager.loadByRepoUrl(url);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR (hasRole('PIPELINE_MANAGER') AND " +
-            "hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'WRITE'))")
+    @PreAuthorize(PIPELINE_ID_MANAGE)
     public GitRepositoryEntry addHookToPipelineRepository(Long id) throws GitClientException {
         return gitManager.addHookToPipelineRepository(id);
     }
@@ -318,9 +323,7 @@ public class PipelineApiService {
         return gitManager.getRepositoryContents(id, version, path);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.pipeline.Pipeline', 'READ') AND "
-            + "(#parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
-            + "hasPermission(#parentFolderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    @PreAuthorize(PIPELINE_COPY)
     public Pipeline copyPipeline(final Long id, final Long parentFolderId, final String newName) {
         return pipelineManager.copyPipeline(id, parentFolderId, newName);
     }

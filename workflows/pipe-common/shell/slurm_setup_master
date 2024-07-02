@@ -14,31 +14,102 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+########################################
+# Build instructions: slurm RPMs for EL8
+# yum install -y epel-release
+# yum install -y yum-utils
+# yum config-manager --set-enabled powertools
+# yum install -y rpm-build munge-devel munge-libs pam-devel perl python3 readline-devel
+# GLOBAL_DISTRIBUTION_URL=https://cloud-pipeline-oss-builds-eu-west-1.s3.eu-west-1.amazonaws.com/
+# CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+# _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
+# wget $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+# rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
+# ls -la /root/rpmbuild/RPMS/x86_64/*
+########################################
+
+SLURM_COMMON_CONFIG_DIR="$SHARED_FOLDER/.slurm"
 SLURM_MASTER_SETUP_TASK="SLURMMasterSetup"
 SLURM_MASTER_SETUP_TASK_WORKERS="SLURMMasterSetupWorkers"
 CURRENT_PID=$$
 
+resolve_node_resources() {
+    _TASK="$1"
+
+    export _NODE_CPU_COUNT=$(nproc)
+    pipe_log_info "$_NODE_CPU_COUNT CPUs found" "$_TASK"
+
+    export _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
+    pipe_log_info "${_NODE_RAM_COUNT}M RAM found" "$_TASK"
+
+    export _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
+    export _NODE_GPUS_COUNT="${_NODE_GPUS_COUNT:-0}"
+    pipe_log_info "$_NODE_GPUS_COUNT GPUs found" "$_TASK"
+}
+
+configure_consumable_gpu_resource() {
+    _RESOURCE_VALUE="$1"
+
+    if (( _RESOURCE_VALUE > 0 )); then
+        for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
+            echo "Name=gpu File=/dev/$device" >> "$_SLURM_CONFIG_LOCATION/gres.conf"
+        done
+    fi
+}
+
+resolve_node_names() {
+    if [ ! -f "$DEFAULT_HOSTFILE" ]; then
+        export _NODE_NAMES="$(hostname)"
+    else
+        IFS=$'\n' read -d '' -r -a _NODE_NAMES < "$DEFAULT_HOSTFILE"
+        export _NODE_NAMES
+    fi
+}
+
 configure_slurm() {
+    _SLURM_CONFIG_LOCATION=$( slurm_config_location )
 
-    mkdir /var/spool/slurmctld
-    chown slurm: /var/spool/slurmctld
-    chmod 755 /var/spool/slurmctld
-    touch /var/log/slurmctld.log
-    chown slurm: /var/log/slurmctld.log
-    touch /var/log/slurm_jobacct.log /var/log/slurm_jobcomp.log
-    chown slurm: /var/log/slurm_jobacct.log /var/log/slurm_jobcomp.log
+    mkdir -p ${SLURM_COMMON_CONFIG_DIR}
 
-    cat > /common/cgroup.conf <<EOL
+    mkdir -p /var/spool/slurmctld \
+             /var/spool/slurmd
+    chown slurm: /var/spool/slurmctld \
+                 /var/spool/slurmd
+    chmod 755 /var/spool/slurmctld \
+              /var/spool/slurmd
+
+    touch /var/log/slurmctld.log \
+          /var/log/slurm_jobacct.log \
+          /var/log/slurm_jobcomp.log
+    chown slurm: /var/log/slurmctld.log \
+                 /var/log/slurm_jobacct.log \
+                 /var/log/slurm_jobcomp.log
+
+    dd if=/dev/urandom bs=1 count=1024 > ${SLURM_COMMON_CONFIG_DIR}/munge.key
+    cp ${SLURM_COMMON_CONFIG_DIR}/munge.key /etc/munge/
+    chown munge: /etc/munge/munge.key
+    chmod 400 /etc/munge/munge.key
+    su -c /usr/sbin/munged -s /bin/bash munge
+
+    touch ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    touch ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf
+
+    ln -s ${SLURM_COMMON_CONFIG_DIR}/slurm.conf "$_SLURM_CONFIG_LOCATION"
+    ln -s  ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf "$_SLURM_CONFIG_LOCATION"
+
+    resolve_node_resources "$SLURM_MASTER_SETUP_TASK"
+    configure_consumable_gpu_resource "$_NODE_GPUS_COUNT"
+
+    cat >> ${SLURM_COMMON_CONFIG_DIR}/cgroup.conf <<EOL
 CgroupAutomount=yes
 CgroupMountpoint=/cgroup
 ConstrainCores=no
 ConstrainRAMSpace=no
 EOL
 
-    cat > /common/slurm.conf <<EOL
+    cat >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf <<EOL
 ControlMachine=$HOSTNAME
 #
-#MailProg=/bin/mail
 MpiDefault=none
 ProctrackType=proctrack/cgroup
 ReturnToService=1
@@ -53,7 +124,8 @@ TaskPlugin=task/none
 
 # SCHEDULING
 SchedulerType=sched/backfill
-SelectType=select/linear
+SelectType=select/cons_tres
+SelectTypeParameters=CR_CPU
 
 # LOGGING AND ACCOUNTING
 ClusterName=cloudpipeline
@@ -62,53 +134,52 @@ JobAcctGatherType=jobacct_gather/none
 SlurmctldLogFile=/var/log/slurmctld.log
 SlurmdLogFile=/var/log/slurmd.log
 
-#
-# COMPUTE NODES
+# RESOURCES
+GresTypes=gpu
+
 EOL
 
-    _WORKER_CORES=$(nproc)
-    _NODE_GPUS_COUNT=$(nvidia-smi -L 2>/dev/null | wc -l)
-    _NODE_RAM_COUNT=$(grep MemTotal /proc/meminfo | awk '{print int($2 / 1024)}')
-    CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
-    _WORKER_CORES=$((_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
-
-    if (( _NODE_GPUS_COUNT > 0 ))
-    then
-        echo "GresTypes=gpu" >> /common/slurm.conf
-        for device in $(ls /dev/ | grep -E "nvidia[0-9]+") ; do
-            echo "Name=gpu File=/dev/$device" >> /$_SLURM_CONFIG_LOCATION/gres.conf
-        done
-    fi
-
-    IFS=$'\n' read -d '' -r -a _NODE_NAMES < $DEFAULT_HOSTFILE
-    for _NODE in ${_NODE_NAMES[*]} ; do
-        if (( _NODE_GPUS_COUNT > 0 ))
-        then
-            echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$(getent hosts $_NODE | awk '{ print $1 }') CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> /common/slurm.conf
-        else
-            echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$(getent hosts $_NODE | awk '{ print $1 }') CPUs=$_WORKER_CORES RealMemory=$_NODE_RAM_COUNT State=UNKNOWN" >> /common/slurm.conf
-        fi
-    done
-    echo "PartitionName=main.q Nodes=`echo ${_NODE_NAMES[*]} | xargs |  awk -v OFS="," '{$1=$1;print}'` Default=YES MaxTime=INFINITE State=UP" >> /common/slurm.conf
-
+    echo "# EXTRAS" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     if [ ! -z $CP_SLURM_LICENSES ]; then
-        echo "Licenses=$CP_SLURM_LICENSES" >> /common/slurm.conf
+        echo "Licenses=$CP_SLURM_LICENSES" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
-}
+    if check_cp_cap CP_CAP_GRID_ENGINE_NOTIFICATIONS; then
+        echo "MailProg=$COMMON_REPO_DIR_MUTUAL_LOC/shell/pipe_mail" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    fi
+    if check_cp_cap CP_CAP_AUTOSCALE; then
+        echo "MaxNodeCount=1000" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+        echo "TreeWidth=65533" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    fi
+    echo "" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
 
-get_linux_dist() {
-    result=
-    command -v apt-get > /dev/null
-    if [ $? -eq 0 ]; then
-        result="debian"
+    echo "# PARTITIONS" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    echo "PartitionName=$CP_CAP_SGE_QUEUE_NAME Nodes=ALL Default=YES MaxTime=INFINITE State=UP" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    echo "" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+
+    echo "# NODES" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    if check_cp_cap CP_CAP_SLURM_SYNTHETIC_WORKER; then
+        echo "NodeName=synthetic-worker NodeHostname=synthetic-worker NodeAddr=127.0.0.1 CPUs=10000 Gres=gpu:10000 RealMemory=1073741824 State=DOWN Reason=\"Synthetic Worker\"" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
 
-    command -v yum > /dev/null
-    if [ $? -eq 0 ]; then
-        result="redhat"
+    CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
+    if [ "$CP_CAP_SGE_MASTER_CORES" == "0" ]; then
+        pipe_log_info "CP_CAP_SGE_MASTER_CORES is set to 0. Master host was disabled in $CP_CAP_SGE_QUEUE_NAME queue" "$SLURM_MASTER_SETUP_TASK"
+    else
+        _NODE="$(hostname)"
+        _NODE_ADDR="$(getent hosts $_NODE | awk '{ print $1 }')"
+        _MASTER_NODE_CPU_COUNT=$((_NODE_CPU_COUNT < CP_CAP_SGE_MASTER_CORES ? _NODE_CPU_COUNT : CP_CAP_SGE_MASTER_CORES))
+        echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$_NODE_ADDR CPUs=$_MASTER_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
 
-    echo "$result"
+    resolve_node_names
+    for _NODE in ${_NODE_NAMES[*]} ; do
+        if [ "$_NODE" == "$(hostname)" ]; then
+            continue
+        fi
+        _NODE_ADDR="$(getent hosts $_NODE | awk '{ print $1 }')"
+        echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$_NODE_ADDR CPUs=$_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
+    done
+    echo "" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
 }
 
 check_last_exit_code() {
@@ -124,83 +195,128 @@ check_last_exit_code() {
     fi
 }
 
-pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
+slurm_config_location() {
+   _SLURM_CONFIG_DIR=$(ls /etc/ | grep slurm | head -n 1)
+   if [ "$_SLURM_CONFIG_DIR" != "" ]; then
+      echo "/etc/$_SLURM_CONFIG_DIR"
+   else
+      pipe_log_fail "Failed to find SLURM config dir" "${SLURM_MASTER_SETUP_TASK}"
+      kill -s "$CURRENT_PID"
+      exit 1
+   fi
+}
 
-LINUX_DISTRIBUTION=$( get_linux_dist )
+install_slurm() {
+    create_slurm_user
 
-if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-    apt-get update && apt-get install -y munge slurm-wlm
-    _SLURM_CONFIG_LOCATION=/etc/slurm-llnl/
-    mkdir -p /var/run/munge
-    chown munge: /var/run/munge
-    mkdir -p /run/munge
-    chown munge: /run/munge
-    chmod +t /run/munge
-elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-
-    if [ -z $CP_SLURM_PACKAGE_URL ]; then
-        CP_SLURM_PACKAGE_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/slurm/rpm/slurm-19.05.5-1.el7.x86_64.tar"
-        CP_SLURM_SOURCE_URL="https://download.schedmd.com/slurm/slurm-19.05.5.tar.bz2"
+    if [ "$CP_OS_FAMILY" == "debian" ]; then
+        if [ "$CP_OS" == "ubuntu" ] && [ "$CP_VER" == "16.04" ]; then
+            pipe_log_fail "SLURM support for Ubuntu 16.04 has been dropped. Please use Ubuntu 18.04 instead." "$SLURM_MASTER_SETUP_TASK"
+            return 1
+        fi
+        install_slurm_debian
+    elif [ "$CP_OS_FAMILY" == "rhel" ]; then
+        install_slurm_rhel
+    else
+        return 1
     fi
+}
 
-    _SLURM_CONFIG_LOCATION=/etc/slurm/
+create_slurm_user() {
     export SLURMUSER=992
     groupadd -g $SLURMUSER slurm
     useradd  -m -c "SLURM workload manager" -d /var/lib/slurm -u $SLURMUSER -g slurm  -s /bin/bash slurm
+}
 
+install_slurm_debian() {
+    apt-get update -y
+    apt-get install -y munge
+
+    mkdir -p /var/run/munge \
+             /run/munge
+    chown munge: /var/run/munge \
+                 /run/munge
+    chmod +t /run/munge
+
+    wget -q "$CP_SLURM_PACKAGE_DEB_URL" -O /tmp/slurm.deb
+    if ! apt-get install -y -f /tmp/slurm.deb; then
+        return 1
+    fi
+    rm -f /tmp/slurm.deb
+
+    mkdir -p /etc/slurm \
+             /etc/slurm/prolog.d \
+             /etc/slurm/epilog.d
+    chown slurm: /etc/slurm \
+                 /etc/slurm/prolog.d \
+                 /etc/slurm/epilog.d
+
+    ln -s /usr/local/slurm/bin/* /usr/bin/
+    ln -s /usr/local/slurm/sbin/* /usr/sbin/
+
+    return 0
+}
+
+install_slurm_rhel() {
     yum install epel-release -y
     yum install gcc gcc-c++ mariadb-server mariadb-devel  munge munge-libs munge-devel openssl openssl-devel \
                 pam-devel numactl hwloc hwloc-devel lua lua-devel readline-devel rrdtool-devel ncurses-devel  \
                 man2html libibmad libibumad rpm-build perl-devel perl-CPAN -y
 
+    _pkgs_dir="$SHARED_FOLDER/slurm-pkgs"
     _TMP_PACKAGE_DIR=/tmp/localinstall && mkdir -p $_TMP_PACKAGE_DIR
-    mkdir -p /common/slurm-pkgs
-    wget $CP_SLURM_PACKAGE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+    mkdir -p ${_pkgs_dir}
+    wget -q "$CP_SLURM_PACKAGE_RPM_URL" --directory-prefix=$_TMP_PACKAGE_DIR
     if [[ $? -ne 0 ]]; then
         rm -rf /root/rpmbuild/RPMS/x86_64/*
-        wget $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
+        wget -q $CP_SLURM_SOURCE_URL --directory-prefix=$_TMP_PACKAGE_DIR
         rpmbuild -ta $_TMP_PACKAGE_DIR/slurm*.tar.bz2
-        cp /root/rpmbuild/RPMS/x86_64/* /common/slurm-pkgs/
+        cp /root/rpmbuild/RPMS/x86_64/* ${_pkgs_dir}/
     else
         tar -xf $_TMP_PACKAGE_DIR/slurm*.tar --directory $_TMP_PACKAGE_DIR
-        mv $_TMP_PACKAGE_DIR/slurm*/* /common/slurm-pkgs/
+        mv $_TMP_PACKAGE_DIR/slurm*/* ${_pkgs_dir}/
     fi
 
-    yum --nogpgcheck localinstall /common/slurm-pkgs/* -y
-    check_last_exit_code $? "Successfully install SLURM packages" "Can't install SLURM packages from /common/slurm-pkgs/"
+    yum --nogpgcheck localinstall ${_pkgs_dir}/* -y
+}
+
+pipe_log_info "Installing SLURM master" "$SLURM_MASTER_SETUP_TASK"
+
+OS_VERSION_ID=$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
+export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
+export CP_CAP_SLURM_SYNTHETIC_WORKER="${CP_CAP_SLURM_SYNTHETIC_WORKER:-true}"
+export CP_SLURM_SOURCE_URL="${CP_SLURM_SOURCE_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/slurm-22.05.5.tar.bz2"}"
+export CP_SLURM_PACKAGE_DEB_URL="${CP_SLURM_PACKAGE_DEB_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/deb/slurm_22.05.5_amd64.deb"}"
+export CP_SLURM_PACKAGE_RPM_URL="${CP_SLURM_PACKAGE_RPM_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/slurm/rpm/slurm-22.05.5-1.el${OS_VERSION_ID:-7}.x86_64.tar"}"
+
+if check_cp_cap CP_CAP_SLURM_PREINSTALLED; then
+    pipe_log_info "Skipping SLURM packages installation because packages are preinstalled" "$SLURM_MASTER_SETUP_TASK"
+elif check_cp_cap RESUMED_RUN; then
+    pipe_log_info "Skipping SLURM packages installation because run is resumed" "$SLURM_MASTER_SETUP_TASK"
+else
+    pipe_log_info "Installing SLURM packages" "$SLURM_MASTER_SETUP_TASK"
+    install_slurm
+    check_last_exit_code $? "SLURM packages have been installed" "Can't install SLURM packages"
 fi
 
-configure_slurm
-
-dd if=/dev/urandom bs=1 count=1024 > /common/munge.key
-cp /common/munge.key /etc/munge/
-chown munge: /etc/munge/munge.key
-chmod 400 /etc/munge/munge.key
-su -c /usr/sbin/munged -s /bin/bash munge
-
-cp /common/slurm.conf "$_SLURM_CONFIG_LOCATION"
-cp /common/cgroup.conf "$_SLURM_CONFIG_LOCATION"
-
-slurmctld && slurmd
-
-check_last_exit_code $? "SLURM demons have started" "Fail to start SLURM demons."
-
-pipe_log_success "Master ENV is ready" "$SLURM_MASTER_SETUP_TASK"
-
-
-# Verify whether it is a resumed run - if so, do not reinstall SLURM, instead - just rerun master and worker daemon
-if [ "$RESUMED_RUN" = true ]; then
-    pipe_log_info "Run is resumed - SLURM master node won't be reconfigured. Starting master and worker daemons" "$SLURM_MASTER_SETUP_TASK"
-    slurmctld -f /etc/slurm/slurm.conf && slurmd -f /etc/slurm/slurm.conf
-    _SLURM_RESUME_RESULT=$?
-
-    if [ $_SLURM_RESUME_RESULT -eq 0 ]; then
-        pipe_log_success "SLURM daemons started" "$SLURM_MASTER_SETUP_TASK"
-    else
-        pipe_log_fail "SLURM daemons start failed. See any errors in the ConsoleOutput" "$SLURM_MASTER_SETUP_TASK"
-    fi
-    exit 0
+if check_cp_cap RESUMED_RUN; then
+    pipe_log_info "Skipping SLURM cluster configuration because run is resumed" "$SLURM_MASTER_SETUP_TASK"
+else
+    pipe_log_info "Configuring SLURM cluster" "$SLURM_MASTER_SETUP_TASK"
+    configure_slurm
+    pipe_log_info "SLURM cluster has been configured" "$SLURM_MASTER_SETUP_TASK"
 fi
+
+slurmctld
+check_last_exit_code $? "SLURM control daemon has started" "Fail to start SLURM control daemon"
+
+CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
+if [ "$CP_CAP_SGE_MASTER_CORES" != "0" ]; then
+    slurmd
+    check_last_exit_code $? "SLURM worker daemon has started" "Fail to start SLURM worker daemon"
+fi
+
+pipe_log_success "SLURM master node has been successfully configured" "$SLURM_MASTER_SETUP_TASK"
 
 # Wait for worker nodes to initiate and connect to the master
 if [ -z "$node_count" ] || (( "$node_count" == 0 )); then
@@ -216,11 +332,19 @@ else
         _MASTER_EXEC_WAIT_ATTEMPTS=$(( _MASTER_EXEC_WAIT_ATTEMPTS-1 ))
 
         if (( $_MASTER_EXEC_WAIT_ATTEMPTS <= 0 )); then
-            pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SLURM_MASTER_SETUP_TASK_WORKERS"
-            exit 0
+            break
         fi
     done
-    pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
-    rm -rf /common/slurm.conf /common/cgroup.conf /common/munge.key
+    if [ "$node_count" -gt "$_CURRENT_EXEC_HOSTS_COUNT" ]; then
+        pipe_log_success "NOT all execution hosts are connected. But we are giving up waiting as threshold has been reached" "$SLURM_MASTER_SETUP_TASK_WORKERS"
+    else
+        pipe_log_success "All SLURM hosts are connected" "$SLURM_MASTER_SETUP_TASK_WORKERS"
+    fi
 fi
 
+(
+    export CP_CAP_AUTOSCALE_TASK="SLURMAutoscaling"
+    export CP_CAP_SGE_QUEUE_DEFAULT="true"
+    export CP_CAP_SGE_QUEUE_STATIC="true"
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.slurm.main.q.log" 2>&1 &
+)

@@ -34,7 +34,8 @@ class PipelineRun(API):
              pipeline_id=None,
              version=None,
              parent_id=None,
-             custom_filter=None):
+             custom_filter=None,
+             owners=None):
         api = cls.instance()
         data = {'page': page, 'pageSize': page_size}
         if statuses is not None and len(statuses) > 0:
@@ -51,6 +52,8 @@ class PipelineRun(API):
             data['parentId'] = parent_id
         if custom_filter is not None:
             data['partialParameters'] = custom_filter
+        if owners is not None:
+            data['owners'] = owners
         response_data = api.call('run/filter', json.dumps(data))
         return PipelineRunFilterModel.load(json=response_data['payload'], page=page, page_size=page_size)
 
@@ -92,3 +95,13 @@ class PipelineRun(API):
         if response_data and 'payload' in response_data:
             return response_data['payload']
         return None
+
+    @classmethod
+    def count_user_runs(cls, target_statuses=None, owner=None):
+        if target_statuses is None:
+            target_statuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
+        api = cls.instance()
+        filter_data = {'statuses': target_statuses, 'owners': [owner], 'userModified': False}
+        response_data = api.call('run/count', json.dumps(filter_data))
+        if 'payload' in response_data:
+            return response_data['payload']

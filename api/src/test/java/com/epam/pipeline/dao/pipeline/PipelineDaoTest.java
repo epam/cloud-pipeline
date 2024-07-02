@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,8 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     private static final String TEST_NAME = "Test";
     private static final String TEST_REPO = "///";
     private static final String TEST_REPO_SSH = "git@test";
+    private static final String TEST_CODE_PATH = "/src";
+    private static final String TEST_DOCS_PATH = "/docs";
 
     @Autowired
     private PipelineDao pipelineDao;
@@ -50,12 +53,18 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void testCreatePipeline() {
-        Pipeline pipeline = getPipeline(TEST_NAME);
+        final Pipeline pipeline = getPipeline(TEST_NAME);
+        pipeline.setVisibility(RunVisibilityPolicy.OWNER);
+        pipeline.setCodePath(TEST_CODE_PATH);
+        pipeline.setDocsPath(TEST_DOCS_PATH);
         pipelineDao.createPipeline(pipeline);
         List<Pipeline> result = pipelineDao.loadAllPipelines();
         assertEquals(1, result.size());
+        final Pipeline resultPipeline = result.get(0);
+        assertEquals(resultPipeline.getVisibility(), RunVisibilityPolicy.OWNER);
+        assertEquals(resultPipeline.getCodePath(), TEST_CODE_PATH);
+        assertEquals(resultPipeline.getDocsPath(), TEST_DOCS_PATH);
     }
-
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)

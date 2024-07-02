@@ -20,20 +20,25 @@ import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -59,17 +64,20 @@ public class MetadataPermissionManager {
         if (permissionHelper.isAdmin()) {
             return true;
         }
-        if (entityClass.isSupportsEntityManager()) {
-            final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
-            return permissionHelper.isAllowed(permission, securedEntity);
-        }
         if (entityClass.equals(AclClass.ROLE)) {
             return false;
         }
-        if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            return isSameUser(entityId);
+        if (entityClass.equals(AclClass.PIPELINE_USER) && isSameUser(entityId)) {
+            return true;
         }
-        return false;
+
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
+        }
+
+        final AbstractSecuredEntity securedEntity = entityManager.load(entityClass, entityId);
+        return permissionHelper.isAllowed(permission, securedEntity);
     }
 
     public boolean metadataPermission(final MetadataEntry metadataEntry, final String permissionName) {
@@ -120,17 +128,21 @@ public class MetadataPermissionManager {
         }
         final EntityVO entity = metadataVO.getEntity();
         final AclClass entityClass = entity.getEntityClass();
-        if (entityClass.isSupportsEntityManager()) {
-            return permissionHelper.isOwner(
-                    entityManager.load(entityClass, entity.getEntityId()));
-        }
-        if (entityClass.equals(AclClass.ROLE)) {
-            return false;
+        if (entityClass.equals(AclClass.DATA_STORAGE) &&
+                permissionHelper.hasAnyRole(DefaultRoles.ROLE_STORAGE_ADMIN)) {
+            return true;
         }
         if (allowUser && entityClass.equals(AclClass.PIPELINE_USER)) {
             return isMetadataEditAllowedForUser(metadataVO);
         }
-        return false;
+        if (entityClass.equals(AclClass.ROLE)) {
+            return false;
+        }
+        if (AclClass.TOOL.equals(entityClass) && isMetadataContainsRestrictedInstanceValues(metadataVO)) {
+            return false;
+        }
+        return permissionHelper.isOwner(
+                entityManager.load(entityClass, entity.getEntityId()));
     }
 
     private boolean isMetadataEditAllowedForUser(final MetadataVO metadataVO) {
@@ -140,11 +152,23 @@ public class MetadataPermissionManager {
                 .anyMatch(key -> metadataVO.getData().containsKey(key))) {
             return false;
         }
-        return isSameUser(metadataVO.getEntity().getEntityId());
+        final Long entityId = metadataVO.getEntity().getEntityId();
+        return isSameUser(entityId) || permissionHelper.isAllowed("WRITE",
+                entityManager.load(AclClass.PIPELINE_USER, entityId));
     }
 
     private boolean isSameUser(final Long entityId) {
-        final PipelineUser user = userManager.loadUserById(entityId);
+        final PipelineUser user = userManager.load(entityId);
         return permissionHelper.isOwner(user.getUserName());
+    }
+
+    private boolean isMetadataContainsRestrictedInstanceValues(final MetadataVO metadata) {
+        final Set<String> allowedTags = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
+        if (CollectionUtils.isEmpty(allowedTags)) {
+            return false;
+        }
+        return SetUtils.emptyIfNull(MapUtils.emptyIfNull(metadata.getData()).keySet()).stream()
+                .anyMatch(allowedTags::contains);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringMa
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Test;
 
@@ -68,6 +69,7 @@ public class PipelineRunDockerOperationManagerTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
+    private final RunLimitsService runLimitsService = mock(RunLimitsService.class);
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             new PipelineRunDockerOperationManager(
                     dockerContainerOperationManager,
@@ -80,7 +82,8 @@ public class PipelineRunDockerOperationManagerTest {
                     runLogManager,
                     runStatusManager,
                     messageHelper,
-                    preferenceManager);
+                    preferenceManager,
+                    runLimitsService);
 
     @Test
     public void pauseRunShouldBeRelaunched() {
@@ -194,13 +197,13 @@ public class PipelineRunDockerOperationManagerTest {
         when(runStatusManager.loadRunStatus(RUN_ID)).thenReturn(Arrays.asList(
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1)),
                 pausingRunStatus(convertDateToLocalDateTime(DATE_2))));
-        when(runLogManager.loadAllLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Arrays.asList(
+        when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Arrays.asList(
                 pauseRunLog(DATE_1, TaskStatus.SUCCESS), pauseRunLog(DATE_3, TaskStatus.SUCCESS)));
     }
 
     private void mockNoNeedToRerunPauseSituation() {
         when(runStatusManager.loadRunStatus(RUN_ID)).thenReturn(Collections.singletonList(
                 pausingRunStatus(convertDateToLocalDateTime(DATE_1))));
-        when(runLogManager.loadAllLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
+        when(runLogManager.loadLogsForTask(RUN_ID, PAUSE_TASK_NAME)).thenReturn(Collections.emptyList());
     }
 }

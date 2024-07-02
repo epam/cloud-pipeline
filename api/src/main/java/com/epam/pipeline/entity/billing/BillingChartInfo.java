@@ -26,9 +26,10 @@ import java.util.Map;
 @Builder
 public class BillingChartInfo {
 
-    private Map<String, String> groupingInfo;
-    private LocalDateTime periodStart;
-    private LocalDateTime periodEnd;
-    private Long cost;
-    private Long accumulatedCost;
+    Map<String, String> groupingInfo;
+    LocalDateTime periodStart;
+    LocalDateTime periodEnd;
+    BillingChartDetails costDetails;
+    Long cost;
+    Long accumulatedCost;
 }

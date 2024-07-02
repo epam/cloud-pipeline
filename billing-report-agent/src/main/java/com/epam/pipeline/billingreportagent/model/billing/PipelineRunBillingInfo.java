@@ -30,12 +30,17 @@ public class PipelineRunBillingInfo extends AbstractBillingInfo<PipelineRunWithT
 
     private Long usageMinutes;
     private Long pausedMinutes;
+    private Long diskCost;
+    private Long computeCost;
 
     @Builder
     public PipelineRunBillingInfo(final LocalDate date, final PipelineRunWithType run,
-                                  final Long cost, final Long usageMinutes, final Long pausedMinutes) {
+                                  final Long cost, final Long usageMinutes, final Long pausedMinutes,
+                                  final Long diskCost, final Long computeCost) {
         super(date, run, cost, ResourceType.COMPUTE);
         this.usageMinutes = usageMinutes;
         this.pausedMinutes = pausedMinutes;
+        this.diskCost = diskCost;
+        this.computeCost = computeCost;
     }
 }

@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Pagination, Radio, Table} from 'antd';
 import {
-  BarChart,
+  BarChartWithQuota,
   GroupedBarChart,
   BillingTable,
   PieChart,
@@ -43,12 +43,14 @@ import {
 } from './utilities';
 import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
+import QuotaTypes from '../quotas/utilities/quota-types';
 import styles from './reports.css';
 
 function injection (stores, props) {
   const {location} = props;
   const {
     user: userQ,
+    'billing-group': billingGroupQ,
     group: groupQ,
     period = Period.month,
     range,
@@ -57,55 +59,58 @@ function injection (stores, props) {
   const {users, preferences} = stores;
   users.fetchIfNeededOrWait();
   preferences.fetchIfNeededOrWait();
-  const group = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
+  const billingGroup = billingGroupQ ? billingGroupQ.split(RUNNER_SEPARATOR) : undefined;
+  const adGroup = groupQ ? groupQ.split(RUNNER_SEPARATOR) : undefined;
   const user = userQ ? userQ.split(RUNNER_SEPARATOR) : undefined;
   const cloudRegionId = regionQ && regionQ.length ? regionQ.split(REGION_SEPARATOR) : undefined;
   const periodInfo = getPeriod(period, range);
   const filters = {
-    group,
+    billingGroup,
     user,
+    adGroup,
     cloudRegionId,
     ...periodInfo
   };
   const billingCentersStorageRequest = new GetGroupedBillingCentersWithPrevious(
-    {...filters, resourceType: 'STORAGE'}
+    {filters: {...filters, resourceType: 'STORAGE'}}
   );
   billingCentersStorageRequest.fetch();
   const billingCentersComputeRequest = new GetGroupedBillingCentersWithPrevious(
-    {...filters, resourceType: 'COMPUTE'}
+    {filters: {...filters, resourceType: 'COMPUTE'}}
   );
   billingCentersComputeRequest.fetch();
   let billingCentersComputeTableRequest;
   let billingCentersStorageTableRequest;
-  if (group) {
+  if (billingGroup || adGroup) {
     billingCentersComputeTableRequest = new GetGroupedBillingCenters(
-      {...filters, resourceType: 'COMPUTE'}
+      {filters: {...filters, resourceType: 'COMPUTE'}}
     );
     billingCentersComputeTableRequest.fetch();
     billingCentersStorageTableRequest = new GetGroupedBillingCenters(
-      {...filters, resourceType: 'STORAGE'}
+      {filters: {...filters, resourceType: 'STORAGE'}}
     );
     billingCentersStorageTableRequest.fetch();
   }
-  const resources = new GetGroupedResourcesWithPrevious(filters);
+  const resources = new GetGroupedResourcesWithPrevious({filters});
   resources.fetch();
-  const summaryCompute = new GetBillingData(
-    {
+  const summaryCompute = new GetBillingData({
+    filters: {
       ...filters,
-      filterBy: GetBillingData.FILTER_BY.compute
+      filterBy: {resourceType: GetBillingData.FILTER_BY.compute}
     }
-  );
+  });
   summaryCompute.fetch();
-  const summaryStorages = new GetBillingData(
-    {
+  const summaryStorages = new GetBillingData({
+    filters: {
       ...filters,
-      filterBy: GetBillingData.FILTER_BY.storages
+      filterBy: {resourceType: GetBillingData.FILTER_BY.storages}
     }
-  );
+  });
   summaryStorages.fetch();
   return {
     user,
-    group,
+    billingGroup,
+    adGroup,
     summaryCompute,
     summaryStorages,
     billingCentersComputeRequest,
@@ -141,7 +146,7 @@ class BillingCenters extends React.Component {
 
   render () {
     const {
-      request,
+      requests,
       discounts: discountsFn,
       onSelect,
       height,
@@ -171,8 +176,9 @@ class BillingCenters extends React.Component {
         </Radio.Group>
         {
           mode === BillingCentersDisplayModes.bar && (
-            <BarChart
-              request={request}
+            <BarChartWithQuota
+              requests={requests}
+              quotaType={QuotaTypes.billingCenter}
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
@@ -183,7 +189,7 @@ class BillingCenters extends React.Component {
         {
           mode === BillingCentersDisplayModes.pie && (
             <PieChart
-              request={request}
+              request={requests}
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
@@ -197,7 +203,7 @@ class BillingCenters extends React.Component {
 }
 
 BillingCenters.propTypes = {
-  request: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  requests: PropTypes.array,
   discounts: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onSelect: PropTypes.func,
   title: PropTypes.node,
@@ -284,6 +290,7 @@ function UserReport ({
                             'Compute instances': computeDiscounts
                           }}
                           title="Resources"
+                          displayQuotasSummary
                           onSelect={onResourcesSelect}
                           height={height}
                         />
@@ -396,7 +403,7 @@ class UsersChartComponent extends React.Component {
 
   render () {
     const {
-      request,
+      requests,
       discounts,
       title,
       onSelect,
@@ -405,8 +412,9 @@ class UsersChartComponent extends React.Component {
       preferences
     } = this.props;
     return (
-      <BarChart
-        request={request}
+      <BarChartWithQuota
+        quotaType={QuotaTypes.user}
+        requests={requests}
         discounts={discounts}
         title={title}
         onSelect={onSelect}
@@ -421,7 +429,8 @@ const UsersChart = inject('users', 'preferences')(observer(UsersChartComponent))
 
 function GroupReport ({
   authenticatedUserInfo,
-  group,
+  billingGroup,
+  adGroup,
   billingCentersComputeRequest,
   billingCentersStorageRequest,
   billingCentersComputeTableRequest,
@@ -432,7 +441,7 @@ function GroupReport ({
   filters
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
-  const billingCenterName = (group || []).join(' ');
+  const billingCenterName = (billingGroup || adGroup || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
     key: 'user',
@@ -465,7 +474,7 @@ function GroupReport ({
     className: styles.tableCell
   }, {
     key: 'billingCenter',
-    title: 'Billing center',
+    title: adGroup ? 'Group' : 'Billing center',
     render: () => billingCenterName,
     className: styles.tableCell
   }];
@@ -483,7 +492,8 @@ function GroupReport ({
         (computeDiscounts, storageDiscounts) => (
           <Export.Consumer
             exportConfiguration={{
-              group,
+              billingGroup,
+              adGroup,
               period,
               range,
               filters: {
@@ -540,6 +550,7 @@ function GroupReport ({
                             'Compute instances': computeDiscounts
                           }}
                           title="Resources"
+                          displayQuotasSummary
                           onSelect={onResourcesSelect}
                           height={height}
                         />
@@ -555,7 +566,7 @@ function GroupReport ({
                       ({height}) => (
                         <div>
                           <UsersChart
-                            request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                            requests={[billingCentersComputeRequest, billingCentersStorageRequest]}
                             discounts={[computeDiscounts, storageDiscounts]}
                             title={title}
                             onSelect={onUserSelect}
@@ -594,7 +605,8 @@ function GeneralReport ({
   summaryStorages,
   filters,
   user,
-  group
+  billingGroup,
+  adGroup
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
   const onResourcesSelect = BillingNavigation.generateNavigationFn(
@@ -613,7 +625,8 @@ function GeneralReport ({
           <Export.Consumer
             exportConfiguration={{
               user,
-              group,
+              billingGroup,
+              adGroup,
               period,
               range,
               filters: {
@@ -675,6 +688,7 @@ function GeneralReport ({
                           }}
                           onSelect={onResourcesSelect}
                           title="Resources"
+                          displayQuotasSummary
                           height={height}
                         />
                       )
@@ -692,7 +706,10 @@ function GeneralReport ({
                         {
                           ({height}) => (
                             <BillingCenters
-                              request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                              requests={[
+                                billingCentersComputeRequest,
+                                billingCentersStorageRequest
+                              ]}
                               discounts={[computeDiscounts, storageDiscounts]}
                               onSelect={onBillingCenterSelect}
                               title="Billing centers"
@@ -714,11 +731,14 @@ function GeneralReport ({
 }
 
 function DefaultReport (props) {
-  const {user, group} = props;
+  const {user, billingGroup, adGroup} = props;
   if (user) {
     return UserReport(props);
   }
-  if (group && group.length === 1) {
+  if (
+    (billingGroup && billingGroup.length === 1) ||
+    (adGroup && adGroup.length === 1)
+  ) {
     return GroupReport(props);
   }
   return GeneralReport(props);

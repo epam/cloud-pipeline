@@ -21,6 +21,6 @@ To run python tests you should add `workflows/pipe-common` to your `PYTHOPATH`.
 ```bash
 cd /path/to/cloud-pipeline/workflows/pipe-common
 export PYTHONPATH=$PYTHONPATH:$PWD
-python -m pip install mock
+python -m pip install mock pytest
 python -m pytest
 ```

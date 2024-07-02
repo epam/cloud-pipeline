@@ -50,7 +50,7 @@ public class PipelineRunScheduleProvider implements ScheduleProvider {
 
     @Override
     public void verifySchedulable(final Long schedulableId) {
-        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(schedulableId);
+        final PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(schedulableId, false);
         Assert.notNull(pipelineRun, messageHelper
                 .getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
         Assert.isTrue(!pipelineRun.getInstance().getSpot(), messageHelper.getMessage(

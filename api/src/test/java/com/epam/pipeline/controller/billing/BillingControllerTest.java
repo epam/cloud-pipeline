@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.billing.BillingGroupingSortOrder;
 import com.epam.pipeline.test.web.AbstractControllerTest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -52,12 +53,18 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"interval\":\"1d\"," +
                                                 "\"grouping\":\"BILLING_CENTER\"," +
                                                 "\"loadDetails\":true," +
+                                                "\"order\": {" +
+                                                    "\"metric\": \"COST\", " +
+                                                    "\"aggregate\": \"DEFAULT\", " +
+                                                    "\"desc\": false" +
+                                                "}," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";
     private final BillingChartInfo billingChartInfo = BillingChartInfo.builder().cost(COST).build();
     private final BillingChartRequest billingChartRequest = new BillingChartRequest(
             LocalDate.MIN, LocalDate.MAX, Collections.singletonMap("test", Collections.singletonList("test")),
-            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER, true, 5L, 1L
+            DateHistogramInterval.DAY, BillingGrouping.BILLING_CENTER,
+            BillingGroupingSortOrder.DEFAULT_SORT_ORDER, true, false, 5L, 1L
     );
     private final List<BillingChartInfo> billingChartInfos = Collections.singletonList(billingChartInfo);
 

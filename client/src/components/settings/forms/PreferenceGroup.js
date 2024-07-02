@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,20 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Checkbox, Form, Icon, Input, Row} from 'antd';
+import {
+  Button,
+  Checkbox,
+  Form,
+  Icon,
+  Input,
+  Row,
+  Select
+} from 'antd';
 import CodeEditor from '../../special/CodeEditor';
 import highlightText from '../../special/highlightText';
 import {MANAGEMENT_SECTION} from '../user-profile/appearance';
 import {ThemesPreferenceModes, ThemesPreferenceName} from '../../../themes';
+import {sshThemesList} from '../../special/metadata/special/ssh-theme-select';
 import styles from './PreferenceGroup.css';
 
 const formatJson = (string, presentation = true, catchError = true) => {
@@ -295,7 +304,26 @@ class PreferenceInput extends React.Component {
         </div>
       );
     }
-    if (this.props.value.type === 'BOOLEAN') {
+    if (value.name === 'ui.ssh.theme') {
+      return (
+        <Select
+          value={this.state.value}
+          onChange={this.onValueChange}
+          disabled={this.props.disabled}
+          size="small"
+        >
+          {Object.entries(sshThemesList)
+            .map(([value, text]) => (
+              <Select.Option
+                key={value}
+                value={value}
+              >
+                {text}
+              </Select.Option>
+            ))}
+        </Select>
+      );
+    } else if (this.props.value.type === 'BOOLEAN') {
       return (
         <Checkbox
           style={{lineHeight: 1, marginLeft: 2}}

@@ -24,7 +24,12 @@ import {
   DETAIL_VIEW_ID,
   getDefaultInitialViewState,
 } from '@hms-dbmi/viv';
-import DetailViewWithMesh from './collage-mesh/view';
+import DetailViewWithMesh from './view';
+
+const defaultHooks = { handleValue: () => {}, handleCoordinate: () => {} };
+const defaultViewStates = [];
+const defaultLensBorderColor = [255, 255, 255];
+const defaultExtensions = [];
 
 function VivViewer(props) {
   const {
@@ -32,28 +37,33 @@ function VivViewer(props) {
     contrastLimits,
     colors,
     channelsVisible,
-    viewStates: viewStatesProp = [],
+    viewStates: viewStatesProp = defaultViewStates,
     colormap,
     overview,
     overviewOn,
     selections,
-    hoverHooks = { handleValue: () => {}, handleCoordinate: () => {} },
+    hoverHooks = defaultHooks,
     height,
     width,
     lensEnabled = false,
     lensSelection = 0,
     lensRadius = 100,
-    lensBorderColor = [255, 255, 255],
+    lensBorderColor = defaultLensBorderColor,
     lensBorderRadius = 0.02,
     clickCenter = true,
     transparentColor,
     onViewStateChange,
     onHover,
     onViewportLoad,
-    extensions = [],
+    extensions = defaultExtensions,
     deckProps,
     mesh,
     onCellClick,
+    overlayImages,
+    annotations,
+    selectedAnnotation,
+    onEditAnnotation,
+    onSelectAnnotation,
   } = props;
   const detailViewState = viewStatesProp?.find((v) => v.id === DETAIL_VIEW_ID);
   const baseViewState = useMemo(
@@ -85,6 +95,11 @@ function VivViewer(props) {
     onCellHover: onCellHovered,
     hoveredCell,
     onCellClick,
+    onEditAnnotation,
+    overlayImages,
+    annotations,
+    selectedAnnotation,
+    onSelectAnnotation,
   });
   const layerConfig = {
     loader,

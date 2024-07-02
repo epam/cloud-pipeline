@@ -23,8 +23,12 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.BaseMatcher;
@@ -33,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -56,14 +61,22 @@ public class S3HelperTest {
     private static final String NO_VERSION = null;
     private static final long EXCEEDED_OBJECT_SIZE = Long.MAX_VALUE;
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
+    private static final String ARCHIVE_STORAGE_EXCEPTION_MESSAGE = "storage class";
+    public static final String DEEP_ARCHIVE = "DEEP_ARCHIVE";
+    public static final String X_AMZ_STORAGE_CLASS = "x-amz-storage-class";
+    public static final String MOCK_MESSAGE = "mock message";
+
 
     private final AmazonS3 amazonS3 = mock(AmazonS3.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final S3Helper helper = spy(new S3Helper(messageHelper));
+    private final StorageEventCollector events = mock(StorageEventCollector.class);
+    private final S3Helper helper = spy(new S3Helper(events, messageHelper));
+    private final S3bucketDataStorage storage = new S3bucketDataStorage();
 
     @Before
     public void setUp() {
         doReturn(amazonS3).when(helper).getDefaultS3Client();
+        storage.setPath(BUCKET);
     }
 
     @Test
@@ -103,7 +116,7 @@ public class S3HelperTest {
                                                       "8.10.249.0/24", "77.75.64.0/23", "77.75.66.0/23",
                                                       "193.202.91.0/24");
 
-        S3Helper helper = new S3Helper(messageHelper);
+        S3Helper helper = new S3Helper(events, messageHelper);
         ObjectMapper objectMapper = new ObjectMapper();
 
         String populatedPolicyString = helper.populateBucketPolicy("testBucket", policyStr, testAllowedCidrs, true);
@@ -130,7 +143,21 @@ public class S3HelperTest {
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.moveFile(BUCKET, OLD_PATH, NEW_PATH));
+            () -> helper.moveFile(storage, OLD_PATH, NEW_PATH));
+    }
+
+    @Test
+    public void testVerifyArchiveStateWorksCorrectlyWithRestoredFiles() {
+        when(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ARCHIVE_ACCESS)).thenReturn(MOCK_MESSAGE);
+        ObjectMetadata fileMetadata = new ObjectMetadata();
+        fileMetadata.setHeader(X_AMZ_STORAGE_CLASS, DEEP_ARCHIVE);
+        assertThrows(DataStorageException.class, () -> helper.verifyArchiveState(fileMetadata));
+
+        fileMetadata.setRestoreExpirationTime(Date.from(DateUtils.now().toInstant().minus(1, ChronoUnit.MINUTES)));
+        assertThrows(DataStorageException.class, () -> helper.verifyArchiveState(fileMetadata));
+
+        fileMetadata.setRestoreExpirationTime(Date.from(DateUtils.now().toInstant().plus(1, ChronoUnit.MINUTES)));
+        helper.verifyArchiveState(fileMetadata);
     }
 
     @Test
@@ -142,7 +169,7 @@ public class S3HelperTest {
         fileMetadata.setLastModified(new Date());
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
-        helper.moveFile(BUCKET, OLD_PATH, NEW_PATH);
+        helper.moveFile(storage, OLD_PATH, NEW_PATH);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(OLD_PATH, NEW_PATH)));
         final Map<String, String> pathVersionMap = new HashMap<>();
@@ -157,7 +184,7 @@ public class S3HelperTest {
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.restoreFileVersion(BUCKET, OLD_PATH, VERSION));
+            () -> helper.restoreFileVersion(storage, OLD_PATH, VERSION));
     }
 
     @Test
@@ -165,7 +192,7 @@ public class S3HelperTest {
         final ObjectMetadata fileMetadata = new ObjectMetadata();
         when(amazonS3.getObjectMetadata(any())).thenReturn(fileMetadata);
 
-        helper.restoreFileVersion(BUCKET, OLD_PATH, VERSION);
+        helper.restoreFileVersion(storage, OLD_PATH, VERSION);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(OLD_PATH, OLD_PATH)));
         final Map<String, String> pathVersionMap = new HashMap<>();
@@ -188,7 +215,27 @@ public class S3HelperTest {
                 .thenReturn(sourceListing, destinationListing, bucketListing);
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
-            () -> helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH));
+            () -> helper.moveFolder(storage, OLD_PATH, NEW_PATH));
+    }
+
+    @Test
+    public void testMoveFolderShouldThrowIfAtLeastOneOfItsFilesLocatedInArchiveTier() {
+        final ObjectListing sourceListing = new ObjectListing();
+        sourceListing.setCommonPrefixes(Collections.singletonList(OLD_PATH));
+        final ObjectListing destinationListing = new ObjectListing();
+        destinationListing.setCommonPrefixes(Collections.emptyList());
+        final ObjectListing bucketListing = spy(new ObjectListing());
+        final S3ObjectSummary fileSummary = new S3ObjectSummary();
+        fileSummary.setKey(OLD_PATH + "/fileFromDeepArchive");
+        fileSummary.setStorageClass(DEEP_ARCHIVE);
+        when(bucketListing.getObjectSummaries()).thenReturn(Collections.singletonList(fileSummary));
+        when(amazonS3.listObjects(any(ListObjectsRequest.class)))
+                .thenReturn(sourceListing, destinationListing, bucketListing);
+
+        assertThrows(
+            e -> e instanceof DataStorageException && e.getMessage().contains(ARCHIVE_STORAGE_EXCEPTION_MESSAGE),
+            () -> helper.moveFolder(storage, OLD_PATH, NEW_PATH)
+        );
     }
 
     @Test
@@ -204,13 +251,15 @@ public class S3HelperTest {
         final ObjectListing bucketListing = spy(new ObjectListing());
         final S3ObjectSummary firstFileSummary = new S3ObjectSummary();
         firstFileSummary.setKey(firstFileOldPath);
+        firstFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         final S3ObjectSummary secondFileSummary = new S3ObjectSummary();
         secondFileSummary.setKey(secondFileOldPath);
+        secondFileSummary.setStorageClass(S3Helper.STANDARD_STORAGE_CLASS);
         when(bucketListing.getObjectSummaries()).thenReturn(Arrays.asList(firstFileSummary, secondFileSummary));
         when(amazonS3.listObjects(any(ListObjectsRequest.class)))
                 .thenReturn(sourceListing, destinationListing, bucketListing);
 
-        helper.moveFolder(BUCKET, OLD_PATH, NEW_PATH);
+        helper.moveFolder(storage, OLD_PATH, NEW_PATH);
 
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(firstFileOldPath, firstFileNewPath)));
         verify(amazonS3).copyObject(argThat(hasSourceAndDestination(secondFileOldPath, secondFileNewPath)));

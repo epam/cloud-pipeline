@@ -19,11 +19,16 @@ import defaultSizes from './default-panels-sizes';
 import defaultState from './default-panels-state';
 import {buildGridStyle, buildLayout} from '../../../../special/grid-layout';
 
-const GridStyles = buildGridStyle({top: 0, maxLayoutColumns: 4});
+const GridStyles = buildGridStyle({
+  top: 0,
+  maxLayoutColumns: 4,
+  minimumHeight: 1400,
+  rows: 48
+});
 
 const Layout = buildLayout({
   defaultState,
-  storage: 'panelsLayout-Billing-Instances',
+  storage: 'panelsLayout-Billing-Instances-new',
   defaultSizes,
   panelNeighbors: [],
   gridStyle: GridStyles
