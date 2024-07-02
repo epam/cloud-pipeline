@@ -22,7 +22,8 @@ import lombok.Data;
 @Data
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CommitRunCheckResult {
-    private CommitRunCheck<Boolean> enoughSpace;
-    private CommitRunCheck<Long> containerSize;
+public class CommitRunCheck<T> {
+    private CommitRunCheckStatus status;
+    private String message;
+    private T value;
 }

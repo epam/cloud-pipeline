@@ -17,7 +17,6 @@
 package com.epam.pipeline.entity.preference;
 
 import com.epam.pipeline.entity.git.GitlabVersion;
-import com.epam.pipeline.entity.tool.ToolSizeLimits;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.git.GitManager;
@@ -25,8 +24,6 @@ import com.epam.pipeline.manager.git.GitlabClient;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.Assert;
 import org.junit.Before;
@@ -164,29 +161,6 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
         validateGitPreferences();
     }
 
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testValidateToolSizeLimits() throws JsonProcessingException {
-        final Preference preference = SystemPreferences.COMMIT_TOOL_SIZE_LIMITS.toPreference();
-        final ObjectMapper objectMapper = new ObjectMapper();
-        ToolSizeLimits toolSizeLimits = ToolSizeLimits.builder()
-                .commitToolHardLimit("123")
-                .commitToolSoftLimit("123b")
-                .runToolHardLimit("123kB")
-                .runToolSoftLimit("123TB")
-                .build();
-        preference.setValue(objectMapper.writeValueAsString(toolSizeLimits));
-        Assert.assertTrue(preferences.isValid(preference, null));
-
-        toolSizeLimits = ToolSizeLimits.builder()
-                .commitToolHardLimit("123")
-                .commitToolSoftLimit("whatever")
-                .runToolHardLimit("123kB")
-                .runToolSoftLimit("123TB")
-                .build();
-        preference.setValue(objectMapper.writeValueAsString(toolSizeLimits));
-        Assert.assertFalse(preferences.isValid(preference, null));
-    }
 
     @Test
     public void testDependentPreferencesMapAppropriateFilling() {

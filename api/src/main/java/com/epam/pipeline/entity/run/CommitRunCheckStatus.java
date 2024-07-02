@@ -15,14 +15,6 @@
 
 package com.epam.pipeline.entity.run;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class CommitRunCheckResult {
-    private CommitRunCheck<Boolean> enoughSpace;
-    private CommitRunCheck<Long> containerSize;
+public enum CommitRunCheckStatus {
+    FAIL, WARN, OK;
 }

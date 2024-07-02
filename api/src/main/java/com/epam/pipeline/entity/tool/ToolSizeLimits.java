@@ -23,8 +23,8 @@ import lombok.Data;
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ToolSizeLimits {
-    private String commitToolSoftLimit;
-    private String commitToolHardLimit;
-    private String runToolSoftLimit;
-    private String runToolHardLimit;
+    private Long commitToolSoftLimit;
+    private Long commitToolHardLimit;
+    private Long runToolSoftLimit;
+    private Long runToolHardLimit;
 }

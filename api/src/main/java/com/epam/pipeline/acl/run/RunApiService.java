@@ -49,6 +49,8 @@ import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.run.CommitRunCheckResult;
+import com.epam.pipeline.entity.run.CommitRunCheck;
+import com.epam.pipeline.entity.run.CommitRunCheckStatus;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -328,10 +330,15 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public CommitRunCheckResult getCommitRunCheckResult(final Long runId) {
         final boolean enoughSpace = pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId);
-        final long containerSize = pipelineRunDockerOperationManager.getContainerSize(runId);
+        final CommitRunCheck<Boolean> enoughSpace1 = CommitRunCheck.<Boolean>builder()
+                .status(enoughSpace ? CommitRunCheckStatus.OK : CommitRunCheckStatus.FAIL)
+                .message("")
+                .value(enoughSpace)
+                .build();
+        final CommitRunCheck<Long> containerSize = pipelineRunDockerOperationManager.getContainerSize(runId);
         return CommitRunCheckResult.builder()
                 .containerSize(containerSize)
-                .enoughSpace(enoughSpace)
+                .enoughSpace(enoughSpace1)
                 .build();
     }
 

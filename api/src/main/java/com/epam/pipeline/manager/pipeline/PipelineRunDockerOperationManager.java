@@ -26,6 +26,9 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.CommitRunCheck;
+import com.epam.pipeline.entity.run.CommitRunCheckStatus;
+import com.epam.pipeline.entity.tool.ToolSizeLimits;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
@@ -116,9 +119,19 @@ public class PipelineRunDockerOperationManager {
         return dockerContainerOperationManager.getContainerLayers(pipelineRun);
     }
 
-    public Long getContainerSize(final Long id) {
+    public CommitRunCheck<Long> getContainerSize(final Long id) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
-        return dockerContainerOperationManager.getContainerSize(pipelineRun);
+        final long containerSize = dockerContainerOperationManager.getContainerSize(pipelineRun);
+        final ToolSizeLimits limits = preferenceManager.getPreference(SystemPreferences.COMMIT_TOOL_SIZE_LIMITS);
+        return CommitRunCheck.<Long>builder()
+                .status(containerSize <= limits.getCommitToolSoftLimit() ? CommitRunCheckStatus.OK :
+                        (containerSize <= limits.getRunToolHardLimit() ? CommitRunCheckStatus.WARN :
+                                CommitRunCheckStatus.FAIL))
+                .message(containerSize <= limits.getCommitToolSoftLimit() ? null :
+                        (containerSize <= limits.getRunToolHardLimit() ? "Container image will be too big." :
+                                "Container is too big for commit."))
+                .value(containerSize)
+                .build();
     }
 
     /**

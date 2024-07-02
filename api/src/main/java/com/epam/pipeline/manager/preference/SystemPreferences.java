@@ -170,7 +170,7 @@ public class SystemPreferences {
             COMMIT_GROUP, isGreaterThan(0));
     public static final ObjectPreference<ToolSizeLimits> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
             "commit.tool.size.limits", null, new TypeReference<ToolSizeLimits>() {},
-            COMMIT_GROUP, PreferenceValidators.isValidToolSizeLimits);
+            COMMIT_GROUP, isNullOrValidJson(new TypeReference<ToolSizeLimits>() {}));
 
     public static final IntPreference GET_CONTAINER_SIZE_TIMEOUT = new IntPreference("get.container.size.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
