@@ -692,7 +692,7 @@ Note that this tab displays groups created in CP only, not given by <strong>SS
 <h3 id="roles">Roles</h3>
 <p>The "<strong>Roles</strong>" subtab shows a set of predefined system roles that couldn't be extended or reduced. Here you can grant or refuse users in a role.<br />
 <img alt="CP_ManageSettings" src="../attachments/ManageSettings_5.png" /></p>
-<p>There is a list of CP system roles:</p>
+<p>There is a list of Cloud Pipeline system roles:</p>
 <table>
 <thead>
 <tr>
@@ -703,55 +703,87 @@ Note that this tab displays groups created in CP only, not given by <strong>SS
 <tbody>
 <tr>
 <td><strong>ROLE_ADMIN</strong></td>
-<td>The user gets Read/Write/Execute/Owner permissions to all objects in the system.<br /><strong><em>Note</em></strong>: The owner of the object can manage its Access Control List. <strong>OWNER</strong> property is assigned to a user has created an object by default.</td>
+<td>User gets Read/Write/Execute/Owner permissions to all objects in the Platform.<br /><strong><em>Note</em></strong>: The owner of the object can manage its Access Control List. <strong>OWNER</strong> property is assigned to a user has created an object by default.</td>
 </tr>
 <tr>
 <td><strong>ROLE_USER</strong></td>
-<td>basic user.</td>
+<td>Basic user.</td>
 </tr>
 <tr>
 <td><strong>ROLE_ADVANCED_USER</strong></td>
-<td></td>
+<td>Allows to use <a href="../../10_Manage_Tools/10.5._Launch_a_Tool/#launch-a-tool-with-friendly-url">friendly URLs</a> for runs.</td>
+</tr>
+<tr>
+<td><strong>ROLE_ALLOW_ALL_POLICY</strong></td>
+<td>By default, users can connect from own run to any other own run.<br />This role allows users to connect from own run to any run of that user or other users (in case of corresponding <a href="../../13_Permissions/13._Permissions/">permissions</a> on such runs).</td>
 </tr>
 <tr>
 <td><strong>ROLE_ANONYMOUS_USER</strong></td>
-<td>specific role for the ability of sharing interactive runs endpoints to the <code>anonymous</code> users (users, who have successfully passed the IdP authentication but is not registered in the Cloud Pipeline).</td>
+<td>Specific role for the ability of sharing interactive runs endpoints to the <code>anonymous</code> users.<br /><strong><em>Note</em></strong>:<code>anonymous</code> users - users, who have successfully passed the IdP authentication but are not registered in the Cloud Pipeline Platform.</td>
 </tr>
 <tr>
 <td><strong>ROLE_BILLING_MANAGER</strong></td>
-<td>users who are granted this role are able to view the whole <strong>Billing reports</strong> info of the platform (as if they were admins).</td>
+<td>Users who are granted this role are able to view the whole <strong>Billing reports</strong> info of the platform (as if they were admins).</td>
 </tr>
 <tr>
 <td><strong>ROLE_CONFIGURATION_MANAGER</strong></td>
-<td>allows to create/delete <strong>Cluster Configurations</strong> (given to each user by default).</td>
+<td>Allows to create/delete <strong>Cluster Configurations</strong> (given to each user by default).</td>
 </tr>
 <tr>
 <td><strong>ROLE_DTS_MANAGER</strong></td>
-<td></td>
+<td>Allows to manage data transfer service.</td>
 </tr>
 <tr>
 <td><strong>ROLE_ENTITIES_MANAGER</strong> </td>
-<td>allows to create/delete <strong>Entities</strong>.</td>
+<td>Allows to create/delete <strong>Entities</strong>.</td>
 </tr>
 <tr>
 <td><strong>ROLE_FOLDER_MANAGER</strong></td>
-<td>allows to create/delete <strong>Folders</strong> (given to each user by default).</td>
+<td>Allows to create/delete <strong>Folders</strong> (given to each user by default).</td>
 </tr>
 <tr>
 <td><strong>ROLE_PIPELINE_MANAGER</strong></td>
-<td>allows to create/delete <strong>Pipelines</strong> (given to each user by default).</td>
+<td>Allows to create/delete <strong>Pipelines</strong> (given to each user by default).</td>
+</tr>
+<tr>
+<td><strong>ROLE_SERVICE_ACCOUNT</strong></td>
+<td>Adds no extra permissions. But accounts with this role are not being blocked by LDAP.</td>
+</tr>
+<tr>
+<td><strong>ROLE_STORAGE_ADMIN</strong></td>
+<td>User gets Read/Write/Owner permissions to all data storages in the Platform.</td>
+</tr>
+<tr>
+<td><strong>ROLE_STORAGE_ARCHIVE_MANAGER</strong></td>
+<td>Allows to manage <a href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">storages lifecycle processes</a>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_STORAGE_ARCHIVE_READER</strong></td>
+<td>Allows read-only access to <a href="../../08_Manage_Data_Storage/8.10._Storage_lifecycle/">storages lifecycle info</a>.</td>
 </tr>
 <tr>
 <td><strong>ROLE_STORAGE_MANAGER</strong></td>
-<td>allows to create/delete <strong>Data Storages</strong>.</td>
+<td>Allows to create/delete <strong>Data Storages</strong>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_STORAGE_TAG_MANAGER</strong></td>
+<td>Allows to manage storage attributes.</td>
 </tr>
 <tr>
 <td><strong>ROLE_TOOL_GROUP_MANAGER</strong></td>
-<td>allows to create/delete <strong>Tool groups</strong>.</td>
+<td>Allows to create/delete <strong>Tool groups</strong>.</td>
+</tr>
+<tr>
+<td><strong>ROLE_VERSIONED_STORAGE_MANAGER</strong></td>
+<td>Allows to create/delete <a href="../../08_Manage_Data_Storage/8.13._Versioned_storages/"><strong>Versioned Storages</strong></a>.</td>
 </tr>
 <tr>
 <td><strong>ROLE_USER_READER</strong></td>
-<td>allows read-only access to the users, groups, roles information and export users feature.</td>
+<td>Allows read-only access to the users, groups, roles information and export users feature.</td>
+</tr>
+<tr>
+<td><strong>ROLE_USER_METADATA_READER</strong></td>
+<td>Allows read-only access to the users metadata. Additional to the role <strong>ROLE_USER_READER</strong>.</td>
 </tr>
 </tbody>
 </table>
