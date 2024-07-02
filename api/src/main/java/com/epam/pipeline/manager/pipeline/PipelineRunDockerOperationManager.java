@@ -124,12 +124,8 @@ public class PipelineRunDockerOperationManager {
         final long containerSize = dockerContainerOperationManager.getContainerSize(pipelineRun);
         final ToolSizeLimits limits = preferenceManager.getPreference(SystemPreferences.COMMIT_TOOL_SIZE_LIMITS);
         return CommitRunCheck.<Long>builder()
-                .status(containerSize <= limits.getCommitToolSoftLimit() ? CommitRunCheckStatus.OK :
-                        (containerSize <= limits.getRunToolHardLimit() ? CommitRunCheckStatus.WARN :
-                                CommitRunCheckStatus.FAIL))
-                .message(containerSize <= limits.getCommitToolSoftLimit() ? null :
-                        (containerSize <= limits.getRunToolHardLimit() ? "Container image will be too big." :
-                                "Container is too big for commit."))
+                .status(getCommitRunCheckStatus(containerSize, limits))
+                .message(getCommitRunCheckMessage(containerSize, limits))
                 .value(containerSize)
                 .build();
     }
@@ -307,5 +303,24 @@ public class PipelineRunDockerOperationManager {
             log.error("Failed to load available disk space.", e);
             return Long.MAX_VALUE;
         }
+    }
+
+    private static String getCommitRunCheckMessage(final long containerSize, final ToolSizeLimits toolSizeLimits) {
+        if (toolSizeLimits == null) {
+            return null;
+        }
+        return containerSize <= toolSizeLimits.getCommitToolSoftLimit() ? null :
+                (containerSize <= toolSizeLimits.getRunToolHardLimit() ? "Container image will be too big." :
+                        "Container is too big for commit.");
+    }
+
+    private static CommitRunCheckStatus getCommitRunCheckStatus(final long containerSize,
+                                                                final ToolSizeLimits toolSizeLimits) {
+        if (toolSizeLimits == null) {
+            return CommitRunCheckStatus.OK;
+        }
+        return containerSize <= toolSizeLimits.getCommitToolSoftLimit() ? CommitRunCheckStatus.OK :
+                (containerSize <= toolSizeLimits.getRunToolHardLimit() ? CommitRunCheckStatus.WARN :
+                        CommitRunCheckStatus.FAIL);
     }
 }
