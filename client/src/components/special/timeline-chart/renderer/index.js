@@ -40,7 +40,8 @@ const DEFAULT_SEARCH_MODE = SEARCH_MODE.closest;
 const TimelineChartEvents = {
   scaleChanged: 'SCALE_CHANGED',
   onItemClick: 'ON_ITEM_CLICK',
-  onItemsHover: 'ON_ITEMS_HOVER'
+  onItemsHover: 'ON_ITEMS_HOVER',
+  onZoom: 'ON_ZOOM'
 };
 
 function hoveredItemsEqual (a, b) {
@@ -73,6 +74,7 @@ class TimelineChartRenderer {
    * @property {string} [selectionColor=#666666]
    * @property {boolean} [adaptValueAxis=true]
    * @property {boolean} [showHoveredCoordinateLine=false]
+   * @property {boolean} [showHorizontalLines=false]
    */
   /**
    * @param {TimelineChartOptions} [options]
@@ -85,8 +87,11 @@ class TimelineChartRenderer {
       backgroundColor = '#ffffff',
       selectionColor = '#666666',
       adaptValueAxis = true,
-      showHoveredCoordinateLine = false
+      showHoveredCoordinateLine = false,
+      animateZoom = true,
+      shiftWheel = false
     } = options || {};
+    this.options = options || {};
     this.container = undefined;
     this.canvas = undefined;
     this.textCanvas = undefined;
@@ -110,6 +115,8 @@ class TimelineChartRenderer {
     this._backgroundColor = backgroundColor;
     this._adaptValueAxis = adaptValueAxis;
     this._showHoveredCoordinateLine = showHoveredCoordinateLine;
+    this._animateZoom = animateZoom;
+    this._shiftWheel = shiftWheel;
     this._hoverEvents = true;
     this.xAxis = new RendererAxis(
       (item) => item.x,
@@ -127,7 +134,9 @@ class TimelineChartRenderer {
         stickToZero: true,
         vertical: true
       });
-    this.xAxis.addScaleChangedListener(this.onScaleChange.bind(this, true));
+    this.xAxis.addScaleChangedListener(
+      (fromZoom, fromDrag) => this.onScaleChange(true, fromZoom, fromDrag)
+    );
     this.yAxis.addScaleChangedListener(this.onScaleChange.bind(this));
     this.mouseMoveHandler = this.onMouseMove.bind(this);
     this.mouseUpHandler = this.onMouseUp.bind(this);
@@ -468,7 +477,10 @@ class TimelineChartRenderer {
         });
       });
       if (min !== undefined && max !== undefined) {
-        this.yAxis.setRange({from: min, to: max}, {extend: true, animate: false});
+        this.yAxis.setRange({from: min, to: max}, {
+          extend: true,
+          animate: this._animateZoom
+        });
       }
     } else {
       this.yAxis.clearRange();
@@ -512,14 +524,16 @@ class TimelineChartRenderer {
     this.unHoverItems();
   }
 
-  onScaleChange (changeYAxis = false) {
+  onScaleChange (changeYAxis = false, fromZoom = false, fromDrag = false) {
     if (changeYAxis) {
       this.adaptYAxisForVisibleElements();
     }
     this.unHoverItems();
     this.reportEvent(TimelineChartEvents.scaleChanged, {
       from: this.from,
-      to: this.to
+      to: this.to,
+      fromZoom,
+      fromDrag
     });
     this.requestRender();
   }
@@ -567,7 +581,15 @@ class TimelineChartRenderer {
 
   onMouseWheel (event) {
     const info = this.getMousePosition(event);
-    if (this.xAxis.zoomBy(-event.deltaY / 100, info.valueX)) {
+    let delta = -event.deltaY / 100;
+    if (this._shiftWheel) {
+      delta = event.wheelDelta / 400;
+    }
+    if (this._shiftWheel && !info.shiftKey) {
+      return;
+    }
+    const zoom = this.xAxis.zoomBy(delta, info.valueX);
+    if (zoom) {
       event.stopPropagation();
       event.preventDefault();
     }
@@ -623,7 +645,10 @@ class TimelineChartRenderer {
         end = start;
         start = tmp;
       }
-      this.xAxis.setRange({from: start, to: end}, {animate: true});
+      this.xAxis.setRange({from: start, to: end}, {
+        animate: this._animateZoom,
+        fromZoom: true
+      });
     } else if (this.dragEvent && this.dragEvent.moved) {
       this.onMouseMove(event);
     } else if (this.dragEvent) {
@@ -773,7 +798,7 @@ class TimelineChartRenderer {
           key,
           data: data
             .map((item) => {
-              if (item === undefined || !isDate(item.date) || !isNumber(item.value)) {
+              if (item === undefined || !isDate(item.date)) {
                 return undefined;
               }
               const {
@@ -791,7 +816,8 @@ class TimelineChartRenderer {
                 y: Number(value),
                 date,
                 x,
-                dateValue
+                dateValue,
+                hide: !isNumber(item.value)
               };
             })
             .filter((item) => item === undefined || item.x !== undefined)
@@ -906,7 +932,10 @@ class TimelineChartRenderer {
         };
       }
     });
-    return blocks.map((block) => buildPathVAO(block, this.pathProgram));
+    return blocks.map((block) => {
+      const filtered = block.filter(b => !b.hide);
+      return buildPathVAO(filtered, this.pathProgram);
+    });
   }
 
   draw () {
@@ -1155,6 +1184,14 @@ class TimelineChartRenderer {
           x2: this.xAxis.pixelsOffset,
           color: this.coordinatesSystemColor
         });
+        if (this.options?.showHorizontalLines) {
+          this.horizontalLine({
+            y: this.yAxis.getPixelForValue(tick.value),
+            x1: this.xAxis.pixelsOffset,
+            x2: this.width,
+            color: this.coordinatesSystemColor
+          });
+        }
       }
     });
   }
