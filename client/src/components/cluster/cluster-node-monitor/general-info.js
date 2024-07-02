@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {
   Alert,
@@ -31,19 +31,19 @@ import Dropdown from 'rc-dropdown';
 import FileSaver from 'file-saver';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
-import LoadingView from '../special/LoadingView';
-import styles from './ClusterNode.css';
+import LoadingView from '../../special/LoadingView';
 import {
   CPUUsageChart,
   FileSystemUsageChart,
   MemoryUsageChart,
   NetworkUsageChart
-} from './charts';
-import {ResponsiveContainer} from './charts/utilities';
+} from '../charts';
+import {ResponsiveContainer} from '../charts/utilities';
 import ClusterNodeUsageReport, * as usageUtilities
-from '../../models/cluster/ClusterNodeUsageReport';
-import ClusterUsageExportSettingsDialog from './ClusterUsageExportSettingsDialog';
-import continuousFetch from '../../utils/continuous-fetch';
+from '../../../models/cluster/ClusterNodeUsageReport';
+import ClusterUsageExportSettingsDialog from '../ClusterUsageExportSettingsDialog';
+import continuousFetch from '../../../utils/continuous-fetch';
+import styles from '../ClusterNode.css';
 
 const MIN_CHART_SIZE = {width: 500, height: 350};
 const CHART_MARGIN = 2;
@@ -111,9 +111,8 @@ function ChartContainer (
   );
 }
 
-@inject('chartsData', 'preferences')
 @observer
-class ClusterNodeMonitor extends React.Component {
+class GeneralInfoTab extends React.Component {
   state = {
     containerWidth: 0,
     containerHeight: 0,
@@ -124,6 +123,24 @@ class ClusterNodeMonitor extends React.Component {
     exporting: false,
     exportWindowVisible: false
   };
+
+  componentDidMount () {
+    this.initializeRange();
+    this.checkWindowsBasedNode();
+    this.initializeContinuousMonitorUpdate();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    this.initializeRange();
+    this.checkWindowsBasedNode();
+    if (prevProps.nodeName !== this.props.nodeName) {
+      this.initializeContinuousMonitorUpdate();
+    }
+  }
+
+  componentWillUnmount () {
+    this.stopContinuousMonitorUpdate();
+  }
 
   @computed
   get wholeRangeEnabled () {
@@ -181,11 +198,6 @@ class ClusterNodeMonitor extends React.Component {
     return false;
   }
 
-  componentDidMount () {
-    this.initializeRange();
-    this.initializeContinuousMonitorUpdate();
-  }
-
   initializeContinuousMonitorUpdate () {
     this.stopContinuousMonitorUpdate();
     const {
@@ -207,15 +219,16 @@ class ClusterNodeMonitor extends React.Component {
     this.resetContinuousFetch = undefined;
   }
 
-  componentDidUpdate (prevProps, prevState, snapshot) {
-    if (prevProps.nodeName !== this.props.nodeName) {
-      this.initializeContinuousMonitorUpdate();
+  checkWindowsBasedNode = () => {
+    if (this.windowsOS) {
+      const {
+        router,
+        node
+      } = this.props;
+      if (node && node.loaded && router) {
+        router.push(`/cluster/${node.value.name}/info`);
+      }
     }
-    this.initializeRange();
-  }
-
-  componentWillUnmount () {
-    this.stopContinuousMonitorUpdate();
   }
 
   onResizeContainer = (width, height) => {
@@ -541,7 +554,7 @@ class ClusterNodeMonitor extends React.Component {
     return (
       <div
         className={styles.fullHeightContainer}
-        style={{flexDirection: 'column', overflow: 'hidden'}}
+        style={{flexDirection: 'column', overflow: 'hidden', height: 'calc(100vh - 120px)'}}
       >
         <Row type={'flex'} justify={'end'} align={'middle'} style={{marginTop: 5, marginBottom: 5}}>
           <Checkbox
@@ -700,4 +713,4 @@ class ClusterNodeMonitor extends React.Component {
   }
 }
 
-export default ClusterNodeMonitor;
+export default GeneralInfoTab;

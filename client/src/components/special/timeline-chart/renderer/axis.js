@@ -4,6 +4,7 @@ import {
   getLabelSizer
 } from './text-utilities';
 import buildCoordinates from './coordinates';
+import { parseDate } from '../../heat-map-chart/utils';
 
 const dpr = window.devicePixelRatio;
 
@@ -139,7 +140,7 @@ class RendererAxis {
       this._from = from;
       this._to = to;
       this.updateTicks();
-      this.reportScaleChanged();
+      this.reportScaleChanged(false, true);
     }
   }
 
@@ -222,10 +223,10 @@ class RendererAxis {
     this._listeners = this._listeners.filter((aListener) => aListener !== listener);
   }
 
-  reportScaleChanged () {
+  reportScaleChanged (fromZoom = false, fromDrag = false) {
     this._listeners.forEach((listener) => {
       if (typeof listener === 'function') {
-        listener();
+        listener(fromZoom, fromDrag);
       }
     });
   }
@@ -485,7 +486,7 @@ class RendererAxis {
     return this.setRange({
       from: newFrom,
       to: newTo
-    });
+    }, {fromZoom: true});
   }
 
   zoomBy (factor = 0, anchor = this.center) {
@@ -500,7 +501,8 @@ class RendererAxis {
   setRange (range, options = {}) {
     const {
       extend = false,
-      animate = false
+      animate = false,
+      fromZoom = false
     } = options || {};
     const {
       from: _from = this._from,
@@ -513,12 +515,12 @@ class RendererAxis {
     if (newFrom !== this._from || newTo !== this._to) {
       this.stopSetRangeAnimation();
       if (animate) {
-        this.startSetRangeAnimation(newFrom, newTo);
+        this.startSetRangeAnimation(newFrom, newTo, fromZoom);
       } else {
         this._from = newFrom;
         this._to = newTo;
         this.updateTicks();
-        this.reportScaleChanged();
+        this.reportScaleChanged(fromZoom);
       }
       return true;
     }
@@ -537,7 +539,7 @@ class RendererAxis {
     return false;
   }
 
-  startSetRangeAnimation (from, to) {
+  startSetRangeAnimation (from, to, fromZoom) {
     this.stopSetRangeAnimation();
     let currentFrom = this.from;
     let currentTo = this.to;
@@ -550,7 +552,7 @@ class RendererAxis {
       this._from = from;
       this._to = to;
       this.updateTicks();
-      this.reportScaleChanged();
+      this.reportScaleChanged(fromZoom);
       return;
     }
     const DURATION_MS = 250;
@@ -570,6 +572,7 @@ class RendererAxis {
         request = false;
         this._from = from;
         this._to = to;
+        this.reportScaleChanged(fromZoom);
       } else {
         const ratio = easeInOut(Math.max(0, Math.min(1.0, duration / DURATION_MS)));
         this._from = currentFrom + (from - currentFrom) * ratio;
