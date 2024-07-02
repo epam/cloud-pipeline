@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
+import {Alert, Menu, Row, Button, Modal, message, Popover} from 'antd';
 import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
@@ -42,6 +42,26 @@ import roleModel from '../../utils/roleModel';
 })
 @observer
 class ClusterNode extends Component {
+  state = {
+    labelsToShow: undefined
+  };
+
+  resizeListener;
+  labelRefs = [];
+
+  componentDidMount () {
+    this.resizeListener = window.addEventListener('resize', this.onResize);
+    this.onResize();
+  }
+
+  componentDidUpdate () {
+    this.onResize();
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('resize', this.onResize);
+  }
+
   @computed
   get windowsOS () {
     const {node} = this.props;
@@ -132,7 +152,7 @@ class ClusterNode extends Component {
 
   renderNodeLabels = () => {
     if (this.props.node.error) {
-      return null;
+      return [];
     }
     const labels = Object.assign({}, this.props.node.value ? this.props.node.value.labels : {});
 
@@ -146,7 +166,6 @@ class ClusterNode extends Component {
         labels[PIPELINE_INFO_LABEL] = `${parts[parts.length - 1]}`;
       }
     }
-
     return generateNodeLabels(
       labels,
       {
@@ -157,7 +176,8 @@ class ClusterNode extends Component {
         },
         location: this.props.router.location,
         pipelineRun: this.props.node.value ? this.props.node.value.pipelineRun : null,
-        pools: this.props.pools.loaded ? (this.props.pools.value || []) : []
+        pools: this.props.pools.loaded ? (this.props.pools.value || []) : [],
+        sortFn: (a, b) => (a.info || {}).role - (b.info || {}).role
       });
   };
 
@@ -194,7 +214,23 @@ class ClusterNode extends Component {
     return !testRole(roles, nodeRoles.master) && !testRole(roles, nodeRoles.cloudPipelineRole);
   };
 
+  onResize = () => {
+    const containerWidth = this.containerRef?.offsetWidth - 60;
+    const {show} = (this.labelRefs || []).reduce((acc, label) => {
+      const nextWidth = label.offsetLeft + label.getBoundingClientRect().width;
+      if (nextWidth < containerWidth) {
+        acc.show += 1;
+        acc.totalWidth = nextWidth;
+      }
+      return acc;
+    }, {show: 0, totalWidth: 0});
+    if (this.state.labelsToShow !== show) {
+      this.setState({labelsToShow: show});
+    }
+  };
+
   render () {
+    const {labelsToShow} = this.state;
     const result = [
       this.renderError(),
       this.renderMenu(),
@@ -209,13 +245,14 @@ class ClusterNode extends Component {
         )
       )
     ];
-    const nodeLabels = this.renderNodeLabels();
+    const nodeLabels = this.renderNodeLabels().filter(label => label !== ' ');
     const allowToTerminate = this.props.node.loaded &&
       roleModel.executeAllowed(this.props.node.value) &&
       roleModel.isOwner(this.props.node.value) &&
       this.nodeIsSlave(this.props.node.value);
     return (
       <div
+        style={{display: 'flex', flexDirection: 'column'}}
         key={this.props.name}
         className={
           classNames(
@@ -226,36 +263,88 @@ class ClusterNode extends Component {
           )
         }
       >
-        <Row align="middle">
-          <Col span={1}>
-            <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
-          </Col>
-          <Col span={18}>
-            <span className={parentStyles.nodeMainInfo}>
-              Node: {this.props.name}{nodeLabels}</span>
-          </Col>
-          <Col span={5} className={parentStyles.refreshButtonContainer}>
-            {
-              allowToTerminate && (
-                <Button
-                  id="terminate-cluster-node-button"
-                  type="danger"
-                  disabled={this.props.node.pending || this.props.chartsData.pending}
-                  style={{marginRight: 5}}
-                  onClick={this.nodeTerminationConfirm}
-                >
-                  Terminate
-                </Button>
-              )
-            }
-            <Button
-              id="refresh-cluster-node-button"
-              onClick={this.refreshNodeInstance}
-              disabled={this.props.node.pending || this.props.chartsData.pending}>
-              Refresh
-            </Button>
-          </Col>
-        </Row>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'nowrap',
+            gap: 5,
+            alignItems: 'center'
+          }}>
+          <Link id="back-button" to="/cluster"><Button type="link" icon="arrow-left" /></Link>
+          <div
+            style={{whiteSpace: 'nowrap'}}
+            className={parentStyles.nodeMainInfo}
+          >
+            Node: {this.props.name}
+          </div>
+          <div
+            style={{textWrap: 'nowrap', overflow: 'hidden', position: 'relative', flexGrow: 1}}
+            ref={el => { this.containerRef = el; }}
+          >
+            {(nodeLabels || []).map((label, index) => (
+              <span
+                style={{
+                  visibility: index + 1 > labelsToShow ? 'hidden' : 'visible',
+                  marginRight: 5
+                }}
+                className={parentStyles.nodeMainInfo}
+                key={index}
+                ref={(el) => {
+                  this.labelRefs[index] = el;
+                }}>
+                {label}
+              </span>
+            ))}
+            {labelsToShow < nodeLabels.length ? (
+              <Popover
+                placement="bottomRight"
+                content={(
+                  <div style={{display: 'flex', width: 400, flexWrap: 'wrap'}}>
+                    {(nodeLabels || []).slice(labelsToShow).map((label, index) => (
+                      <span
+                        style={{marginRight: 5}}
+                        key={index}>
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                title={false}
+                trigger="hover"
+              >
+                <a style={{
+                  whiteSpace: 'nowrap',
+                  left: this.labelRefs[labelsToShow]?.offsetLeft + 10,
+                  position: 'absolute',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  cursor: 'pointer'
+                }}>
+                  +{nodeLabels.length - labelsToShow} more
+                </a>
+              </Popover>
+            ) : null}
+          </div>
+          {
+            allowToTerminate && (
+              <Button
+                id="terminate-cluster-node-button"
+                type="danger"
+                disabled={this.props.node.pending || this.props.chartsData.pending}
+                style={{marginRight: 5}}
+                onClick={this.nodeTerminationConfirm}
+              >
+                Terminate
+              </Button>
+            )
+          }
+          <Button
+            id="refresh-cluster-node-button"
+            onClick={this.refreshNodeInstance}
+            disabled={this.props.node.pending || this.props.chartsData.pending}>
+            Refresh
+          </Button>
+        </div>
         {result}
       </div>
     );
