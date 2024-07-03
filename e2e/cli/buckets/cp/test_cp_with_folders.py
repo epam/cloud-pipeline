@@ -80,7 +80,7 @@ class TestCopyWithFolders(object):
 
     @classmethod
     def teardown_class(cls):
-        delete_buckets(cls.bucket_name, cls.other_bucket_name)
+        # delete_buckets(cls.bucket_name, cls.other_bucket_name)
         clean_test_data(os.path.abspath(cls.test_file_1))
         clean_test_data(os.path.abspath(cls.test_file_2))
         clean_test_data(os.path.abspath(cls.test_folder))
