@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,8 +70,15 @@ public class MetadataFilter {
     @AllArgsConstructor
     public static class FilterQuery {
         private String key;
+        private MetadataFilterOperator operator;
         private List<String> values;
         private boolean predefined = false;
+
+        public FilterQuery(String key, List<String> values, boolean predefined) {
+            this.key = key;
+            this.values = values;
+            this.predefined = predefined;
+        }
     }
 
     @Getter

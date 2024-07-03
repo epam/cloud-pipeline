@@ -133,17 +133,36 @@ class ThemedReportConfiguration {
         this.current,
         this.previous,
         this.quota,
-        this.themes.currentThemeConfiguration['@color-yellow'],
-        this.themes.currentThemeConfiguration['@color-violet'],
-        this.themes.currentThemeConfiguration['@color-pink']
+        ...this.otherColors
       ];
     }
     return [
       colors.current,
       colors.previous,
       colors.quota,
+      ...this.otherColors
+    ];
+  }
+
+  @computed
+  get otherColors () {
+    if (this.themes && this.themes.currentThemeConfiguration) {
+      return [
+        this.themes.currentThemeConfiguration['@color-green-soft'],
+        this.themes.currentThemeConfiguration['@color-blue-soft'],
+        this.themes.currentThemeConfiguration['@color-yellow'],
+        this.themes.currentThemeConfiguration['@color-violet'],
+        this.themes.currentThemeConfiguration['@color-pink']
+      ];
+    }
+    return [
       colors.orange
     ];
+  }
+
+  getOtherColorForIndex (index) {
+    const otherColors = this.otherColors;
+    return otherColors[index % otherColors.length];
   }
 
   generateColors = (count, useHover = false, hover = false) => {

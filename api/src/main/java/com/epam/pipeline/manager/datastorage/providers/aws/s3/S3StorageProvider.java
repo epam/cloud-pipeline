@@ -21,8 +21,12 @@ import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.re
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -32,6 +36,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
@@ -41,10 +46,13 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.region.AwsRegionCredentials;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.S3TemporaryCredentialsGenerator;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -59,9 +67,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,7 +85,16 @@ import java.util.stream.Stream;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
+    /**
+     * See {@link StorageClass} from s3 model.
+     * */
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
+            "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
+
+    public static final String STANDARD_RESTORE_MODE = "STANDARD";
+    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
+    private final StorageEventCollector s3Events;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
     private final PreferenceManager preferenceManager;
@@ -96,7 +115,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         }
         if (StringUtils.isNotBlank(prefix)) {
             try {
-                s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
+                s3Helper.createFile(storage, ProviderUtils.withTrailingDelimiter(prefix),
                         new byte[]{}, authManager.getAuthorizedUser());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", prefix);
@@ -136,14 +155,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public void deleteStorage(final S3bucketDataStorage dataStorage) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         if (StringUtils.isNotBlank(datastoragePath.getPath())) {
-            getS3Helper(dataStorage).deleteFolder(datastoragePath.getRoot(), datastoragePath.getPath(), true);
+            getS3Helper(dataStorage).deleteFolder(dataStorage, datastoragePath.getPath(), true);
         } else {
-            getS3Helper(dataStorage).deleteS3Bucket(dataStorage.getPath());
+            getS3Helper(dataStorage).deleteS3Bucket(dataStorage);
         }
     }
 
     @Override
-    public void applyStoragePolicy(S3bucketDataStorage dataStorage) {
+    public void applyStoragePolicy(final S3bucketDataStorage dataStorage) {
         final AwsRegion awsRegion = getAwsRegion(dataStorage);
         final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getRoot(), storagePolicy);
@@ -162,7 +181,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void restoreFileVersion(S3bucketDataStorage dataStorage, String path, String version) {
         validateFilePathMatchingMasks(dataStorage, path);
-        getS3Helper(dataStorage).restoreFileVersion(dataStorage.getRoot(),
+        getS3Helper(dataStorage).restoreFileVersion(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version);
     }
 
@@ -184,13 +203,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
+        return getItems(dataStorage, path, showVersion, pageSize, marker, null);
+    }
+
+    @Override
+    public DataStorageListing getItems(final S3bucketDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
         final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
-            .getItems(datastoragePath.getRoot(),
-                      ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                      Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null));
+                .getItems(datastoragePath.getRoot(),
+                        ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
+                        ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                        Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null),
+                        restoredListing);
     }
 
     @Override
@@ -207,16 +234,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                                                           String path, String version,
                                                           ContentDisposition contentDisposition) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, false);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDownloadURL(dataStorage.getRoot(),
+        return getS3HelperForSignedUrl(dataStorage, version, false).generateDownloadURL(dataStorage.getRoot(),
                 ProviderUtils.buildPath(dataStorage, path), version, contentDisposition);
     }
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
-        final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
-        return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
+        return getS3HelperForSignedUrl(dataStorage, null, true).generateDataStorageItemUploadUrl(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
     }
 
@@ -232,7 +257,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             byte[] contents) {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), contents,
+                dataStorage, ProviderUtils.buildPath(dataStorage, path), contents,
                 authManager.getAuthorizedUser());
     }
 
@@ -241,7 +266,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         throws DataStorageException {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
+                dataStorage, ProviderUtils.buildPath(dataStorage, path),
                 dataStream, authManager.getAuthorizedUser());
     }
 
@@ -270,7 +295,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public void deleteFile(S3bucketDataStorage dataStorage, String path, String version, Boolean totally) {
         validateFilePathMatchingMasks(dataStorage, path);
-        getS3Helper(dataStorage).deleteFile(dataStorage.getRoot(),
+        getS3Helper(dataStorage).deleteFile(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), version,
                 totally && dataStorage.isVersioningEnabled());
     }
@@ -279,7 +304,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public void deleteFolder(S3bucketDataStorage dataStorage, String path, Boolean totally) {
         validateFolderPathMatchingMasks(dataStorage, path);
         getS3Helper(dataStorage)
-                .deleteFolder(dataStorage.getRoot(),
+                .deleteFolder(dataStorage,
                         ProviderUtils.buildPath(dataStorage, path), totally && dataStorage.isVersioningEnabled());
 
     }
@@ -288,7 +313,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             String newPath) throws DataStorageException {
         validateFilePathMatchingMasks(dataStorage, oldPath);
         validateFilePathMatchingMasks(dataStorage, newPath);
-        return getS3Helper(dataStorage).moveFile(dataStorage.getRoot(),
+        return getS3Helper(dataStorage).moveFile(dataStorage,
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
     }
@@ -297,7 +322,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             String newPath) throws DataStorageException {
         validateFolderPathMatchingMasks(dataStorage, oldPath);
         validateFolderPathMatchingMasks(dataStorage, newPath);
-        return getS3Helper(dataStorage).moveFolder(dataStorage.getRoot(),
+        return getS3Helper(dataStorage).moveFolder(dataStorage,
                 ProviderUtils.buildPath(dataStorage, oldPath),
                 ProviderUtils.buildPath(dataStorage, newPath));
     }
@@ -326,7 +351,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         }
         if (!dataStorage.isSensitive() && StringUtils.isNotBlank(datastoragePath.getPath())) {
             try {
-                s3Helper.createFile(datastoragePath.getRoot(),
+                s3Helper.createFile(dataStorage,
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
                     new byte[]{}, authManager.getAuthorizedUser());
             } catch (DataStorageException e) {
@@ -378,25 +403,81 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
     }
 
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        rule.getTransitions().forEach(t -> {
+            Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(t.getStorageClass()),
+                    "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+            Assert.isTrue(t.getTransitionAfterDays() != null || t.getTransitionDate() != null,
+                    "transitionAfterDays or transitionDate should be provided!");
+            Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
+                    "Only transitionAfterDays or transitionDate could be provided, but not both!");
+        });
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
+                "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+    }
+
+    @Override
+    public void verifyRestoreActionSupported() {
+        // s3 provider supports restore - nothing to do
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest restoreActionRequest) {
+        if (StringUtils.isEmpty(restoreActionRequest.getRestoreMode())) {
+            return STANDARD_RESTORE_MODE;
+        }
+        Assert.isTrue(SUPPORTED_RESTORE_MODES.contains(restoreActionRequest.getRestoreMode()),
+                "Restore request mode should be one of: " + SUPPORTED_RESTORE_MODES);
+        return restoreActionRequest.getRestoreMode();
+    }
+
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
-        AwsRegion region = getAwsRegion(dataStorage);
+        final AwsRegion region = getAwsRegion(dataStorage);
         if (dataStorage.isUseAssumedCredentials()) {
             final String roleArn = Optional.ofNullable(dataStorage.getTempCredentialsRole())
                     .orElse(region.getTempCredentialsRole());
-            return new AssumedCredentialsS3Helper(roleArn, region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, roleArn);
         }
         if (StringUtils.isNotBlank(region.getIamRole())) {
-            return new AssumedCredentialsS3Helper(region.getIamRole(), region, messageHelper);
+            return new AssumedCredentialsS3Helper(s3Events, messageHelper, region, region.getIamRole());
         }
-        return new RegionAwareS3Helper(region, messageHelper);
+        return new RegionAwareS3Helper(s3Events, messageHelper, region, getAwsCredentials(region));
     }
 
     public S3Helper getS3Helper(final TemporaryCredentials credentials, final AwsRegion region) {
-        return new TemporaryCredentialsS3Helper(credentials, messageHelper, region);
+        return new TemporaryCredentialsS3Helper(s3Events, messageHelper, region, credentials);
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final S3bucketDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getS3Helper(dataStorage).getItemType(dataStorage.getRoot(),
+                ProviderUtils.buildPath(dataStorage, path), version);
     }
 
     private AwsRegion getAwsRegion(S3bucketDataStorage dataStorage) {
         return cloudRegionManager.getAwsRegion(dataStorage);
+    }
+
+    private AwsRegionCredentials getAwsCredentials(final AwsRegion region) {
+        return cloudRegionManager.loadCredentials(region);
+    }
+
+    private S3Helper getS3HelperForSignedUrl(final S3bucketDataStorage dataStorage,
+                                             final String version,
+                                             final boolean write) {
+        final AwsRegion awsRegion = getAwsRegion(dataStorage);
+        if (StringUtils.isBlank(awsRegion.getS3Endpoint())) {
+            final TemporaryCredentials credentials = getStsCredentials(dataStorage, version, write);
+            return getS3Helper(credentials, awsRegion);
+        }
+        return getS3Helper(dataStorage);
     }
 
     private TemporaryCredentials getStsCredentials(final S3bucketDataStorage dataStorage,

@@ -18,7 +18,8 @@ import Panels from './panels';
 
 export default {
   [Panels.summary]: {w: 2, h: 1},
-  [Panels.instances]: {w: 2, h: 1},
-  [Panels.pipelines]: {w: 2, h: 1},
-  [Panels.tools]: {w: 2, h: 1}
+  [Panels.details]: {w: 2, h: 1},
+  [Panels.instances]: {w: 4, h: 1},
+  [Panels.pipelines]: {w: 4, h: 1},
+  [Panels.tools]: {w: 4, h: 1}
 };

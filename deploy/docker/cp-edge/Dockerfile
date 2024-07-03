@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Building 'maintenance' page
+FROM node:14-alpine AS maintenance
+
+ENV CP_MAINTENANCE_PUBLIC_URL="/maintenance"
+
+WORKDIR /etc/maintenance
+
+COPY ./maintenance/ui/package*.json ./
+
+RUN npm ci
+
+COPY ./maintenance/ui .
+
+RUN npm run build
 
 FROM library/centos:7
 
@@ -29,7 +44,8 @@ RUN yum install -y python \
                    zlib-devel \
                    cronie \
                    sshpass \
-                   perl && \
+                   perl \
+                   netcat && \
     yum group install -y "Development Tools" && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
@@ -74,6 +90,7 @@ RUN touch /var/log/sync-routes.log && \
 ## Main config file
 ADD	nginx.conf /etc/nginx/nginx.conf
 ADD endpoints-config /etc/nginx/endpoints-config
+ADD static /etc/nginx/static
 ADD mime.types /etc/nginx/mime.types
 
 ## Logs dir
@@ -88,6 +105,8 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
+ADD validate_proxy_auth.lua /etc/nginx/validate_proxy_auth.lua
+COPY maintenance*.lua /etc/nginx/
 
 ## DAV auth page
 ADD dav-auth /etc/nginx/dav/webdav/auth-sso
@@ -106,6 +125,13 @@ RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
     cd /
 
+## Install maintenance page
+COPY --from=maintenance /etc/maintenance/build /etc/nginx/maintenance
+
+# Configure maintenance cron and refresh script
+COPY maintenance/scripts/* /etc/maintenance/
+RUN touch /var/log/maintenance.log
+
 ## Disable tls checks for wetty -> API
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 
@@ -120,4 +146,4 @@ ADD ingress-config /etc/nginx/ingress
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
-COPY filebeat-template.yml /etc/filebeat/
+COPY filebeat-config/* /etc/filebeat/

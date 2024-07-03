@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CP_NODE_WINE_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-wine"
+CP_NODE_WINE_DOCKER="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-wine-14-17-5"
 docker pull $CP_NODE_WINE_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_NODE_WINE_DOCKER image, it will be rebuilt"
@@ -26,11 +26,16 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
 cd /cloud-data
 
+version_file="scripts/PublishVersionPlugin.js"
+cp $version_file /tmp/version.bkp
+sed -i "s/1111111111111111111111111111111111111111/$CLOUD_DATA_COMMIT_HASH/g" $version_file
+
 npm install
 npm run package:win64
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Windows"
+    cp /tmp/version.bkp \$version_file
     exit 1
 fi
 
@@ -39,8 +44,13 @@ cd out
 zip -r -q /cloud-data/out/cloud-data-win64.zip cloud-data-win32-x64/
 
 chmod -R 777 /cloud-data/out
+cp /tmp/version.bkp \$version_file
 
 EOL
+
+cd $CP_CLOUD_DATA_SOURCES_DIR
+CLOUD_DATA_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
 
 docker run -i --rm \
            -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \

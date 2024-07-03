@@ -22,9 +22,13 @@ import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.LustreFS;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CloudPipelineAPIClient {
@@ -62,6 +67,10 @@ public class CloudPipelineAPIClient {
         return retryingApiExecutor.execute(cloudPipelineAPI.loadAllDataStorages());
     }
 
+    public StorageUsage getStorageUsage(final String id, final String path) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getStorageUsage(id, path));
+    }
+
     public List<InstanceType> loadAllInstanceTypesForRegion(final Long regionId) {
         try {
             return retryingApiExecutor.execute(cloudPipelineAPI.loadAllInstanceTypesForRegion(regionId));
@@ -82,7 +91,23 @@ public class CloudPipelineAPIClient {
         return retryingApiExecutor.execute(cloudPipelineAPI.loadAllRegions());
     }
 
+    public List<Pipeline> loadAllPipelines() {
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllPipelines());
+    }
+
+    public DockerRegistryList loadAllRegistries() {
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllRegistries());
+    }
+
     public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
         return retryingApiExecutor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
+    }
+
+    public LustreFS getLustre(final String mountName, final Long regionId) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getLustre(mountName, regionId));
+    }
+
+    public Map<String, Long> getSystemLogsGrouped(final LogRequest request) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.getSystemLogsGrouped(request));
     }
 }

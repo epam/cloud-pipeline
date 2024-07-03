@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,9 @@ import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.info.UserInfo;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -39,12 +41,20 @@ import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
+import com.epam.pipeline.manager.keypair.SshKeyPair;
+import com.epam.pipeline.manager.keypair.SshKeyPairManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
+import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
+import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
+import com.epam.pipeline.manager.utils.UserUtils;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -72,16 +82,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
-public class UserManager {
+@AclSync
+public class UserManager implements SecuredEntityManager {
+
+    private static final String FALLBACK_SSH_PUB_METADATA_KEY = "ssh_pub";
+    private static final String FALLBACK_SSH_PRV_METADATA_KEY = "ssh_prv";
+    public static final String EMAIL_ATTRIBUTE = "email";
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private UserNotificationManager userNotificationManager;
 
     @Autowired
     private RoleDao roleDao;
@@ -119,24 +138,80 @@ public class UserManager {
     @Autowired
     private PipelineUserRepository userRepository;
 
+    @Autowired
+    private QuotaService quotaService;
+
+    @Autowired
+    private SshKeyPairManager sshKeyPairManager;
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUser(String name, List<Long> roles,
-                                   List<String> groups, Map<String, String> attributes,
-                                   Long defaultStorageId) {
-        final PipelineUser newUser = createUser(name, roles, groups, attributes);
+    public PipelineUser create(String name, List<Long> roles,
+                               List<String> groups, Map<String, String> attributes,
+                               Long defaultStorageId) {
+        PipelineUser user = create(name, roles, groups, attributes);
+        user = configureUserDefaultStorage(user, defaultStorageId);
+        return configureUserDefaultMetadata(user);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineUser configureUserDefaultStorage(final PipelineUser user, final Long defaultStorageId) {
         if (defaultStorageId != null) {
             storageValidator.validate(defaultStorageId);
-            assignDefaultStorageToUser(newUser, defaultStorageId);
-        } else {
-            try {
-                return initUserDefaultStorage(newUser);
-            } catch (RuntimeException e) {
-                log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                        name, e.getMessage()));
-            }
+            assignDefaultStorageToUser(user, defaultStorageId);
+            return user;
         }
-        return newUser;
+        try {
+            return initUserDefaultStorage(user);
+        } catch (RuntimeException e) {
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
+                    user.getUserName(), e.getMessage()));
+            return user;
+        }
+    }
+
+    private PipelineUser configureUserDefaultMetadata(final PipelineUser user) {
+        if (isSshKeysAutoCreationEnabled()) {
+            configureSshKeys(user);
+        }
+        return user;
+    }
+
+    private boolean isSshKeysAutoCreationEnabled() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_AUTO_CREATE)
+                .map(preferenceManager::getPreference)
+                .orElse(true);
+    }
+
+    private void configureSshKeys(final PipelineUser user) {
+        log.info("Generating ssh keys for user {} #{}...", user.getUserName(), user.getId());
+        final SshKeyPair sshKeyPair = sshKeyPairManager.generate();
+        final Map<String, PipeConfValue> metadata = new HashMap<>(getCurrentMetadata(user.getId()));
+        metadata.put(getSshPrvMetadataKey(), getMetadataValue(sshKeyPair.getPrivateKey()));
+        metadata.put(getSshPubMetadataKey(), getMetadataValue(sshKeyPair.getPublicKey()));
+        metadataManager.updateEntityMetadata(metadata, user.getId(), AclClass.PIPELINE_USER);
+    }
+
+    private Map<String, PipeConfValue> getCurrentMetadata(final Long userId) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(userId, AclClass.PIPELINE_USER))
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap);
+    }
+
+    private String getSshPrvMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PRV_METADATA_KEY);
+    }
+
+    private String getSshPubMetadataKey() {
+        return Optional.of(SystemPreferences.SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_SSH_PUB_METADATA_KEY);
+    }
+
+    private PipeConfValue getMetadataValue(final String sshKeyPair) {
+        return new PipeConfValue(EntityTypeField.DEFAULT_TYPE, sshKeyPair);
     }
 
     /**
@@ -147,8 +222,8 @@ public class UserManager {
      * @return created user
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser createUser(PipelineUserVO userVO) {
-        return createUser(userVO.getUserName(), userVO.getRoleIds(), null, null,
+    public PipelineUser create(PipelineUserVO userVO) {
+        return create(userVO.getUserName(), userVO.getRoleIds(), null, null,
                 userVO.getDefaultStorageId());
     }
 
@@ -173,12 +248,21 @@ public class UserManager {
         return authManager.issueToken(userContext, expiration);
     }
 
-    public PipelineUser loadUserByName(String name) {
+    public PipelineUser loadUserByName(final String name) {
         return userDao.loadUserByName(name);
     }
 
+    public PipelineUser loadUserByEmail(final String email) {
+        final List<PipelineUser> usersByEmail = userDao.findUsersByAttribute(EMAIL_ATTRIBUTE, email);
+        if (!usersByEmail.isEmpty()) {
+            return usersByEmail.get(0);
+        } else {
+            return null;
+        }
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineUser> loadUsersByNames(Collection<String> names) {
+    public List<PipelineUser> loadUsersByNames(final Collection<String> names) {
         if (names.isEmpty()) {
             return Collections.emptyList();
         }
@@ -186,9 +270,17 @@ public class UserManager {
         return userDao.loadUsersByNames(names);
     }
 
-    public PipelineUser loadUserById(Long id) {
-        PipelineUser user = userDao.loadUserById(id);
+    @Override
+    public PipelineUser load(final Long id) {
+        return load(id, false);
+    }
+
+    public PipelineUser load(final Long id, final boolean quotas) {
+        final PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
+        if (quotas && !user.isAdmin()) {
+            user.setActiveQuotas(quotaService.loadActiveQuotasForUser(user));
+        }
         return user;
     }
 
@@ -202,14 +294,28 @@ public class UserManager {
     }
 
     public Collection<PipelineUser> loadAllUsers() {
-        return userDao.loadAllUsers();
+        return loadAllUsers(false);
     }
 
-    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+    public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas) {
+        final  Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
         final PipelineUser currentUser = getCurrentUser();
-        return currentUser.isAdmin()
+        if (loadQuotas && (currentUser.isAdmin() ||
+                UserUtils.hasRole(currentUser, DefaultRoles.ROLE_BILLING_MANAGER))) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        final PipelineUser currentUser = getCurrentUser();
+        final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
                 ? userDao.loadUsersWithActivityStatus()
                 : loadAllUsers();
+        if (loadQuotas) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
     }
 
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
@@ -235,10 +341,11 @@ public class UserManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser deleteUser(Long id) {
-        PipelineUser userContext = loadUserById(id);
+    public PipelineUser delete(Long id) {
+        PipelineUser userContext = load(id);
         permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
+        userNotificationManager.deleteByUserId(id);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
         return userContext;
@@ -246,23 +353,30 @@ public class UserManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(Long id, List<Long> roles) {
-        loadUserById(id);
+        load(id);
         updateUserRoles(id, roles);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_ROLES,
                 id, roles.stream().map(Object::toString).collect(Collectors.joining(", "))));
-        return loadUserById(id);
+        return load(id);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserFirstLoginDate(Long id, LocalDateTime firstLoginDate) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         user.setFirstLoginDate(firstLoginDate);
         return userDao.updateUser(user);
     }
 
+    @Transactional
+    public void updateExternalBlockDate(final Long id, final LocalDateTime date) {
+        final PipelineUser user = load(id);
+        user.setExternalBlockDate(date);
+        userDao.updateUser(user);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUser(Long id, PipelineUserVO userVO) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         user.setDefaultStorageId(userVO.getDefaultStorageId());
         storageValidator.validate(user);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_DATASTORAGE,
@@ -272,9 +386,10 @@ public class UserManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
-        final PipelineUser user = loadUserById(id);
+        final PipelineUser user = load(id);
         user.setBlocked(blockStatus);
         user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
+        user.setExternalBlockDate(null);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
@@ -313,7 +428,7 @@ public class UserManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser updateUserSAMLInfo(Long id, String name, List<Long> roles, List<String> groups,
                                            Map<String, String> attributes) {
-        PipelineUser user = loadUserById(id);
+        PipelineUser user = load(id);
         if (needToUpdateUser(groups, attributes, user)) {
             user.setUserName(name);
             user.setGroups(groups);
@@ -322,13 +437,14 @@ public class UserManager {
         }
         updateUserRoles(id, roles);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_SAML_INFO, user.getUserName(), id));
-        return loadUserById(id);
+        return load(id);
     }
 
-    public PipelineUser loadUserByNameOrId(String identifier) {
+    @Override
+    public PipelineUser loadByNameOrId(String identifier) {
         PipelineUser user;
         if (NumberUtils.isDigits(identifier)) {
-            user = loadUserById(Long.parseLong(identifier));
+            user = load(Long.parseLong(identifier));
         } else {
             user = loadUserByName(identifier);
         }
@@ -426,7 +542,7 @@ public class UserManager {
     public PipelineUser getCurrentUser() {
         PipelineUser currentUser = authManager.getCurrentUser();
         if (currentUser != null && !StringUtils.isEmpty(currentUser.getUserName())) {
-            PipelineUser extended = loadUserByName(currentUser.getUserName());
+            PipelineUser extended = loadByNameOrId(currentUser.getUserName());
             if (extended != null) {
                 extended.setAdmin(currentUser.isAdmin());
                 return extended;
@@ -459,13 +575,46 @@ public class UserManager {
         if (Objects.isNull(user) || Objects.isNull(user.getId())) {
             return;
         }
-        final PipelineUser loadedUser = loadUserById(user.getId());
+        final PipelineUser loadedUser = load(user.getId());
         loadedUser.setLastLoginDate(DateUtils.nowUTC());
         userDao.updateUser(loadedUser);
     }
 
     public Collection<PipelineUser> getOnlineUsers() {
         return userDao.loadOnlineUsers();
+    }
+
+    @Override
+    public AbstractSecuredEntity loadWithParents(final Long id) {
+        return load(id);
+    }
+
+    @Override
+    @Transactional
+    public AbstractSecuredEntity changeOwner(final Long id, final String owner) {
+        final PipelineUser user = load(id);
+        user.setOwner(owner);
+        userDao.updateUser(user);
+        return user;
+    }
+
+    @Override
+    public AclClass getSupportedClass() {
+        return AclClass.PIPELINE_USER;
+    }
+
+    //TODO
+    @Override
+    public Integer loadTotalCount() {
+        return null;
+    }
+
+    //TODO
+    @Override
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(
+            final Integer page,
+            final Integer pageSize) {
+        return null;
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
@@ -498,14 +647,15 @@ public class UserManager {
         return userDao.updateUser(newUser);
     }
 
-    private PipelineUser createUser(final String name, final List<Long> roles, final List<String> groups,
-                                    final Map<String, String> attributes) {
+    private PipelineUser create(final String name, final List<Long> roles, final List<String> groups,
+                                final Map<String, String> attributes) {
         Assert.isTrue(StringUtils.isNotBlank(name),
                       messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED));
         String userName = name.trim().toUpperCase();
         PipelineUser loadedUser = userDao.loadUserByName(userName);
         Assert.isNull(loadedUser, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_EXISTS, name));
         PipelineUser user = new PipelineUser(userName);
+        user.setOwner(authManager.getAuthorizedUser());
         List<Long> userRoles = getNewUserRoles(roles);
         user.setRoles(roleDao.loadRolesList(userRoles));
         user.setGroups(groups);
@@ -526,7 +676,7 @@ public class UserManager {
     }
 
     private void setAuthAsUser(final String userName) {
-        final PipelineUser pipelineUser = loadUserByName(userName);
+        final PipelineUser pipelineUser = loadByNameOrId(userName);
         final UserContext userContext = new UserContext(pipelineUser);
         final JwtAuthenticationToken userAuth = new JwtAuthenticationToken(userContext, userContext.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(userAuth);
@@ -557,5 +707,12 @@ public class UserManager {
             userRoles.add(roleUserId);
         }
         return userRoles;
+    }
+
+    private void attachQuotaInfo(final Collection<PipelineUser> pipelineUsers) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            return;
+        }
+        quotaService.attachQuotaInfo(pipelineUsers);
     }
 }

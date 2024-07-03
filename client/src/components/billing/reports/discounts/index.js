@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import {observable} from 'mobx';
 import {inject, observer, Provider as MobxProvider} from 'mobx-react';
 import {InputNumber, Modal, Slider} from 'antd';
-import classNames from 'classnames';
 import * as discounts from './apply';
 import styles from './discounts.css';
 
@@ -173,72 +172,8 @@ DiscountsModalComponent.propTypes = {
 
 const DiscountsModal = inject('discounts')(observer(DiscountsModalComponent));
 
-class ButtonComponent extends React.Component {
-  state = {
-    modalVisible: false
-  };
-
-  onOpenModal = () => {
-    this.setState({modalVisible: true});
-  };
-
-  onCloseModal = () => {
-    this.setState({modalVisible: false});
-  };
-
-  render () {
-    const {className, discounts} = this.props;
-    const {modalVisible} = this.state;
-    const classNames = [className, styles.button, 'cp-billing-button-link'].filter(Boolean).join(' ');
-    const parts = [];
-    const round = a => Math.round(a * 100.0) / 100.0;
-    if (discounts.compute !== 0) {
-      parts.push((
-        <div key="compute">
-          <b>{round(discounts.compute)}%</b>
-          <span style={{marginLeft: 5}}>compute discounts</span>
-        </div>
-      ));
-    }
-    if (discounts.storage !== 0) {
-      parts.push((
-        <div key="storage">
-          <b>{round(discounts.storage)}%</b>
-          <span style={{marginLeft: 5}}>storage discounts</span>
-        </div>
-      ));
-    }
-    if (parts.length === 0) {
-      parts.push((
-        <div key="configure">Configure discounts</div>
-      ));
-    }
-    return (
-      <div
-        className={classNames}
-        onClick={this.onOpenModal}
-      >
-        {parts}
-        <DiscountsModal
-          key="modal"
-          visible={modalVisible}
-          onClose={this.onCloseModal}
-        />
-      </div>
-    );
-  }
-}
-
-ButtonComponent.propTypes = {
-  className: PropTypes.string
-};
-
-const Button = inject('discounts')(observer(ButtonComponent));
-
 class Discounts extends React.Component {
-  static Slider = DiscountsSlider;
   static Consumer = DiscountsConsumer;
-  static Button = Button;
   store = new DiscountsStore();
 
   render () {
@@ -255,5 +190,5 @@ Discounts.propTypes = {
   children: PropTypes.node
 };
 
-export {discounts};
+export {discounts, DiscountsModal};
 export default Discounts;

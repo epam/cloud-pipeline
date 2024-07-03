@@ -18,7 +18,7 @@ import { CompositeLayer, COORDINATE_SYSTEM } from '@deck.gl/core';
 import { PolygonLayer } from '@deck.gl/layers';
 import getImageSize from '../../../state/utilities/get-image-size';
 
-const EMPTY_SELECTION_CELL = { column: -1, row: -1 };
+const EMPTY_SELECTION_CELL = { x: -1, y: -1 };
 
 const CollageMeshLayer = class extends CompositeLayer {
   renderLayers() {
@@ -29,44 +29,41 @@ const CollageMeshLayer = class extends CompositeLayer {
       hoveredCell,
     } = this.props;
     const {
-      rows = 0,
-      columns = 0,
       cells = [],
+      selected = [],
+      meshSize = 1,
+      notSelectedAlpha = 0.75,
     } = mesh;
 
     const { width = 0, height = 0 } = getImageSize(loader[0]) || {};
-    const meshData = [];
-    const cellWidth = width / columns;
-    const cellHeight = height / rows;
-    const getPoint = (column, row) => [column * cellWidth, row * cellHeight];
-    const getCellPolygon = (column, row) => {
-      const p1 = getPoint(column, row);
-      const p2 = getPoint(column + 1, row);
-      const p3 = getPoint(column + 1, row + 1);
-      const p4 = getPoint(column, row + 1);
+    const cellWidth = width / meshSize;
+    const cellHeight = height / meshSize;
+    const getPoint = (x, y) => [x * cellWidth, y * cellHeight];
+    const getCellPolygon = (x, y) => {
+      const p1 = getPoint(x, y);
+      const p2 = getPoint(x + 1, y);
+      const p3 = getPoint(x + 1, y + 1);
+      const p4 = getPoint(x, y + 1);
       return [p1, p2, p3, p4];
     };
-    for (let row = 0; row < rows; row += 1) {
-      for (let column = 0; column < columns; column += 1) {
-        meshData.push({ column, row });
-      }
-    }
     const isCellHovered = (cell) => cell
       && hoveredCell
-      && hoveredCell.column === cell.column
-      && hoveredCell.row === cell.row;
+      && hoveredCell.id === cell.id;
+    const cellIsNotSelected = (cell) => cell
+      && !selected.some((s) => s.id === cell.id);
+    const meshData = cells.slice();
     meshData.sort((a, b) => Number(isCellHovered(a)) - Number(isCellHovered(b)));
     const meshLayer = new PolygonLayer({
       id: `line-${id}`,
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       data: meshData,
-      getPolygon: (cell) => getCellPolygon(cell.column, cell.row),
+      getPolygon: (cell) => getCellPolygon(cell.x, cell.y),
       getLineWidth: (cell) => (
         isCellHovered(cell) ? 2 : 1
       ),
       lineWidthUnits: 'pixels',
       getLineColor: (cell) => (
-        isCellHovered(cell) ? [220, 220, 220] : [120, 120, 120]
+        isCellHovered(cell) ? [220, 220, 220] : [220, 220, 220, 50]
       ),
       filled: false,
       stroked: true,
@@ -78,13 +75,22 @@ const CollageMeshLayer = class extends CompositeLayer {
       id: `cell-${id}`,
       coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
       data: cells,
-      getPolygon: (cell) => getCellPolygon(cell.column, cell.row),
+      getPolygon: (cell) => getCellPolygon(cell.x, cell.y),
       filled: true,
       stroked: false,
       pickable: true,
       getFillColor: [255, 255, 255, 0],
     });
-    return [meshLayer, cellsLayer];
+    const notSelectedCellsLayer = new PolygonLayer({
+      id: `cell-not-selected-${id}`,
+      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      data: cells.filter(cellIsNotSelected),
+      getPolygon: (cell) => getCellPolygon(cell.x, cell.y),
+      filled: true,
+      stroked: false,
+      getFillColor: [0, 0, 0, Math.max(0, Math.min(255, Math.round(255 * notSelectedAlpha)))],
+    });
+    return [notSelectedCellsLayer, meshLayer, cellsLayer];
   }
 
   onHover(info) {
@@ -124,7 +130,7 @@ CollageMeshLayer.defaultProps = {
     value: { zoom: 0, target: [0, 0, 0] },
     compare: true,
   },
-  mesh: { type: 'object', value: { rows: 0, columns: 0 }, compare: true },
+  mesh: { type: 'object', value: { meshSize: 0 }, compare: true },
   onHover: { type: 'function', value: (() => {}), compare: true },
   onClick: { type: 'function', value: (() => {}), compare: true },
 };

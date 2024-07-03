@@ -34,6 +34,7 @@ public class ToolVersionScanResultView {
     private Long toolId;
     private String version;
     private ToolOSVersionView toolOSVersion;
+    private boolean cudaAvailable;
     private ToolScanStatus status;
     private Date scanDate;
     private Date successScanDate;
@@ -42,6 +43,8 @@ public class ToolVersionScanResultView {
     private boolean isAllowedToExecute;
     private boolean fromWhiteList;
     private Date gracePeriod;
+    private String defaultCmd;
+    private Integer layersCount;
     private Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount;
 
     public static ToolVersionScanResultView from(final ToolVersionScanResult scanResult, final boolean isOSAllowed) {
@@ -59,6 +62,9 @@ public class ToolVersionScanResultView {
                     .fromWhiteList(scan.isFromWhiteList())
                     .gracePeriod(scan.getGracePeriod())
                     .vulnerabilitiesCount(scan.getVulnerabilitiesCount())
+                    .defaultCmd(scan.getDefaultCmd())
+                    .layersCount(scan.getLayersCount())
+                    .cudaAvailable(scan.isCudaAvailable())
                     .build()
         ).orElse(null);
     }

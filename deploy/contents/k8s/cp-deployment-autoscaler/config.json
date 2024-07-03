@@ -1,0 +1,96 @@
+{
+  "target": {
+    "deployments": [
+      "cp-api-srv"
+    ],
+    "labels": {
+      "cloud-pipeline/cp-api-srv": "true"
+    },
+    "transient_labels": {
+      "cloud-pipeline/persistence": "transient"
+    },
+    "tags": {
+      "cloud-pipeline/environment": "dev",
+      "cloud-pipeline/deployment": "cp-api-srv"
+    },
+    "transient_tags": {
+      "cloud-pipeline/persistence": "transient"
+    },
+    "reserved_labels": [
+      "cp-api-srv/service-leader"
+    ],
+    "forbidden_instances": [
+      "i-12345678901234567"
+    ],
+    "forbidden_nodes": [
+      "ip-123-45-6-789.eu-central-1.compute.internal"
+    ]
+  },
+  "trigger": {
+    "cluster_nodes_per_target_replicas": 100,
+    "target_replicas_per_target_nodes": 1,
+    "memory_pressured_nodes": 1,
+    "disk_pressured_nodes": 1,
+    "pid_pressured_nodes": 1,
+    "cpu_utilization": {
+      "max": 90,
+      "monitoring_period": 600
+    },
+    "memory_utilization": {
+      "max": 90,
+      "monitoring_period": 600
+    }
+  },
+  "rules": {
+    "on_lost_instances" : "SKIP",
+    "on_lost_nodes": "SKIP",
+    "on_threshold_trigger": {
+      "extra_replicas": 2,
+      "extra_nodes": 2
+    }
+  },
+  "limit": {
+    "min_nodes_number": 1,
+    "max_nodes_number": 10,
+    "min_replicas_number": 1,
+    "max_replicas_number": 10,
+    "min_scale_interval": 300,
+    "min_triggers_duration": 60
+  },
+  "instance": {
+    "instance_cloud": "aws",
+    "instance_region": "eu-central-1",
+    "instance_image": "ami-12345678901234567",
+    "instance_type": "r5.xlarge",
+    "instance_disk": 500,
+    "instance_sshkey": "deploykey",
+    "instance_subnet": "subnet-12345678",
+    "instance_security_groups": [
+      "sg-12345678"
+    ],
+    "instance_role": "arn:aws:iam::123456789012:instance-profile/Cloud-Pipeline-Service",
+    "instance_name": "cp-deployment-autoscaler-instance",
+    "instance_init_script": "/opt/deployment-autoscaler/init_multicloud.sh"
+  },
+  "node": {
+    "kube_token": "12345678901234567890123",
+    "kube_ip": "123.45.6.789",
+    "kube_port": "6443",
+    "kube_dns_ip": "10.96.0.10",
+    "aws_fs_url": "fs-12345678901234567.fsx.eu-central-1.amazonaws.com@tcp:/12345678",
+    "http_proxy": "",
+    "https_proxy": "",
+    "no_proxy": ""
+  },
+  "timeout": {
+    "scale_up_node_timeout": 900,
+    "scale_up_node_delay": 10,
+    "scale_up_instance_timeout": 60,
+    "scale_up_instance_delay": 10,
+    "scale_down_node_timeout": 120,
+    "scale_down_node_delay": 10
+  },
+  "misc": {
+    "boto3_retry_count": 10
+  }
+}

@@ -17,16 +17,28 @@
 package com.epam.pipeline.entity.cluster.container;
 
 public enum ContainerMemoryResourcePolicy {
+
     /**
-     * No memory requests/limits shall be set for the pods
+     * container_mem_request = 0
+     * container_mem_limit = 0
      */
+
     NO_LIMIT,
     /**
-     * Memory request: 1Mi, memory limit: node_memory - 1Gi
+     * container_mem_request = $launch.container.memory.resource.request
+     * container_mem_limit = node_mem - 1 GiB
      */
     NODE,
+
     /**
-     * Memory request: 1Mi, memory limit: node_memory + swap_size - 1Gi
+     * container_mem_request = $launch.container.memory.resource.request
+     * container_mem_limit = node_mem + swap_mem - 1 GiB
      */
-    NODE_SWAP
+    NODE_SWAP,
+
+    /**
+     * container_mem_request = $launch.container.memory.resource.request
+     * container_mem_limit = node_mem - $cluster.node.kube.mem - $cluster.node.system.mem - $cluster.node.extra.mem
+     */
+    DEFAULT
 }

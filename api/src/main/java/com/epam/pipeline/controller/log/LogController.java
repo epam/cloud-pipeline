@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,23 @@ package com.epam.pipeline.controller.log;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.log.LogEntry;
 import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.acl.log.LogApiService;
+import com.epam.pipeline.entity.log.LogRequest;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -39,8 +43,7 @@ public class LogController extends AbstractRestController {
     private final LogApiService logApiService;
 
 
-    @RequestMapping(value = "/log/filter", method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/log/filter")
     @ApiOperation(
             value = "Filter logs.",
             notes = "Filter logs.",
@@ -52,8 +55,7 @@ public class LogController extends AbstractRestController {
         return Result.success(logApiService.filter(logFilter));
     }
 
-    @RequestMapping(value = "/log/filter", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/log/filter")
     @ApiOperation(
             value = "Get possible values for filters.",
             notes = "Get possible values for filters.",
@@ -65,4 +67,28 @@ public class LogController extends AbstractRestController {
         return Result.success(logApiService.getFilters());
     }
 
+    @PostMapping(value = "/log/group")
+    @ApiOperation(
+            value = "Filter and group logs by a field.",
+            notes = "Filter and group logs by a field.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Map<String, Long>> group(@RequestBody final LogRequest logRequest) {
+        return Result.success(logApiService.group(logRequest));
+    }
+
+    @PostMapping(value = "/log")
+    @ApiOperation(
+            value = "Save logs.",
+            notes = "Save logs.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Boolean> save(@RequestBody final List<LogEntry> logEntries) {
+        logApiService.save(logEntries);
+        return Result.success();
+    }
 }

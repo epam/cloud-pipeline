@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.Primitive.EDITOR;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.openqa.selenium.Keys;
+import org.openqa.selenium.interactions.Actions;
 
 import java.io.File;
 import java.util.Arrays;
@@ -24,14 +27,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.interactions.Actions;
+
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
@@ -49,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.NEW_FILE;
 import static com.epam.pipeline.autotests.ao.Primitive.RENAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static java.lang.String.format;
@@ -66,7 +70,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             entry(DELETE, $$(tagName("button")).findBy(text("Delete"))),
             entry(NEW_FILE, $$(tagName("button")).findBy(text("NEW FILE"))),
             entry(UPLOAD, $$(tagName("button")).findBy(text("UPLOAD"))),
-            entry(CREATE_FOLDER, $(buttonByIconClass("anticon-plus")))
+            entry(CREATE_FOLDER, $(buttonByIconClass("anticon-plus"))),
+            entry(EDIT, context().$$(".pipeline-code-form__button")
+                    .findBy(text("Edit"))),
+            entry(SAVE, context().$$(".pipeline-code-form__button")
+                    .findBy(text("Save"))),
+            entry(EDITOR, $(byClassName("CodeMirror-code")))
     );
 
     public PipelineCodeTabAO(String pipelineName) {
@@ -83,27 +92,27 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         $(byText(fileName)).click();
 
         //Click Edit
-        $$(".pipeline-code-form__button").findBy(text("Edit")).click();
+
+        get(EDIT).waitUntil(exist, DEFAULT_TIMEOUT).click();
+        get(SAVE).waitUntil(exist, DEFAULT_TIMEOUT);
 
         sleep(500, MILLISECONDS);
-        Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
-        for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
-        }
-        action.perform();
+        get(EDITOR).shouldBe();
+        Utils.selectAllAndClearTextField(get(EDITOR));
+        Utils.clickAndSendKeysWithSlashes(get(EDITOR), newText);
 
-        Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
-
-        $$(".pipeline-code-form__button").findBy(text("Save")).click();
+        get(SAVE).click();
         $("#message").setValue("test commit message");
         $$("button").findBy(text("Commit")).click();
+        $("ant-modal-content").waitUntil(not(exist), DEFAULT_TIMEOUT);
+        sleep(1000, MILLISECONDS);
 
         return this;
     }
 
     public PipelineCodeTabAO uploadFile(File file) {
         sleep(5, SECONDS);
-        ensure(UPLOAD, visible);
+        ensure(UPLOAD, visible, enabled);
         $(byClassName("ant-upload-select")).find(tagName("input")).should(exist).uploadFile(file);
         return this;
     }
@@ -129,13 +138,23 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return new EditFilePopupAO();
     }
 
+    public PipelineCodeTabAO waitUntilRenameButtonAppears(String filename) {
+        $$(tagName("tr"))
+                .find(text(filename))
+                .find(button("Rename"))
+                .shouldBe(exist);
+        return this;
+    }
+
     public FileEditingPopupAO clickOnFile(String fileName) {
-        $(withText(fileName)).shouldBe(visible).click();
+        $(withText(fileName)).shouldBe(visible, enabled).click();
         return new FileEditingPopupAO(this);
     }
 
     public PipelineCodeTabAO shouldContainElement(String folderName) {
-        $(".ant-table-tbody").findAll("tr")
+        $(byText("config.json")).waitUntil(visible, DEFAULT_TIMEOUT);
+        $(".ant-table-tbody")
+                .findAll("tr")
                 .shouldHaveSize(3)
                 .get(0).shouldHave(text(folderName));
         return this;
@@ -182,6 +201,18 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         return this;
     }
 
+    private PipelineCodeTabAO waitUntilSaveEnding() {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while ($(withText("Committing changes...")).exists()
+                && attempt < maxAttempts) {
+            sleep(1, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
@@ -218,12 +249,12 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
         }
 
         private FileEditingPopupAO fillWith(String newText) {
-            Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
+            Utils.pasteText($(byClassName("CodeMirror-line")), newText);
             return this;
         }
 
         public PipelineCodeTabAO saveAndCommitWithMessage(String message) {
-            return openCommitDialog().typeInField(message).ok();
+            return openCommitDialog().typeInField(message).ok().sleep(2, SECONDS).waitUntilSaveEnding();
         }
 
         private CommitPopupAO<PipelineCodeTabAO> openCommitDialog() {
@@ -259,8 +290,7 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
                 return this;
             }
             clear()
-                    .fillWith(edited)
-                    .deleteExtraBrackets(100);
+                    .fillWith(edited);
             return this;
         }
 

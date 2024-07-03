@@ -50,7 +50,7 @@
   flex: 1;
 }
 
-.hidden-details-button {
+.hidden-details-actions {
   visibility: hidden;
   margin: 5px 10px 5px 5px;
 }
@@ -95,6 +95,7 @@
   z-index: 1;
 }
 
+.details-actions .action,
 .configuration-actions .action {
   margin: 5px;
   line-height: 1;
@@ -113,11 +114,31 @@
   width: 300px;
 }
 
-.download-tiff-row {
+.additional-configuration-controls {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 5px;
+}
+
+.additional-configuration-controls .action {
+  margin-bottom: 3px;
+  width: 90%;
+}
+
+.well-view-group {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.well-view-button {
+  display: flex;
+  flex: 1 0 auto;
+  justify-content: center;
 }
 
 .details-panel {
@@ -126,7 +147,7 @@
   min-width: 200px;
 }
 
-.details-info-btn {
+.details-actions {
   position: absolute;
   top: 10px;
   left: 10px;

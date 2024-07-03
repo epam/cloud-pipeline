@@ -31,6 +31,8 @@ public final class Constants {
     public static final String COMMA = ",";
     public static final String NEWLINE = "\n";
     public static final String DOT = ".";
+    public static final String SPACE = " ";
+    public static final String COLON = ":";
 
     public static final Integer SECONDS_IN_MINUTE = 60;
     public static final Integer MINUTES_IN_HOUR = 60;

@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -26,24 +29,30 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.exception.ObjectNotFoundException;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Constants;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.FileContentUtils;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.utils.PosixPermissionUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedOutputStream;
@@ -61,11 +70,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -78,18 +87,42 @@ import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getN
  * filesystem using {@link NFSStorageMounter}.
  */
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NFSStorageProvider.class);
-    private static final Set<PosixFilePermission> PERMISSIONS = Arrays.stream(PosixFilePermission.values())
-                                                                      .filter(p -> !p.name().startsWith("OTHERS"))
-                                                                      .collect(Collectors.toSet());
-
+    private static final int DEFAULT_PAGE_SIZE = 1000;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final FileShareMountManager shareMountManager;
     private final NFSStorageMounter nfsStorageMounter;
+    private final AuthManager authManager;
+    private final Set<PosixFilePermission> filePermissions;
+    private final Set<PosixFilePermission> folderPermissions;
+    private final Integer groupUID;
+
+    public NFSStorageProvider(final PreferenceManager preferenceManager,
+                              final FileShareMountManager shareMountManager,
+                              final NFSStorageMounter nfsStorageMounter,
+                              final AuthManager authManager,
+                              @Value("${data.storage.nfs.default.umask:0002}") final String fileShareUMask,
+                              @Value("${data.storage.nfs.default.group.uid:}") final Integer groupUID,
+                              final MessageHelper messageHelper) {
+        this.messageHelper = messageHelper;
+        this.preferenceManager = preferenceManager;
+        this.shareMountManager = shareMountManager;
+        this.nfsStorageMounter = nfsStorageMounter;
+        this.authManager = authManager;
+        final Set<PosixFilePermission> allowedPermissionsFromUMask =
+                PosixPermissionUtils.getAllowedPermissionsFromUMask(fileShareUMask);
+        // default mask for folders 777 -> no need for additional filtering
+        this.folderPermissions = allowedPermissionsFromUMask;
+        // default mask for files 666 -> filter our all execute permissions
+        this.filePermissions = allowedPermissionsFromUMask.stream()
+                .filter(p -> !PosixPermissionUtils.EXECUTE_PERMISSIONS.contains(p))
+                .collect(Collectors.toSet());
+        this.groupUID = groupUID;
+    }
 
     @Override
     public DataStorageType getStorageType() {
@@ -192,17 +225,26 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageListing getItems(NFSDataStorage dataStorage, String path, Boolean showVersion,
-                                       Integer pageSize, String marker) {
-        File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
-        File dir = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
+    public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker) {
+        final File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
+        final File startingPath = path != null ? new File(dataStorageRoot, path) : dataStorageRoot;
+
+        // If we list file - just return it as result
+        if (startingPath.isFile()) {
+            return new DataStorageListing(
+                    null,
+                    Collections.singletonList(mapFileToDataStorageFile(dataStorageRoot, startingPath))
+            );
+        }
 
         long offset = StringUtils.isNumeric(marker) ? Long.parseLong(marker) : 1;
-        try (Stream<Path> dirStream = Files.walk(dir.toPath(), 1)) {
+        try (Stream<Path> dirStream = Files.walk(startingPath.toPath(), 1)) {
+            final int effectivePageSize = Optional.ofNullable(pageSize).orElse(DEFAULT_PAGE_SIZE);
             List<AbstractDataStorageItem> dataStorageItems = dirStream
                 .sorted()
                 .skip(offset) // First element is a directory itself
-                .limit(pageSize)
+                .limit(effectivePageSize)
                 .map(p -> {
                     File file = p.toFile();
 
@@ -228,8 +270,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
             DataStorageListing listing = new DataStorageListing();
             listing.setResults(dataStorageItems);
 
-            Long nextOffset = offset + pageSize;
-            try (Stream<Path> nextStream = Files.walk(dir.toPath(), 1)) {
+            Long nextOffset = offset + effectivePageSize;
+            try (Stream<Path> nextStream = Files.walk(startingPath.toPath(), 1)) {
                 if (nextStream.skip(nextOffset).findFirst().isPresent()) {
                     listing.setNextPageMarker(nextOffset.toString());
                 }
@@ -242,20 +284,23 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
+    public DataStorageListing getItems(final NFSDataStorage dataStorage, final String path,
+                                       final Boolean showVersion, final Integer pageSize, final String marker,
+                                       final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        if (Objects.nonNull(restoredListing)) {
+            throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+        }
+        return getItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    @Override
     public Optional<DataStorageFile> findFile(final NFSDataStorage dataStorage,
                                               final String path,
                                               final String version) {
         final File dataStorageRoot = nfsStorageMounter.mount(dataStorage);
         return Optional.of(new File(dataStorageRoot, path))
                 .filter(File::exists)
-                .map(file -> {
-                    final DataStorageFile item = new DataStorageFile();
-                    item.setSize(file.length());
-                    item.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
-                    item.setName(file.getName());
-                    item.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
-                    return item;
-                });
+                .map(file -> mapFileToDataStorageFile(dataStorageRoot, file));
     }
 
     @Override
@@ -307,7 +352,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
 
         try (BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file))) {
             IOUtils.copy(dataStream, outputStream);
-            setUmask(file);
+            initFile(file, filePermissions);
         } catch (IOException e) {
             throw new DataStorageException(e);
         }
@@ -324,7 +369,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
                 MessageConstants.ERROR_DATASTORAGE_NFS_CREATE_FOLDER, dataStorage.getPath()));
         }
         try {
-            setUmask(folder);
+            initFile(folder, folderPermissions);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     MessageConstants.ERROR_DATASTORAGE_CANNOT_CREATE_FILE, folder.getPath()), e);
@@ -332,9 +377,16 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         return new DataStorageFolder(path, folder);
     }
 
-    private void setUmask(File file) throws IOException {
+    private void initFile(final File file, final Set<PosixFilePermission> permissions) throws IOException {
         if (!SystemUtils.IS_OS_WINDOWS) {
-            Files.setPosixFilePermissions(file.toPath(), PERMISSIONS);
+            Files.setPosixFilePermissions(file.toPath(), permissions);
+            if (!preferenceManager.getPreference(SystemPreferences.SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED)) {
+                Optional.ofNullable(authManager.getCurrentUser())
+                        .ifPresent(user ->
+                                nfsStorageMounter.chown(file, user,
+                                        preferenceManager.getPreference(SystemPreferences.LAUNCH_UID_SEED),
+                                        groupUID));
+            }
         }
     }
 
@@ -512,11 +564,53 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
     }
 
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public void verifyRestoreActionSupported() {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest actionRequest) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
+    @Override
+    public DataStorageItemType getItemType(final NFSDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        final File mntDir = nfsStorageMounter.mount(dataStorage);
+        final File file = new File(mntDir, path);
+        if (!file.exists()) {
+            throw new ObjectNotFoundException(messageHelper
+                    .getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND, path, dataStorage.getName()));
+        }
+        return file.isFile() ? DataStorageItemType.File : DataStorageItemType.Folder;
+    }
+
     private String encodeUrl(final String path) {
         try {
             return URLEncoder.encode(path, StandardCharsets.UTF_8.toString());
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    private static DataStorageFile mapFileToDataStorageFile(final File dataStorageRoot, final File file) {
+        final DataStorageFile dataStorageFile = new DataStorageFile();
+        dataStorageFile.setSize(file.length());
+        dataStorageFile.setChanged(S3Constants.getAwsDateFormat().format(new Date(file.lastModified())));
+        dataStorageFile.setName(file.getName());
+        dataStorageFile.setPath(dataStorageRoot.toURI().relativize(file.toURI()).getPath());
+        return dataStorageFile;
     }
 }

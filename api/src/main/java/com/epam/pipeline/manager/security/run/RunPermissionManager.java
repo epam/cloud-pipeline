@@ -21,11 +21,13 @@ import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.contextual.ContextualPreference;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -88,8 +90,8 @@ public class RunPermissionManager {
         if (permissionsHelper.isOwnerOrAdmin(run.getOwner()) || isRunSshAllowed(run)) {
             return true;
         }
-        return inheritPermissions() && Optional.ofNullable(runManager.loadRunParent(run))
-                .map(parent -> permissionsHelper.isAllowed(permissionName, parent))
+        return Optional.ofNullable(runManager.loadRunParent(run))
+                .map(parent -> pipelineInheritPermissions(permissionName, (Pipeline) parent))
                 .orElse(false);
     }
 
@@ -156,14 +158,11 @@ public class RunPermissionManager {
             return;
         }
         filter.setOwnershipFilter(authManager.getAuthorizedUser().toLowerCase());
-        if (inheritPermissions()) {
-            final List<Long> allowedPipelinesList =
-                    pipelineApiService.loadAllPipelinesWithoutVersion()
-                            .stream()
-                            .map(BaseEntity::getId)
-                            .collect(toList());
-            filter.setAllowedPipelines(allowedPipelinesList);
-        }
+        final boolean globalInheritPolicy = inheritPermissions();
+        filter.setAllowedPipelines(pipelineApiService.loadAllPipelinesWithoutVersion().stream()
+                .filter(pipeline -> findPipelineInheritPolicy(pipeline).orElse(globalInheritPolicy))
+                .map(BaseEntity::getId)
+                .collect(toList()));
     }
 
     public boolean hasEntityPermissionToRunAs(final PipelineStart runVO, final AbstractSecuredEntity entity,
@@ -218,5 +217,15 @@ public class RunPermissionManager {
                 .map(RunVisibilityPolicy::valueOf)
                 .orElse(DEFAULT_POLICY);
         return RunVisibilityPolicy.INHERIT == visibilityPolicy;
+    }
+
+    private boolean pipelineInheritPermissions(final String permissionName, final Pipeline parent) {
+        return findPipelineInheritPolicy(parent)
+                .orElse(inheritPermissions() && permissionsHelper.isAllowed(permissionName, parent));
+    }
+
+    private Optional<Boolean> findPipelineInheritPolicy(final Pipeline parent) {
+        return Optional.ofNullable(parent.getVisibility())
+                .map(pipelineVisibility -> RunVisibilityPolicy.INHERIT == pipelineVisibility);
     }
 }

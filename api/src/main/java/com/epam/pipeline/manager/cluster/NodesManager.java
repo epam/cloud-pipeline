@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.exception.cluster.NodeNotFoundException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -184,7 +185,7 @@ public class NodesManager {
     }
 
     public NodeInstance getNode(String name, FilterPodsRequest request) {
-        return findNode(name, request).orElseThrow(() -> new IllegalArgumentException(
+        return findNode(name, request).orElseThrow(() -> new NodeNotFoundException(
                 messageHelper.getMessage(MessageConstants.ERROR_NODE_NOT_FOUND, name)));
     }
 
@@ -353,7 +354,7 @@ public class NodesManager {
     /**
      * Creates and attaches new disk to the run cloud instance.
      */
-    public void attachDisk(final PipelineRun run, final DiskAttachRequest request) {
+    public void attachDisk(final PipelineRun run, final DiskAttachRequest request, final Map<String, String> tags) {
         final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
         final String nodeId = instance.map(RunInstance::getNodeId)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
@@ -361,7 +362,7 @@ public class NodesManager {
         final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
                 .map(regionManager::load)
                 .orElseGet(regionManager::loadDefaultRegion);
-        cloudFacade.attachDisk(region.getId(), run.getId(), request);
+        cloudFacade.attachDisk(region.getId(), run.getId(), request, tags);
         nodeDiskManager.register(nodeId, DiskRegistrationRequest.from(request));
     }
 

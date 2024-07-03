@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.pipeline;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
@@ -40,6 +41,11 @@ public class Pipeline extends AbstractSecuredEntity {
     private RepositoryType repositoryType;
     private String repositoryError;
     private boolean hasMetadata;
+    private String branch;
+    private String configurationPath;
+    private RunVisibilityPolicy visibility;
+    private String codePath;
+    private String docsPath;
 
     public Pipeline(Long id) {
         super(id);

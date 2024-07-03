@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import java.util.Map;
 
 @Service
 public class ClusterCommandService {
@@ -43,7 +44,8 @@ public class ClusterCommandService {
                                                                  final AbstractCloudRegion region,
                                                                  final String nodeLabel,
                                                                  final RunInstance instance,
-                                                                 final String cloud) {
+                                                                 final String cloud,
+                                                                 final Map<String, String> runtimeParameters) {
         return NodeUpCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeUpScript)
@@ -57,6 +59,8 @@ public class ClusterCommandService {
                 .kubeCertHash(kubeCertHash)
                 .kubeNodeToken(kubeNodeToken)
                 .cloud(cloud)
+                .runtimeParameters(runtimeParameters)
+                .prePulledImages(instance.getPrePulledDockerImages())
                 .region(region.getRegionCode());
     }
 
@@ -81,20 +85,23 @@ public class ClusterCommandService {
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final Long oldId,
                                            final Long newId,
-                                           final String cloud) {
-        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud);
+                                           final String cloud,
+                                           final Map<String, String> tags) {
+        return buildNodeReassignCommand(nodeReassignScript, String.valueOf(oldId), String.valueOf(newId), cloud, tags);
     }
 
     public String buildNodeReassignCommand(final String nodeReassignScript,
                                            final String oldId,
                                            final String newId,
-                                           final String cloud) {
+                                           final String cloud,
+                                           final Map<String, String> tags) {
         return ReassignCommand.builder()
                 .executable(AbstractClusterCommand.EXECUTABLE)
                 .script(nodeReassignScript)
                 .oldRunId(oldId)
                 .newRunId(newId)
                 .cloud(cloud)
+                .tags(tags)
                 .build()
                 .getCommand();
     }

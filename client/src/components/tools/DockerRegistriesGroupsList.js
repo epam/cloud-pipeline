@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,60 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react/index';
-import {Button, Row} from 'antd';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import {
+  Button,
+  Row,
+  Icon,
+  Tag,
+  Collapse
+} from 'antd';
+import {observer} from 'mobx-react';
+import styles from './DockerRegistryGroupsList.css';
+
+const MODES = {
+  groups: 'groups',
+  extended: 'extended'
+};
 
 @observer
-export default class DockerRegistryGroupsList extends React.Component {
-
-  static propTypes = {
-    groups: PropTypes.array,
-    groupSearch: PropTypes.string,
-    onNavigate: PropTypes.func
+class DockerRegistryGroupsList extends React.Component {
+  state = {
+    allGroupsExpanded: false
   };
 
+  componentDidMount () {
+    this.updateExpandedState();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.groupSearch !== this.props.groupSearch) {
+      this.updateExpandedState();
+    }
+  }
+
+  updateExpandedState = () => {
+    if (this.props.groupSearch && this.props.groupSearch.length > 0) {
+      this.expandAllGroups();
+    }
+  };
+
+  get selectedLibraryGroup () {
+    const {filter, currentGroup = {}} = this.props;
+    if (filter) {
+      return undefined;
+    }
+    return currentGroup;
+  }
+
   groupsFilter = group => {
+    const {mode} = this.props;
+    if (
+      mode === MODES.extended && group.privateGroup
+    ) {
+      return true;
+    }
     if (!this.props.groupSearch || !this.props.groupSearch.length) {
       return true;
     }
@@ -40,46 +80,157 @@ export default class DockerRegistryGroupsList extends React.Component {
 
   getGroupName = (group) => {
     if (group.privateGroup) {
-      return 'personal';
+      return 'Personal';
     }
     return group.name;
   };
 
   onSelectGroup = (id) => {
-    this.props.onNavigate && this.props.onNavigate(id);
+    this.props.onNavigate && this.props.onNavigate(encodeURIComponent(id));
   };
 
-  render () {
+  onChangeExpandedState = (keys) => {
+    this.setState({
+      allGroupsExpanded: keys.length > 0
+    });
+  };
+
+  expandAllGroups = () => this.setState({allGroupsExpanded: true});
+
+  renderFilterCard = group => {
+    const {filter} = this.props;
+    const isActive = filter === group.id;
     return (
-      <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
-        {
-          this.props.groups.filter(this.groupsFilter)
-            .map(group => {
-              return (
-                <Row key={group.id} type="flex">
-                  <Button
-                    id={`group-${group.id}-button`}
-                    style={{
-                      textAlign: 'left',
-                      width: '100%',
-                      border: 'none',
-                      fontWeight: group.privateGroup ? 'bold' : 'normal',
-                      fontStyle: group.privateGroup ? 'italic' : 'normal',
-                      backgroundColor: 'transparent'
-                    }}
-                    onClick={
-                      () => this.onSelectGroup(group.id)
-                    }>
-                    {
-                      this.getGroupName(group)
-                    }
-                  </Button>
-                </Row>
-              );
-            })
-        }
-      </div>
+      <Button
+        key={group.id}
+        className={classNames(styles.button, styles.cardContainer)}
+        id={`group-${group.id}-filter`}
+        onClick={() => this.onSelectGroup(group.id)}
+      >
+        <div className={styles.card}>
+          <span className={styles.heading}>
+            {group.title}
+          </span>
+          {group.description ? (
+            <span
+              className={classNames(
+                styles.comment,
+                'cp-text-not-important'
+              )}
+            >
+              {group.description}
+            </span>
+          ) : null}
+        </div>
+        {isActive ? (
+          <Icon
+            className={styles.activeGroupIcon}
+            type="check"
+          />
+        ) : null}
+      </Button>
     );
   }
 
+  renderGroupsSelector = () => {
+    const {groups} = this.props;
+    const filteredGroups = groups.filter(this.groupsFilter)
+      .map(group => {
+        return (
+          <Row key={group.id} type="flex">
+            <Button
+              id={`group-${group.id}-button`}
+              className={styles.button}
+              style={{
+                fontWeight: group.privateGroup ? 'bold' : 'normal',
+                fontStyle: group.privateGroup ? 'italic' : 'normal',
+                padding: 0
+              }}
+              onClick={() => this.onSelectGroup(group.id)}
+            >
+              {this.getGroupName(group)}
+            </Button>
+          </Row>
+        );
+      });
+    return (
+      <div className={styles.section}>
+        {filteredGroups}
+      </div>
+    );
+  };
+
+  render () {
+    const {mode, filters, groupSearch} = this.props;
+    if (mode === MODES.groups) {
+      return (
+        <div style={{overflowY: 'auto', flex: '1 1 auto'}}>
+          {this.renderGroupsSelector()}
+        </div>
+      );
+    }
+    const {
+      allGroupsExpanded
+    } = this.state;
+    if (filters.groups.length === 0) {
+      return (
+        <div
+          style={{
+            overflowY: 'auto',
+            flex: '1 1 auto'
+          }}
+          className={styles.defaultContainer}
+        >
+          {this.renderGroupsSelector()}
+        </div>
+      );
+    }
+    return (
+      <div className={styles.extendedContainer}>
+        {
+          (!groupSearch || groupSearch.length === 0) &&
+          filters.groups.map(group => this.renderFilterCard(group))
+        }
+        <Collapse
+          bordered={false}
+          onChange={this.onChangeExpandedState}
+          activeKey={allGroupsExpanded ? ['groups'] : []}
+        >
+          <Collapse.Panel
+            className={styles.collapseContainer}
+            header={(
+              <div>
+                <span>All groups</span>
+                {this.selectedLibraryGroup ? (
+                  <Tag
+                    style={{marginLeft: 5}}
+                  >
+                    {this.getGroupName(this.selectedLibraryGroup)}
+                  </Tag>
+                ) : null}
+              </div>
+            )}
+            key="groups"
+          >
+            {this.renderGroupsSelector()}
+          </Collapse.Panel>
+        </Collapse>
+      </div>
+    );
+  }
 }
+
+DockerRegistryGroupsList.propTypes = {
+  groups: PropTypes.array,
+  groupSearch: PropTypes.string,
+  onNavigate: PropTypes.func,
+  mode: PropTypes.string,
+  filter: PropTypes.string,
+  filters: PropTypes.object
+};
+
+DockerRegistryGroupsList.defaultProps = {
+  mode: MODES.extended
+};
+
+export default DockerRegistryGroupsList;

@@ -22,9 +22,13 @@ import com.epam.pipeline.elasticsearchagent.model.PipelineRunWithLog;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
@@ -70,7 +74,7 @@ public class CloudPipelineAPIClient {
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") String cloudPipelineToken,
-                                  @Value("${sync.search.files.hidden.masks.preference.key}") String preferenceName,
+                                  @Value("${sync.search.files.elements.settings.preference.key}") String preferenceName,
                                   CloudPipelineApiExecutor cloudPipelineApiExecutor) {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
@@ -81,6 +85,10 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return executor.execute(cloudPipelineAPI.loadAllDataStorages());
+    }
+
+    public List<DataStorageWithShareMount> loadAllDataStoragesWithMounts() {
+        return executor.execute(cloudPipelineAPI.loadAllDataStoragesWithMounts());
     }
 
     public AbstractDataStorage loadDataStorage(final Long id) {
@@ -99,11 +107,23 @@ public class CloudPipelineAPIClient {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadDataStorageObjectTags(id, request)));
     }
 
+    public DataStorageDownloadFileUrl generateDownloadUrl(final Long id, final String path) {
+        return executor.execute(cloudPipelineAPI.generateDownloadUrl(id, path));
+    }
+
     public Map<String, Map<String, String>> loadDataStorageTagsMap(final Long id,
                                                                    final DataStorageTagLoadBatchRequest request) {
         return loadDataStorageTags(id, request).stream()
                 .collect(Collectors.groupingBy(tag -> tag.getObject().getPath(),
                         Collectors.toMap(DataStorageTag::getKey, DataStorageTag::getValue)));
+    }
+
+    public List<StorageRestoreAction> loadDataStorageRestoreHierarchy(
+            final long datastorageId, final String path,
+            final StorageRestorePathType pathType, final boolean recursive) {
+        return ListUtils.emptyIfNull(executor.execute(
+                cloudPipelineAPI.loadDataStorageRestoreHierarchy(datastorageId, path, pathType, recursive)));
+
     }
 
     public PipelineRunWithLog loadPipelineRunWithLogs(final Long pipelineRunId) {
@@ -220,5 +240,9 @@ public class CloudPipelineAPIClient {
 
     public FileShareMount loadFileShareMount(final Long id) {
         return executor.execute(cloudPipelineAPI.loadShareMount(id));
+    }
+
+    public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
+        return executor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
     }
 }

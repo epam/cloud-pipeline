@@ -72,7 +72,7 @@
 .report-filter {}
 
 .filters-container .actions-block {
-  margin-right: 5px;
+  margin-right: 15px;
   display: flex;
   flex-grow: 1;
   flex-direction: row;
@@ -88,8 +88,6 @@
 .restore-layout-button {
   margin-right: 5px;
 }
-
-.export-reports-button {}
 
 .chart {
   padding-bottom: 15px;

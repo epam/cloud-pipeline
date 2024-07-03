@@ -15,40 +15,69 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react/index';
-import {Input} from 'antd';
+import {Button, Input} from 'antd';
 import PropTypes from 'prop-types';
 
-@observer
-export default class DockerRegistriesGroupsSearch extends React.Component {
-
-  static propTypes = {
-    groupSearch: PropTypes.string,
-    onGroupSearch: PropTypes.func,
-    onCancel: PropTypes.func
-  };
-
-  onGroupSearch = (e) => {
-    this.props.onGroupSearch && this.props.onGroupSearch(e.target.value);
-  };
-
-  render () {
-    return (
-      <div style={{padding: '13px 13px 4px'}}>
-        <Input.Search
-          onKeyDown={(e) => {
-            if (this.props.onCancel && e.key && e.key.toLowerCase() === 'escape') {
-              this.props.onCancel();
-            }
-          }}
-          id="groups-search-input"
-          value={this.props.groupSearch}
-          onChange={this.onGroupSearch}
-          style={{width: '100%'}}
-          size="small"
-        />
-      </div>
-    );
+function DockerRegistriesGroupsSearch (
+  {
+    onGroupSearch,
+    groupSearch,
+    onCancel
   }
+) {
+  const onSearch = (e) => {
+    if (onGroupSearch) {
+      onGroupSearch(e.target.value);
+    }
+  };
 
+  const onSearchClear = () => {
+    if (onGroupSearch) {
+      onGroupSearch();
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (onCancel && e.key && e.key.toLowerCase() === 'escape') {
+      onCancel();
+    }
+  };
+
+  const disabled = !groupSearch || !groupSearch.length;
+  return (
+    <div
+      style={{
+        padding: '13px 13px 4px',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center'
+      }}
+    >
+      <Input.Search
+        onKeyDown={onKeyDown}
+        id="groups-search-input"
+        value={groupSearch}
+        onChange={onSearch}
+        style={{flex: 1}}
+        size="small"
+        placeholder="Search tool groups"
+      />
+      <Button
+        style={{marginLeft: 5}}
+        onClick={onSearchClear}
+        disabled={disabled}
+        size="small"
+      >
+        Clear
+      </Button>
+    </div>
+  );
 }
+
+DockerRegistriesGroupsSearch.propTypes = {
+  groupSearch: PropTypes.string,
+  onGroupSearch: PropTypes.func,
+  onCancel: PropTypes.func
+};
+
+export default DockerRegistriesGroupsSearch;

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown=true)
@@ -28,4 +29,7 @@ public class ContainerConfig {
 
     @JsonProperty("Cmd")
     private List<String> commands;
+
+    @JsonProperty("Labels")
+    private Map<String, String> labels;
 }

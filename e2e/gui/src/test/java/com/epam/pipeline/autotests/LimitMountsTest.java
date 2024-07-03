@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_SELECTION;
@@ -52,6 +51,7 @@ import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.PrivilegeValue.ALLOW;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implements Navigation, Authorization, Tools {
 
@@ -77,7 +77,9 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .ok();
         Stream.of(storage2, storage3, storage4).forEach(s -> givePermissionsToStorage(user, s));
         cleanToolLimitMounts();
+        cleanUserLimitMounts();
         logout();
+        loginAs(user);
     }
 
     @AfterClass(alwaysRun = true)
@@ -97,7 +99,6 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase(value = {"2210_1"})
     public void validateSelectDataStoragesToLimitMountsForm() {
-        loginAs(user);
         navigationMenu()
                 .settings()
                 .switchToMyProfile()
@@ -131,12 +132,12 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .expandTab(PARAMETERS)
                 .ensure(configurationParameter(cpCapLimitMounts, "None"), exist)
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
+                .clickMountBuckets()
                 .ensure(log(), containsMessages(
                         "Run is launched with mount limits (None) Only 0 storages will be mounted",
                         "No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none"))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls -l cloud-data/")
                         .assertOutputContains("total 0")
                         .close());
@@ -173,12 +174,14 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
                 .showLog(getLastRunId())
                 .waitForSshLink()
-                .waitForTask(mountDataStoragesTask)
-                .click(taskWithName(mountDataStoragesTask))
-                .ensure(log(), containsMessages("Found 1 available storage(s). Checking mount options."))
-                .ensure(log(), containsMessages("Only 1 storages will be mounted"))
-                .ensure(log(), containsMessages(mountStorageMessage(storage3)))
+                .clickMountBuckets()
+                .sleep(5, SECONDS)
+                .ensure(log(), containsMessages(
+                        "Found 1 available storage(s). Checking mount options.",
+                        "Only 1 storages will be mounted",
+                        mountStorageMessage(storage3)))
                 .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
                         .execute("ls /cloud-data/")
                         .assertOutputContains(storage3.toLowerCase())
                         .close());
@@ -252,6 +255,7 @@ public class LimitMountsTest extends AbstractSeveralPipelineRunningTest implemen
                 .switchToUsers()
                 .searchUserEntry(user.login.toUpperCase())
                 .edit()
+                .sleep(2, SECONDS)
                 .doNotMountStoragesSelect(true)
                 .doNotMountStoragesSelect(false)
                 .ok();

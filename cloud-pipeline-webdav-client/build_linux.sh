@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-CP_NODE_DOCKER="node:14.9.0-stretch"
+CP_NODE_DOCKER="node:14.17.5-stretch"
 docker pull $CP_NODE_DOCKER
 if [ $? -ne 0 ]; then
     echo "Unable to pull $CP_NODE_DOCKER image"
@@ -26,11 +26,16 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 
 cd /cloud-data
 
+version_file="scripts/PublishVersionPlugin.js"
+cp $version_file /tmp/version.bkp
+sed -i "s/1111111111111111111111111111111111111111/$CLOUD_DATA_COMMIT_HASH/g" $version_file
+
 npm install
 npm run package:linux
 
 if [ $? -ne 0 ]; then
     echo "Unable to build UI for Linux"
+    cp /tmp/version.bkp \$version_file
     exit 1
 fi
 
@@ -39,13 +44,19 @@ tar -zcf /cloud-data/out/cloud-data-linux.tar.gz \
         cloud-data-linux-x64
 
 chmod -R 777 /cloud-data/out
+cp /tmp/version.bkp \$version_file
 
 EOL
+
+cd $CP_CLOUD_DATA_SOURCES_DIR
+CLOUD_DATA_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
 
 docker run -i --rm \
            -v $CP_CLOUD_DATA_SOURCES_DIR:/cloud-data \
            -v $_BUILD_SCRIPT_NAME:$_BUILD_SCRIPT_NAME \
            --env CLOUD_DATA_APP_VERSION=$CLOUD_DATA_APP_VERSION \
+           --env CLOUD_DATA_COMMIT_HASH=$CLOUD_DATA_COMMIT_HASH \
            $CP_NODE_DOCKER \
            bash $_BUILD_SCRIPT_NAME
 

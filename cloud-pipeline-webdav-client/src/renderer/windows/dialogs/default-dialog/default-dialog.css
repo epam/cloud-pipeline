@@ -1,0 +1,61 @@
+.dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: auto;
+  width: 100vw;
+}
+
+.title {
+  font-weight: bold;
+  padding: 5px 15px;
+  border-bottom: 1px solid #ccc;
+}
+
+.body {
+  flex: 1;
+  padding: 5px 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.body .message,
+.body .input-container,
+.body .checkbox-container,
+.body .details,
+.body .error {
+  margin: 2px 0;
+}
+
+.body .details {
+  color: #666;
+  font-size: smaller;
+}
+
+.body .error {
+  color: red;
+  font-size: smaller;
+}
+
+.body .message,
+.body .details,
+.body .error {
+  word-break: break-word;
+}
+
+.body .input-container .input {
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 5px;
+}
+
+.actions .action:not(:last-child) {
+  margin-right: 5px;
+}

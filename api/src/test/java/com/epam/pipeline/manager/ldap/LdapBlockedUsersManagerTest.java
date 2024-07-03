@@ -16,13 +16,16 @@
 
 package com.epam.pipeline.manager.ldap;
 
+import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.ldap.LdapEntity;
 import com.epam.pipeline.entity.ldap.LdapEntityType;
 import com.epam.pipeline.entity.ldap.LdapSearchRequest;
 import com.epam.pipeline.entity.ldap.LdapSearchResponse;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
@@ -30,64 +33,187 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.test.creator.user.UserCreatorUtils.getPipelineUser;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class LdapBlockedUsersManagerTest {
+
     private static final int PAGE_SIZE = 2;
     private static final String NAME_ATTRIBUTE = "nameAttribute";
+    private static final String USER_FILTER = "${USERS_LIST}";
+    private static final String USER_NAME_INVALID = "Name not found";
     private static final String USER_NAME_1 = "name1";
     private static final String USER_NAME_2 = "name2";
     private static final String USER_NAME_3 = "name3";
+    private static final String USER_NAME_4 = "name4";
+    private static final String USER_NAME_5 = "name5";
     private static final Long ID_1 = 1L;
     private static final Long ID_2 = 2L;
     private static final Long ID_3 = 3L;
+    private static final Long ID_4 = 4L;
+    private static final Long ID_5 = 5L;
 
     private final LdapManager ldapManager = mock(LdapManager.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
-    private final LdapBlockedUsersManager blockedUsersManager = new LdapBlockedUsersManager(ldapManager,
-            preferenceManager);
+    private final LdapBlockedUsersManager manager = new LdapBlockedUsersManager(ldapManager, preferenceManager);
+
+    @Before
+    public void setUp() throws Exception {
+        set(SystemPreferences.LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE, PAGE_SIZE);
+        set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD,
+                LdapBlockedUserSearchMethod.LOAD_ACTIVE_AND_INTERCEPT.name());
+        set(SystemPreferences.LDAP_BLOCKED_USER_FILTER, USER_FILTER);
+        set(SystemPreferences.LDAP_BLOCKED_USER_NAME_ATTRIBUTE, NAME_ATTRIBUTE);
+        set(SystemPreferences.LDAP_INVALID_USER_ENTRIES, Collections.singleton(USER_NAME_INVALID));
+    }
 
     @Test
-    public void shouldReturnBlockedUsersOnly() {
-        final PipelineUser blockedUser = user(USER_NAME_1, ID_1);
-        final PipelineUser user1 = user(USER_NAME_2, ID_2);
-        final PipelineUser user2 = user(USER_NAME_3, ID_3);
+    public void shouldReturnBlockedUsersUsingLoadBlockedMethod() {
+        set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD, LdapBlockedUserSearchMethod.LOAD_BLOCKED.name());
 
-        doReturn(PAGE_SIZE).when(preferenceManager).getPreference(
-                SystemPreferences.LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE);
-        doReturn("${USERS_LIST}").when(preferenceManager).getPreference(
-                SystemPreferences.LDAP_BLOCKED_USER_FILTER);
-        doReturn(NAME_ATTRIBUTE).when(preferenceManager).getPreference(
-                SystemPreferences.LDAP_BLOCKED_USER_NAME_ATTRIBUTE);
-        final String expectedFilter1 = "(|(nameAttribute=name1)(nameAttribute=name2))";
-        final String expectedFilter2 = "(|(nameAttribute=name3))";
-        final LdapSearchRequest request1 = LdapSearchRequest.builder()
-                .size(PAGE_SIZE)
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_5, ID_5);
+
+        doReturn(ldapResponse(user1, user2))
+                .doReturn(ldapResponse(user3))
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user3);
+    }
+
+    @Test
+    public void filterShouldReturnBlockedUsersUsingLoadActiveMethod() {
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_5, ID_5);
+
+        doReturn(ldapResponse(user1, user2))
+                .doReturn(ldapResponse(user3))
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user4);
+    }
+
+    @Test
+    public void filterShouldIgnorePagesWithInvalidEntitiesUsingLoadBlockedMethod() {
+        set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD, LdapBlockedUserSearchMethod.LOAD_BLOCKED.name());
+
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_INVALID, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_INVALID, ID_5);
+
+        doReturn(ldapResponse(user1, user2))
+                .doReturn(ldapResponse(user3))
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user3);
+    }
+
+    @Test
+    public void filterShouldIgnorePagesWithInvalidEntitiesUsingLoadActiveMethod() {
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_INVALID, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_INVALID, ID_5);
+
+        doReturn(ldapResponse(user1, user2))
+                .doReturn(ldapResponse(user3))
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user4);
+    }
+
+    @Test
+    public void filterShouldIgnoreFullPagesUsingLoadBlockedMethod() {
+        set(SystemPreferences.LDAP_BLOCKED_USER_SEARCH_METHOD, LdapBlockedUserSearchMethod.LOAD_BLOCKED.name());
+
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_5, ID_5);
+
+        doReturn(ldapResponse(user1, user2))
+                .doReturn(ldapResponse(user3))
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user3);
+    }
+
+    @Test
+    public void filterShouldIgnoreEmptyPagesUsingLoadActiveMethod() {
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_5, ID_5);
+
+        doReturn(ldapResponse(user1))
+                .doReturn(emptyLdapResponse())
+                .doReturn(ldapResponse(user5))
+                .when(ldapManager).search(any(), any());
+
+        final List<PipelineUser> result = manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        assertThat(result).containsExactlyInAnyOrder(user2);
+    }
+
+    @Test
+    public void filterShouldUsePaginatedLdapFilters() {
+        final PipelineUser user1 = user(USER_NAME_1, ID_1);
+        final PipelineUser user2 = user(USER_NAME_2, ID_2);
+        final PipelineUser user3 = user(USER_NAME_3, ID_3);
+        final PipelineUser user4 = user(USER_NAME_4, ID_4);
+        final PipelineUser user5 = user(USER_NAME_5, ID_5);
+
+        manager.filterBlockedUsers(Arrays.asList(user1, user2, user3, user4, user5));
+
+        verify(ldapManager, times(3)).search(any(), any());
+        verify(ldapManager).search(request(PAGE_SIZE), "(|(nameAttribute=name1)(nameAttribute=name2))");
+        verify(ldapManager).search(request(PAGE_SIZE), "(|(nameAttribute=name3)(nameAttribute=name4))");
+        verify(ldapManager).search(request(1), "(|(nameAttribute=name5))");
+    }
+
+    private void set(final AbstractSystemPreference<?> key, final Object value) {
+        doReturn(value).when(preferenceManager).getPreference(key);
+    }
+
+    private LdapSearchRequest request(final int page) {
+        return LdapSearchRequest.builder()
+                .size(page)
                 .type(LdapEntityType.USER)
                 .nameAttribute(NAME_ATTRIBUTE)
                 .build();
-        final LdapSearchRequest request2 = LdapSearchRequest.builder()
-                .size(1) // since only one user remains
-                .type(LdapEntityType.USER)
-                .nameAttribute(NAME_ATTRIBUTE)
-                .build();
-        doReturn(ldapResponse(USER_NAME_1.toUpperCase(Locale.ROOT))).when(ldapManager)
-                .search(request1, expectedFilter1);
-        doReturn(emptyLdapResponse()).when(ldapManager).search(request2, expectedFilter2);
-
-        final List<PipelineUser> result = blockedUsersManager.filterBlockedUsers(
-                Arrays.asList(blockedUser, user1, user2));
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0)).isEqualTo(blockedUser);
-
-        verify(ldapManager).search(request1, expectedFilter1);
-        verify(ldapManager).search(request2, expectedFilter2);
     }
 
     private PipelineUser user(final String userName, final Long id) {
@@ -97,9 +223,12 @@ public class LdapBlockedUsersManagerTest {
         return pipelineUser;
     }
 
-    private LdapSearchResponse ldapResponse(final String userName) {
-        return LdapSearchResponse.completed(Collections.singletonList(
-                new LdapEntity(userName, LdapEntityType.USER, null)));
+    private LdapSearchResponse ldapResponse(final PipelineUser... users) {
+        List<LdapEntity> result = Arrays.stream(users)
+                .map(PipelineUser::getUserName)
+                .map(user -> user.toUpperCase(Locale.ROOT))
+                .map(user -> new LdapEntity(user, LdapEntityType.USER, null)).collect(Collectors.toList());
+        return LdapSearchResponse.completed(result);
     }
 
     private LdapSearchResponse emptyLdapResponse() {

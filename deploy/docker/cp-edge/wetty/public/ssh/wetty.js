@@ -24,18 +24,84 @@ Wetty.prototype.onTerminalResize = function(col, row) {
     socket.emit('resize', { col: col, row: row });
 };
 
+var theme = 'default';
+var generalPreferences = {
+  "ctrl-c-copy": true,
+  "ctrl-v-paste": true,
+  "use-default-window-copy": true
+};
+var themes = {
+    light: Object.assign(
+      {
+          "background-color": "#fafafa",
+          "foreground-color": "#333333",
+          "cursor-color": "rgba(50, 50, 50, 0.5)",
+          "color-palette-overrides": { 51: 'rgb(0, 140, 140)'}
+      },
+      generalPreferences),
+    default: Object.assign(
+      {
+        "background-color": "rgb(16, 16, 16)",
+        "foreground-color": "rgb(240, 240, 240)",
+        "cursor-color": "rgba(255, 0, 0, 0.5)",
+        "color-palette-overrides": null
+      },
+      generalPreferences)
+};
+
+function initializeTermThemes() {
+    if (term) {
+        term.setProfile('default');
+        term.prefs_.importFromJson(themes.default);
+        term.setProfile('light');
+        term.prefs_.importFromJson(themes.light);
+        term.setProfile('default');
+    }
+}
+
+function setTerminalTheme() {
+    if (term) {
+        var currentThemeName = 'default';
+        if (theme && theme.toLowerCase() == 'light') {
+            currentThemeName = 'light';
+        }
+        term.setProfile(currentThemeName);
+    }
+}
+
+function toggleTheme(event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    if (theme == 'default') {
+        theme = 'light';
+    } else {
+        theme = 'default';
+    }
+    setTerminalTheme();
+    var terminalDiv = document.getElementById('terminal');
+    if (terminalDiv) {
+        terminalDiv.focus();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var settingsBtn = document.getElementById('settings');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', toggleTheme);
+    }
+});
+
 socket.on('connect', function() {
     lib.init(function() {
         hterm.defaultStorage = new lib.Storage.Local();
         term = new hterm.Terminal();
+        initializeTermThemes();
         window.term = term;
         term.decorate(document.getElementById('terminal'));
 
         term.setCursorPosition(0, 0);
         term.setCursorVisible(true);
-        term.prefs_.set('ctrl-c-copy', true);
-        term.prefs_.set('ctrl-v-paste', true);
-        term.prefs_.set('use-default-window-copy', true);
 
         term.runCommandClass(Wetty, document.location.hash.substr(1));
         socket.emit('resize', {
@@ -48,6 +114,7 @@ socket.on('connect', function() {
             term.io.writeUTF16(buf);
             buf = '';
         }
+        setTerminalTheme();
     });
 });
 
@@ -61,4 +128,9 @@ socket.on('output', function(data) {
 
 socket.on('disconnect', function() {
     console.log("Socket.io connection closed");
+});
+
+socket.on('term.theme', function(sshTheme) {
+    theme = sshTheme;
+    setTerminalTheme();
 });

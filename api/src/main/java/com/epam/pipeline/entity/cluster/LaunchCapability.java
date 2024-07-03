@@ -16,14 +16,22 @@
 package com.epam.pipeline.entity.cluster;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Data
+@Builder
 public class LaunchCapability {
-
+    private String name;
     private String description;
+    private Boolean visible;
+    private String cloud;
+    private String os;
+    private Map<String, String> params;
     private List<String> commands;
+    private Map<String, LaunchCapability> capabilities;
 }

@@ -24,13 +24,23 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
+import com.epam.pipeline.entity.datastorage.LustreFS;
+import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.log.LogRequest;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.notification.NotificationMessage;
@@ -77,6 +87,7 @@ import retrofit2.http.Query;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface CloudPipelineAPI {
 
@@ -163,8 +174,22 @@ public interface CloudPipelineAPI {
     @GET("datastorage/loadAll")
     Call<Result<List<AbstractDataStorage>>> loadAllDataStorages();
 
+    @GET("datastorage/availableWithMounts")
+    Call<Result<List<DataStorageWithShareMount>>> loadAllDataStoragesWithMounts();
+
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
+
+    @GET("datastorage/findByPath")
+    Call<Result<AbstractDataStorage>> findStorageByPath(@Query(ID) String path);
+
+    @GET("datastorage/{id}/content")
+    Call<Result<DataStorageItemContent>> getStorageItemContent(@Path(ID) Long storageId,
+                                                               @Query(PATH) String path);
+    @POST("datastorage/{id}/content")
+    Call<Result<DataStorageFile>> createStorageItem(@Path(ID) Long storageId,
+                                                    @Query(PATH) String path,
+                                                    @Body String content);
 
     @PUT("datastorage/{id}/tags/batch/insert")
     Call<Result<Object>> insertDataStorageTags(@Path(ID) Long storageId,
@@ -177,6 +202,12 @@ public interface CloudPipelineAPI {
     @POST("datastorage/{id}/tags/batch/load")
     Call<Result<List<DataStorageTag>>> loadDataStorageObjectTags(@Path(ID) Long storageId,
                                                                  @Body DataStorageTagLoadBatchRequest request);
+
+    @GET("datastorage/{id}/generateUrl")
+    Call<Result<DataStorageDownloadFileUrl>> generateDownloadUrl(@Path(ID) Long storageId, @Query(PATH) String path);
+
+    @GET("datastorage/path/usage")
+    Call<Result<StorageUsage>> getStorageUsage(@Query(ID) String id, @Query(PATH) String path);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
@@ -216,6 +247,9 @@ public interface CloudPipelineAPI {
 
     @GET("tool/{toolId}/attributes ")
     Call<Result<ToolDescription>> loadToolAttributes(@Path(TOOL_ID) Long toolId);
+
+    @GET("dockerRegistry/loadTree")
+    Call<Result<DockerRegistryList>> loadAllRegistries();
 
     @GET("dockerRegistry/{id}/load")
     Call<Result<DockerRegistry>> loadDockerRegistry(@Path(ID) Long dockerRegistryId);
@@ -276,20 +310,33 @@ public interface CloudPipelineAPI {
     Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
 
     @GET("preferences/{key}")
-    Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
+    Call<Result<Preference>> loadPreference(@Path(KEY) String preferenceName);
 
     @GET("preferences")
     Call<Result<List<Preference>>> loadAllPreference();
 
     @GET("filesharemount/{id}")
-    Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+    Call<Result<FileShareMount>> loadShareMount(@Path(ID) Long id);
 
     @GET("app/info")
     Call<Result<ApplicationInfo>> fetchVersion();
 
     @POST("cluster/pool/usage")
-    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
+    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body List<NodePoolUsage> records);
 
     @DELETE("cluster/pool/usage")
     Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);
+
+    @GET("datastorage/{id}/lifecycle/restore/effectiveHierarchy")
+    Call<Result<List<StorageRestoreAction>>> loadDataStorageRestoreHierarchy(
+            @Path(ID) long datastorageId, @Query(PATH) String path,
+            @Query("pathType") StorageRestorePathType pathType,
+            @Query("recursive") boolean recursive);
+
+    @GET("lustre")
+    Call<Result<LustreFS>> getLustre(@Query("mountName") String mountName,
+                                     @Query("regionId") Long regionId);
+
+    @POST("log/group")
+    Call<Result<Map<String, Long>>> getSystemLogsGrouped(@Body LogRequest logRequest);
 }

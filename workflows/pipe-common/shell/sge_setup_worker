@@ -17,6 +17,13 @@
 SGE_WORKER_SETUP_TASK="SGEWorkerSetup"
 CURRENT_PID=$$
 
+reset_local_host_config() {
+    qconf -sconf $HOSTNAME &> /dev/null
+    if [ "$?" -eq "0" ]; then
+        qconf -dconf $HOSTNAME
+    fi
+}
+
 add_worker() {
     local _QUEUE=$1
     local _HOSTLIST=$2
@@ -24,7 +31,7 @@ add_worker() {
     local _MASTER_NAME=$4
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-        ssh -t "$_MASTER_NAME" bash -c "'
+        ssh $CP_SSH_EXTRA_ARGS -t "$_MASTER_NAME" bash -c "'
         # add to the execution host list
         TMPFILE=/tmp/sge.hostname-$HOSTNAME
         echo -e \"hostname $HOSTNAME\nload_scaling NONE\ncomplex_values NONE\nuser_lists NONE\nxuser_lists NONE\nprojects NONE\nxprojects NONE\nusage_scaling NONE\nreport_variables NONE\" > \$TMPFILE
@@ -51,7 +58,7 @@ add_worker() {
         '"
     elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
         cd "$SGE_ROOT"
-        ssh -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
+        ssh $CP_SSH_EXTRA_ARGS -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
         copy_qmaster_configuration $_MASTER_NAME
         run_redhat_installation "worker"
 
@@ -71,6 +78,8 @@ add_worker() {
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
     fi
+
+    reset_local_host_config
 }
 
 remove_worker() {
@@ -235,8 +244,9 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                             perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
                             ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
                             xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
-                            compat-db-headers compat-db47 libpipeline man-db \
-        && yum install -y -q gridengine \
+                            compat-db-headers compat-db47 libpipeline man-db
+
+        yum install -y -q gridengine \
                             gridengine-debuginfo \
                             gridengine-devel \
                             gridengine-drmaa4ruby \
@@ -267,7 +277,7 @@ fi
 export _CP_CAP_SGE_DEFAULT_QUEUE_NAME="$CP_CAP_SGE_QUEUE_NAME"
 export _CP_CAP_SGE_DEFAULT_HOSTLIST_NAME="$CP_CAP_SGE_HOSTLIST_NAME"
 
-for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"

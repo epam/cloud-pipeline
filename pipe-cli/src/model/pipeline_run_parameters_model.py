@@ -23,6 +23,7 @@ class PipelineRunParametersModel(object):
         self.instance_size = None
         self.parameters = []
         self.version = None
+        self.docker_image = None
 
     @classmethod
     def load(cls, json, version):
@@ -30,6 +31,7 @@ class PipelineRunParametersModel(object):
         instance.version = version
         instance.instance_disk = json['instance_disk']
         instance.instance_size = json['instance_size']
+        instance.docker_image = json.get('docker_image', None)
         if 'main_file' in json:
             instance.main_file = json['main_file']
 

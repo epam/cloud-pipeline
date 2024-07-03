@@ -40,6 +40,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -76,6 +77,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 
+@SuppressWarnings("unused")
 @Transactional
 public class UserManagerTest extends AbstractSpringTest {
 
@@ -129,6 +131,9 @@ public class UserManagerTest extends AbstractSpringTest {
     @MockBean
     private DataStorageValidator storageValidator;
 
+    @MockBean
+    private MetadataManager metadataManager;
+
     @Before
     public void setUpPreferenceManager() {
         doReturn(mock(S3StorageProvider.class)).when(storageProviderManager).getStorageProvider(any());
@@ -158,7 +163,7 @@ public class UserManagerTest extends AbstractSpringTest {
     public void readUser() {
         Assert.assertNull(userManager.loadUserByName(TEST_USER));
         final PipelineUser newUser = createDefaultPipelineUser();
-        final PipelineUser loadedUser = userManager.loadUserById(newUser.getId());
+        final PipelineUser loadedUser = userManager.load(newUser.getId());
         compareAllFieldOfUsers(newUser, loadedUser);
     }
 
@@ -217,12 +222,12 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertFalse(user.isBlocked());
 
         userManager.updateUserBlockingStatus(user.getId(), true);
-        final PipelineUser blockedPipelineUser = userManager.loadUserById(user.getId());
+        final PipelineUser blockedPipelineUser = userManager.load(user.getId());
         Assert.assertTrue(blockedPipelineUser.isBlocked());
         Assert.assertNotNull(blockedPipelineUser.getBlockDate());
 
         userManager.updateUserBlockingStatus(user.getId(), false);
-        final PipelineUser unblockedPipelineUser = userManager.loadUserById(user.getId());
+        final PipelineUser unblockedPipelineUser = userManager.load(user.getId());
         Assert.assertFalse(unblockedPipelineUser.isBlocked());
         Assert.assertNull(unblockedPipelineUser.getBlockDate());
     }
@@ -234,7 +239,7 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertNull(user.getFirstLoginDate());
 
         userManager.updateUserFirstLoginDate(user.getId(), DateUtils.nowUTC());
-        final PipelineUser loaded = userManager.loadUserById(user.getId());
+        final PipelineUser loaded = userManager.load(user.getId());
 
         Assert.assertNotNull(loaded.getFirstLoginDate());
     }
@@ -246,7 +251,7 @@ public class UserManagerTest extends AbstractSpringTest {
         Assert.assertNull(user.getLastLoginDate());
 
         userManager.updateLastLoginDate(user);
-        final PipelineUser loaded = userManager.loadUserById(user.getId());
+        final PipelineUser loaded = userManager.load(user.getId());
 
         Assert.assertNotNull(loaded.getLastLoginDate());
     }
@@ -266,7 +271,7 @@ public class UserManagerTest extends AbstractSpringTest {
 
         notificationDao.createMonitoringNotification(message);
         Assert.assertFalse(notificationDao.loadAllNotifications().isEmpty());
-        userManager.deleteUser(user.getId());
+        userManager.delete(user.getId());
         Assert.assertTrue(notificationDao.loadAllNotifications().isEmpty());
     }
 
@@ -360,7 +365,7 @@ public class UserManagerTest extends AbstractSpringTest {
                                                                             null);
         final AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
         prepareContextForDefaultUserStorage();
-        final PipelineUser newUser = userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
+        final PipelineUser newUser = userManager.create(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
                                                             DEFAULT_USER_ATTRIBUTE, storage.getId());
         Assert.assertEquals(storage.getId(), newUser.getDefaultStorageId());
     }
@@ -369,7 +374,7 @@ public class UserManagerTest extends AbstractSpringTest {
     public void createUserAndDefaultStorageWhenExplicitDefaultStorageDoesntExist() {
         final long storageId = 1;
         doThrow(new IllegalArgumentException()).when(storageValidator).validate(eq(storageId));
-        userManager.createUser(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
+        userManager.create(TEST_USER, DEFAULT_USER_ROLES, DEFAULT_USER_GROUPS,
                                                             DEFAULT_USER_ATTRIBUTE, storageId);
     }
 
@@ -455,7 +460,7 @@ public class UserManagerTest extends AbstractSpringTest {
     }
 
     private PipelineUser createDefaultPipelineUser() {
-        return userManager.createUser(TEST_USER,
+        return userManager.create(TEST_USER,
                                       DEFAULT_USER_ROLES,
                                       DEFAULT_USER_GROUPS,
                                       DEFAULT_USER_ATTRIBUTE,
@@ -471,7 +476,7 @@ public class UserManagerTest extends AbstractSpringTest {
         dataStorageVO.setName(USER_DEFAULT_DS);
         SecuredEntityWithAction<AbstractDataStorage> ds =
                 dataStorageManager.create(dataStorageVO, false, false, false);
-        return userManager.createUser(TEST_USER,
+        return userManager.create(TEST_USER,
                 DEFAULT_USER_ROLES,
                 DEFAULT_USER_GROUPS,
                 DEFAULT_USER_ATTRIBUTE,

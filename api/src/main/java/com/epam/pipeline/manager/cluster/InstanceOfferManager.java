@@ -32,6 +32,10 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferMinimumRequirementsFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferTermTypeFilter;
+import com.epam.pipeline.manager.cloud.offer.InstanceOfferUniqueFilter;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
@@ -39,37 +43,31 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
+import com.epam.pipeline.utils.RunDurationUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 
-import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 @Service
 @AllArgsConstructor
@@ -78,7 +76,14 @@ public class InstanceOfferManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceOfferManager.class);
 
-    private static final String EMPTY = "";
+    private static final int FALLBACK_INSTANCE_OFFER_INSERT_BATCH_SIZE = 10_000;
+    private static final Set<String> FALLBACK_FILTER_TERM_TYPES =
+            Arrays.stream(CloudInstancePriceService.TermType.values())
+                    .map(CloudInstancePriceService.TermType::getName)
+                    .collect(Collectors.toSet());
+    private static final boolean FALLBACK_FILTER_UNIQUE = true;
+    private static final int FALLBACK_FILTER_CPU_MIN = 2;
+    private static final int FALLBACK_FILTER_MEM_MIN = 3;
 
     @Autowired
     private InstanceOfferDao instanceOfferDao;
@@ -104,14 +109,7 @@ public class InstanceOfferManager {
     @Autowired
     private CloudFacade cloudFacade;
 
-    /**
-     * Map under the reference collects instance types grouped by the region ids.
-     */
-    private final AtomicReference<Map<Long, Map<PriceType, Set<String>>>> offeredInstanceTypesMap =
-            new AtomicReference<>(Collections.emptyMap());
-
     private final AntPathMatcher matcher = new AntPathMatcher();
-    private final Subject<List<InstanceType>> updatedInstanceTypesSubject = BehaviorSubject.create();
 
     private static final double ONE_SECOND = 1000;
     private static final double ONE_MINUTE = 60 * ONE_SECOND;
@@ -128,44 +126,6 @@ public class InstanceOfferManager {
             SystemPreferences.CLUSTER_ALLOWED_PRICE_TYPES.getKey());
     private static final List<String> MASTER_PRICE_TYPES_PREFERENCES = Collections.singletonList(
             SystemPreferences.CLUSTER_ALLOWED_MASTER_PRICE_TYPES.getKey());
-
-    @PostConstruct
-    public void init() {
-        updateOfferedInstanceTypes(instanceOfferDao.loadInstanceTypes());
-        updateOfferedInstanceTypesOnPreferenceChange(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
-        updateOfferedInstanceTypesOnPreferenceChange(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
-
-        updatedInstanceTypesSubject.onNext(getAllInstanceTypes());
-    }
-
-    private void updateOfferedInstanceTypesOnPreferenceChange(final AbstractSystemPreference.StringPreference pref) {
-        preferenceManager.getObservablePreference(pref)
-            .subscribe(newInstanceTypes -> { // Will run on same thread, that updates preference
-                LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_PREFERENCE_UPDATED_WITH_ADDITIONAL_TASKS,
-                    pref.getKey(), newInstanceTypes, String.format("Update InstanceOfferManager::%s", pref.getKey())));
-                updateOfferedInstanceTypes(instanceOfferDao.loadInstanceTypes());
-            });
-    }
-
-    /**
-     * Updates offered instance types for all regions.
-     */
-    public void updateOfferedInstanceTypes(final List<InstanceType> instanceTypes) {
-        final Map<Long, Map<PriceType, Set<String>>>offeredInstanceTypes = groupInstanceTypes(instanceTypes);
-        offeredInstanceTypesMap.set(extendInstanceTypesForAws(offeredInstanceTypes));
-    }
-
-    public void updateOfferedInstanceTypes() {
-        updateOfferedInstanceTypes(getAllInstanceTypes());
-    }
-
-    /**
-     * Updates offered instance types for all regions.
-     */
-    public void updateOfferedInstanceTypesAccordingToInstanceOffers(final List<InstanceOffer> instanceOffers) {
-        final Map<Long, Map<PriceType, Set<String>>> offeredInstanceTypes = groupInstanceOffers(instanceOffers);
-        offeredInstanceTypesMap.set(extendInstanceTypesForAws(offeredInstanceTypes));
-    }
 
     public Date getPriceListPublishDate() {
         return instanceOfferDao.getPriceListPublishDate();
@@ -199,7 +159,7 @@ public class InstanceOfferManager {
             long maximumDuration = -1;
             long totalDurations = 0;
             for (PipelineRun run : runs) {
-                long duration = run.getEndDate().getTime() - run.getStartDate().getTime();
+                long duration = RunDurationUtils.getBillableDuration(run).toMillis();
                 if (minimumDuration == -1 || minimumDuration > duration) {
                     minimumDuration = duration;
                 }
@@ -221,7 +181,7 @@ public class InstanceOfferManager {
         final boolean isSpot = isSpotRequest(spot);
         final Long actualRegionId = defaultRegionIfNull(regionId);
         Assert.isTrue(isInstanceAllowed(instanceType, actualRegionId, isSpot) ||
-                        isToolInstanceAllowed(instanceType, null, actualRegionId, isSpot),
+                        isToolInstanceAllowed(instanceType, actualRegionId, isSpot),
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_TYPE_IS_NOT_ALLOWED,
                         instanceType));
         double computePricePerHour = getPricePerHourForInstance(instanceType, isSpot, actualRegionId);
@@ -233,7 +193,7 @@ public class InstanceOfferManager {
 
     public PipelineRunPrice getPipelineRunEstimatedPrice(Long runId, Long regionId) {
         final Long actualRegionId = defaultRegionIfNull(regionId);
-        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
+        PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId, false);
         RunInstance runInstance = pipelineRun.getInstance();
         boolean spot = isSpotRequest(runInstance.getSpot());
         double computePricePerHour = getPricePerHourForInstance(runInstance.getNodeType(), spot, actualRegionId);
@@ -247,8 +207,7 @@ public class InstanceOfferManager {
         price.setPricePerHour(pricePerHour);
 
         if (pipelineRun.getStatus().isFinal()) {
-            long duration = pipelineRun.getEndDate().getTime() - pipelineRun.getStartDate().getTime();
-            price.setTotalPrice(duration / ONE_HOUR * pricePerHour);
+            price.setTotalPrice(RunDurationUtils.getBillableDuration(pipelineRun).toMillis() / ONE_HOUR * pricePerHour);
         } else {
             price.setTotalPrice(0);
         }
@@ -259,8 +218,9 @@ public class InstanceOfferManager {
      * Returns all instance types that are allowed on a system-wide level for all regions.
      */
     public List<InstanceType> getAllowedInstanceTypes() {
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         return getAllInstanceTypes().stream()
-                .filter(offer -> isInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
@@ -271,8 +231,9 @@ public class InstanceOfferManager {
      */
     public List<InstanceType> getAllowedInstanceTypes(final Long regionId, final Boolean spot) {
         final boolean isSpot = isSpotRequest(spot);
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
         return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
-                .filter(offer -> isInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
@@ -283,20 +244,21 @@ public class InstanceOfferManager {
      */
     public List<InstanceType> getAllowedToolInstanceTypes(final Long regionId, final Boolean spot) {
         final boolean isSpot = isSpotRequest(spot);
+        final String allowed = preferenceManager.getPreference(SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
         return getAllInstanceTypes(defaultRegionIfNull(regionId), isSpot).stream()
-                .filter(offer -> isToolInstanceTypeAllowed(offer.getName()))
+                .filter(offer -> isInstanceTypeAllowed(offer.getName(), allowed))
                 .collect(toList());
     }
 
+    public Optional<InstanceOffer> findOffer(final String instanceType, final Long regionId) {
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
+        return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
+                .stream()
+                .findFirst();
+    }
+
     public double getPricePerHourForInstance(final String instanceType, final Long regionId) {
-        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
-        requestVO.setInstanceType(instanceType);
-        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
-        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
-        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
-        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
-        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
-        requestVO.setRegionId(regionId);
+        final InstanceOfferRequestVO requestVO = buildInstanceTypeRequest(instanceType, regionId);
         return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(requestVO))
                 .stream()
                 .map(InstanceOffer::getPricePerUnit)
@@ -319,20 +281,52 @@ public class InstanceOfferManager {
     }
 
     /**
+     * Checks if the given instance type is allowed for the authorized user in the specified or default region.
+     * Also checks if the instance type is one of the offered instance types.
+     *
+     * @param instanceType To be checked.
+     * @param resources List of preference resources: tool, region, etc.
+     * @param regionId If specified then instance types for the specified region will be used.
+     */
+    public boolean isInstanceAllowed(final String instanceType,
+                                     final List<ContextualPreferenceExternalResource> resources,
+                                     final Long regionId,
+                                     final boolean spot) {
+        return isInstanceTypeAllowed(instanceType, resources, defaultRegionIfNull(regionId),
+                INSTANCE_TYPES_PREFERENCES, spot);
+    }
+
+    /**
      * Checks if the given tool instance type is allowed for the authorized user and the requested tool
      * in the specified or default region.
      *
      * Also checks if the instance type is one of the offered instance types.
      *
      * @param instanceType To be checked.
-     * @param toolResource Optional tool resource.
+     * @param resources List of preference resources: tool, region, etc.
      * @param regionId If specified then instance types for the specified region will be used.
      */
     public boolean isToolInstanceAllowed(final String instanceType,
-                                         final ContextualPreferenceExternalResource toolResource,
+                                         final List<ContextualPreferenceExternalResource> resources,
                                          final Long regionId,
                                          final boolean spot) {
-        return isInstanceTypeAllowed(instanceType, toolResource, defaultRegionIfNull(regionId),
+        return isInstanceTypeAllowed(instanceType, resources, defaultRegionIfNull(regionId),
+                TOOL_INSTANCE_TYPES_PREFERENCES, spot);
+    }
+
+    /**
+     * Checks if the given tool instance type is allowed for the authorized user and the requested tool
+     * in the specified or default region.
+     *
+     * Also checks if the instance type is one of the offered instance types.
+     *
+     * @param instanceType To be checked.
+     * @param regionId If specified then instance types for the specified region will be used.
+     */
+    public boolean isToolInstanceAllowed(final String instanceType,
+                                         final Long regionId,
+                                         final boolean spot) {
+        return isInstanceTypeAllowed(instanceType, null, defaultRegionIfNull(regionId),
                 TOOL_INSTANCE_TYPES_PREFERENCES, spot);
     }
 
@@ -347,122 +341,174 @@ public class InstanceOfferManager {
      */
     public boolean isToolInstanceAllowedInAnyRegion(final String instanceType,
                                                     final ContextualPreferenceExternalResource toolResource) {
-        return isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
-                || isInstanceTypeAllowed(instanceType, toolResource, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
-    }
-
-    private Map<Long, Map<PriceType, Set<String>>> groupInstanceTypes(final List<InstanceType> instanceTypes) {
-        return instanceTypes.stream()
-                .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
-                        .anyMatch(priceType -> StringUtils.defaultIfEmpty(it.getTermType(), EMPTY)
-                                .equalsIgnoreCase(priceType.getName())))
-                .collect(groupingBy(InstanceType::getRegionId,
-                        groupingBy(it -> PriceType.fromTermType(it.getTermType()),
-                                mapping(InstanceType::getName, toSet()))));
-    }
-
-    private Map<Long, Map<PriceType, Set<String>>> groupInstanceOffers(final List<InstanceOffer> instanceOffers) {
-        return instanceOffers.stream()
-                .filter(it -> Arrays.stream(CloudInstancePriceService.TermType.values())
-                        .anyMatch(priceType -> StringUtils.defaultIfEmpty(it.getTermType(), EMPTY)
-                                .equalsIgnoreCase(priceType.getName())))
-                .collect(groupingBy(InstanceOffer::getRegionId,
-                        groupingBy(io -> PriceType.fromTermType(io.getTermType()),
-                                mapping(InstanceOffer::getInstanceType, toSet()))));
-    }
-
-    private Map<Long, Map<PriceType, Set<String>>> extendInstanceTypesForAws(
-            final Map<Long, Map<PriceType, Set<String>>> offeredInstanceTypes) {
-        offeredInstanceTypes.forEach((regionId, prices) -> {
-            final AbstractCloudRegion region = cloudRegionManager.load(regionId);
-            if (region.getProvider() == CloudProvider.AWS) {
-                prices.put(PriceType.SPOT, prices.get(PriceType.ON_DEMAND));
-            }
-        });
-        return offeredInstanceTypes;
+        final List<ContextualPreferenceExternalResource> resources = toolResource != null
+                ? Collections.singletonList(toolResource) : Collections.emptyList();
+        return isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, false)
+                || isInstanceTypeAllowed(instanceType, resources, null, TOOL_INSTANCE_TYPES_PREFERENCES, true);
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType,
-                                          final ContextualPreferenceExternalResource resource,
+                                          final List<ContextualPreferenceExternalResource> resources,
                                           final Long regionId,
                                           final List<String> instanceTypesPreferences,
                                           final boolean spot) {
         return !StringUtils.isEmpty(instanceType)
-                && isInstanceTypeMatchesAllowedPatterns(instanceType, resource, instanceTypesPreferences)
+                && isInstanceTypeMatchesAllowedPatterns(instanceType, resources, instanceTypesPreferences)
                 && isInstanceTypeOffered(instanceType, regionId, spot);
     }
 
     private boolean isInstanceTypeMatchesAllowedPatterns(final String instanceType,
-                                                         final ContextualPreferenceExternalResource resource,
+                                                         final List<ContextualPreferenceExternalResource> resources,
                                                          final List<String> instanceTypesPreferences) {
-        return getContextualPreferenceValueAsList(resource, instanceTypesPreferences).stream()
+        return getContextualPreferenceValueAsList(resources, instanceTypesPreferences).stream()
                 .anyMatch(pattern -> matcher.match(pattern, instanceType));
-    }
-
-    private boolean isInstanceTypeOffered(final String instanceType, final Long regionId, final boolean spot) {
-        return regionId != null
-                ? isInstanceTypeOfferedInRegion(instanceType, regionId, spot)
-                : isInstanceTypeOfferedInAnyRegion(instanceType, spot);
-    }
-
-    private boolean isInstanceTypeOfferedInRegion(final String instanceType, final Long regionId, final boolean spot) {
-        final Set<String> regionInstances = offeredInstanceTypesMap.get()
-                .getOrDefault(regionId, Collections.emptyMap()).get(spot ? PriceType.SPOT : PriceType.ON_DEMAND);
-        return SetUtils.emptyIfNull(regionInstances).contains(instanceType);
-    }
-
-    private boolean isInstanceTypeOfferedInAnyRegion(final String instanceType, final boolean spot) {
-        return offeredInstanceTypesMap.get().values().stream()
-                .map(m -> m.get(spot ? PriceType.SPOT : PriceType.ON_DEMAND))
-                .flatMap(s -> SetUtils.emptyIfNull(s).stream())
-                .anyMatch(instanceType::equals);
     }
 
     /**
      * Checks if the given price type is allowed for the authorized user and tool.
      *
      * @param priceType To be checked.
-     * @param toolResource Optional tool resource.
+     * @param resources List of resources.
      * @param isMaster is checking node a master in cluster run
      */
     public boolean isPriceTypeAllowed(final String priceType,
-                                      final ContextualPreferenceExternalResource toolResource,
+                                      final List<ContextualPreferenceExternalResource> resources,
                                       final boolean isMaster) {
         final List<String> priceTypesPreferences = isMaster
                                      ? MASTER_PRICE_TYPES_PREFERENCES
                                      : PRICE_TYPES_PREFERENCES;
-        return getContextualPreferenceValueAsList(toolResource, priceTypesPreferences).stream()
-            .anyMatch(priceType::equals);
+        return getContextualPreferenceValueAsList(resources, priceTypesPreferences).stream()
+                .anyMatch(priceType::equals);
     }
 
-    public boolean isPriceTypeAllowed(final String priceType,
-                                      final ContextualPreferenceExternalResource toolResource) {
-        return isPriceTypeAllowed(priceType, toolResource, false);
+    public boolean isPriceTypeAllowed(final String priceType) {
+        return isPriceTypeAllowed(priceType, null, false);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void refreshPriceList() {
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_STARTED));
-        instanceOfferDao.removeInstanceOffers();
-        List<InstanceOffer> instanceOffers = cloudRegionManager.loadAll()
+        List<InstanceOffer> offers = cloudRegionManager.loadAll()
                 .stream()
-                .map(this::updatePriceListForRegion)
+                .map(this::updatePriceList)
                 .flatMap(List::stream)
                 .collect(toList());
 
-        updatedInstanceTypesSubject.onNext(getAllInstanceTypes());
-
         LOGGER.debug(messageHelper.getMessage(MessageConstants.DEBUG_INSTANCE_OFFERS_UPDATE_FINISHED));
-        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_UPDATED, instanceOffers.size()));
-        updateOfferedInstanceTypesAccordingToInstanceOffers(instanceOffers);
+        LOGGER.info(messageHelper.getMessage(MessageConstants.INFO_INSTANCE_OFFERS_UPDATED, offers.size()));
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    public List<InstanceOffer> updatePriceListForRegion(AbstractCloudRegion cloudRegion) {
-        instanceOfferDao.removeInstanceOffersForRegion(cloudRegion.getId());
-        List<InstanceOffer> instanceOffers = cloudFacade.refreshPriceListForRegion(cloudRegion.getId());
-        instanceOfferDao.insertInstanceOffers(instanceOffers);
-        return instanceOffers;
+    public void refreshPriceList(Long id) {
+        AbstractCloudRegion region = cloudRegionManager.load(id);
+        updatePriceList(region);
+    }
+
+    public void refreshPriceList(AbstractCloudRegion region) {
+        updatePriceList(region);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private List<InstanceOffer> updatePriceList(final AbstractCloudRegion region) {
+        try {
+            final List<InstanceOffer> offers = retrievePriceList(region);
+            if (offers.isEmpty()) {
+                LOGGER.warn("Skipping instance offers update for region {} {} #{} " +
+                                "because no instance offers have been retrieved...",
+                        region.getProvider(), region.getRegionCode(), region.getId());
+                return offers;
+            }
+            final List<InstanceOffer> filteredOffers = filterPriceList(region, offers);
+            return replacePriceList(region, filteredOffers);
+        } catch (RuntimeException e) {
+            LOGGER.error("Failed to update instance offers for region {} {} #{}.",
+                    region.getProvider(), region.getRegionCode(), region.getId(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    private List<InstanceOffer> retrievePriceList(final AbstractCloudRegion region) {
+        LOGGER.debug("Retrieving instance offers for region {} {} #{}...",
+                region.getProvider(), region.getRegionCode(), region.getId());
+        final List<InstanceOffer> offers = cloudFacade.refreshPriceListForRegion(region.getId());
+        LOGGER.debug("Retrieved {} instance offers for region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return offers;
+    }
+
+    private List<InstanceOffer> filterPriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
+        LOGGER.debug("Filtering instance offers for region {} {} #{}...",
+                region.getProvider(), region.getRegionCode(), region.getId());
+        final InstanceOfferFilter filter = getFilter();
+        final List<InstanceOffer> filteredOffers = filter.filter(offers);
+        LOGGER.debug("Filtered out {} instance offers for region {} {} #{}.",
+                offers.size() - filteredOffers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return filteredOffers;
+    }
+
+    private InstanceOfferFilter getFilter() {
+        return offers -> getFilters().stream()
+                .map(filter -> (Function<List<InstanceOffer>, List<InstanceOffer>>) filter::filter)
+                .reduce(Function::andThen)
+                .orElseGet(Function::identity)
+                .apply(offers);
+    }
+
+    private List<InstanceOfferFilter> getFilters() {
+        final List<InstanceOfferFilter> filters = new ArrayList<>();
+        final Set<String> termTypes = getFilterTermTypes();
+        if (CollectionUtils.isNotEmpty(termTypes)) {
+            filters.add(new InstanceOfferTermTypeFilter(termTypes));
+        }
+        if (isFilterUnique()) {
+            filters.add(new InstanceOfferUniqueFilter());
+        }
+        final int cpu = getFilterCpuMin();
+        final int mem = getFilterMemMin();
+        if (cpu > 0 || mem > 0) {
+            filters.add(new InstanceOfferMinimumRequirementsFilter(cpu, mem));
+        }
+        return filters;
+    }
+
+    private Set<String> getFilterTermTypes() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_TERM_TYPES)
+                .map(preferenceManager::getPreference)
+                .map(it -> StringUtils.split(it, ','))
+                .map(Arrays::asList)
+                .<Set<String>>map(HashSet::new)
+                .orElse(FALLBACK_FILTER_TERM_TYPES);
+    }
+
+    private boolean isFilterUnique() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_UNIQUE)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_UNIQUE);
+    }
+
+    private Integer getFilterCpuMin() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_CPU_MIN)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_CPU_MIN);
+    }
+
+    private Integer getFilterMemMin() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_FILTER_MEM_MIN)
+                .map(preferenceManager::getPreference)
+                .orElse(FALLBACK_FILTER_MEM_MIN);
+    }
+
+    private List<InstanceOffer> replacePriceList(final AbstractCloudRegion region, final List<InstanceOffer> offers) {
+        LOGGER.debug("Inserting {} instance offers to region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        instanceOfferDao.replaceInstanceOffersForRegion(region.getId(), offers, getInstanceOfferInsertBatchSize());
+        LOGGER.debug("Inserted {} instance offers to region {} {} #{}.",
+                offers.size(), region.getProvider(), region.getRegionCode(), region.getId());
+        return offers;
+    }
+
+    private int getInstanceOfferInsertBatchSize() {
+        return Optional.of(SystemPreferences.CLUSTER_INSTANCE_OFFER_INSERT_BATCH_SIZE)
+            .map(preferenceManager::getPreference)
+            .orElse(FALLBACK_INSTANCE_OFFER_INSERT_BATCH_SIZE);
     }
 
     private boolean isSpotRequest(Boolean spot) {
@@ -494,30 +540,14 @@ public class InstanceOfferManager {
         return cloudFacade.getAllInstanceTypes(regionId, spot);
     }
 
-    public Observable<List<InstanceType>> getAllInstanceTypesObservable() {
-        return updatedInstanceTypesSubject;
-    }
-
     private double getPriceForDisk(int instanceDisk, Long regionId, String instanceType, boolean spot) {
         InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
         requestVO.setProductFamily(CloudInstancePriceService.STORAGE_PRODUCT_FAMILY);
         requestVO.setVolumeType(CloudInstancePriceService.GENERAL_PURPOSE_VOLUME_TYPE);
         requestVO.setRegionId(regionId);
+        cloudFacade.adjustOfferRequest(regionId, requestVO);
         List<InstanceOffer> offers = instanceOfferDao.loadInstanceOffers(requestVO);
         return cloudFacade.getPriceForDisk(regionId, offers, instanceDisk, instanceType, spot);
-    }
-
-    private boolean isInstanceTypeAllowed(final String instanceType) {
-        return isInstanceTypeAllowed(instanceType, SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES);
-    }
-
-    private boolean isToolInstanceTypeAllowed(final String instanceType) {
-        return isInstanceTypeAllowed(instanceType, SystemPreferences.CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
-    }
-
-    private boolean isInstanceTypeAllowed(final String instanceType,
-                                          final AbstractSystemPreference.StringPreference patternPreference) {
-        return isInstanceTypeAllowed(instanceType, preferenceManager.getPreference(patternPreference));
     }
 
     private boolean isInstanceTypeAllowed(final String instanceType, final String pattern) {
@@ -582,11 +612,56 @@ public class InstanceOfferManager {
         final List<String> preferenceNames = Arrays.stream(preferences)
                 .map(AbstractSystemPreference::getKey)
                 .collect(toList());
-        return getContextualPreferenceValueAsList(resource, preferenceNames);
+        return getContextualPreferenceValueAsList(Optional.ofNullable(resource)
+                .map(Collections::singletonList)
+                .orElse(null), preferenceNames);
     }
 
-    private List<String> getContextualPreferenceValueAsList(final ContextualPreferenceExternalResource resource,
+    private List<String> getContextualPreferenceValueAsList(final List<ContextualPreferenceExternalResource> resources,
                                                             final List<String> preferences) {
-        return Arrays.asList(contextualPreferenceManager.search(preferences, resource).getValue().split(DELIMITER));
+        return Arrays.asList(contextualPreferenceManager
+                .searchList(preferences, resources).getValue().split(DELIMITER));
+    }
+
+    private boolean isInstanceTypeOffered(final String instanceType, final Long regionId, final boolean spot) {
+        final InstanceOfferRequestVO request = new InstanceOfferRequestVO();
+        request.setRegionId(regionId);
+        request.setInstanceType(instanceType);
+        if (!spot) {
+            request.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
+        }
+        return ListUtils.emptyIfNull(instanceOfferDao.loadInstanceOffers(request))
+                .stream()
+                .anyMatch(offer -> matchingOffer(instanceType, spot, offer));
+    }
+
+    private boolean matchingOffer(final String instanceType,
+                                  final boolean spot,
+                                  final InstanceOffer offer) {
+        final String type = offer.getInstanceType();
+        if (!instanceType.equalsIgnoreCase(type)) {
+            return false;
+        }
+        return offer.getTermType().equalsIgnoreCase(getTermType(offer.getCloudProvider(), spot));
+    }
+
+    private String getTermType(final CloudProvider provider, final boolean spot) {
+        if (!spot) {
+            return CloudInstancePriceService.TermType.ON_DEMAND.getName();
+        }
+        return PriceType.spotTermName(provider);
+    }
+
+    private static InstanceOfferRequestVO buildInstanceTypeRequest(final String instanceType,
+                                                                   final Long regionId) {
+        final InstanceOfferRequestVO requestVO = new InstanceOfferRequestVO();
+        requestVO.setInstanceType(instanceType);
+        requestVO.setTermType(CloudInstancePriceService.TermType.ON_DEMAND.getName());
+        requestVO.setOperatingSystem(CloudInstancePriceService.LINUX_OPERATING_SYSTEM);
+        requestVO.setTenancy(CloudInstancePriceService.SHARED_TENANCY);
+        requestVO.setUnit(CloudInstancePriceService.HOURS_UNIT);
+        requestVO.setProductFamily(CloudInstancePriceService.INSTANCE_PRODUCT_FAMILY);
+        requestVO.setRegionId(regionId);
+        return requestVO;
     }
 }

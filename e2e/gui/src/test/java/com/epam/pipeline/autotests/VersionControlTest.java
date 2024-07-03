@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Selectors.byText;
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -117,24 +120,27 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 BucketPermission.deny(EXECUTE, storageName)
         );
         logout();
-
         loginAs(user)
                 .library()
                 .selectStorage(storageName)
+                .ensure(byText("Show files versions"), not(exist))
                 .selectFile(file.getName())
                 .delete()
                 .validateElementNotPresent(file.getName());
         logout();
 
-        loginAs(admin)
+        loginAs(admin);
+        final StorageContentAO storageContentAO = navigationMenu()
                 .library()
-                .selectStorage(storageName)
+                .selectStorage(storageName);
+        storageContentAO
                 .showFilesVersions(true)
                 .validateElementIsPresent(file.getName())
                 .selectFile(file.getName())
                 .showVersions()
                 .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
+                .validateHasSize(0);
+        storageContentAO
                 .selectNthFileWithName(1, file.getName())
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
@@ -149,14 +155,17 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
                 .selectNthFileWithName(1, file.getName())
                 .reload()
-                .selectFile(file.getName() + " (latest)")
                 .sleep(2, SECONDS)
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
-                .showFilesVersions(false)
+                .selectFile(file.getName() + " (latest)")
+                .validateHasNotSize(0);
+        logout();
+        loginAs(user);
+        navigationMenu()
+                .library()
+                .selectStorage(storageName)
+                .ensure(byText("Show files versions"), not(exist))
                 .validateElementIsPresent(file.getName());
     }
 
@@ -165,12 +174,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
     @TestCase({"EPMCMBIBPC-820"})
     public void checkFilesVersionsAfterUpdate() {
         anotherFile = Utils.createTempFileWithNameAndSize(file.getName());
-        logout();
-        loginAs(user)
+        navigationMenu()
                 .library()
                 .selectStorage(storageName)
                 .uploadFile(anotherFile);
-
         logout();
 
         loginAs(admin)
@@ -182,12 +189,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .selectFile(anotherFile.getName() + " (latest)")
                 .validateHasSize((int) anotherFile.length())
                 .validateHasDateTime()
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(0, file.getName())
                 .validateHasSize(0)
                 .validateHasDateTime()
-                .selectNthFileWithName(1, file.getName())
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
-                .selectFile(file.getName())
+                .selectNthFileWithName(0, file.getName())
                 .ensure(EDIT, visible);
     }
 

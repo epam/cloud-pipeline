@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import java.io.File;
 import java.util.Arrays;
@@ -41,10 +43,12 @@ import java.util.stream.Collectors;
 public class PipelineCLIImpl implements PipelineCLI {
 
     private static final String PIPE_CP_TEMPLATE = "'%s' storage cp '%s' '%s' %s";
+    private static final String PIPE_MV_TEMPLATE = "'%s' storage mv '%s' '%s' %s";
     private static final String PIPE_LS_TEMPLATE = "'%s' storage ls '%s' -l";
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
     private static final String SEPARATOR = "/";
+    public static final Marker PIPE = MarkerFactory.getMarker("PIPE");
 
     private final String pipelineCliExecutable;
     private final String pipeCpSuffix;
@@ -59,8 +63,9 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public String uploadData(String source, String destination, List<String> include, String username) {
-        if (!forceUpload && isFileAlreadyLoaded(source, destination)) {
+    public String uploadData(String source, String destination, List<String> include, String username,
+                             boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix) {
+        if (!forceUpload && isFileAlreadyLoaded(source, destination, logEnabled)) {
             log.info(String.format("Skip file %s uploading. " +
                     "It already exists in the remote bucket: %s", source, destination));
             return destination;
@@ -71,10 +76,18 @@ public class PipelineCLIImpl implements PipelineCLI {
 
             while (attempts < retryCount) {
                 try {
-                    cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
+                    final String command = buildPipeTransferCommand(source, destination, include,
+                            deleteSource, pipeCmd, pipeCmdSuffix);
+                    String stdout = cmdExecutor.executeCommand(command, username);
+                    if (logEnabled) {
+                        log.info(PIPE, stdout);
+                    }
                     log.info(String.format("Successfully uploaded from %s to %s", source, destination));
                     return destination;
                 } catch (CmdExecutionException e) {
+                    if (logEnabled) {
+                        log.error(PIPE, e.getMessage());
+                    }
                     log.error(String.format("Failed to upload from %s to %s. Error: %s",
                             source, destination, e.getMessage()));
                     attempts++;
@@ -93,17 +106,26 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public void downloadData(String source, String destination, List<String> include, String username) {
+    public void downloadData(String source, String destination, List<String> include, String username,
+                             boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix) {
         log.info(String.format("Download from %s to %s", source, destination));
         int attempts = 0;
         CmdExecutionException lastException = null;
 
         while (attempts < retryCount) {
             try {
-                cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
+                final String command = buildPipeTransferCommand(source, destination, include,
+                        deleteSource, pipeCmd, pipeCmdSuffix);
+                final String stdout = cmdExecutor.executeCommand(command, username);
+                if (logEnabled) {
+                    log.info(PIPE, stdout);
+                }
                 log.info(String.format("Successfully downloaded from %s to %s", source, destination));
                 return;
             } catch (CmdExecutionException e) {
+                if (logEnabled) {
+                    log.error(PIPE, e.getMessage());
+                }
                 log.error(String.format("Failed to download from %s to %s. Error: %s",
                         source, destination, e.getMessage()));
                 attempts++;
@@ -121,16 +143,31 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     private boolean isFileAlreadyLoaded(final String localFilePath,
-                                        final String remoteFilePath) {
-        return retrieveDescription(remoteFilePath)
+                                        final String remoteFilePath,
+                                        final boolean logEnabled) {
+        return retrieveDescription(remoteFilePath, logEnabled)
             .filter(file -> !file.getType().equals(FOLDER) && file.getSize().equals(new File(localFilePath).length()))
             .isPresent();
     }
 
     @Override
     public Optional<RemoteFileDescription> retrieveDescription(final String targetPath) {
+        return retrieveDescription(targetPath, false);
+    }
+
+    public Optional<RemoteFileDescription> retrieveDescription(final String targetPath, final boolean logEnabled) {
         final String targetPathWithoutTrailingSeparator = removeTrailingSeparator(targetPath);
-        final String pipeLsOutput = cmdExecutor.executeCommand(pipeLS(targetPathWithoutTrailingSeparator));
+        String pipeLsOutput = "";
+        try {
+            pipeLsOutput = cmdExecutor.executeCommand(pipeLS(targetPathWithoutTrailingSeparator));
+            if (logEnabled) {
+                log.info(PIPE, pipeLsOutput);
+            }
+        } catch (CmdExecutionException e) {
+            if (logEnabled) {
+                log.error(PIPE, e.getMessage());
+            }
+        }
         final String[] outputLines = pipeLsOutput.split("\n");
 
         if (outputLines.length < 2) {
@@ -175,18 +212,31 @@ public class PipelineCLIImpl implements PipelineCLI {
         };
     }
 
-    private String pipeCP(final String source,
-                          final String destination,
-                          final List<String> include) {
-        String command = String.format(PIPE_CP_TEMPLATE, pipelineCliExecutable, source, destination, pipeCpSuffix);
-        if (CollectionUtils.isEmpty(include)) {
-            return command;
-        }
-        command = command + SPACE + include.stream()
+    private String buildPipeTransferCommand(final String source,
+                                            final String destination,
+                                            final List<String> include,
+                                            final boolean deleteSource,
+                                            final String pipeCmd,
+                                            final String pipeCmdSuffix) {
+        return deleteSource
+                ? buildPipeTransferCommand(PIPE_MV_TEMPLATE, source, destination, include, pipeCmd, pipeCmdSuffix)
+                : buildPipeTransferCommand(PIPE_CP_TEMPLATE, source, destination, include, pipeCmd, pipeCmdSuffix);
+    }
+
+    private String buildPipeTransferCommand(final String template, final String source, final String destination,
+                                            final List<String> include, final String pipeCmd,
+                                            final String pipeCmdSuffix) {
+        final String command = String.format(template,
+                StringUtils.isBlank(pipeCmd) ? pipelineCliExecutable : pipeCmd,
+                source, destination,
+                StringUtils.isBlank(pipeCmdSuffix) ? pipeCpSuffix : pipeCmdSuffix);
+        return CollectionUtils.isEmpty(include) ? command : command + SPACE + getIncludesArguments(include);
+    }
+
+    private String getIncludesArguments(final List<String> include) {
+        return include.stream()
                 .map(s -> String.format("--include '%s'", s))
                 .collect(Collectors.joining(SPACE));
-
-        return command;
     }
 
     private String pipeLS(final String destination) {

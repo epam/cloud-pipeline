@@ -87,13 +87,17 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadStorageWithParentsQuery;
     private String loadDataStorageByPrefixesQuery;
     private String loadDataStoragesByIdsQuery;
+    private String loadDataStoragesByPathsQuery;
+
     private String loadDataStoragesFileShareId;
     private String loadDataStorageRootQuery;
     private String createDataStorageRootQuery;
     private String loadToolsToMountQuery;
+    private String loadToolsToMountByIdsQuery;
     private String loadToolsToMountsForAllStoragesQuery;
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
+    private String loadDataStoragesByRootIdsQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -186,6 +190,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return storages;
     }
 
+    public Map<Long, List<ToolFingerprint>> loadToolsToMountForStorages(final List<Long> ids) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
+        return getNamedParameterJdbcTemplate()
+                .query(loadToolsToMountByIdsQuery, params,
+                        DataStorageParameters.getToolsToMountForAllStorageRowMapper());
+    }
+
     public List<ToolFingerprint> loadToolsToMountForStorage(Long id) {
         return getJdbcTemplate().query(loadToolsToMountQuery, DataStorageParameters.getToolsToMountRowMapper(), id);
     }
@@ -200,6 +212,16 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
         return getNamedParameterJdbcTemplate().query(loadDataStoragesByIdsQuery,
                 params, DataStorageParameters.getRowMapper());
+
+    }
+
+    public List<AbstractDataStorage> loadDataStoragesByPaths(final List<String> paths) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_PATHS.name(), paths);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByPathsQuery,
+                params, DataStorageParameters.getRowMapper()).stream()
+                .filter(storage -> storage.getSourceStorageId() == null)
+                .collect(Collectors.toList());
 
     }
 
@@ -269,7 +291,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         int size = pageSize == null ? 0 : pageSize;
         int offset = page == null ? 0 : (page - 1) * size;
         query = offsetPattern.matcher(query).replaceFirst(String.valueOf(offset));
-        return getJdbcTemplate().query(query, DataStorageParameters.getDataStorageWithFolderTreeExtractor());
+        final Collection<AbstractDataStorage> storages = getJdbcTemplate()
+                .query(query, DataStorageParameters.getDataStorageWithFolderTreeExtractor());
+        final Map<Long, List<ToolFingerprint>> toolsToMountForStorages = loadToolsToMountForStorages(
+                storages.stream().map(s -> s.getId()).collect(Collectors.toList()));
+        storages.forEach(storage -> storage.setToolsToMount(toolsToMountForStorages.get(storage.getId())));
+        return storages;
     }
 
     public AbstractDataStorage loadStorageWithParents(final Long id) {
@@ -295,6 +322,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     public List<AbstractDataStorage> loadDataStoragesByFileShareMountID(Long fileShareId) {
         return getJdbcTemplate().query(loadDataStoragesFileShareId, DataStorageParameters
                 .getRowMapper(), fileShareId);
+    }
+
+
+    public List<AbstractDataStorage> loadDataStoragesByRootIds(final Collection<Long> storageRootIds) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_ROOT_IDS.name(), storageRootIds);
+        return getNamedParameterJdbcTemplate().query(loadDataStoragesByRootIdsQuery,
+                params, DataStorageParameters.getRowMapper());
     }
 
     @Required
@@ -380,6 +415,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         this.loadDataStoragesByIdsQuery = loadDataStoragesByIdsQuery;
     }
 
+    public void setLoadDataStoragesByPathsQuery(final String loadDataStoragesByPathsQuery) {
+        this.loadDataStoragesByPathsQuery = loadDataStoragesByPathsQuery;
+    }
+
     public void setLoadDataStoragesFileShareId(String loadDataStoragesFileShareId) {
         this.loadDataStoragesFileShareId = loadDataStoragesFileShareId;
     }
@@ -407,6 +446,16 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     public void setLoadToolsToMountsForAllStoragesQuery(String loadToolsToMountsForAllStoragesQuery) {
         this.loadToolsToMountsForAllStoragesQuery = loadToolsToMountsForAllStoragesQuery;
     }
+
+    public void setLoadToolsToMountByIdsQuery(String loadToolsToMountByIdsQuery) {
+        this.loadToolsToMountByIdsQuery = loadToolsToMountByIdsQuery;
+    }
+
+    public void setLoadDataStoragesByRootIdsQuery(String loadDataStoragesByRootIdsQuery) {
+        this.loadDataStoragesByRootIdsQuery = loadDataStoragesByRootIdsQuery;
+    }
+
+
 
     public enum DataStorageParameters {
         DATASTORAGE_ID,
@@ -444,10 +493,13 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         MOUNT_DISABLED,
 
         DATASTORAGE_IDS,
+        DATASTORAGE_PATHS,
         
         // root
         DATASTORAGE_ROOT_ID,
         DATASTORAGE_ROOT_PATH,
+        DATASTORAGE_ROOT_IDS,
+
 
         // tools to mount
         TOOL_ID,

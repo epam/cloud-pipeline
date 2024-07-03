@@ -21,17 +21,31 @@ function install_prerequisites {
   pipe_log_info "Installing DCV prerequisites" "$DCV_INSTALL_TASK"
   _pkg_result=0
   if [[ "$IS_RPM_BASED" = 0 ]]; then
-    yum -y install glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
-                       xorg-x11-utils xorg-x11-xauth xorg-x11-xinit xvattr \
+    if [ "$CP_OS" == "centos" ]; then
+      _rpm_dcv_extra_pkgs="xvattr gnome-system-log desktop-backgrounds-gnome"
+    fi
+
+    _rpm_dcv_pkgs="glx-utils mesa-dri-drivers xorg-x11-server-Xorg \
+                       xorg-x11-utils xorg-x11-xauth xorg-x11-xinit \
                        xorg*fonts* xterm libXvMC mesa-libxatracker freeglut \
-                       gnome-desktop3 gnome-terminal gnome-system-log \
+                       gnome-desktop3 gnome-terminal \
                        gnome-system-monitor nautilus evince gnome-color-manager \
                        gnome-font-viewer gnome-shell gnome-calculator gedit gdm \
                        metacity gnome-session gnome-classic-session \
                        gnome-session-xsession gnu-free-fonts-common \
                        gnu-free-mono-fonts gnu-free-sans-fonts \
-                       gnu-free-serif-fonts desktop-backgrounds-gnome && \
+                       gnu-free-serif-fonts $_rpm_dcv_extra_pkgs"
+    
+    yum install -y epel-release
+    yum -y install $_rpm_dcv_pkgs && \
     yum -y groupinstall "Xfce"
+    _pkg_result=$?
+    
+    # Fallback: try same with an upstream repo
+    if [ $_pkg_result -ne 0 ]; then
+      yum -y install --disablerepo=cloud-pipeline $_rpm_dcv_pkgs && \
+      yum -y groupinstall --disablerepo=cloud-pipeline "Xfce"
+    fi
     _pkg_result=$?
   else
     apt update -y && \
@@ -54,20 +68,23 @@ function install_prerequisites {
 function install_dcv {
   pipe_log_info "Installing DCV server" "$DCV_INSTALL_TASK"
   _pkg_result=0
-  _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/dcv}"
+  _dcv_distro_url="${CP_CAP_DCV_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/dcv"}"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     if [[ "$CP_VER" == *"7"* ]]; then
         _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-el7-x86_64
         rpm --import "$_dcv_distro_url/NICE-GPG-KEY"
-        wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
-        tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
-        cd ${_NICE_DCV_DISTRIBUTION} && \
-        yum install -y nice-dcv-server-2021.2.11190-1.el7.x86_64.rpm \
-                        nice-dcv-web-viewer-2021.2.11190-1.el7.x86_64.rpm \
-                        nice-xdcv-2021.2.411-1.el7.x86_64.rpm && \
-        systemctl start dbus
-        _pkg_result=$?
+    else
+        _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11445-el8-x86_64
     fi
+
+    wget "$_dcv_distro_url/${_NICE_DCV_DISTRIBUTION}.tgz" && \
+      tar -xvzf ${_NICE_DCV_DISTRIBUTION}.tgz && \
+      cd ${_NICE_DCV_DISTRIBUTION} && \
+      yum install -y nice-dcv-server-*.x86_64.rpm \
+                      nice-dcv-web-viewer-*.x86_64.rpm \
+                      nice-xdcv-*.x86_64.rpm && \
+      systemctl start dbus
+    _pkg_result=$?
   else
     if [[ "$CP_VER" == *"18.04"* ]]; then
       _NICE_DCV_DISTRIBUTION=nice-dcv-2021.2-11190-ubuntu1804-x86_64
@@ -91,15 +108,16 @@ function install_dcv {
       _pkg_result=$?  
     fi
 
-    if [ $_pkg_result -ne 0 ]; then
-      pipe_log_fail "[ERROR] Cannot install DCV itself" "$DCV_INSTALL_TASK"
-      return $_pkg_result
-    fi
-
     service dbus start
   fi
+
+  if [ $_pkg_result -ne 0 ]; then
+    pipe_log_fail "[ERROR] Cannot install DCV itself" "$DCV_INSTALL_TASK"
+    return $_pkg_result
+  fi
+
   cd ..
-  rm -rf "${_NICE_DCV_DISTRIBUTION}*"
+  rm -rf "${_NICE_DCV_DISTRIBUTION}"*
   pipe_log_info "DCV successfully installed and configured" "$DCV_INSTALL_TASK"
 }
 
@@ -114,6 +132,17 @@ cat <<EOF >>/etc/dcv/dcv.conf
 primary-selection-copy=true
 primary-selection-paste=true
 EOF
+}
+
+function configure_dcv_extras {
+mkdir -p /opt/dcv/extras
+cat <<EOF >>/opt/dcv/extras/xfce4launch
+#!/bin/bash
+mkdir -p ~/.config/xfce4/xfconf/xfce-perchannel-xml
+cp /etc/xdg/xfce4/panel/default.xml ~/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-panel.xml
+startxfce4
+EOF
+chmod +x /opt/dcv/extras/xfce4launch
 }
 
 function run_dcv {
@@ -143,19 +172,26 @@ function run_dcv {
       exit 1
   fi
 
-  dcv create-session --owner $OWNER --user $OWNER session
+  # We may want to delay session creation, as the subsequent scripts may want to modify the user's profile
+  # Which won't be possible once the session is created and a process is running on the user's behalf
+  # So we shall set 'CP_DCV_DELAY_SESSION_CREATION=true' and then call 'nice_dcv_create_session' in the 
+  # next execution steps
+  if [ "$CP_DCV_DELAY_SESSION_CREATION" == "true" ]; then
+    pipe_log_warn "DCV session will NOT be created now as the CP_DCV_DELAY_SESSION_CREATION is set to 'true'. Make sure to run 'nice_dcv_create_session' before the user can login." "$DCV_INSTALL_TASK"
+  else
+    nice_dcv_create_session
+  fi
 
   # Serve additional server to provide dcv desktop session file
-  if [ ! -z $CP_DCV_PROXY_HOST ] && [ ! -z $CP_DCV_PROXY_PORT ] && [ ! -z $CP_DCV_DESKTOP_PORT ]; then
+  if [ -n "${CP_DCV_DESKTOP_PORT}" ]; then
       pipe_log_info "Run DCV desktop launcher" "$DCV_INSTALL_TASK"
-      nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/nice_dcv_desktop_launcher.py \
-                                                          --desktop-port $CP_DCV_DESKTOP_PORT \
-                                                          --serving-port $CP_DCV_WEB_PORT \
-                                                          --proxy-host $CP_DCV_PROXY_HOST \
-                                                          --proxy-port $CP_DCV_PROXY_PORT &> /var/log/nice-dcv-desktop.log &
-
+      nohup "${CP_PYTHON2_PATH}" "${COMMON_REPO_DIR}/scripts/serve_desktop.py" \
+          --serving-port "${CP_DCV_DESKTOP_PORT}" \
+          --desktop-port "${CP_DCV_WEB_PORT}" \
+          --template-path "${COMMON_REPO_DIR}/resources/linux/template.dcv" \
+          &> "/var/log/nice_dcv_desktop.log" &
   else
-      pipe_log_warn "One of values CP_DCV_PROXY_HOST, CP_DCV_PROXY_PORT, CP_DCV_DESKTOP_PORT is not set. Desktop endpoint will not work! Use WEB endpoint instead." "$DCV_INSTALL_TASK"
+      pipe_log_warn "CP_DCV_DESKTOP_PORT is not set. Desktop endpoint will not work! Use WEB endpoint instead." "$DCV_INSTALL_TASK"
   fi
 }
 
@@ -181,10 +217,6 @@ if [[ "${CLOUD_PROVIDER}" -ne "AWS" ]]; then
     exit 1
 fi
 
-# Check if required proxy settings are correct
-export CP_DCV_PROXY_HOST="${CP_DCV_PROXY_HOST:-$CP_CAP_DCV_PROXY_HOST}"
-export CP_DCV_PROXY_PORT="${CP_DCV_PROXY_PORT:-$CP_CAP_DCV_PROXY_PORT}"
-
 export CP_DCV_DESKTOP_PORT="${CP_DCV_DESKTOP_PORT:-$CP_CAP_DCV_DESKTOP_PORT}"
 if [ -z $CP_DCV_DESKTOP_PORT ]; then
     pipe_log_warn "DCV desktop port is not set (CP_DCV_DESKTOP_PORT). Default 8099 will be used." "$DCV_INSTALL_TASK"
@@ -204,7 +236,8 @@ if [ $IS_DCV_INSTALLED -eq 0 ]; then
 else
    install_prerequisites && \
    install_dcv && \
-   configure_dcv
+   configure_dcv && \
+   configure_dcv_extras
 
    if [ $? -ne 0 ]; then
     pipe_log_fail "[ERROR] DCV installation failed. Exiting" "$DCV_INSTALL_TASK"
@@ -214,4 +247,3 @@ fi
 
 run_dcv
 pipe_log_success "[INFO] DCV server is ready." "$DCV_INSTALL_TASK"
-

@@ -247,6 +247,10 @@ class Config(object):
                 pass
 
     @classmethod
+    def get_encoding(cls):
+        return sys.getdefaultencoding()
+
+    @classmethod
     def config_path(cls):
         config_path = cls.get_install_dir_config_path()
         if config_path and os.path.isfile(config_path):

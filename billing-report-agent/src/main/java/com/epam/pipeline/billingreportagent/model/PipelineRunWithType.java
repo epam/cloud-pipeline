@@ -17,7 +17,9 @@
 package com.epam.pipeline.billingreportagent.model;
 
 import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
 import lombok.Value;
 
 import java.util.List;
@@ -26,6 +28,9 @@ import java.util.List;
 public class PipelineRunWithType {
 
     PipelineRun pipelineRun;
+    ToolAddress toolAddress;
+    EntityContainer<Tool> tool;
+    EntityContainer<Pipeline> pipeline;
     List<NodeDisk> disks;
     ComputeType runType;
 }

@@ -18,18 +18,13 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import folders from '../../../models/folders/Folders';
 import pipelines from '../../../models/pipelines/Pipelines';
-import RunTable from '../../runs/RunTable';
+import RunTable from '../../runs/run-table';
 import LoadingView from '../../special/LoadingView';
 import EditableField from '../../special/EditableField';
 import {Alert, Icon, Row} from 'antd';
 import connect from '../../../utils/connect';
-import pipelineRun from '../../../models/pipelines/PipelineRun';
-import {openReRunForm} from '../../runs/actions';
-import moment from 'moment-timezone';
-import styles from './Browser.css';
 import HiddenObjects from '../../../utils/hidden-objects';
-
-const PAGE_SIZE = 20;
+import styles from './Browser.css';
 
 @connect({
   folders,
@@ -37,16 +32,9 @@ const PAGE_SIZE = 20;
 })
 @HiddenObjects.checkFolders(p => (p.params ? p.params.id : p.id))
 @inject(({folders}, {params}) => {
-  const filterParams = {
-    page: 1,
-    pageSize: PAGE_SIZE,
-    projectIds: [params.id],
-    userModified: false
-  };
   return {
-    runFilter: pipelineRun.runFilter(filterParams, true),
     folder: folders.load(params.id),
-    folderId: params.id,
+    folderId: params.id ? Number(params.id) : undefined,
     id: params.id,
     folders,
     pipelines
@@ -54,60 +42,6 @@ const PAGE_SIZE = 20;
 })
 @observer
 export default class ProjectHistory extends React.Component {
-
-  launchPipeline = (run) => {
-    return openReRunForm(run, this.props);
-  };
-  onSelectRun = ({id}) => {
-    this.props.router.push(`/run/${id}`);
-  };
-  reloadTable = () => {
-    this.props.runFilter.fetch();
-  };
-  initializeRunTable = (control) => {
-    this.runTable = control;
-  };
-
-  handleTableChange (pagination, filter) {
-    const {current, pageSize} = pagination;
-    let modified = false;
-    const statuses = filter.statuses ? filter.statuses : undefined;
-    if (statuses && statuses.length) {
-      modified = true;
-    }
-    const dockerImages = filter.dockerImages ? filter.dockerImages : undefined;
-    if (dockerImages && dockerImages.length > 0) {
-      modified = true;
-    }
-    const startDateFrom = filter.started && filter.started.length === 1
-      ? moment(filter.started[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
-    if (startDateFrom) {
-      modified = true;
-    }
-    const endDateTo = filter.completed && filter.completed.length === 1
-      ? moment(filter.completed[0]).utc(false).format('YYYY-MM-DD HH:mm:ss.SSS') : undefined;
-    if (endDateTo) {
-      modified = true;
-    }
-    const parentId = filter.parentRunIds && filter.parentRunIds.length === 1
-      ? filter.parentRunIds[0] : undefined;
-    if (parentId) {
-      modified = true;
-    }
-    const params = {
-      page: current,
-      pageSize,
-      projectIds: [this.props.folderId],
-      dockerImages,
-      statuses,
-      startDateFrom,
-      endDateTo,
-      parentId,
-      userModified: modified
-    };
-    this.props.runFilter.filter(params, true);
-  }
-
   render () {
     if (this.props.folder.pending && !this.props.folder.loaded) {
       return <LoadingView />;
@@ -116,6 +50,9 @@ export default class ProjectHistory extends React.Component {
       return <Alert message={this.props.folder.error} type="error" />;
     }
     const folderTitleClassName = this.props.folder.value.locked ? styles.readonly : undefined;
+    const {
+      folderId
+    } = this.props;
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <table style={{width: '100%'}}>
@@ -123,7 +60,10 @@ export default class ProjectHistory extends React.Component {
             <tr>
               <td>
                 <Row type="flex" className={styles.itemHeader} align="middle">
-                  <Icon type="clock-circle-o" className={`${styles.editableControl} ${folderTitleClassName}`} />
+                  <Icon
+                    type="clock-circle-o"
+                    className={`${styles.editableControl} ${folderTitleClassName}`}
+                  />
                   {
                     this.props.folder.value.locked &&
                     <Icon
@@ -131,7 +71,7 @@ export default class ProjectHistory extends React.Component {
                       type="lock" />
                   }
                   <EditableField
-                    readOnly={true}
+                    readOnly
                     className={folderTitleClassName}
                     allowEpmty={false}
                     editStyle={{flex: 1}}
@@ -145,27 +85,12 @@ export default class ProjectHistory extends React.Component {
           </tbody>
         </table>
         <RunTable
-          onInitialized={this.initializeRunTable}
-          useFilter={true}
+          filters={{
+            projectIds: folderId ? [folderId] : undefined
+          }}
           className={styles.runTable}
-          loading={this.props.runFilter.pending}
-          dataSource={this.props.runFilter.value}
-          handleTableChange={::this.handleTableChange}
-          pipelines={this.props.pipelines.pending ? [] : (this.props.pipelines.value || []).map(p => p)}
-          pagination={{total: this.props.runFilter.total, pageSize: PAGE_SIZE}}
-          reloadTable={this.reloadTable}
-          launchPipeline={this.launchPipeline}
-          onSelect={this.onSelectRun}
         />
       </div>
     );
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.id !== this.props.id) {
-      if (this.runTable) {
-        this.runTable.clearState();
-      }
-    }
   }
 }

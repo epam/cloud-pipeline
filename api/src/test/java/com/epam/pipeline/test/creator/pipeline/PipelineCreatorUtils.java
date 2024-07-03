@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DocumentGenerationProperty;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -46,6 +47,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -104,13 +106,29 @@ public final class PipelineCreatorUtils {
         final Pipeline pipeline = getPipeline();
         pipeline.setId(id);
         pipeline.setOwner(owner);
+        pipeline.setPipelineType(PipelineType.PIPELINE);
+        pipeline.setParentFolderId(parentId);
+        pipeline.setCurrentVersion(getRevision());
+        return pipeline;
+    }
+
+    public static Pipeline getPipeline(final Long id, final String owner, final Long parentId,
+                                       final PipelineType type) {
+        final Pipeline pipeline = getPipeline();
+        pipeline.setId(id);
+        pipeline.setOwner(owner);
+        pipeline.setPipelineType(type);
         pipeline.setParentFolderId(parentId);
         pipeline.setCurrentVersion(getRevision());
         return pipeline;
     }
 
     public static Pipeline getPipeline(final String owner) {
-        return getPipeline(ID, owner, ID);
+        return getPipeline(ID, owner, ID, PipelineType.PIPELINE);
+    }
+
+    public static Pipeline getVersionedStorage(final String owner) {
+        return getPipeline(ID, owner, ID, PipelineType.VERSIONED_STORAGE);
     }
 
     public static PipelineRun getPipelineRun() {
@@ -174,6 +192,14 @@ public final class PipelineCreatorUtils {
         return pipelineVO;
     }
 
+    public static PipelineVO getVersionedStorageVO(final Long id) {
+        final PipelineVO pipelineVO = getPipelineVO();
+        pipelineVO.setId(ID);
+        pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
+        pipelineVO.setParentFolderId(id);
+        return pipelineVO;
+    }
+
     public static PipelineStart getPipelineStart(final Map<String, PipeConfValueVO> params, final String image) {
         final PipelineStart vo = new PipelineStart();
         vo.setNonPause(false);
@@ -188,6 +214,7 @@ public final class PipelineCreatorUtils {
         vo.setNodeCount(TEST_INT);
         vo.setIsSpot(true);
         vo.setParams(params);
+        vo.setNotifications(Collections.emptyList());
         return vo;
     }
 

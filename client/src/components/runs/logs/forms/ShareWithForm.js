@@ -40,6 +40,25 @@ function sortByOverlap (str1, str2, query) {
   }
   return 0;
 }
+
+export const ROLE_ALL = {
+  name: 'ALL ROLES',
+  includedRoles: ['ROLE_USER', 'ROLE_ADMIN', 'ROLE_ANONYMOUS_USER']
+};
+
+export function shouldCombineRoles (sids, combinableRoles, accessType) {
+  if (!sids || !combinableRoles || !accessType) {
+    return false;
+  }
+  return combinableRoles
+    .every(roleName => !!sids
+      .find((role) => !role.isPrincipal &&
+        role.accessType === accessType &&
+        role.name === roleName
+      )
+    );
+};
+
 @observer
 export default class ShareWithForm extends React.Component {
   static propTypes = {
@@ -49,7 +68,8 @@ export default class ShareWithForm extends React.Component {
     onClose: PropTypes.func,
     visible: PropTypes.bool,
     roles: PropTypes.array,
-    pending: PropTypes.bool
+    pending: PropTypes.bool,
+    runSharing: PropTypes.bool
   };
 
   state = {
@@ -64,6 +84,15 @@ export default class ShareWithForm extends React.Component {
     roleName: null,
     operationInProgress: false
   };
+
+  get combineRolesIntoAllRoles () {
+    const {sids} = this.state;
+    const {runSharing} = this.props;
+    return {
+      ssh: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.ssh),
+      endpoint: runSharing && shouldCombineRoles(sids, ROLE_ALL.includedRoles, AccessTypes.endpoint)
+    };
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -142,15 +171,16 @@ export default class ShareWithForm extends React.Component {
       )
       : [];
     if (this.groupFind && !this.groupFind.pending && !this.groupFind.error) {
-      return [
-        ...new Set(
-          [
-            ...roles,
-            ...(this.groupFind.value || []).map(g => g)]
-        )
-      ].sort((u1, u2) => sortByOverlap(u1, u2, query));
+      const set = [...new Set([
+        ...(this.props.runSharing ? [ROLE_ALL.name] : []),
+        ...roles,
+        ...(this.groupFind.value || []).map(g => g)
+      ])];
+      return set
+        .sort((u1, u2) => sortByOverlap(u1, u2, query));
     }
-    return [...roles].sort((u1, u2) => sortByOverlap(u1, u2, query));
+    return [...roles]
+      .sort((u1, u2) => sortByOverlap(u1, u2, query));
   };
 
   openFindUserDialog = () => {
@@ -164,7 +194,7 @@ export default class ShareWithForm extends React.Component {
   onSelectUser = async () => {
     const {userSearchString} = this.state;
     const selectedUser = userSearchString ? userSearchString.trim() : null;
-    await this.grantPermission(selectedUser, true);
+    this.grantPermission(selectedUser, true);
     this.closeFindUserDialog();
   };
 
@@ -182,11 +212,15 @@ export default class ShareWithForm extends React.Component {
     const [role] = this.props.roles
       .filter(r => !r.predefined && this.splitRoleName(r.name) === selectedGroup);
     const roleName = role ? role.name : selectedGroup;
-    await this.grantPermission(roleName, false);
+    if (roleName === ROLE_ALL.name) {
+      ROLE_ALL.includedRoles.forEach(role => this.grantPermission(role, false));
+    } else {
+      this.grantPermission(roleName, false);
+    }
     this.closeFindGroupDialog();
   };
 
-  grantPermission = async (name, isPrincipal) => {
+  grantPermission = (name, isPrincipal) => {
     if (name) {
       const sids = this.state.sids;
       const [sidItem] = sids.filter(s => {
@@ -207,17 +241,15 @@ export default class ShareWithForm extends React.Component {
 
   removeUserOrGroupClicked = (item) => async (event) => {
     event.stopPropagation();
-    const sids = this.state.sids;
-    const [sidItem] = sids.filter(s => {
-      return s.isPrincipal === item.isPrincipal && s.name.toLowerCase() === item.name.toLowerCase();
-    });
-    if (sidItem) {
-      const index = sids.indexOf(sidItem);
-      if (index >= 0) {
-        sids.splice(index, 1);
-        this.setState({sids});
+    const {sids} = this.state;
+    const filterSids = ({name, isPrincipal}) => {
+      if (item.name === ROLE_ALL.name) {
+        return !ROLE_ALL.includedRoles.includes(name);
       }
-    }
+      return !(name.toLowerCase() === item.name.toLowerCase() &&
+        isPrincipal === item.isPrincipal);
+    };
+    this.setState({sids: sids.filter(filterSids)});
   };
 
   renderUserName = (user) => {
@@ -326,9 +358,31 @@ export default class ShareWithForm extends React.Component {
         </Col>
       </Row>
     );
-    const data = this.state.sids.map((p, index) => {
+    let data = this.state.sids.map((p, index) => {
       return {...p, id: index};
     });
+    const {
+      ssh: combineSshRoles,
+      endpoint: combineEndpointRoles
+    } = this.combineRolesIntoAllRoles;
+    if (combineSshRoles || combineEndpointRoles) {
+      data = [
+        ...data,
+        {
+          ...ROLE_ALL,
+          key: ROLE_ALL.name,
+          id: data.length
+        }
+      ].filter(({name, accessType}) => {
+        if (
+          (combineSshRoles && accessType === AccessTypes.ssh) ||
+          (combineEndpointRoles && accessType === AccessTypes.endpoint)
+        ) {
+          return !ROLE_ALL.includedRoles.includes(name);
+        }
+        return true;
+      });
+    }
     return (
       <Table
         className={styles.table}

@@ -60,6 +60,7 @@ if ($Install) {
 `$env:JAVA_HOME = "$env:DTS_DIR\app\jre"
 `$env:PIPE_DIR = "$env:DTS_DIR\pipe"
 `$env:DTS_LOGS_DIR = "$env:DTS_DIR\logs"
+`$env:DTS_LOCKS_DIR = "$env:DTS_DIR\locks"
 `$env:DTS_LAUNCHER_LOG_PATH = "$env:DTS_DIR\logs\launcher.log"
 `$env:DTS_RESTART_DELAY_SECONDS = "10"
 `$env:DTS_FINISH_DELAY_SECONDS = "10"
@@ -75,7 +76,7 @@ if ($Install) {
 `$env:CP_API_JWT_KEY_PUBLIC = "$env:API_PUBLIC_KEY"
 `$env:DTS_LOCAL_NAME = "$env:DTS_NAME"
 `$env:DTS_IMPERSONATION_ENABLED = "false"
-`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\pipe\pipe\pipe.exe"
+`$env:DTS_PIPE_EXECUTABLE = "$env:DTS_DIR\pipe\pipe\pipe"
 "@ | Out-File -FilePath Environment.ps1 -Encoding ascii -Force -ErrorAction Stop
 
     Log "Loading environment..."
@@ -110,6 +111,7 @@ if ($Install) {
         } catch {
             Log "Scheduled task creation has failed: $_"
             Log "Please send all the logs above to Cloud Pipeline Support Team."
+            Exit
         }
     }
 

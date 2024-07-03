@@ -19,10 +19,14 @@ package com.epam.pipeline.manager.cluster;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.cluster.PrettyUrl;
 import com.epam.pipeline.entity.cluster.ServiceDescription;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.fasterxml.jackson.core.type.TypeReference;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +35,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -47,8 +52,8 @@ import java.util.stream.Collectors;
 public class EdgeServiceManager {
     private static final String DEFAULT_SVC_SCHEME = "http";
     private static final String BASE_URL_TEMPLATE = "%s://%s:%d";
-    private static final String SSH_URL_TEMPLATE = "%s://%s:%d/ssh/pipeline/%d";
-    private static final String FSBROWSER_URL_TEMPLATE = "%s://%s:%d/fsbrowser/%d";
+    private static final String SSH_URL_TEMPLATE = "%s://%s:%d/ssh/pipeline/%s";
+    private static final String FSBROWSER_URL_TEMPLATE = "%s://%s:%d/fsbrowser/%s";
 
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
@@ -83,12 +88,27 @@ public class EdgeServiceManager {
     }
 
     public Map<String, String> buildSshUrl(final Long runId) {
-        return buildServiceUrl(runId, SSH_URL_TEMPLATE);
+        return buildServiceUrl(SSH_URL_TEMPLATE, toPrettyUrlPath(runId).orElse(ObjectUtils.toString(runId)));
     }
 
-    public String getEdgeDomainNameOrIP() {
-        final String defaultEdgeRegion = preferenceManager.getPreference(SystemPreferences.DEFAULT_EDGE_REGION);
-        final Map<String, String> labels = buildRegionsLabels(defaultEdgeRegion);
+    private Optional<String> toPrettyUrlPath(final Long runId) {
+        return runCRUDService.findRunByRunId(runId)
+                .map(PipelineRun::getPrettyUrl)
+                .flatMap(this::toPrettyUrl)
+                .map(PrettyUrl::getPath);
+    }
+
+    private Optional<PrettyUrl> toPrettyUrl(final String prettyUrlJson) {
+        try {
+            return Optional.ofNullable(JsonMapper.parseData(prettyUrlJson, new TypeReference<PrettyUrl>() {}));
+        } catch (IllegalArgumentException e) {
+            log.warn("Pretty url parsing has failed: {}", prettyUrlJson, e);
+            return Optional.empty();
+        }
+    }
+
+    public String getEdgeDomainNameOrIP(final String region) {
+        final Map<String, String> labels = buildRegionsLabels(region);
         return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
                 .findFirst()
                 .map(this::getServiceDescription)
@@ -98,15 +118,15 @@ public class EdgeServiceManager {
 
     public Map<String, String> buildFSBrowserUrl(final Long runId) {
         if (isFSBrowserEnabled() && runIsNotSensitive(runId)) {
-            return buildServiceUrl(runId, FSBROWSER_URL_TEMPLATE);
+            return buildServiceUrl(FSBROWSER_URL_TEMPLATE, ObjectUtils.toString(runId));
         } else {
             throw new IllegalArgumentException("Storage fsbrowser is not enabled.");
         }
     }
 
     public String buildEdgeExternalUrl(final String region) {
-        final Map<String, String> labels = buildRegionsLabels(getEdgeRegion(region));
-        return kubernetesManager.getServicesByLabels(labels, edgeLabel).stream()
+        return getEdgeForRegionOrDefault(region)
+                .stream()
                 .findFirst()
                 .map(edgeService -> buildEdgeExternalUrl(getServiceDescription(edgeService)))
                 .orElseGet(this::logServiceNotFoundAndReturnNull);
@@ -177,10 +197,6 @@ public class EdgeServiceManager {
                 .orElse(false);
     }
 
-    private String buildUrl(final ServiceDescription service, final String template, final Long runId) {
-        return String.format(template, service.getScheme(), service.getIp(), service.getPort(), runId);
-    }
-
     private String buildEdgeExternalUrl(final ServiceDescription edgeService) {
         return String.format(BASE_URL_TEMPLATE, edgeService.getScheme(), edgeService.getIp(), edgeService.getPort());
     }
@@ -193,11 +209,15 @@ public class EdgeServiceManager {
         return labels;
     }
 
-    private Map<String, String> buildServiceUrl(final Long runId, final String template) {
+    private Map<String, String> buildServiceUrl(final String template, final String path) {
         return kubernetesManager.getServicesByLabel(edgeLabel).stream()
                 .map(this::getServiceDescription)
                 .collect(Collectors.toMap(ServiceDescription::getRegion, serviceDescription ->
-                        buildUrl(serviceDescription, template, runId)));
+                        buildUrl(template, path, serviceDescription)));
+    }
+
+    private String buildUrl(final String template, final String path, final ServiceDescription service) {
+        return String.format(template, service.getScheme(), service.getIp(), service.getPort(), path);
     }
 
     private String getEdgeRegion(final String region) {
@@ -209,5 +229,18 @@ public class EdgeServiceManager {
     private String logServiceNotFoundAndReturnNull() {
         log.debug("Could not find any edge service");
         return null;
+    }
+
+    private List<Service> getEdgeForRegionOrDefault(final String region) {
+        final List<Service> services = getEdgeServiceForRegion(region);
+        if (CollectionUtils.isNotEmpty(services)) {
+            return services;
+        }
+        return getEdgeServiceForRegion(null);
+    }
+
+    private List<Service> getEdgeServiceForRegion(final String region) {
+        final Map<String, String> labels = buildRegionsLabels(getEdgeRegion(region));
+        return kubernetesManager.getServicesByLabels(labels, edgeLabel);
     }
 }

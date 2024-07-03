@@ -18,6 +18,9 @@
 
 import React from 'react';
 import {Radio} from 'antd';
+import {observer} from 'mobx-react';
+import {StorageMetrics, parseStorageMetrics} from '../../navigation/metrics';
+import BillingNavigation from '../../navigation';
 
 const filters = {
   value: {
@@ -32,17 +35,25 @@ const filters = {
   }
 };
 
-export default function ({onChange, value}) {
+function StorageFilter ({filters}) {
+  const {
+    metrics,
+    metricsNavigation
+  } = filters;
   return (
     <Radio.Group
-      value={value}
-      onChange={e => onChange(e.target.value)}
+      value={parseStorageMetrics(metrics)}
+      onChange={e => metricsNavigation(e.target.value)}
       size="small"
     >
-      <Radio.Button key={filters.value.key} value={filters.value.key}>Costs</Radio.Button>
-      <Radio.Button key={filters.usage.key} value={filters.usage.key}>Volume</Radio.Button>
+      <Radio.Button key={StorageMetrics.costs} value={StorageMetrics.costs}>Costs</Radio.Button>
+      <Radio.Button key={StorageMetrics.volume} value={StorageMetrics.volume}>Volume</Radio.Button>
     </Radio.Group>
   );
 }
+
+export default BillingNavigation.attach(
+  observer(StorageFilter)
+);
 
 export {filters as StorageFilters};

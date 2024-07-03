@@ -55,6 +55,7 @@ public class ToolDependency {
         SWIFT("Swift.PM"),
         CMAKE("CMAKE"),
         RUBY("Ruby.Bundle"),
+        NVIDIA("Nvidia"),
         OTHER("OTHER");
 
         private static Map<String, Ecosystem> map;
@@ -65,6 +66,7 @@ public class ToolDependency {
             map.put(R_PKG.value, R_PKG);
             map.put(OS.value, OS);
             map.put(SYSTEM.value, SYSTEM);
+            map.put(NVIDIA.value, NVIDIA);
         }
 
         private String value;

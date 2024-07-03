@@ -61,6 +61,26 @@ public class RunInstance {
     private Set<String> prePulledDockerImages;
     private Long poolId;
 
+    public RunInstance(final String nodeType,
+                       final Integer nodeDisk,
+                       final Integer effectiveNodeDisk,
+                       final String nodeIP,
+                       final String nodeId,
+                       final String nodeImage,
+                       final String nodeName,
+                       final String nodePlatform,
+                       final Boolean spot) {
+        this.nodeType = nodeType;
+        this.nodeDisk = nodeDisk;
+        this.effectiveNodeDisk = effectiveNodeDisk;
+        this.nodeIP = nodeIP;
+        this.nodeId = nodeId;
+        this.nodeImage = nodeImage;
+        this.nodeName = nodeName;
+        this.nodePlatform = nodePlatform;
+        this.spot = spot;
+    }
+
     @JsonIgnore
     public boolean isEmpty() {
         return nodeType == null && (nodeDisk == null || nodeDisk <= 0)

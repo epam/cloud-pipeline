@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,15 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.Configuration;
+import com.epam.pipeline.autotests.ao.Profile;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.function.Consumer;
+
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -138,28 +141,34 @@ public class DetachedConfigurationsTest
             .createConfiguration(pipelineCustomProfile)
             .createConfiguration(pipelineProfile1611)
             .sleep(1, SECONDS)
-            .editConfiguration(pipelineCustomProfile, profile ->
+            .editConfiguration(pipelineCustomProfile, profile -> {
                 profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
-                    .setValue(DISK, customDisk)
-                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .setCommand(command)
-                    .clickAddStringParameter()
-                    .setName(stringParameterName)
-                    .close()
-                    .clickAddPathParameter()
-                    .setName(pathParameterName)
-                    .close()
-                    .click(SAVE)
-            )
+                        .setValue(DISK, customDisk)
+                        .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                        .setCommand(command)
+                        .clickAddStringParameter()
+                        .setName(stringParameterName)
+                        .close()
+                        .clickAddPathParameter()
+                        .setName(pathParameterName)
+                        .close()
+                        .click(SAVE);
+                profile
+                        .waitUntilSaveEnding(pipelineCustomProfile);
+            })
             .sleep(5, SECONDS)
-            .editConfiguration(pipelineDefaultProfile, profile ->
+            .editConfiguration(pipelineDefaultProfile, profile -> {
+                refresh();
                 profile.expandTab(EXEC_ENVIRONMENT)
                     .setValue(DISK, defaultDisk)
                     .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                    .sleep(3, SECONDS)
                     .click(SAVE)
-            )
+                    .waitUntilSaveEnding(pipelineCustomProfile);
+            })
             .sleep(5, SECONDS)
-            .editConfiguration(pipelineProfile1611, profile ->
+            .editConfiguration(pipelineProfile1611, profile -> {
+                refresh();
                 profile
                     .addStringParameter(stringParameter, stringParameterValue)
                     .addPathParameter(pathParameter, pathParameterValue)
@@ -168,8 +177,8 @@ public class DetachedConfigurationsTest
                     .addOutputParameter(outputParameter, outputParameterValue)
                     .sleep(3, SECONDS)
                     .click(SAVE)
-                    .waitUntilSaveEnding(pipelineProfile1611)
-            );
+                    .waitUntilSaveEnding(pipelineProfile1611);
+            });
         refresh();
         library().clickRoot();
     }
@@ -557,11 +566,15 @@ public class DetachedConfigurationsTest
         library()
             .refresh()
             .createConfiguration(configuration1611)
-            .configurationWithin(configuration1611, configuration ->
+            .sleep(30, SECONDS)
+            .configurationWithin(configuration1611, configuration -> {
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
-                    .click(SAVE)
-                    .sleep(2, SECONDS)
-            )
+                        .sleep(7, SECONDS)
+                        .ensure(ESTIMATED_PRICE, visible)
+                        .click(SAVE);
+                new Profile(configuration)
+                        .waitUntilSaveEnding(configuration1611);
+            })
             .refresh()
             .configurationWithin(configuration1611, configuration ->
                 configuration
@@ -581,10 +594,23 @@ public class DetachedConfigurationsTest
         library()
             .createConfiguration(runWithParametersConfiguration)
             .configurationWithin(runWithParametersConfiguration, configuration -> {
-                        configuration.selectPipeline(pipeline1)
-                                .click(SAVE)
+                        configuration
+                                .selectPipeline(pipeline1)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE);
+                        new Profile(configuration)
+                                .waitUntilSaveEnding(defaultConfigurationProfile)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(5, SECONDS);
+                        configuration
                                 .addProfile(secondConfigurationProfile)
+                                .ensure(ESTIMATED_PRICE, visible)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .getParameterByIndex(parameterByName(stringParameterName).index())
@@ -598,7 +624,8 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, pathParameterValue2)
                                 .ensure(PARAMETER_NAME, disabled);
                         configuration
-                                .click(SAVE);
+                                .click(SAVE)
+                                .ensureDisable(SAVE);
                     }
             );
     }

@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolInfo;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -52,8 +53,9 @@ public class NodePoolController extends AbstractRestController {
     @GetMapping
     @ApiOperation(value = "Returns all registered node pools", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<NodePool>> loadAll() {
-        return Result.success(apiService.loadAll());
+    public Result<List<? extends NodePoolInfo>> loadAll(
+            final @RequestParam(defaultValue = "false") boolean loadStatus) {
+        return Result.success(apiService.loadAll(loadStatus));
     }
 
     @GetMapping("{id}")

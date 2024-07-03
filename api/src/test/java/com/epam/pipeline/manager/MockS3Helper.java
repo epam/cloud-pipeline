@@ -19,6 +19,7 @@ package com.epam.pipeline.manager;
 import com.amazonaws.services.s3.model.CORSRule;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper;
 
@@ -28,7 +29,7 @@ import java.util.Map;
 public class MockS3Helper extends S3Helper {
 
     public MockS3Helper() {
-        super(null);
+        super(null, null);
     }
 
     @Override public String createS3Bucket(final String name) {
@@ -46,7 +47,7 @@ public class MockS3Helper extends S3Helper {
         return ActionStatus.success();
     }
 
-    @Override public void deleteS3Bucket(String name) {
+    @Override public void deleteS3Bucket(S3bucketDataStorage storage) {
         // no op
     }
 

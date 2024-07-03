@@ -19,17 +19,25 @@ package com.epam.pipeline.billingreportagent.service;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -49,10 +57,11 @@ public interface EntityLoader<T> {
                         .stream()
                         .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
 
-        final Map<Long, Map<String, String>> metadata = apiClient.loadMetadataEntry(users.values()
-                .stream()
-                .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
-                .collect(Collectors.toList()))
+        final Map<Long, Map<String, String>> metadata = ListUtils.emptyIfNull(
+                        apiClient.loadMetadataEntry(users.values()
+                                .stream()
+                                .map(user -> new EntityVO(user.getId(), AclClass.PIPELINE_USER))
+                                .collect(Collectors.toList())))
                 .stream()
                 .collect(Collectors.toMap(data -> data.getEntity().getEntityId(), this::prepareMetadataEntry));
 
@@ -82,5 +91,41 @@ public interface EntityLoader<T> {
                         map.put(entry.getKey(), value);
                     },
                     HashMap::putAll);
+    }
+
+    default Map<Long, AbstractCloudRegion> prepareRegions(final CloudPipelineAPIClient apiClient) {
+        return apiClient.loadAllCloudRegions()
+                .stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+    }
+
+    default Map<Long, Pipeline> preparePipelines(final CloudPipelineAPIClient apiClient) {
+        return ListUtils.emptyIfNull(apiClient.loadAllPipelines())
+                .stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+    }
+
+    default Map<String, Tool> prepareTools(final CloudPipelineAPIClient apiClient) {
+        return Optional.ofNullable(apiClient.loadAllRegistries())
+                .map(DockerRegistryList::getRegistries)
+                .map(List::stream)
+                .orElseGet(Stream::empty)
+                .filter(Objects::nonNull)
+                .flatMap(registry -> Optional.ofNullable(registry.getGroups())
+                        .map(List::stream)
+                        .orElseGet(Stream::empty)
+                        .filter(Objects::nonNull)
+                        .flatMap(group -> Optional.ofNullable(group.getTools())
+                                .map(List::stream)
+                                .orElseGet(Stream::empty)
+                                .filter(Objects::nonNull)
+                                .peek(tool -> {
+                                    tool.setRegistryId(registry.getId());
+                                    tool.setRegistry(registry.getName());
+                                    tool.setToolGroupId(group.getId());
+                                    tool.setToolGroup(group.getName());
+                                })))
+                .filter(tool -> StringUtils.isNotBlank(tool.getRegistry()) && StringUtils.isNotBlank(tool.getImage()))
+                .collect(Collectors.toMap(tool -> tool.getRegistry() + "/" + tool.getImage(), Function.identity()));
     }
 }

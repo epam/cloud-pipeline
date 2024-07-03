@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.ao.settings.CliAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -45,7 +46,6 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -124,60 +124,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public PipelinesLibraryAO ok() {
         click(OK);
         return parentAO;
-    }
-
-    public static class CliAO extends SettingsPageAO {
-        public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                super.elements(),
-                entry(PIPE_CLI, context().findAll("tr").find(text("Pipe CLI"))),
-                entry(GIT_CLI, context().findAll("tr").find(text("Git CLI"))),
-                entry(GIT_COMMAND, context().find(byCssSelector(".tyles__md-preview")))
-        );
-
-        public CliAO(final PipelinesLibraryAO parent) {
-            super(parent);
-        }
-
-        public CliAO switchGitCLI() {
-            click(GIT_CLI);
-            return this;
-        }
-
-        public CliAO switchPipeCLI() {
-            click(PIPE_CLI);
-            return this;
-        }
-
-        public CliAO ensureCodeHasText(final String text) {
-            ensure(GIT_COMMAND, matchesText(text));
-            return this;
-        }
-
-        public CliAO selectOperationSystem(final String operationSystem) {
-            final String defaultSystem = $(tagName("b")).parent().find(byClassName("ant-select-selection__rendered"))
-                    .getText();
-            selectValue(byText(defaultSystem), menuitem(operationSystem));
-            return this;
-        }
-
-        public CliAO checkOperationSystemInstallationContent(final String content) {
-            ensure(byId("pip-install-url-input"), text(content));
-            return this;
-        }
-
-        public CliAO generateAccessKey() {
-            click(byId("generate-access-key-button"));
-            return this;
-        }
-
-        public String getCLIConfigureCommand() {
-            return $(byId("cli-configure-command-text-area")).getText();
-        }
-
-        @Override
-        public Map<Primitive, SelenideElement> elements() {
-            return elements;
-        }
     }
 
     public class SystemEventsAO extends SettingsPageAO {
@@ -578,6 +524,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public UsersTabAO pressMagnifierIcon() {
+                $(byClassName("user-management-form__container"))
+                        .$(byClassName("ant-input-search-icon")).shouldBe(enabled).click();
+                return this;
+            }
+
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
                 clear(SEARCH);
@@ -599,7 +551,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO checkUserExist(String name) {
                 searchUser(name).sleep(1, SECONDS);
-                assertTrue(getUser(name.toUpperCase()).isDisplayed(), format("User %s isn't found in list", name));
+                getUser(name.toUpperCase()).shouldBe(visible);
+                return this;
+            }
+
+            public UsersTabAO checkUserNotExist(String name) {
+                searchUser(name).sleep(1, SECONDS);
+                getUser(name.toUpperCase()).shouldNotBe(exist);
                 return this;
             }
 
@@ -736,6 +694,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
                             entry(ADD_KEY, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
+                            entry(CANCEL, context().$(button("CANCEL"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
                             entry(DELETE, context().$(byId("delete-user-button"))),
@@ -757,7 +716,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     @Override
                     public UsersTabAO ok() {
-                        click(OK);
+                        if (get(OK).isEnabled()) {
+                            click(OK);
+                        } else {
+                            click(CANCEL);
+                        }
                         return parentAO;
                     }
 
@@ -785,6 +748,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public EditUserPopup addRoleOrGroupIfNonExist(final String value) {
+                        $(By.className("role-ROLE_USER")).waitUntil(exist, DEFAULT_TIMEOUT);
+                        if ($(By.className(format("role-%s", value))).exists()) {
+                            return this;
+                        }
+                        return addRoleOrGroup(value);
+                    }
+
                     public EditUserPopup deleteRoleOrGroup(final String value) {
                         $$(byClassName("role-name-column"))
                                 .findBy(text(value))
@@ -792,6 +763,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                 .find(By.id("delete-role-button"))
                                 .click();
                         return this;
+                    }
+
+                    public EditUserPopup deleteRoleOrGroupIfExist(final String value) {
+                        $(byClassName("edit-user-roles-dialog__table")).waitUntil(exist, DEFAULT_TIMEOUT);
+                        if(!$$(byClassName("role-name-column")).findBy(text(value)).exists()) {
+                            return this;
+                        }
+                        return deleteRoleOrGroup(value);
                     }
 
                     public EditUserPopup blockUser(final String user) {
@@ -873,6 +852,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public EditUserPopup doNotMountStoragesSelect (boolean isSelected) {
+                        if(!get(DO_NOT_MOUNT_STORAGES).exists()) {
+                            return this;
+                        }
                         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
                             click(DO_NOT_MOUNT_STORAGES);
@@ -1019,6 +1001,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final GroupsTabAO parentAO;
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
+                        entry(CANCEL, context().$(button("CANCEL"))),
                         entry(PRICE_TYPE, context().find(byXpath(
                                 format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
                 );
@@ -1035,7 +1018,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 @Override
                 public GroupsTabAO ok() {
-                    click(OK);
+                    if (get(OK).isEnabled()) {
+                        click(OK);
+                    } else {
+                        click(CANCEL);
+                    }
                     return parentAO;
                 }
 
@@ -1221,9 +1208,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public String[] getPreference(String preference) {
             searchPreference(preference);
-            String[] prefValue = new String[2];
-            List<String> list = context().$(byClassName("CodeMirror-code"))
-                    .findAll(byClassName("CodeMirror-line")).texts();
+            $(byClassName("CodeMirror-code")).shouldBe(visible);
+            sleep(1, SECONDS);
+            final List<String> list = $$(byClassName("CodeMirror-line")).texts();
+            final String[] prefValue = new String[2];
             prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
             prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
                     .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
@@ -1233,9 +1221,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public PreferencesAO clearAndSetJsonToPreference(String preference, String value, boolean eyeIsChecked) {
             SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
             searchPreference(preference);
-            clearTextField(pref);
+            selectAllAndClearTextField(pref);
             clickAndSendKeysWithSlashes(pref, value);
-            deleteExtraBrackets(pref, 100);
+            deleteExtraBrackets(pref, 300);
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1244,13 +1232,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             searchPreference(preference);
             final SelenideElement editor = $(byClassName("CodeMirror-line"));
             selectAllAndClearTextField(editor);
-            final StringSelection stringSelection = new StringSelection(value);
-            Toolkit.getDefaultToolkit().getSystemClipboard()
-                    .setContents(stringSelection, null);
-            actions().moveToElement(editor).click()
-                    .sendKeys(Keys.chord(Keys.CONTROL, "v"))
-                    .perform();
-            deleteExtraBrackets(editor, 500);
+            pasteText(editor, value);
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1340,10 +1322,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public String[] getAmisFromClusterNetworksConfigPreference(String region) {
-            String[] ami = new String[2];
+            final String[] ami = new String[2];
             searchPreference("cluster.networks.config");
-            String[] strings = context().$(byClassName("CodeMirror-code"))
-                    .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
+            $(byClassName("CodeMirror-code")).shouldBe(visible);
+            sleep(1, SECONDS);
+            final String[] strings = $$(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
                 JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
                 for (JsonNode node1 : instance) {
@@ -1365,12 +1348,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO save() {
-            click(SAVE);
-            get(SAVE).shouldBe(disabled);
+        /* click(SAVE) method has been replaced by pressEnter() method due to the problem of pressing
+           the Save button at case of big size json or a lot of preferences on the page for current Chromium version
+        */
+            actions().moveToElement(get(SAVE)).perform();
+            get(SAVE).pressEnter();
+            get(SAVE).waitUntil(disabled, DEFAULT_TIMEOUT);
             return this;
         }
 
         public PreferencesAO saveIfNeeded() {
+            actions().moveToElement($(By.id("edit-preference-form-ok-button")))
+                     .perform();
+            sleep(10, SECONDS);
             if(get(SAVE).isEnabled()) {
                 save();
             }
@@ -1389,6 +1379,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private final By clusterAllowedInstanceTypes = getByField("cluster.allowed.instance.types");
             private final By clusterAllowedInstanceTypesDocker = getByField(
                     "cluster.allowed.instance.types.docker");
+
+            public static final String CLUSTER_AWS_EBS_TYPE = "cluster.aws.ebs.type";
 
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1426,9 +1418,18 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public ClusterTabAO checkClusterAwsEbsType(final String value) {
+                ensure(getByField(CLUSTER_AWS_EBS_TYPE), value(value));
+                ensure(getPreferenceState(CLUSTER_AWS_EBS_TYPE), cssClass("anticon-eye"));
+                return this;
+            }
+
             private ClusterTabAO setClusterValue(final String clusterPref, final String value) {
                 By clusterVariable = getByField(clusterPref);
                 setByVariable(value, clusterVariable);
+                while(!$(clusterVariable).attr("value").equals(value)) {
+                    sleep(500, MILLISECONDS);
+                }
                 return this;
             }
 
@@ -1791,6 +1792,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     private void addAllowedLaunchOptions(final String option, final String mask) {
+        $(byText("Allowed price types")).shouldBe(visible, enabled);
         final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);

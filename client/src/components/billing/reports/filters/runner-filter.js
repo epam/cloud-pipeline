@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, isObservableArray} from 'mobx';
 import {Row, Select} from 'antd';
-import styles from './runner-filter.css';
 import roleModel from '../../../../utils/roleModel';
 import BillingNavigation, {RunnerTypes} from '../../navigation';
+import styles from './runner-filter.css';
 
 function runnersEqual (runnersA, runnersB) {
   if (!runnersA && !runnersB) {
@@ -117,6 +117,7 @@ class RunnerFilter extends React.Component {
     searchCriteria: undefined,
     searching: false,
     filteredUsers: [],
+    filteredAdGroups: [],
     filteredCenters: undefined
   };
 
@@ -147,7 +148,8 @@ class RunnerFilter extends React.Component {
       searchCriteria: undefined,
       searching: false,
       filteredUsers: [],
-      filteredCenters: undefined
+      filteredCenters: undefined,
+      filteredAdGroups: []
     });
   }
 
@@ -187,8 +189,15 @@ class RunnerFilter extends React.Component {
     items.push(
       ...this.centers.map((center) => ({
         item: center,
-        key: `${RunnerTypes.group}_${center}`,
+        key: `${RunnerTypes.billingGroup}_${center}`,
         label: center
+      }))
+    );
+    items.push(
+      ...this.adGroups.map((group) => ({
+        item: group,
+        key: `${RunnerTypes.group}_${group}`,
+        label: group
       }))
     );
     return this.currentRunner.map((runner) => {
@@ -232,6 +241,15 @@ class RunnerFilter extends React.Component {
       searchOptions: getUserSearchOptions(user),
       attributesValues: getAttributesValues(user)
     }));
+  }
+
+  @computed
+  get adGroups () {
+    const adGroups = this.users.reduce((acc, user) => {
+      acc.push(...(user.groups || []));
+      return acc;
+    }, []);
+    return [...new Set(adGroups)];
   }
 
   @computed
@@ -284,6 +302,7 @@ class RunnerFilter extends React.Component {
           this.setState({
             filteredCenters: undefined,
             filteredUsers: [],
+            filteredAdGroups: [],
             searching: false
           });
         } else {
@@ -291,9 +310,12 @@ class RunnerFilter extends React.Component {
             .filter((center) => filterRunner([(center || '').toLowerCase()], searchCriteria));
           const filteredUsers = this.users
             .filter((user) => filterRunner(user.searchOptions, searchCriteria));
+          const filteredAdGroups = this.adGroups
+            .filter((group) => filterRunner([(group || '').toLowerCase()], searchCriteria));
           this.setState({
             filteredCenters,
             filteredUsers,
+            filteredAdGroups,
             searching: false
           });
         }
@@ -313,6 +335,7 @@ class RunnerFilter extends React.Component {
       this.setState({
         filter: newRunners[0],
         filteredUsers: [],
+        filteredAdGroups: [],
         filteredCenters: undefined,
         searchCriteria: undefined
       });
@@ -320,6 +343,7 @@ class RunnerFilter extends React.Component {
       this.setState({
         filter: {type: runnersType, id: newRunners.map(r => r.id)},
         filteredUsers: [],
+        filteredAdGroups: [],
         filteredCenters: undefined,
         searchCriteria: undefined
       });
@@ -327,6 +351,7 @@ class RunnerFilter extends React.Component {
       this.setState({
         filter: null,
         filteredUsers: [],
+        filteredAdGroups: [],
         filteredCenters: undefined,
         searchCriteria: undefined
       });
@@ -338,7 +363,8 @@ class RunnerFilter extends React.Component {
     if (!searchCriteria) {
       this.setState({
         filteredCenters: undefined,
-        filteredUsers: []
+        filteredUsers: [],
+        filteredAdGroups: []
       });
     }
     this.setState({focused: true});
@@ -360,6 +386,7 @@ class RunnerFilter extends React.Component {
       focused,
       filteredCenters,
       filteredUsers,
+      filteredAdGroups,
       searchCriteria
     } = this.state;
     const showBillingCenters = (filteredCenters || this.centers).length > 0;
@@ -375,8 +402,8 @@ class RunnerFilter extends React.Component {
         dropdownMatchSelectWidth={false}
         className={styles.runnerSelect}
         dropdownClassName={styles.dropdown}
-        style={{width: 185}}
-        placeholder="All users / groups"
+        style={{width: 200}}
+        placeholder="All billing centers / users / groups"
         notFoundContent={
           searchCriteria ? 'Not found' : 'Specify user or billing center name'
         }
@@ -393,8 +420,8 @@ class RunnerFilter extends React.Component {
           {
             (filteredCenters || this.centers).map((center) => (
               <Select.Option
-                key={`${RunnerTypes.group}_${center}`}
-                value={`${RunnerTypes.group}_${center}`}
+                key={`${RunnerTypes.billingGroup}_${center}`}
+                value={`${RunnerTypes.billingGroup}_${center}`}
               >
                 {center}
               </Select.Option>
@@ -409,6 +436,18 @@ class RunnerFilter extends React.Component {
                 value={`${RunnerTypes.user}_${user.name}`}
               >
                 <RenderUserName myUserName={this.myUserName} user={user} />
+              </Select.Option>
+            ))
+          }
+        </Select.OptGroup>
+        <Select.OptGroup label="Groups">
+          {
+            filteredAdGroups.map((group) => (
+              <Select.Option
+                key={`${RunnerTypes.group}_${group}`}
+                value={`${RunnerTypes.group}_${group}`}
+              >
+                {group}
               </Select.Option>
             ))
           }

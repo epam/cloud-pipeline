@@ -109,6 +109,11 @@ bash build.sh -aws eu-central-1,us-east-1 \                         # List of re
                 -env CP_EDGE_WEB_CLIENT_MAX_SIZE = \                # Sets the maximum file (request) size to be uploaded via the EDGE service, to remove the limit - set it to 0 (default: 500M)
                 -env CP_EDGE_MAX_SSH_CONNECTIONS = \                # Sets maximum number of the SSH connections to a single run (default: 25)
 
+                # Storage Lifecycle Service
+                -env CP_PREF_STORAGE_LIFECYCLE_SERVICE_AWS_ACCOUNT = \             # AWS account where lifecycle actions will be performed
+                -env CP_PREF_STORAGE_LIFECYCLE_SERVICE_S3_ROLE_ARN = \             # AWS IAM Role that will be assigned by batch operation jobs when storage lifecycle actions are executed
+                -env CP_PREF_STORAGE_LIFECYCLE_SERVICE_REPORT_BUCKET_PREFIX = \    # Prefix inside CP_PREF_STORAGE_SYSTEM_STORAGE_NAME bucket where all failed batch operations will store their results
+
                 # Pipectl options
                 -m|--install-kube-master \                          # Install kuberneters master
                 -d|--docker \                                       # Limit images to be pushed during deployment

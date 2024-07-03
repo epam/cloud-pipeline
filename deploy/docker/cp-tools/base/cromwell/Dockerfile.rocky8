@@ -1,0 +1,78 @@
+ARG BASE_IMG=library/rockylinux:8.9
+FROM $BASE_IMG
+
+RUN yum install curl yum-utils -y
+
+# Install common dependencies
+RUN yum install -y wget \
+                   bzip2 \
+                   gcc \
+                   zlib-devel \
+                   bzip2-devel \
+                   xz-devel \
+                   make \
+                   ncurses-devel \
+                   unzip \
+                   git \
+                   python2 \
+                   fuse \
+                   tzdata \
+                   acl \
+                   openssh-server \
+                   yum-utils \
+                   findutils \
+                   java-11-openjdk && \
+    yum clean all
+RUN dnf install -y --allowerasing coreutils
+
+# Install pip
+RUN curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python2 && \
+    python2 -m pip install \
+    --index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple \
+    --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com \
+    -I -q setuptools==44.1.1
+
+# Install NFS/SMB/Lustre clients
+RUN yum install nfs-utils cifs-utils -y
+RUN cd /tmp && \
+    yum install nfs-utils cifs-utils -y && \
+    wget -q https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-2.10.8-2.el8.x86_64.tar.gz -O lustre-client.tar.gz && \
+    mkdir -p lustre-client && \
+    tar -xzvf lustre-client.tar.gz -C lustre-client/ && \
+    rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm && \
+    yum install -y lustre-client/*.rpm && \
+    (package-cleanup --cleandupes -y || true) && \
+    rm -rf lustre-client*
+
+
+# Cromwell download link should be provided through --build-arg
+ARG CROMWELL_LINK="https://github.com/broadinstitute/cromwell/releases/download/86/cromwell-86.jar"
+ARG WDLTOOL_LINK="https://github.com/broadinstitute/cromwell/releases/download/86/womtool-86.jar"
+
+
+# Set enviroment varaibles containing characteristics of image
+# and add cromwell home directory to path environment variable
+ENV CROMWELL_HOME=/cromwell_bin
+ENV WDLTOOL_HOME=/wdltool_bin
+ENV PATH="$PATH:$CROMWELL_HOME"
+
+# Bake-in the autoscaling option, so that all runs with "node" parameter will be able to share a single FS
+ENV CP_CAP_AUTOSCALE="true"
+ENV CP_CAP_NFS="true"
+ENV cluster_role="master"
+# Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
+ENV ANALYSIS_DIR="/common/analysis"
+ENV INPUT_DIR="/common/input"
+
+# Copy cromwell files to the image
+# It also creates cromwell home directory
+COPY cromwell cromwell.conf cromwell_wrapper.py options.json cromwell_submit_task.sh $CROMWELL_HOME/
+
+# Make cromwell starter script executable
+RUN chmod +x $CROMWELL_HOME/cromwell
+
+# Download cromwell and wdltool java executables
+RUN wget -q ${CROMWELL_LINK} -O $CROMWELL_HOME/cromwell.jar
+
+RUN mkdir $WDLTOOL_HOME && \
+    wget -q ${WDLTOOL_LINK} -O $WDLTOOL_HOME/wdltool.jar

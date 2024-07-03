@@ -148,3 +148,47 @@
 .cp-billing-layout .react-grid-item {
   transition: none;
 }
+
+.cp-quota-status-green {
+  fill: @color-success;
+  background-color: @color-success;
+}
+
+.cp-quota-status-green.hide {
+  fill: transparent;
+  background-color: transparent;
+}
+
+.cp-quota-status-yellow {
+  fill: @color-warning;
+  background-color: @color-warning;
+}
+
+.cp-quota-status-red {
+  fill: @color-error;
+  background-color: @color-error;
+}
+
+.cp-billing-action-tag .ant-tag-text{
+  background-color: @color-warning;
+}
+
+.cp-report-table td,
+.cp-report-table th {
+  background-color: @panel-background-color;
+  color: @application-color;
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-report-table tbody tr:not(:last-child) > *,
+.cp-report-table th {
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-report-table tr > *.fixed-column {
+  border-right: 1px solid @card-border-color;
+}
+
+.cp-report-table tr.cp-warning-row {
+  background-color: fade(@color-error, 20%);
+}

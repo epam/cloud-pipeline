@@ -17,12 +17,13 @@ import re
 
 from abc import abstractmethod, ABCMeta
 from collections import namedtuple
-
+import pytz
 import click
 import jwt
-
+import datetime
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.encoding_utilities import is_safe_chars, to_ascii, to_string
 
 TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
@@ -131,6 +132,17 @@ class StorageOperations:
             return None
 
     @classmethod
+    def get_local_file_modification_datetime(cls, path):
+        try:
+            return pytz.UTC.localize(datetime.datetime.utcfromtimestamp(os.path.getmtime(path)))
+        except OSError:
+            return None
+
+    @classmethod
+    def get_item_modification_datetime_utc(cls, item):
+        return item.changed.astimezone(pytz.utc)
+
+    @classmethod
     def without_prefix(cls, string, prefix):
         if string.startswith(prefix):
             return string[len(prefix):]
@@ -150,26 +162,41 @@ class StorageOperations:
         if not tags:
             return {}
         if len(tags) > cls.MAX_TAGS_NUMBER:
-            raise ValueError(
-                "Maximum allowed number of tags is {}. Provided {} tags.".format(cls.MAX_TAGS_NUMBER, len(tags)))
-        tags_dict = {}
-        for tag in tags:
-            if "=" not in tag:
-                raise ValueError("Tags must be specified as KEY=VALUE pair.")
-            parts = tag.split("=", 1)
+            raise ValueError('Maximum allowed number of tags is {}. Provided {} tags.'
+                             .format(cls.MAX_TAGS_NUMBER, len(tags)))
+        return cls.preprocess_tags(cls.extract_tags(tags))
+
+    @classmethod
+    def extract_tags(cls, raw_tags):
+        tags = {}
+        for tag in raw_tags:
+            if '=' not in tag:
+                raise ValueError('Tags must be specified as KEY=VALUE pair.')
+            parts = tag.split('=', 1)
             key = parts[0]
-            if len(key) > cls.MAX_KEY_LENGTH:
-                click.echo("Maximum key value is {}. Provided key {}.".format(cls.MAX_KEY_LENGTH, key))
-                continue
             value = parts[1]
+            tags[key] = value
+        return tags
+
+    @classmethod
+    def preprocess_tags(cls, tags):
+        preprocessed_tags = {}
+        for key, value in tags.items():
+            if len(key) > cls.MAX_KEY_LENGTH:
+                click.echo('Maximum key value is {}. Provided key {}.'.format(cls.MAX_KEY_LENGTH, key))
+                continue
             value = value.replace('\\', '/')
-            if not value or value.isspace() or bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
-                click.echo("The tag value you have provided is invalid: %s. The tag %s will be skipped." % (value, key))
+            if not value or value.isspace():
+                click.echo('The tag value you have provided is blank. The tag %s will be skipped.' % key)
+                continue
+            if bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
+                click.echo('The tag value you have provided contains unsafe characters: %s. '
+                           'The tag %s will be skipped.' % (value, key))
                 continue
             if len(value) > cls.MAX_VALUE_LENGTH:
                 value = value[:cls.MAX_VALUE_LENGTH - len(cls.TAG_SHORTEN_SUFFIX)] + cls.TAG_SHORTEN_SUFFIX
-            tags_dict[key] = value
-        return tags_dict
+            preprocessed_tags[key] = value
+        return preprocessed_tags
 
     @classmethod
     def get_user(cls):
@@ -180,9 +207,13 @@ class StorageOperations:
         raise RuntimeError('Cannot find user info.')
 
     @classmethod
+    def to_ascii(cls, value):
+        return value if is_safe_chars(value) else to_ascii(value, replacing=True, replacing_with='-')
+
+    @classmethod
     def generate_tags(cls, raw_tags, source):
         tags = StorageOperations.parse_tags(raw_tags)
-        tags[StorageOperations.CP_SOURCE_TAG] = source
+        tags[StorageOperations.CP_SOURCE_TAG] = StorageOperations.to_ascii(source)
         tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return tags
 
@@ -208,7 +239,8 @@ class StorageOperations:
                 item_relative_path = os.path.basename(item.name)
             else:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + delimiter)
-            yield ('File', item.name, item_relative_path, item.size)
+            yield ('File', item.name, item_relative_path, item.size,
+                   StorageOperations.get_item_modification_datetime_utc(item))
 
     @classmethod
     def file_is_empty(cls, size):
@@ -230,9 +262,19 @@ class AbstractTransferManager:
     def get_destination_size(self, destination_wrapper, destination_key):
         pass
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        """
+        Returns:
+        - destination file size
+        - destination file last modification datetime in UTC format
+
+        """
+        return None, None
+
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5',
+                 checksum_skip=False):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -250,20 +292,26 @@ class AbstractTransferManager:
         :param io_threads: Number of threads to be used for a single file io operations.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
+        :param checksum_algorithm: The name of the algorithm to create checksums for objects
+        :param checksum_skip: Enables ability to skip objects integrity checks
         """
         pass
 
     @staticmethod
-    def skip_existing(source_key, source_size, destination_key, destination_size, quiet):
+    def skip_existing(source_key, source_size, source_modification_datetime, destination_key, destination_size,
+                      destination_modification_datetime, sync_newer, quiet):
         if destination_size is not None and destination_size == source_size:
-            if not quiet:
-                click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-            return True
+            if not sync_newer or sync_newer and (destination_modification_datetime is not None
+                                                 and source_modification_datetime is not None
+                                                 and source_modification_datetime < destination_modification_datetime):
+                if not quiet:
+                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
+                return True
         return False
 
     @staticmethod
     def create_local_folder(destination_key, lock):
-        folder = os.path.dirname(destination_key)
+        folder = to_string(os.path.dirname(destination_key))
         if lock:
             lock.acquire()
         try:
@@ -277,9 +325,11 @@ class AbstractTransferManager:
 class AbstractListingManager:
     __metaclass__ = ABCMeta
 
+    STANDARD_TIER = "STANDARD"
+
     @abstractmethod
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         """
         Lists files and folders by a relative path in the current storage.
 
@@ -287,12 +337,13 @@ class AbstractListingManager:
         :param recursive: Specifies if the listing has to be recursive.
         :param page_size: Max number of items to return. The argument is ignored if show_all argument is specified.
         :param show_all: Specifies if all items have to be listed.
+        :param show_archive: Specifies if archived items have to be listed
         """
         pass
 
     @abstractmethod
     def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                          start_token=None):
+                          start_token=None, show_archive=False):
         """
         Lists files and folders on the specified page by a relative path in the current storage.
 
@@ -300,6 +351,7 @@ class AbstractListingManager:
         :param recursive: Specifies if the listing has to be recursive.
         :param page_size: Max number of items on the page.
         :param start_token: Paging continuation token.
+        :param show_archive: Specifies if archived items have to be listed
         """
         pass
 
@@ -327,7 +379,9 @@ class AbstractListingManager:
     def get_items(self, relative_path):
         """
         Returns all files under the given relative path in forms of tuples with the following structure:
-        ('File', full_path, relative_path, size)
+        ('File', full_path, relative_path, size, modification_date)
+        where <modification_date> - a file last modification datetime in UTC format or None if not applicable
+        NOTE: shall be calculated for cloud sources only
 
         :param relative_path: Path to a folder or a file.
         :return: Generator of file tuples.
@@ -340,7 +394,8 @@ class AbstractListingManager:
                 item_relative_path = os.path.basename(item.name)
             else:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + StorageOperations.PATH_SEPARATOR)
-            yield ('File', item.name, item_relative_path, item.size)
+            yield ('File', item.name, item_relative_path, item.size,
+                   StorageOperations.get_item_modification_datetime_utc(item))
 
     @abstractmethod
     def get_paging_items(self, relative_path, start_token, page_size):
@@ -363,6 +418,13 @@ class AbstractListingManager:
             if item.name == relative_path:
                 return item.size
         return None
+
+    def get_file_object_head(self, relative_path):
+        items = self.list_items(relative_path, show_all=True, recursive=True)
+        for item in items:
+            if item.name == relative_path:
+                return item.size, StorageOperations.get_item_modification_datetime_utc(item)
+        return None, None
 
 
 class AbstractDeleteManager:

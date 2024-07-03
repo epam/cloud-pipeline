@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.mapper.PipelineRunMapper;
+import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -94,8 +95,7 @@ public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
 
     @Before
     public void setUp() {
-        user = new PipelineUser();
-        user.setUserName(TEST_USER1);
+        user = UserCreatorUtils.getPipelineUser(TEST_USER1);
         userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
 

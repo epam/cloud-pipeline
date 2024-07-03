@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,6 @@ public enum Primitive {
     FILES_PANEL,
     CROSS,
     CONFIGURATION,
-    ESTIMATE_PRICE,
     INSTANCE,
     EXEC_ENVIRONMENT,
     PARAMETERS,
@@ -214,6 +213,7 @@ public enum Primitive {
     TOOL_SETTINGS,
     INSTANCE_TYPE,
     NEW_ENDPOINT,
+    DOCKER_IMAGE,
     SEVERITY,
     STATE,
     STATE_CHECKBOX,
@@ -291,6 +291,12 @@ public enum Primitive {
     IMPERSONATE,
     MY_PROFILE,
     FILE_SYSTEM_ACCESS,
+    CONFIGURE_NOTIFICATION,
+    RECIPIENTS,
+    ADD_NOTIFICATION,
+    CLEAR_ALL_RECIPIENTS,
+    CLEAR_ALL_NOTIFICATIONS,
+    ACTIONS,
     DISABLE,
     ALLOW_COMMIT,
     CONTENT_PREVIEW,
@@ -312,5 +318,10 @@ public enum Primitive {
     ENDS_ON,
     ENDS_ON_TIME,
     AUTOSCALED,
-    PROTOCOL
+    PROTOCOL,
+    REINDEX,
+    CONDITION,
+    SHOW_TIMINGS,
+    SELECTION_ACTIONS,
+    EDITOR
 }

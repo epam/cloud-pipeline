@@ -36,6 +36,7 @@ python2 -m pip install -r ${PIPE_CLI_SOURCES_DIR}/requirements.txt
 python2 -m pip install -r ${PIPE_MOUNT_SOURCES_DIR}/requirements.txt
 cd $PIPE_MOUNT_SOURCES_DIR && \
 python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
+                                --paths "${PIPE_CLI_SOURCES_DIR}" \
                                 --hidden-import=UserList \
                                 --hidden-import=UserString \
                                 --hidden-import=commands \
@@ -56,7 +57,6 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                 --additional-hooks-dir="${PIPE_MOUNT_SOURCES_DIR}/hooks" \
                                 -y \
                                 --clean \
-                                --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                 --distpath /tmp/mount/dist \
                                 ${PIPE_MOUNT_SOURCES_DIR}/pipe-fuse.py
 
@@ -97,6 +97,10 @@ function build_pipe {
     echo "__bundle_info__ = { 'bundle_type': '$bundle_type', 'build_os_id': 'macos', 'build_os_version_id': '$build_os_version_id' }" >> $version_file
 
     cd $PIPE_CLI_SOURCES_DIR
+    sed -i '/__component_version__/d' $version_file
+    local pipe_commit_hash=$(git log --pretty=tformat:"%H" -n1 .)
+    echo "__component_version__='$pipe_commit_hash'" >> $version_file
+
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
                                     --hidden-import=UserList \
@@ -119,7 +123,6 @@ function build_pipe {
                                     --additional-hooks-dir="$PIPE_CLI_SOURCES_DIR/hooks" \
                                     -y \
                                     --clean \
-                                    --runtime-tmpdir $PIPE_CLI_RUNTIME_TMP_DIR \
                                     --distpath $distpath \
                                     --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \

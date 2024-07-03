@@ -19,18 +19,35 @@ package com.epam.pipeline.billingreportagent.model.billing;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Getter
+@Setter
 public class StoragePricing {
 
-    private final List<StoragePricingEntity> prices = new ArrayList<>();
+    private final Map<String, List<StoragePricingEntity>> prices = new HashMap<>();
 
-    public void addPrice(final StoragePricingEntity entity) {
-        prices.add(entity);
+    public Set<String> getStorageClasses() {
+        return prices.keySet();
+    }
+
+    public List<StoragePricingEntity> getPrices(final String storageClass) {
+        return prices.get(storageClass);
+    }
+
+    public void addPrice(final String storageClass, final StoragePricingEntity entity) {
+        prices.computeIfAbsent(storageClass, (key) -> new ArrayList<>()).add(entity);
+    }
+
+    public void addPrices(final String storageClass, final List<StoragePricingEntity> entities) {
+        prices.computeIfAbsent(storageClass, (key) -> new ArrayList<>()).addAll(entities);
     }
 
     @Data
@@ -40,5 +57,14 @@ public class StoragePricing {
         private Long beginRangeBytes;
         private Long endRangeBytes;
         private BigDecimal priceCentsPerGb;
+        private Integer throughput;
+
+        public StoragePricingEntity(final Long beginRangeBytes,
+                                    final Long endRangeBytes,
+                                    final BigDecimal priceCentsPerGb) {
+            this.beginRangeBytes = beginRangeBytes;
+            this.endRangeBytes = endRangeBytes;
+            this.priceCentsPerGb = priceCentsPerGb;
+        }
     }
 }

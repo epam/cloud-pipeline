@@ -1,0 +1,7 @@
+#!/bin/sh
+
+set -e
+
+mkdir -p /home/elasticsearch/elasticsearch/data
+chown -R elasticsearch /home/elasticsearch/elasticsearch/data
+su - elasticsearch -c "sh /home/elasticsearch/elasticsearch/bin/elasticsearch -Ehttp.host=0.0.0.0"

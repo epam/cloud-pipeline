@@ -15,7 +15,8 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
@@ -31,6 +32,51 @@ import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
 import '../../../staticStyles/EndpointInput.css';
 
+function validatePort (port) {
+  if (!port) {
+    return 'Port is required';
+  } else if (isNaN(port) || +port <= 0) {
+    return 'Port must be a positive number';
+  }
+  return null;
+}
+
+function validateName (name) {
+  return null;
+}
+
+function validateAdditional (additional) {
+  return null;
+}
+
+function getValidationResult (endpoint) {
+  let name, port, additional;
+  try {
+    const json = JSON.parse(endpoint || '');
+    name = json.name;
+    if (json.nginx) {
+      port = json.nginx.port;
+      additional = json.nginx.additional;
+    }
+  } catch (__) {
+  }
+  return {
+    port: validatePort(port),
+    name: validateName(name),
+    additional: validateAdditional(additional)
+  };
+}
+
+export function getValidationError (endpoint) {
+  const {
+    port,
+    name,
+    additional
+  } = getValidationResult(endpoint);
+  return port || name || additional || undefined;
+}
+
+@inject('authenticatedUserInfo')
 @observer
 export default class EndpointInput extends React.Component {
   static propTypes = {
@@ -46,41 +92,23 @@ export default class EndpointInput extends React.Component {
     validation: {}
   };
 
-  validatePort = (port) => {
-    if (!port) {
-      return 'Port is required';
-    } else if (isNaN(port) || +port <= 0) {
-      return 'Port must be a positive number';
+  @computed
+  get additionalConfigurationEditable () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      const {
+        admin,
+        roles = []
+      } = authenticatedUserInfo.value;
+      return admin || !!roles.find(o => /^ROLE_ADVANCED_USER$/i.test(o.name));
     }
-    return null;
-  };
-
-  validateName = (name) => {
-    return null;
-  };
-
-  validateAdditional = (additional) => {
-    return null;
-  };
+    return false;
+  }
 
   validate = () => {
-    let port, name, additional;
-    if (this.state.value) {
-      try {
-        const json = JSON.parse(this.state.value || '');
-        name = json.name;
-        if (json.nginx) {
-          port = json.nginx.port;
-          additional = json.nginx.additional;
-        }
-      } catch (__) {
-      }
-    }
-    const validation = {
-      port: this.validatePort(port),
-      name: this.validateName(name),
-      additional: this.validateAdditional(additional)
-    };
+    const validation = getValidationResult(this.state.value);
     this.setState({
       validation
     });
@@ -460,9 +488,13 @@ export default class EndpointInput extends React.Component {
         </Row>
         <Row type="flex" className={styles.endpointCodeEditorContainer}>
           <CodeEditor
-            readOnly={this.props.disabled}
+            readOnly={this.props.disabled || !this.additionalConfigurationEditable}
             ref={this.initializeEditor}
-            placeholder="Add any additional nginx configuration here"
+            placeholder={
+              this.additionalConfigurationEditable
+                ? 'Add any additional nginx configuration here'
+                : 'You have no permissions to modify the additional nginx configuration'
+            }
             lineNumbers={false}
             className={styles.endpointCodeEditor}
             language="shell"

@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
 # limitations under the License.
 
 import argparse
-import errno
+import ctypes
 import logging
 import os
 import platform
-import sys
 import traceback
 
+import errno
 import future.utils
+import sys
+from cachetools import TTLCache
 
 
 def is_windows():
@@ -43,27 +45,35 @@ libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse',
 if os.path.exists(libfuse_path):
     os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
+import fuse
+from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
-from pipefuse.fuseutils import MB, GB
-from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
-from pipefuse.buffread import BufferingReadAheadFileSystemClient
-from pipefuse.buffwrite import BufferingWriteFileSystemClient
+from pipefuse.api import CloudPipelineClient, CloudType
+from pipefuse.audit import AuditFileSystemClient
+from pipefuse.memread import MemoryBufferingReadAheadFileSystemClient
+from pipefuse.memwrite import MemoryBufferingWriteFileSystemClient
+from pipefuse.cache import ListingCache, ThreadSafeListingCache, \
+    CachingListingFileSystemClient
+from pipefuse.fslock import get_lock
+from pipefuse.fuseutils import MB, GB, MINUTE, HOUR
+from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
+from pipefuse.path import PathExpandingStorageFileSystemClient
+from pipefuse.pipefs import PipeFS, RestrictingOperationsFS, ResilientFS
+from pipefuse.diskread import DiskBufferingReadAllFileSystemClient, DiskBufferTTLDaemon
+from pipefuse.record import RecordingFileSystemClient, RecordingFS
+from pipefuse.s3 import S3StorageLowLevelClient
+from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.api import CloudPipelineClient, CloudType
-from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
-from pipefuse.webdav import CPWebDavClient
-from pipefuse.s3 import S3StorageLowLevelClient
-from pipefuse.storage import StorageHighLevelFileSystemClient
-from pipefuse.pipefs import PipeFS
-from pipefuse.record import RecordingFS, RecordingFileSystemClient
-from pipefuse.path import PathExpandingStorageFileSystemClient
-from pipefuse.fslock import get_lock
-import ctypes
-import fuse
-from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
-from cachetools import TTLCache
+from pipefuse.webdav import WebDavClient, ResilientWebDavFileSystemClient, PermissionAwareWebDavFileSystemClient
+from pipefuse.xattr import ExtendedAttributesCache, ThreadSafeExtendedAttributesCache, \
+    ExtendedAttributesCachingFileSystemClient, RestrictingExtendedAttributesFS
+from pipefuse.archived import ArchivedFilesFilterFileSystemClient, ArchivedAttributesFileSystemClient
+from pipefuse.storageclassfilter import StorageClassFilterFileSystemClient
+from src.common.audit import LoggingAuditConsumer, ChunkingAuditConsumer, \
+    SetAuditContainer, AuditDaemon, DelayingAuditContainer, StoragePathAuditConsumer, \
+    CloudPipelineAuditConsumer
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
@@ -71,75 +81,129 @@ _allowed_logging_levels_string = ', '.join(_allowed_logging_levels)
 _default_logging_level = 'ERROR'
 _debug_logging_level = 'DEBUG'
 _info_logging_level = 'INFO'
+_xattrs_operations = ['setxattr', 'getxattr', 'listxattr', 'removexattr']
+_xattrs_include_prefix = 'user'
 
 
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
+          read_disk_buffer_path, read_disk_buffer_read_ahead_size, read_disk_buffer_ttl, read_disk_buffer_ttl_delay,
           write_buffer_size, trunc_buffer_size, chunk_size,
-          cache_ttl, cache_size, default_mode,
-          mount_options=None, threads=False, monitoring_delay=600, recording=False):
-    if mount_options is None:
-        mount_options = {}
+          listing_cache_ttl, listing_cache_size,
+          xattrs_include_prefixes, xattrs_exclude_prefixes,
+          xattrs_cache_ttl, xattrs_cache_size,
+          disabled_operations, default_mode,
+          mount_options, threads, monitoring_delay, recording,
+          show_archived, storage_class_exclude,
+          audit_buffer_ttl, audit_buffer_size, fix_permissions):
     try:
         os.makedirs(mountpoint)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
 
-    api = os.environ.get('API', '')
-    bearer = os.environ.get('API_TOKEN', '')
-    chunk_size = int(os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size))
-    read_ahead_min_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE', read_ahead_min_size))
-    read_ahead_max_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
-    read_ahead_size_multiplier = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
-                                                    read_ahead_size_multiplier))
+    api = os.getenv('API', '')
+    bearer = os.getenv('API_TOKEN', '')
+    chunk_size = int(os.getenv('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size))
+    read_ahead_min_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE', read_ahead_min_size))
+    read_ahead_max_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
+    read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
+                                               read_ahead_size_multiplier))
+    read_disk_buffer_path = os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_PATH', read_disk_buffer_path)
+    read_disk_buffer_read_ahead_size = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_READ_AHEAD_SIZE',
+                                                     read_disk_buffer_read_ahead_size))
+    read_disk_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL', read_disk_buffer_ttl))
+    read_disk_buffer_ttl_delay = int(os.getenv('CP_PIPE_FUSE_READ_DISK_BUFFER_TTL_DELAY', read_disk_buffer_ttl_delay))
+    audit_buffer_ttl = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_TTL', audit_buffer_ttl))
+    audit_buffer_size = int(os.getenv('CP_PIPE_FUSE_AUDIT_BUFFER_SIZE', audit_buffer_size))
+    fs_name = os.getenv('CP_PIPE_FUSE_FS_NAME', 'PIPE_FUSE')
     bucket_type = None
-    root_path = None
+    bucket_path = None
+    daemons = []
     if not bearer:
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
-        client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        client = WebDavClient(webdav_url=webdav, bearer=bearer)
+        client = ResilientWebDavFileSystemClient(client)
+        if fix_permissions:
+            client = PermissionAwareWebDavFileSystemClient(client, webdav, bearer)
     else:
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
         pipe = CloudPipelineClient(api=api, token=bearer)
-        path_chunks = bucket.rstrip('/').split('/')
-        bucket_name = path_chunks[0]
-        root_path = '/'.join(path_chunks[1:])
-        bucket_object = pipe.get_storage(bucket)
+        bucket_object = pipe.init_bucket_object(bucket)
         bucket_type = bucket_object.type
+        bucket_name = bucket_object.root
+        bucket_path = '/'.join(bucket_object.path.split('/')[1:])
         if bucket_type == CloudType.S3:
-            client = S3StorageLowLevelClient(bucket_name, pipe=pipe, chunk_size=chunk_size, storage_path=bucket)
+            client = S3StorageLowLevelClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
+            if not show_archived:
+                client = ArchivedFilesFilterFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
+            client = ArchivedAttributesFileSystemClient(client, pipe=pipe, bucket=client.bucket_object)
         elif bucket_type == CloudType.GS:
-            client = GoogleStorageLowLevelFileSystemClient(bucket_name, pipe=pipe, chunk_size=chunk_size,
-                                                           storage_path=bucket)
+            client = GoogleStorageLowLevelFileSystemClient(bucket_name, bucket_object, pipe=pipe, chunk_size=chunk_size)
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
+        if audit_buffer_ttl > 0:
+            logging.info('Auditing is enabled.')
+            client, daemon = get_audit_client(client, pipe, bucket_object, audit_buffer_ttl, audit_buffer_size)
+            daemons.append(daemon)
+        else:
+            logging.info('Auditing is disabled.')
         client = StorageHighLevelFileSystemClient(client)
+    if storage_class_exclude:
+        client = StorageClassFilterFileSystemClient(client, classes=storage_class_exclude)
     if recording:
         client = RecordingFileSystemClient(client)
     if bucket_type in [CloudType.S3, CloudType.GS]:
-        client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
-    if cache_ttl > 0 and cache_size > 0:
-        cache_implementation = TTLCache(maxsize=cache_size, ttl=cache_ttl)
-        cache = ListingCache(cache_implementation)
+        client = PathExpandingStorageFileSystemClient(client, root_path=bucket_path)
+    if listing_cache_ttl > 0 and listing_cache_size > 0:
+        listing_cache_implementation = TTLCache(maxsize=listing_cache_size, ttl=listing_cache_ttl)
+        listing_cache = ListingCache(listing_cache_implementation)
         if threads:
-            cache = ThreadSafeListingCache(cache)
-        client = CachingFileSystemClient(client, cache)
+            listing_cache = ThreadSafeListingCache(listing_cache)
+        client = CachingListingFileSystemClient(client, listing_cache)
     else:
-        logging.info('Caching is disabled.')
+        logging.info('Listing caching is disabled.')
+    if bucket_type == CloudType.S3:
+        if xattrs_cache_ttl > 0 and xattrs_cache_size > 0:
+            xattrs_cache_implementation = TTLCache(maxsize=xattrs_cache_size, ttl=xattrs_cache_ttl)
+            xattrs_cache = ExtendedAttributesCache(xattrs_cache_implementation)
+            if threads:
+                xattrs_cache = ThreadSafeExtendedAttributesCache(xattrs_cache)
+            client = ExtendedAttributesCachingFileSystemClient(client, xattrs_cache)
+        else:
+            logging.info('Extended attributes caching is disabled.')
+    if read_disk_buffer_path:
+        logging.info('Disk buffering read is enabled.')
+        client = DiskBufferingReadAllFileSystemClient(client,
+                                                      read_ahead_size=read_disk_buffer_read_ahead_size,
+                                                      path=read_disk_buffer_path)
+        if read_disk_buffer_ttl > 0:
+            logging.info('Disk buffering read ttl is enabled.')
+            daemons.append(DiskBufferTTLDaemon(path=read_disk_buffer_path,
+                                               ttl=read_disk_buffer_ttl,
+                                               delay=read_disk_buffer_ttl_delay))
+        else:
+            logging.info('Disk buffering read ttl is not enabled.')
+    else:
+        logging.info('Disk buffering read is disabled.')
     if read_buffer_size > 0:
-        client = BufferingReadAheadFileSystemClient(client,
-                                                    read_ahead_min_size=read_ahead_min_size,
-                                                    read_ahead_max_size=read_ahead_max_size,
-                                                    read_ahead_size_multiplier=read_ahead_size_multiplier,
-                                                    capacity=read_buffer_size)
+        logging.info('Memory buffering read is enabled.')
+        client = MemoryBufferingReadAheadFileSystemClient(client,
+                                                          read_ahead_min_size=read_ahead_min_size,
+                                                          read_ahead_max_size=read_ahead_max_size,
+                                                          read_ahead_size_multiplier=read_ahead_size_multiplier,
+                                                          capacity=read_buffer_size)
     else:
-        logging.info('Read buffering is disabled.')
+        logging.info('Memory buffering read is disabled.')
     if write_buffer_size > 0:
-        client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
+        logging.info('Memory buffering write is enabled.')
+        client = MemoryBufferingWriteFileSystemClient(client, capacity=write_buffer_size)
     else:
-        logging.info('Write buffering is disabled.')
+        logging.info('Memory buffering write is disabled.')
     if trunc_buffer_size > 0:
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
@@ -151,16 +215,60 @@ def start(mountpoint, webdav, bucket,
             client = WriteNullsOnUpTruncateFileSystemClient(client, capacity=trunc_buffer_size)
     else:
         logging.info('Truncating support is disabled.')
-    logging.info('File system clients pipeline: %s', client.stats())
+    if threads:
+        logging.info('Threading is enabled.')
+    else:
+        logging.info('Threading is disabled.')
+
     fs = PipeFS(client=client, lock=get_lock(threads, monitoring_delay=monitoring_delay), mode=int(default_mode, 8))
+    if bucket_type == CloudType.S3:
+        if xattrs_include_prefixes:
+            if xattrs_include_prefixes[0] == '*':
+                logging.info('All extended attributes will be processed.')
+            else:
+                fs = RestrictingExtendedAttributesFS(fs, include_prefixes=xattrs_include_prefixes)
+        if xattrs_exclude_prefixes:
+            if xattrs_exclude_prefixes[0] == '*':
+                logging.info('All extended attributes operations will be disabled.')
+                disabled_operations.extend(_xattrs_operations)
+            else:
+                fs = RestrictingExtendedAttributesFS(fs, exclude_prefixes=xattrs_exclude_prefixes)
+    else:
+        logging.info('All extended attributes operations will be disabled.')
+        disabled_operations.extend(_xattrs_operations)
+    if disabled_operations:
+        fs = RestrictingOperationsFS(fs, exclude=disabled_operations)
+    fs = ResilientFS(fs)
     if recording:
         fs = RecordingFS(fs)
 
-    logging.info('Initializing file system.')
+    logging.info('File system processing chain: \n%s', fs.summary())
+
+    if daemons:
+        logging.info('Initiating file system daemons...')
+        for daemon in daemons:
+            daemon.start()
+
+    logging.info('Initializing file system...')
     enable_additional_operations()
     ro = client.is_read_only() or mount_options.get('ro', False)
     mount_options.pop('ro', None)
-    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, **mount_options)
+    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, fsname=fs_name, **mount_options)
+
+
+def get_audit_client(client, pipe, storage, audit_buffer_ttl, audit_buffer_size):
+    user = pipe.whoami()
+    container = SetAuditContainer()
+    container = DelayingAuditContainer(container, delay=audit_buffer_ttl)
+    consumer = CloudPipelineAuditConsumer(consumer_func=pipe.create_system_logs,
+                                          user_name=user.get('userName'),
+                                          service_name='pipe-mount')
+    consumer = LoggingAuditConsumer(consumer)
+    consumer = StoragePathAuditConsumer(consumer, storage=storage)
+    consumer = ChunkingAuditConsumer(consumer, chunk_size=audit_buffer_size)
+    client = AuditFileSystemClient(client, container=container)
+    daemon = AuditDaemon(container=container, consumer=consumer)
+    return client, daemon
 
 
 def enable_additional_operations():
@@ -263,6 +371,14 @@ if __name__ == '__main__':
     parser.add_argument("--read-ahead-size-multiplier", type=int, required=False, default=2,
                         help="Sequential read ahead size multiplier. "
                              "Can be configured via CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER environment variable.")
+    parser.add_argument("--read-disk-buffer-path", required=False, default='',
+                        help="Read disk buffer path")
+    parser.add_argument("--read-disk-buffer-read-ahead-size", type=int, required=False, default=512 * MB,
+                        help="Read disk buffer read size")
+    parser.add_argument("--read-disk-buffer-ttl", type=int, required=False, default=1 * HOUR,
+                        help="Read disk buffer time to live, seconds")
+    parser.add_argument("--read-disk-buffer-ttl-delay", type=int, required=False, default=2 * HOUR,
+                        help="Read disk buffer time to live polling delay, seconds")
     parser.add_argument("-wb", "--write-buffer-size", type=int, required=False, default=512 * MB,
                         help="Write buffer size for a single file")
     parser.add_argument("-r", "--trunc-buffer-size", type=int, required=False, default=512 * MB,
@@ -270,21 +386,58 @@ if __name__ == '__main__':
     parser.add_argument("-c", "--chunk-size", type=int, required=False, default=10 * MB,
                         help="Multipart upload chunk size. Can be also specified via "
                              "CP_PIPE_FUSE_CHUNK_SIZE environment variable.")
-    parser.add_argument("-t", "--cache-ttl", type=int, required=False, default=60,
+    parser.add_argument("-t", "--cache-ttl", "--listing-cache-ttl", dest="listing_cache_ttl",
+                        type=int, required=False, default=1 * MINUTE,
                         help="Listing cache time to live, seconds")
-    parser.add_argument("-s", "--cache-size", type=int, required=False, default=100,
+    parser.add_argument("-s", "--cache-size", "--listing-cache-size", dest="listing_cache_size",
+                        type=int, required=False, default=100,
                         help="Number of simultaneous listing caches")
+    parser.add_argument("--xattrs-include-prefix", dest="xattrs_include_prefixes",
+                        type=str, required=False, action="append", default=[],
+                        help="Extended attribute prefixes to be included in processing. "
+                             "Use --xattrs-include-prefix=\"*\" to enable all extended attributes processing. "
+                             "The argument can be specified multiple times. "
+                             "Defaults to \"%s\"." % _xattrs_include_prefix)
+    parser.add_argument("--xattrs-exclude-prefix", dest="xattrs_exclude_prefixes",
+                        type=str, required=False, action="append", default=[],
+                        help="Extended attribute prefixes to be excluded from processing. "
+                             "Use --xattrs-exclude-prefix=\"*\" to disable all extended attributes processing. "
+                             "The argument can be specified multiple times.")
+    parser.add_argument("--xattrs-cache-ttl", type=int, required=False, default=1 * MINUTE,
+                        help="Extended attributes cache time to live, seconds.")
+    parser.add_argument("--xattrs-cache-size", type=int, required=False, default=1000,
+                        help="Number of simultaneous extended attributes caches.")
+    parser.add_argument("--disabled-operation", dest="disabled_operations",
+                        type=str, required=False, action="append", default=[],
+                        help="Disabled file system operations. "
+                             "The argument can be specified multiple times.")
     parser.add_argument("-m", "--mode", type=str, required=False, default="700",
                         help="Default mode for files")
     parser.add_argument("-o", "--options", type=str, required=False,
                         help="String with mount options supported by FUSE")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")
-    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
-    parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
-                        help="Delay between path lock monitoring cycles.")
+    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.",
+                        default=True)
+    parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=10 * MINUTE,
+                        help="Delay between path lock monitoring cycles, seconds.")
+    parser.add_argument("--show-archived", action='store_true', help="Show archived files.")
+    parser.add_argument("--storage-class-exclude", type=str, required=False, action="append", default=[],
+                        help="Storage classes that shall be excluded from listing.")
+    parser.add_argument("--audit-buffer-ttl", type=int, required=False, default=1 * MINUTE,
+                        help="Data access audit buffer time to live, seconds.")
+    parser.add_argument("--audit-buffer-size", type=int, required=False, default=100,
+                        help="Number of entries in data access audit buffer.")
+    parser.add_argument("-f", "--fix-permissions", default=False, action='store_true',
+                        help="With this flag enabled, permissions for the uploaded files will be overriden."
+                             "Applied only to WebDav mounts.")
+
     args = parser.parse_args()
 
+    if args.xattrs_include_prefixes and args.xattrs_exclude_prefixes:
+        parser.error('Either --xattrs-include-prefix or --xattrs-exclude-prefix parameter should be specified.')
+    if not args.xattrs_include_prefixes and not args.xattrs_exclude_prefixes:
+        args.xattrs_include_prefixes = [_xattrs_include_prefix]
     if not args.webdav and not args.bucket:
         parser.error('Either --webdav or --bucket parameter should be specified.')
     if args.bucket and (args.chunk_size < 5 * MB or args.chunk_size > 5 * GB):
@@ -306,12 +459,23 @@ if __name__ == '__main__':
               read_buffer_size=args.read_buffer_size,
               read_ahead_min_size=args.read_ahead_min_size, read_ahead_max_size=args.read_ahead_max_size,
               read_ahead_size_multiplier=args.read_ahead_size_multiplier,
+              read_disk_buffer_path=args.read_disk_buffer_path,
+              read_disk_buffer_read_ahead_size=args.read_disk_buffer_read_ahead_size,
+              read_disk_buffer_ttl=args.read_disk_buffer_ttl,
+              read_disk_buffer_ttl_delay=args.read_disk_buffer_ttl_delay,
               write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
               chunk_size=args.chunk_size,
-              cache_ttl=args.cache_ttl, cache_size=args.cache_size,
+              listing_cache_ttl=args.listing_cache_ttl, listing_cache_size=args.listing_cache_size,
+              xattrs_include_prefixes=args.xattrs_include_prefixes,
+              xattrs_exclude_prefixes=args.xattrs_exclude_prefixes,
+              xattrs_cache_ttl=args.xattrs_cache_ttl, xattrs_cache_size=args.xattrs_cache_size,
+              disabled_operations=args.disabled_operations,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
-              threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
-    except BaseException as e:
-        logging.error('Unhandled error: %s' % str(e))
+              threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording,
+              show_archived=args.show_archived, storage_class_exclude=args.storage_class_exclude,
+              audit_buffer_ttl=args.audit_buffer_ttl, audit_buffer_size=args.audit_buffer_size,
+              fix_permissions=args.fix_permissions)
+    except Exception:
+        logging.exception('Unhandled error')
         traceback.print_exc()
         sys.exit(1)

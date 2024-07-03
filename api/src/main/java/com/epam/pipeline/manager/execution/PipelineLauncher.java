@@ -23,11 +23,17 @@ import com.epam.pipeline.entity.cluster.EnvVarsSettings;
 import com.epam.pipeline.entity.cluster.container.ImagePullPolicy;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.scan.ToolOSVersion;
+import com.epam.pipeline.entity.scan.ToolVersionScanResult;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
+import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -37,6 +43,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import lombok.Getter;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -70,6 +77,21 @@ public class PipelineLauncher {
     private static final String ENV_DELIMITER = ",";
     private static final String CP_POD_PULL_POLICY = "CP_POD_PULL_POLICY";
 
+    @Getter
+    public enum LinuxLaunchScriptParams {
+        LINUX_LAUNCH_SCRIPT_URL_PARAM("linuxLaunchScriptUrl"),
+        INIT_LINUX_SCRIPT_URL_PARAM("linuxInitScriptUrl"),
+        GIT_CLONE_URL_PARAM("gitCloneUrl"),
+        GIT_REVISION_NAME_PARAM("gitRevisionName"),
+        PIPELINE_COMMAND_PARAM("pipelineCommand");
+
+        private final String value;
+
+        LinuxLaunchScriptParams(String value) {
+            this.value = value;
+        }
+    }
+
     @Autowired
     private PipelineExecutor executor;
 
@@ -82,11 +104,17 @@ public class PipelineLauncher {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private ToolScanInfoManager toolScanInfoManager;
+
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
     @Value("${launch.script.url.linux}")
     private String linuxLaunchScriptUrl;
+
+    @Value("${init.script.url.linux}")
+    private String linuxInitScriptUrl;
 
     @Value("${launch.script.url.windows}")
     private String windowsLaunchScriptUrl;
@@ -103,68 +131,132 @@ public class PipelineLauncher {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.SIMPLE_DATE_FORMAT);
     private final SimpleDateFormat timeFormat = new SimpleDateFormat(Constants.SIMPLE_TIME_FORMAT);
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration, List<String> endpoints,
-                         String nodeIdLabel, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, true, run.getPodId(), clusterId);
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final String clusterId) {
+        return launch(run, configuration, endpoints, true, run.getPodId(), clusterId);
     }
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId) {
-        return launch(run, configuration, endpoints, nodeIdLabel, useLaunch, pipelineId, clusterId,
-                getImagePullPolicy(configuration));
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration, final List<String> endpoints,
+                         final boolean useLaunch, final String pipelineId, final String clusterId) {
+        return launch(run, configuration, endpoints, useLaunch, pipelineId,
+                clusterId, getImagePullPolicy(configuration));
     }
 
-    public String launch(PipelineRun run, PipelineConfiguration configuration,
-                         List<String> endpoints, String nodeIdLabel, boolean useLaunch,
-                         String pipelineId, String clusterId, ImagePullPolicy imagePullPolicy) {
-        GitCredentials gitCredentials = configuration.getGitCredentials();
+    public String launch(final PipelineRun run, final PipelineConfiguration configuration,
+                         final List<String> endpoints, final boolean useLaunch, final String pipelineId,
+                         final String clusterId, final ImagePullPolicy imagePullPolicy) {
+        validateLaunchConfiguration(configuration);
+        final GitCredentials gitCredentials = configuration.getGitCredentials();
         //TODO: AZURE fix
-        Map<SystemParams, String> systemParams = matchSystemParams(
+        final Map<SystemParams, String> systemParams = matchSystemParams(
                 run,
                 preferenceManager.getPreference(SystemPreferences.BASE_API_HOST),
                 kubeNamespace,
                 preferenceManager.getPreference(SystemPreferences.CLUSTER_ENABLE_AUTOSCALING),
                 configuration, gitCredentials);
-        checkRunOnParentNode(run, nodeIdLabel, systemParams);
-        List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
-                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive()));
+        markRunOnParentNode(run, configuration.getPodAssignPolicy(), systemParams);
+        final List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
+                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
+                        configuration.getKubeLabels()));
 
         Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
                 MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
-        String pipelineCommand = commandBuilder.build(configuration, systemParams);
-        String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
+        final String pipelineCommand = commandBuilder.build(configuration, systemParams);
+        final String gitCloneUrl = Optional.ofNullable(gitCredentials).map(GitCredentials::getUrl)
                 .orElse(run.getRepository());
-        String rootPodCommand;
+        final String rootPodCommand;
+        final OSSpecificLaunchCommandTemplate commandTemplate;
         if (!useLaunch) {
             rootPodCommand = pipelineCommand;
+            commandTemplate = null;
         } else {
             if (KubernetesConstants.WINDOWS.equals(run.getPlatform())) {
                 rootPodCommand = String.format(
-                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS), 
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_WINDOWS),
                         windowsLaunchScriptUrl, pipelineCommand);
+                commandTemplate = null;
             } else {
-                rootPodCommand = String.format(
-                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX), 
-                        linuxLaunchScriptUrl, linuxLaunchScriptUrl, gitCloneUrl,
-                        run.getRevisionName(), pipelineCommand);
+                final ToolOSVersion toolOSVersion = toolScanInfoManager
+                        .loadToolVersionScanInfoByImageName(configuration.getDockerImage())
+                        .map(ToolVersionScanResult::getToolOSVersion).orElse(null);
+                commandTemplate = PodLaunchCommandHelper.pickLaunchCommandTemplate(
+                        preferenceManager.getPreference(SystemPreferences.LAUNCH_POD_CMD_TEMPLATE_LINUX),
+                        toolOSVersion, configuration.getDockerImage());
+                final String effectiveLaunchCommand = commandTemplate.getCommand();
+                Assert.notNull(effectiveLaunchCommand, "Fail to evaluate pod launch command.");
+                rootPodCommand = PodLaunchCommandHelper.evaluateLaunchCommandTemplate(
+                        effectiveLaunchCommand,
+                        new HashMap<String, String>() {{
+                            put(LinuxLaunchScriptParams.LINUX_LAUNCH_SCRIPT_URL_PARAM.getValue(), linuxLaunchScriptUrl);
+                            put(LinuxLaunchScriptParams.INIT_LINUX_SCRIPT_URL_PARAM.getValue(), linuxInitScriptUrl);
+                            put(LinuxLaunchScriptParams.GIT_CLONE_URL_PARAM.getValue(), gitCloneUrl);
+                            put(LinuxLaunchScriptParams.GIT_REVISION_NAME_PARAM.getValue(), run.getRevisionName());
+                            put(LinuxLaunchScriptParams.PIPELINE_COMMAND_PARAM.getValue(), pipelineCommand);
+                        }});
             }
+
         }
         LOGGER.debug("Start script command: {}", rootPodCommand);
-        executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, imagePullPolicy);
+        executor.launchRootPod(rootPodCommand, run, envVars, endpoints, pipelineId,
+                configuration.getPodAssignPolicy(), configuration.getSecretName(),
+                clusterId, imagePullPolicy, configuration.getKubeLabels(),
+                configuration.getKubeServiceAccount(), commandTemplate);
         return pipelineCommand;
     }
 
+
+    void validateLaunchConfiguration(final PipelineConfiguration configuration) {
+        final PipelineUser user = authManager.getCurrentUser();
+        validateRunAssignPolicy(configuration);
+        validateConfigurationOnAdvancedAssignPolicy(configuration, user);
+        validateConfigurationOnKubernetesServiceAccount(configuration, user);
+    }
+
+    private void validateRunAssignPolicy(final PipelineConfiguration configuration) {
+        Optional.ofNullable(configuration.getPodAssignPolicy()).ifPresent(assignPolicy -> {
+            if (!assignPolicy.isValid()) {
+                throw new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_MALFORMED,
+                                assignPolicy.toString()));
+            }
+        });
+    }
+
+    private void validateConfigurationOnKubernetesServiceAccount(final PipelineConfiguration configuration,
+                                                                 final PipelineUser user) {
+        if (!user.isAdmin() && configuration.getKubeServiceAccount() != null) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_RUN_WITH_SERVICE_ACCOUNT_FORBIDDEN, user.getUserName())
+            );
+        }
+    }
+
+    private void validateConfigurationOnAdvancedAssignPolicy(final PipelineConfiguration configuration,
+                                                             final PipelineUser user) {
+        if (user.isAdmin()) {
+            return;
+        }
+        final boolean isAdvancedRunAssignPolicy = Optional.ofNullable(configuration.getPodAssignPolicy())
+                .map(policy -> !policy.getSelector().getLabel().equals(KubernetesConstants.RUN_ID_LABEL))
+                .orElse(false);
+        if (isAdvancedRunAssignPolicy) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_ASSIGN_POLICY_FORBIDDEN, user.getUserName()));
+        }
+    }
+
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
-                                                           final boolean sensitiveRun) {
-        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId, sensitiveRun);
+                                                           final boolean sensitiveRun,
+                                                           final Map<String, String> kubeLabels) {
+        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId, sensitiveRun, kubeLabels);
         final Map<String, String> cloudEnvVars = cloudFacade.buildContainerCloudEnvVars(cloudRegionId);
         return CommonUtils.mergeMaps(externalProperties, cloudEnvVars);
     }
 
     private Map<String, String> getExternalProperties(final Long regionId,
-                                                      final boolean sensitiveRun) {
+                                                      final boolean sensitiveRun,
+                                                      final Map<String, String> kubeLabels) {
         final EnvVarsSettings podEnvVarsFileMap =
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_ENV_PROPERTIES);
         if (podEnvVarsFileMap == null) {
@@ -175,6 +267,12 @@ public class PipelineLauncher {
         if (sensitiveRun) {
             mergedEnvVars.putAll(MapUtils.emptyIfNull(podEnvVarsFileMap.getSensitiveEnvVars()));
         }
+        if (MapUtils.isNotEmpty(kubeLabels)) {
+            final Map<String, Map<String, Object>> labelEnvVars =
+                    MapUtils.emptyIfNull(podEnvVarsFileMap.getLabelEnvVars());
+            kubeLabels.keySet()
+                    .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
+        }
         ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars())
                 .stream()
                 .filter(region -> regionId.equals(region.getRegionId()))
@@ -184,14 +282,25 @@ public class PipelineLauncher {
                     if (sensitiveRun) {
                         mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getSensitiveEnvVars()));
                     }
+                    if (MapUtils.isNotEmpty(kubeLabels)) {
+                        final Map<String, Map<String, Object>> labelEnvVars =
+                                MapUtils.emptyIfNull(region.getLabelEnvVars());
+                        kubeLabels.keySet()
+                                .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
+                    }
                 });
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
 
-    private void checkRunOnParentNode(PipelineRun run, String nodeIdLabel,
-                                      Map<SystemParams, String> systemParams) {
-        if (!run.getId().toString().equals(nodeIdLabel)) {
-            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+    private void markRunOnParentNode(final PipelineRun run, final RunAssignPolicy assignPolicy,
+                                     final Map<SystemParams, String> systemParams) {
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            assignPolicy.ifMatchThenMapValue(KubernetesConstants.RUN_ID_LABEL, Long::valueOf)
+                    .ifPresent(parentNodeId -> {
+                        if (!run.getId().equals(parentNodeId)) {
+                            systemParams.put(SystemParams.RUN_ON_PARENT_NODE, EMPTY_PARAMETER);
+                        }
+                    });
         }
     }
 
@@ -269,7 +378,14 @@ public class PipelineLauncher {
                 .orElse(userManager.loadUserContext(run.getOwner()));
         systemParamsWithValue.put(SystemParams.API_TOKEN, authManager
                 .issueToken(owner, null).getToken());
+
+        final PipelineUser user = userManager.loadByNameOrId(run.getOwner());
         systemParamsWithValue.put(SystemParams.OWNER, run.getOwner());
+        systemParamsWithValue.put(SystemParams.OWNER_ID, String.valueOf(user.getId()));
+        if (StringUtils.hasText(user.getEmail())) {
+            systemParamsWithValue.put(SystemParams.OWNER_EMAIL, user.getEmail());
+        }
+
         if (gitCredentials != null) {
             putIfStringValuePresent(systemParamsWithValue,
                     SystemParams.GIT_USER, gitCredentials.getUserName());

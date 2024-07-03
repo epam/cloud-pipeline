@@ -70,8 +70,10 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
     @Override
     public void synchronize(LocalDateTime lastSyncTime, LocalDateTime syncStart) {
         log.debug("Started {} storage billing synchronization", storageType);
-        final List<EntityContainer<AbstractDataStorage>> entityContainers = loader.loadAllEntities();
-        entityContainers.removeIf(storage -> storage.getEntity().getType() != storageType);
+        final List<EntityContainer<AbstractDataStorage>> entityContainers = loader.loadAllEntities()
+                .stream()
+                .filter(storage -> storage.getEntity().getType().equals(storageType))
+                .collect(Collectors.toList());
         final List<DocWriteRequest> storageBillingRequests =
             createStorageBillingRequest(entityContainers, lastSyncTime, syncStart);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,11 @@ import ConfigurationDelete from '../../../models/configuration/ConfigurationDele
 import CreateDataStorage from '../../../models/dataStorage/DataStorageSave';
 import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
-  from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
+from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
-import Metadata from '../../special/metadata/Metadata';
+import {METADATA_KEYS} from './metadata-controls/get-default-metadata-properties';
+import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
+import ItemsTable, {isJson} from '../../special/metadata/items-table';
 import Issues from '../../special/issues/Issues';
 import {
   ContentIssuesMetadataPanel,
@@ -79,7 +81,7 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../special/UploadButton';
@@ -111,7 +113,7 @@ function splitFolderPaths (foldersStructure) {
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
 @HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -240,12 +242,64 @@ export default class Folder extends localization.LocalizedReactComponent {
     });
   };
 
-  renderMetadataKeyValue = (key, value) => {
+  renderMetadataKeyValue = (key, metadata) => {
+    if (!metadata) {
+      return null;
+    }
+    const {value} = metadata;
+    const ignoredKey = () => {
+      return Object.values(METADATA_KEYS).includes(key);
+    };
+    if (ignoredKey()) {
+      return null;
+    }
+    const renderSpecialMetadataComponent = () => {
+      const SpecialMetadataComponent = SpecialTags[key];
+      return (
+        <div
+          key={`${key}_value`}
+          className="cp-text"
+        >
+          <SpecialMetadataComponent
+            key={key}
+            metadata={metadata}
+            showOnlySummary
+          />
+        </div>
+      );
+    };
+    const renderJSONComponent = () => {
+      return (
+        <div
+          key={`${key}_value`}
+        >
+          <ItemsTable
+            title={key}
+            showOnlySummary
+            value={value}
+            containerStyle={{display: 'grid', padding: 0}}
+            className="cp-text"
+          />
+        </div>
+      );
+    };
+    let metadataValue;
+    let wrapValue;
+    if (SpecialTags.hasOwnProperty(key)) {
+      metadataValue = renderSpecialMetadataComponent();
+      wrapValue = true;
+    } else if (isJson(value)) {
+      metadataValue = renderJSONComponent();
+    } else {
+      metadataValue = value;
+    }
     return (
       <Tooltip key={key} overlay={
         <Row>
           <Row>{key}:</Row>
-          <Row>{value}</Row>
+          <Row style={{wordBreak: 'break-word'}}>
+            {value}
+          </Row>
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
@@ -257,9 +311,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           </Row>
           <Row className={classNames(
             styles.metadataItemValue,
+            {[styles.wrap]: wrapValue},
             'cp-library-metadata-item-value'
           )}>
-            {value}
+            {metadataValue}
           </Row>
         </div>
       </Tooltip>
@@ -273,7 +328,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     const items = [];
     for (let key in metadata) {
       if (metadata.hasOwnProperty(key)) {
-        items.push(this.renderMetadataKeyValue(key, metadata[key].value));
+        items.push(
+          this.renderMetadataKeyValue(key, metadata[key])
+        );
       }
     }
     if (items.length > MAX_INLINE_METADATA_KEYS) {
@@ -352,6 +409,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     },
     {
       key: 'region',
+      className: styles.treeItemRegion,
       render: (item) => {
         if (item.type === ItemTypes.storage) {
           return <AWSRegionTag regionId={item.regionId} />;
@@ -461,7 +519,10 @@ export default class Folder extends localization.LocalizedReactComponent {
         }
         break;
       case ItemTypes.storage:
-        if (roleModel.writeAllowed(item)) {
+        if (
+          roleModel.isManager.storageAdmin(this) ||
+          roleModel.writeAllowed(item)
+        ) {
           actions.push(
             <Button
               key="edit"
@@ -724,8 +785,6 @@ export default class Folder extends localization.LocalizedReactComponent {
       path: path,
       shared: storage.serviceType === ServiceTypes.objectStorage && storage.shared,
       storagePolicy: {
-        longTermStorageDuration: storage.longTermStorageDuration,
-        shortTermStorageDuration: storage.shortTermStorageDuration,
         backupDuration: storage.backupDuration,
         versioningEnabled: storage.versioningEnabled
       },
@@ -788,15 +847,11 @@ export default class Folder extends localization.LocalizedReactComponent {
     } else {
       if (this.state.editableStorage.policySupported &&
         storage.serviceType !== ServiceTypes.fileShare &&
-        (storage.longTermStorageDuration !== undefined ||
-        storage.shortTermStorageDuration !== undefined ||
-        storage.backupDuration !== undefined || !storage.versioningEnabled)) {
+        (storage.backupDuration !== undefined || !storage.versioningEnabled)) {
         const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
         await updatePolicyRequest.send({
           id: this.state.editableStorage.id,
           storagePolicy: {
-            longTermStorageDuration: storage.longTermStorageDuration,
-            shortTermStorageDuration: storage.shortTermStorageDuration,
             backupDuration: storage.backupDuration,
             versioningEnabled: storage.versioningEnabled
           }
@@ -914,7 +969,18 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token} = opts;
+    const {
+      name,
+      description,
+      repository,
+      repositoryType,
+      branch,
+      token,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
+    } = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -922,7 +988,13 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
-      repositoryToken: token
+      repositoryType,
+      repositoryToken: token,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
     });
     hide();
     if (this.createPipelineRequest.error) {
@@ -1017,11 +1089,13 @@ export default class Folder extends localization.LocalizedReactComponent {
   checkRequest = new CheckPipelineRepository();
 
   checkRepositoryExistence = async (pipelineOpts, callback) => {
-    const {repository, token} = pipelineOpts;
+    const {repository, repositoryType, branch, token} = pipelineOpts;
     if ((token && token.length) || (repository && repository.length)) {
       const hide = message.loading('Checking repository existence...', -1);
       await this.checkRequest.send({
         repository,
+        type: repositoryType,
+        branch,
         token
       });
       hide();
@@ -1086,17 +1160,33 @@ export default class Folder extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
+  editPipeline = async (values) => {
+    const {
+      name,
+      description,
+      token,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
+    } = values || {};
     const {pipelineType} = this.state.editablePipeline;
     const objectName = /^versioned_storage$/i.test(pipelineType)
       ? 'versioned storage'
       : 'pipeline';
     const hide = message.loading(`Updating ${this.localizedString(objectName)} ${name}...`, 0);
+    const pipelineId = this.state.editablePipeline.id;
     await this.updatePipelineRequest.send({
-      id: this.state.editablePipeline.id,
+      id: pipelineId,
       name: name,
       description: description,
-      parentFolderId: this._currentFolder.folder.id
+      parentFolderId: this._currentFolder.folder.id,
+      branch,
+      configurationPath,
+      visibility,
+      codePath,
+      docsPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -1113,7 +1203,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           message.error(this.updatePipelineTokenRequest.error, 5);
         } else {
           this.closeEditPipelineDialog();
-          await this.props.folder.fetch();
+          await Promise.all([
+            this.props.folder.fetch(),
+            this.props.pipelines.getPipeline(pipelineId).fetch()
+          ]);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this._currentFolder.folder.parentId);
           }
@@ -1121,7 +1214,10 @@ export default class Folder extends localization.LocalizedReactComponent {
       } else {
         hide();
         this.closeEditPipelineDialog();
-        await this.props.folder.fetch();
+        await Promise.all([
+          this.props.folder.fetch(),
+          this.props.pipelines.getPipeline(pipelineId).fetch()
+        ]);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this._currentFolder.folder.parentId);
         }
@@ -1262,7 +1358,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-          dataSource={this._currentFolder.data}
+          dataSource={formatTreeItems(this._currentFolder.data, {preferences: this.props.preferences})}
           columns={this.columns}
           rowKey={(item) => item.key}
           title={null}
@@ -1310,7 +1406,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           (this.showMetadata && this.props.folderId !== undefined) &&
           <Metadata
             key={METADATA_PANEL_KEY}
-            readOnly={!roleModel.isOwner(this.props.folder.value)}
+            readOnly={!(
+              roleModel.isOwner(this.props.folder.value) ||
+              roleModel.isManager.storageAdmin(this)
+            )}
             entityName={this.props.folder.value.name}
             entityId={this.props.folderId} entityClass="FOLDER" />
         }
@@ -1470,7 +1569,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           );
         }
       }
-      if (roleModel.isManager.storage(this)) {
+      if (roleModel.isManager.storage(this) ||
+      (roleModel.isManager.storageAdmin(this) && roleModel.writeAllowed(this.props.folder.value))
+      ) {
         const fsMountsAvailable = this.props.awsRegions.loaded &&
           extractFileShareMountList(this.props.awsRegions.value).length > 0;
         createActions.push(
@@ -1560,7 +1661,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           createActions.push(...folderTemplatesMenu);
         }
       }
-      if (roleModel.isManager.pipeline(this)) {
+      if (roleModel.isManager.versionedStorage(this)) {
         if (!folderTemplatesMenu) {
           createActions.push(<Divider key="divider versioned storages" />);
         }
@@ -1771,12 +1872,15 @@ export default class Folder extends localization.LocalizedReactComponent {
         );
       }
       if (
-        !this.props.readOnly &&
-        roleModel.writeAllowed(this.props.folder.value) &&
-        roleModel.isManager.folder(this)
+        !this.props.readOnly && (
+          roleModel.isManager.storageAdmin(this) || (
+            roleModel.writeAllowed(this.props.folder.value) &&
+            roleModel.isManager.folder(this)
+          )
+        )
       ) {
         if (editActions.length > 0) {
-          editActions.push(<Divider key="divider"/>);
+          editActions.push(<Divider key="divider" />);
         }
         editActions.push(
           <MenuItem
@@ -1837,7 +1941,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 size="small"
                 className={styles.dropDownTrigger}
               >
-                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}}/>
+                <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
               </Button>
             </Dropdown>
           </DropDownWrapper>
@@ -1925,11 +2029,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       let data = generateTreeData(
         this.props.folder.value,
-        true,
-        {id: this.props.folderId},
-        [],
-        this.props.supportedTypes,
-        this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.folderId},
+          types: this.props.supportedTypes,
+          filter: this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        }
       );
       if (this.props.isRoot) {
         this._currentFolder = {

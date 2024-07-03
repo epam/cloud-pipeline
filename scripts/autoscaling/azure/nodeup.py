@@ -251,12 +251,13 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
 def run_instance(api_url, api_token, api_user, instance_name, instance_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ssh_pub_key, user,
-                 ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images):
+                 ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                 global_distribution_url, pre_pull_images):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                            swap_size, pre_pull_images)
+                                            global_distribution_url, swap_size, pre_pull_images)
     access_config = get_access_config(cloud_region)
     disable_external_access = False
     if access_config is not None:
@@ -647,12 +648,12 @@ def verify_run_id(run_id):
     vm_name = None
     private_ip = None
     for resource in resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-        if str(resource.type).split('/')[-1] == "virtualMachines":
+        if str(resource.type).split('/')[-1].lower() == "virtualmachines":
             vm_name = resource.name
             private_ip = network_client.network_interfaces\
                 .get(resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
             break
-        if str(resource.type).split('/')[-1] == "virtualMachineScaleSet":
+        if str(resource.type).split('/')[-1].lower() == "virtualmachinescaleset":
             scale_set_name = resource.name
             vm_name, private_ip = get_instance_name_and_private_ip_from_vmss(scale_set_name)
             break
@@ -817,16 +818,16 @@ def resolve_azure_api(resource):
     api version) """
     provider = resource_client.providers.get(resource.id.split('/')[6])
     rt = next((t for t in provider.resource_types
-               if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+               if t.resource_type.lower() == '/'.join(resource.type.split('/')[1:]).lower()), None)
     if rt and 'api_versions' in rt.__dict__:
         api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
         return api_version[0] if api_version else rt.__dict__['api_versions'][0]
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
+    if str(r1.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
+    elif str(r1.type).split('/')[-1].lower() == "networkinterfaces" and not str(r2.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
     return 0
 
@@ -846,8 +847,8 @@ def delete_all_by_run_id(run_id):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].startswith('virtualMachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-        if str(resources[0].type).split('/')[-1] == 'virtualMachines':
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].lower().startswith('virtualmachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        if str(resources[0].type).split('/')[-1].lower() == 'virtualmachines':
             detach_disks_and_nic(vm_name)
         for resource in resources:
             resource_client.resources.delete(
@@ -981,7 +982,8 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 
 def get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, ins_img, ins_platform, kube_ip,
-                         kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images):
+                         kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                         global_distribution_url, swap_size, pre_pull_images):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -998,15 +1000,18 @@ def get_user_data_script(api_url, api_token, api_user, cloud_region, ins_type, i
         user_data_script = replace_swap(swap_size, user_data_script)
         user_data_script = replace_docker_images(pre_pull_images, user_data_script)
         user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
-                                            .replace('@KUBE_IP@', kube_ip) \
-                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
-                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
-                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
-                                            .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token) \
-                                            .replace('@API_USER@', api_user) \
-                                            .replace('@FS_TYPE@', fs_type)
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@API_USER@', api_user) \
+                                           .replace('@FS_TYPE@', fs_type) \
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
+                                           .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
+                                           .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():
@@ -1105,6 +1110,8 @@ def main():
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
+    global_distribution_url = os.getenv('GLOBAL_DISTRIBUTION_URL',
+                                        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
 
     global zone
     zone = region_id
@@ -1163,7 +1170,8 @@ def main():
             api_token = os.environ["API_TOKEN"]
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, resource_name, ins_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ins_key_path,
-                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images)
+                                          "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                                          global_distribution_url, pre_pull_images)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels)
         pipe_log('Node created:\n'

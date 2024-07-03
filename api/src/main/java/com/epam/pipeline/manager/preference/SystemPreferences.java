@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -30,20 +31,29 @@ import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
+import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
+import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
+import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
+import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
 import com.epam.pipeline.manager.cloud.gcp.GCPResourceMapping;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerClient;
@@ -58,9 +68,12 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.IntPreferen
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
-import com.epam.pipeline.manager.security.run.RunVisibilityPolicy;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference.EnumPreference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -84,12 +97,15 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotBlank;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidJson;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidLocalPath;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -121,34 +137,48 @@ public class SystemPreferences {
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
+    private static final String CLOUD = "Cloud";
+    private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String SYSTEM_JOBS_GROUP = "System Jobs";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
 
-    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
-            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
-            new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
-            isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
-
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
-                                                                  COMMIT_GROUP, PreferenceValidators.isNotBlank);
+                                                                  COMMIT_GROUP, isNotBlank);
     public static final IntPreference COMMIT_TIMEOUT = new IntPreference("commit.timeout", 600, COMMIT_GROUP,
                                                                          isGreaterThan(0));
     public static final StringPreference COMMIT_USERNAME = new StringPreference("commit.username", null,
-                                                                         COMMIT_GROUP, PreferenceValidators.isNotBlank);
+                                                                         COMMIT_GROUP, isNotBlank);
     public static final StringPreference PRE_COMMIT_COMMAND_PATH = new StringPreference("commit.pre.command.path",
-            "/root/pre_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+            "/root/pre_commit.sh", COMMIT_GROUP, isNotBlank);
     public static final StringPreference POST_COMMIT_COMMAND_PATH = new StringPreference("commit.post.command.path",
-            "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+            "/root/post_commit.sh", COMMIT_GROUP, isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
+    public static final IntPreference PAUSE_LAYERS_COUNT_TO_SQUASH = new IntPreference(
+        "pause.layers.count.to.squash", 25, COMMIT_GROUP, isGreaterThanOrEquals(-1));
     // List of ',' separated env vars to be cleaned up from docker image before commit
     public static final StringPreference ADDITIONAL_ENVS_TO_CLEAN = new StringPreference(
             "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);
+    public static final IntPreference GET_LAYERS_COUNT_TIMEOUT = new IntPreference("get.layers.count.timeout", 600,
+            COMMIT_GROUP, isGreaterThan(0));
+    public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
+            COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
+    public static final BooleanPreference DATA_STORAGE_TAG_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
+        "storage.tag.restricted.access", false, DATA_STORAGE_GROUP, pass);
+    public static final ObjectPreference<List<String>> DATA_STORAGE_TAG_RESTRICTED_ACCESS_EXCLUDE_KEYS =
+        new ObjectPreference<>("storage.tag.restricted.access.exclude.keys",
+        ListUtils.unmodifiableList(Arrays.asList("CP_SOURCE", "CP_OWNER", "CP_RUN_ID", "CP_JOB_ID",
+                "CP_JOB_NAME", "CP_JOB_VERSION", "CP_JOB_CONFIGURATION", "CP_DOCKER_IMAGE", "CP_CALC_CONFIG")),
+        new TypeReference<List<String>>() {}, DATA_STORAGE_GROUP,
+        isNullOrValidJson(new TypeReference<List<String>>() {}));
+    public static final BooleanPreference DATA_STORAGE_MGMT_RESTRICTED_ACCESS_ENABLED = new BooleanPreference(
+        "storage.mgmt.restricted.access", false, DATA_STORAGE_GROUP, pass);
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
         "storage.max.download.size", 10000, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_TEMP_CREDENTIALS_DURATION = new IntPreference(
@@ -190,14 +220,18 @@ public class SystemPreferences {
             "/,/etc,/runs,/common,/bin,/opt,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/tmp",
             DATA_STORAGE_GROUP, PreferenceValidators.isEmptyOrValidBatchOfPaths);
 
+    public static final BooleanPreference DATA_STORAGE_NFS_NETWORK_ACCESS_RESTRICTED = new BooleanPreference(
+            "storage.mounts.nfs.network.access.restricted", false, DATA_STORAGE_GROUP, pass, true);
+
     /**
      * Defines NFS mounting policy for sensitive runs. Can take SKIP, TIMEOUT, NONE values.
      * */
     public static final StringPreference DATA_STORAGE_NFS_MOUNT_SENSITIVE_POLICY = new StringPreference(
             "storage.mounts.nfs.sensitive.policy",
-            null,
+            NFSMountPolicy.SKIP.name(),
             DATA_STORAGE_GROUP,
-            isNullOrValidEnum(NFSMountPolicy.class));
+            isNullOrValidEnum(NFSMountPolicy.class),
+            true);
 
     /**
      * Configures a system data storage for storing attachments and etc.
@@ -219,6 +253,8 @@ public class SystemPreferences {
             null, DATA_STORAGE_GROUP, pass);
     public static final LongPreference STORAGE_LISTING_TIME_LIMIT =
             new LongPreference("storage.listing.time.limit", 3000L, DATA_STORAGE_GROUP, pass);
+    public static final IntPreference STORAGE_LS_FILTER_ITEMS_LIMIT = new IntPreference(
+            "storage.listing.filter.items.limit", 500, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference STORAGE_INCOMPLETE_UPLOAD_CLEAN_DAYS =
             new IntPreference("storage.incomplete.upload.clean.days", 5, DATA_STORAGE_GROUP,
                     isNullOrGreaterThan(0));
@@ -227,6 +263,16 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
             new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
                     DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
+    public static final LongPreference STORAGE_LIFECYCLE_PROLONG_DAYS =
+            new LongPreference("storage.lifecycle.prolong.days", 7L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
+    public static final LongPreference STORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS =
+            new LongPreference("storage.lifecycle.notify.before.days", 7L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
+
+    public static final LongPreference STORAGE_LIFECYCLE_DEFAULT_RESTORE_DAYS =
+            new LongPreference("storage.lifecycle.default.restore.days", 30L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
@@ -287,6 +333,40 @@ public class SystemPreferences {
             GIT_GROUP, isGreaterThan(0));
     public static final StringPreference GIT_FSBROWSER_WD =
             new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
+    public static final StringPreference BITBUCKET_USER_NAME =
+            new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
+    public static final StringPreference GITLAB_API_VERSION = new StringPreference(
+            "git.gitlab.api.version", "v3", GIT_GROUP, pass);
+    public static final BooleanPreference GITLAB_HASHED_REPO_SUPPORT = new BooleanPreference(
+            "git.gitlab.hashed.repo.support", false, GIT_GROUP, pass);
+    public static final StringPreference GITLAB_DEFAULT_SRC_DIRECTORY = new StringPreference(
+            "gitlab.default.src.directory", "src/", GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_DEFAULT_DOC_DIRECTORY = new StringPreference(
+            "gitlab.default.doc.directory", "docs/", GIT_GROUP, pass, true);
+    public static final StringPreference BITBUCKET_DEFAULT_SRC_DIRECTORY = new StringPreference(
+            "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
+    public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
+            "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
+            "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
+    public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
+            "git.gitlab.issue.project", null, GIT_GROUP, pass, true);
+
+    public static final BooleanPreference GITLAB_SERVER_FILTERING = new BooleanPreference(
+            "git.gitlab.issue.server.filtering", false, GIT_GROUP, pass);
+    public static final ObjectPreference<List<String>> GITLAB_ISSUE_STATUSES = new ObjectPreference<>(
+            "git.gitlab.issue.statuses", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final ObjectPreference<List<String>> GITLAB_DEFAULT_LABELS = new ObjectPreference<>(
+            "git.gitlab.default.labels", null, new TypeReference<List<String>>() {}, GIT_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final EnumPreference<GitlabIssueVisibility> GITLAB_ISSUE_VISIBILITY = new EnumPreference<>(
+            "git.gitlab.issue.visibility", GitlabIssueVisibility.OWNER, GIT_GROUP);
+    public static final ObjectPreference<GitlabIssueLabelsFilter> GITLAB_ISSUE_DEFAULT_FILTER = new ObjectPreference<>(
+            "git.gitlab.issue.default.filter", null, new TypeReference<GitlabIssueLabelsFilter>() {},
+            GIT_GROUP, isNullOrValidJson(new TypeReference<GitlabIssueLabelsFilter>() {}), true);
+    public static final LongPreference GIT_DEFAULT_TOKEN_DURATION_DAYS = new LongPreference(
+            "git.default.token.duration.days", 1L, GIT_GROUP, isGreaterThan(0L));
 
     // DOCKER_SECURITY_GROUP
     /**
@@ -352,6 +432,9 @@ public class SystemPreferences {
      */
     public static final IntPreference DOCKER_SECURITY_TOOL_POLICY_MAX_HIGH_VULNERABILITIES = new IntPreference(
         "security.tools.policy.max.high.vulnerabilities", 20, DOCKER_SECURITY_GROUP, isGreaterThanOrEquals(0));
+    public static final ObjectPreference<Set<String>> DOCKER_SECURITY_CUDNN_VERSION_LABEL =
+            new ObjectPreference<>("security.tools.nvidia.cudnn.version.label", null,
+                    new TypeReference<Set<String>>() {}, DOCKER_SECURITY_GROUP, pass, true);
 
     // CLUSTER_GROUP
     /**
@@ -362,13 +445,13 @@ public class SystemPreferences {
 
     public static final StringPreference CLUSTER_ALLOWED_INSTANCE_TYPES = new StringPreference(
             "cluster.allowed.instance.types", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
     public static final StringPreference CLUSTER_ALLOWED_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
-            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_ALLOWED_MASTER_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types.master", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
-            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_TYPE = new StringPreference("cluster.instance.type",
         "m5.large", CLUSTER_GROUP, PreferenceValidators.isClusterInstanceTypeAllowed, CLUSTER_ALLOWED_INSTANCE_TYPES);
 
@@ -376,6 +459,32 @@ public class SystemPreferences {
         "cluster.kill.not.matching.nodes", true, CLUSTER_GROUP, pass);
     public static final BooleanPreference CLUSTER_ENABLE_AUTOSCALING = new BooleanPreference(
         "cluster.enable.autoscaling", true, CLUSTER_GROUP, pass);
+    /**
+     * Configures a grace period in minutes after which unavailable nodes are terminated.
+     * This value can be specified directly for run using NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES system parameter.
+     */
+    public static final IntPreference CLUSTER_NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES = new IntPreference(
+        "cluster.node.unavailable.grace.period.minutes", 30, CLUSTER_GROUP, isGreaterThanOrEquals(0));
+
+    public static final DoublePreference CLUSTER_NODE_KUBE_MEM_RATIO = new DoublePreference(
+        "cluster.node.kube.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.kube.mem.min.mib", 256, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_KUBE_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.kube.mem.max.mib", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_SYSTEM_MEM_RATIO = new DoublePreference(
+        "cluster.node.system.mem.ratio", 0.025, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.system.mem.min.mib", 256, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_SYSTEM_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.system.mem.max.mib", 1024, CLUSTER_GROUP, isGreaterThan(0));
+    public static final DoublePreference CLUSTER_NODE_EXTRA_MEM_RATIO = new DoublePreference(
+        "cluster.node.extra.mem.ratio", 0.05, CLUSTER_GROUP, isGreaterThan(0.0f).and(isLessThan(1.0f)));
+    public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MIN_MIB = new IntPreference(
+        "cluster.node.extra.mem.min.mib", 512, CLUSTER_GROUP, isGreaterThan(0));
+    public static final IntPreference CLUSTER_NODE_EXTRA_MEM_MAX_MIB = new IntPreference(
+        "cluster.node.extra.mem.max.mib", Integer.MAX_VALUE, CLUSTER_GROUP, isGreaterThan(0));
+
     public static final IntPreference CLUSTER_AUTOSCALE_RATE = new IntPreference("cluster.autoscale.rate",
                                                     40000, CLUSTER_GROUP, isGreaterThan(1000));
     public static final IntPreference CLUSTER_MAX_SIZE = new IntPreference("cluster.max.size", 50,
@@ -418,10 +527,30 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MAX_SIZE = new IntPreference(
             "cluster.instance.hdd.scale.disk.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
-            "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
             "cluster.instance.device.suffixes", "defghijklmnopqrstuvwxyz", CLUSTER_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
+    public static final ObjectPreference<Map<String, Integer>> CLUSTER_INSTANCE_GPU_CORES_MAPPING =
+            new ObjectPreference<>("cluster.instance.gpu.cores.mapping", CommonUtils.toMap(
+                                   Pair.of("NVIDIA M40", 3072),
+                                   Pair.of("NVIDIA M60", 2048),
+                                   Pair.of("NVIDIA P4", 2560),
+                                   Pair.of("NVIDIA P40", 3840),
+                                   Pair.of("NVIDIA P100", 3584),
+                                   Pair.of("NVIDIA V100", 5120),
+                                   Pair.of("NVIDIA T4", 2560),
+                                   Pair.of("NVIDIA T4G", 2560),
+                                   Pair.of("NVIDIA A100", 6912),
+                                   Pair.of("NVIDIA A10G", 9216),
+                                   Pair.of("NVIDIA H100", 18432),
+                                   Pair.of("NVIDIA K80", 4992),
+                                   Pair.of("NVIDIA K520", 3072),
+                                   Pair.of("NVIDIA L4", 7424),
+                                   Pair.of("NVIDIA A100-80GB", 6912)),
+                                   new TypeReference<Map<String, Integer>>() {}, CLUSTER_GROUP,
+                                   isNullOrValidJson(new TypeReference<Map<String, Integer>>() {}), true);
+
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
@@ -429,6 +558,12 @@ public class SystemPreferences {
             100, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
             5, CLUSTER_GROUP, isGreaterThan(0));
+    public static final StringPreference CLUSTER_AWS_EBS_TYPE = new StringPreference(
+            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank);
+    public static final StringPreference CLUSTER_AWS_EC2_PRICING_URL_TEMPLATE = new StringPreference(
+            "cluster.aws.ec2.pricing.url.template",
+            "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonEC2/current/%s/index.csv",
+            CLUSTER_GROUP, isNotBlank);
 
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
@@ -448,8 +583,28 @@ public class SystemPreferences {
                                                                                  CLUSTER_GROUP, isGreaterThan(0.0f));
     public static final StringPreference CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER = new StringPreference(
         "cluster.allowed.instance.types.docker", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP, pass);
+
     public static final IntPreference CLUSTER_INSTANCE_OFFER_UPDATE_RATE = new IntPreference(
         "instance.offer.update.rate", 3600000, CLUSTER_GROUP, isGreaterThan(10000));
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_EXPIRATION_RATE_HOURS = new IntPreference(
+        "instance.offer.expiration.rate.hours", 72, CLUSTER_GROUP, isGreaterThan(0));
+    public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FETCH_GPU = new BooleanPreference(
+        "instance.offer.fetch.gpu", true, CLUSTER_GROUP, pass);
+    public static final BooleanPreference CLUSTER_INSTANCE_OFFER_FILTER_UNIQUE = new BooleanPreference(
+        "instance.offer.filter.unique", true, CLUSTER_GROUP, pass);
+    public static final StringPreference CLUSTER_INSTANCE_OFFER_FILTER_TERM_TYPES = new StringPreference(
+        "instance.offer.filter.term.types",
+        Arrays.stream(CloudInstancePriceService.TermType.values())
+                .map(CloudInstancePriceService.TermType::getName)
+                .collect(Collectors.joining(",")),
+        CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_FILTER_CPU_MIN = new IntPreference(
+        "instance.offer.filter.cpu.min", 2, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_FILTER_MEM_MIN = new IntPreference(
+        "instance.offer.filter.mem.min", 3, CLUSTER_GROUP, pass);
+    public static final IntPreference CLUSTER_INSTANCE_OFFER_INSERT_BATCH_SIZE = new IntPreference(
+        "instance.offer.insert.batch.size", 10_000, CLUSTER_GROUP, isGreaterThan(0));
+
     public static final IntPreference CLUSTER_BATCH_RETRY_COUNT = new IntPreference("cluster.batch.retry.count",
             0, CLUSTER_GROUP, isGreaterThanOrEquals(0));
     public static final ObjectPreference<List<String>> INSTANCE_RESTART_STATE_REASONS = new ObjectPreference<>(
@@ -476,23 +631,63 @@ public class SystemPreferences {
     public static final ObjectPreference<Set<String>> INSTANCE_COMPUTE_FAMILY_NAMES = new ObjectPreference<>(
             "instance.compute.family.names", null, new TypeReference<Set<String>>() {}, CLUSTER_GROUP,
             isNullOrValidJson(new TypeReference<Set<String>>() {}));
+
+    /**
+     * Configures global dns hosted zone id.
+     * Generally should not be used in favor of region specific dns hosted zone id.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_ID = new StringPreference(
             "instance.dns.hosted.zone.id", null, CLUSTER_GROUP, pass);
+
+    /**
+     * Configures global dns hosted zone base.
+     * Generally should not be used in favor of region specific dns hosted zone base.
+     */
     public static final StringPreference INSTANCE_DNS_HOSTED_ZONE_BASE = new StringPreference(
             "instance.dns.hosted.zone.base", null, CLUSTER_GROUP, pass);
+
     public static final StringPreference DEFAULT_EDGE_REGION = new StringPreference(
             "default.edge.region", "eu-central", CLUSTER_GROUP, pass);
+    public static final IntPreference DEFAULT_EDGE_REGION_ID = new IntPreference(
+            "default.edge.region.id", 1, CLUSTER_GROUP, isGreaterThan(0L), true);
 
+    public static final ObjectPreference<Map<String, RuntimeParameter>> CLUSTER_RUN_PARAMETERS_MAPPING =
+            new ObjectPreference<>("cluster.run.parameters.mapping", null,
+                    new TypeReference<Map<String, RuntimeParameter>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, RuntimeParameter>>() {}));
+    public static final IntPreference CLUSTER_NODE_READY_TIMEOUT = new IntPreference(
+            "cluster.node.ready.polling.timeout", 300000, CLUSTER_GROUP, isGreaterThan(0));
+
+    public static final ObjectPreference<Map<CommonInstanceTagsType, String>> CLUSTER_INSTANCE_TAGS =
+            new ObjectPreference<>("cluster.instances.tags", null,
+                    new TypeReference<Map<CommonInstanceTagsType, String>>() {}, CLUSTER_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<CommonInstanceTagsType, String>>() {}));
+
+    public static final StringPreference CLUSTER_INSTANCE_ALLOWED_TAGS = new StringPreference(
+            "cluster.instances.allowed.tags", null, CLUSTER_GROUP, isValidInstanceTags);
+    public static final StringPreference CLUSTER_KUBE_CORE_COMPONENT_LABEL = new StringPreference(
+            "cluster.kube.core.component.label", "cloud-pipeline/core-component", CLUSTER_GROUP, pass);
 
     //LAUNCH_GROUP
     public static final StringPreference LAUNCH_CMD_TEMPLATE = new StringPreference("launch.cmd.template",
                                                             "sleep infinity", LAUNCH_GROUP, pass);
-    public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_LINUX = new StringPreference(
-            "launch.pod.cmd.template.linux", "set -o pipefail; "
-            + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
-            + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
-            + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
-            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+    public static final ObjectPreference<List<OSSpecificLaunchCommandTemplate>> LAUNCH_POD_CMD_TEMPLATE_LINUX =
+            new ObjectPreference<>(
+                "launch.pod.cmd.template.linux",
+                Collections.singletonList(
+                    OSSpecificLaunchCommandTemplate.builder()
+                        .os("*")
+                        .command("set -o pipefail; "
+                            + "command -v wget >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"wget --no-check-certificate -q -O - '$linuxLaunchScriptUrl'\"; }; "
+                            + "command -v curl >/dev/null 2>&1 && " +
+                                "{ LAUNCH_CMD=\"curl -s -k '$linuxLaunchScriptUrl'\"; }; "
+                            + "eval $LAUNCH_CMD " +
+                                "| bash /dev/stdin \"$gitCloneUrl\" '$gitRevisionName' '$pipelineCommand'"
+                        ).build()
+                ),
+                new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {},
+                LAUNCH_GROUP, isValidMapOfLaunchCommands);
     public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
             "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
             "using System.Net;\n" +
@@ -512,7 +707,7 @@ public class SystemPreferences {
             "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
             "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
             "python .\\launch.py",
-            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+            LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
@@ -521,6 +716,14 @@ public class SystemPreferences {
     public static final ObjectPreference<List<DockerMount>> DOCKER_IN_DOCKER_MOUNTS = new ObjectPreference<>(
             "launch.dind.mounts", null, new TypeReference<List<DockerMount>>() {},
             LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+
+    public static final ObjectPreference<List<DockerMount>> LAUNCH_COMMON_MOUNTS = new ObjectPreference<>(
+            "launch.common.mounts", null, new TypeReference<List<DockerMount>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DockerMount>>() {}));
+
+    public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
+            "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
      * from run container.
@@ -531,9 +734,9 @@ public class SystemPreferences {
     public static final StringPreference RUN_VISIBILITY_POLICY = new StringPreference("launch.run.visibility",
             RunVisibilityPolicy.INHERIT.name(), LAUNCH_GROUP, isValidEnum(RunVisibilityPolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_CPU_RESOURCE = new IntPreference(
-            "launch.container.cpu.resource", 0, LAUNCH_GROUP, isGreaterThan(-1));
+            "launch.container.cpu.resource", 1, LAUNCH_GROUP, isGreaterThan(-1));
     public static final StringPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_POLICY = new StringPreference(
-            "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.NO_LIMIT.name(),
+            "launch.container.memory.resource.policy", ContainerMemoryResourcePolicy.DEFAULT.name(),
             LAUNCH_GROUP, isValidEnum(ContainerMemoryResourcePolicy.class));
     public static final IntPreference LAUNCH_CONTAINER_MEMORY_RESOURCE_REQUEST = new IntPreference(
             "launch.container.memory.resource.request", 1, LAUNCH_GROUP, isGreaterThan(0));
@@ -546,7 +749,7 @@ public class SystemPreferences {
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
-            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, isNotBlank);
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
     public static final ObjectPreference<Map<String, LaunchCapability>> LAUNCH_CAPABILITIES = new ObjectPreference<>(
@@ -561,7 +764,22 @@ public class SystemPreferences {
             "pods", LAUNCH_GROUP, pass);
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+    public static final LongPreference KUBE_POD_GRACE_PERIOD_SECONDS = new LongPreference(
+            "launch.kube.pod.grace.period.seconds", 30L, LAUNCH_GROUP, pass, false);
+    public static final LongPreference KUBE_POD_HANG_PERIOD_SECONDS = new LongPreference(
+            "launch.kube.pod.hang.period.seconds", 300L, LAUNCH_GROUP, pass, false);
+    public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
+            LAUNCH_GROUP, pass, true);
+    public static final IntPreference  LAUNCH_GID_SEED = new IntPreference("launch.gid.seed", 90000,
+            LAUNCH_GROUP, pass, true);
 
+    public static final ObjectPreference<Map<String, Object>> LAUNCH_PRE_COMMON_COMMANDS = new ObjectPreference<>(
+            "launch.pre.common.commands", null, new TypeReference<Map<String, Object>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final ObjectPreference<List<Map<String, Object>>> LAUNCH_DISK_THRESHOLDS = new ObjectPreference<>(
+            "launch.job.disk.size.thresholds", null, new TypeReference<List<Map<String, Object>>>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<Map<String, Object>>>() {}), true);
 
     //DTS submission
     public static final StringPreference DTS_LAUNCH_CMD_TEMPLATE = new StringPreference("dts.launch.cmd",
@@ -584,6 +802,14 @@ public class SystemPreferences {
         new ObjectPreference<>("launch.system.parameters", null,
                                new TypeReference<List<DefaultSystemParameter>>() {},
                                LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DefaultSystemParameter>>() {}));
+
+    /**
+     * Controls maximum number of active runs for specific user/group
+     */
+    public static final ObjectPreference<Integer> LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT = new ObjectPreference<>(
+        "launch.max.runs.user.global", null, new TypeReference<Integer>() {},
+        LAUNCH_GROUP, isNullOrGreaterThan(0));
+
     /**
      * Sets task status update rate, on which application will query Kubernetes cluster for running task status,
      * milliseconds
@@ -600,6 +826,11 @@ public class SystemPreferences {
      */
     public static final IntPreference RELEASE_UNUSED_NODES_RATE = new IntPreference(
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
+    public static final LongPreference LAUNCH_JWT_TOKEN_EXPIRATION_REFRESH_THRESHOLD = new LongPreference(
+            "launch.jwt.token.expiration.refresh.threshold", 172800L, LAUNCH_GROUP, isGreaterThan(0L));
+    public static final StringPreference LAUNCH_INSUFFICIENT_CAPACITY_MESSAGE = new StringPreference(
+            "launch.insufficient.capacity.message", "Insufficient instance capacity.",
+            LAUNCH_GROUP, pass);
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
@@ -616,7 +847,7 @@ public class SystemPreferences {
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
     public static final StringPreference UI_DEPLOYMENT_NAME = new StringPreference("ui.pipeline.deployment.name",
-            "Cloud Pipeline", UI_GROUP, PreferenceValidators.isNotBlank);
+            "Cloud Pipeline", UI_GROUP, isNotBlank);
     public static final ObjectPreference<Map<String, String>> UI_PIPE_DRIVE_MAPPING = new ObjectPreference<>(
             "ui.pipe.drive.mapping", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
@@ -637,11 +868,71 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
     public static final DoublePreference UI_WSI_NOTIFICATION_FACTOR = new DoublePreference(
             "ui.wsi.magnification.factor", 1.0, UI_GROUP, isGreaterThan(0));
+    public static final BooleanPreference UI_LIBRARY_INLINE_METADATA = new BooleanPreference(
+            "ui.library.metadata.inline", false, UI_GROUP, pass);
+    public static final ObjectPreference<List<String>> UI_KUBE_LABELS = new ObjectPreference<>(
+            "ui.tool.kube.labels", null, new TypeReference<List<String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
+            "", UI_GROUP, pass);
+    public static final StringPreference UI_STORAGE_STATIC_PREVIEW_MASK =
+            new StringPreference("ui.storage.static.preview.mask", "html,htm", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_PIPELINE_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.pipeline.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_MAINTENANCE_TOOL_ENABLED = new ObjectPreference<>(
+            "ui.run.maintenance.tool.enabled", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final StringPreference UI_STORAGE_DOWNLOAD_ATTRIBUTE = new StringPreference(
+            "ui.storage.download.attribute", "download_allowed_roles", UI_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> UI_RUNS_COUNT_FILTER = new ObjectPreference<>(
+            "ui.runs.counter.filter", null, new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final ObjectPreference<List<Object>> UI_RUNS_FILTERS = new ObjectPreference<>(
+            "ui.runs.filters", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<Object> UI_RUNS_OWNERS_FILTERS = new ObjectPreference<>(
+            "ui.runs.owners.filter", Collections.emptyList(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+    public static final ObjectPreference<Map<String, Object>> UI_TOOLS_FILTERS = new ObjectPreference<>(
+            "ui.tools.filters", Collections.emptyMap(), new TypeReference<Map<String, Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+    public static final BooleanPreference UI_RUNS_CLUSTER_DETAILS_SHOW_ACTIVE_ONLY = new BooleanPreference(
+            "ui.runs.cluster.details.show.active.only", true, UI_GROUP, pass);
+    public static final BooleanPreference UI_PERSONAL_TOOL_WARNING_ENABLED = new BooleanPreference(
+            "ui.personal.tools.launch.warning.enabled", false, UI_GROUP, pass, true);
+    public static final ObjectPreference<List<Object>> UI_PERSONAL_TOOL_RESTRICTIONS = new ObjectPreference<>(
+            "ui.personal.tools.permissions.restrictions",
+            Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final ObjectPreference<Object> UI_SEARCH_COLUMNS_ORDER = new ObjectPreference<>(
+            "ui.search.columns.order",
+            Collections.emptyList(), new TypeReference<Object>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<Object>() {}), true);
+    public static final IntPreference UI_UPLOAD_CHUNK_COUNT = new IntPreference("ui.upload.chunk.count",
+            null, UI_GROUP, isNullOrGreaterThan(0));
+    public static final IntPreference UI_UPLOAD_CHUNK_SIZE = new IntPreference("ui.upload.chunk.size.mb", 
+            null, UI_GROUP, isNullOrGreaterThan(0));
+    public static final ObjectPreference<List<Object>> UI_RUNS_TAGS = new ObjectPreference<>(
+            "ui.runs.tags", Collections.emptyList(), new TypeReference<List<Object>>() {},
+            UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
             "faceted.filter.dictionaries", null, new TypeReference<Map<String, Object>>() {},
             FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+
+    public static final StringPreference FACETED_FILTER_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.display.name.tag", null, FACETED_FILTER_GROUP, pass, true);
+    public static final StringPreference FACETED_FILTER_STORAGE_DISPLAY_NAME_TAG = new StringPreference(
+            "faceted.filter.storage.display.file.name.tag", null, FACETED_FILTER_GROUP, pass, true);
+    public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DOWNLOAD = new ObjectPreference<>(
+            "faceted.filter.download", null, new TypeReference<Map<String, Object>>() {},
+            FACETED_FILTER_GROUP, isNullOrValidJson(new TypeReference<Map<String, Object>>() {}), true);
+
+    public static final StringPreference FACETED_FILTER_DOWNLOAD_FILE_TAG = new StringPreference(
+            "faceted.filter.download.file.tag", "download_url", FACETED_FILTER_GROUP, pass, true);
+
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
@@ -654,6 +945,12 @@ public class SystemPreferences {
             null, BASE_URLS_GROUP, pass);
     public static final StringPreference BASE_EDGE_INVALIDATE_AUTH_PATH =
             new StringPreference("base.invalidate.edge.auth.path", "/invalidate", BASE_URLS_GROUP, pass);
+    public static final ObjectPreference<Map<String, String>> CLOUD_DATA_DISTRIBUTION_URL = new ObjectPreference<>(
+            "base.cloud.data.distribution.url", null, new TypeReference<Map<String, String>>() {},
+            BASE_URLS_GROUP, isNullOrValidJson(new TypeReference<Map<String, String>>() {}), true);
+    public static final StringPreference BASE_GLOBAL_DISTRIBUTION_URL = new StringPreference(
+            "base.global.distribution.url", "https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/",
+            BASE_URLS_GROUP, isNotBlank, true);
 
     //Data sharing
     public static final StringPreference BASE_API_SHARED = new StringPreference("data.sharing.base.api", null,
@@ -662,7 +959,17 @@ public class SystemPreferences {
             DATA_SHARING_GROUP, pass);
     public static final StringPreference DATA_SHARING_FOLDERS_DIR =
             new StringPreference("data.sharing.storage.folders.directory", null, DATA_SHARING_GROUP, pass);
-    private static final String CLOUD_REGION_GROUP = "Cloud region";
+    public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
+            new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
+                    new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<SharedStoragePermissions>() {}));
+    public static final ObjectPreference<Map<String, StaticResourceSettings>> DATA_SHARING_STATIC_RESOURCE_SETTINGS =
+            new ObjectPreference<>("data.sharing.static.resource.settings", null,
+                    new TypeReference<Map<String, StaticResourceSettings>>() {}, DATA_SHARING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, StaticResourceSettings>>() {}));
+    public static final StringPreference STATIC_RESOURCES_FOLDER_TEMPLATE_PATH =
+            new StringPreference("data.sharing.static.resource.template.path", "classpath:views/folder.vm",
+                    DATA_SHARING_GROUP, pass);
 
     // SYSTEM_GROUP
     /**
@@ -689,6 +996,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_LIMIT_LOG_LINES = new IntPreference(
             "system.log.line.limit", 8000, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final StringPreference SYSTEM_RUN_TAG_DATE_SUFFIX = new StringPreference(
+            "system.run.tag.date.suffix", "_date", SYSTEM_GROUP, pass);
+
+    public static final StringPreference SYSTEM_RUN_TAG_STOP_REASON = new StringPreference(
+            "system.run.tag.stop.reason", "STOP_REASON", SYSTEM_GROUP, pass, true);
 
     /**
      * Level of CPU load, below which a Run is considered `idle`
@@ -733,6 +1046,9 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_LONG_PAUSED_ACTION = new StringPreference("system.long.paused.action",
             LongPausedRunAction.NOTIFY.name(), SYSTEM_GROUP, PreferenceValidators.isValidLongPauseRunAction);
+    public static final IntPreference SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES =
+            new IntPreference("system.long.paused.action.timeout.minutes",
+                    30, SYSTEM_GROUP, isGreaterThan(0));
     /**
      * Controls how long resource monitoring stats are being kept, in days
      */
@@ -742,7 +1058,7 @@ public class SystemPreferences {
      * Specifies if interactive run ssh sessions should use root as a default user.
      */
     public static final BooleanPreference SYSTEM_SSH_DEFAULT_ROOT_USER_ENABLED = new BooleanPreference(
-            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass);
+            "system.ssh.default.root.user.enabled", true, SYSTEM_GROUP, pass, true);
     /**
      * Controls which instance types will be excluded from notification list.
      */
@@ -756,16 +1072,20 @@ public class SystemPreferences {
      */
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
-            "system.user.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
-    public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
-            "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_DELAY = new IntPreference(
+            "system.inactive.user.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_INACTIVE_USER_MONITOR_ENABLED = new BooleanPreference(
+            "system.inactive.user.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
+            "system.inactive.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_INACTIVE_USER_MONITOR_IDLE_DAYS = new IntPreference(
+            "system.inactive.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED = new BooleanPreference(
             "system.ldap.user.block.monitor.enable", false, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_BLOCKED_DAYS = new IntPreference(
-            "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
-            "system.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_DELAY = new IntPreference(
+            "system.ldap.user.block.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_GRACE_PERIOD_DAYS = new IntPreference(
+            "system.ldap.user.block.monitor.grace.period.days", 7, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_NODE_POOL_MONITOR_DELAY = new IntPreference(
             "system.node.pool.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**
@@ -774,6 +1094,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_USER_JWT_LAST_LOGIN_THRESHOLD = new IntPreference(
             "system.user.jwt.last.login.threshold.hours", 1, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_USER_SSH_KEYS_AUTO_CREATE = new BooleanPreference(
+            "system.user.ssh.keys.auto.create", true, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PRV_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.prv.metadata.key", "ssh_prv", SYSTEM_GROUP, isNotBlank);
+    public static final StringPreference SYSTEM_USER_SSH_KEYS_PUB_METADATA_KEY = new StringPreference(
+            "system.user.ssh.keys.pub.metadata.key", "ssh_pub", SYSTEM_GROUP, isNotBlank);
 
     public static final ObjectPreference<Map<String, NotificationFilter>>
             SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS = new ObjectPreference("system.notifications.exclude.params",
@@ -782,15 +1108,21 @@ public class SystemPreferences {
 
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_NAT_HOST_CHECK_ATTEMPTS = new IntPreference(
+            "system.nat.host.check.attempts", 10, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_NAT_HOST_CHECK_RETRY_MS = new IntPreference(
+            "system.nat.host.check.retry", 100, SYSTEM_GROUP, isGreaterThan(0));
     public static final StringPreference KUBE_NETWORK_POLICY_NAME = new StringPreference(
             "system.kube.network.policy.name", "sensitive-runs-policy", SYSTEM_GROUP, pass);
 
     public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
-            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass, true);
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
-            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
-
+            "Platform is in a maintenance mode, operation is temporary unavailable",
+            SYSTEM_GROUP, pass, true);
+    public static final BooleanPreference SYSTEM_BLOCKING_MAINTENANCE_MODE = new BooleanPreference(
+            "system.blocking.maintenance.mode", false, SYSTEM_GROUP, pass, true);
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
@@ -801,6 +1133,10 @@ public class SystemPreferences {
             "system.usage.users.clean.delay",  Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_NOTIFICATIONS_EXP_PERIOD = new IntPreference(
+            "system.notifications.exp.period", 3, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
+            "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -819,9 +1155,9 @@ public class SystemPreferences {
     public static final StringPreference FIRECLOUD_LAUNCHER_TOOL = new StringPreference("firecloud.launcher.tool",
             null, FIRECLOUD_GROUP, null);
     public static final StringPreference FIRECLOUD_LAUNCHER_CMD = new StringPreference("firecloud.launcher.cmd",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isNotBlank);
+            null, FIRECLOUD_GROUP, isNotBlank);
     public static final StringPreference FIRECLOUD_BILLING_PROJECT = new StringPreference("firecloud.billing.project",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isNotBlank);
+            null, FIRECLOUD_GROUP, isNotBlank);
     public static final StringPreference FIRECLOUD_INSTANCE_TYPE = new StringPreference("firecloud.instance.type",
             "m4.xlarge", FIRECLOUD_GROUP, pass);
     public static final IntPreference FIRECLOUD_INSTANCE_DISK = new IntPreference("firecloud.instance.disk",
@@ -832,7 +1168,7 @@ public class SystemPreferences {
                                                                                      MISC_GROUP, isGreaterThan(0));
     public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
             "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
     public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
             "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
@@ -850,8 +1186,16 @@ public class SystemPreferences {
             null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_ELASTIC_PORT = new IntPreference("search.elastic.port",
             null, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_SOCKET_TIMEOUT = new IntPreference(
+            "search.elastic.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_BILLING_SOCKET_TIMEOUT = new IntPreference(
+            "search.elastic.billing.socket.timeout", 30000, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_ELASTIC_BILLING_RETRY_TIMEOUT = new IntPreference(
+            "search.elastic.billing.retry.timeout", 30000, SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_CP_INDEX_PREFIX = new StringPreference(
             "search.elastic.index.common.prefix", null, SEARCH_GROUP, pass);
+    public static final StringPreference SEARCH_ELASTIC_REQUESTS_INDEX_PREFIX = new StringPreference(
+            "search.elastic.index.requests.prefix", "cp-storage-requests-*", SEARCH_GROUP, pass);
     public static final StringPreference SEARCH_ELASTIC_TYPE_FIELD = new StringPreference(
             "search.elastic.type.field", "doc_type", SEARCH_GROUP, pass);
 
@@ -878,13 +1222,26 @@ public class SystemPreferences {
             "search.elastic.denied.groups.field", null, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_AGGS_MAX_COUNT = new IntPreference("search.aggs.max.count",
             20, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_LOGS_AGGS_MAX_COUNT = new IntPreference("search.logs.aggs.max.count",
+            10000, SEARCH_GROUP, pass);
+    public static final BooleanPreference SEARCH_HIDE_DELETED = new BooleanPreference(
+            "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
+    public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference(
+            "search.export.page.size", 5000, SEARCH_GROUP, isGreaterThan(0));
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
-        "search.storage.elements.hide.mask",
+        "search.storage.elements.settings",
         Collections.emptyList(),
         new TypeReference<List<StorageFileSearchMask>>() {},
         SEARCH_GROUP,
         isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
+
+    public static final StringPreference SEARCH_ELASTIC_PREFIX_FILTER_FIELD = new StringPreference(
+            "search.elastic.prefix.filter.field", "id", SEARCH_GROUP, pass);
+    public static final ObjectPreference<List<String>> SEARCH_ELASTIC_METADATA_FIELDS = new ObjectPreference<>(
+            "search.elastic.index.metadata.fields", null,
+            new TypeReference<List<String>>() {}, SEARCH_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
@@ -905,6 +1262,9 @@ public class SystemPreferences {
             new ObjectPreference<>("ge.autoscaling.scale.multi.queues.template", null,
                     new TypeReference<Map<String, Object>>() {}, GRID_ENGINE_AUTOSCALING_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+    public static final StringPreference GE_UTILITY_ALLOWED_GROUPS =
+            new StringPreference("ge.utility.allowed.groups", "ROLE_ADMIN,ROLE_ADVANCED_USER",
+                    GRID_ENGINE_AUTOSCALING_GROUP, pass, true);
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(
@@ -914,7 +1274,7 @@ public class SystemPreferences {
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
-            "gcp.default.gpu.type", "a100", GCP_GROUP, PreferenceValidators.isNotBlank);
+            "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
@@ -933,6 +1293,9 @@ public class SystemPreferences {
             "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
     public static final IntPreference BILLING_QUOTAS_MONITORING_PERIOD_SECONDS = new IntPreference(
             "billing.quotas.period.seconds", Constants.SECONDS_IN_DAY, BILLING_QUOTAS_GROUP, isGreaterThan(10));
+    public static final IntPreference BILLING_QUOTAS_CLEARING_PERIOD_SECONDS = new IntPreference(
+            "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
+            BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
@@ -940,7 +1303,7 @@ public class SystemPreferences {
     public static final IntPreference LUSTRE_FS_BKP_RETENTION_DAYS = new IntPreference(
             "lustre.fs.backup.retention.days", 7, LUSTRE_GROUP, pass);
     public static final IntPreference LUSTRE_FS_DEFAULT_THROUGHPUT = new IntPreference(
-            "lustre.fs.default.throughput", 50, LUSTRE_GROUP, pass);
+            "lustre.fs.default.throughput", 500, LUSTRE_GROUP, pass);
     public static final StringPreference LUSTRE_FS_MOUNT_OPTIONS = new StringPreference(
             "lustre.fs.mount.options", null, LUSTRE_GROUP, pass);
     public static final StringPreference LUSTRE_FS_DEPLOYMENT_TYPE = new StringPreference(
@@ -977,33 +1340,42 @@ public class SystemPreferences {
             "ldap.response.timeout", 60000, LDAP_GROUP, isGreaterThanOrEquals(0));
     public static final StringPreference LDAP_BLOCKED_USER_FILTER = new StringPreference(
             "ldap.blocked.user.filter", "", LDAP_GROUP, pass);
+
+    public static final StringPreference LDAP_BLOCKED_USER_SEARCH_METHOD = new StringPreference(
+            "ldap.blocked.user.search.method",
+            LdapBlockedUserSearchMethod.LOAD_BLOCKED.name(), LDAP_GROUP,
+            isValidEnum(LdapBlockedUserSearchMethod.class));
     public static final StringPreference LDAP_BLOCKED_USER_NAME_ATTRIBUTE = new StringPreference(
             "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
             "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
+    public static final ObjectPreference<Set<String>> LDAP_INVALID_USER_ENTRIES = new ObjectPreference<>(
+            "ldap.blocked.invalid.user.entries",
+            Collections.singleton("Name not found"), new TypeReference<Set<String>>() {}, LDAP_GROUP,
+            isNullOrValidJson(new TypeReference<Set<String>>() {}));
 
     //NGS Preprocessing
     public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(
             "ngs.preprocessing.machine.run.metadata.class.name", "MachineRun",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLE_CLASS = new StringPreference(
             "ngs.preprocessing.sample.metadata.class.name", "Sample",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN = new StringPreference(
             "ngs.preprocessing.machinerun.to.sample.column", "Samples",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLESHEET_FILE_NAME = new StringPreference(
             "ngs.preprocessing.samplesheet.file.name", "samplesheet.csv",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_DATA_FOLDER = new StringPreference(
             "ngs.preprocessing.data.folder", "ngs-data",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLESHEET_LINK_COLUMN = new StringPreference(
             "ngs.preprocessing.samplesheet.link.column", "Sample Sheet",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
             "ngs.preprocessing.machine.run.column.name", "Machine Run",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
 
     // Monitoring
     public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(
@@ -1018,7 +1390,24 @@ public class SystemPreferences {
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
 
+    // Cloud
+    public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =
+            new ObjectPreference<>(
+                    "cloud.access.management.config", Collections.emptyList(),
+                    new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
+                    isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
+
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
+
+    // System Jobs
+    public static final StringPreference SYSTEM_JOBS_SCRIPTS_LOCATION = new StringPreference(
+            "system.jobs.scripts.location", "src/system-jobs", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final StringPreference SYSTEM_JOBS_OUTPUT_TASK = new StringPreference(
+            "system.jobs.output.pipeline.task", "SystemJob", SYSTEM_JOBS_GROUP, pass, false);
+
+    public static final LongPreference SYSTEM_JOBS_PIPELINE = new LongPreference(
+            "system.jobs.pipeline.id", null, SYSTEM_JOBS_GROUP, isNullOrGreaterThan(0), false);
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;
 

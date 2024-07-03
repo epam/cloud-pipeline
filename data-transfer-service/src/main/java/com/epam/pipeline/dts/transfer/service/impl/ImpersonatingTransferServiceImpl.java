@@ -46,11 +46,16 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
     @Override
     public TransferTask runTransferTask(@NonNull final StorageItem source,
                                         @NonNull final StorageItem destination,
-                                        final List<String> included) {
+                                        final List<String> included,
+                                        final boolean deleteSource,
+                                        boolean logEnabled,
+                                        String pipeCmd,
+                                        String pipeCmdSuffix) {
         final String impersonatingUser = getImpersonatingUser(source, destination);
-        final TransferTask transferTask = taskService.createTask(source, destination, included, impersonatingUser);
+        final TransferTask transferTask = taskService.createTask(source, destination, included, impersonatingUser,
+                deleteSource);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
-        dataUploaderProviderManager.transferData(transferTask);
+        dataUploaderProviderManager.transferData(transferTask, logEnabled, pipeCmd, pipeCmdSuffix);
         return transferTask;
     }
 

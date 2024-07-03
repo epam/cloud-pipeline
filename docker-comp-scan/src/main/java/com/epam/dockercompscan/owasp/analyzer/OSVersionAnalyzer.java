@@ -16,8 +16,9 @@
 
 package com.epam.dockercompscan.owasp.analyzer;
 
+import com.epam.dockercompscan.owasp.analyzer.filter.FilePathGlobFilter;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.NameFileFilter;
+import org.apache.commons.io.FilenameUtils;
 import org.owasp.dependencycheck.Engine;
 import org.owasp.dependencycheck.analyzer.AbstractFileTypeAnalyzer;
 import org.owasp.dependencycheck.analyzer.AnalysisPhase;
@@ -56,30 +57,23 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
     /**
      * Names of OS version files to analyze.
      */
-    private static final String OS_RELEASE = "os-release";
-    private static final String REDHAT_RELEASE = "redhat-release";
-    private static final String SYSTEM_RELEASE = "system-release";
-    private static final String CENTOS_RELEASE = "centos-release";
-
-    /**
-     * Filter that detects files named "os-release".
-     */
-    private static final NameFileFilter NAME_FILE_FILTER = new NameFileFilter(
-            new String[]{OS_RELEASE, REDHAT_RELEASE, SYSTEM_RELEASE, CENTOS_RELEASE});
-
-    /**
-     * The file filter used to determine which files this analyzer supports.
-     */
-    private static final FileFilter FILTER = FileFilterBuilder.newInstance().addFileFilters(NAME_FILE_FILTER).build();
+    public static final String OS_RELEASE = "etc/os-release";
+    public static final String OS_RELEASE_USR_LIB = "usr/lib/os-release";
+    public static final String REDHAT_RELEASE = "etc/redhat-release";
+    public static final String SYSTEM_RELEASE = "etc/system-release";
+    public static final String CENTOS_RELEASE = "etc/centos-release";
 
     private static final Pattern VERSION_PATTERN = Pattern.compile(".*\nVERSION_ID=\"?([^\n\"]*)\"?\n.*");
     private static final Pattern NAME_TITLE_PATTERN = Pattern.compile(".*\nID=\"?([^\n\"]*)\"?\n.*");
     private static final Pattern SYSTEM_NAME_TITLE_PATTERN = Pattern.compile("([^ ]+).*");
     private static final Pattern SYSTEM_VERSION_PATTERN = Pattern.compile("([\\d\\.\\-_]+)");
+    public static final String OS_RELEASE_FILE = "os-release";
 
     @Override
     protected FileFilter getFileFilter() {
-        return FILTER;
+        final String searchBasePath = getSettings().getString(AnalyzerConstants.BASE_SEARCH_PATH_SETTING);
+        final FilePathGlobFilter nameFileFilter = buildFilter(searchBasePath);
+        return FileFilterBuilder.newInstance().addFileFilters(nameFileFilter).build();
     }
 
     @Override
@@ -117,8 +111,8 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
             return;
         }
         final String cleanContent = contents.replaceAll("\n\\s+", " ");
-        final Pattern namePattern = source.equals(OS_RELEASE) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
-        final Pattern versionPattern = source.equals(OS_RELEASE) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
+        final Pattern namePattern = OS_RELEASE_FILE.equals(source) ? NAME_TITLE_PATTERN : SYSTEM_NAME_TITLE_PATTERN;
+        final Pattern versionPattern = OS_RELEASE_FILE.equals(source) ? VERSION_PATTERN : SYSTEM_VERSION_PATTERN;
 
         gatherEvidence(dependency, EvidenceType.VERSION, versionPattern, cleanContent,
                 source, "Version", Confidence.HIGH);
@@ -154,5 +148,19 @@ public class OSVersionAnalyzer extends AbstractFileTypeAnalyzer {
             }
             dependency.addEvidence(type, source, name, matcher.group(1), confidence);
         }
+    }
+
+    public FilePathGlobFilter buildFilter(final String searchBasePath) {
+        return new FilePathGlobFilter(
+                buildSearchPath(searchBasePath, OS_RELEASE),
+                buildSearchPath(searchBasePath, OS_RELEASE_USR_LIB),
+                buildSearchPath(searchBasePath, REDHAT_RELEASE),
+                buildSearchPath(searchBasePath, SYSTEM_RELEASE),
+                buildSearchPath(searchBasePath, CENTOS_RELEASE)
+        );
+    }
+
+    private String buildSearchPath(final String searchBasePath, final String pattern) {
+        return FilenameUtils.concat(searchBasePath, pattern);
     }
 }

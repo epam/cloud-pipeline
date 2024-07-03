@@ -41,11 +41,14 @@ class HcsImagePage extends React.Component {
           classNames(
             styles.hcsImagePage,
             'app-background',
+            'cp-panel',
+            'cp-panel-transparent',
             'no-image'
           )
         }
         storageId={storageId}
         path={hcsImagePath}
+        wellViewByDefault={false}
       />
     );
   }

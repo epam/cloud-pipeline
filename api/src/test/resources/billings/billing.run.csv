@@ -1,3 +1,3 @@
-"Run","Owner","Billing center","Pipeline","Tool","Type","Instance","Started","Finished","Duration (hours)","Cost ($)"
-"1","some_owner","some_billing_center",,"some_registry/some_group/some_tool:some_tag","some_compute_type","some_instance_type","2021-10-11 11:11:11",,"1.00","1.00"
-"2","some_owner","some_billing_center","some_pipeline","some_registry/some_group/some_tool:some_tag","some_compute_type","some_instance_type","2021-10-11 11:11:11","2021-11-11 11:11:11","10.00","10.00"
+"Run","Owner","Billing center","Pipeline","Tool","Type","Instance","Started","Finished","Duration (hours)","Cost ($)","Disk cost ($)","Compute cost ($)"
+"1","some_owner","some_billing_center",,"some_registry/some_group/some_tool:some_tag","some_compute_type","some_instance_type","2021-10-11 11:11:11",,"1.00","1.00","1.00","1.00"
+"2","some_owner","some_billing_center","some_pipeline","some_registry/some_group/some_tool:some_tag","some_compute_type","some_instance_type","2021-10-11 11:11:11","2021-11-11 11:11:11","10.00","10.00","10.00","10.00"

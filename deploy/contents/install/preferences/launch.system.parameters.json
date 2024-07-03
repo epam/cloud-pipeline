@@ -76,6 +76,13 @@
         "defaultValue": "true"
     },
     {
+        "name": "CP_CAP_KUBE_VERSION",
+        "type": "string",
+        "description": "Sets Kubernetes version to be installed: 1.15.4 and 1.28.2 are available",
+        "defaultValue": "1.15.4",
+        "passToWorkers": true
+    },
+    {
         "name": "CP_S3_FUSE_TYPE",
         "type": "string",
         "description": "Allows to select which FUSE implementation to use for S3 buckets mounting. Allowed values are: goofys, s3fs and pipefuse",
@@ -263,9 +270,10 @@
     },
     {
         "name": "CP_CAP_DIND_VERSION",
-        "type": "boolean",
-        "description": "Allows to select docker version, used for DIND setup. Default: 18.09.6",
-        "defaultValue": "true"
+        "type": "string",
+        "description": "Allows to select docker version, used for DIND setup",
+        "defaultValue": "18.09.6",
+        "passToWorkers": true
     },
     {
         "name": "CP_CAP_SYSTEMD_CONTAINER",
@@ -304,8 +312,22 @@
     {
         "name": "CP_CAP_SHARE_FS_SIZE",
         "type": "int",
-        "description": "Allows to specify shared file system size (supported for luster FS only)",
+        "description": "Allows to specify shared file system size (supported for Lustre FS only)",
         "defaultValue": "1200",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_DEPLOYMENT_TYPE",
+        "type": "string",
+        "description": "Allows to specify shared file deployment type: [SCRATCH_1, SCRATCH_2, PERSISTENT_1, PERSISTENT_2] (supported for Lustre FS only)",
+        "defaultValue": "SCRATCH_2",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SHARE_FS_THROUGHPUT",
+        "type": "int",
+        "description": "Allows to specify shared file system throughput (supported for persistent Lustre FS only)",
+        "defaultValue": "500",
         "passToWorkers": false
     },
     {
@@ -335,16 +357,30 @@
         "passToWorkers": true
     },
     {
+        "name": "CP_CAP_MOUNT_OPTIONS_",
+        "type": "string",
+        "description": "Allows to set mount options for a storage",
+        "passToWorkers": true,
+        "prefix": true
+    },
+    {
+        "name": "CP_CAP_MOUNT_PATH_",
+        "type": "string",
+        "description": "Allows to set mount path for a storage",
+        "passToWorkers": true,
+        "prefix": true
+    },
+    {
         "name": "CP_CAP_FORCE_MOUNTS",
         "type": "string",
         "description": "If defined - will force specified mounts for the run, even if the limits are set",
         "passToWorkers": true
     },
     {
-        "name": "CP_PIPE_FUSE_TIMEOUT",
+        "name": "CP_PIPE_FUSE_MOUNT_TIMEOUT",
         "type": "int",
         "description": "Allows to specify the pipe fuse timeout",
-        "defaultValue": "500",
+        "defaultValue": "10000",
         "passToWorkers": false
     },
     {
@@ -482,9 +518,127 @@
     },
     {
         "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
-        "type": "boolen",
+        "type": "boolean",
         "description": "Whether fail or keep a job running if a config file based localization fails",
         "defaultValue": "true",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_AVAILABILITY_ZONE",
+        "type": "string",
+        "description": "Specifies the target availability zone for a run",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_TARGET_NETWORK_INTERFACE",
+        "type": "string",
+        "description": "Specifies the target ENI to be attached to the node for run",
+        "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_DEDICATED_INSTANCE",
+        "type": "boolean",
+        "description": "Specifies if the instance should be dedicated (has a dedicated hardware)",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_SECURITY_GROUPS",
+        "type": "string",
+        "description": "Specifies which security groups shall be attached to the instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_TARGET_SUBNET_ID",
+        "type": "string",
+        "description": "Specifies which subnet shall be used for an instance",
+        "defaultValue": "",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_NODE_SSH_PORT",
+        "type": "int",
+        "description": "Sets SSH port, which is used by a host node of the job",
+        "defaultValue": "22",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_EFA_ENABLED",
+        "type": "boolean",
+        "description": "Specifies if EFA should be enabled for this instance",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_USE_HOST_NETWORK",
+        "type": "boolean",
+        "description": "Specifies if run pod should be run with host network capability",
+        "defaultValue": "false",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_RECOVERY",
+        "type": "boolean",
+        "description": "Enables recovery support for a current run",
+        "defaultValue": "true",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_EXCLUSIVE_MODE",
+        "type": "boolean",
+        "description": "Enables GPU exclusive mode",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_SGE_GPU_RSMAP_DEVICES",
+        "type": "boolean",
+        "description": "Enables RSMAP-like GPU devices assignment",
+        "defaultValue": "true",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_RESCHEDULE_RUN",
+        "type": "boolean",
+        "description": "Enables rescheduling run to other regions",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_GRID_ENGINE_NOTIFICATIONS",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Enables notifications for Slurm and SGE engines.",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_MAIL",
+        "type": "boolean",
+        "defaultValue": "true",
+        "description": "Changes default mail client if favor to pipe_mail script.",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_NETWORK_POLICY_TYPE",
+        "type": "string",
+        "description": "Specifies run network policy type. Allowed values are: common and internal.",
+        "defaultValue": "common",
+        "passToWorkers": true
+    },
+    {
+        "name": "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES",
+        "type": "int",
+        "description": "Configures a grace period in minutes after which unavailable nodes are terminated.",
+        "defaultValue": "30",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_SSH_EXTRA_ARGS",
+        "type": "string",
+        "description": "Configures ssh extra args.",
+        "defaultValue": "-o ConnectTimeout=10 -o ConnectionAttempts=30 -v",
+        "passToWorkers": true
     }
 ]

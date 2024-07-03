@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.utils;
 
+import com.epam.pipeline.config.Constants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -24,6 +25,7 @@ import java.util.Base64;
 public interface AuthorizationUtils {
 
     String BASIC_AUTH = "Basic";
+    String BEARER_AUTH = "Bearer ";
 
     static String[] parseBasicAuth(final String authorization) {
         if (authorization != null && authorization.startsWith(BASIC_AUTH)) {
@@ -32,7 +34,7 @@ public interface AuthorizationUtils {
             final String credentials = new String(Base64.getDecoder().decode(base64Credentials),
                     StandardCharsets.UTF_8);
             // credentials = username:password
-            final String[] values = credentials.split(":", 2);
+            final String[] values = credentials.split(Constants.COLON, 2);
             if (values.length < 2 || StringUtils.isBlank(values[0]) || StringUtils.isBlank(values[1])) {
                 return null;
             }

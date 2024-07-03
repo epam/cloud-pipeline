@@ -38,6 +38,7 @@ public class FileShareMountDao extends NamedParameterJdbcDaoSupport {
 
     @Setter(onMethod_={@Required}) private String loadShareMountByIdQuery;
     @Setter(onMethod_={@Required}) private String loadAllShareMountByRegionIdQuery;
+    @Setter(onMethod_={@Required}) private String loadAllShareMounts;
     @Setter(onMethod_={@Required}) private String createShareMountQuery;
     @Setter(onMethod_={@Required}) private String updateShareMountQuery;
     @Setter(onMethod_={@Required}) private String deleteShareMountQuery;
@@ -54,6 +55,10 @@ public class FileShareMountDao extends NamedParameterJdbcDaoSupport {
     public List<FileShareMount> loadAllByRegionId(final long regionId) {
         return getJdbcTemplate().query(loadAllShareMountByRegionIdQuery,
                 FileShareMountDao.MountShareParameters.getRowMapper(), regionId);
+    }
+
+    public List<FileShareMount> loadAll() {
+        return getJdbcTemplate().query(loadAllShareMounts, FileShareMountDao.MountShareParameters.getRowMapper());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

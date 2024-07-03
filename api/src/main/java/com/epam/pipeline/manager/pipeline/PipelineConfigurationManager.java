@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.cluster.AMIConfiguration;
+import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.configuration.ConfigurationEntry;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
@@ -28,12 +30,17 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.utils.RegExpUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -43,6 +50,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -50,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -62,6 +71,8 @@ public class PipelineConfigurationManager {
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
     public static final String WORKER_CLUSTER_ROLE = "worker";
     public static final String WORKER_CMD_TEMPLATE = "sleep infinity";
+    public static final String INHERITABLE_PARAMETER_NAMES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_NAMES";
+    public static final String INHERITABLE_PARAMETER_PREFIXES = "CP_CAP_AUTOSCALE_INHERITABLE_PARAMETER_PREFIXES";
 
     @Autowired
     private PipelineVersionManager pipelineVersionManager;
@@ -83,6 +94,12 @@ public class PipelineConfigurationManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private CloudRegionManager regionManager;
+
+    @Autowired
+    private PipelineConfigurationLaunchCapabilitiesProcessor launchCapabilitiesProcessor;
 
     public PipelineConfiguration getPipelineConfigurationForPipeline(final Pipeline pipeline,
                                                                      final PipelineStart runVO) {
@@ -122,6 +139,13 @@ public class PipelineConfigurationManager {
             mergeParametersFromTool(configuration, tool);
         }
 
+        getParametersFromNetworkConfig(configuration.getInstanceType(), runVO.getCloudRegionId())
+                .forEach((key, parameter) -> {
+                    if(!configuration.getParameters().containsKey(key)) {
+                        configuration.getParameters().put(key, parameter);
+                    }
+                });
+
         //client always sends actual node count value
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
         configuration.setCloudRegionId(runVO.getCloudRegionId());
@@ -130,8 +154,7 @@ public class PipelineConfigurationManager {
     }
 
     public PipelineConfiguration mergeParameters(PipelineStart runVO, PipelineConfiguration defaultConfig) {
-        Map<String, PipeConfValueVO> params = runVO.getParams() == null
-                ? Collections.emptyMap() : runVO.getParams();
+        Map<String, PipeConfValueVO> params = Optional.ofNullable(runVO.getParams()).orElseGet(Collections::emptyMap);
         PipelineConfiguration configuration = new PipelineConfiguration();
 
         configuration.setMainFile(defaultConfig.getMainFile());
@@ -146,6 +169,8 @@ public class PipelineConfigurationManager {
                 .stream()
                 .filter(entry -> entry.getValue().isRequired() || !StringUtils.isEmpty(entry.getValue().getValue()))
                 .forEach(entry -> runParameters.put(entry.getKey(), entry.getValue()));
+
+        runParameters.putAll(launchCapabilitiesProcessor.process(runParameters));
 
         //fill in default values, only if user's value wasn't provided
         if (defaultConfig.getParameters() != null) {
@@ -180,6 +205,27 @@ public class PipelineConfigurationManager {
         } else {
             configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
+        if (runVO.getNotifications() != null) {
+            configuration.setNotifications(runVO.getNotifications());
+        } else {
+            configuration.setNotifications(defaultConfig.getNotifications());
+        }
+
+        if (MapUtils.isNotEmpty(runVO.getKubeLabels())) {
+            configuration.setKubeLabels(runVO.getKubeLabels());
+        } else {
+            configuration.setKubeLabels(defaultConfig.getKubeLabels());
+        }
+
+        // TODO: merging parentNodeId together with runAssignPolicy,
+        //  in a future we can delete it if we get rid of parentNodeId in favor of runAssignPolicy
+        configuration.setPodAssignPolicy(mergeAssignPolicy(runVO, defaultConfig));
+
+        if (!StringUtils.isEmpty(runVO.getKubeServiceAccount())) {
+            configuration.setKubeServiceAccount(runVO.getKubeServiceAccount());
+        } else {
+            configuration.setKubeServiceAccount(defaultConfig.getKubeServiceAccount());
+        }
 
         //client always sends actual node-count
         configuration.setNodeCount(runVO.getNodeCount());
@@ -203,6 +249,42 @@ public class PipelineConfigurationManager {
         configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
         configuration.setTags(runVO.getTags());
         return configuration;
+    }
+
+    private RunAssignPolicy mergeAssignPolicy(final PipelineStart runVO, final PipelineConfiguration defaultConfig) {
+        final Long useRunId = runVO.getParentNodeId() != null ? runVO.getParentNodeId() : runVO.getUseRunId();
+        final RunAssignPolicy assignPolicy = runVO.getPodAssignPolicy();
+
+        if (useRunId != null && assignPolicy != null) {
+            throw new IllegalArgumentException(
+                    "Both RunAssignPolicy and (parentRunId or useRunId) cannot be specified, " +
+                    "please provide only one of them"
+            );
+        }
+
+        if (assignPolicy != null && assignPolicy.isValid()) {
+            log.debug("RunAssignPolicy is provided and valid, will proceed with it.");
+            return assignPolicy;
+        } else {
+            if (useRunId != null) {
+                final String value = useRunId.toString();
+                log.debug(
+                    String.format("Configuring RunAssignPolicy as: label %s, value: %s.",
+                            KubernetesConstants.RUN_ID_LABEL, value)
+                );
+                return RunAssignPolicy.builder()
+                        .selector(
+                            RunAssignPolicy.PodAssignSelector.builder()
+                                .label(KubernetesConstants.RUN_ID_LABEL)
+                                .value(value).build())
+                        .build();
+            } else {
+                if (defaultConfig.getPodAssignPolicy() != null && defaultConfig.getPodAssignPolicy().isValid()) {
+                    return defaultConfig.getPodAssignPolicy();
+                }
+                return RunAssignPolicy.builder().build();
+            }
+        }
     }
 
     /**
@@ -233,22 +315,36 @@ public class PipelineConfigurationManager {
         configuration.buildEnvVariables();
     }
 
-    public void updateWorkerConfiguration(String parentId, PipelineStart runVO,
-            PipelineConfiguration configuration, boolean isNFS, boolean clearParams) {
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_WORKER_ENDPOINTS));
-        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(configuration.getParameters()) ?
-                new HashMap<>() : configuration.getParameters();
+    public PipelineConfiguration generateMasterConfiguration(final PipelineConfiguration configuration,
+                                                             final boolean isNFS) {
+        final PipelineConfiguration copiedConfiguration = configuration.clone();
+        updateMasterConfiguration(copiedConfiguration, isNFS);
+        return copiedConfiguration;
+    }
+
+    public PipelineConfiguration generateWorkerConfiguration(final String parentId, final PipelineStart runVO,
+                                                             final PipelineConfiguration configuration,
+                                                             final boolean isNFS, final boolean clearParams) {
+        final PipelineConfiguration workerConfiguration = configuration.clone();
+        workerConfiguration.setEraseRunEndpoints(hasBooleanParameter(workerConfiguration, ERASE_WORKER_ENDPOINTS));
+        final Map<String, PipeConfValueVO> configParameters = MapUtils.isEmpty(workerConfiguration.getParameters()) ?
+                new HashMap<>() : workerConfiguration.getParameters();
         final Map<String, PipeConfValueVO> updatedParams = clearParams ? new HashMap<>() : configParameters;
         final List<DefaultSystemParameter> systemParameters = preferenceManager.getPreference(
                 SystemPreferences.LAUNCH_SYSTEM_PARAMETERS);
         ListUtils.emptyIfNull(systemParameters)
                 .stream()
-                .filter(param -> param.isPassToWorkers() &&
-                        configParameters.containsKey(param.getName()))
+                .filter(DefaultSystemParameter::isPassToWorkers)
                 .forEach(param -> {
-                    final String paramName = param.getName();
-                    updatedParams.put(paramName, configParameters.get(paramName));
+                    if (param.isPrefix()) {
+                        processPrefixParam(param.getName(), configParameters, updatedParams);
+                    } else {
+                        processInheritedParam(param.getName(), configParameters, updatedParams);
+                    }
                 });
+
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_NAMES, configParameters, updatedParams, false);
+        processExplicitlyInheritedParams(INHERITABLE_PARAMETER_PREFIXES, configParameters, updatedParams, true);
 
         updatedParams.put(PipelineRun.PARENT_ID_PARAM, new PipeConfValueVO(parentId));
         if (isNFS) {
@@ -256,31 +352,31 @@ public class PipelineConfigurationManager {
         } else {
             updatedParams.remove(NFS_CLUSTER_ROLE);
         }
-        configuration.setParameters(updatedParams);
-        configuration.setClusterRole(WORKER_CLUSTER_ROLE);
-        configuration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
+        workerConfiguration.setParameters(updatedParams);
+        workerConfiguration.setClusterRole(WORKER_CLUSTER_ROLE);
+        workerConfiguration.setCmdTemplate(StringUtils.hasText(runVO.getWorkerCmd()) ?
                 runVO.getWorkerCmd() : WORKER_CMD_TEMPLATE);
-        configuration.setPrettyUrl(null);
+        workerConfiguration.setPrettyUrl(null);
         //remove node count parameter for workers
-        configuration.setNodeCount(null);
-        configuration.buildEnvVariables();
+        workerConfiguration.setNodeCount(null);
+        // if podAssignPolicy is a simple policy to assign run pod to dedicated instance, then we need to cleared it
+        // and workers then will be assigned to its own nodes, otherwise keep existing policy to assign workers
+        // as was configured in policy object
+        if (workerConfiguration.getPodAssignPolicy().isMatch(KubernetesConstants.RUN_ID_LABEL, parentId)) {
+            workerConfiguration.setPodAssignPolicy(null);
+        }
+        workerConfiguration.buildEnvVariables();
+        return workerConfiguration;
     }
 
     public boolean hasNFSParameter(PipelineConfiguration entry) {
         return hasBooleanParameter(entry, NFS_CLUSTER_ROLE);
     }
 
-    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
-        return entry.getParameters().entrySet().stream().anyMatch(e ->
-                e.getKey().equals(parameterName) && e.getValue().getValue() != null
-                        && e.getValue().getValue().equalsIgnoreCase("true"));
-    }
-
-    private void setEndpointsErasure(PipelineConfiguration configuration) {
-        if (MapUtils.isEmpty(configuration.getParameters())) {
-            return;
-        }
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
+    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
+        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+                .map(ConfigurationEntry::getConfiguration)
+                .orElseGet(PipelineConfiguration::new);
     }
 
     public PipelineConfiguration getConfigurationFromRun(PipelineRun run) {
@@ -318,6 +414,55 @@ public class PipelineConfigurationManager {
         }
         configuration.buildEnvVariables();
         return configuration;
+    }
+
+    private Map<String, PipeConfValueVO> getParametersFromNetworkConfig(final String instanceType,
+                                                                        final Long cloudRegionId) {
+        final Map<String, PipeConfValueVO> parameters = new HashMap<>();
+        final AbstractCloudRegion runRegion = regionManager.loadOrDefault(cloudRegionId);
+        final CloudRegionsConfiguration cloudRegionsConfiguration = preferenceManager.getPreference(
+                SystemPreferences.CLUSTER_NETWORKS_CONFIG);
+
+        if (cloudRegionsConfiguration == null || !StringUtils.hasText(instanceType)) {
+            return Collections.emptyMap();
+        }
+
+        ListUtils.emptyIfNull(cloudRegionsConfiguration.getRegions())
+                .stream()
+                .filter(r -> runRegion.getRegionCode().equals(r.getName()) || runRegion.getId().equals(r.getRegionId()))
+                .flatMap(networkConfiguration -> ListUtils.emptyIfNull(networkConfiguration.getAmis()).stream())
+                .filter(
+                        ami -> {
+                            final String instanceRegExp = RegExpUtils.getRegExpFormGlob(ami.getInstanceMask());
+                            return Pattern.compile(instanceRegExp).matcher(instanceType).find();
+                        }
+                ).findFirst()
+                .map(AMIConfiguration::getRunParameters)
+                .ifPresent(p -> p.forEach((k, v) -> parameters.put(k, buildPipeConfValue(v))));
+        return parameters;
+    }
+
+    private static PipeConfValueVO buildPipeConfValue(Object value) {
+        String type = PipeConfValueVO.DEFAULT_TYPE;
+        if (value instanceof Integer || value instanceof Long) {
+            type = "int";
+        } else if (value instanceof Boolean) {
+            type = "boolean";
+        }
+        return new PipeConfValueVO(value.toString(), type);
+    }
+
+    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
+        return entry.getParameters().entrySet().stream().anyMatch(e ->
+                e.getKey().equals(parameterName) && e.getValue().getValue() != null
+                        && e.getValue().getValue().equalsIgnoreCase("true"));
+    }
+
+    private void setEndpointsErasure(PipelineConfiguration configuration) {
+        if (MapUtils.isEmpty(configuration.getParameters())) {
+            return;
+        }
+        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
     }
 
     private String chooseDockerImage(PipelineStart runVO, PipelineConfiguration defaultConfig) {
@@ -392,13 +537,42 @@ public class PipelineConfigurationManager {
         return defaultConfiguration;
     }
 
-    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
-        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
-                .map(ConfigurationEntry::getConfiguration)
-                .orElseGet(PipelineConfiguration::new);
-    }
-
     private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
         return StringUtils.isEmpty(configuration.getRunAs()) ? runVO.getRunAs() : configuration.getRunAs();
+    }
+
+    private static void processExplicitlyInheritedParams(final String paramName,
+                                                         final Map<String, PipeConfValueVO> configParameters,
+                                                         final Map<String, PipeConfValueVO> updatedParams,
+                                                         final boolean prefix) {
+        final PipeConfValueVO inheritableParameters = configParameters.get(paramName);
+        if (inheritableParameters != null && StringUtils.hasText(inheritableParameters.getValue())) {
+            Arrays.stream(StringUtils.commaDelimitedListToStringArray(inheritableParameters.getValue()))
+                    .forEach(param -> {
+                        if (prefix) {
+                            processPrefixParam(param, configParameters, updatedParams);
+                        } else {
+                            processInheritedParam(param, configParameters, updatedParams);
+                        }
+                    });
+        }
+    }
+
+    private static void processInheritedParam(final String paramName,
+                                              final Map<String, PipeConfValueVO> configParameters,
+                                              final Map<String, PipeConfValueVO> updatedParams) {
+        if (configParameters.containsKey(paramName)) {
+            updatedParams.put(paramName, configParameters.get(paramName));
+        }
+    }
+
+    private static void processPrefixParam(final String paramName,
+                                           final Map<String, PipeConfValueVO> configParameters,
+                                           final Map<String, PipeConfValueVO> updatedParams) {
+        configParameters.forEach((name, value) -> {
+            if (name.startsWith(paramName)) {
+                updatedParams.put(name, value);
+            }
+        });
     }
 }

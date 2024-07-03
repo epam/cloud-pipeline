@@ -26,6 +26,8 @@ dependencies {
     }
     compile project(':core')
 
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.16.16'
+
     // Logging
     compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.24'
     compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: log4jVersion

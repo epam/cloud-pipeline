@@ -84,6 +84,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   cursor: pointer;
 }
 
+.tree-item-region:hover {
+  cursor: pointer;
+}
+
 .tree-item-actions {
   cursor: pointer;
   min-width: min-content;
@@ -158,6 +162,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 
 .storage-actions button {
   margin-left: 5px;
+}
+
+.storage-actions > * {
+  margin-bottom: 3px;
 }
 
 .item-actions {
@@ -269,7 +277,8 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
 }
 
 .app-link span,
-.app-link img {
+.app-link img,
+.app-link i {
   vertical-align: middle;
 }
 
@@ -361,6 +370,23 @@ tr.table-row-selected {
   border-bottom: none;
   padding: 5px;
   min-height: 37px;
+  flex-wrap: nowrap;
+}
+
+.metadata-predefined-filters {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: none;
+  border-top: none;
+  padding: 0 5px 5px;
+  min-height: 37px;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+}
+
+.metadata-predefined-filter {
+  margin-right: 5px;
+  margin-bottom: 2px;
 }
 
 .action-link:hover {
@@ -390,6 +416,7 @@ tr.table-row-selected {
   margin-bottom: 3px;
   margin-right: 10px;
   font-size: smaller;
+  vertical-align: top;
 }
 
 .metadata-popover .metadata-item-container {
@@ -409,6 +436,10 @@ tr.table-row-selected {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.metadata-item-value.wrap {
+  white-space: initial;
 }
 
 .metadata-popover .metadata-item-value {

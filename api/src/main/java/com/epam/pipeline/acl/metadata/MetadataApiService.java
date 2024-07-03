@@ -54,7 +54,7 @@ public class MetadataApiService {
         return metadataManager.updateMetadataItem(metadataVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @metadataPermissionManager.listMetadataPermission(#entities, 'READ')")
+    @PostFilter(AclExpressions.METADATA_FILTER)
     public List<MetadataEntry> listMetadataItems(List<EntityVO> entities) {
         return metadataManager.listMetadataItems(entities);
     }
@@ -98,9 +98,7 @@ public class MetadataApiService {
         return metadataManager.searchMetadataByClassAndKeyValue(entityClass, key, value);
     }
 
-    @PostFilter("hasRole('ADMIN') or " +
-            "@metadataPermissionManager.metadataPermission(filterObject.entity.entityId, " +
-            "filterObject.entity.entityClass, 'READ')")
+    @PostFilter(AclExpressions.METADATA_FILTER)
     public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass, final String key,
                                                            final String value) {
         return metadataManager.searchMetadataEntriesByClassAndKeyValue(entityClass, key, value);

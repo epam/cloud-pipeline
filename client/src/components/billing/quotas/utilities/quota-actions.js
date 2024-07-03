@@ -16,6 +16,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import quotaGroups from './quota-groups';
+import classNames from 'classnames';
 
 const actions = {
   notify: 'NOTIFY',
@@ -45,7 +46,8 @@ function QuotaAction (
   }
   const {
     threshold = 0,
-    actions = []
+    actions = [],
+    activeAction
   } = action;
   if (actions.length === 0) {
     return null;
@@ -55,7 +57,14 @@ function QuotaAction (
       .toLowerCase()).join(', ');
   return (
     <span
-      className={className}
+      className={
+        classNames(
+          className,
+          {
+            'cp-warning': !!activeAction
+          }
+        )
+      }
       style={style}
     >
       {Math.round(100.0 * Number(threshold)) / 100.0}%: {actionsDescription}
@@ -69,6 +78,27 @@ QuotaAction.propTypes = {
     actions: PropTypes.object
   })
 };
+
+function quotaActionTriggered (action) {
+  return action && action.activeAction;
+}
+
+function quotaHasTriggeredActions (quota) {
+  if (!quota) {
+    return false;
+  }
+  const {actions = []} = quota;
+  return actions.some(quotaActionTriggered);
+}
+
+function getTriggeredActions (quota) {
+  const {actions = []} = quota || {};
+  const triggered = actions
+    .filter(quotaActionTriggered)
+    .map(triggeredAction => triggeredAction.actions || [])
+    .reduce((r, c) => ([...r, ...c]), []);
+  return [...(new Set(triggered))];
+}
 
 const actionsByGroup = {
   [quotaGroups.global]: [
@@ -94,6 +124,9 @@ const actionsByGroup = {
 export {
   actionNames,
   actionsByGroup,
-  QuotaAction
+  QuotaAction,
+  quotaActionTriggered,
+  quotaHasTriggeredActions,
+  getTriggeredActions
 };
 export default actions;

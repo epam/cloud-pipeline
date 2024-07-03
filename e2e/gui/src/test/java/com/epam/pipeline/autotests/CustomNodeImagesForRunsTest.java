@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.nodeLabel;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
@@ -85,7 +84,7 @@ public class CustomNodeImagesForRunsTest extends AbstractSeveralPipelineRunningT
                 .instanceParameters(instance ->
                         instance.ensure(NODE_IMAGE, text(testAmi)))
                 .waitForCompletion()
-                .click(taskWithName("InitializeNode"))
+                .clickTaskWithName("InitializeNode")
                 .ensure(STATUS, SUCCESS.reached)
                 .logMessages()
                 .collect(toSet());

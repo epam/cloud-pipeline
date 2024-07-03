@@ -35,4 +35,5 @@
   text-align: center;
   line-height: 20px;
   cursor: move;
+  z-index: 3;
 }

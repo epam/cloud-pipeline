@@ -1,0 +1,45 @@
+task build(type: Exec) {
+    group = 'build'
+    doFirst {
+        setSLSVersion()
+    }
+    commandLine 'python', "$project.rootDir/storage-lifecycle-service/setup.py", 'sdist'
+    doLast {
+        setSLSVersion()
+        copy {
+            from "$project.rootDir/storage-lifecycle-service/dist/sls-${version}.tar.gz"
+            into "$project.rootDir/storage-lifecycle-service/dist/"
+            rename { String fileName ->
+                fileName.replace("sls-${version}", "sls")
+            }
+        }
+    }
+}
+
+def setSLSVersion() {
+    copy {
+        from('sls/version.py')
+        into('temp')
+    }
+    def proj = file('sls/version.py')
+    def text = proj.getText("UTF-8")
+    text = text.replaceAll(/(__version__='.+')/, "__version__=\'$version\'")
+    proj.write(text, "UTF-8")
+}
+
+def cleanSLSVersion() {
+    copy {
+        from('temp/version.py')
+        into('storage-lifecycle-service')
+    }
+    delete("temp")
+}
+
+task clean(type: Delete) {
+    group = 'build'
+    doLast {
+        delete("$project.rootDir/storage-lifecycle-service/temp")
+        delete("$project.rootDir/storage-lifecycle-service/sls.egg-info")
+        delete("$project.rootDir/storage-lifecycle-service/dist")
+    }
+}

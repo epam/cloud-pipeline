@@ -35,6 +35,8 @@ import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEsti
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+'../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -52,9 +54,24 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import SensitiveBucketsWarning from './sensitive-buckets-warning';
 import OOMCheck from '../../pipelines/launch/form/utilities/oom-check';
 import {filterNFSStorages} from '../../pipelines/launch/dialogs/AvailableStoragesBrowser';
-import {
-  applyCustomCapabilitiesParameters
+import RunCapabilities, {
+  RUN_CAPABILITIES_MODE,
+  getEnabledCapabilities,
+  updateCapabilities,
+  applyCustomCapabilitiesParameters,
+  CapabilitiesDisclaimer,
+  checkRequiredCapabilitiesErrors
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import ToolLayersCheckWarning from './check/tool-layers/warning';
+import DiskSizeWarning from './warnings/disk-size-warning';
+import PersonalToolWarning from './warnings/personal-tool-warning';
+import CudaWarning from './warnings/cuda-warning';
+import {getSelectOptions} from '../../special/instance-type-info';
+import {
+  getLimitMountsStorages,
+  getLimitMountsParameterValue,
+  storageMatchesIdentifiers
+} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -96,9 +113,17 @@ export function run (parent, callback) {
 export function openReRunForm (run, props) {
   const {
     router,
+    routing,
     pipelines
   } = props;
-  if (!run || !router) {
+  let push;
+  if (router && typeof router.push === 'function') {
+    push = router.push.bind(router);
+  }
+  if (routing && typeof routing.push === 'function') {
+    push = routing.push.bind(routing);
+  }
+  if (!run || !push) {
     return Promise.resolve();
   }
   const wrapPipelineInfoPromise = (pipelineRequest, callback) => new Promise((resolve, reject) => {
@@ -162,7 +187,7 @@ export function openReRunForm (run, props) {
           link = `/launch/${id}${query}`;
         }
         if (link) {
-          router.push(link);
+          push(link);
         }
         resolve(link);
       });
@@ -249,7 +274,10 @@ function runFn (
     let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
-    const {dataStorageAvailable} = stores;
+    const {
+      dataStorageAvailable,
+      authenticatedUserInfo
+    } = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -297,8 +325,11 @@ function runFn (
     ) {
       dataStorageAvailable && await dataStorageAvailable.fetchIfNeededOrWait();
       if (dataStorageAvailable.loaded) {
-        const ids = new Set(payload.params[CP_CAP_LIMIT_MOUNTS].value.split(',').map(i => +i));
-        const selection = (dataStorageAvailable.value || []).filter(s => ids.has(+s.id));
+        const cpCapLimitMountsParameter = payload.params[CP_CAP_LIMIT_MOUNTS].value || '';
+        const selection = getLimitMountsStorages(
+          cpCapLimitMountsParameter,
+          dataStorageAvailable.value || []
+        );
         const hasSensitive = !!selection.find(s => s.sensitive);
         const filtered = selection
           .filter(
@@ -308,7 +339,10 @@ function runFn (
             )
           );
         if (filtered.length) {
-          payload.params[CP_CAP_LIMIT_MOUNTS].value = filtered.map(s => s.id).join(',');
+          payload.params[CP_CAP_LIMIT_MOUNTS].value = getLimitMountsParameterValue(
+            filtered,
+            cpCapLimitMountsParameter
+          );
         } else {
           payload.params[CP_CAP_LIMIT_MOUNTS].value = 'None';
         }
@@ -400,7 +434,8 @@ function runFn (
               name: launchName,
               alias: payload.runNameAlias,
               version: launchVersion,
-              title
+              title,
+              payload
             }}
             ref={ref}
             platform={platform}
@@ -426,7 +461,11 @@ function runFn (
                 : undefined
             }
             preferences={stores.preferences}
+            dockerRegistries={stores.dockerRegistries}
+            usersInfo={stores.usersInfo}
             skipCheck={skipCheck}
+            dockerImage={payload.dockerImage}
+            authenticatedUserInfo={authenticatedUserInfo}
           />
         ),
         style: {
@@ -435,6 +474,27 @@ function runFn (
         okText: 'Launch',
         onOk: async function () {
           if (component) {
+            if (component.state.runCapabilities) {
+              payload.params = updateCapabilities(
+                payload.params,
+                component.state.runCapabilities,
+                stores.preferences
+              );
+            }
+            payload.params = applyCustomCapabilitiesParameters(
+              payload.params,
+              stores.preferences
+            );
+            if (
+              checkRequiredCapabilitiesErrors(
+                getEnabledCapabilities(payload.params),
+                stores.preferences
+              )
+            ) {
+              const error = 'You need to specify required capabilities';
+              message.error(error, 5);
+              return Promise.reject(new Error(error));
+            }
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
@@ -535,7 +595,13 @@ export class RunConfirmation extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    dockerImage: PropTypes.string,
+    dockerRegistries: PropTypes.object,
+    usersInfo: PropTypes.object,
+    runCapabilities: PropTypes.array,
+    onChangeRunCapabilities: PropTypes.func,
+    showRunCapabilities: PropTypes.bool
   };
 
   static defaultProps = {
@@ -565,42 +631,18 @@ export class RunConfirmation extends React.Component {
   }
 
   @computed
-  get initialSelectedDataStorageIndecis () {
-    if (/^none$/i.test(this.props.limitMounts)) {
-      return [];
-    }
-    return (
-      this.props.limitMounts ||
-      this.dataStorages.filter(d => !d.sensitive)
-        .map(d => `${d.id}`).join(',')
-    )
-      .split(',')
-      .map(d => +d);
-  }
-
-  @computed
-  get selectedDataStorageIndecis () {
-    if (/^none$/i.test(this.state.limitMounts)) {
-      return [];
-    }
-    return (
-      this.state.limitMounts ||
-      this.dataStorages.filter(d => !d.sensitive)
-        .map(d => `${d.id}`).join(',')
-    )
-      .split(',')
-      .map(d => +d);
-  }
-
-  @computed
   get dataStorages () {
     return (this.props.dataStorages || []).map(d => d);
   }
 
-  @computed
+  get selectedDataStorages () {
+    const {limitMounts} = this.state;
+    return this.getStoragesByIdentifiersString(limitMounts);
+  }
+
   get initialSelectedDataStorages () {
-    return this.dataStorages
-      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0);
+    const {limitMounts} = this.props;
+    return this.getStoragesByIdentifiersString(limitMounts);
   }
 
   @computed
@@ -612,7 +654,6 @@ export class RunConfirmation extends React.Component {
       );
   }
 
-  @computed
   get notConflictingIndecis () {
     return this.initialSelectedDataStorages
       .filter((d, i, a) =>
@@ -624,8 +665,8 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get initialLimitMountsHaveConflicts () {
-    return this.dataStorages
-      .filter(d => this.initialSelectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+    return this.initialSelectedDataStorages
+      .filter(d => !!d.mountPoint)
       .map(d => d.mountPoint)
       .filter(notUniqueInArray)
       .length > 0;
@@ -633,11 +674,22 @@ export class RunConfirmation extends React.Component {
 
   @computed
   get limitMountsHaveConflicts () {
-    return this.dataStorages
-      .filter(d => this.selectedDataStorageIndecis.indexOf(+d.id) >= 0 && !!d.mountPoint)
+    return this.selectedDataStorages
+      .filter(d => !!d.mountPoint)
       .map(d => d.mountPoint)
       .filter(notUniqueInArray)
       .length > 0;
+  }
+
+  getStoragesByIdentifiersString(identifiersString) {
+    if (/^none$/i.test(identifiersString)) {
+      return [];
+    }
+    if (identifiersString) {
+      const ids = identifiersString.split(',');
+      return this.dataStorages.filter((d) => storageMatchesIdentifiers(d, ids));
+    }
+    return this.dataStorages.filter(d => !d.sensitive && !d.sourceStorageId);
   }
 
   getInstanceTypes = () => {
@@ -667,6 +719,16 @@ export class RunConfirmation extends React.Component {
       return undefined;
     }
     return this.getInstanceTypes().find(t => t.name === this.state.instanceType);
+  }
+
+  get runCapabilitiesErrorSolved () {
+    if (this.props.runCapabilities && this.props.preferences) {
+      return !checkRequiredCapabilitiesErrors(
+        this.props.runCapabilities,
+        this.props.preferences
+      );
+    }
+    return false;
   }
 
   setOnDemand = (onDemand) => {
@@ -764,15 +826,36 @@ export class RunConfirmation extends React.Component {
               option.props.name.toLowerCase().indexOf(input.toLowerCase()) >= 0 ||
               option.props.pathMask.toLowerCase().indexOf(input.toLowerCase()) >= 0}
           value={
-            this.selectedDataStorageIndecis
-              .filter(i => this.notConflictingIndecis.indexOf(+i) === -1)
-              .map(i => i.toString())
+            this.selectedDataStorages
+              .filter(s => this.notConflictingIndecis.indexOf(s.id) === -1)
+              .map(s => s.id.toString())
           }
         >
           {this.getSelectStructure()}
         </Select>
       </Provider>
     );
+  };
+
+  renderCapabilitiesDisclaimer = () => {
+    const {
+      preferences,
+      parameters
+    } = this.props;
+    return (
+      <Provider preferences={preferences}>
+        <CapabilitiesDisclaimer
+          style={{margin: 2}}
+          showIcon
+          parameters={parameters}
+        />
+      </Provider>
+    );
+  };
+
+  onChangeRunCapabilities = (capabilities) => {
+    const {onChangeRunCapabilities} = this.props;
+    onChangeRunCapabilities && onChangeRunCapabilities(capabilities);
   };
 
   render () {
@@ -889,12 +972,15 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
+                {/* eslint-disable-next-line max-len */}
                 Note that you will not be able to commit a cluster. Commit feature is only available for single-node runs
               </Row>
             } />
         }
         {
-          !this.props.isCluster && this.gpuEnabled &&
+          !this.props.isCluster &&
+          this.gpuEnabled &&
+          !/^windows$/i.test(this.props.platform) &&
           <Alert
             type="info"
             style={{margin: 2}}
@@ -902,12 +988,15 @@ export class RunConfirmation extends React.Component {
             message={
               <Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   <b>You are going to launch a job using GPU-enabled instance</b> - <b>{this.state.instanceType}.</b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
+                  {/* eslint-disable-next-line max-len */}
                   Note that if you install any <b>NVIDIA packages</b> manually and commit it, that may produce an unusable image.
                 </Row>
                 <Row>
+                  {/* eslint-disable-next-line max-len */}
                   All cuda-based dockers shall be built using <b><a target="_blank" href="https://hub.docker.com/r/nvidia/cuda/">nvidia/cuda</a></b> base image instead.
                 </Row>
               </Row>
@@ -934,34 +1023,12 @@ export class RunConfirmation extends React.Component {
                   optionFilterProp="children"
                   notFoundContent="Instance types not found"
                   onChange={this.setInstanceType}
-                  filterOption={
-                    (input, option) =>
-                    option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                  {
-                    this.getInstanceTypes()
-                      .map(t => t.instanceFamily)
-                      .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                      .map(instanceFamily => {
-                        return (
-                          <Select.OptGroup
-                            key={instanceFamily || 'Other'}
-                            label={instanceFamily || 'Other'}
-                          >
-                            {
-                              this.getInstanceTypes()
-                                .filter(t => t.instanceFamily === instanceFamily)
-                                .map(t =>
-                                  <Select.Option
-                                    key={t.sku}
-                                    value={t.name}>
-                                    {t.name} (CPU: {t.vcpu}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}`: ''})
-                                  </Select.Option>
-                                )
-                            }
-                          </Select.OptGroup>
-                        );
-                      })
+                  filterOption={(input, option) => option.props.value
+                    .toLowerCase()
+                    .indexOf(input.toLowerCase()) >= 0
                   }
+                >
+                  {getSelectOptions(this.getInstanceTypes())}
                 </Select>
               </div>
             } />
@@ -990,9 +1057,11 @@ export class RunConfirmation extends React.Component {
               message={
                 <div>
                   <Row style={{marginBottom: 5}}>
+                    {/* eslint-disable-next-line max-len */}
                     There is a number of data storages, that are going to be mounted to the same location within the compute node. This may lead to unexpected behavior.
                   </Row>
                   <Row style={{marginBottom: 5, fontWeight: 'bold'}}>
+                    {/* eslint-disable-next-line max-len */}
                     Please review the list of the mount points below and choose the data storage to be mounted:
                   </Row>
                   <Row style={{width: '100%'}}>
@@ -1048,10 +1117,81 @@ export class RunConfirmation extends React.Component {
           hddSize={this.props.hddSize}
           onDiskSizeChanged={this.props.onChangeHddSize}
         />
+        <DiskSizeWarning
+          disk={this.props.hddSize}
+          style={{margin: 2}}
+          showIcon
+        />
         <SensitiveBucketsWarning
           parameters={this.props.parameters}
           style={{margin: 2}}
         />
+        <Provider
+          dockerRegistries={this.props.dockerRegistries}
+        >
+          <CudaWarning
+            style={{margin: 2}}
+            showIcon
+            docker={this.props.dockerImage}
+            gpuEnabledRun={this.gpuEnabled}
+            instanceType={this.state.instanceType}
+          />
+        </Provider>
+        {
+          this.renderCapabilitiesDisclaimer()
+        }
+        {this.props.showRunCapabilities ? (
+          <Alert
+            type={this.runCapabilitiesErrorSolved ? 'info' : 'error'}
+            style={{margin: 2}}
+            showIcon
+            message={
+              <div style={{display: 'flex', flexDirection: 'column'}}>
+                <span style={{marginBottom: 5}}>
+                  {this.runCapabilitiesErrorSolved
+                    ? 'All required run capabilities are selected.'
+                    : 'Some of the required run capabilities are missing.'
+                  }
+                </span>
+                <Provider
+                  awsRegions={awsRegions}
+                  preferences={this.props.preferences}
+                  dockerRegistries={this.props.dockerRegistries}
+                >
+                  <RunCapabilities
+                    values={this.props.runCapabilities}
+                    onChange={this.onChangeRunCapabilities}
+                    platform={this.props.platform}
+                    dockerImage={this.props.dockerImage}
+                    provider={this.currentCloudProvider}
+                    region={this.currentRegion}
+                    mode={RUN_CAPABILITIES_MODE.launch}
+                    tagStyle={{height: '20px'}}
+                    style={{padding: '2px'}}
+                    showError={false}
+                    getPopupContainer={node => node}
+                  />
+                </Provider>
+              </div>
+            }
+          />
+        ) : null}
+        <ToolLayersCheckWarning
+          style={{margin: 2}}
+          toolId={this.props.dockerImage}
+          showIcon
+        />
+        <Provider
+          preferences={this.props.preferences}
+          dockerRegistries={this.props.dockerRegistries}
+          usersInfo={this.props.usersInfo}
+        >
+          <PersonalToolWarning
+            docker={this.props.dockerImage}
+            style={{margin: 2}}
+            showIcon
+          />
+        </Provider>
       </div>
     );
   }
@@ -1094,7 +1234,18 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    dockerRegistries: PropTypes.object,
+    usersInfo: PropTypes.object,
+    runInfo: PropTypes.shape({
+      name: PropTypes.string,
+      alias: PropTypes.string,
+      version: PropTypes.string,
+      title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+      payload: PropTypes.object
+    }),
+    skipCheck: PropTypes.bool,
+    authenticatedUserInfo: PropTypes.object,
+    dockerImage: PropTypes.string
   };
 
   static defaultProps = {
@@ -1108,8 +1259,19 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     hddSize: 0,
     instanceType: null,
     limitMounts: null,
-    runNameAlias: null
+    runNameAlias: null,
+    runCapabilities: null
   };
+
+  get runCapabilitiesError () {
+    if (this.props.parameters && this.props.preferences) {
+      return checkRequiredCapabilitiesErrors(
+        Object.keys(this.props.parameters),
+        this.props.preferences
+      );
+    }
+    return false;
+  }
 
   onChangeSpotType = (isSpot) => {
     this.setState({
@@ -1162,6 +1324,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     this.setState({runNameAlias: alias});
   };
 
+  onChangeRunCapabilities = (capabilities) => {
+    this.setState({runCapabilities: (capabilities || []).slice()});
+  };
+
   renderModalTitle = () => {
     const {
       name,
@@ -1172,7 +1338,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     let titleFn = (runName) => ([
       (<span key="launch">Launch</span>),
       runName,
-      (<span key="question">?</span>),
+      (<span key="question">?</span>)
     ]);
     if (title && typeof title === 'function') {
       titleFn = title;
@@ -1182,6 +1348,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }
     return (
       <div
+        className="cp-run-name-title"
         style={{
           marginTop: '-16px',
           marginBottom: '6px',
@@ -1231,12 +1398,18 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             limitMounts={this.props.limitMounts}
             onChangeLimitMounts={this.onChangeLimitMounts}
             onChangeHddSize={this.onChangeHddSize}
+            runCapabilities={this.state.runCapabilities}
+            onChangeRunCapabilities={this.onChangeRunCapabilities}
             nodeCount={this.props.nodeCount}
             hddSize={this.props.hddSize}
             parameters={this.props.parameters}
             permissionErrors={this.props.permissionErrors}
+            showRunCapabilities={this.runCapabilitiesError}
             preferences={this.props.preferences}
             skipCheck={this.props.skipCheck}
+            dockerImage={this.props.dockerImage}
+            dockerRegistries={this.props.dockerRegistries}
+            usersInfo={this.props.usersInfo}
           />
         </Row>
         {
@@ -1255,6 +1428,12 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
+        <Provider authenticatedUserInfo={this.props.authenticatedUserInfo}>
+          <AllowedInstancesCountWarning
+            payload={this.props.runInfo.payload}
+            style={{margin: '4px 2px'}}
+          />
+        </Provider>
       </div>
     );
   }
@@ -1265,7 +1444,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
       hddSize: this.props.hddSize,
-      limitMounts: this.props.limitMounts
+      limitMounts: this.props.limitMounts,
+      runCapabilities: getEnabledCapabilities(this.props.parameters)
     }, async () => {
       this._estimatedPriceType = new PipelineRunEstimatedPrice(
         this.props.pipelineId,

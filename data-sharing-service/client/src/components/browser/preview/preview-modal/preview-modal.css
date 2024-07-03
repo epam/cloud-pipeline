@@ -45,8 +45,8 @@
 }
 
 .preview.large {
-  max-width: 80vw;
-  width: 80vw;
+  max-width: calc(100vw - 20px);
+  width: calc(100vw - 20px);
   max-height: unset;
 }
 

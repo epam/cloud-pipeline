@@ -50,6 +50,8 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-green-soft': '#008080',
+    '@color-blue-soft': '#025979',
     '@spinner': '@application-color',
     '@element-hover-color': '@application-color',
     '@element-hover-background-color': 'lighten(@panel-background-color, 5%)',
@@ -93,6 +95,8 @@ export default {
     '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
+    '@local-icon': "@static_resource('icons/providers/local-light.svg')",
+    '@local-icon-contrast': "@static_resource('icons/providers/local-light.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
     '@even-element-background': 'lighten(@card-background-color, 5%)',
     '@alert-success-background': 'fade(@color-success, 25%)',
@@ -124,6 +128,7 @@ export default {
     '@code-background-color': 'lighten(@card-background-color, 10%)',
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
+    '@search-highlight-text-inactive-background-color': 'fadeout(@navigation-panel-color-impersonated, 50%)',
     '@vs-color-conflict-background': '@alert-error-background',
     '@vs-color-conflict-border': '@alert-error-border',
     '@vs-color-conflict-applied-background': '@vs-color-conflict-background',
@@ -132,6 +137,9 @@ export default {
     '@vs-color-insertion-applied-background': '@vs-color-insertion-background',
     '@vs-color-change-background': '@alert-warning-background',
     '@vs-color-change-border': '@alert-warning-border',
-    '@vs-color-change-applied-background': '@vs-color-change-background'
+    '@vs-color-change-applied-background': '@vs-color-change-background',
+    '@application-console-background-color': '@card-background-color',
+    '@application-console-color': '@application-color',
+    '@application-console-color-details': '@application-color-faded'
   }
 };

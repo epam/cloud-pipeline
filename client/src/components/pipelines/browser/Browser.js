@@ -37,7 +37,7 @@ import {
   Tooltip
 } from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
 import styles from './Browser.css';
 import UserName from '../../special/UserName';
@@ -52,6 +52,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
+@inject('preferences')
 @inject(({pipelines, dataStorages}, params) => {
   let {browserLocation, onReloadTree} = params;
   browserLocation = browserLocation || 'pipelines';
@@ -97,11 +98,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       return generateTreeData(
         payload,
-        true,
-        undefined,
-        undefined,
-        [ItemTypes.pipeline, ItemTypes.storage],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          ignoreChildren: true,
+          types: [ItemTypes.pipeline, ItemTypes.storage],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
     }
     return [];
@@ -110,7 +111,8 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
+      case ItemTypes.versionedStorage:
+        return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (
@@ -243,8 +245,24 @@ export default class Folder extends localization.LocalizedReactComponent {
     const {browserLocation} = this.props;
     const isStorages = /^storages$/i.test(browserLocation);
     const {filter} = this.state;
+    const filterItem = (item) => {
+      if (!filter) {
+        return true;
+      }
+      if (item.name.toLowerCase().includes(filter.toLowerCase())) {
+        return true;
+      }
+      if (
+        item.type === ItemTypes.storage &&
+        item.path &&
+        item.path.toLowerCase().includes(filter.toLowerCase())
+      ) {
+        return true;
+      }
+      return false;
+    };
     const items = this.items
-      .filter((item) => !filter || item.name.toLowerCase().indexOf(filter.toLowerCase()) >= 0);
+      .filter(filterItem);
     const columns = [
       {
         key: 'type',
@@ -342,7 +360,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     return (
       <Table
         className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-        dataSource={items}
+        dataSource={formatTreeItems(items, {preferences: this.props.preferences})}
         columns={columns}
         rowKey={(item) => item.key}
         title={null}

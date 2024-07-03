@@ -16,15 +16,36 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon, InputNumber, Modal, Row, Select, TimePicker} from 'antd';
+import {Button, Icon, Modal, Row, Select, TimePicker} from 'antd';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
-import daysOfWeek from './days-of-week';
-
+import {
+  DailyForm,
+  WeeklyForm,
+  MonthlyForm,
+  YearlyForm,
+  DAY_SELECTOR_MODES,
+  DAYS,
+  MONTHS,
+  ORDINALS
+} from './forms';
 import {CronConvert, isTimeZoneEqualCurrent, ruleModes} from './cron-convert';
-
 import styles from './run-scheduling.css';
+
+const BLANK_SCHEDULE = {
+  every: 1,
+  day: undefined,
+  dayNumber: undefined,
+  ordinal: undefined,
+  dayOfWeek: undefined,
+  month: undefined,
+  daySelectorMode: undefined,
+  time: {
+    hours: 0,
+    minutes: 0
+  }
+};
 
 const actions = {
   pause: 'PAUSE',
@@ -53,6 +74,7 @@ export default class RunScheduleDialog extends React.Component {
       actions.resume,
       actions.run
     ])),
+    showActionType: PropTypes.bool,
     rules: PropTypes.array,
     visible: PropTypes.bool,
     disabled: PropTypes.bool,
@@ -106,14 +128,30 @@ export default class RunScheduleDialog extends React.Component {
   validate = () => {
     const {rules} = this.state;
     const validationErrors = [];
-
+    const cronExpressions = rules.map((r, index) => ({
+      ruleIndex: index,
+      expression: CronConvert.convertToCronString(r.schedule),
+      removed: r.removed
+    }));
     rules.forEach(({removed, schedule: {mode, dayOfWeek}}, index) => {
       if (!removed && mode === ruleModes.weekly &&
         (dayOfWeek.length === 0 || (dayOfWeek.length === 1 && dayOfWeek[0] === '*'))) {
         validationErrors.push({index, message: 'You must choose at least one weekday.'});
       }
+      const hasDuplicates = cronExpressions
+        .find(({expression, ruleIndex, removed}) => {
+          const current = cronExpressions[index];
+          return current.expression === expression &&
+            index !== ruleIndex &&
+            !removed;
+        });
+      if (!removed && hasDuplicates) {
+        validationErrors.push({
+          index,
+          message: 'A rule with the same configuration already exists.'
+        });
+      }
     });
-
     this.setState({validationErrors});
     return !(validationErrors.length > 0);
   };
@@ -145,7 +183,6 @@ export default class RunScheduleDialog extends React.Component {
       };
 
       const result = (rules || []).map(convertRule);
-
       onSubmit && onSubmit(result);
     }
   };
@@ -196,8 +233,14 @@ export default class RunScheduleDialog extends React.Component {
       rules[i].action = value;
       this.setState({rules});
     };
-    const {availableActions} = this.props;
-    if (!availableActions || availableActions.length < 2) {
+    const {
+      availableActions,
+      showActionType
+    } = this.props;
+    if (
+      (!availableActions || availableActions.length < 2) &&
+      !showActionType
+    ) {
       return null;
     }
     return (
@@ -222,15 +265,42 @@ export default class RunScheduleDialog extends React.Component {
   renderScheduleModeSelector = ({removed, schedule}, i) => {
     const onModeChange = (value) => {
       const {rules} = this.state;
-
-      rules[i].schedule.mode = value;
-      if (value === ruleModes.daily) {
-        rules[i].schedule.every = 1;
-        delete rules[i].schedule.dayOfWeek;
-      } else {
-        rules[i].schedule.dayOfWeek = [];
-        delete rules[i].schedule.every;
+      let newSchedule = {
+        ...BLANK_SCHEDULE,
+        mode: value
+      };
+      switch (value) {
+        case (ruleModes.daily):
+          newSchedule = {...newSchedule};
+          break;
+        case (ruleModes.weekly):
+          newSchedule = {
+            ...newSchedule,
+            dayOfWeek: [],
+            daySelectorMode: DAY_SELECTOR_MODES.numeric
+          };
+          break;
+        case (ruleModes.monthly):
+          newSchedule = {
+            ...newSchedule,
+            ordinal: ORDINALS[0].cronCode,
+            dayNumber: 1,
+            day: DAYS[0].key,
+            daySelectorMode: DAY_SELECTOR_MODES.numeric
+          };
+          break;
+        case (ruleModes.yearly):
+          newSchedule = {
+            ...newSchedule,
+            month: MONTHS[0].key,
+            ordinal: ORDINALS[0].cronCode,
+            dayNumber: 1,
+            day: DAYS[0].key,
+            daySelectorMode: DAY_SELECTOR_MODES.numeric
+          };
+          break;
       }
+      rules[i].schedule = newSchedule;
       this.setState({rules});
     };
     return (
@@ -244,80 +314,8 @@ export default class RunScheduleDialog extends React.Component {
         >
           <Select.Option key={ruleModes.daily}>Daily</Select.Option>
           <Select.Option key={ruleModes.weekly}>Weekly</Select.Option>
-        </Select>
-      </div>
-    );
-  };
-
-  renderScheduleEverySelector = ({removed, schedule}, i) => {
-    if (schedule.mode !== ruleModes.daily) {
-      return null;
-    }
-    const onEveryChange = (value) => {
-      const {rules} = this.state;
-
-      rules[i].schedule.every = value;
-      this.setState({rules});
-    };
-    return (
-      <div style={{flex: 1, marginRight: 15}}>
-        Every
-        <InputNumber
-          disabled={removed}
-          min={1}
-          max={31}
-          onChange={onEveryChange}
-          value={schedule.every}
-          size="small"
-          style={{margin: '0 10px 0 10px', width: 50}}
-        />
-        day(s)
-      </div>
-    );
-  };
-
-  renderDayOfWeekSelector = ({removed, schedule}, i) => {
-    if (schedule.mode !== ruleModes.weekly) {
-      return null;
-    }
-    const onDayOfWeekSelect = (value) => {
-      const {rules} = this.state;
-
-      rules[i].schedule.dayOfWeek.push(value);
-      rules[i].schedule.dayOfWeek.sort();
-      this.setState({rules});
-    };
-    const onDayOfWeekDeselect = (value) => {
-      const {rules} = this.state;
-
-      const index = rules[i].schedule.dayOfWeek.indexOf(value);
-      if (index >= 0) {
-        rules[i].schedule.dayOfWeek.splice(index, 1);
-        this.setState({rules});
-      }
-    };
-    const {validationErrors} = this.state;
-    const [validationError] = (validationErrors || []).filter(({index}) => index === i);
-
-    return (
-      <div style={{flex: 1, marginRight: 15}}>
-        <Select
-          disabled={removed}
-          mode="multiple"
-          className={classNames({'cp-error': !!validationError})}
-          onDeselect={onDayOfWeekDeselect}
-          onSelect={onDayOfWeekSelect}
-          value={schedule.dayOfWeek || '1'}
-          size="small"
-          style={{width: 170}}
-        >
-          {
-            daysOfWeek.map(({day, value}) => (
-              <Select.Option key={day} value={value.toString()}>
-                {day}
-              </Select.Option>
-            ))
-          }
+          <Select.Option key={ruleModes.monthly}>Monthly</Select.Option>
+          <Select.Option key={ruleModes.yearly}>Yearly</Select.Option>
         </Select>
       </div>
     );
@@ -333,7 +331,7 @@ export default class RunScheduleDialog extends React.Component {
     };
     const format = 'HH:mm';
     return (
-      <div style={{marginRight: 15}}>
+      <div style={{marginRight: 15, marginLeft: 'auto'}}>
         at
         <TimePicker
           allowEmpty={false}
@@ -367,7 +365,6 @@ export default class RunScheduleDialog extends React.Component {
   renderErrorMessage = (i) => {
     const {validationErrors} = this.state;
     const [validationError] = (validationErrors || []).filter(({index}) => index === i);
-
     if (validationError && validationError.message) {
       return (
         <Row
@@ -378,18 +375,52 @@ export default class RunScheduleDialog extends React.Component {
             )
           }
           justify="center"
+          style={{marginLeft: 5}}
         >
           {validationError.message}
         </Row>
       );
     }
-
     return null;
+  };
+
+  renderScheduleForm = (rule, i) => {
+    if (!rule || !rule.schedule) {
+      return null;
+    }
+    let FormComponent;
+    const onChange = (schedule) => {
+      const {rules} = this.state;
+      rules[i].schedule = schedule;
+      this.setState({rules});
+    };
+    switch (rule.schedule.mode) {
+      case ruleModes.daily:
+        FormComponent = DailyForm;
+        break;
+      case (ruleModes.weekly):
+        FormComponent = WeeklyForm;
+        break;
+      case ruleModes.monthly:
+        FormComponent = MonthlyForm;
+        break;
+      case ruleModes.yearly:
+        FormComponent = YearlyForm;
+        break;
+      default:
+        FormComponent = DailyForm;
+    }
+    return (
+      <FormComponent
+        disabled={rule.removed}
+        onChange={onChange}
+        schedule={rule.schedule}
+      />
+    );
   };
 
   renderRule = (rule, i) => {
     const sameTimezone = isTimeZoneEqualCurrent(rule.timeZone);
-
     return (
       <Row
         key={i}
@@ -411,8 +442,7 @@ export default class RunScheduleDialog extends React.Component {
         })}>
           {this.renderActionSelector(rule, i)}
           {this.renderScheduleModeSelector(rule, i)}
-          {this.renderScheduleEverySelector(rule, i)}
-          {this.renderDayOfWeekSelector(rule, i)}
+          {this.renderScheduleForm(rule, i)}
           {this.renderTimePicker(rule, i)}
           {
             !rule.removed
@@ -442,16 +472,16 @@ export default class RunScheduleDialog extends React.Component {
   };
 
   render () {
-    const {onClose, visible, title} = this.props;
+    const {onClose, visible, title, showActionType} = this.props;
     const {rules} = this.state;
-
     return (
       <Modal
         title={title}
         onCancel={onClose}
         onOk={this.onOkClicked}
         visible={visible}
-        width={600}>
+        width={showActionType ? '800px' : '700px'}
+      >
         <Row type="flex" className={styles.rulesContainer}>
           {rules.map(this.renderRule)}
         </Row>

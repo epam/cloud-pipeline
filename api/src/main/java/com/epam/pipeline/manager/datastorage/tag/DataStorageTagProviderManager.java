@@ -16,6 +16,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -47,9 +48,11 @@ public class DataStorageTagProviderManager {
         final String authorizedUser = authManager.getAuthorizedUser();
         final String absolutePath = storage.resolveAbsolutePath(path);
         final Map<String, String> defaultTags = Collections.singletonMap(ProviderUtils.OWNER_TAG_KEY, authorizedUser);
-        tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
+        // Upsert instead of insert here to safe previous tags if any,
+        // in case we don't create a new file but update it with new content
+        tagManager.upsert(storage.getRootId(), new DataStorageObject(absolutePath, null), defaultTags);
         if (storage.isVersioningEnabled()) {
-            tagManager.insert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
+            tagManager.upsert(storage.getRootId(), new DataStorageObject(absolutePath, version), defaultTags);
         }
     }
 
@@ -59,6 +62,15 @@ public class DataStorageTagProviderManager {
         final String absolutePath = storage.resolveAbsolutePath(path);
         final DataStorageObject object = new DataStorageObject(absolutePath, version);
         return mapFrom(tagManager.load(storage.getRootId(), object));
+    }
+
+    public Map<Long, List<DataStorageTag>> search(final List<AbstractDataStorage> storages,
+                                                  final Map<String, String> tags) {
+        Assert.notNull(tags, "Please specify at least a tag key to search by!");
+        Assert.state(!tags.isEmpty(), "Please specify at least a tag key to search by!");
+        final List<Long> dataStorageRootIds = CollectionUtils.emptyIfNull(storages).stream()
+                .map(AbstractDataStorage::getRootId).collect(Collectors.toList());
+        return tagManager.search(dataStorageRootIds, tags);
     }
 
     public Map<String, String> updateFileTags(final AbstractDataStorage storage,

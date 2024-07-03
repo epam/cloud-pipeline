@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {computed} from 'mobx';
 import classNames from 'classnames';
 import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
@@ -64,27 +64,159 @@ import HiddenObjects from '../../../utils/hidden-objects';
 export default class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
-  @observable _graphIsSupported = null;
+  @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
+  }
+
+  @computed
+  get codePath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {codePath} = pipeline.value || {};
+      if (codePath && codePath.length) {
+        return codePath;
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get docsPath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {docsPath} = pipeline.value || {};
+      if (docsPath && docsPath.length) {
+        return docsPath;
+      }
+    }
+    return undefined;
+  }
+
+  @computed
+  get displayGraph () {
+    const {language} = this.props;
+    if (language && language.loaded) {
+      return graphIsSupportedForLanguage(language.value);
+    }
+    return false;
+  }
+
+  @computed
+  get isCWLPipeline () {
+    const {language} = this.props;
+    if (language && language.loaded) {
+      return /^cwl$/i.test(language.value);
+    }
+    return false;
+  }
+
+  get activeTabPath () {
+    const {
+      router: {location}
+    } = this.props;
+    const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
+    return activeTab ? activeTab.toLowerCase() : undefined;
+  }
+
+  @computed
+  get tabs () {
+    const {
+      pipelineId: id,
+      version
+    } = this.props;
+    const workflow = this.displayGraph && this.isCWLPipeline ? {
+      key: 'workflow',
+      title: 'Workflow',
+      link: `/${id}/${version}/workflow`
+    } : false;
+    const documents = {
+      key: 'documents',
+      title: 'Documents',
+      link: `/${id}/${version}/documents`
+    };
+    const code = {
+      key: 'code',
+      title: 'Code',
+      link: `/${id}/${version}/code`
+    };
+    const configuration = {
+      key: 'configuration',
+      title: 'Configuration',
+      link: `/${id}/${version}/configuration`
+    };
+    const graph = this.displayGraph && !this.isCWLPipeline ? {
+      key: 'graph',
+      title: 'Graph',
+      link: `/${id}/${version}/graph`
+    } : false;
+    const history = {
+      key: 'history',
+      title: 'History',
+      link: `/${id}/${version}/history`
+    };
+    const storage = {
+      key: 'storage',
+      title: 'Storage rules',
+      link: `/${id}/${version}/storage`
+    };
+    switch (this.repositoryType) {
+      case 'BITBUCKET':
+        return [
+          this.codePath ? code : false,
+          configuration,
+          history,
+          storage
+        ].filter(Boolean);
+      default:
+        return [
+          workflow,
+          this.docsPath ? documents : false,
+          this.codePath ? code : false,
+          configuration,
+          graph,
+          history,
+          storage
+        ].filter(Boolean);
+    }
+  }
 
   componentDidMount () {
-    this.redirectToVersionedStorage();
+    this.redirectIfRequired();
   }
 
   componentDidUpdate () {
-    if (!this.props.language.pending) {
-      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
-      if (graphIsSupported !== this._graphIsSupported) {
-        this._graphIsSupported = graphIsSupported;
-      }
-    }
-    this.redirectToVersionedStorage();
+    this.redirectIfRequired();
   }
 
-  redirectToVersionedStorage = () => {
-    if (this.props.pipeline.loaded) {
-      const {id, pipelineType} = this.props.pipeline.value;
+  redirectIfRequired = () => {
+    const {
+      pipeline,
+      language
+    } = this.props;
+    if (
+      pipeline &&
+      pipeline.loaded
+    ) {
+      const {id, pipelineType} = pipeline.value;
       if (/^versioned_storage$/i.test(pipelineType)) {
         this.props.router && this.props.router.push(`/vs/${id}`);
+        return;
+      }
+      if (
+        language &&
+        (language.loaded || (language.error && !language.pending))
+      ) {
+        const currentTab = this.tabs.find(o => o.key === this.activeTabPath);
+        const [first] = this.tabs;
+        if (!currentTab && first) {
+          this.props.router && this.props.router.push(first.link);
+        }
       }
     }
   };
@@ -97,6 +229,24 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     });
   };
 
+  reload = async () => {
+    const {
+      parentFolderId
+    } = this.props.pipeline.value || {};
+    await this.props.pipeline.fetch();
+    if (this.props.onReloadTree) {
+      if (parentFolderId) {
+        this.props.folders.invalidateFolder(parentFolderId);
+      } else {
+        this.props.pipelinesLibrary.invalidateCache();
+      }
+      this.props.onReloadTree(
+        !parentFolderId,
+        parentFolderId
+      );
+    }
+  };
+
   updatePipeline = (values) => {
     this.setState({updating: true}, async () => {
       const updatePipeline = new UpdatePipeline();
@@ -105,7 +255,12 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           id: this.props.pipelineId,
           name: values.name,
           description: values.description,
-          parentFolderId: this.props.pipeline.value.parentFolderId
+          parentFolderId: this.props.pipeline.value.parentFolderId,
+          branch: values.branch,
+          configurationPath: values.configurationPath,
+          visibility: values.visibility,
+          codePath: values.codePath,
+          docsPath: values.docsPath
         }
       );
       if (updatePipeline.error) {
@@ -113,12 +268,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         message.error(`Error updating ${this.localizedString('pipeline')}: ${updatePipeline.error}`);
         this.setState({updating: false});
       } else {
-        this.setState({updating: false, isModalVisible: false}, () => {
-          this.props.pipeline.fetch();
-          if (this.props.onReloadTree) {
-            this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-          }
-        });
+        this.setState({updating: false, isModalVisible: false}, () => this.reload());
       }
     });
   };
@@ -140,10 +290,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       this.setState({
         isModalVisible: false
       });
-      await this.props.pipeline.fetch();
-      if (this.props.onReloadTree) {
-        this.props.onReloadTree(!this.props.pipeline.value.parentFolderId);
-      }
+      await this.reload();
     }
   };
 
@@ -156,14 +303,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
         message.error(`Error deleting ${this.localizedString('pipeline')}: ${deletePipeline.error}`);
         this.setState({deleting: false});
       } else {
-        const parentFolderId = this.props.pipeline.value.parentFolderId;
+        const {parentFolderId} = this.props.pipeline.value;
         if (parentFolderId) {
           this.props.folders.invalidateFolder(parentFolderId);
         } else {
           this.props.pipelinesLibrary.invalidateCache();
         }
         if (this.props.onReloadTree) {
-          this.props.onReloadTree(!parentFolderId);
+          this.props.onReloadTree(
+            !parentFolderId,
+            parentFolderId
+          );
         }
         if (parentFolderId) {
           this.props.router.push(`/folder/${parentFolderId}`);
@@ -252,30 +402,29 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
   };
 
   render () {
-    if (!this.props.pipeline.loaded && this.props.pipeline.pending) {
+    const {
+      pipeline,
+      language
+    } = this.props;
+    if (
+      (!pipeline.loaded && pipeline.pending) ||
+      (!language.loaded && language.pending)
+    ) {
       return <LoadingView />;
     }
-    if (this.props.pipeline.error) {
+    if (pipeline.error) {
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
-    const {id, description, pipelineType} = this.props.pipeline.value;
+    const {description, pipelineType} = this.props.pipeline.value;
     if (/^versioned_storage$/i.test(pipelineType)) {
       return (
         <LoadingView />
       );
     }
-    const {version} = this.props.params;
 
     const {router: {location}} = this.props;
-    const activeTab = this.props.router.location.pathname.split('/').slice(3)[0];
-
-    let displayGraph = false;
-    if (!this.props.language.pending) {
-      displayGraph = graphIsSupportedForLanguage(this.props.language.value);
-    } else if (this._graphIsSupported !== null) {
-      displayGraph = this._graphIsSupported;
-    }
+    const activeTab = this.activeTabPath;
 
     return (
       <div
@@ -312,7 +461,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}
-              ssh={this.props.pipeline.value.repositorySsh} />
+              ssh={this.props.pipeline.value.repositorySsh}
+              repositoryType={this.props.pipeline.value.repositoryType}
+            />
           </Col>
         </Row>
         <Row>
@@ -334,51 +485,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             selectedKeys={[activeTab]}
             className={styles.tabsMenu}
           >
-            <TabMenu.Item key="documents">
-              <AdaptedLink
-                to={`/${id}/${version}/documents`}
-                location={location}>
-                Documents
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="code">
-              <AdaptedLink
-                to={`/${id}/${version}/code`}
-                location={location}>
-                Code
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="configuration">
-              <AdaptedLink
-                to={`/${id}/${version}/configuration`}
-                location={location}>
-                Configuration
-              </AdaptedLink>
-            </TabMenu.Item>
             {
-              displayGraph &&
-              <TabMenu.Item key="graph">
-                <AdaptedLink
-                  to={`/${id}/${version}/graph`}
-                  location={location}>
-                  Graph
-                </AdaptedLink>
-              </TabMenu.Item>
+              this.tabs.map((tab) => (
+                <TabMenu.Item key={tab.key}>
+                  <AdaptedLink
+                    to={tab.link}
+                    location={location}>
+                    {tab.title}
+                  </AdaptedLink>
+                </TabMenu.Item>
+              ))
             }
-            <TabMenu.Item key="history">
-              <AdaptedLink
-                to={`/${id}/${version}/history`}
-                location={location}>
-                History
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="storage">
-              <AdaptedLink
-                to={`/${id}/${version}/storage`}
-                location={location}>
-                Storage rules
-              </AdaptedLink>
-            </TabMenu.Item>
           </TabMenu>
         </Row>
         <div

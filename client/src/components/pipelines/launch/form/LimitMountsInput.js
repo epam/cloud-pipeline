@@ -23,6 +23,9 @@ import AvailableStoragesBrowser, {filterNFSStorages}
 from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
+import {
+  correctLimitMountsParameterValue, storageMatchesIdentifiers
+} from '../../../../utils/limit-mounts/get-limit-mounts-storages';
 
 @inject('dataStorageAvailable', 'preferences')
 @observer
@@ -31,7 +34,9 @@ export class LimitMountsInput extends React.Component {
     onChange: PropTypes.func,
     value: PropTypes.string,
     disabled: PropTypes.bool,
-    allowSensitive: PropTypes.bool
+    showOnlySummary: PropTypes.bool,
+    allowSensitive: PropTypes.bool,
+    className: PropTypes.string
   };
 
   static defaultProps = {
@@ -71,16 +76,12 @@ export class LimitMountsInput extends React.Component {
       dataStorageAvailable
         .fetchIfNeededOrWait()
         .then(() => {
-          const nonSensitiveStorageIds = (dataStorageAvailable.value || [])
-            .filter(s => !s.sensitive)
-            .map(s => +s.id);
-          const mountsIds = value
-            .split(',')
-            .map(id => +id)
-            .filter(id => nonSensitiveStorageIds.indexOf(id) >= 0);
-          const newValue = mountsIds ? mountsIds.map(i => `${i}`).join(',') : null;
           this.setState({
-            value: newValue
+            value: correctLimitMountsParameterValue(
+              value,
+              dataStorageAvailable.value || [],
+              {allowSensitive}
+            )
           }, this.handleChange);
         })
         .catch(console.error);
@@ -101,7 +102,7 @@ export class LimitMountsInput extends React.Component {
   get availableStorages () {
     if (this.props.dataStorageAvailable.loaded) {
       return (this.props.dataStorageAvailable.value || [])
-        .filter(s => !s.mountDisabled && (this.props.allowSensitive || !s.sensitive))
+        .filter(s => !s.mountDisabled && (this.props.allowSensitive || !s.sensitive) && !s.sourceStorageId)
         .map(s => s);
     }
     return [];
@@ -113,10 +114,9 @@ export class LimitMountsInput extends React.Component {
   }
 
   allNonSensitiveStorages (selection) {
-    const ids = new Set(selection.map(id => +id));
-    return ids.size === this.availableNonSensitiveStorages.length &&
+    return (selection || []).length === this.availableNonSensitiveStorages.length &&
       this.availableNonSensitiveStorages
-        .filter(s => ids.has(+s.id))
+        .filter(s => storageMatchesIdentifiers(s, selection || []))
         .length === this.availableNonSensitiveStorages.length;
   }
 
@@ -124,9 +124,8 @@ export class LimitMountsInput extends React.Component {
     const hasSensitive = !!this.availableStorages.find(s => s.sensitive);
     const all = this.availableStorages
       .filter(filterNFSStorages(this.nfsSensitivePolicy, hasSensitive));
-    const ids = new Set(selection.map(id => +id));
-    return ids.size === all.length &&
-      all.filter(s => ids.has(+s.id)).length === all.length;
+    return (selection || []).length === all.length &&
+      all.filter(s => storageMatchesIdentifiers(s, selection)).length === all.length;
   }
 
   get selectedStorages () {
@@ -134,8 +133,8 @@ export class LimitMountsInput extends React.Component {
       if (/^none$/i.test(this.state.value)) {
         return [];
       }
-      const ids = new Set(this.state.value.split(',').map(i => +i));
-      return this.availableStorages.filter(s => ids.has(s.id));
+      const ids = this.state.value.split(',');
+      return this.availableStorages.filter(s => storageMatchesIdentifiers(s, ids));
     }
     return this.availableNonSensitiveStorages;
   }
@@ -183,6 +182,7 @@ export class LimitMountsInput extends React.Component {
   };
 
   renderContent = () => {
+    const {showOnlySummary} = this.props;
     if (this.selectedStorages.length === 0) {
       return (
         <span>No storages will be mounted</span>
@@ -202,17 +202,27 @@ export class LimitMountsInput extends React.Component {
         </span>
       );
     }
-    return this.selectedStorages
-      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages))
-      .map(s => (
-        <span
-          key={s.id}
-          className={classNames(styles.storage, 'cp-limit-mounts-input-tag')}
-        >
-          <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
-          {s.name}
-        </span>
+    const filteredSelectedStorages = this.selectedStorages
+      .filter(filterNFSStorages(
+        this.nfsSensitivePolicy,
+        this.hasSelectedSensitiveStorages
       ));
+    if (showOnlySummary) {
+      return (
+        <p>
+          {filteredSelectedStorages.map(s => s.id).join(',')}
+        </p>
+      );
+    }
+    return filteredSelectedStorages.map(s => (
+      <span
+        key={s.id}
+        className={classNames(styles.storage, 'cp-limit-mounts-input-tag')}
+      >
+        <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
+        {s.name}
+      </span>
+    ));
   };
 
   render () {
@@ -223,11 +233,13 @@ export class LimitMountsInput extends React.Component {
         tabIndex={0}
         className={
           classNames(
+            this.props.className,
             styles.limitMountsInput,
             'cp-limit-mounts-input',
             {
               disabled: this.props.disabled,
-              [styles.disabled]: this.props.disabled
+              [styles.disabled]: this.props.disabled,
+              [styles.summary]: this.props.showOnlySummary
             }
           )
         }

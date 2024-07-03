@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-const postfixes = ['bytes',
-  'Kb',
-  'Mb',
-  'Gb',
-  'Tb',
-  'Pb',
-  'Eb'
-];
+import memoryUsage from './memory-usage';
 
 export default function (value) {
-  if (value <= 0) {
+  const memoryUsageValue = memoryUsage(value);
+  if (!memoryUsageValue || !memoryUsageValue.length) {
     return '';
   }
-  let index = 0;
-  while (value >= 1024 && index < postfixes.length - 2) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${postfixes[index]}/sec`;
+  return `${memoryUsageValue}/sec`;
 }

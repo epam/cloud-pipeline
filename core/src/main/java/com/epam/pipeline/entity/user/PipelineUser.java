@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.dto.quota.Quota;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -59,7 +62,7 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name = "user", schema = "pipeline")
 @EqualsAndHashCode
-public class PipelineUser implements StorageContainer {
+public class PipelineUser extends AbstractSecuredEntity implements StorageContainer {
 
     public static final String EMAIL_ATTRIBUTE = "email";
 
@@ -91,6 +94,12 @@ public class PipelineUser implements StorageContainer {
 
     private LocalDateTime firstLoginDate;
 
+    private LocalDateTime lastLoginDate;
+
+    private LocalDateTime blockDate;
+
+    private LocalDateTime externalBlockDate;
+
     private Long defaultStorageId;
 
     @Convert(converter = AttributesConverterJson.class)
@@ -111,12 +120,11 @@ public class PipelineUser implements StorageContainer {
     @ElementCollection
     private List<RunnerSid> allowedRunners;
 
-    private LocalDateTime lastLoginDate;
-
-    private LocalDateTime blockDate;
-
     @Transient
     private Boolean online;
+
+    @Transient
+    private List<Quota> activeQuotas;
 
     public PipelineUser() {
         this.admin = false;
@@ -153,6 +161,16 @@ public class PipelineUser implements StorageContainer {
     @Override
     public Long getDefaultStorageId() {
         return defaultStorageId;
+    }
+
+    @Override
+    public AbstractSecuredEntity getParent() {
+        return null;
+    }
+
+    @Override
+    public AclClass getAclClass() {
+        return AclClass.PIPELINE;
     }
 
     public static class AttributesConverterJson implements AttributeConverter<Map<String, String>, String>  {

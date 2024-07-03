@@ -16,9 +16,15 @@
 
 package com.epam.pipeline.security.acl;
 
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.manager.security.PermissionsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.AuditLogger;
+import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.model.AccessControlEntry;
 import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.NotFoundException;
@@ -27,9 +33,20 @@ import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.util.Assert;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class PermissionGrantingStrategyImpl implements PermissionGrantingStrategy {
+
+    private static final Set<String> STORAGE_CLASSES = new HashSet<>(
+            Arrays.asList(
+                    S3bucketDataStorage.class.getName(),
+                    GSBucketStorage.class.getName(),
+                    AzureBlobStorage.class.getName(),
+                    NFSDataStorage.class.getName())
+    );
 
     @Autowired
     private PermissionsService permissionsService;
@@ -83,6 +100,14 @@ public class PermissionGrantingStrategyImpl implements PermissionGrantingStrateg
         if (sids.stream().anyMatch(sid -> acl.getOwner().equals(sid))) {
             return true;
         }
+
+        //Storage special case
+        if (STORAGE_CLASSES.contains(acl.getObjectIdentity().getType()) &&
+                sids.stream().anyMatch(sid ->
+                        sid.equals(new GrantedAuthoritySid(DefaultRoles.ROLE_STORAGE_ADMIN.getName())))) {
+            return true;
+        }
+
         final List<AccessControlEntry> aces = acl.getEntries();
 
         AccessControlEntry firstRejection = null;

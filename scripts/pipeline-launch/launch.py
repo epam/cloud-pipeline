@@ -15,11 +15,14 @@
 import logging
 import os
 import pathlib
+import re
 import subprocess
+import tarfile
 import traceback
 import zipfile
+from urllib.parse import urlparse
+
 import sys
-import tarfile
 
 
 class LaunchError(RuntimeError):
@@ -71,6 +74,17 @@ def _extract_boolean_parameter(name, default='false', default_provider=lambda: '
     return parameter.lower() == 'true'
 
 
+def _extract_pypi_base_url(global_distribution_url):
+    website_distribution_url_match = re.search('^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)', global_distribution_url)
+    if website_distribution_url_match:
+        website_distribution_url = 'http://{storage_name}.s3-website.{storage_region}.amazonaws.com{storage_path}' \
+            .format(storage_name=website_distribution_url_match.group(1),
+                    storage_region=website_distribution_url_match.group(2),
+                    storage_path=website_distribution_url_match.group(3))
+        return f'{website_distribution_url}tools/python/pypi/simple'
+    return None
+
+
 def _parse_host_and_port(url, default_host, default_port):
     parsed_url = urlparse(url)
     host_and_port = parsed_url.netloc if parsed_url.netloc else parsed_url.path
@@ -96,6 +110,9 @@ try:
     resources_dir = _extract_parameter('RESOURCES_DIR', default=os.path.join(run_dir, 'resources'))
     distribution_url = _extract_parameter('DISTRIBUTION_URL',
                                           default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/')
+    global_distribution_url = _extract_parameter(
+        'GLOBAL_DISTRIBUTION_URL',
+        default='https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/')
     api_url = _extract_parameter('API', default='https://cp-api-srv.default.svc.cluster.local:31080/pipeline/restapi/')
     api_token = _extract_parameter('API_TOKEN')
     node_owner = _extract_parameter('CP_NODE_OWNER', default='Administrator')
@@ -107,9 +124,8 @@ try:
     owner_password = _extract_parameter('OWNER_PASSWORD', default=os.getenv('SSH_PASS', ''))
     owner_groups = _extract_parameter('OWNER_GROUPS', default='Administrators')
     logon_title = _extract_parameter('CP_LOGON_TITLE', default='Login as ' + owner)
-    logon_image_url = _extract_parameter(
-        'CP_LOGON_IMAGE_URL',
-        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pgina/logon.bmp')
+    logon_image_url = _extract_parameter('CP_LOGON_IMAGE_URL',
+                                         default=global_distribution_url + 'tools/pgina/logon.bmp')
     logon_image_path = _extract_parameter('CP_LOGON_IMAGE_PATH', default=os.path.join(resources_dir, 'logon.bmp'))
     task_path = _extract_parameter('CP_TASK_PATH', '.\\task.ps1')
     python_dir = _extract_parameter('CP_PYTHON_DIR', 'c:\\python')
@@ -117,9 +133,10 @@ try:
     requires_repo = False
     repo_pypi_base_url = _extract_parameter(
         'CP_REPO_PYPI_BASE_URL_DEFAULT',
-        default='http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple')
+        default_provider=lambda: _extract_pypi_base_url(global_distribution_url),
+        default='http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple')
     repo_pypi_trusted_host = _extract_parameter('CP_REPO_PYPI_TRUSTED_HOST_DEFAULT',
-                                                default='cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com')
+                                                default_provider=lambda: urlparse(repo_pypi_base_url).netloc)
 
     # Enables network file systems and object storages mounting
     requires_storage_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_STORAGE')
@@ -138,7 +155,7 @@ try:
 
     cloud_data_distribution_url = _extract_parameter(
         'CP_CLOUD_DATA_WIN_DISTRIBUTION_URL',
-        default='https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/cloud-data/win/cloud-data-win-x64.zip')
+        default=global_distribution_url + 'tools/cloud-data/win/cloud-data-win-x64.zip')
 
     # Enables network file systems mounting as drives
     requires_drive_mount = _extract_boolean_parameter('CP_CAP_WIN_MOUNT_DRIVE')
@@ -185,7 +202,7 @@ try:
 
     from pipeline.api import PipelineAPI
     from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger
-    from pipeline.utils.ssh import HostSSH, LogSSH, UserSSH
+    from pipeline.utils.ssh import RemoteHostExecutor, LoggingExecutor, UserExecutor
     from pipeline.utils.path import add_to_path
 
     logging.getLogger('paramiko').setLevel(logging.WARNING)
@@ -205,7 +222,7 @@ try:
     _extract_archive(os.path.join(pipe_dir, 'pipe.zip'), os.path.dirname(pipe_dir))
 
     logger.info('Configuring pipe...')
-    subprocess.check_call(f'powershell -Command "pipe.exe configure --api \'{api_url}\''
+    subprocess.check_call(f'powershell -Command "pipe configure --api \'{api_url}\''
                           f'                                        --auth-token \'{api_token}\''
                           f'                                        --timezone local'
                           f'                                        --proxy pac"')
@@ -214,9 +231,9 @@ try:
     node_ip = _extract_parameter(
         'NODE_IP',
         default_provider=lambda: api.load_run_efficiently(run_id).get('instance', {}).get('nodeIP', ''))
-    node_ssh = HostSSH(host=node_ip, private_key_path=node_private_key_path)
-    node_ssh = LogSSH(logger=logger, inner=node_ssh)
-    node_ssh = UserSSH(user=node_owner, inner=node_ssh)
+    node_ssh = RemoteHostExecutor(host=node_ip, private_key_path=node_private_key_path)
+    node_ssh = LoggingExecutor(logger=logger, inner=node_ssh)
+    node_ssh = UserExecutor(user=node_owner, inner=node_ssh)
 
     logger.info('Installing pipe common on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -m pip install -q {common_repo_dir}')
@@ -237,7 +254,7 @@ try:
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
-                     f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"')
+                     f'create_user(\'{owner}\', \'{owner_password}\', groups=\'{owner_groups}\')\\"')
 
     logger.info('Persisting environment...')
     with open(persisted_env_path, 'w') as f:
@@ -273,7 +290,7 @@ try:
     if requires_storage_mount:
         task_name = 'MountDataStorages'
         task_logger = TaskLogger(task=task_name, inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Mounting data storages...')
         # Invocation of WmiMethod is required in order to keep background processes running after ssh session is over
         task_ssh.execute(f'Invoke-WmiMethod -Path \'Win32_Process\' -Name Create -ArgumentList \''
@@ -290,7 +307,7 @@ try:
 
     if requires_cloud_data:
         task_logger = TaskLogger(task='InstallCloudData', inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Installing Cloud-Data application...')
         task_logger.info('Downloading Cloud-Data App...')
         _download_file(cloud_data_distribution_url, os.path.join(run_dir, 'cloud-data.zip'))
@@ -317,16 +334,15 @@ try:
                      user=owner)
 
     logger.info('Configuring node SSH server proxy...')
-    subprocess.check_call(f'powershell -Command "pipe.exe tunnel start --direct -lp 22 -rp 22 --trace '
+    subprocess.check_call(f'powershell -Command "pipe tunnel start --direct -lp 22 -rp 22 --trace '
                           f'-l {_escape_backslashes(os.path.join(run_dir, "ssh_proxy.log"))} '
                           f'{node_ip}"')
 
     if requires_drive_mount:
         task_logger = TaskLogger(task='NetworkStorageMapping', inner=run_logger)
-        task_ssh = LogSSH(logger=task_logger, inner=node_ssh)
+        task_ssh = LoggingExecutor(logger=task_logger, inner=node_ssh)
         task_logger.info('Adding EDGE root certificate to trusted...')
         edge_root_cert_path = os.path.join(host_root, 'edge_root.cer')
-        from urllib.parse import urlparse
         edge_host, edge_port = _parse_host_and_port(edge_url, 'cp-edge.default.svc.cluster.local', 31081)
         task_ssh.execute(f'{python_dir}\\python.exe -c '
                          f'\\"from scripts.add_root_certificate_win import add_root_cert_to_trusted_root_win;'
@@ -361,11 +377,10 @@ try:
     sys.exit(exit_code)
 except BaseException as e:
     if _extract_boolean_parameter('CP_CAP_ZOMBIE'):
-        traceback.print_exc()
-        stacktrace = traceback.format_exc()
         try:
-            logger.error('Switching to zombie mode because the error occurred: {} {}'.format(e, stacktrace))
+            logger.error('Switching to zombie mode because the error occurred.', trace=True)
         except:
+            traceback.print_exc()
             print('Switching to zombie mode because the error occurred...')
         import time
 

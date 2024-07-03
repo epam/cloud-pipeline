@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,12 @@
 ######################################################
 # Singularity distribution build commands
 ######################################################
+# Build in a clear environment
+# -
+# docker run -it --rm \
+#     -v /root/build/singularity/:/var/lib/singularity/ \
+#     centos:7.6.1810 bash
+
 # v2.5.2
 # -
 # yum install -y libarchive-devel squashfs-tools
@@ -28,10 +34,9 @@
 # make -j$(nproc) && \
 # make install
 
-# v3.6.1
+# v3.6.1/v3.7.3
 # -
-# yum update -y && \
-#     yum groupinstall -y 'Development Tools' && \
+# yum groupinstall -y 'Development Tools' && \
 #     yum install -y \
 #     openssl-devel \
 #     libuuid-devel \
@@ -48,7 +53,7 @@
 # export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin
 # go get -u github.com/golang/dep/cmd/dep
 
-# export VERSION=3.6.1 && \
+# export VERSION=3.7.3 && \
 #     mkdir -p $GOPATH/src/github.com/sylabs && \
 #     cd $GOPATH/src/github.com/sylabs && \
 #     wget https://github.com/sylabs/singularity/releases/download/v${VERSION}/singularity-${VERSION}.tar.gz && \
@@ -60,8 +65,9 @@
 
 # Packing both versions
 # -
-# cd /var/lib/
+# cd /root/build/
 # tar -zcf singularity.tgz singularity/
+# aws s3 cp singularity.tgz s3://cloud-pipeline-oss-builds/tools/singularity/$VERSION/singularity.tgz
 
 SNGLRT_SETUP_TASK="SetupSingularity"
 
@@ -99,10 +105,11 @@ pipe_log_info "Done with singularity dependencies" "$SNGLRT_SETUP_TASK"
 # Install Singularity 
 ######################
 
-# Two version are avaialble for now:
-# 2.5.2:            https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/2.5.2/singularity.tgz
-# 3.6.1 (default):  https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz
-CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/singularity/3.6.1/singularity.tgz}"
+# Two version are available for now:
+# 2.5.2:            tools/singularity/2.5.2/singularity.tgz
+# 3.6.1:            tools/singularity/3.6.1/singularity.tgz
+# 3.7.3 (default):  tools/singularity/3.7.3/singularity.tgz
+CP_SNGLRT_DISTR_URL="${CP_SNGLRT_DISTR_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/singularity/3.7.3/singularity.tgz"}"
 CP_SNGLRT_INSTALL_PATH="${CP_SNGLRT_INSTALL_PATH:-/var/lib/singularity}"
 CP_SNGLRT_INSTALL_TEMP="/tmp/snglrt-tmp"
 rm -rf "$CP_SNGLRT_INSTALL_TEMP" && \
@@ -192,6 +199,12 @@ if [ "$OWNER" ] && [ "$API" ] && [ "$API_TOKEN" ]; then
     fi
 else
     pipe_log_warn "One of the environment variables OWNER, API, API_TOKEN is not set, can't configure the certificates for the internal registry" "$SNGLRT_SETUP_TASK"
+fi
+
+# Configure Singularity to probe the host for all mounted filesystems and bind those into containers at runtime
+if [ "$CP_CAP_SINGULARITY_MOUNT_FS" == "true" ]; then
+    $CP_USR_BIN/singularity config global --set "mount hostfs" yes
+    echo "Singularity 'MOUNT HOSTFS' option was be enabled"
 fi
 
 motd_setup add "This job was launched with 'Singularity' enabled

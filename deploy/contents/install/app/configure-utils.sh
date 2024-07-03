@@ -749,7 +749,18 @@ read -r -d '' payload <<-EOF
     "project": "$CP_GCP_PROJECT",
     "applicationName": "$CP_GCP_APPLICATION_NAME",
     "tempCredentialsRole": "$CP_PREF_STORAGE_TEMP_CREDENTIALS_ROLE",
-    "customInstanceTypes": $gcp_custom_instance_types_json
+    "customInstanceTypes": $gcp_custom_instance_types_json,
+    "storageLifecycleServiceProperties": {
+      "properties": {
+        "batch_operation_job_aws_account_id": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_AWS_ACCOUNT}",
+        "batch_operation_job_role_arn": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_S3_ROLE_ARN}",
+        "batch_operation_job_report_bucket": "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}",
+        "batch_operation_job_report_bucket_prefix": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_REPORT_BUCKET_PREFIX:-storage-lifecycle-service/tagging-job-reports}",
+        "batch_operation_job_poll_status_retry_count": 30,
+        "batch_operation_job_poll_status_sleep_sec": 5,
+        "storage_skip_archiving_tag": "disable_storage_lifecycle"
+      }
+    }
 }
 EOF
     else
@@ -886,6 +897,8 @@ function api_setup_base_preferences {
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
     api_set_preference "launch.cmd.template" "${CP_PREF_LAUNCH_CMD_TEMPLATE}" "true"
     api_set_preference "launch.run.visibility" "${CP_PREF_LAUNCH_RUN_VISIBILITY:-INHERIT}" "true"
+    api_set_preference "launch.kube.pod.search.path" "${CP_PREF_LAUNCH_KUBE_POD_SEARCH_PATH:-"pods.default.svc.cluster.local"}" "true"
+    api_set_preference "launch.kube.pod.domains.enabled" "${CP_PREF_LAUNCH_KUBE_POD_DOMAINS_ENABLED:-"true"}" "true"
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
@@ -983,6 +996,7 @@ function api_register_search {
     api_set_preference "search.elastic.type.field" "doc_type" "false"
     api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
+    api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
     api_set_preference "search.elastic.allowed.groups.field" "allowed_groups" "false"
@@ -1065,7 +1079,7 @@ function api_register_drive_mapping {
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
 
-    api_set_preference"base.invalidate.edge.auth.path" "${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}" "true"
+    api_set_preference "base.invalidate.edge.auth.path" "${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}" "true"
 }
 
 function api_register_share_service {
@@ -1086,9 +1100,10 @@ EOF
 function idp_register_app {
     local issuer="$1"
     local cert="$2"
-    
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
+
     print_info "Creating IdP connection for $issuer with cert $cert"
-    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert")
+    idp_register_app_response=$(execute_deployment_command cp-idp default "saml-idp add-connection $issuer -c $cert --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering IdP connection for $issuer with cert $cert"
         echo "========"
@@ -1106,9 +1121,10 @@ function idp_register_user {
     local firstname="$3"
     local lastname="$4"
     local email="$5"
+    local idp_pd="${CP_IDP_PROFILE_DB:-/opt/idp/pdb/saml-idp-profiles.json}"
 
     print_info "Registering IdP user $username"
-    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email")
+    idp_register_user_response=$(execute_deployment_command cp-idp default "saml-idp add-user $username $password --firstName $firstname --lastName $lastname --email $email --profileDatabase $idp_pd")
     if [ $? -ne 0 ]; then
         print_err "Error ocurred registering user $username"
         echo "========"
@@ -1405,6 +1421,49 @@ function api_register_data_transfer_pipeline {
     api_set_preference "storage.transfer.pipeline.version" "$dt_pipeline_version" "true"
 
     print_ok "Data transfer pipeline $CP_API_SRV_SYSTEM_TRANSFER_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $dt_pipeline_version"
+}
+
+function api_register_system_jobs_pipeline {
+    local sj_role_grant="${1:-ROLE_ADMIN}"
+    local sj_role_permissions="21"
+    local sj_pipeline_version=${CP_API_SRV_SYSTEM_JOBS_PIPELINE_VERSION:-v1}
+
+    # 0. Verify and update config.json template
+    local sj_pipeline_dir="$OTHER_PACKAGES_PATH/system_jobs"
+    local sj_pipeline_config_json="$sj_pipeline_dir/config.json"
+    if [ ! -f "$sj_pipeline_config_json" ]; then
+        print_err "config.json is not found for the system jobs pipeline at ${sj_pipeline_config_json}. Pipeline will not be registered"
+        return 1
+    fi
+
+    local sj_pipeline_config_json_content="$(envsubst < "$sj_pipeline_config_json")"
+    cat <<< "$sj_pipeline_config_json_content" > "$sj_pipeline_config_json"
+
+    # 1. Register a system jobs pipeline in general
+    api_register_pipeline   "$CP_API_SRV_SYSTEM_FOLDER_NAME" \
+                            "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME" \
+                            "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_DESCRIPTION" \
+                            "$sj_pipeline_dir" \
+                            "$sj_role_grant" \
+                            "$sj_role_permissions" \
+                            "$sj_pipeline_version"
+
+    if [ $? -ne 0 ]; then
+        print_err "Error occurred while registering a system jobs pipeline (see any output above). API will not be configured to use system jobs"
+        return 1
+    fi
+
+    # 2. Get system jobs pipeline registered id
+    local pipeline_id="$(api_get_entity_id "$CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME" "pipeline")"
+    if [ $? -ne 0 ] || [ ! "$pipeline_id" ]; then
+        print_err "Unable to determine ID of the data system jobs pipeline. API will not be configured to use data system jobs pipeline"
+        return 1
+    fi
+
+    # 3. Register system jobs pipeline in the preferences
+    api_set_preference "system.jobs.pipeline.id" "$pipeline_id" "true"
+
+    print_ok "System jobs pipeline $CP_API_SRV_SYSTEM_JOBS_PIPELINE_FRIENDLY_NAME is registered with ID $pipeline_id and tag $sj_pipeline_version"
 }
 
 function api_register_email_templates {

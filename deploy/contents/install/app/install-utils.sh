@@ -610,6 +610,11 @@ function parse_options {
         -s|--service)
         parse_env_option "$2"
         services_count=$((services_count+1))
+        if [ -n "${CP_SERVICES_ENABLED}" ]; then 
+           export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${2}"
+        else 
+           export CP_SERVICES_ENABLED="${2}"
+        fi
         shift # past argument
         shift # past value
         ;;
@@ -627,7 +632,7 @@ function parse_options {
     esac
     done
     set -- "${POSITIONAL[@]}" # restore positional parameters
-    
+
     local cp_bad_command_msg="\"install\" or \"remove\" command shall be specified"
     if [[ "$#" == 0 ]] || [[ "$#" > 1 ]]; then
         cp_bad_command=1 
@@ -745,7 +750,20 @@ function parse_options {
     if [ $services_count == 0 ]; then
         print_warn "No specific services (-s|--service) are specified, ALL will be installed"
         export CP_INSTALL_SERVICES_ALL=1
+        export CP_SERVICES_ENABLED="all"
     fi
+
+    # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
+    # (f.i. In case of redeploy of existing deployment CP_OVERWRITE_SERVICES_ENABLED variable can be used to identify already deployed services that need to be proxied by edge service)  
+    # In this case this variable would be propagated to the current session and available here, because of function parse_env_option
+    if [ -n "$CP_OVERWRITE_SERVICES_ENABLED" ]; then
+        export CP_SERVICES_ENABLED=$CP_OVERWRITE_SERVICES_ENABLED
+    fi    
+    #Propagate this variable in the ConfigMap to be used by Cloud-Pipeline services (e.g. edge) during runtime
+    update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                        "CP_SERVICES_ENABLED" \
+                        "$CP_SERVICES_ENABLED"
+    
 
     if [ -z "$CP_DEPLOYMENT_ID" ]; then
         export CP_DEPLOYMENT_ID=$(head /dev/urandom | tr -dc a-z | head -c 10)
@@ -1220,6 +1238,11 @@ function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
     local CONTAINER_NAME=$2
     local CMD="$3"
+    # Pod propagation regulates on which amount of pods this command will be executed.
+    # Should be one of [ALL, SINGLE_POD] or empty
+    # ALL - command will run for all pods
+    # SINGLE_POD - command will be executed only for first pod from the list
+    local POD_PROPAGATION="${4:-ALL}"
 
     if [ "$CONTAINER_NAME" != "default" ]; then
         CONTAINER_NAME="--container $CONTAINER_NAME"
@@ -1228,6 +1251,10 @@ function execute_deployment_command {
     fi
 
     pods=$(get_deployment_pods $DEPLOYMENT_NAME)
+    if [ "$POD_PROPAGATION" == "SINGLE_POD" ]; then
+        pods=(${pods[0]})
+    fi
+
     for p in $pods; do
         bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done
@@ -1517,10 +1544,8 @@ function configure_idp_metadata {
     local idp_external_port="${4}"
     local idp_internal_host="${5}"
     local idp_internal_port="${6}"
-    local service_external_host="${7}"
-    local service_external_port="${8}"
-    local certificate_dir="${9}"
-    local context_path="${10}"
+    local service_sso_endpoint_id="${7}"
+    local certificate_dir="${8}"
 
     local metadata_exists=0
     local metadata_dir=$(dirname "${metadata_file}")
@@ -1540,8 +1565,7 @@ function configure_idp_metadata {
                     -k
         if [ $? -eq 0 ] && [ -f "${metadata_file}" ]; then
             metadata_exists=1
-            idp_register_app "https://${service_external_host}:${service_external_port}/${context_path}/" \
-                                 "${certificate_dir}/sso-public-cert.pem"
+            idp_register_app "${service_sso_endpoint_id}" "${certificate_dir}/sso-public-cert.pem"
         fi
     fi
 

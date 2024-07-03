@@ -52,13 +52,19 @@ function removeSingleSelection (selection, name) {
   return result;
 }
 
-function fetchFacets (facets, selection, query = '*', sortingOrder, abortSignal) {
+function fetchFacets (facets, selection, query = '*', sortingOrder, abortSignal, skip = false) {
   const facetsToken = getFacetFilterToken({
     query,
     sortingOrder,
     filters: selection,
     pageSize: 1
   });
+  if (skip) {
+    return Promise.resolve({
+      facetsToken,
+      facetsCount: {}
+    });
+  }
   const selectedFacets = Object.keys(selection);
   const notSelectedFacets = facets.filter(f => selectedFacets.indexOf(f) === -1);
   return new Promise((resolve) => {

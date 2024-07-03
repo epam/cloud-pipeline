@@ -29,11 +29,11 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 @observer
 export default class CommitRunDialog extends localization.LocalizedReactComponent {
   static propTypes = {
+    runId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
     pending: PropTypes.bool,
     visible: PropTypes.bool,
-    commitCheck: PropTypes.bool,
     defaultDockerImage: PropTypes.string
   };
 
@@ -43,6 +43,14 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
   get toolValid () {
     if (this._commitRunForm) {
       return this._commitRunForm.toolValid;
+    }
+    return false;
+  }
+
+  @computed
+  get layersCheckPassed () {
+    if (this._commitRunForm) {
+      return this._commitRunForm.layersCheckPassed;
     }
     return false;
   }
@@ -79,7 +87,7 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
         { this.registries.length && <Button
           id="commit-pipeline-run-form-commit-button"
           type="primary" htmlType="submit"
-          disabled={!this.toolValid}
+          disabled={!this.toolValid || !this.layersCheckPassed}
           onClick={this.handleSubmit}>COMMIT</Button> }
       </Row>
     );
@@ -96,14 +104,16 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
         visible={this.props.visible}
         title={`Commit ${this.localizedString('pipeline')} run`}
         onCancel={this.props.onCancel}
-        footer={modalFooter}>
+        footer={modalFooter}
+      >
         <CommitRunForm
+          runId={this.props.runId}
           onInitialized={this.onInitialize}
           onPressEnter={this.handleSubmit}
           visible={this.props.visible}
-          commitCheck={this.props.commitCheck}
           defaultDockerImage={this.props.defaultDockerImage}
-          pending={this.props.pending} />
+          pending={this.props.pending}
+        />
       </Modal>
     );
   }

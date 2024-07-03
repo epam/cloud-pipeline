@@ -42,9 +42,9 @@ resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 def find_instance(run_id):
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-        if str(resource.type).split('/')[-1] == "virtualMachines":
+        if str(resource.type).split('/')[-1].lower() == "virtualmachines":
             return resource.name
-        elif str(resource.type).split('/')[-1] == "virtualMachineScaleSets":
+        elif str(resource.type).split('/')[-1].lower() == "virtualmachinescalesets":
             instance_name, _ = get_instance_name_and_private_ip_from_vmss(resource.name)
             return instance_name
     return None
@@ -133,16 +133,16 @@ def resolve_azure_api(resource):
     api version) """
     provider = res_client.providers.get(resource.id.split('/')[6])
     rt = next((t for t in provider.resource_types
-               if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+               if t.resource_type.lower() == '/'.join(resource.type.split('/')[1:]).lower()), None)
     if rt and 'api_versions' in rt.__dict__:
         api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
         return api_version[0] if api_version else rt.__dict__['api_versions'][0]
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
+    if str(r1.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
+    elif str(r1.type).split('/')[-1].lower() == "networkinterfaces" and not str(r2.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
     return 0
 

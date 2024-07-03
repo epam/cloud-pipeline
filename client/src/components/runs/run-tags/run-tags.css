@@ -15,48 +15,17 @@
  */
 
 .run-tag {
-  border: 1px solid #aaa;
   border-radius: 4px;
-  color: #666;
   font-size: x-small;
   margin-left: 1px;
+  margin-bottom: 1px;
   padding: 1px 3px;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .link .run-tag {
   cursor: pointer;
-}
-
-.run-tag.black-theme,
-.link .run-tag:hover {
-  border: 1px solid #666;
-  background-color: #666;
-  color: #fff;
-}
-
-.run-tag.idle {
-  color: #f79e2c;
-  border-color: #f79e2c;
-}
-
-.run-tag.idle.black-theme,
-.link .run-tag.idle:hover {
-  background-color: #f79e2c;
-  color: #fff;
-  font-weight: normal;
-}
-
-.run-tag.pressure {
-  color: #ae1726;
-  border-color: #ae1726;
-}
-
-.run-tag.pressure.black-theme,
-.link .run-tag.pressure:hover {
-  background-color: #ae1726;
-  color: #fff;
-  font-weight: normal;
 }
 
 .more-label {

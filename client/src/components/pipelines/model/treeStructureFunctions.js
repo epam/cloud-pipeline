@@ -45,7 +45,7 @@ export const ItemTypes = {
   fireCloudMethodConfiguration
 };
 
-function generateUrl (item) {
+export function generateUrl (item) {
   if (!item) {
     return '/library';
   }
@@ -71,7 +71,7 @@ function generateUrl (item) {
     case ItemTypes.versionedStorage: return `/vs/${item.id}`;
     case ItemTypes.storage: return `/storage/${item.id}`;
     case ItemTypes.configuration: return `/configuration/${item.id}`;
-    case ItemTypes.metadata: return `/folder/${item.parent.parentId}/metadata/${item.name}`;
+    case ItemTypes.metadata: return `/folder/${item.folderId}/metadata/${item.name}`;
     case ItemTypes.metadataFolder: return `/folder/${item.parentId}/metadata`;
     case ItemTypes.projectHistory: return `/folder/${item.id}/history`;
     default:
@@ -88,8 +88,39 @@ function nameSorter (pA, pB) {
   return 0;
 }
 
+/**
+ * @typedef {Object} LibraryTree
+ * @property {*[]} [pipelines]
+ * @property {*[]} [childFolders]
+ * @property {*[]} [versions]
+ * @property {*[]} [storages]
+ * @property {*[]} [configurations]
+ * @property {*} [metadata]
+ * @property {number|string} [id]
+ * @property {*} [objectMetadata]
+ * @property {*} [fireCloud]
+ */
+
+/**
+ * @typedef {Object} GenerateTreeDataOptions
+ * @property {boolean} [ignoreChildren=false]
+ * @property {*} [parent]
+ * @property {string[]} [expandedKeys]
+ * @property {string[]} [types]
+ * @property {function(item, type)} [filter]
+ * @property {boolean} [sortRoot=false]
+ */
+
+/**
+ * @param {LibraryTree} libraryTree
+ * @param {GenerateTreeDataOptions} [options]
+ * @returns {string|*[]}
+ */
 export function generateTreeData (
-  {
+  libraryTree,
+  options = {}
+) {
+  const {
     pipelines,
     childFolders,
     versions,
@@ -99,14 +130,15 @@ export function generateTreeData (
     id,
     objectMetadata,
     fireCloud
-  },
-  ignoreChildren = false,
-  parent = null,
-  expandedKeys = [],
-  types = undefined,
-  filter = (item, type) => true,
-  sortRoot = true
-) {
+  } = libraryTree || {};
+  const {
+    ignoreChildren = false,
+    parent = null,
+    expandedKeys = [],
+    types = undefined,
+    filter = (item, type) => true,
+    sortRoot = true
+  } = options;
   const children = [];
   const pipelinesSorted = (pipelines || [])
     .filter(pipeline => !/^versioned_storage$/i.test(pipeline.pipelineType))
@@ -222,11 +254,11 @@ export function generateTreeData (
         ? undefined
         : generateTreeData(
           childFoldersSorted[i],
-          ignoreChildren,
-          folder,
-          expandedKeys,
-          types,
-          filter
+          {
+            ...options,
+            parent: folder,
+            sortRoot: true
+          }
         );
       folder.isLeaf = ignoreChildren
         ? true
@@ -286,7 +318,15 @@ export function generateTreeData (
       };
       storage.children = ignoreChildren
         ? undefined
-        : generateTreeData(childStoragesSorted[i], false, storage, expandedKeys, types, filter);
+        : generateTreeData(
+          childStoragesSorted[i],
+          {
+            ...options,
+            ignoreChildren: false,
+            parent: storage,
+            sortRoot: true
+          }
+        );
       storage.isLeaf = ignoreChildren
         ? true
         : storage.children.length === 0;
@@ -366,7 +406,15 @@ export function generateTreeData (
       };
       pipeline.children = ignoreChildren || (types && types.indexOf(ItemTypes.version) === -1)
         ? undefined
-        : generateTreeData(pipelinesSorted[i], false, pipeline, expandedKeys, types, filter);
+        : generateTreeData(
+          pipelinesSorted[i],
+          {
+            ...options,
+            parent: pipeline,
+            ignoreChildren: false,
+            sortRoot: true
+          }
+        );
       pipeline.expanded = expandedKeys.indexOf(pipeline.key) >= 0 && pipeline.children.length > 0;
       children.push(pipeline);
     }
@@ -379,7 +427,7 @@ export function generateTreeData (
       children.push({
         ...versions[i],
         id: versions[i].commitId,
-        key: `${ItemTypes.version}_${versions[i].commitId}`,
+        key: `${ItemTypes.version}_${parent ? parent.id : ''}_${versions[i].commitId}`,
         name: versions[i].name,
         author: versions[i].author,
         type: ItemTypes.version,
@@ -445,8 +493,9 @@ export function generateTreeData (
     (!filter || filter({id}, ItemTypes.metadataFolder))
   ) {
     const metadataFolder = {
-      id: `${id}metadataFolder`,
-      key: `${ItemTypes.metadataFolder}_${id}metadataFolder`,
+      id: `${id}/metadata`,
+      key: `${ItemTypes.metadataFolder}_${id}/metadata`,
+      folderId: id,
       name: 'Metadata',
       type: ItemTypes.metadataFolder,
       children: [],
@@ -473,12 +522,13 @@ export function generateTreeData (
         continue;
       }
       metadataChildren.push({
-        id: `${metadataFolder && metadataFolder.id}${key}`,
-        key: `${ItemTypes.metadata}_${metadataFolder && metadataFolder.id}${key}`,
+        id: `${id}/metadata/${key}`,
+        key: `${ItemTypes.metadata}_${id}/metadata/${key}`,
         name: key,
         type: ItemTypes.metadata,
         children: undefined,
         parent: metadataFolder,
+        folderId: id,
         parentId: metadataFolder && metadataFolder.id,
         isLeaf: true,
         amount: metadata[key],
@@ -494,6 +544,7 @@ export function generateTreeData (
     metadataFolder.children = ignoreChildren
       ? undefined
       : metadataChildren;
+    metadataFolder.metadataClasses = metadataChildren;
     children.push(metadataFolder);
   }
 
@@ -529,15 +580,32 @@ export function generateTreeData (
   return children;
 }
 
+/**
+ * @param {*[]} treeItems
+ * @param {{inlineMetadata: boolean?, preferences: *}} [options]
+ */
+export function formatTreeItems (treeItems = [], options = {}) {
+  const {
+    preferences,
+    inlineMetadata = preferences ? preferences.inlineMetadataEntities : false
+  } = options;
+  return (treeItems || []).reduce(
+    (result, item) => {
+      if (item.type === ItemTypes.metadataFolder && inlineMetadata) {
+        return [...result, ...(item.children || item.metadataClasses || [])];
+      }
+      return [...result, item];
+    },
+    []
+  );
+}
+
 export function getTreeItemInfoByKey (key) {
-  const parts = key.split('_');
-  let id = parts[1] || parts[0];
-  for (let i = 2; i < parts.length; i++) {
-    id = `${id}_${parts[i]}`;
-  }
+  const [type, ...idParts] = key.split('_');
+  const id = idParts.length === 0 ? type : idParts.join('_');
   return {
-    id: id,
-    type: parts[0]
+    id,
+    type
   };
 }
 
@@ -648,7 +716,10 @@ export function findPath (key, items, parentPath) {
     if (item.key === key) {
       return [
         ...prefix,
-        {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+        {
+          ...item,
+          url: () => generateUrl(item)
+        }
       ];
     } else if (item.children && item.children.length > 0) {
       const result =
@@ -657,7 +728,10 @@ export function findPath (key, items, parentPath) {
           item.children,
           [
             ...prefix,
-            {name: item.name, id: item.id, type: item.type, key: item.key, url: generateUrl(item)}
+            {
+              ...item,
+              url: () => generateUrl(item)
+            }
           ]
         );
       if (result) {

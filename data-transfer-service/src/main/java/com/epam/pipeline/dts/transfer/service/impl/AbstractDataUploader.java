@@ -27,14 +27,24 @@ public abstract class AbstractDataUploader implements DataUploader {
 
     @Override
     public void transfer(final TransferTask transferTask) {
+        transfer(transferTask, false, null, null);
+    }
+
+    @Override
+    public void transfer(final TransferTask transferTask,
+                         final boolean logEnabled,
+                         final String pipeCmd,
+                         final String pipeCmdSuffix) {
         final StorageItem source = transferTask.getSource();
         final StorageItem destination = transferTask.getDestination();
         if (source.getType() == StorageType.LOCAL) {
             checkStoragePath(destination.getPath());
-            upload(source, destination, transferTask.getIncluded(), transferTask.getUser());
+            upload(source, destination, transferTask.getIncluded(), transferTask.getUser(),
+                    transferTask.isDeleteSource(), logEnabled, pipeCmd, pipeCmdSuffix);
         } else {
             checkStoragePath(source.getPath());
-            download(source, destination, transferTask.getIncluded(), transferTask.getUser());
+            download(source, destination, transferTask.getIncluded(), transferTask.getUser(),
+                    transferTask.isDeleteSource(), logEnabled, pipeCmd, pipeCmdSuffix);
         }
     }
 
@@ -44,9 +54,17 @@ public abstract class AbstractDataUploader implements DataUploader {
             String.format("%s path must have %s scheme.", getStorageType(), expectedPathPrefix));
     }
 
-    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username);
+    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username,
+                                boolean deleteSource);
 
-    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username);
+    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username,
+                                boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
+
+    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username,
+                                  boolean deleteSource);
+
+    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username,
+                                  boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
 
     public abstract String getFilesPathPrefix();
 }

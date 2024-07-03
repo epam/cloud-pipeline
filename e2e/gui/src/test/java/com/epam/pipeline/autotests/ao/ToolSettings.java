@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Condition.have;
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +32,6 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -43,8 +43,10 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
@@ -60,7 +62,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(NEW_ENDPOINT, context().find(button("Add endpoint"))),
                 entry(LABEL_INPUT_FIELD, context().find(withText("Labels")).closest(".ant-row")
                         .find(tagName("input"))),
-                entry(EXEC_ENVIRONMENT, context().find(byClassName("ant-collapse-header"))),
+                entry(EXEC_ENVIRONMENT, context().find(byText("EXECUTION ENVIRONMENT")).parent()),
                 entry(DEFAULT_COMMAND, context().find(byText("Cmd template:")).closest(".ant-row")
                         .find(byClassName("tools__code-editor"))),
                 entry(INSTANCE, context().find(byClassName("ant-select-selection-selected-value"))),
@@ -79,13 +81,15 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                        .closest(".ant-row").find(by("role", "combobox")))
+                        .closest(".ant-row").find(className("ant-form-item-control ")))
         );
     }
 
     @Override
     public ToolSettings open() {
         click(SETTINGS);
+        get(SETTINGS).waitUntil(have(cssClass("ant-menu-item-selected")), DEFAULT_TIMEOUT);
+        get(EXEC_ENVIRONMENT).waitUntil(exist, DEFAULT_TIMEOUT);
         return click(EXEC_ENVIRONMENT);
     }
 
@@ -155,17 +159,24 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings setInstanceType(final String instanceType) {
         click(INSTANCE_TYPE);
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
+        $(visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
                 .shouldBe(visible).click();
         return this;
     }
 
     public ToolSettings setPriceType(final String priceType) {
         click(PRICE_TYPE);
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
+        $(visible(byClassName("ant-select-dropdown-menu")))
                 .find(withText(priceType))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public ToolSettings selectRunCapability(final String optionQualifier) {
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
+        $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
+                .shouldBe(visible).click();
         return this;
     }
 
@@ -265,7 +276,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -280,10 +291,10 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCapabilityTooltip(final String capability, final String text) {
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
-        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+        $(visible(byClassName("ant-tooltip")))
                         .find(byClassName("ant-tooltip-content"))
                 .shouldHave(Condition.text(text));
         return this;

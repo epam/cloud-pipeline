@@ -41,8 +41,15 @@ task copyFsAutoscalerScripts(type: Copy) {
 }
 
 task copyLocalDtsStartupScripts(type: Copy) {
-    from "$rootDir/scripts/dts/DeployDts.ps1"
+    from "$rootDir/scripts/dts/DeployDts.ps1", "$rootDir/scripts/dts/deploy_dts.sh"
     into "$rootDir/api/src/main/resources/static/"
+}
+
+task generateComponentsVersions(type: Exec) {
+    commandLine "bash",
+                "$project.rootDir/scripts/pipeline-scripts/generate_components_versions.sh",
+                "$project.rootDir",
+                "$rootDir/api/src/main/resources/static/components_versions.json"
 }
 
 jar {
@@ -87,7 +94,8 @@ ext {
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
 
 def apiDeps = [":client:buildUI", ":core:build", ":buildPipe", ":pipe-cli:build", ":pipe-cli:buildLinux",
-":pipe-cli:buildWin", ":fs-browser:build", ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]
+":pipe-cli:buildWin", ":fs-browser:build", ":workflows:buildGpuStat", ":cloud-pipeline-webdav-client:buildWin",
+":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli"]
 
 build.mustRunAfter apiDeps
 bootRepackage.mustRunAfter apiDeps
@@ -113,6 +121,7 @@ dependencies {
     compile group: "net.sf.ehcache", name: "ehcache", version: "2.10.4"
     compile group: "org.springframework", name: "spring-context", version: "4.3.7.RELEASE"
     compile group: "org.springframework", name: "spring-context-support", version: "4.3.7.RELEASE"
+    compile "com.jcraft:jsch:0.1.55"
 
     //Cache
     compile("org.springframework.boot:spring-boot-starter-cache")
@@ -121,11 +130,11 @@ dependencies {
 
     //GCP
     compile group: "com.google.auth", name: "google-auth-library-oauth2-http", version: "0.10.0"
-    compile group: "com.google.api-client", name: "google-api-client", version: "1.23.0"
-    compile "com.google.apis:google-api-services-compute:v1-rev210-1.25.0"
+    compile group: "com.google.api-client", name: "google-api-client", version: "1.34.0"
+    compile "com.google.apis:google-api-services-compute:v1-rev20220720-1.32.1"
     compile "com.google.apis:google-api-services-cloudbilling:v1-rev30-1.25.0"
     compile "com.google.apis:google-api-services-iamcredentials:v1-rev32-1.25.0"
-    compile "com.google.cloud:google-cloud-storage:1.64.0"
+    compile "com.google.cloud:google-cloud-storage:1.70.0"
 
     testCompile group: "org.springframework.security", name: "spring-security-test", version: "4.2.2.RELEASE"
     testCompile group: "com.github.tomakehurst", name: "wiremock", version: "2.14.0"
@@ -182,15 +191,15 @@ dependencies {
     compile group: "io.springfox", name: "springfox-swagger-ui", version: "2.6.1"
 
     //AWS
-    compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.11.377"
+    compile group: "com.amazonaws", name: "aws-java-sdk-ec2", version: "1.12.256"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3
-    compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.11.301"
+    compile group: "com.amazonaws", name: "aws-java-sdk-s3", version: "1.12.256"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-sts
     compile group: "com.amazonaws", name: "aws-java-sdk-sts", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-iam
     compile group: "com.amazonaws", name: "aws-java-sdk-iam", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-fsx
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.11.880'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.321'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
 
 
@@ -242,8 +251,11 @@ dependencies {
     compile('io.reflectoring.diffparser:diffparser:1.4')
 
     compile 'dnsjava:dnsjava:3.4.3'
+
+    //Template engine
+    compile group: 'org.apache.velocity', name: 'velocity', version: '1.7'
 }
 
 // >>>>> processes profiles
 processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
-                                   copyLocalDtsStartupScripts])
+                                   copyLocalDtsStartupScripts, generateComponentsVersions])

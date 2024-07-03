@@ -17,6 +17,7 @@ package com.epam.pipeline.elasticsearchagent.service.impl;
 
 import com.epam.pipeline.elasticsearchagent.service.ElasticsearchServiceClient;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
@@ -44,6 +45,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -176,6 +179,23 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return indices[0];
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to get alias name:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<String> findIndices(final String pattern) {
+        try {
+            final GetIndexRequest request = new GetIndexRequest();
+            request.indices(pattern);
+
+            final GetIndexResponse getIndexResponse = client.indices().get(request, RequestOptions.DEFAULT);
+            final String[] indices = getIndexResponse.indices();
+            if (ArrayUtils.isEmpty(indices)) {
+                return Collections.emptyList();
+            }
+            return Arrays.asList(indices);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to get indices for pattern:" + e.getMessage(), e);
         }
     }
 

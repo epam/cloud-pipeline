@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package com.epam.pipeline.autotests;
 
+import static com.codeborne.selenide.Condition.disabled;
+import static com.codeborne.selenide.Selectors.withText;
 import com.epam.pipeline.autotests.ao.*;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -23,13 +25,11 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThanOrEqual;
 import static com.codeborne.selenide.CollectionCondition.sizeLessThanOrEqual;
 import static com.codeborne.selenide.Condition.*;
@@ -221,7 +221,8 @@ public class SamplesMetadataTest
                 .uploadMetadata(getFile(wes11repsamples))
                 .uploadMetadata(getFile(wes11repset))
                 .sleep(2, SECONDS)
-                .ensure(byText(metadataFolder), visible);
+                .ensure(byText(metadataFolder), visible)
+                .refresh();
     }
 
     @Test(priority = 1, dependsOnMethods = {"metadataUploading"})
@@ -230,10 +231,11 @@ public class SamplesMetadataTest
         final String nonExistingPath = "prefix://unexisting-storage-path";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .performIf(hideMetadata, visible, ms -> ms.click(hideMetadata))
-                .click(columnHeader(idField))
+                .initializeSorting(idField)
                 .sleep(5, SECONDS)
                 .performForEachRow(row -> {
 
@@ -251,7 +253,6 @@ public class SamplesMetadataTest
                             final String r2value = r2key.getValue();
                             r2key.changeValue(r2value.replace(nonExistingPath, path(dataStorage)))
                                     .close();
-
                             sleep(500, MILLISECONDS);
 
                             row.getCell("R1_Fastq")
@@ -267,6 +268,7 @@ public class SamplesMetadataTest
     public void viewMetadata() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleSetFolder, metadata -> {
                             metadata.validateFields(idField, createDateField, nameField, samplesField)
@@ -292,6 +294,7 @@ public class SamplesMetadataTest
     public void navigateToStorageFromMetadataEntity() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .getRow(1)
@@ -307,6 +310,7 @@ public class SamplesMetadataTest
         final By idHeader = columnHeader(idField);
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .initializeSorting(idField)
@@ -325,6 +329,7 @@ public class SamplesMetadataTest
         final String substring = "D70";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .setValue(searchMetadata, substring)
@@ -341,6 +346,7 @@ public class SamplesMetadataTest
     public void columnsListCustomization() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .showColumnsMenu()
@@ -398,16 +404,20 @@ public class SamplesMetadataTest
                 .saveAndCommitWithMessage("test: sample metadata")
                 .click(DELETE)
                 .click(button("OK"))
+                .sleep(10, SECONDS)
                 .uploadFile(getFile(launchScript))
                 .ensure(byText(launchScript), visible);
-        sleep(20, SECONDS);
         refresh();
         library()
                 .cd(project)
                 .configurationWithin(configuration, profile ->
                         profile.expandTabs(execEnvironmentTab, advancedTab, parametersTab)
                                 .selectPipeline(pipeline)
+                                .ensure(ESTIMATED_PRICE, visible)
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
                                 .click(save())
+                                .ensure(save(), disabled)
                                 .ensure(pipeline(), valueContains(pipeline))
                                 .ensure(image(), not(empty))
                                 .ensure(instanceType(), text(instanceType))
@@ -468,6 +478,7 @@ public class SamplesMetadataTest
                                 )
                                 .click(byText(projectOutput), in(comboboxDropdown()))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
@@ -483,6 +494,7 @@ public class SamplesMetadataTest
                                 .selectValue(rootEntityType(), rootEntityTypeSampleSet)
                                 .ensure(rootEntityType(), text(rootEntityTypeSampleSet))
                                 .click(save())
+                                .ensure(save(), disabled)
                 );
     }
 
@@ -526,6 +538,7 @@ public class SamplesMetadataTest
                                         )
                                 ).click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
                                 .click(save())
+                                .ensure(save(), disabled)
                                 .sleep(1, SECONDS)
                 );
     }
@@ -535,7 +548,8 @@ public class SamplesMetadataTest
     public void selectMetadataPopup() {
         library()
                 .cd(project)
-                .configuration(configuration, profile -> profile.click(run(), MetadataSelection::new))
+                .configuration(configuration, profile ->
+                        profile.sleep(3, SECONDS).click(run(), MetadataSelection::new))
                 .ensure(byText(project), visible)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
@@ -545,9 +559,9 @@ public class SamplesMetadataTest
                 .ensure(MetadataSelection.cancel, visible)
                 .ensure(MetadataSelection.ok, visible)
                 .cd(metadataFolder)
-                .ensure(byText("SampleSet"), visible)
-                .ensure(byText("Sample"), visible)
-                .cd("Sample")
+                .ensure(byText("SampleSet [2]"), visible)
+                .ensure(byText(sampleFolder), visible)
+                .cd(sampleFolder)
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
 
@@ -694,6 +708,7 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .cd("SampleSet")
                 .samples(samples -> samples.getRowByCellValue("NA12878_3_rep").selectRow())

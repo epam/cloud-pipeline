@@ -5,7 +5,7 @@
     Description: none
 -->
 <module name="Checker">
-    <property name="severity" value="warning"/>
+    <property name="severity" value="error"/>
     <module name="SuppressWarningsFilter"/>
     <module name="SuppressionCommentFilter"/>
     <module name="TreeWalker">

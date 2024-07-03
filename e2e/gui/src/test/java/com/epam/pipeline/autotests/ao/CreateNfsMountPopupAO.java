@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,20 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import org.openqa.selenium.By;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
+import static java.lang.String.format;
 
 public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStoragePopUpAO<CreateStoragePopupAO, PipelinesLibraryAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -48,8 +53,6 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
         return this.parent();
     }
 
-
-
     public CreateNfsMountPopupAO setNfsMountPath(String nfsMountPath) {
         $(byId("edit-storage-storage-path-input")).shouldBe(visible).setValue(nfsMountPath);
         return this;
@@ -62,6 +65,25 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
 
     public CreateNfsMountPopupAO setNfsMountDescription(String nfsDescription) {
         $(byId("description")).shouldBe(visible).setValue(nfsDescription);
+        return this;
+    }
+
+    public CreateNfsMountPopupAO setNfsMount(final String nfsMount) {
+        final String pathInput = "edit-storage-storage-path-input";
+        final String fsMountValue = $(byId(pathInput)).parent().find(By.xpath("div//div//div[2]")).getText();
+        final String fsMount = fsMountValue.startsWith(": ")
+                ? fsMountValue.replace(": ", "")
+                : fsMountValue;
+        if (nfsMount.equalsIgnoreCase(fsMount)) {
+            return this;
+        }
+        $(byId(pathInput)).parent().find("button").shouldBe(enabled).click();
+        final SelenideElement selenideElement = $$(byClassName("ant-row-flex")).stream()
+                .filter(m -> m.getText().contains(nfsMount))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        format("the provided %s NFS mount was not found", nfsMount)));
+        $(selenideElement).shouldBe(visible).click();
         return this;
     }
 

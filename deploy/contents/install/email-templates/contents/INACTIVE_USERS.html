@@ -39,29 +39,6 @@
         #end
     </table>
     #end
-    #if( ${CP_DOLLAR}templateParameters["ldapUsers"] )
-    <p>The following users were blocked since they are blocked into LDAP.</p>
-    <table>
-        <tr>
-            <th>User ID</th>
-            <th>Email</th>
-            <th>Storage Name</th>
-            <th>Creation Date</th>
-            <th>Last Login Date</th>
-            <th>Blocked Date</th>
-        </tr>
-        #foreach( ${CP_DOLLAR}user in ${CP_DOLLAR}templateParameters["ldapUsers"] )
-        <tr>
-            <td>${CP_DOLLAR}user.name</td>
-            #if( ${CP_DOLLAR}user.email )<td>${CP_DOLLAR}user.email</td>#else<td></td>#end
-            #if( ${CP_DOLLAR}user.storage_name )<td>${CP_DOLLAR}user.storage_name</td>#else<td></td>#end
-            ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.registration_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>
-            #if( ${CP_DOLLAR}user.last_login_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.last_login_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
-            #if( ${CP_DOLLAR}user.block_date ) ${CP_DOLLAR}calendar.setTime(${CP_DOLLAR}dateFormat.parse(${CP_DOLLAR}user.block_date))<td>${CP_DOLLAR}calendar.getTime().toString()</td>#else<td></td>#end
-        </tr>
-        #end
-    </table>
-    #end
 
     <p>Best regards,</p>
     <p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>

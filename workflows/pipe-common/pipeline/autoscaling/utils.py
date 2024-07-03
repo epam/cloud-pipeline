@@ -298,7 +298,7 @@ def replace_docker_images(pre_pull_images, user_data_script):
 
 def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                          kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                         swap_size, pre_pull_images=[]):
+                         global_distribution_url, swap_size, pre_pull_images=[]):
     allowed_instance = get_allowed_instance_image(cloud_region, ins_type, ins_platform, ins_img)
     if allowed_instance and allowed_instance["init_script"]:
         init_script = open(allowed_instance["init_script"], 'r')
@@ -315,16 +315,19 @@ def get_user_data_script(cloud_region, ins_type, ins_img, ins_platform, kube_ip,
         user_data_script = replace_swap(swap_size, user_data_script)
         if pre_pull_images:
             user_data_script = replace_docker_images(pre_pull_images, user_data_script)
-        user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string)\
-                                            .replace('@WELL_KNOWN_HOSTS@', well_known_string)\
-                                            .replace('@KUBE_IP@', kube_ip)\
-                                            .replace('@KUBE_TOKEN@', kubeadm_token) \
-                                            .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
-                                            .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
-                                            .replace('@API_URL@', api_url) \
-                                            .replace('@API_TOKEN@', api_token) \
-                                            .replace('@API_USER@', api_user) \
-                                            .replace('@FS_TYPE@', fs_type)
+        user_data_script = user_data_script.replace('@DOCKER_CERTS@', certs_string) \
+                                           .replace('@WELL_KNOWN_HOSTS@', well_known_string) \
+                                           .replace('@KUBE_IP@', kube_ip) \
+                                           .replace('@KUBE_TOKEN@', kubeadm_token) \
+                                           .replace('@KUBE_CERT_HASH@', kubeadm_cert_hash) \
+                                           .replace('@KUBE_NODE_TOKEN@', kube_node_token) \
+                                           .replace('@API_URL@', api_url) \
+                                           .replace('@API_TOKEN@', api_token) \
+                                           .replace('@API_USER@', api_user) \
+                                           .replace('@FS_TYPE@', fs_type) \
+                                           .replace('@GLOBAL_DISTRIBUTION_URL@', global_distribution_url) \
+                                           .replace('@KUBE_RESERVED_MEM@', os.getenv('KUBE_RESERVED_MEM', '')) \
+                                           .replace('@SYSTEM_RESERVED_MEM@', os.getenv('SYSTEM_RESERVED_MEM', ''))
         embedded_scripts = {}
         if allowed_instance["embedded_scripts"]:
             for embedded_name, embedded_path in allowed_instance["embedded_scripts"].items():

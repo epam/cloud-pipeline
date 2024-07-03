@@ -1,0 +1,106 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.parameter {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.parameter.padding {
+  padding-right: 60px;
+}
+
+.error {
+  line-height: initial;
+  display: flex;
+  align-items: center;
+  margin: -5px 0 5px 0;
+  font-size: smaller;
+}
+
+.add-parameter-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 5px 0;
+}
+
+.hint-content {
+  max-width: 300px;
+}
+
+.section {
+  margin: 5px 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  line-height: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.section-header .line {
+  height: 1px;
+  margin: 0 5px;
+  flex: 1;
+}
+
+.parameter .name {
+  min-width: 200px;
+  width: initial;
+  margin-right: 5px;
+  padding: 4px 7px;
+}
+
+.parameter .name.input {
+  border-style: dashed;
+}
+
+.parameter .value {
+  flex: 1;
+}
+
+.parameter .remove,
+.parameter .hint {
+  width: 20px;
+  margin: 0 5px;
+  text-align: center;
+}
+
+.parameter .remove .button,
+.parameter .hint .button {
+  cursor: pointer;
+}
+
+.parameter-container.larger .parameter .name,
+.parameter-container.larger .parameter .value {
+  font-size: larger;
+}
+
+.parameter-addon {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+}
+
+.parameter-addon .addon {
+  justify-content: center;
+  padding: 4px 7px;
+}

@@ -16,10 +16,21 @@
 
 package com.epam.pipeline.utils;
 
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class GitUtils {
+
+    public static final String INITIAL_COMMIT = "Initial commit";
+    public static final String GIT_MASTER_REPOSITORY = "master";
+    public static final String DRAFT_PREFIX = "draft-";
+    public static final String GITKEEP_FILE = ".gitkeep";
+    public static final String FOLDER_MARKER = "tree";
+    public static final String FILE_MARKER = "blob";
+    public static final String BRANCH_REF_PATTERN = "refs/heads/%s";
 
     //regex for alphanumeric characters, underscore, dots and dash, allowing dash only in the middle
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_.]+([-.][a-zA-Z0-9_]+)*$");
@@ -47,5 +58,33 @@ public final class GitUtils {
 
     public static String convertPipeNameToProject(final String name) {
         return name.trim().toLowerCase().replaceAll(CHARS_TO_BE_REMOVED_FROM_NAME, "").replaceAll("\\s+", "-");
+    }
+
+    public static String getRevisionName(final String version) {
+        if (StringUtils.isBlank(version)) {
+            return version;
+        }
+        return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
+    }
+
+    public static String buildModifyFileCommitMessage(final String commitMessage, final String filePath,
+                                                      final boolean fileExists) {
+        if (StringUtils.isNotBlank(commitMessage)) {
+            return commitMessage;
+        }
+        return fileExists
+                ? String.format("Updating file %s", filePath)
+                : String.format("Creating file %s", filePath);
+    }
+
+    public static String getBranchRefOrDefault(final String branch) {
+        return String.format(BRANCH_REF_PATTERN, StringUtils.isNotBlank(branch) ? branch : GIT_MASTER_REPOSITORY);
+    }
+
+    public static String withoutLeadingDelimiter(final String path) {
+        if (StringUtils.isBlank(path) || ProviderUtils.DELIMITER.equals(path)) {
+            return path;
+        }
+        return ProviderUtils.withoutLeadingDelimiter(path);
     }
 }

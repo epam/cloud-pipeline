@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import static com.epam.pipeline.autotests.ao.Primitive.CONDITION;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
@@ -50,6 +52,8 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 
 public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
 
@@ -86,9 +90,9 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     private HotNodePoolsAO waitUntilNodesAppear(String poolName, int nodeType, int count) {
         NodeEntry node = searchForNodeEntry(poolName);
         int attempt = 0;
-        int maxAttempts = 10;
+        int maxAttempts = 60;
         while (!node.getNodeCount(nodeType).equals(valueOf(count)) && attempt < maxAttempts) {
-            sleep(30, SECONDS);
+            sleep(10, SECONDS);
             click(REFRESH);
             attempt++;
         }
@@ -164,8 +168,12 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                 entry(CLOUD_REGION, context().find(byXpath(".//div[.='Region']"))),
                 entry(DISK, context().find(byText("Disk:"))
                         .find(byXpath("following-sibling::div//input"))),
+                entry(PRICE_TYPE, context()
+                        .find(byXpath(".//span[.='Price type:']/following-sibling::div/div[@role='combobox']"))),
                 entry(AUTOSCALED, context().find(byText("Autoscaled:"))
-                        .parent().find(byClassName("ant-checkbox")))
+                        .parent().find(byClassName("ant-checkbox"))),
+                entry(CONDITION, context()
+                        .find(byXpath(".//span[.='Condition:']/following-sibling::div/div[@role='combobox']")))
         );
 
         public CreateHotNodePoolAO(HotNodePoolsAO parentAO) {
@@ -188,6 +196,8 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         public CreateHotNodePoolAO addDockerImage(String registry, String group, String tool) {
             context().find(byText("Add docker image")).parent().click();
             context().find(byXpath(".//div[.='Docker image']")).click();
+            SelenideElement el1=$(byClassName("dd-docker-registry-control__container")).find(byXpath(".//input"));
+            setValue(el1, group);
             $(byClassName("ant-select-dropdown-menu"))
                     .shouldBe(enabled)
                     .findAll(byClassName("ant-select-dropdown-menu-item"))
@@ -199,6 +209,30 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .click();
             context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
             sleep(5, SECONDS);
+            return this;
+        }
+
+        public CreateHotNodePoolAO addFilter(String filter) {
+            context().find(byText("Add filter")).parent().click();
+            context().find(byXpath("//*[contains(@class, 'ant-select-selection__placeholder') and contains(., 'Select property')]"))
+                    .click();
+            $(byClassName("ilters-control__column")).$(byClassName("ant-select-dropdown-menu"))
+                    .shouldBe(enabled)
+                    .findAll(byClassName("ant-select-dropdown-menu-item"))
+                    .stream()
+                    .filter(el -> el.text()
+                            .contains(filter))
+                    .findFirst()
+                    .orElseThrow(NoSuchElementException::new)
+                    .click();
+            return this;
+        }
+
+        public CreateHotNodePoolAO addRunOwnerFilterValue(String value) {
+            context().find(By.xpath(".//div[.='Select owner']")).shouldBe(visible, enabled).click();
+            context().$(byClassName("ilters-control__column")).find(byClassName("ant-select-search__field"))
+                    .sendKeys(Keys.chord(Keys.CONTROL, "a"), value);
+            $(By.xpath(String.format("//li[.='%s']", value))).click();
             return this;
         }
 

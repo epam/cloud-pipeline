@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.*;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -59,7 +60,7 @@ public class DockerCommitTest
     private final String defaultPriceType = Tools.defaultPriceType;
     private final String testFileName = "test_file.txt";
     private final String testFileContent = "This is a test file " + suffix;
-    private final String personalGroup = "personal";
+    private final String personalGroup = "Personal";
     private final String toolInPersonalGroup = personalGroupActualName(login) + "/" + exactToolName(tool);
     private final String customTag = "test_tag";
 
@@ -187,11 +188,12 @@ public class DockerCommitTest
                 )
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
-                                .ssh(shell ->
-                                        shell.execute("cd /")
-                                                .execute("head " + testFileName)
-                                                .assertOutputContains(testFileContent)
-                                                .close()
+                                .ssh(shell -> shell
+                                         .waitUntilTextAppears(getLastRunId())
+                                         .execute("cd /")
+                                         .execute("head " + testFileName)
+                                         .assertOutputContains(testFileContent)
+                                         .close()
                                 )
                 );
 
@@ -312,10 +314,11 @@ public class DockerCommitTest
                 .log(getLastRunId(), log ->
                         log.waitForSshLink()
                                 .inAnotherTab(logTab -> logTab
-                                        .ssh(shell ->
-                                                shell.execute("cd /")
-                                                        .execute("head " + testFileName)
-                                                        .assertOutputContains(testFileContent)))
+                                        .ssh(shell -> shell
+                                                .waitUntilTextAppears(getLastRunId())
+                                                .execute("cd /")
+                                                .execute("head " + testFileName)
+                                                .assertOutputContains(testFileContent)))
                 );
 
         runsMenu()
@@ -429,12 +432,6 @@ public class DockerCommitTest
 
     private Consumer<ToolGroup> deleteGroup(final String groupName) {
         return group -> group.deleteGroup(deletion -> deletion.ensureGroupNameIs(groupName).ok());
-    }
-
-    public boolean hasOnPage(String customTag) {
-        return $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
-                .exists();
     }
 
     private boolean groupHasNoText(String text) {

@@ -32,6 +32,7 @@ import displaySize from '../../../../utils/displaySize';
 import roleModel from '../../../../utils/roleModel';
 import {
   expandItem,
+  formatTreeItems,
   generateTreeData,
   getExpandedKeys,
   getTreeItemByKey,
@@ -54,7 +55,7 @@ const GS_BUCKET_TYPE = 'GS';
 @connect({
   pipelinesLibrary
 })
-@inject('dtsList')
+@inject('dtsList', 'preferences')
 @inject(() => ({
   storages: dataStorages,
   library: pipelinesLibrary
@@ -62,7 +63,6 @@ const GS_BUCKET_TYPE = 'GS';
 @HiddenObjects.injectTreeFilter
 @observer
 export default class BucketBrowser extends React.Component {
-
   static propTypes = {
     path: PropTypes.string,
     visible: PropTypes.bool,
@@ -70,6 +70,7 @@ export default class BucketBrowser extends React.Component {
     onCancel: PropTypes.func,
     multiple: PropTypes.bool,
     showOnlyFolder: PropTypes.bool,
+    allowBucketSelection: PropTypes.bool,
     checkWritePermissions: PropTypes.bool,
     bucketTypes: PropTypes.arrayOf(
       PropTypes.oneOf([
@@ -218,13 +219,14 @@ export default class BucketBrowser extends React.Component {
 
   getItemFullPath = (item) => {
     if (this.state.bucket && (
-        this.state.bucket.type === ItemTypes.storage ||
+      this.state.bucket.type === ItemTypes.storage ||
         this.state.bucket.type === S3_BUCKET_TYPE ||
         this.state.bucket.type === AZ_BUCKET_TYPE ||
         this.state.bucket.type === GS_BUCKET_TYPE ||
         this.state.bucket.type === NFS_BUCKET_TYPE
-      )) {
+    )) {
       const type = this.state.bucket.storageType || this.state.bucket.type;
+      const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
       if (type === 'NFS') {
         const storagePath = this.state.bucket.path.replace(':', '');
         const mountPoint = this.state.bucket.mountPoint
@@ -232,15 +234,13 @@ export default class BucketBrowser extends React.Component {
             ? this.state.bucket.mountPoint.slice(0, -1)
             : this.state.bucket.mountPoint
           : null;
-        return mountPoint
-          ? `${mountPoint}/${item.path}`
-          : `/cloud-data/${storagePath}/${item.path}`;
+        return buildPath(mountPoint || `/cloud-data/${storagePath}`);
       }
-      return `${type.toLowerCase()}://${this.state.bucket.path}/${item.path}`;
+      return buildPath(`${type.toLowerCase()}://${this.state.bucket.path}`);
     } else if (this.state.bucket && this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
-      return item.fullPath || '';
+      return item ? (item.fullPath || '') : '';
     }
-    return item.path || '';
+    return item ? (item.path || '') : '';
   };
 
   itemIsSelected = (item) => {
@@ -248,7 +248,7 @@ export default class BucketBrowser extends React.Component {
       if (this.props.multiple) {
         const filteredSelectedItems =
           this.state.selectedItems.filter(selectedItem =>
-              selectedItem.name.trim().toLowerCase() === this.getItemFullPath(item).toLowerCase()
+            selectedItem.name.trim().toLowerCase() === this.getItemFullPath(item).toLowerCase()
           );
         let isSelected = false;
 
@@ -412,7 +412,9 @@ export default class BucketBrowser extends React.Component {
     return {
       columns,
       data:
-        this.props.showOnlyFolder ? this.tableData.filter(r => r.type.toLowerCase() === 'folder') : this.tableData
+        this.props.showOnlyFolder
+          ? this.tableData.filter(r => r.type.toLowerCase() === 'folder')
+          : this.tableData
     };
   };
 
@@ -463,6 +465,13 @@ export default class BucketBrowser extends React.Component {
     }
   };
 
+  onSelectBucketClicked = () => {
+    if (this.props.onSelect && this.state.bucket && this.props.allowBucketSelection) {
+      this.props.onSelect(this.getItemFullPath());
+      this.setState({selectedItems: []});
+    }
+  };
+
   renderItemTitle (item) {
     let icon;
     let subTitle;
@@ -507,27 +516,28 @@ export default class BucketBrowser extends React.Component {
     if (!items) {
       return [];
     }
-    return items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    return formatTreeItems(items, {preferences: this.props.preferences})
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf} />
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}>
+              {this.generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
   }
 
   onExpand = (expandedKeys, {expanded, node}) => {
@@ -607,22 +617,21 @@ export default class BucketBrowser extends React.Component {
         ...this.postprocessTree(
           generateTreeData(
             this.props.library.value,
-            false,
-            null,
-            [],
-            [ItemTypes.storage],
-            this.props.hiddenObjectsTreeFilter(
-              (item, type) => {
-                if (
-                  !this.props.bucketTypes ||
-                  this.props.bucketTypes.length === 0 ||
-                  type !== ItemTypes.storage
-                ) {
-                  return true;
+            {
+              types: [ItemTypes.storage],
+              filter: this.props.hiddenObjectsTreeFilter(
+                (item, type) => {
+                  if (
+                    !this.props.bucketTypes ||
+                    this.props.bucketTypes.length === 0 ||
+                    type !== ItemTypes.storage
+                  ) {
+                    return true;
+                  }
+                  return this.props.bucketTypes.indexOf(item.type) >= 0;
                 }
-                return this.props.bucketTypes.indexOf(item.type) >= 0;
-              }
-            )
+              )
+            }
           )
         )];
     }
@@ -631,7 +640,7 @@ export default class BucketBrowser extends React.Component {
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys} >
         {this.generateTreeItems(this.rootItems)}
@@ -740,6 +749,19 @@ export default class BucketBrowser extends React.Component {
                     : ''
                 }
               </Button>
+              {
+                this.props.allowBucketSelection && (
+                  <Button
+                    type="primary"
+                    disabled={
+                      !this.state.bucket || DTS_ROOT_ITEM_TYPE === this.state.bucket.type
+                    }
+                    onClick={() => this.onSelectBucketClicked()}
+                  >
+                    Select bucket
+                  </Button>
+                )
+              }
             </Col>
           </Row>
         }
@@ -754,12 +776,13 @@ export default class BucketBrowser extends React.Component {
   componentWillReceiveProps (nextProps) {
     if (nextProps.path !== this.props.path) {
       let path = nextProps.path;
+      const allowBucketSelection = nextProps.allowBucketSelection;
       const firstItemPath = (path || '').split(',').map(p => p.trim())[0];
       let bucket = this.getBucketByPath(firstItemPath);
       if (bucket) {
         const bucketKey = bucket.type === DTS_ROOT_ITEM_TYPE
-            ? `${DTS_ROOT_ITEM_TYPE}_${bucket.id}_${bucket.prefix}`
-            : `storage_${bucket.id}`;
+          ? `${DTS_ROOT_ITEM_TYPE}_${bucket.id}_${bucket.prefix}`
+          : `storage_${bucket.id}`;
         let expandedKeys = this.state.expandedKeys;
         if (this.rootItems) {
           const item = getTreeItemByKey(
@@ -772,11 +795,13 @@ export default class BucketBrowser extends React.Component {
           }
         }
         let pathCorrected;
+        let mask;
         if (bucket.type === DTS_ROOT_ITEM_TYPE) {
           const prefix = `${bucket.prefix}/`.replace(/\/\//g, '/');
           pathCorrected = this.parentDirectory(firstItemPath.substring(prefix.length));
         } else {
           pathCorrected = this.parentDirectory(this.fixPath(firstItemPath));
+          mask = new RegExp(`^${bucket.pathMask}(.*)$`, 'i');
         }
         this.setState(
           {
@@ -784,7 +809,23 @@ export default class BucketBrowser extends React.Component {
             expandedKeys,
             selectedKeys: [bucketKey],
             path: decodeURIComponent(pathCorrected || ''),
-            selectedItems: (path || '').split(',').map(p => ({name: p.trim()}))
+            selectedItems: (path || '')
+              .split(',')
+              .map(p => ({name: p.trim()}))
+              .filter(item => {
+                if (
+                  bucket.type === DTS_ROOT_ITEM_TYPE ||
+                  !mask ||
+                  !allowBucketSelection
+                ) {
+                  return true;
+                }
+                const e = mask.exec(item.name);
+                if (e && e[1]) {
+                  return !['', '/'].includes(e[1]);
+                }
+                return false;
+              })
           });
       }
     }
@@ -896,6 +937,7 @@ export default class BucketBrowser extends React.Component {
           this.state.bucket.id,
           this.state.path,
           false,
+          false,
           PAGE_SIZE
         );
       }
@@ -913,6 +955,7 @@ export default class BucketBrowser extends React.Component {
         this.storage = new DataStorageRequest(
           this.state.bucket.id,
           this.state.path,
+          false,
           false,
           PAGE_SIZE
         );

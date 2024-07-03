@@ -18,7 +18,7 @@
   cursor: pointer;
 }
 
-.container:hover {
+.container:not(.disabled):hover {
   text-decoration: underline;
 }
 

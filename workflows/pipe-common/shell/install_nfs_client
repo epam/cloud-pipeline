@@ -30,7 +30,7 @@ then
     CHECK_NFS_SMB_CMD="rpm -qa | grep nfs-utils && rpm -qa | grep cifs-utils"
     INSTALL_NFS_SMB_CMD="yum install nfs-utils cifs-utils -y -q"
     CHECK_LUSTRE_CMD="rpm -qa | grep lustre-client"
-    OS_VERSION_ID=$(. /etc/os-release;echo $VERSION_ID)
+    OS_VERSION_ID=$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
     if [ "$OS_VERSION_ID" == "6" ]; then
         LUSTRE_VERSION="2.10.8-1"
     elif [ "$OS_VERSION_ID" == "7" ]; then
@@ -41,7 +41,7 @@ then
         LUSTRE_VERSION="NA"
     fi
     LUSTRE_VERSION="$LUSTRE_VERSION.el$OS_VERSION_ID.x86_64"
-    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
+    LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/rpm/lustre-client-$LUSTRE_VERSION.tar.gz"
     read -r -d '' INSTALL_LUSTRE_CMD <<- EOM
       yum install -y -q wget yum-utils &&
       wget -q $LUSTRE_CLIENT_URL -O lustre-client.tar.gz &&
@@ -57,7 +57,7 @@ else
     INSTALL_NFS_SMB_CMD='apt-get install -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" nfs-common cifs-utils -y -qq'
     CHECK_LUSTRE_CMD="dpkg -l | grep lustre-client"
     LUSTRE_VERSION=$(. /etc/os-release;echo $ID-${VERSION_ID//.})
-    LUSTRE_CLIENT_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
+    LUSTRE_CLIENT_URL="${GLOBAL_DISTRIBUTION_URL}tools/lustre/client/deb/lustre-client-$LUSTRE_VERSION.tar.gz"
     if ! command -v depmod &> /dev/null; then
         apt-get install -y -qq kmod
     fi

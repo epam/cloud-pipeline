@@ -1,0 +1,107 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+body {
+  font-family: sans-serif;
+  font-size: 14pt;
+  color: #222;
+  background: linear-gradient(175deg, rgb(240, 240, 240) 50%, rgb(183, 194, 213));
+}
+
+.root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 50px;
+}
+
+.rain {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  overflow: hidden;
+  filter: blur(1px);
+}
+
+.rain .rain-drop {
+  position: absolute;
+  width: 1px;
+  height: 10px;
+  background-color: #ccc;
+  animation: rain 1500ms linear infinite;
+}
+
+.disclaimer {
+  padding: 30px;
+  max-width: 75vw;
+  z-index: 1;
+}
+
+.logo {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 300px;
+  height: 300px;
+  /*background-image: url("images/logo.png");*/
+  z-index: 2;
+  background-repeat: no-repeat;
+  background-position: bottom right;
+}
+
+.disclaimer.displayed {
+
+}
+
+@keyframes rain {
+  0% {
+    transform: translateY(0vh) translateX(0) rotateZ(-5deg);
+  }
+  100% {
+    transform: translateY(100vh) translateX(5vw) rotateZ(-5deg);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not(.ignore-color-scheme) {
+    color: #ccc;
+    background: linear-gradient(175deg, rgb(40, 40, 40), rgb(16, 21, 31));
+  }
+  body:not(.ignore-color-scheme) .logo {
+    /*background-image: url("images/logo-dark.png");*/
+  }
+  body:not(.ignore-color-scheme) .rain .rain-drop {
+    background-color: #444;
+  }
+}
+
+body.dark {
+  color: #ccc;
+  background: linear-gradient(175deg, rgb(40, 40, 40), rgb(16, 21, 31));
+}
+body.dark .logo {
+  /*background-image: url("images/logo-dark.png");*/
+}
+body.dark .rain .rain-drop {
+  background-color: #444;
+}

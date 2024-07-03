@@ -16,12 +16,15 @@ from __future__ import absolute_import
 
 import copy
 import io
-import time
-from threading import Lock
-from datetime import timedelta, datetime
 import os
-import click
+from threading import Lock
 
+import time
+from datetime import timedelta, datetime
+
+from src.model.datastorage_usage_model import StorageUsage
+from src.utilities.audit import DataAccessEvent, DataAccessType
+from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
@@ -63,8 +66,9 @@ class AzureProgressPercentage(ProgressPercentage):
 
 class AzureManager:
 
-    def __init__(self, blob_service):
+    def __init__(self, blob_service, events=None):
         self.service = blob_service
+        self.events = events
 
     def get_max_connections(self, io_threads):
         return max(io_threads, 1) if io_threads is not None else 2
@@ -79,7 +83,7 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         self.delimiter = StorageOperations.PATH_SEPARATOR
 
     def list_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                   show_all=False):
+                   show_all=False, show_archive=False):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
                                                   prefix=prefix if relative_path else None,
@@ -89,8 +93,8 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
     def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                          start_token=None):
-        return self.list_items(relative_path, recursive, page_size, show_all=False), None
+                          start_token=None, show_archive=False):
+        return self.list_items(relative_path, recursive, page_size, show_all=False, show_archive=show_archive), None
 
     def get_paging_items(self, relative_path, start_token, page_size):
         return self.get_items(relative_path), None
@@ -99,13 +103,11 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
                                                   prefix=prefix if relative_path else None)
-        size = 0
-        count = 0
+        storage_usage = StorageUsage()
         for blob in blobs_generator:
             if type(blob) == Blob:
-                size += blob.properties.content_length
-                count += 1
-        return [self.delimiter.join([self.bucket.path, relative_path]), count, size]
+                storage_usage.add_item(AbstractListingManager.STANDARD_TIER, blob.properties.content_length)
+        return [self.delimiter.join([self.bucket.path, relative_path]), storage_usage]
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
@@ -116,7 +118,7 @@ class AzureListingManager(AzureManager, AbstractListingManager):
             if type(blob) == Blob:
                 size = blob.properties.content_length
                 name = blob.name
-                accumulator.add_path(name, size)
+                accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
 
     def _to_storage_item(self, blob):
@@ -147,8 +149,8 @@ class AzureListingManager(AzureManager, AbstractListingManager):
 
 class AzureDeleteManager(AzureManager, AbstractDeleteManager):
 
-    def __init__(self, blob_service, bucket):
-        super(AzureDeleteManager, self).__init__(blob_service)
+    def __init__(self, blob_service, events, bucket):
+        super(AzureDeleteManager, self).__init__(blob_service, events)
         self.bucket = bucket
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
@@ -200,6 +202,7 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
             return False
         if PatternMatcher.match_any(file_name, exclude, default=False):
             return False
+        self.events.put(DataAccessEvent(blob_name, DataAccessType.DELETE, storage=self.bucket))
         self.service.delete_blob(self.bucket.path, blob_name)
         return True
 
@@ -222,11 +225,14 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -241,6 +247,8 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         progress_callback = AzureProgressPercentage.callback(full_path, size, quiet, lock)
         if progress_callback:
             progress_callback(0, size)
+        self.events.put_all([DataAccessEvent(full_path, DataAccessType.READ, storage=source_wrapper.bucket),
+                             DataAccessEvent(destination_path, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
         self.service.copy_blob(destination_bucket, destination_path, source_blob_url,
                                requires_sync=sync_copy)
         if not sync_copy:
@@ -248,6 +256,7 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
         if progress_callback:
             progress_callback(size, size)
         if clean:
+            self.events.put(DataAccessEvent(full_path, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_service.delete_blob(source_wrapper.bucket.path, full_path)
         return TransferResult(source_key=full_path, destination_key=destination_path, destination_version=None,
                               tags=StorageOperations.parse_tags(tags))
@@ -279,19 +288,25 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
-        self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
+        self.events.put(DataAccessEvent(source_key, DataAccessType.READ, storage=source_wrapper.bucket))
+        self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, to_string(destination_key),
                                       progress_callback=progress_callback)
         if clean:
+            self.events.put(DataAccessEvent(source_key, DataAccessType.DELETE, storage=source_wrapper.bucket))
             self.service.delete_blob(source_wrapper.bucket.path, source_key)
 
 
@@ -303,6 +318,9 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
             return os.path.join(source_wrapper.path, source_path)
@@ -310,14 +328,15 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
-        self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
+        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
+        self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, to_string(source_key),
                                            metadata=destination_tags,
                                            progress_callback=progress_callback,
                                            max_connections=max_connections)
@@ -348,11 +367,14 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')
@@ -363,6 +385,7 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
+        self.events.put(DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket))
         self.service.create_blob_from_stream(destination_wrapper.bucket.path, destination_key, _SourceUrlIO(source_key),
                                              metadata=destination_tags,
                                              progress_callback=progress_callback,
@@ -450,24 +473,24 @@ class ProxyBlockBlobService(RefreshingBlockBlobService):
 class AzureBucketOperations:
 
     @classmethod
-    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_between_buckets_manager(cls, source_wrapper, destination_wrapper, events, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return TransferBetweenAzureBucketsManager(blob_service)
+        return TransferBetweenAzureBucketsManager(blob_service, events)
 
     @classmethod
-    def get_download_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_download_manager(cls, source_wrapper, destination_wrapper, events, command):
         blob_service = cls.get_blob_service(source_wrapper.bucket, read=True, write=command == 'mv')
-        return AzureDownloadManager(blob_service)
+        return AzureDownloadManager(blob_service, events)
 
     @classmethod
-    def get_upload_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_upload_manager(cls, source_wrapper, destination_wrapper, events, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return AzureUploadManager(blob_service)
+        return AzureUploadManager(blob_service, events)
 
     @classmethod
-    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, command):
+    def get_transfer_from_http_or_ftp_manager(cls, source_wrapper, destination_wrapper, events, command):
         blob_service = cls.get_blob_service(destination_wrapper.bucket, read=True, write=True)
-        return TransferFromHttpOrFtpToAzureManager(blob_service)
+        return TransferFromHttpOrFtpToAzureManager(blob_service, events)
 
     @classmethod
     def get_blob_service(cls, *args, **kwargs):

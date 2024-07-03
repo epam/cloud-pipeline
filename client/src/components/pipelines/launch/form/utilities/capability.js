@@ -16,8 +16,36 @@
 
 import React from 'react';
 import {Icon, Tooltip} from 'antd';
+import {inject, observer} from 'mobx-react';
+import parseCapabilityCloudSetting from './capabilities-utilities/parse-cloud-setting';
 
-const Capability = ({capability}) => {
+function renderCloudRestriction (cloudSetting, awsRegions) {
+  const regions = awsRegions && awsRegions.loaded ? (awsRegions.value || []) : [];
+  const {
+    cloud: capabilityProvider,
+    regionIdentifier: capabilityRegionName,
+    regionId: capabilityRegionId
+  } = parseCapabilityCloudSetting(cloudSetting);
+  let regionName;
+  if (capabilityRegionName) {
+    regionName = capabilityRegionName;
+  } else if (capabilityRegionId) {
+    const region = regions.find((r) => r.id === capabilityRegionId);
+    regionName = region ? region.name : undefined;
+  }
+  if (capabilityProvider && regionName) {
+    return `${capabilityProvider.toUpperCase()}, region ${regionName.toLowerCase()}`;
+  }
+  if (capabilityProvider) {
+    return capabilityProvider.toUpperCase();
+  }
+  if (regionName) {
+    return `Region ${regionName.toLowerCase()}`;
+  }
+  return null;
+}
+
+const Capability = ({capability, selected, style, nested = [], awsRegions}) => {
   if (!capability) {
     return null;
   }
@@ -25,7 +53,8 @@ const Capability = ({capability}) => {
     name,
     disabled,
     os = [],
-    cloud = []
+    cloud = [],
+    description
   } = capability;
   if (disabled && (os.length > 0 || cloud.length > 0)) {
     return (
@@ -72,7 +101,7 @@ const Capability = ({capability}) => {
                       <li
                         key={`${o}-${i}`}
                       >
-                        {o.toUpperCase()}
+                        {renderCloudRestriction(o, awsRegions)}
                       </li>
                     ))
                   }
@@ -82,22 +111,62 @@ const Capability = ({capability}) => {
           </div>
         )}
         trigger={['hover']}
-        overlayStyle={{zIndex: 1051}}
+        overlayStyle={{zIndex: 1071}}
         placement="left"
       >
-        <span>{name}</span>
-        <Icon
-          type="question-circle-o"
-          style={{marginLeft: 5}}
-        />
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            ...(style || {})
+          }}
+        >
+          <div>
+            <span title={description || name}>{name}</span>
+            <Icon
+              type="question-circle-o"
+              style={{marginLeft: 5}}
+            />
+          </div>
+          <div>
+            {
+              nested.length > 0 && (
+                <Icon type="ellipsis" />
+              )
+            }
+            {
+              selected && (<Icon type="check-circle" className="cp-primary" />)
+            }
+          </div>
+        </div>
       </Tooltip>
     );
   }
   return (
-    <span>
-      {name}
-    </span>
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        ...(style || {})
+      }}
+    >
+      <span title={description || name}>
+        {name}
+      </span>
+      <div>
+        {
+          nested.length > 0 && (
+            <Icon type="ellipsis" />
+          )
+        }
+        {
+          selected && (<Icon type="check-circle" className="cp-primary" />)
+        }
+      </div>
+    </div>
   );
 };
 
-export default Capability;
+export default inject('awsRegions')(observer(Capability));

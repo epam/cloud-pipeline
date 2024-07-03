@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.configuration;
 
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
+import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
@@ -24,6 +25,7 @@ import lombok.Setter;
 import lombok.experimental.Delegate;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -70,7 +72,7 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
         startVO.setPipelineId(getPipelineId());
         startVO.setVersion(getPipelineVersion());
         startVO.setConfigurationName(getConfigName());
-        startVO.setRunSids(getRunSids());
+        List<RunSid> runSids = getRunSids();
         PipelineConfiguration configuration = getConfiguration();
         if (configuration != null) {
             startVO.setCloudRegionId(configuration.getCloudRegionId());
@@ -90,7 +92,11 @@ public class RunConfigurationEntry extends AbstractRunConfigurationEntry {
                 startVO.setWorkerCmd(configuration.getCmdTemplate());
             }
             startVO.setNonPause(configuration.isNonPause());
+            runSids = configuration.mergeRunSids(runSids);
+            startVO.setPodAssignPolicy(configuration.getPodAssignPolicy());
+            startVO.setKubeServiceAccount(configuration.getKubeServiceAccount());
         }
+        startVO.setRunSids(runSids);
         return startVO;
     }
 

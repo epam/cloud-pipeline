@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE="library/centos:7"
+ARG BASE_IMAGE="library/centos:7.7.1908"
 
 FROM $BASE_IMAGE
 

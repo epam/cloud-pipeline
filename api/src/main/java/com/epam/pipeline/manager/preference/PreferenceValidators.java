@@ -25,10 +25,12 @@ import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
+import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.math.NumberUtils;
@@ -45,7 +47,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
@@ -55,6 +59,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECU
  * Validator functions for SystemPreferences
  */
 public final class PreferenceValidators {
+    private static final String NOT_ALLOWED_INSTANCE_TAG = "NAME";
     // CHECKSTYLE:OFF
     /**
      * Checks that a preference is a valid URL and it is accessible
@@ -282,6 +287,30 @@ public final class PreferenceValidators {
                 }
                 return true;
             });
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidMapOfLaunchCommands =
+        isNotBlank.and(
+            isNullOrValidJson(new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {})
+                .and((pref, dependencies) -> {
+                    final List<OSSpecificLaunchCommandTemplate> commandsByImage =
+                        JsonMapper.parseData(pref, new TypeReference<List<OSSpecificLaunchCommandTemplate>>() {});
+                    if (commandsByImage.stream().noneMatch(c -> c.getOs().equals("*") || c.getOs().equals("all"))) {
+                        throw new IllegalArgumentException(
+                                "List of commands doesn't contain default entry with key: '*' or 'all'"
+                        );
+                    }
+                    return true;
+                })
+        );
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidInstanceTags =
+            (pref, dependencies) -> {
+        if (PipelineStringUtils.parseCommaSeparatedSet(Optional.ofNullable(pref)).stream()
+                .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
+            throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
+        }
+        return true;
+    };
 
     private PreferenceValidators() {
         // No-op

@@ -108,6 +108,9 @@ class LayoutComponent extends React.Component {
   };
 
   render () {
+    if (!this.props.children) {
+      return null;
+    }
     const {layoutDimensions, layout, gridStyles, staticPanels = []} = this.props;
     const panelsLayout = layout.getPanelsLayout(true, staticPanels);
     return (
@@ -123,7 +126,7 @@ class LayoutComponent extends React.Component {
         onDragStop={(layout) => this.onLayoutChanged(layout, true)}
         onLayoutChange={(layout) => this.onLayoutChanged(layout, false)}
       >
-        {this.props.children}
+        {this.props.children.filter(Boolean)}
       </GridLayout>
     );
   }

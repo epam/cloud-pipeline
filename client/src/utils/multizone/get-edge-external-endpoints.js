@@ -25,7 +25,7 @@ export default function getEdgeExternalEndpoints (regionIds = []) {
           request
             .fetchIfNeededOrWait()
             .then(() => {
-              if (request.loaded) {
+              if (request.loaded && request.value) {
                 resolve({
                   [regionId]: `${request.value}/_ping`
                 });

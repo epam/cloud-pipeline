@@ -77,9 +77,10 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
                           ":elasticsearch-agent:bootJar", ":vm-monitor:bootJar",
                           ":data-transfer-service:bootJar", ":data-transfer-service:bundleWindows",
-                          ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build", ":monitoring-service:build"]) {
+                          ":data-transfer-service:bundleLinux",
+                          ":data-sharing-service:buildFast", ":fs-browser:build", ":workflows:buildGpuStat", ":billing-report-agent:bootJar",
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
 
@@ -88,9 +89,10 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
                           ":elasticsearch-agent:build", ":vm-monitor:build",
                           ":data-transfer-service:build", ":data-transfer-service:bundleWindows",
-                          ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build", ":monitoring-service:build"]) {
+                          ":data-transfer-service:bundleLinux",
+                          ":data-sharing-service:buildAll", ":fs-browser:build", ":workflows:buildGpuStat", ":billing-report-agent:build",
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux", ":cloud-pipeline-webdav-client:buildCli",
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
 
@@ -160,11 +162,13 @@ task installDist() {
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
                 "$rootDir/data-transfer-service/build/distributions/data-transfer-service-windows.zip",
+                "$rootDir/data-transfer-service/build/distributions/data-transfer-service-linux.zip",
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
                 "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
                 "$rootDir/git-reader/dist/gitreader.tar.gz",
-                "$rootDir/monitoring-service/build/libs/monitoring-service.jar"
+                "$rootDir/monitoring-service/build/libs/monitoring-service.jar",
+                "$rootDir/storage-lifecycle-service/dist/sls.tar.gz"
         )
 
         distFiles.each {

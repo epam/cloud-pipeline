@@ -111,19 +111,20 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolDependencies(result.getDependencies(), tool.getId(), version);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED, new Date(),
                             version, result.getToolOSVersion(),
-                            result.getLastLayerRef(), result.getDigest(), result.getVulnerabilitiesCount());
+                            result.getLastLayerRef(), result.getDigest(), result.getVulnerabilitiesCount(),
+                            result.getDefaultCmd(), result.getLayersCount(), result.isCudaAvailable());
                     updateToolVersion(tool, version, registry, dockerClient);
                 } catch (ToolScanExternalServiceException e) {
                     log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED,
                             tool.getImage(), version), e);
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null, new HashMap<>());
+                            version, null, null, new HashMap<>(), null, null);
                 }
             }
         } catch (Exception e) {
             log.error(messageHelper.getMessage(MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                    "latest", null, null, new HashMap<>());
+                    "latest", null, null, new HashMap<>(), null, null);
         }
     }
 
@@ -152,8 +153,14 @@ class ToolScanSchedulerCore {
             final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = toolVersionScanResult
                     .map(ToolVersionScanResult::getVulnerabilitiesCount)
                     .orElse(new HashMap<>());
+            final String defaultCmd = toolVersionScanResult
+                    .map(ToolVersionScanResult::getDefaultCmd)
+                    .orElse(null);
+            final Integer layersCount = toolVersionScanResult
+                    .map(ToolVersionScanResult::getLayersCount)
+                    .orElse(null);
             toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.PENDING, null,
-                    version, layerRef, digest, vulnerabilitiesCount);
+                    version, layerRef, digest, vulnerabilitiesCount, defaultCmd, layersCount);
             return forceScanExecutor.submit(new DelegatingSecurityContextCallable<>(() -> {
                 log.info(messageHelper.getMessage(
                         MessageConstants.INFO_TOOL_FORCE_SCAN_STARTED, tool.getImage()));
@@ -163,14 +170,16 @@ class ToolScanSchedulerCore {
                     toolManager.updateToolVulnerabilities(scanResult.getVulnerabilities(), tool.getId(),
                             version);
                     toolManager.updateToolDependencies(scanResult.getDependencies(), tool.getId(), version);
-                    toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.COMPLETED,
+                    final ToolScanStatus effectiveScanStatus = scanResult.getStatus() != null
+                            ? scanResult.getStatus() : ToolScanStatus.COMPLETED;
+                    toolManager.updateToolVersionScanStatus(tool.getId(), effectiveScanStatus,
                             scanResult.getScanDate(), version, scanResult.getToolOSVersion(),
-                            scanResult.getLastLayerRef(), scanResult.getDigest(),
-                            scanResult.getVulnerabilitiesCount());
+                            scanResult.getLastLayerRef(), scanResult.getDigest(), scanResult.getVulnerabilitiesCount(),
+                            scanResult.getDefaultCmd(), scanResult.getLayersCount(), scanResult.isCudaAvailable());
                     return scanResult;
                 } catch (Exception e) {
                     toolManager.updateToolVersionScanStatus(tool.getId(), ToolScanStatus.FAILED, new Date(),
-                            version, null, null, new HashMap<>());
+                            version, null, null, new HashMap<>(), null, null);
                     log.error(messageHelper.getMessage(
                             MessageConstants.ERROR_TOOL_SCAN_FAILED, tool.getImage()), e);
                     throw new PipelineException(e);

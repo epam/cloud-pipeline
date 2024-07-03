@@ -203,6 +203,11 @@ public class DaoHelper extends NamedParameterJdbcDaoSupport {
         return !rs.wasNull() ? timestamp.toLocalDateTime() : null;
     }
 
+    public static Integer parseInteger(final ResultSet rs, final String parameter) throws SQLException {
+        final int integer = rs.getInt(parameter);
+        return !rs.wasNull() ? integer : null;
+    }
+
     @Required
     public void setCreateIdQuery(String createIdQuery) {
         this.createIdQuery = createIdQuery;

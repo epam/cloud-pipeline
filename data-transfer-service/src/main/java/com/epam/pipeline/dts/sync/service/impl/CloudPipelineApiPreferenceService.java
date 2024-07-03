@@ -50,6 +50,10 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final String dtsShutdownKey;
     private final String dtsSyncRulesKey;
     private final String dtsHeartbeatEnabledKey;
+    private final String dtsSourceDeletionEnabledKey;
+    private final String dtsLogEnabledKey;
+    private final String dtsPipeCmdKey;
+    private final String dtsPipeCmdSuffixKey;
 
     @Autowired
     public CloudPipelineApiPreferenceService(
@@ -59,6 +63,14 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             final String dtsSyncRulesKey,
             @Value("${dts.preference.heartbeat.enabled.key:dts.heartbeat.enabled}")
             final String dtsHeartbeatEnabledKey,
+            @Value("${dts.preference.source.deletion.enabled.key:dts.source.deletion.enabled}")
+            final String dtsSourceDeletionEnabledKey,
+            @Value("${dts.preference.pipe.log.enabled.key:dts.pipe.log.enabled}")
+            final String dtsLogEnabledKey,
+            @Value("${dts.preference.pipe.cmd.key:dts.pipe.cmd}")
+            final String dtsPipeCmdKey,
+            @Value("${dts.preference.pipe.cmd.suffix.key:dts.pipe.cmd.suffix}")
+            final String dtsPipeCmdSuffixKey,
             final CloudPipelineAPIClient apiClient,
             final IdentificationService identificationService) {
         this.apiClient = apiClient;
@@ -67,6 +79,10 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsShutdownKey = dtsShutdownKey;
         this.dtsSyncRulesKey = dtsSyncRulesKey;
         this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
+        this.dtsSourceDeletionEnabledKey = dtsSourceDeletionEnabledKey;
+        this.dtsLogEnabledKey = dtsLogEnabledKey;
+        this.dtsPipeCmdKey = dtsPipeCmdKey;
+        this.dtsPipeCmdSuffixKey = dtsPipeCmdSuffixKey;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -76,7 +92,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             .flatMap(apiClient::findDtsRegistryByNameOrId)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
-        log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
+        log.info("Following preferences received during sync iteration: {}", updatedPreferences.toString());
         preferences.clear();
         preferences.putAll(updatedPreferences);
     }
@@ -102,6 +118,11 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         return getBooleanPreference(dtsHeartbeatEnabledKey);
     }
 
+    @Override
+    public boolean isSourceDeletionEnabled() {
+        return getBooleanPreference(dtsSourceDeletionEnabledKey);
+    }
+
     private boolean getBooleanPreference(final String preference) {
         return Optional.of(preference)
                 .map(preferences::get)
@@ -115,5 +136,20 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
                 dtsShutdownKey, identificationService.getId());
         apiClient.deleteDtsRegistryPreferences(identificationService.getId(),
                 Collections.singletonList(dtsShutdownKey));
+    }
+
+    @Override
+    public boolean isLogEnabled() {
+        return getBooleanPreference(dtsLogEnabledKey);
+    }
+
+    @Override
+    public String getPipeCmd() {
+        return preferences.getOrDefault(dtsPipeCmdKey, "");
+    }
+
+    @Override
+    public String getPipeCmdSuffix() {
+        return preferences.getOrDefault(dtsPipeCmdSuffixKey, "");
     }
 }

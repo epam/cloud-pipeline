@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.metadata;
 
 import static com.epam.pipeline.util.CategoricalAttributeTestUtils.extractAttributesContent;
+import static org.mockito.Matchers.eq;
 
 import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.EntityVO;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.MetadataReadingException;
+import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.user.UserManager;
@@ -60,7 +62,10 @@ public class MetadataManagerTest extends AbstractSpringTest {
     private CategoricalAttributeManager categoricalAttributeManager;
 
     @MockBean
-    private UserManager userManager;
+    private EntityManager entityManager;
+
+    @MockBean
+    protected UserManager userManager;
 
     private Map<String, PipeConfValue> expectedData = new HashMap<>();
     private EntityVO entityVO = new EntityVO(1L, AclClass.PIPELINE);
@@ -144,8 +149,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
             SystemPreferences.MISC_METADATA_SENSITIVE_KEYS.getKey(),
             String.format("[\"%s\"]", SENSITIVE_KEY))));
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
-
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
@@ -171,8 +176,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
     @Transactional
     public void syncWithCategoricalAttributesWithoutSensitiveKeys() {
         Assert.assertEquals(0, categoricalAttributeManager.loadAll().size());
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
-
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();
         data.put(KEY_1, new PipeConfValue(TYPE, VALUE_1));
@@ -195,7 +200,8 @@ public class MetadataManagerTest extends AbstractSpringTest {
     @Test
     @Transactional
     public void testThatEntityCouldBeSearchedByClassAndKeyOnly() {
-        Mockito.doReturn(new PipelineUser(TEST_USER)).when(userManager).loadUserById(Mockito.anyLong());
+        Mockito.doReturn(new PipelineUser(TEST_USER)).when(entityManager)
+                .load(eq(AclClass.PIPELINE_USER), Mockito.anyLong());
 
         final EntityVO entityVO = new EntityVO(USER_ENTITY_ID, AclClass.PIPELINE_USER);
         final Map<String, PipeConfValue> data = new HashMap<>();

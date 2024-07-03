@@ -38,7 +38,6 @@ export default class App extends Component {
   };
 
   @observable info = {
-    libraryCollapsed: false,
     searchFormVisible: false
   };
 
@@ -52,32 +51,9 @@ export default class App extends Component {
     this.searchDialog && this.searchDialog.openDialog && this.searchDialog.openDialog();
   };
 
-  componentWillMount () {
-    let infoStr = localStorage.getItem('displayInfo');
-    // default value:
-    let info = {
-      libraryCollapsed: false
-    };
-    if (!infoStr) {
-      try {
-        localStorage.setItem('displayInfo', JSON.stringify(info));
-      } catch (___) {}
-    } else {
-      try {
-        info = JSON.parse(infoStr);
-      } catch (___) {}
-    }
-    this.info.libraryCollapsed = info.libraryCollapsed;
-  }
-
   onLibraryCollapsedChange = () => {
-    this.info.libraryCollapsed = !this.info.libraryCollapsed;
-    try {
-      localStorage.setItem(
-        'displayInfo',
-        JSON.stringify({libraryCollapsed: this.info.libraryCollapsed})
-      );
-    } catch (___) {}
+    const {uiNavigation} = this.props;
+    uiNavigation.libraryExpanded = !uiNavigation.libraryExpanded;
   };
 
   onSearchControlVisibilityChanged = (visible) => {
@@ -120,7 +96,7 @@ export default class App extends Component {
             <Navigation
               deploymentName={this.props.preferences.deploymentName}
               activeTabPath={activeTabPath}
-              collapsed={this.info.libraryCollapsed}
+              collapsed={!uiNavigation.libraryExpanded}
               onLibraryCollapsedChange={this.onLibraryCollapsedChange}
               openSearchDialog={this.openSearchDialog}
               searchControlVisible={this.state.searchFormVisible}
@@ -159,7 +135,11 @@ export default class App extends Component {
             )
           }
           {content}
-          <NotificationCenter delaySeconds={2} />
+          <NotificationCenter
+            delaySeconds={2}
+            disableEmailNotifications={activeTabPath === Pages.notifications}
+            router={this.props.router}
+          />
         </div>
       </LocaleProvider>
     );

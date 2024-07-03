@@ -204,8 +204,8 @@ function getDependencyLevel (tree, node) {
   return tree[node].iteration;
 }
 
-function correctFormFieldValues (parameters) {
-  if (!parameters) {
+function correctFormFieldValues (parameters, rawEdit = false) {
+  if (!parameters || rawEdit) {
     return false;
   }
   const {keys = [], params = {}} = parameters;
@@ -264,6 +264,17 @@ function correctFormFieldValues (parameters) {
   return modified;
 }
 
+function booleanParameterValue (parameters, parameter) {
+  if (
+    !!parameters &&
+    parameters.hasOwnProperty(parameter) &&
+    parameters[parameter].value !== undefined
+  ) {
+    return `${parameters[parameter].value}`.toLowerCase() === 'true';
+  }
+  return undefined;
+}
+
 function booleanParameterIsSetToValue (parameters, parameter, value = true) {
   return !!parameters &&
     parameters.hasOwnProperty(parameter) &&
@@ -271,6 +282,7 @@ function booleanParameterIsSetToValue (parameters, parameter, value = true) {
 }
 
 export {
+  booleanParameterValue,
   booleanParameterIsSetToValue,
   correctFormFieldValues,
   isVisible,

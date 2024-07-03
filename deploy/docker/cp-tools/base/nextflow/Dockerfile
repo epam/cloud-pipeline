@@ -12,42 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/ubuntu:18.04
+ARG BASE_IMAGE=nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04
+FROM ${BASE_IMAGE}
 
 # Common applications
 RUN apt update && \
     apt install -y wget \
                    git \
                    curl \
-                   openjdk-8-jdk \
+                   openjdk-11-jdk \
                     graphviz \
                    python && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Stick to a specific version, as the installation script at get.nextflow.io may be upgraded without a notification
 # NXF_VER will be considered in the installation script
-ENV NXF_VER="20.10.0"
+ENV NXF_VER="22.10.7"
 ENV NXF_HOME_ROOT="/opt/nextflow"
 ENV NXF_HOME="$NXF_HOME_ROOT/$NXF_VER"
-
-# Always use sge setup to leverge multi-node autoscaled capabilities
-ENV CP_CAP_SGE="true"
-
-# Always use DinD's "container" mode to allow docker-based workflows
-ENV CP_CAP_DIND_CONTAINER="true"
 
 # Redefine default analysis and input location to /common, which will be shared across nodes. These values can be also changed during startup
 ENV ANALYSIS_DIR="/common/analysis"
 ENV INPUT_DIR="/common/input"
-ENV SCRIPTS_DIR="/common/scripts"
 
 # Install nextflow itlself into $NXF_HOME
 RUN mkdir -p $NXF_HOME && \
     cd $NXF_HOME_ROOT && \
     curl -fsSL get.nextflow.io | bash && \
     mv nextflow "$NXF_HOME/nextflow"
-
-ADD default.config /etc/nextflow/default.config
 
 ADD nextflow /usr/bin/nextflow
 RUN chmod +x /usr/bin/nextflow

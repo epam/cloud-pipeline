@@ -18,6 +18,9 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -26,12 +29,14 @@ import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
+import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.SensitiveStorageOperation;
 import com.epam.pipeline.manager.datastorage.leakagepolicy.StorageWriteOperation;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoredListingContainer;
 import com.epam.pipeline.manager.datastorage.providers.StorageProvider;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -227,5 +232,36 @@ public class StorageProviderManager {
     public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    public void verifyStorageLifecycleRule(final AbstractDataStorage dataStorage, final StorageLifecycleRule rule) {
+        getStorageProvider(dataStorage).verifyStorageLifecyclePolicyRule(rule);
+    }
+
+    public void verifyStorageLifecycleRuleExecution(final AbstractDataStorage dataStorage,
+                                                    final StorageLifecycleRuleExecution execution) {
+        getStorageProvider(dataStorage).verifyStorageLifecycleRuleExecution(execution);
+    }
+
+    public void verifyRestoreActionSupported(final AbstractDataStorage dataStorage) {
+        getStorageProvider(dataStorage).verifyRestoreActionSupported();
+    }
+
+    public String verifyOrDefaultRestoreMode(final AbstractDataStorage dataStorage,
+                                             final StorageRestoreActionRequest restoreActionRequest) {
+        return getStorageProvider(dataStorage).verifyOrDefaultRestoreMode(restoreActionRequest);
+    }
+
+    public DataStorageItemType getItemType(final AbstractDataStorage dataStorage,
+                                           final String path,
+                                           final String version) {
+        return getStorageProvider(dataStorage).getItemType(dataStorage, path, version);
+    }
+
+    public DataStorageListing getRestoredItems(final AbstractDataStorage dataStorage, final String path,
+                                               final Boolean showVersion, final Integer pageSize, final String marker,
+                                               final DataStorageLifecycleRestoredListingContainer restoredListing) {
+        return getStorageProvider(dataStorage)
+                .getItems(dataStorage, path, showVersion, pageSize, marker, restoredListing);
     }
 }

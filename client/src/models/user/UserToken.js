@@ -16,9 +16,38 @@
 
 import Remote from '../basic/Remote';
 
-export default class UserToken extends Remote {
+class UserToken extends Remote {
   constructor (expiration) {
     super();
     this.url = `/user/token?expiration=${expiration}`;
   }
 }
+
+const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24;
+
+let tokenCache;
+
+export function fetchToken () {
+  return new Promise((resolve, reject) => {
+    if (tokenCache) {
+      resolve(tokenCache);
+    } else {
+      const tokenRequest = new UserToken(TOKEN_EXPIRATION_SECONDS);
+      tokenRequest
+        .fetch()
+        .then(() => {
+          if (tokenRequest.loaded) {
+            tokenCache = tokenRequest.value.token;
+            resolve(tokenCache);
+          } else {
+            reject(new Error(`Error fetching user token: ${tokenRequest.value.message}`));
+          }
+        })
+        .catch(e => {
+          reject(new Error(`Error fetching user token: ${e.message}`));
+        });
+    }
+  });
+}
+
+export default UserToken;

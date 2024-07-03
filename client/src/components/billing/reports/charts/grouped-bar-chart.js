@@ -27,7 +27,8 @@ class GroupedBarChart extends React.Component {
     discountsMapper: PropTypes.object,
     onSelect: PropTypes.func,
     title: PropTypes.string,
-    height: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    height: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    displayQuotasSummary: PropTypes.bool
   };
 
   charts = {};
@@ -86,14 +87,15 @@ class GroupedBarChart extends React.Component {
   get billingData () {
     const {request = {}} = this.props;
     const data = request.loaded ? (request.value || {}) : {};
-    const groups = Object.keys(data || {});
+    const groups = Object.keys(data || {}).filter(key => !/^quotaGroups$/i.test(key));
     const itemsCount = groups.map(group => Object.keys(data[group] || {}).length);
     const total = itemsCount.reduce((r, c) => r + c, 0);
     return {
       data,
       groups,
       itemsCount,
-      total
+      total,
+      quotaGroups: data.quotaGroups
     };
   };
 
@@ -101,9 +103,32 @@ class GroupedBarChart extends React.Component {
     this.charts[group] = data;
   };
 
+  getSubChartStyle (group, groupIndex, groups = []) {
+    if (groupIndex === 0) {
+      return {paddingLeft: 40};
+    }
+    if (groupIndex === groups.length - 1) {
+      return {paddingRight: 40};
+    }
+    return {};
+  }
+
   render () {
-    const {title, height, request, discountsMapper, onSelect} = this.props;
-    const {data, itemsCount, groups, total} = this.billingData;
+    const {
+      title,
+      height,
+      request,
+      discountsMapper,
+      onSelect,
+      displayQuotasSummary
+    } = this.props;
+    const {
+      data,
+      itemsCount,
+      groups,
+      total,
+      quotaGroups
+    } = this.billingData;
     const heightCorrected = title && height ? (+height - 22) : height;
     return (
       <div style={{position: 'relative'}}>
@@ -126,12 +151,15 @@ class GroupedBarChart extends React.Component {
               }
               data={data[group]}
               title={group}
+              displayQuotasSummary={displayQuotasSummary}
+              quotaGroup={quotaGroups[group]}
+              subChartTitleStyle={this.getSubChartStyle(group, index, groups)}
               subChart
               style={Object.assign({
                 width: total > 0
                   ? `${100.0 * itemsCount[index] / total}%`
                   : `${100 / itemsCount.length}%`,
-                display: 'inline-block',
+                display: 'inline-flex',
                 height: heightCorrected
               })}
               onSelect={onSelect ? ({key} = {}) => onSelect({group, key}) : undefined}

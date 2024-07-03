@@ -15,36 +15,9 @@
  */
 
 import {computed, observable} from 'mobx';
-import UserToken from '../../user/UserToken';
+import {fetchToken} from '../../user/UserToken';
 import pipelineRunFSBrowserCache from '../../pipelines/PipelineRunFSBrowserCache';
 import multiZoneManager from '../../../utils/multizone';
-
-const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24;
-
-let tokenCache;
-
-function fetchToken () {
-  return new Promise((resolve, reject) => {
-    if (tokenCache) {
-      resolve(tokenCache);
-    } else {
-      const tokenRequest = new UserToken(TOKEN_EXPIRATION_SECONDS);
-      tokenRequest
-        .fetch()
-        .then(() => {
-          if (tokenRequest.loaded) {
-            tokenCache = tokenRequest.value.token;
-            resolve(tokenCache);
-          } else {
-            reject(new Error(`Error fetching user token: ${tokenRequest.value.message}`));
-          }
-        })
-        .catch(e => {
-          reject(new Error(`Error fetching user token: ${e.message}`));
-        });
-    }
-  });
-}
 
 function fetchEndpoint (runId, defaultRegion = undefined) {
   return new Promise((resolve, reject) => {

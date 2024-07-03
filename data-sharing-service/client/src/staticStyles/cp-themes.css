@@ -83,3 +83,7 @@
 .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
   border-color: #ff8818;
 }
+
+.tooltip-text {
+  color: #ececec;
+}

@@ -123,20 +123,16 @@ function PoolCard ({
     name,
     schedule,
     count: nodeCount,
-    dockerImages = []
+    dockerImages = [],
+    usage = 0
   } = pool;
   const poolNodes = (nodes || [])
     .filter(node => node.labels &&
       node.labels.hasOwnProperty('pool_id') &&
       `${node.labels.pool_id}` === `${pool.id}`
     );
-  const runNodes = poolNodes
-    .filter(node => node.labels &&
-      node.labels.hasOwnProperty('runid') &&
-      !/^p-/i.test(`${node.labels.runid}`)
-    );
-  const runs = runNodes.length;
-  const total = poolNodes.length;
+  const runs = usage;
+  const total = Math.max(usage, poolNodes.length);
   const runsCountLabel = displayCount(runs);
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;

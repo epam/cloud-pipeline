@@ -502,6 +502,12 @@
         </classes>
     </test>
 
+    <test name="NFSQuotasTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.NFSQuotasTest"/>
+        </classes>
+    </test>
+
     <test name="PlatformUsageTest">
         <classes>
             <class name="com.epam.pipeline.autotests.PlatformUsageTest"/>
@@ -517,6 +523,18 @@
     <test name="StorageBackupsTest">
         <classes>
             <class name="com.epam.pipeline.autotests.StorageBackupsTest"/>
+        </classes>
+    </test>
+
+    <test name="DnsHostsManagementTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DnsHostsManagementTest"/>
+        </classes>
+    </test>
+
+    <test name="EnvironmentTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.EnvironmentTest"/>
         </classes>
     </test>
 

@@ -29,13 +29,24 @@ public class LustreFSApiService {
     private final LustreFSManager lustreFSManager;
 
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)
-    public LustreFS getOrCreateLustreFS(final Long runId, final Integer size) {
-        return lustreFSManager.getOrCreateLustreFS(runId, size);
+    public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
+                                        final String type, final Integer throughput) {
+        return lustreFSManager.getOrCreateLustreFS(runId, size, type, throughput);
+    }
+
+    @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)
+    public LustreFS updateLustreFsSize(final Long runId, final Integer size) {
+        return lustreFSManager.updateLustreFsSize(runId, size);
     }
 
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)
     public LustreFS getLustreFS(final Long runId) {
         return lustreFSManager.getLustreFS(runId);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public LustreFS getLustreFS(final String mountName, final Long regionId) {
+        return lustreFSManager.getLustreFS(mountName, regionId);
     }
 
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)

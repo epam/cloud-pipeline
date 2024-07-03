@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class QuotaApiService {
     }
 
     @PreAuthorize(ADMIN_OR_BILLING_MANAGER)
-    public List<Quota> getAll() {
-        return quotaService.getAll();
+    public List<Quota> getAll(final boolean loadActive) {
+        return quotaService.getAll(loadActive);
     }
 }

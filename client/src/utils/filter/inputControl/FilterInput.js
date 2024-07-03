@@ -55,7 +55,6 @@ import 'codemirror/addon/edit/trailingspace';
 
 @observer
 export default class FilterInput extends React.Component {
-
   static propTypes = {
     className: PropTypes.string,
     defaultValue: PropTypes.string,
@@ -78,13 +77,16 @@ export default class FilterInput extends React.Component {
   }
 
   _onCodeChange = (editor, change) => {
-    if (this.props.onEdit && change.from) {
-      this.props.onEdit(editor.getValue(), change.from.ch + (change.from.sticky === 'after' ? -1 : 0));
+    if (this.props.onEdit && change.from && editor) {
+      this.props.onEdit(
+        editor.getValue(),
+        change.from.ch + (change.from.sticky === 'after' ? -1 : 0)
+      );
     }
   };
 
   _onEnter = () => {
-    if (this.props.onEnter) {
+    if (this.props.onEnter && this.codeMirrorInstance) {
       this.props.onEnter(this.codeMirrorInstance.getValue());
     }
   };
@@ -151,6 +153,18 @@ export default class FilterInput extends React.Component {
     this.updateEditor(this.props.defaultValue, (this.props.defaultValue || '').length);
   };
 
+  focus = (position) => {
+    if (!this.codeMirrorInstance) {
+      return null;
+    }
+    setTimeout(() => {
+      if (position !== undefined) {
+        this.codeMirrorInstance.setCursor({line: 0, ch: position});
+      }
+      this.codeMirrorInstance.focus();
+    }, 0);
+  };
+
   updateEditor = (code = undefined, position = undefined) => {
     if (!this.codeMirrorInstance) {
       return;
@@ -158,20 +172,13 @@ export default class FilterInput extends React.Component {
     this.codeMirrorInstance.setSize('100%', '100%');
     this.codeMirrorInstance.display.wrapper.style.borderRadius = '4px';
     this.codeMirrorInstance.display.wrapper.style.overflow = 'hidden';
-    this.codeMirrorInstance.display.wrapper.className = classNames(
-      {'cp-runs-advanced-filter-input': !this.props.isError},
-      {'cp-runs-advanced-filter-input-error': this.props.isError}
-    );
     this.codeMirrorInstance.off('change', this._onCodeChange);
     this.codeMirrorInstance.off('keyHandled', this._keyHandled);
     this.codeMirrorInstance.off('blur', this._onBlur);
     this.codeMirrorInstance.off('beforeChange', this._beforeChange);
     if (code) {
       this.codeMirrorInstance.setValue(code || '');
-      this.codeMirrorInstance.focus();
-      if (position !== undefined) {
-        this.codeMirrorInstance.setCursor({line: 0, ch: position});
-      }
+      this.focus(position);
     }
     this.codeMirrorInstance.on('change', this._onCodeChange);
     this.codeMirrorInstance.on('keyHandled', this._keyHandled);
@@ -183,7 +190,12 @@ export default class FilterInput extends React.Component {
     return (
       <div className={this.props.className || codeEditorStyles.container}>
         <div
-          className={codeEditorStyles.editor}>
+          className={classNames(
+            codeEditorStyles.editor,
+            {'cp-runs-advanced-filter-input': !this.props.isError},
+            {'cp-runs-advanced-filter-input-error': this.props.isError}
+          )}
+        >
           <input type="textarea" ref={this._initializeCodeMirror} />
         </div>
       </div>
@@ -218,6 +230,7 @@ export default class FilterInput extends React.Component {
           token: ['variable-2']
         },
         {
+          // eslint-disable-next-line max-len
           regex: /(\s)*(<|<=|=|!=|>=|>)(\s)*('(?:[^\\]|\\.)*?(?:'|$)|"(?:[^\\]|\\.)*?(?:"|$)|[^\s'"()[\]{}/\\]+)/,
           token: [null, null, null, 'comment']
         }

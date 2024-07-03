@@ -27,7 +27,8 @@ import sys
 
 from botocore.exceptions import ClientError
 
-from .cloudprovider import AbstractInstanceProvider, LIMIT_EXCEEDED_ERROR_MASSAGE, LIMIT_EXCEEDED_EXIT_CODE
+from .cloudprovider import AbstractInstanceProvider, \
+    LIMIT_EXCEEDED_ERROR_MESSAGE, LIMIT_EXCEEDED_EXIT_CODE
 from pipeline import TaskStatus
 from . import utils
 
@@ -68,7 +69,8 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
     def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
-                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
+                     num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token,
+                     global_distribution_url, pre_pull_images=[], is_dedicated=False):
 
         ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, pool_id, time_rep)
         if ins_id:
@@ -76,13 +78,14 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
         user_data_script = utils.get_user_data_script(self.cloud_region, ins_type, ins_img, ins_platform, kube_ip,
                                                       kubeadm_token, kubeadm_cert_hash, kube_node_token,
-                                                      swap_size, pre_pull_images)
+                                                      global_distribution_url, swap_size, pre_pull_images)
         if is_spot:
             ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
-                                                       kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size)
+                                                       kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, is_dedicated)
         else:
             ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id,
-                                                           run_id, pool_id, user_data_script, num_rep, time_rep, swap_size)
+                                                           run_id, pool_id, user_data_script, num_rep, time_rep,
+                                                           swap_size, is_dedicated)
         return ins_id, ins_ip
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
@@ -213,7 +216,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         }
 
     def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                 num_rep, time_rep, swap_size):
+                                 num_rep, time_rep, swap_size, is_dedicated):
         utils.pipe_log('Creating on demand instance')
         allowed_networks = utils.get_networks_config(self.cloud_region)
         additional_args = {}
@@ -227,6 +230,13 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             utils.pipe_log('- Networks list NOT found, default subnet in random AZ will be used')
             additional_args = {'SecurityGroupIds': utils.get_security_groups(self.cloud_region)}
+
+        if is_dedicated:
+            additional_args.update({
+                "Placement": {
+                    'Tenancy': "dedicated"
+                }
+            })
 
         try:
             response = self.ec2.run_instances(
@@ -252,7 +262,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             )
         except ClientError as client_error:
             if 'InstanceLimitExceeded' in client_error.message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error
@@ -380,7 +390,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
     def __find_spot_instance(self, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
-                             kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size):
+                             kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size, is_dedicated):
         utils.pipe_log('Creating spot request')
 
         utils.pipe_log('- Checking spot prices for current region...')
@@ -413,6 +423,13 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             utils.pipe_log('- Networks list NOT found or cheapest zone can not be determined, default subnet in a random AZ will be used')
             specifications['SecurityGroupIds'] = utils.get_security_groups(self.cloud_region)
 
+        if is_dedicated:
+            specifications.update({
+                "Placement": {
+                    'Tenancy': "dedicated"
+                }
+            })
+
         current_time = datetime.now(pytz.utc) + timedelta(seconds=10)
 
         try:
@@ -427,7 +444,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         except ClientError as client_error:
             if 'Max spot instance count exceeded' in client_error.message or \
                     'InstanceLimitExceeded' in client_error.message:
-                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MASSAGE)
+                utils.pipe_log_warn(LIMIT_EXCEEDED_ERROR_MESSAGE)
                 sys.exit(LIMIT_EXCEEDED_EXIT_CODE)
             else:
                 raise client_error

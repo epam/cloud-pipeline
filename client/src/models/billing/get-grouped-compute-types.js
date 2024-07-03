@@ -3,7 +3,7 @@ import {costMapper} from './utils';
 
 export class GetGroupedComputeTypes extends BaseBillingRequest {
   constructor (filters, pagination = null) {
-    super(filters, false, pagination);
+    super({filters, pagination});
     this.grouping = 'RUN_COMPUTE_TYPE';
   }
 

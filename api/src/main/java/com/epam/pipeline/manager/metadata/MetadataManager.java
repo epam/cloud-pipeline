@@ -26,23 +26,28 @@ import com.epam.pipeline.entity.metadata.CategoricalAttribute;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.MetadataEntryWithIssuesCount;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.Folder;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
+import com.epam.pipeline.utils.CommonUtils;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.google.common.io.CharStreams;
 import com.google.common.io.LineProcessor;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -86,9 +91,6 @@ public class MetadataManager {
     private FolderManager folderManager;
 
     @Autowired
-    private UserManager userManager;
-
-    @Autowired
     private RoleManager roleManager;
 
     @Autowired
@@ -102,6 +104,9 @@ public class MetadataManager {
 
     @Autowired
     private AuthManager authManager;
+
+    @Autowired
+    private ToolManager toolManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -220,8 +225,6 @@ public class MetadataManager {
     private Long loadEntityId(String identifier, AclClass entityClass) {
         if (entityClass.equals(AclClass.ROLE)) {
             return roleManager.loadRoleByNameOrId(identifier).getId();
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            return userManager.loadUserByNameOrId(identifier).getId();
         } else {
             return entityManager.loadByNameOrId(entityClass, identifier).getId();
         }
@@ -349,6 +352,21 @@ public class MetadataManager {
         return keys;
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    public Map<String, String> prepareCloudResourceTags(final PipelineRun run) {
+        try {
+            if (!CloudProvider.AWS.equals(run.getInstance().getCloudProvider())) {
+                return Collections.emptyMap();
+            }
+            final Map<String, String> implicitTags = resolveInstanceTagsFromPreference(run);
+            final Map<String, String> explicitTags = resolveInstanceTagsFromMetadata(run.getDockerImage());
+            return CommonUtils.mergeMaps(explicitTags, implicitTags);
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during cloud resource tags preparation for run '{}'.", run.getId(), e);
+            return Collections.emptyMap();
+        }
+    }
+
     Map<String, PipeConfValue> convertFileContentToMetadata(MultipartFile file) {
         String delimiter = MetadataParsingUtils.getDelimiterFromFileExtension(file.getOriginalFilename());
         try (InputStream content = file.getInputStream()) {
@@ -390,8 +408,6 @@ public class MetadataManager {
         Object entity;
         if (entityClass.equals(AclClass.ROLE)) {
             entity = roleManager.loadRole(entityId);
-        } else if (entityClass.equals(AclClass.PIPELINE_USER)) {
-            entity = userManager.loadUserById(entityId);
         } else {
             entity = entityManager.load(entityClass, entityId);
         }
@@ -409,5 +425,42 @@ public class MetadataManager {
                 .map(Tool.class::cast)
                 .ifPresent(tool -> Assert.isTrue(tool.isNotSymlink(), messageHelper.getMessage(
                         MessageConstants.ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED)));
+    }
+
+    private Map<String, String> resolveInstanceTagsFromMetadata(final String dockerImage) {
+        final Set<String> instanceTagsKeys = PipelineStringUtils.parseCommaSeparatedSet(
+                preferenceManager.findPreference(SystemPreferences.CLUSTER_INSTANCE_ALLOWED_TAGS));
+        if (CollectionUtils.isEmpty(instanceTagsKeys)) {
+            return Collections.emptyMap();
+        }
+
+        final Tool tool = toolManager.loadByNameOrId(dockerImage);
+        final MetadataEntry toolMetadata = loadMetadataItem(tool.getId(), AclClass.TOOL);
+
+        return Optional.ofNullable(toolMetadata)
+                .map(MetadataEntry::getData)
+                .orElseGet(Collections::emptyMap)
+                .entrySet().stream()
+                .filter(entry -> instanceTagsKeys.contains(entry.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getValue()));
+    }
+
+    private Map<String, String> resolveInstanceTagsFromPreference(final PipelineRun run) {
+        return MapUtils.emptyIfNull(preferenceManager.getPreference(SystemPreferences.CLUSTER_INSTANCE_TAGS))
+                .entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getValue, entry -> getInstanceTagValue(entry.getKey(), run)));
+    }
+
+    private String getInstanceTagValue(final CommonInstanceTagsType tagType, final PipelineRun run) {
+        switch (tagType) {
+            case tool:
+                return run.getDockerImage();
+            case run_id:
+                return run.getId().toString();
+            case owner:
+                return run.getOwner();
+            default:
+                throw new IllegalArgumentException(String.format("Failed to resolve instance tag type '%s'", tagType));
+        }
     }
 }

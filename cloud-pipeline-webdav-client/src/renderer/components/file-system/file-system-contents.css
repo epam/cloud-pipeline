@@ -1,0 +1,69 @@
+.spin-container {
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.directory-contents-container {
+  overflow: auto;
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.directory-contents-container .directory-contents-header {
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  background-color: #fafafa;
+}
+
+.element-header {
+  margin: 0;
+  line-height: 26px;
+  height: 26px;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.directory-contents {
+  flex: 1;
+  position: relative;
+}
+
+.directory-contents-header,
+.directory-contents {
+  overflow-y: scroll;
+  padding: 0 2px;
+}
+
+.directory-contents-header .header-resizer {
+  border-right: 1px solid #ccc;
+}
+
+.directory-contents.drop-target {
+  background-color: rgba(34, 130, 191, 0.125);
+}
+
+.show-more {
+  line-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: smaller;
+  color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
+}
+
+.show-more:hover {
+  color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(34, 130, 191, 0.125);
+}

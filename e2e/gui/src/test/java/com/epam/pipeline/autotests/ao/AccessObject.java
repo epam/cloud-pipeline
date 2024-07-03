@@ -507,8 +507,14 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
      * @return The origin access object.
      */
     default ELEMENT_TYPE selectValue(final Primitive combobox, final By optionQualifier) {
-        get(combobox).shouldBe(visible).click();
+        get(combobox).shouldBe(visible, enabled).click();
         $(visible(byClassName("ant-select-dropdown"))).find(optionQualifier).shouldBe(visible).click();
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE selectValue(final SelenideElement element, final By optionQualifier) {
+        element.shouldBe(visible).click();
+        $(comboboxDropdown()).find(optionQualifier).shouldBe(visible).click();
         return (ELEMENT_TYPE) this;
     }
 

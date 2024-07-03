@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,32 +17,27 @@
 package com.epam.pipeline.notifier.service.task;
 
 import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.notifier.entity.message.MessageText;
 import com.epam.pipeline.notifier.repository.UserRepository;
+import com.epam.pipeline.notifier.service.TemplateService;
 import org.apache.commons.mail.DefaultAuthenticator;
 import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.HtmlEmail;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
-import org.apache.velocity.tools.generic.NumberTool;
+import org.apache.commons.validator.EmailValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.mail.internet.InternetAddress;
-import java.io.StringWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 /**
@@ -51,13 +46,11 @@ import java.util.stream.Collectors;
  * {@link NotificationMessage#getCopyUserIds()}
  */
 @Component
+@ConditionalOnProperty(name = "notification.enable.smtp", havingValue = "true")
 public class SMTPNotificationManager implements NotificationManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SMTPNotificationManager.class);
     public static final String MESSAGE_TAG = "message";
-
-    @Value(value = "${notification.enable.smtp}")
-    private boolean isEnabled;
 
     @Value(value = "${email.notification.retry.count:3}")
     private int notifyRetryCount;
@@ -92,6 +85,9 @@ public class SMTPNotificationManager implements NotificationManager {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TemplateService templateService;
+
     /**
      * Sends a notification to all specified recipients.
      *
@@ -103,9 +99,6 @@ public class SMTPNotificationManager implements NotificationManager {
      */
     @Override
     public void notifySubscribers(NotificationMessage message) {
-        if (!isEnabled) {
-            return;
-        }
         for (int i = 0; i < notifyRetryCount; i++) {
             try {
                 Optional<Email> email = buildEmail(message);
@@ -141,21 +134,9 @@ public class SMTPNotificationManager implements NotificationManager {
 
         email.setFrom(emailFrom);
 
-        Optional<NotificationTemplate> template = Optional.ofNullable(message.getTemplate());
-        String subject = template.map(NotificationTemplate::getSubject).orElse(message.getSubject());
-        String body = template.map(NotificationTemplate::getBody).orElse(message.getBody());
-
-        VelocityContext velocityContext = getVelocityContext(message);
-        velocityContext.put("numberTool", new NumberTool());
-
-        StringWriter subjectOut = new StringWriter();
-        StringWriter bodyOut = new StringWriter();
-
-        Velocity.evaluate(velocityContext, subjectOut, MESSAGE_TAG + message.hashCode(), subject);
-        Velocity.evaluate(velocityContext, bodyOut, MESSAGE_TAG + message.hashCode(), body);
-
-        email.setSubject(subjectOut.toString());
-        email.setHtmlMsg(bodyOut.toString());
+        MessageText messageText = templateService.buildMessageText(message);
+        email.setSubject(messageText.getSubject());
+        email.setHtmlMsg(messageText.getBody());
 
         if (message.getToUserId() == null && CollectionUtils.isEmpty(message.getCopyUserIds())) {
             LOGGER.info("Email with message {} won't be sent: no recipients found", message.getId());
@@ -163,7 +144,7 @@ public class SMTPNotificationManager implements NotificationManager {
         }
 
         String userEmail = getTargetUserEmail(message);
-        if (userEmail != null) {
+        if (isValidEmail(userEmail)) {
             email.addTo(userEmail);
         }
 
@@ -171,7 +152,7 @@ public class SMTPNotificationManager implements NotificationManager {
 
         for (PipelineUser user : keepInformedUsers) {
             String address = user.getEmail();
-            if (address != null) {
+            if (isValidEmail(address)) {
                 email.addBcc(address);
             }
         }
@@ -200,20 +181,6 @@ public class SMTPNotificationManager implements NotificationManager {
         return targetUser.getEmail();
     }
 
-    private VelocityContext getVelocityContext(NotificationMessage message) {
-        VelocityContext velocityContext = new VelocityContext();
-        velocityContext.put("templateParameters", message.getTemplateParameters());
-
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        velocityContext.put("calendar", calendar);
-
-        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        velocityContext.put("dateFormat", dateFormat);
-
-        return velocityContext;
-    }
-
     private void sleepIfRequired(final long delay) {
         if (delay <= 0) {
             return;
@@ -224,6 +191,10 @@ public class SMTPNotificationManager implements NotificationManager {
             Thread.currentThread().interrupt();
             LOGGER.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isValidEmail(final String email) {
+        return EmailValidator.getInstance().isValid(email);
     }
 
 }

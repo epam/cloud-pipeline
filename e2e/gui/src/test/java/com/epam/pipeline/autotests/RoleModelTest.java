@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -476,7 +476,9 @@ public class RoleModelTest
                 .selectStorage(bucket)
                 .validateElementsAreNotEditable()
                 .ensureNotVisible(CREATE_FOLDER, UPLOAD)
-                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 17)
@@ -504,7 +506,9 @@ public class RoleModelTest
                 .library()
                 .selectStorage(bucket)
                 .validateElementsAreEditable()
-                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH, SHOW_METADATA);
+                .ensureVisible(CREATE, UPLOAD, EDIT_STORAGE, SELECT_ALL, ADDRESS_BAR, REFRESH)
+                .click(ACTIONS)
+                .ensureVisible(SHOW_METADATA);
     }
 
     @Test(priority = 19)
@@ -761,6 +765,7 @@ public class RoleModelTest
                 .performWithin(registry, group, tool, tool ->
                         tool.permissions()
                                 .deleteIfPresent(userGroup)
+                                .sleep(2, SECONDS)
                                 .addNewGroup(userGroup)
                                 .closeAll()
                 );
@@ -832,14 +837,16 @@ public class RoleModelTest
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .pressEnter();
+                .pressEnter()
+                .ensure(SEARCH, enabled);
 
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .ensure(SEARCH, cssClass("ant-input-affix-wrapper"));
+                .pressMagnifierIcon()
+                .ensure(SEARCH, enabled);
     }
 
     private PermissionTabAO.UserPermissionsTableAO getUserPipelinePermissions(final Account user,
@@ -923,8 +930,8 @@ public class RoleModelTest
     private PipelineCodeTabAO getFirstVersionOfPipeline(final String pipelineName) {
         return navigationMenu()
                 .library()
-                .clickOnPipeline(pipelineName)
                 .sleep(2, SECONDS)
+                .clickOnPipeline(pipelineName)
                 .firstVersion()
                 .codeTab();
     }

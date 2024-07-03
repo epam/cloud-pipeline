@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,6 +65,22 @@ function clone_repository {
                   echo "[WARNING] Try #${_RETRY_ITERATION}. Failed to clone ${_REPOSITORY_URL} to ${_REPOSITORY_LOCAL_PATH}"
                   sleep "$_RETRIES_TIMEOUT"
             else
+                  cd $SCRIPTS_DIR
+
+                  if [ -z "$BRANCH" ];
+                  then
+                        git -c http.sslVerify=false checkout $REPO_REVISION -q
+                  else
+                        git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
+                  fi
+
+                  if [ "$CP_GIT_RECURSIVE_CLONE" = "true" ];
+                  then
+                        git -c http.sslVerify=false submodule init
+                        git -c http.sslVerify=false submodule update
+                  fi
+
+                  _CLONE_RESULT=$?
                   break
             fi
       done
@@ -92,7 +108,7 @@ function install_pip_package {
      if [ "$_DOWNLOAD_RESULT" -ne 0 ];
         then
             echo "[ERROR] ${_DIST_NAME} download failed. Exiting"
-            exit "$_DOWNLOAD_RESULT"
+            exit_init "$_DOWNLOAD_RESULT"
         fi
     $CP_PYTHON2_PATH -m pip install $CP_PIP_EXTRA_ARGS ${_DIST_NAME}.tar.gz -q -I
     _INSTALL_RESULT=$?
@@ -100,7 +116,7 @@ function install_pip_package {
     if [ "$_INSTALL_RESULT" -ne 0 ];
     then
         echo "[ERROR] Failed to install ${_DIST_NAME}. Exiting"
-        exit "$_INSTALL_RESULT"
+        exit_init "$_INSTALL_RESULT"
     fi
 
 
@@ -117,7 +133,7 @@ function mount_nfs_if_required {
             if [ "$_SETUP_RESULT" -ne 0 ];
             then
                 echo "[ERROR] Mounting NFS failed. Exiting"
-                exit "$_SETUP_RESULT"
+                exit_init "$_SETUP_RESULT"
             fi
      fi
 
@@ -138,7 +154,7 @@ function setup_nfs_if_required {
           if [ "$_SETUP_RESULT" -ne 0 ];
           then
                 echo "[ERROR] NFS mount failed. Exiting"
-                exit "$_SETUP_RESULT"
+                exit_init "$_SETUP_RESULT"
           fi
           echo "------"
     fi
@@ -205,6 +221,19 @@ function cp_cap_publish {
             
             sed -i "/$_SGE_WORKER_INIT/d" $_WORKER_CAP_INIT_PATH
             echo "$_SGE_WORKER_INIT" >> $_WORKER_CAP_INIT_PATH
+
+            # Due to strange behavior of sge_execd with updating global config values,
+            # we need to change default mail client if favor to our custom
+            if check_cp_cap "CP_CAP_GRID_ENGINE_NOTIFICATIONS"
+            then
+                _PIPE_MAIL_ENABLER_SCRIPT="pipe_mail_enabler"
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_MASTER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_MASTER_CAP_INIT_PATH
+
+                sed -i "/$_PIPE_MAIL_ENABLER_SCRIPT/d" $_WORKER_CAP_INIT_PATH
+                echo "$_PIPE_MAIL_ENABLER_SCRIPT" >> $_WORKER_CAP_INIT_PATH
+            fi
       fi
 
       if check_cp_cap "CP_CAP_SLURM"
@@ -282,7 +311,7 @@ function cp_cap_init {
             if [ $_CAP_INIT_SCRIPT_RESULT -ne 0 ];
             then
                   echo "[ERROR] $_CAP_INIT_SCRIPT failed with $_CAP_INIT_SCRIPT_RESULT. Exiting"
-                  exit "$_CAP_INIT_SCRIPT_RESULT"
+                  exit_init "$_CAP_INIT_SCRIPT_RESULT"
             else
                   # Reload env vars, in case they were updated within cap init scripts
                   source "$CP_ENV_FILE_TO_SOURCE"
@@ -333,10 +362,79 @@ function upgrade_installed_packages {
       return $?
 }
 
-# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
-function configure_package_manager {
+function configure_package_manager_pip {
+    if [ -z "$CP_REPO_PYPI_BASE_URL_DEFAULT" ]; then
+        # Converts regional s3 endpoints
+        # https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/
+        # to regional website s3 endpoints
+        # http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/
+        _WEBSITE_DISTRIBUTION_URL="$(echo "$GLOBAL_DISTRIBUTION_URL" \
+            | sed -r 's|^https?://(.*)\.s3\.(.*)\.amazonaws\.com(.*)|http://\1.s3-website.\2.amazonaws.com\3|g')"
+        if [ "$_WEBSITE_DISTRIBUTION_URL" != "$GLOBAL_DISTRIBUTION_URL" ]; then
+            # If the conversion was successful
+            CP_REPO_PYPI_BASE_URL_DEFAULT="${_WEBSITE_DISTRIBUTION_URL}tools/python/pypi/simple"
+        else
+            CP_REPO_PYPI_BASE_URL_DEFAULT="http://cloud-pipeline-oss-builds.s3-website.us-east-1.amazonaws.com/tools/python/pypi/simple"
+        fi
+    fi
+    if [ -z "$CP_REPO_PYPI_TRUSTED_HOST_DEFAULT" ]; then
+        CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="$(echo "$CP_REPO_PYPI_BASE_URL_DEFAULT" | sed -r 's|^.*://([^/]*)/?.*$|\1|g')"
+    fi
+    export CP_REPO_PYPI_BASE_URL_DEFAULT
+    export CP_REPO_PYPI_TRUSTED_HOST_DEFAULT
+    export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
+    echo "Using pypi repository $CP_REPO_PYPI_BASE_URL_DEFAULT ($CP_REPO_PYPI_TRUSTED_HOST_DEFAULT)..."
+}
+
+function run_pre_common_commands {
+      preference_value="$(get_pipe_preference_low_level "launch.pre.common.commands" "{}")"
+      linux_commands=$(echo "$preference_value" | jq -r '.linux' | grep -v "^null$")
+      if [ -z "$linux_commands" ]; then
+        echo "Additional commands for Linux distribution were not found."
+        return
+      fi
+      os_commands=$(echo "$linux_commands" | jq -r ".$CP_OS" | grep -v "^null$")
+      if [ -z "$os_commands" ]; then
+        echo "Additional commands for $CP_OS were not found."
+        return
+      fi
+      os_ver_commands=$(echo "$os_commands" | jq -r ".[\"$CP_VER\"]" | grep -v "^null$")
+      os_default_commands=$(echo "$os_commands" | jq -r ".default" | grep -v "^null$")
+      if [ -z "$os_ver_commands" ] && [ -z "$os_default_commands" ] ; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      if [ "$os_ver_commands" ] && [ "$os_default_commands" ]; then
+        commands=$( echo "$os_default_commands" "$os_ver_commands" | jq -s '.[0] * .[1]' | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      elif [ "$os_ver_commands" ]; then
+        commands=$( echo "$os_ver_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      else
+        commands=$( echo "$os_default_commands" | jq -r '.[] | .[] | select(length > 0) | @sh' )
+      fi
+      declare -a command_list="($commands)"
+      if [ ${#command_list[@]} -eq 0 ]; then
+        echo "Additional commands for $CP_OS:$CP_VER were not found."
+        return
+      fi
+      echo "${#command_list[@]} additional commands were found for $CP_OS:$CP_VER"
+      SUCCESS_COMMANDS_NUM=0
+      for command in "${command_list[@]}"; do
+        eval "$command"
+        PRE_COMMAND_RESULT=$?
+        if [ "$PRE_COMMAND_RESULT" -ne 0 ]; then
+          echo "[WARN] '$command' command done with exit code $PRE_COMMAND_RESULT, review any issues above."
+        else
+          SUCCESS_COMMANDS_NUM=$((SUCCESS_COMMANDS_NUM+1))
+        fi
+      done
+      echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
+}
+
+# This function define the distribution name and version
+function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
+      CP_OS_FAMILY=
       CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
@@ -362,9 +460,28 @@ function configure_package_manager {
             CP_VER=$(uname -r)
       fi
 
-      export CP_OS
-      export CP_VER
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn | rhel)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
 
+      export CP_OS
+      export CP_OS_FAMILY
+      export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+
+
+}
+
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -379,10 +496,13 @@ function configure_package_manager {
       CP_REPO_RETRY_COUNT=${CP_REPO_RETRY_COUNT:-3}
       if [ "${CP_REPO_ENABLED,,}" == 'true' ]; then
             # System package manager setup
-            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos}"
+            local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/yum.repos.d/cuda.repo
+
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
 
@@ -408,25 +528,42 @@ function configure_package_manager {
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
-                        apt-get update -qq -y --allow-insecure-repositories && \
-                        apt-get install curl apt-transport-https gnupg -y -qq && \
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/apt/sources.list.d/cuda.list \
+                              /etc/apt/sources.list.d/nvidia-ml.list \
+                              /etc/apt/sources.list.d/tensorRT.list
+
+                        # todo: Remove these dependencies because their installation requires internet access
+                        if ! check_installed curl || ! check_installed gpg; then
+                            echo "Installing additional dependencies using default apt repos..."
+                            apt-get update -qq -y --allow-insecure-repositories && \
+                            apt-get install curl apt-transport-https gnupg -y -qq
+                        fi
+
+                        if check_cp_cap CP_CAP_OFFLINE; then
+                            echo "Disabling default apt repos..."
+                            echo "" > /etc/apt/sources.list
+                            rm -f /etc/apt/sources.list.d/*
+                        fi
+
+                        echo "Enabling Cloud Pipeline apt repo..."
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
                         curl -sk "${CP_REPO_BASE_URL_DEFAULT}/cloud-pipeline.key" | apt-key add - && \
                         sed -i "1 i\deb ${CP_REPO_BASE_URL} stable main" /etc/apt/sources.list && \
                         apt-get update -qq -y --allow-insecure-repositories
-                        
+
                         if [ $? -ne 0 ]; then
-                              echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
-                              sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                            echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the apt, removing the repo"
+                            sed -i  "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list
+                        else
+                            echo "Using apt repo $CP_REPO_BASE_URL..."
+                            break
                         fi
                   done
             fi
-            # Pip setup
-            local CP_REPO_PYPI_BASE_URL_DEFAULT="${CP_REPO_PYPI_BASE_URL_DEFAULT:-http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple}"
-            local CP_REPO_PYPI_TRUSTED_HOST_DEFAULT="${CP_REPO_PYPI_TRUSTED_HOST_DEFAULT:-cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com}"
-            export CP_PIP_EXTRA_ARGS="${CP_PIP_EXTRA_ARGS} --index-url $CP_REPO_PYPI_BASE_URL_DEFAULT --trusted-host $CP_REPO_PYPI_TRUSTED_HOST_DEFAULT"
-      fi
 
+            configure_package_manager_pip
+      fi
 }
 
 # Generates apt-get or yum command to install specified list of packages (second argument)
@@ -444,8 +581,8 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
       if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         [ "$CP_OS" == "centos" ] && \
-         [ "$CP_VER" == "8" ]; then
+         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
+         { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
@@ -464,10 +601,10 @@ function get_install_command_by_current_distr {
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
             check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  # Centos 8 throws "No available modular metadata for modular package" if all the other repos are disabled
+                  # Centos and rocky 8+ throws "No available modular metadata for modular package" if all the other repos are disabled
                   if [ "$CP_REPO_ENABLED" == "true" ] && \
                      [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
-                     [ "$CP_VER" != "8" ]; then
+                     [ "$CP_VER" == "7" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
@@ -568,7 +705,7 @@ function install_private_packages {
       #    Delete an existing installation, if it's a paused run
       #    We can probably keep it, but it will fail if we need to update a resumed run
       rm -rf "${_install_path}/conda"
-      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz}"
+      CP_CONDA_DISTRO_URL="${CP_CONDA_DISTRO_URL:-"${GLOBAL_DISTRIBUTION_URL}tools/python/2/Miniconda2-4.7.12.1-Linux-x86_64.tar.gz"}"
 
       # Download the distro from a public bucket
       echo "Getting python distro from $CP_CONDA_DISTRO_URL"
@@ -592,16 +729,21 @@ function list_storage_mounts() {
 function update_user_limits() {
     local _MAX_NOPEN_LIMIT=$1
     local _MAX_PROCS_LIMIT=$2
-    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT"
+    local _MAX_CORE_LIMIT=$3
+    ulimit -n "$_MAX_NOPEN_LIMIT" -u "$_MAX_PROCS_LIMIT" -c "$_MAX_CORE_LIMIT"
 cat <<EOT >> /etc/security/limits.conf
 * soft nofile $_MAX_NOPEN_LIMIT
 * hard nofile $_MAX_NOPEN_LIMIT
 * soft nproc $_MAX_PROCS_LIMIT
 * hard nproc $_MAX_PROCS_LIMIT
+* soft core $_MAX_CORE_LIMIT
+* hard core $_MAX_CORE_LIMIT
 root soft nofile $_MAX_NOPEN_LIMIT
 root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
+root soft core $_MAX_CORE_LIMIT
+root hard core $_MAX_CORE_LIMIT
 EOT
     if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
         # On centos this configuration file contains some default nproc limits
@@ -624,6 +766,194 @@ function add_self_to_no_proxy() {
       # "Embedded" Kube services domain is added to "no_proxy" as well
       local _kube_no_proxy="${CP_CAP_KUBE_DOMAIN:-.cp}"
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
+}
+
+function configure_owner_account() {
+    OWNER_ID="$(resolve_owner_id)"
+    export OWNER_ID
+
+    if [ "$OWNER" ]; then
+        # Crop OWNER account by @ if present
+        IFS='@' read -r -a owner_info <<< "$OWNER"
+        export OWNER_CP_ACCOUNT="$OWNER"
+        export OWNER="${owner_info[0]}"
+        export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
+        export OWNER_GROUPS="${OWNER_GROUPS:-root}"
+        if check_cp_cap "CP_CAP_UID_SEED_DISABLED"; then
+            if check_user_created "$OWNER"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "" "" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
+        else
+            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+            export UID_SEED
+            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            export OWNER_GID="$OWNER_UID"
+            export OWNER_GROUPS_EXTRA=$(create_user_extra_groups)
+            if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                # Check that a user is a member of all the groups. This is useful for the "committed" images
+                add_user_to_groups "$OWNER" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS,$OWNER_GROUPS_EXTRA"
+                return "$?"
+            fi
+        fi
+    else
+        echo "OWNER is not set - skipping owner account configuration"
+        return 1
+    fi
+}
+
+function get_pipe_preference_low_level() {
+    # Returns Cloud Pipeline preference value similarly to get_pipe_preference
+    # but doesn't require pipe commons to be installed. Therefore can be used
+    # safely anywhere in launch.sh.
+    local _preference="$1"
+    local _default_value="$2"
+
+    _value="$(curl -X GET \
+                   --insecure \
+                   -s \
+                   --max-time 30 \
+                   --header "Accept: application/json" \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/$_preference" \
+        | jq -r '.payload.value // empty')"
+
+    if [ "$?" == "0" ] && [ "$_value" ]; then
+        echo "$_value"
+    else
+        echo "$_default_value"
+    fi
+}
+
+function get_owner_info () {
+      curl -X GET \
+            --insecure \
+            -s \
+            --max-time 30 \
+            --header "Accept: application/json" \
+            --header "Authorization: Bearer $API_TOKEN" \
+            "$API/whoami"
+}
+
+function resolve_owner_id() {
+    # Returns current cloud pipeline user id
+    get_owner_info | jq -r '.payload.id // 0'
+}
+
+function check_user_created() {
+    local _user_name="$1"
+    local _user_uid="$2"
+    local _user_gid="$3"
+
+    if id "$OWNER" >/dev/null 2>&1; then
+        _existing_user_uid="$(id "$_user_name" -u)"
+        _existing_user_gid="$(id "$_user_name" -g)"
+        echo "User $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) already exists"
+        if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
+            || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
+            echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
+        fi
+        return 0
+    else
+        return 1
+    fi
+}
+
+function create_user_extra_groups() {
+      if ! check_installed "groupadd" && ! check_installed "addgroup"; then
+            return
+      fi
+
+      _gid_seed="$(get_pipe_preference_low_level "launch.gid.seed" "${CP_CAP_GID_SEED:-90000}")"
+      _groups_added=""
+      _user_groups=$(get_owner_info | jq -r '.payload.roles[] | (.id | tostring) + "," + .name')
+      while IFS=, read -r group_id group_name; do
+            real_group_id=$(( _gid_seed + group_id ))
+            _group_create_result=1
+            if ! getent group $real_group_id &> /dev/null; then
+                  if check_installed "groupadd"; then
+                        groupadd "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  elif check_installed "addgroup"; then
+                        addgroup "$group_name" -g "$real_group_id" &> /dev/null
+                        _group_create_result=$?
+                  fi
+            else
+                  _group_create_result=0
+            fi
+            if [ $_group_create_result -eq 0 ]; then
+                  _groups_added="$_groups_added,$group_name"
+            fi
+      done <<< "$_user_groups"
+      echo "$_groups_added" | sed 's/,//'
+}
+
+function add_user_to_groups() {
+    local _user_name="$1"
+    local _user_groups="$2"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
+
+    echo "Adding user $_user_name to the groups: $_user_groups"
+    if check_installed "usermod"; then
+        IFS=',' read -r -a _user_groups_list <<< "$_user_groups"
+        for _user_group in "${_user_groups[@]}"; do
+            usermod -a -G "$_user_group" $_user_name
+        done
+    else
+        echo "Cannot add user $_user_name to any groups: usermod is not installed"
+        return 1
+    fi
+}
+
+function create_user() {
+    local _user_name="$1"
+    local _user_pass="$2"
+    local _user_uid="$3"
+    local _user_gid="$4"
+    local _user_home="$5"
+    local _user_groups="$6"
+
+    # Trim last comma if any
+    _user_groups=$(echo "$_user_groups" | sed 's/,*$//')
+
+    echo "Creating user $_user_name..."
+    if [ "$_user_uid" ] && [ "$_user_gid" ]; then
+        if check_installed "useradd" && check_installed "groupadd"; then
+            groupadd "$_user_name" -g "$_user_gid"
+            useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser" && check_installed "addgroup"; then
+            addgroup "$_user_name" -g "$_user_gid"
+            adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd/groupadd and adduser/addgroup commands are not installed"
+            return 1
+        fi
+    else
+        if check_installed "useradd"; then
+            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser"; then
+            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd and adduser commands are not installed"
+            return 1
+        fi
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Cannot create user $_user_name: creation command has failed"
+        return 1
+    fi
+    echo "$_user_name:$_user_pass" | chpasswd
+    _existing_user_uid="$(id "$_user_name" -u)"
+    _existing_user_gid="$(id "$_user_name" -g)"
+    echo "User ${_user_name} (uid: $_existing_user_uid, gid: $_existing_user_gid) has been created"
+    return 0
 }
 
 function configureHyperThreading() {
@@ -656,6 +986,147 @@ function configureHyperThreading() {
     fi
 }
 
+function self_terminate_on_cleanup_timeout() {
+      local _min_terminate_timeout_min=1
+      if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
+            return 0
+      fi
+      if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
+            pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
+            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
+      fi
+
+      local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
+      if [ -z "$_node_name" ]; then
+            pipe_log_fail "Cannot get node name for a current run" "CleanupEnvironment"
+            return 1
+      fi
+
+      pipe_log_info "Will wait for ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min to let the run stop normally. Otherwise it will be terminated." "CleanupEnvironment"
+
+      sleep $(( $CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN * 60 ))
+
+      local _run_status_after_timeout=$(echo $(pipe view-runs $RUN_ID | grep Status) | cut -d' ' -f2)
+      if [ "$_run_status_after_timeout" == "RUNNING" ]; then
+            pipe_log_success "Run #${RUN_ID} is still running after ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min. Terminating a node." "CleanupEnvironment"
+            pipe terminate-node -y "$_node_name"
+            return 0
+      fi
+}
+
+function exit_stage() {
+    local _EXIT_CODE="$1"
+    local _RECOVERY_MODE="$2"
+
+    if [ "$_RECOVERY_MODE" == "continue" ]; then
+        tag_run "$CP_CAP_RECOVERY_TAG" "true"
+        echo "Recovering from $_EXIT_CODE using continue recovery mode..."
+        return "$_EXIT_CODE"
+    fi
+    if [ "$_RECOVERY_MODE" == "sleep" ]; then
+        tag_run "$CP_CAP_RECOVERY_TAG" "true"
+        echo "Recovering from $_EXIT_CODE using sleep recovery mode..."
+        sleep 10000d
+    fi
+
+    echo "Exiting with $_EXIT_CODE..."
+    exit "$_EXIT_CODE"
+}
+
+function exit_init {
+    local _EXIT_CODE="$1"
+    exit_stage "$_EXIT_CODE" "$CP_CAP_RECOVERY_MODE_INIT"
+}
+
+function exit_exec {
+    local _EXIT_CODE="$1"
+    exit_stage "$_EXIT_CODE" "$CP_CAP_RECOVERY_MODE_EXEC"
+}
+
+function exit_term {
+    local _EXIT_CODE="$1"
+    exit_stage "$_EXIT_CODE" "$CP_CAP_RECOVERY_MODE_TERM"
+}
+
+function call_api() {
+    local _HTTP_METHOD="$1"
+    local _API_METHOD="$2"
+    local _HTTP_BODY="$3"
+
+    echo "Calling $API$_API_METHOD..." >> "$LOG_DIR/launch.sh.call_api.log"
+    if [[ "$_HTTP_BODY" ]]; then
+        curl -f -s -k --max-time 30 \
+            -X "$_HTTP_METHOD" \
+            --header 'Accept: application/json' \
+            --header 'Authorization: Bearer '"$API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            --data "$_HTTP_BODY" \
+            "$API$_API_METHOD" \
+            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+    else
+        curl -f -s -k --max-time 30 \
+            -X "$_HTTP_METHOD" \
+            --header 'Accept: application/json' \
+            --header 'Authorization: Bearer '"$API_TOKEN" \
+            --header 'Content-Type: application/json' \
+            "$API$_API_METHOD" \
+            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+    fi
+}
+
+function tag_run() {
+    local _KEY="$1"
+    local _VALUE="$2"
+    call_api "POST" "run/$RUN_ID/tag" '{
+        "tags": {
+            "'"$_KEY"'": "'"$_VALUE"'"
+        }
+    }'
+}
+
+function is_jq_null() {
+  [ -z "$1" ] || [ "$1" == "null" ]
+}
+
+function jwt_b64_padding() {
+  local len=$(( ${#1} % 4 ))
+  local padded_b64=''
+  if [ ${len} = 2 ]; then
+    padded_b64="${1}=="
+  elif [ ${len} = 3 ]; then
+    padded_b64="${1}="
+  else
+    padded_b64="${1}"
+  fi
+  echo -n "$padded_b64"
+}
+
+function jwt_get_attribute() {
+  if [ -z "$API_TOKEN" ]; then
+    return 1
+  fi
+
+  local _jwt_attribute="$1"
+
+  IFS='.' read -r _jwt_header _jwt_payload _jwt_signature <<< "$API_TOKEN"
+  
+  _jwt_payload=$(jwt_b64_padding "${_jwt_payload}" | tr -- '-_' '+/')
+  _jwt_payload=$(echo "${_jwt_payload}" | base64 -d)
+  _jwt_payload=$(echo "$_jwt_payload" | jq -r ".${_jwt_attribute}")
+  if is_jq_null "$_jwt_payload"; then
+    return 1
+  else
+    echo "$_jwt_payload"
+  fi
+}
+
+function jwt_get_user_groups() {
+  local _jwt_groups=$(jwt_get_attribute "groups" | jq '. | join(" ")' -r)
+  local _jwt_roles=$(jwt_get_attribute "roles" | jq '. | join(" ")' -r)
+
+  echo ${_jwt_groups} ${_jwt_roles}
+}
+
 ######################################################
 
 
@@ -680,6 +1151,19 @@ else
     SINGLE_RUN=false;
 fi
 
+if check_cp_cap CP_CAP_RECOVERY || check_cp_cap RESUMED_RUN ; then
+    export CP_CAP_RECOVERY_MODE_INIT="${CP_CAP_RECOVERY_MODE_INIT:-continue}"
+    export CP_CAP_RECOVERY_MODE_EXEC="${CP_CAP_RECOVERY_MODE_EXEC:-sleep}"
+else
+    export CP_CAP_RECOVERY_MODE_INIT="${CP_CAP_RECOVERY_MODE_INIT:-exit}"
+    export CP_CAP_RECOVERY_MODE_EXEC="${CP_CAP_RECOVERY_MODE_EXEC:-continue}"
+fi
+export CP_CAP_RECOVERY_MODE_TERM="${CP_CAP_RECOVERY_MODE_TERM:-exit}"
+export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
+
+if check_cp_cap CP_SENSITIVE_RUN; then
+    export CP_CAP_OFFLINE="true"
+fi
 
 ######################################################
 # Configure Hyperthreading
@@ -722,6 +1206,35 @@ if [ -f /bin/bash ]; then
     ln -sf /bin/bash /bin/sh
 fi
 
+export GLOBAL_DISTRIBUTION_URL="${GLOBAL_DISTRIBUTION_URL:-"https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"}"
+echo "Using global distribution $GLOBAL_DISTRIBUTION_URL..."
+
+# Check jq is installed
+if ! jq --version > /dev/null 2>&1; then
+    echo "Installing jq"
+    # check curl or wget commands
+    _JQ_INSTALL_RESULT=
+    if check_installed "wget"; then
+      wget -q --no-check-certificate "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    elif check_installed "curl"; then
+      curl -s -k "${GLOBAL_DISTRIBUTION_URL}tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
+      _JQ_INSTALL_RESULT=$?
+    else
+      echo "[ERROR] 'wget' or 'curl' commands not found to install 'jq'."
+    fi
+    if [ "$_JQ_INSTALL_RESULT" -ne 0 ]; then
+      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
+    fi
+    chmod +x /usr/bin/jq
+fi
+
+# Define the name and version of the distribution
+define_distro_name_and_version
+
+# Invoke any additional commands for the distribution
+run_pre_common_commands
+
 # Perform any distro/version specific package manage configuration
 configure_package_manager
 
@@ -734,7 +1247,7 @@ then
       if [ "$_CP_UPGRADE_RESULT" -ne 0 ]
       then
             echo "[WARN] Packages upgrade done with exit code $_CP_UPGRADE_RESULT, review any issues above"
-            exit "$_DOWNLOAD_RESULT"
+            exit_init "$_DOWNLOAD_RESULT"
       else
             echo "Packages upgrade done"
       fi
@@ -776,23 +1289,13 @@ if [ ! -f "$CP_PYTHON2_PATH" ]; then
             if [ -z "$CP_PYTHON2_PATH" ]
             then
                   echo "[ERROR] python2 environment not found, exiting."
-                  exit 1
+                  exit_init 1
             fi
       fi
 fi
 echo "Local python interpreter found: $CP_PYTHON2_PATH"
 
-check_python_module_installed "pip --version" || { curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | $CP_PYTHON2_PATH; };
-
-# Check jq is installed
-if ! jq --version > /dev/null 2>&1; then
-    echo "Installing jq"
-    wget -q "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -O /usr/bin/jq
-    if [ $? -ne 0 ]; then
-      echo "[ERROR] Unable to install 'jq', downstream setup may fail"
-    fi
-    chmod +x /usr/bin/jq
-fi
+check_python_module_installed "pip --version" || { curl -s "${GLOBAL_DISTRIBUTION_URL}tools/pip/2.7/get-pip.py" | $CP_PYTHON2_PATH; };
 
 ######################################################
 # Configure the dependencies if needed
@@ -867,6 +1370,14 @@ if [ -z "$COMMON_REPO_DIR" ] ;
 fi
 echo "Creating default common code directory at ${COMMON_REPO_DIR}"
 create_sys_dir $COMMON_REPO_DIR
+
+export COMMON_REPO_DIR_MUTUAL_LOC="${COMMON_REPO_DIR_MUTUAL_LOC:-/usr/local/CommonRepo}"
+echo "Linking CommonRepo dir '$COMMON_REPO_DIR' to mutual location '$COMMON_REPO_DIR_MUTUAL_LOC'"
+
+if [ -L $COMMON_REPO_DIR_MUTUAL_LOC ]; then
+    unlink $COMMON_REPO_DIR_MUTUAL_LOC
+fi
+[ -d $COMMON_REPO_DIR ] && ln -s -f $COMMON_REPO_DIR $COMMON_REPO_DIR_MUTUAL_LOC || echo "$COMMON_REPO_DIR not found, and will not be linked to $COMMON_REPO_DIR_MUTUAL_LOC"
 
 # Setup log directory
 if [ -z "$LOG_DIR" ] ;
@@ -973,6 +1484,12 @@ if [ -z "$MAX_NOPEN_LIMIT" ] ;
         echo "MAX_NOPEN_LIMIT is not defined, setting to ${MAX_NOPEN_LIMIT}"
 fi
 
+if [ -z "$MAX_CORE_LIMIT" ] ;
+    then
+        export MAX_CORE_LIMIT="unlimited"
+        echo "MAX_CORE_LIMIT is not defined, setting to ${MAX_CORE_LIMIT}"
+fi
+
 if [ -z "$CP_CAP_ENV_UMASK" ] ;
     then
         export CP_CAP_ENV_UMASK="0002"
@@ -981,12 +1498,19 @@ fi
 
 if [ -z "$CP_CAP_SUDO_ENABLE" ] ;
     then
-        export CP_CAP_SUDO_ENABLE="true"
-        echo "CP_CAP_SUDO_ENABLE is not defined, setting to ${CP_CAP_SUDO_ENABLE}"
+        _user_groups=$(jwt_get_user_groups)
+        if [[ " ${_user_groups} " =~ " ROLE_ADMIN " ]]; then
+            export CP_CAP_SUDO_ENABLE="true"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\" as the user is a member of ROLE_ADMIN"
+        else
+            _default_root_user_enabled=$(get_pipe_preference_low_level "system.ssh.default.root.user.enabled" "true")
+            export CP_CAP_SUDO_ENABLE="$_default_root_user_enabled"
+            echo "CP_CAP_SUDO_ENABLE is not defined, setting to \"${CP_CAP_SUDO_ENABLE}\""
+        fi
 fi
 
 # Setup max open files and max processes limits for a current session and all ssh sessions, as default limit is 1024
-update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT
+update_user_limits $MAX_NOPEN_LIMIT $MAX_PROCS_LIMIT $MAX_CORE_LIMIT
 
 # default 0002 - will result into 775 (dir) and 664 (file) permissions
 _CP_ENV_UMASK="umask ${CP_CAP_ENV_UMASK:-0002}"
@@ -1015,35 +1539,9 @@ echo
 echo Configure owner account
 echo "-"
 ######################################################
-if [ "$OWNER" ]
-then
 
-      # Crop OWNER account by @ if present
-	IFS='@' read -r -a owner_info <<< "$OWNER"
-	export OWNER="${owner_info[0]}"
-	export OWNER_HOME="/home/$OWNER"
-
-      export _OWNER_CONFIGURED=1
-
-      # Create OWNER account if not exists
-	if id "$OWNER" >/dev/null 2>&1
-	then
-		echo "User ${OWNER} already exists"
-	else
-            if check_installed "useradd"; then
-                  useradd -s "/bin/bash" "$OWNER" -G root -d $OWNER_HOME
-            elif check_installed "adduser"; then
-                  adduser -s "/bin/bash" $OWNER -d $OWNER_HOME -D -G root
-            else
-                  echo "Cannot add user $OWNER. useradd and adduser commands not installed"
-                  export _OWNER_CONFIGURED=0
-            fi
-		echo "$OWNER:$OWNER" | chpasswd
-	fi
-else
-	echo "OWNER is not set - skipping owner account configuration"
-fi
-
+configure_owner_account
+export _OWNER_CONFIGURED="$?"
 
 echo "------"
 echo
@@ -1055,17 +1553,15 @@ echo Configure sudo
 echo "-"
 ######################################################
 
-if check_cp_cap CP_CAP_SUDO_ENABLE
-then
-  SUDO_INSTALL_COMMAND=
-  get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
-  if [ -z "$SUDO_INSTALL_COMMAND" ] ;
-    then
+if check_cp_cap CP_CAP_SUDO_ENABLE; then
+    SUDO_INSTALL_COMMAND=
+    get_install_command_by_current_distr SUDO_INSTALL_COMMAND "sudo"
+    if [ -z "$SUDO_INSTALL_COMMAND" ]; then
         echo "Unable to setup sudo, package manager not found (apt-get/yum/apk)"
     else
         # Install sudo
         eval "$SUDO_INSTALL_COMMAND"
-  fi
+    fi
 fi
 
 ######################################################
@@ -1149,7 +1645,7 @@ CP_PIPE_COMMON_ENABLED=${CP_PIPE_COMMON_ENABLED:-"true"}
 if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
       if [ -z "$DISTRIBUTION_URL" ]; then
             echo "[ERROR] Distribution URL is not defined. Exiting"
-            exit 1
+            exit_init 1
       else
             cd $COMMON_REPO_DIR
             # Fixed setuptools version to be compatible with the pipe-common package
@@ -1159,7 +1655,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$_DOWNLOAD_RESULT" -ne 0 ];
             then
                   echo "[ERROR] Main repository download failed. Exiting"
-                  exit "$_DOWNLOAD_RESULT"
+                  exit_init "$_DOWNLOAD_RESULT"
             fi
             _INSTALL_RESULT=0
             tar xf pipe-common.tar.gz
@@ -1168,15 +1664,21 @@ if [ "$CP_PIPE_COMMON_ENABLED" == "true" ]; then
             if [ "$_INSTALL_RESULT" -ne 0 ];
             then
                   echo "[ERROR] Main repository install failed. Exiting"
-                  exit "$_INSTALL_RESULT"
+                  exit_init "$_INSTALL_RESULT"
             fi
             cd -
       fi
 fi
 # Init path for shell scripts from common repository
 if [ -d $COMMON_REPO_DIR/shell ]; then
-      chmod +x $COMMON_REPO_DIR/shell/*
-      export PATH=$PATH:$COMMON_REPO_DIR/shell
+    chmod +x $COMMON_REPO_DIR/shell/*
+    export PATH=$PATH:$COMMON_REPO_DIR/shell
+    if check_cp_cap CP_CAP_SUDO_ENABLE; then
+        # Add common repo scripts to sudo PATH
+        _SUDO_PATH="$(sudo printenv | grep -e "^PATH=")"
+        _SUDO_PATH="${_SUDO_PATH#PATH=}"
+        echo "Defaults        secure_path=\"$_SUDO_PATH:$COMMON_REPO_DIR/shell\"" >> /etc/sudoers.d/cpsudoers
+    fi
 fi
 
 # Fix /etc/hosts if requested
@@ -1203,7 +1705,7 @@ if [ "$CP_PIPE_CLI_ENABLED" == "true" ]; then
 
             if [ $? -ne 0 ]; then
                   echo "[ERROR] 'pipe' CLI download failed. Exiting"
-                  exit 1
+                  exit_init 1
             fi
 
             # Clean any known locations, where previous version of the pipe might reside (E.g. committed by the user)
@@ -1243,7 +1745,7 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       download_file "${DISTRIBUTION_URL}${CP_FSBROWSER_NAME}"
       if [ $? -ne 0 ]; then
             echo "[ERROR] Unable to install FSBrowser"
-            exit 1
+            exit_init 1
       fi
 
       rm -f /bin/fsbrowser
@@ -1267,6 +1769,66 @@ elif [ "$CP_FSBROWSER_ENABLED" == "true" ]; then
       echo
 fi
 
+
+# Install gpustat
+if [ "$CP_GPUSTAT_ENABLED" != "false" ] && check_installed "nvidia-smi"; then
+      echo "Setup gpustat"
+      echo "-"
+
+      echo "Installing gpustat"
+      CP_GPUSTAT_NAME=${CP_GPUSTAT_NAME:-gpustat.tar.gz}
+
+      download_file "${DISTRIBUTION_URL}${CP_GPUSTAT_NAME}"
+      if [ $? -ne 0 ]; then
+            echo "[ERROR] Unable to download gpustat"
+            exit_init 1
+      fi
+
+      CP_GPUSTAT_INSTALL_DIR=${CP_GPUSTAT_INSTALL_DIR:-${CP_USR_BIN}/gpustat-dist}
+      rm -rf $CP_GPUSTAT_INSTALL_DIR
+      rm -rf /tmp/gpustat
+      tar -xf "$CP_GPUSTAT_NAME" -C /tmp
+      rm -f "$CP_GPUSTAT_NAME"
+      mv /tmp/gpustat $CP_GPUSTAT_INSTALL_DIR
+
+      rm -f /usr/bin/gpustat
+      rm -f /usr/bin/gpustat-web
+      CP_GPUSTAT_BIN=$CP_GPUSTAT_INSTALL_DIR/cli/cli
+      if [ -f "$CP_GPUSTAT_BIN" ]; then
+            ln -sf $CP_GPUSTAT_BIN $CP_USR_BIN/gpustat
+            ln -sf $CP_GPUSTAT_BIN /usr/bin/gpustat
+      fi
+      CP_GPUSTAT_WEB_BIN=$CP_GPUSTAT_INSTALL_DIR/app/app
+      if [ -f "$CP_GPUSTAT_WEB_BIN" ]; then
+            ln -sf $CP_GPUSTAT_WEB_BIN $CP_USR_BIN/gpustat-web
+            ln -sf $CP_GPUSTAT_WEB_BIN /usr/bin/gpustat-web
+      fi
+      echo "gpustat installation done" 
+
+      if [ -z "$cluster_role" ] || [ "$cluster_role" = "master" ]; then
+            echo "Starting gpustat server as a background thread. See /var/log/gpustat.log"
+            nohup gpustat_setup $CP_GPUSTAT_INSTALL_DIR > /var/log/gpustat.log 2>&1 &
+      else
+            echo "Will not run the gpustat server for a non-master node"
+      fi
+      echo "------"
+      echo
+fi
+
+######################################################
+echo "Setting up Gitlab credentials"
+echo "-"
+######################################################
+set_git_credentials
+
+_GIT_CREDS_RESULT=$?
+
+if [ ${_GIT_CREDS_RESULT} -ne 0 ];
+then
+    echo "Failed to get user's Gitlab credentials"
+fi
+echo "------"
+
 # check whether we shall get code from repository before executing a command or not
 if [ -z "$GIT_REPO" ] ;
 then
@@ -1281,15 +1843,7 @@ else
       if [ "$_CLONE_RESULT" -ne 0 ];
       then
             echo "[ERROR] Pipeline repository clone failed. Exiting"
-            exit "$_CLONE_RESULT"
-      fi
-      cd $SCRIPTS_DIR
-
-      if [ -z "$BRANCH" ]
-      then
-            git -c http.sslVerify=false checkout $REPO_REVISION -q
-      else
-            git -c http.sslVerify=false checkout -b $BRANCH $REPO_REVISION -q
+            exit_init "$_CLONE_RESULT"
       fi
       cd -
 fi
@@ -1358,7 +1912,11 @@ export CLOUD_PIPELINE_CLUSTER_CORES=$(($CLOUD_PIPELINE_NODE_CORES * $TOTAL_NODES
 
 # Check if this is a cluster master run 
 _SETUP_RESULT=0
-if [ "$cluster_role" = "master" ] && ([ ! -z "$node_count" ] && (( "$node_count" > 0 )) || [ "$CP_CAP_AUTOSCALE" = "true" ]);
+if [ "$cluster_role" = "master" ] \
+      && ([ ! -z "$node_count" ] \
+            && (( "$node_count" > 0 )) \
+            || [ "$CP_CAP_AUTOSCALE" = "true" ] \
+            || [ "$CP_CAP_FORCE_MASTER_FS_SETUP" = "true" ]);
 then
     setup_nfs_if_required
     mount_nfs_if_required "$RUN_ID"
@@ -1389,7 +1947,7 @@ fi
 if [ "$_SETUP_RESULT" -ne 0 ];
 then
     echo "[ERROR] Cluster setup failed. Exiting"
-    exit "$_SETUP_RESULT"
+    exit_init "$_SETUP_RESULT"
 fi
 
 if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
@@ -1398,9 +1956,9 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
     ssh_fix_permissions /home/${OWNER}/.ssh
-    echo "Passworldess SSH for ${OWNER} is configured"
+    echo "Passwordless SSH for ${OWNER} is configured"
 else
-    echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
+    echo "[ERROR] Failed to configure passwordless SSH for \"${OWNER}\""
 fi
 # Double check that root's SSH permissions are correct
 ssh_fix_permissions /root/.ssh
@@ -1409,6 +1967,16 @@ echo "------"
 echo
 ######################################################
 
+
+######################################################
+echo "Configure custom mail client if requested"
+echo "-"
+######################################################
+
+if check_cp_cap CP_CAP_MAIL; then
+    pipe_mail_enabler
+fi
+######################################################
 
 
 ######################################################
@@ -1465,7 +2033,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
 
             if [ $? -ne 0 ]; then
                   echo "Failed to upload input data"
-                  exit 1
+                  exit_init 1
             fi
             echo
 
@@ -1481,7 +2049,7 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
                   if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE" == "true" ]; then
                         echo "--> It is requested to continue running on config files based localization failure"
                   else
-                        exit 1
+                        exit_init 1
                   fi
             fi
             echo
@@ -1492,19 +2060,6 @@ echo
 ######################################################
 
 
-######################################################
-echo "Setting up Gitlab credentials"
-echo "-"
-######################################################
-set_git_credentials
-
-_GIT_CREDS_RESULT=$?
-
-if [ ${_GIT_CREDS_RESULT} -ne 0 ];
-then
-    echo "Failed to get user's Gitlab credentials"
-fi
-echo "------"
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
@@ -1554,6 +2109,7 @@ do
             [[ "$var" == "KUBERNETES_"* ]] || \
             [[ "$var" == "EDGE_SERVICE_"* ]] || \
             [[ "$var" == "HOME" ]] || \
+            [[ "$var" == "PWD" ]] || \
             [[ "$var" == "AWSACCESSKEYID" ]] || \
             [[ "$var" == "AWSSECRETACCESSKEY" ]] || \
             [[ "$var" == "CP_ACCOUNT_ID_"* ]] || \
@@ -1674,7 +2230,7 @@ echo Symlink common locations for OWNER and root
 echo "-"
 ######################################################
 
-if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
+if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -eq 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
       # Just double check the permissions for the OWNER on the OWNER_HOME
@@ -1743,32 +2299,43 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ]; then
-      _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
-      _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
-      _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
-      for i in *; do \
-        [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
-      done); \
-      rm -f /lib/systemd/system/multi-user.target.wants/*;\
-      rm -f /etc/systemd/system/*.wants/*;\
-      rm -f /lib/systemd/system/local-fs.target.wants/*; \
-      rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
-      rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
-      rm -f /lib/systemd/system/basic.target.wants/*;\
-      rm -f /lib/systemd/system/anaconda.target.wants/*;'
+    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
 
-      echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
-      eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
-      echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
-      eval "$_IGNORING_CHROOT_ENV_EXPORTING"
-      eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
-      /usr/lib/systemd/systemd --system &
-      
-      # This directory does not exist by default
-      # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
-      # See: https://serverfault.com/a/925694
-      mkdir /run/systemd/system
+        # Make sure sysctl is available
+        _SYSCTL_INSTALL_COMMAND=
+        get_install_command_by_current_distr _SYSCTL_INSTALL_COMMAND "procps"
+        eval "$_SYSCTL_INSTALL_COMMAND"
+
+        _SYSTEMCTL_STATUS=$(systemctl &> /dev/null; $?)
+        if [ "$_SYSTEMCTL_STATUS" -eq 0 ]; then
+            echo "Systemd already active, skipping installation"
+        else
+            _CONTAINER_DOCKER_ENV_EXPORTING="export container=docker"
+            _IGNORING_CHROOT_ENV_EXPORTING="export SYSTEMD_IGNORE_CHROOT=1"
+            _REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND='(cd /lib/systemd/system/sysinit.target.wants/; \
+            for i in *; do \
+              [ $i == systemd-tmpfiles-setup.service ] || rm -f $i; \
+            done); \
+            rm -f /lib/systemd/system/multi-user.target.wants/*;\
+            rm -f /etc/systemd/system/*.wants/*;\
+            rm -f /lib/systemd/system/local-fs.target.wants/*; \
+            rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+            rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+            rm -f /lib/systemd/system/basic.target.wants/*;\
+            rm -f /lib/systemd/system/anaconda.target.wants/*;'
+
+            echo $_CONTAINER_DOCKER_ENV_EXPORTING >> /etc/cp_env.sh
+            eval "$_CONTAINER_DOCKER_ENV_EXPORTING"
+            echo $_IGNORING_CHROOT_ENV_EXPORTING >> /etc/cp_env.sh
+            eval "$_IGNORING_CHROOT_ENV_EXPORTING"
+            eval "$_REMOVING_SYSTEMD_UNIT_PROBLEM_FILES_COMMAND"
+            /usr/lib/systemd/systemd --system &
+
+            # This directory does not exist by default
+            # If it is missing - systemctl will throw "Failed to get D-Bus connection: Operation not permitted"
+            # See: https://serverfault.com/a/925694
+            mkdir /run/systemd/system
+        fi
 else
     echo "Systemd is not requested, skipping installation"
 fi
@@ -1824,6 +2391,28 @@ fi
 ######################################################
 
 ######################################################
+# Setup "EFA" support
+######################################################
+
+echo "Check if AWS EFA support is needed"
+echo "-"
+if [ "$CP_CAP_EFA_ENABLED" == "true" ]; then
+    echo "EFA support is requested, proceeding with installation..."
+    _LSPCI_INSTALL_COMMAND=
+    get_install_command_by_current_distr _LSPCI_INSTALL_COMMAND "pciutils"
+    eval "$_LSPCI_INSTALL_COMMAND"
+    if [ `lspci | grep -E "EFA|efa|Elastic Fabric Adapter" | wc -l` -gt 0 ]; then
+          efa_setup
+    else
+        echo "AWS EFA device cannot be found, drivers won't be installed"
+    fi
+else
+    echo "EFA support is not requested"
+fi
+
+######################################################
+
+######################################################
 # Setup "Singularity" support
 ######################################################
 
@@ -1852,10 +2441,20 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
-      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
-            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+            if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_RHEL_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_RHEL_URL"
+            fi
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]); then
+            if [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+                  get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+            fi
+            if [ "$CP_CAP_EXTRA_PKG_DEB_URL" ]; then
+                  CP_CAP_EXTRA_PKG_URL="$CP_CAP_EXTRA_PKG_URL $CP_CAP_EXTRA_PKG_DEB_URL"
+            fi
       fi
 
       if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
@@ -1866,6 +2465,38 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
             echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
             eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+
+      if [ "$CP_CAP_EXTRA_PKG_URL" ]; then
+            echo "Installing extra packages from external sources"
+            _old_pwd=$(pwd)
+            cd "$CP_USR_BIN"
+            for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_filename=$(basename "$_pkg")
+                  _pkg_filename_ext="${_pkg_filename##*.}"
+                  if [ -f "$_pkg_filename" ]; then
+                        rm -f "$_pkg_filename"
+                  fi
+                  if ! download_file "$_pkg"; then
+                        echo "[WARN] Failed downloading $_pkg extra package"
+                  else
+                        if [ "$_pkg_filename_ext" == "tgz" ]; then
+                              tar -zxf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "tar" ]; then
+                              tar -xf "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "zip" ]; then
+                              unzip -o "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        elif [ "$_pkg_filename_ext" == "gz" ]; then
+                              chmod +x "$_pkg_filename"
+                              gzip -d -f "$_pkg_filename"
+                              rm -f "$_pkg_filename"
+                        fi
+                  fi
+            done
+            cd "$_old_pwd"
       fi
 else
       echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
@@ -1893,11 +2524,69 @@ fi
 
 ######################################################
 
+######################################################
+# Enable API_TOKEN refresher
+######################################################
+
+echo "Setup API_TOKEN refresher"
+echo "-"
+
+if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
+    echo "API_TOKEN refresh is not requested"
+else
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+fi
+
+######################################################
+
+
+######################################################
+# Enable mount restrictor
+######################################################
+
+echo "Setup mount restrictor"
+echo "-"
+
+if [ "$CP_MOUNT_RESTRICTOR_DISABLED" != "true" ]; then
+      initialise_wrappers "mount" "mount_restrictor" "$CP_USR_BIN"
+fi
+
+######################################################
+
+
+######################################################
+# Custom shells
+######################################################
+
+echo "Setup custom shells"
+echo "-"
+
+if [ "$CP_CAP_SHELL_LIST" ]; then
+      custom_shells_setup "$CP_CAP_SHELL_LIST"
+fi
+
+
+######################################################
+# Custom shells
+######################################################
+
+echo "'Sync to storage' daemon start"
+echo "-"
+
+if [ "$CP_SYNC_TO_STORAGE_ENABLED" == "true" ]; then
+      sync_to_storage start
+fi
+
+
+######################################################
 
 ######################################################
 echo Executing task
 echo "-"
 ######################################################
+
+# If any of those exist - it may prevent users to connect via SSH
+rm -f /{var/run,etc,run}/nologin
 
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
 if [ "$CP_CAP_DELAY_SETUP" != "true" ]; then
@@ -1956,6 +2645,10 @@ else
   CP_EXEC_RESULT=$?
 fi
 
+if [ "$CP_EXEC_RESULT" != "0" ]; then
+    exit_exec "$CP_EXEC_RESULT"
+fi
+
 echo "------"
 echo
 ######################################################
@@ -1988,6 +2681,11 @@ else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
 fi
 
+# It may happen that the shared filesystem may cause a job to "hang" indefinitely
+# even if the script has exited. To address this, we wait a preconfigured amount of minutes
+# and *terminate* an underlying node. So that it won't be reassigned in that bad state
+self_terminate_on_cleanup_timeout &
+
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \
    [ $CP_OUTPUTS_RESULT -ne 0 ]); then
@@ -2013,6 +2711,10 @@ else
     rm -Rf $RUN_DIR
 fi
 
-echo "Exiting with $CP_EXEC_RESULT"
-exit "$CP_EXEC_RESULT"
+if [ "$CP_EXEC_RESULT" != "0" ]; then
+    exit_term "$CP_EXEC_RESULT"
+else
+    echo "Exiting with $CP_EXEC_RESULT..."
+    exit "$CP_EXEC_RESULT"
+fi
 ######################################################

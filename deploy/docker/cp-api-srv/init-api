@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -120,7 +120,7 @@ function sign_and_publish_pipe_win_distribution() {
     unzip -p "$jar_path" BOOT-INF/classes/static/pipe.zip >pipe.zip
     unzip -qq pipe.zip
     rm -f pipe.zip
-    sign_win_executable "pipe/pipe.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
+    sign_win_executable "pipe/pipe-cli.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
     sign_win_executable "pipe/ntlmaps/ntlmaps.exe" "$cert_path" "$cert_pass" "$cert_desc" "$cert_url"
     zip -q -r "$output_dir/pipe.zip" pipe
     rm -rf pipe
@@ -263,6 +263,7 @@ openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
 
 echo "Copying DTS windows bundle to static resources"
 cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
+cp "$CP_API_HOME/data-transfer-service-linux.zip" "$CP_API_SRV_STATIC_DIR"
 
 # Add a deployment specific configuration to the "cloud data" application:
 # - API URL
@@ -294,6 +295,20 @@ if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATI
     echo "Importing static assets from $CP_PREF_API_STATIC_DIRECTORY_EXT to $CP_API_SRV_STATIC_DIR"
     \cp -r $CP_PREF_API_STATIC_DIRECTORY_EXT/* "$CP_API_SRV_STATIC_DIR/"
 fi
+
+# Prepare liveness check for api srv
+if [ -z "${CP_API_JWT_ADMIN}" ]; then
+    CP_API_JWT_ADMIN=$(java  -jar /opt/api/jwt-generator.jar \
+                             --private $CP_API_SRV_CERT_DIR/jwt.key.private \
+                             --expires 94608000 \
+                             --claim user_id=1 \
+                             --claim user_name=$CP_DEFAULT_ADMIN_NAME \
+                             --claim role=ROLE_ADMIN \
+                             --claim group=ADMIN)
+fi
+export CP_API_LIVENESS_JWT_TOKEN=${CP_API_JWT_ADMIN}
+envsubst '$CP_API_LIVENESS_JWT_TOKEN' < /liveness-api-srv-template.sh > /liveness-api-srv.sh
+chmod +x /liveness-api-srv.sh
 
 # Configure logging and launch
 API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"

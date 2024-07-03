@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# 1.15.4
 #############################
 # Kube RPMs download command
 #############################
@@ -77,11 +78,137 @@
 # docker pull k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 && \
 # docker save k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1 -o k8s.gcr.io-cluster-proportional-autoscaler-amd64-1.1.1.tar
 
+# 1.28.2
+#############################
+# Kube RPMs download command
+#############################
+# EL7
+# yum install epel-release -y
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=http://yum.kubernetes.io/repos/kubernetes-el7-x86_64
+# enabled=1
+# gpgcheck=1
+# repo_gpgcheck=1
+# gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#        https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg && \
+# mkdir kube && \
+# cd kube && \
+# yum install --downloadonly \
+#             --downloaddir=/root/kube_dist/other \
+#             kubeadm-1.28.2-0.x86_64 \
+#             kubectl-1.28.2-0.x86_64 \
+#             kubelet-1.28.2-0.x86_64 \
+#             cpp \
+#             gcc \
+#             libgcc \
+#             glibc \
+#             glibc-common \
+#             gettext \
+#             gettext-libs \
+#             iproute \
+#             iptables \
+#             kernel-headers \
+#             libcroco \
+#             libmnl \
+#             libmpc \
+#             libnetfilter_conntrack \
+#             libnfnetlink \
+#             libunistring \
+#             mpfr \
+#             tcp_wrappers-libs && \
+# cd .. && \
+# tar -zcvf kube-1.28.2.tgz kube && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.tgz && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el7.tgz
+
+
+# EL8
+#
+# yum install epel-release -y
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg && \
+# mkdir kube && \
+# yum install --downloadonly \
+#             --downloaddir=$(pwd)/kube \
+#             kubeadm-1.28.2 \
+#             kubectl-1.28.2 \
+#             kubelet-1.28.2 \
+#             cpp \
+#             gcc \
+#             libgcc \
+#             glibc \
+#             glibc-common \
+#             gettext \
+#             gettext-libs \
+#             iproute \
+#             iptables \
+#             kernel-headers \
+#             libcroco \
+#             libmnl \
+#             libmpc \
+#             libnetfilter_conntrack \
+#             libnfnetlink \
+#             libunistring \
+#             mpfr \
+#             tcp_wrappers-libs && \
+# tar -zcvf kube-1.28.2.tgz kube && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el8.tgz
+
+
+##########################################
+# Kube system pods images download command
+##########################################
+# mkdir kube-dockers && \
+# cd kube-dockers && \
+# docker pull registry.k8s.io/kube-proxy:v1.28.2 && \
+# docker save registry.k8s.io/kube-proxy:v1.28.2 -o registry.k8s.io-kube-proxy-v1.28.2.tar && \
+# docker pull registry.k8s.io/kube-apiserver:v1.28.2 && \
+# docker save registry.k8s.io/kube-apiserver:v1.28.2 -o registry.k8s.io-kube-apiserver-v1.28.2.tar && \
+# docker pull registry.k8s.io/kube-controller-manager:v1.28.2 && \
+# docker save registry.k8s.io/kube-controller-manager:v1.28.2 -o registry.k8s.io-kube-controller-manager-v1.28.2.tar && \
+# docker pull registry.k8s.io/kube-scheduler:v1.28.2 && \
+# docker save registry.k8s.io/kube-scheduler:v1.28.2 -o registry.k8s.io-kube-scheduler-v1.28.2.tar && \
+# docker pull registry.k8s.io/etcd:3.5.9-0 && \
+# docker save registry.k8s.io/etcd:3.5.9-0 -o registry.k8s.io-etcd-3.5.9-0.tar && \
+# docker pull registry.k8s.io/coredns/coredns:v1.10.1 && \
+# docker save registry.k8s.io/coredns/coredns:v1.10.1 -o registry.k8s.io-coredns-coredns-1.10.1.tar && \
+# docker pull registry.k8s.io/pause:3.9 && \
+# docker save registry.k8s.io/pause:3.9 -o registry.k8s.io-pause-3.9.tar && \
+# docker pull registry.k8s.io/pause:3.8 && \
+# docker save registry.k8s.io/pause:3.8 -o registry.k8s.io-pause-3.8.tar && \
+# docker pull registry.k8s.io/pause:3.6 && \
+# docker save registry.k8s.io/pause:3.6 -o registry.k8s.io-pause-3.6.tar && \
+# docker pull docker.io/flannel/flannel-cni-plugin:v1.2.0 && \
+# docker save docker.io/flannel/flannel-cni-plugin:v1.2.0 -o docker.io-flannel-flannel-cni-plugin-v1.2.0.tar && \
+# docker pull docker.io/flannel/flannel:v0.23.0 && \
+# docker save docker.io/flannel/flannel:v0.23.0 -o docker.io-flannel-flannel-v0.23.0.tar && \
+# cd .. && \
+# tar -zcvf kube-dockers-1.28.2.tgz kube-dockers && \
+# aws s3 cp kube-dockers-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/docker/kube-dockers-1.28.2.tgz
+
+
 ############################
 # Input parameters
 ############################
 _kube_common_setup_task_name="$1"
 _kube_install_log="$2"
+_kube_version="$3"
+
+if [ -z "$_kube_version" ]; then
+    pipe_log_fail "[ERROR] kube_setup_common: Kubernetes version is not set" $_kube_common_setup_task_name
+    exit 1
+fi
 
 ############################
 # Common functions
@@ -111,39 +238,76 @@ function download_distr() {
 _pkg_mngr=$(which_pkg_manager)
 if [ "$_pkg_mngr" == "yum" ]; then
     _pkg_type="rpm"
+    _pkg_distro=el$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
 else
     pipe_log_fail "[ERROR] Only RPM-based Linux distibutions are supported for the kubernetes installation" "$_kube_common_setup_task_name"
     exit 1
 fi
+export CP_CAP_KUBE_DISTR_PREFIX="${CP_CAP_KUBE_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/kube"}"
+export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/$_pkg_type/kube-${_kube_version}.${_pkg_distro}.tgz}"
+export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/docker/kube-dockers-${_kube_version}.tgz}"
 
-export CP_CAP_KUBE_VERSION="${CP_CAP_KUBE_VERSION:-1.15.4}"
-export CP_CAP_KUBE_DISTR_PREFIX="${CP_CAP_KUBE_DISTR_PREFIX:-https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube}"
-export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/$CP_CAP_KUBE_VERSION/$_pkg_type/kube-$CP_CAP_KUBE_VERSION.tgz}"
-export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/$CP_CAP_KUBE_VERSION/docker/kube-dockers-$CP_CAP_KUBE_VERSION.tgz}"
+_node_gpus_count=$(nvidia-smi -L 2>/dev/null | wc -l)
+_node_gpus_count="${_node_gpus_count:-0}"
 
 pipe_log_info "- Package manager: $_pkg_type\n \
-- Kube version: $CP_CAP_KUBE_VERSION\n \
+- Kube version: $_kube_version\n \
 - Kube packages URL: $CP_CAP_KUBE_PACKAGES_DISTR_URL\n \
-- Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_kube_common_setup_task_name"
+- Kube dockers URL: $CP_CAP_KUBE_SYSTEM_PODS_DISTR\n \
+- GPUs count: $_node_gpus_count" "$_kube_common_setup_task_name"
 
-pipe_log_info "Getting system docker images" "$_kube_common_setup_task_name"
+CP_CAP_DIND_CONTAINERD_LOG="${CP_CAP_DIND_CONTAINERD_LOG:-/var/log/containerd.log}"
+CP_CAP_DIND_CONTAINERD_BIN="${CP_CAP_DIND_CONTAINERD_BIN:-/usr/local/bin/containerd}"
+if [ -f "$CP_CAP_DIND_CONTAINERD_BIN" ]; then
+    pipe_log_info "Starting containerd" "$_kube_common_setup_task_name"
+    cat > /etc/crictl.yaml <<'EOF'
+runtime-endpoint: unix:///run/containerd/containerd.sock
+image-endpoint: unix:///run/containerd/containerd.sock
+debug: true
+EOF
+    _containerd_config_file="/etc/containerd/config.toml"
+    mkdir -p $(dirname "$_containerd_config_file")
+    "$CP_CAP_DIND_CONTAINERD_BIN" config default > "$_containerd_config_file"
+    sed -i 's/SystemdCgroup = true/SystemdCgroup = false/' "$_containerd_config_file"
 
-############################################################
-# Install the kubernetes dockers (API/Scheduler/Network/etc)
-############################################################
-_docker_distr_dir=$(mktemp -d)
-download_distr "$CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_docker_distr_dir" || exit 1
-for _docker_tar in $_docker_distr_dir/kube-dockers/*.tar; do
-    docker load -i $_docker_tar &> $_kube_install_log
-    if [ $? -ne 0 ]; then
-        pipe_log_fail "[ERROR] Cannot load the docker image from the tarball at $_docker_tar" "$_kube_common_setup_task_name"
-        exit 1
+    if (( _node_gpus_count > 0 )); then
+        sed -i 's/default_runtime_name = "runc"/default_runtime_name = "nvidia"/' "$_containerd_config_file"
+        sed -i '/\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes\]/a\
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia]\
+          privileged_without_host_devices = false\
+          runtime_engine = ""\
+          runtime_root = ""\
+          runtime_type = "io.containerd.runc.v2"\
+          [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.nvidia.options]\
+            BinaryName = "/usr/bin/nvidia-container-runtime"' "$_containerd_config_file"
     fi
-    pipe_log_info "$_docker_tar has been loaded" "$_kube_common_setup_task_name"
-done
-rm -rf $_docker_distr_dir
 
-pipe_log_info "All system docker images are loaded" "$_kube_common_setup_task_name"
+    # Configure CRI to work with the private registry
+    _dind_registry_certs_dir="/etc/docker/certs.d"
+    _cri_registry_certs_dir="/etc/containerd/certs.d"
+    if [ -d "$_dind_registry_certs_dir" ]; then
+        mkdir -p "$_cri_registry_certs_dir"
+        \cp -r $_dind_registry_certs_dir/* $_cri_registry_certs_dir/
+        sed -i "s|config_path = \"\"|config_path = \"$_cri_registry_certs_dir\"|" "$_containerd_config_file"
+
+        _cri_registry_list=$(find $_cri_registry_certs_dir -type d)
+        for _cri_registry in $_cri_registry_list; do
+            [ "$_cri_registry" == "$_cri_registry_certs_dir" ] && continue
+            _cri_registry_name=$(basename $_cri_registry)
+            sed -i "/\[plugins.\"io.containerd.grpc.v1.cri\".registry.configs\]/a\
+\        [plugins.\"io.containerd.grpc.v1.cri\".registry.configs.\"$_cri_registry_name\".auth]\n\
+          username = \"$OWNER\"\n\
+          password = \"$API_TOKEN\"\n" "$_containerd_config_file"
+        done
+        pipe_log_info "Containerd private registry access is configured (using docker config from $_dind_registry_certs_dir)" "$_kube_common_setup_task_name"
+    else
+        pipe_log_warn "Cannot setup private registry access for containerd as the docker config is missing at $_dind_registry_certs_dir" "$_kube_common_setup_task_name"
+    fi
+
+    nohup "$CP_CAP_DIND_CONTAINERD_BIN" &> "$CP_CAP_DIND_CONTAINERD_LOG" &
+else
+    pipe_log_warn "containerd binary not found at $CP_CAP_DIND_CONTAINERD_BIN" "$_kube_common_setup_task_name"
+fi
 
 ######################################
 # Install kubelet and management tools
@@ -161,3 +325,26 @@ fi
 rm -rf $_packages_distr_dir
 
 pipe_log_info "All kubernetes packages are installed" "$_kube_common_setup_task_name"
+
+############################################################
+# Install the kubernetes dockers (API/Scheduler/Network/etc)
+############################################################
+pipe_log_info "Getting system docker images" "$_kube_common_setup_task_name"
+
+_docker_distr_dir=$(mktemp -d)
+download_distr "$CP_CAP_KUBE_SYSTEM_PODS_DISTR" "$_docker_distr_dir" || exit 1
+for _docker_tar in $_docker_distr_dir/kube-dockers/*.tar; do
+    if util_version_compare "$_kube_version" "1.24.0" ">"; then
+        ctr -n=k8s.io images import "$_docker_tar"
+    else
+        docker load -i $_docker_tar &> $_kube_install_log
+    fi
+    if [ $? -ne 0 ]; then
+        pipe_log_fail "[ERROR] Cannot load the docker image from the tarball at $_docker_tar" "$_kube_common_setup_task_name"
+        exit 1
+    fi
+    pipe_log_info "$_docker_tar has been loaded" "$_kube_common_setup_task_name"
+done
+rm -rf $_docker_distr_dir
+
+pipe_log_info "All system docker images are loaded" "$_kube_common_setup_task_name"

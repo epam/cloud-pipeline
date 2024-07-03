@@ -1,0 +1,153 @@
+{
+  "description": "DAV audit data extraction pipeline from EDGE",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "\\[%{HTTPDATE:log_timestamp}\\] \\\"%{DATA:verb} %{DATA:source} %{DATA:protocol}\\\" \\\"%{DATA:target}\\\" %{DATA:response} %{GREEDYDATA:size}"
+        ]
+      }
+    },
+    {
+      "drop": {
+        "if": "!ctx.response.startsWith('2') || ctx.verb == 'GET' && ctx.source.endsWith('/')"
+      }
+    },
+    {
+      "split": {
+        "field": "source",
+        "target_field": "source_parts",
+        "separator": "/"
+      }
+    },
+    {
+      "split": {
+        "field": "target",
+        "target_field": "target_parts",
+        "separator": "/"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "ctx.user = ctx.source_parts[2]"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "ctx.source_parts = ctx.source_parts.subList(3, ctx.source_parts.size())"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "ctx.target_parts = ctx.target_parts.subList(5, ctx.target_parts.size())",
+        "if": "ctx.target != '-'"
+      }
+    },
+    {
+      "join": {
+        "field": "source_parts",
+        "target_field": "source",
+        "separator": "/"
+      }
+    },
+    {
+      "join": {
+        "field": "target_parts",
+        "target_field": "target",
+        "separator": "/"
+      }
+    },
+    {
+      "script": {
+        "lang": "painless",
+        "source": "ctx.verb = ctx.verb == 'GET' ? 'READ' : ctx.verb == 'PUT' ? 'WRITE' : ctx.verb"
+      }
+    },
+    {
+      "set": {
+        "field": "message",
+        "value": "{{verb}} cp://{{source}}",
+        "if": "ctx.target == '-'"
+      }
+    },
+    {
+      "set": {
+        "field": "message",
+        "value": "{{verb}} cp://{{source}} cp://{{target}}",
+        "if": "ctx.target != '-'"
+      }
+    },
+    {
+      "rename": {
+        "field": "fields.type",
+        "target_field": "type"
+      }
+    },
+    {
+      "set": {
+        "field": "service_account",
+        "value": false,
+        "ignore_failure": true
+      }
+    },
+    {
+      "script": {
+        "ignore_failure": false,
+        "lang": "painless",
+        "source": "ctx.event_id=System.nanoTime()"
+      }
+    },
+    {
+      "set": {
+        "if": "ctx.user.equalsIgnoreCase('$CP_DEFAULT_ADMIN_NAME')",
+        "field": "service_account",
+        "value": true,
+        "ignore_failure": true
+      }
+    },
+    {
+      "rename": {
+        "field": "fields.service",
+        "target_field": "service_name"
+      }
+    },
+    {
+      "rename": {
+        "field": "host.name",
+        "target_field": "hostname"
+      }
+    },
+    {
+      "date": {
+        "field": "log_timestamp",
+        "target_field": "message_timestamp",
+        "formats": [
+          "dd/MMM/YYYY:HH:mm:ss Z"
+        ]
+      }
+    },
+    {
+      "remove": {
+        "field": [
+          "log_timestamp",
+          "fields",
+          "host",
+          "verb",
+          "source",
+          "source_parts",
+          "target",
+          "target_parts",
+          "protocol",
+          "response",
+          "size"
+        ],
+        "ignore_missing": true,
+        "ignore_failure": true
+      }
+    }
+  ]
+}

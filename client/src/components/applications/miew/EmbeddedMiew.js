@@ -25,7 +25,6 @@ import styles from './EmbeddedMiew.css';
 
 @observer
 export default class EmbeddedMiew extends React.Component {
-
   static propTypes = {
     pdb: PropTypes.string,
     s3item: PropTypes.object,
@@ -70,6 +69,7 @@ export default class EmbeddedMiew extends React.Component {
       this.viewer = new Miew({
         container: this.container,
         load: this.state.pdb,
+        type: 'pdb',
         rep: {
           mode: 'CA',
           colorer: 'EL'
@@ -104,7 +104,12 @@ export default class EmbeddedMiew extends React.Component {
   };
 
   generateUrl = async (s3item, callback) => {
-    this.generateUtlRequest = new GenerateDownloadUrlRequest(s3item.storageId, s3item.path, s3item.version);
+    this.generateUtlRequest = new GenerateDownloadUrlRequest(
+      s3item.storageId,
+      s3item.path,
+      s3item.version,
+      true
+    );
     await this.generateUtlRequest.fetch();
     if (this.generateUtlRequest.error) {
       callback(null, this.generateUtlRequest.error);
@@ -168,5 +173,4 @@ export default class EmbeddedMiew extends React.Component {
       this.viewer.script(command, success, error);
     }
   };
-
 }

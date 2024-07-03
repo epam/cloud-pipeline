@@ -78,6 +78,14 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
     }
 
     @Override
+    public Stream<DataStorageFile> versions(final String storage,
+                                            final String path,
+                                            final Supplier<TemporaryCredentials> credentialsSupplier,
+                                            final boolean showDeleted) {
+        return versionsWithNativeTags(storage, path, credentialsSupplier);
+    }
+
+    @Override
     public Stream<DataStorageFile> versionsWithNativeTags(final String storage,
                                                           final String path,
                                                           final Supplier<TemporaryCredentials> credentialsSupplier) {
@@ -103,7 +111,7 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         @SneakyThrows
         public AccessToken refreshAccessToken() {
             credentials = credentialsSupplier.get();
-            final Date expirationDate = ESConstants.FILE_DATE_FORMAT.parse(credentials.getExpirationTime());
+            final Date expirationDate = ESConstants.GS_DATE_FORMAT.parse(credentials.getExpirationTime());
             return new AccessToken(credentials.getToken(), expirationDate);
         }
         

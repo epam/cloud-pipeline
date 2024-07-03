@@ -51,6 +51,20 @@ CP_GITLAB_BLOCK_AUTO_CREATED_USERS="${CP_GITLAB_BLOCK_AUTO_CREATED_USERS:-"false
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
 CP_GITLAB_SAML_USER_ATTRIBUTES="${CP_GITLAB_SAML_USER_ATTRIBUTES:-email: ['email']}"
+CP_GITLAB_CA_CERT_PATH="${CP_GITLAB_CA_CERT_PATH:-/opt/common/pki/ca-public-cert.pem}"
+CP_GITLAB_SSL_CIPHERS="${CP_GITLAB_SSL_CIPHERS:-ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256:EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH:EECDH+AESGCM:EDH+AESGCM:ECDHE-RSA-AES128-GCM-SHA256:AES256+EECDH:DHE-RSA-AES128-GCM-SHA256:AES256+EDH:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA:ECDHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES256-GCM-SHA384:AES128-GCM-SHA256:AES256-SHA256:AES128-SHA256:AES256-SHA}"
+
+if [ -f "$CP_GITLAB_CA_CERT_PATH" ]; then
+  \cp "$CP_GITLAB_CA_CERT_PATH" /etc/gitlab/trusted-certs/
+  echo
+  echo "${CP_GITLAB_CA_CERT_PATH} added to /etc/gitlab/trusted-certs/"
+  echo
+else
+  echo
+  echo "CP_GITLAB_CA_CERT_PATH is set to ${CP_GITLAB_CA_CERT_PATH}, but the file does not exist. It will not be added to /etc/gitlab/trusted-certs/"
+  echo
+fi
+
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -59,10 +73,12 @@ echo
 
 # If the proxies are not set via env vars, gitlab will consider empty values as "no proxy set"
 CP_GITLAB_HTTP_PROXY="${CP_GITLAB_HTTP_PROXY:-$http_proxy}"
-CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTP_PROXY:-$https_proxy}"
+CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTPS_PROXY:-$https_proxy}"
+CP_GITLAB_NO_PROXY="${CP_GITLAB_NO_PROXY:-$no_proxy}"
 GIT_PROXIES="gitlab_rails['env'] = {
   \"http_proxy\" => \"$CP_GITLAB_HTTP_PROXY\",
-  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\"
+  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\",
+  \"no_proxy\" => \"$CP_GITLAB_NO_PROXY\"
 }"
 
 # If the smtp configuration is available - add it to gitlab as well
@@ -98,6 +114,68 @@ $SMTP_SETTINGS_PASS
 $SMTP_SETTINGS_AUTH_TYPE"
 fi
 
+
+#######################
+# LFS/ObjStore settings
+#######################
+
+if [ "$CP_CLOUD_PLATFORM" == "aws" ]; then
+    if [ -z "$CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID" ] && [ -f "$CP_CLOUD_CREDENTIALS_LOCATION" ]; then
+      CP_GITLAB_OBJ_STORE_STORAGE_KEY_NAME="$(echo $(cat $CP_CLOUD_CREDENTIALS_LOCATION | grep aws_access_key_id | cut -d'=' -f2))"
+    fi
+    if [ -z "$CP_GITLAB_OBJ_STORE_KEY_SECRET" ] && [ -f "$CP_CLOUD_CREDENTIALS_LOCATION" ]; then
+      CP_GITLAB_OBJ_STORE_KEY_SECRET="$(echo $(cat $CP_CLOUD_CREDENTIALS_LOCATION | grep aws_secret_access_key | cut -d'=' -f2))"
+    fi
+    if [ -z "$CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID" ] || [ -z "$CP_GITLAB_OBJ_STORE_KEY_SECRET" ]; then
+      echo "[INFO] object_store: Access keys are NOT set, instance profile will be used"
+      LFS_SETTINGS_CREDENTIALS="'use_iam_profile' => true"
+    else
+      echo "[INFO] object_store: Access keys are provided"
+      LFS_SETTINGS_CREDENTIALS="'aws_access_key_id' => '${CP_GITLAB_OBJ_STORE_STORAGE_KEY_ID}',
+'aws_secret_access_key' => '${CP_GITLAB_OBJ_STORE_KEY_SECRET}'"
+    fi
+else
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store is supported for the AWS only. It won't be configured"
+fi
+
+CP_GITLAB_OBJ_STORE_LFS_BUCKET="${CP_GITLAB_OBJ_STORE_LFS_BUCKET:-$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}"
+if [ -z "$CP_GITLAB_OBJ_STORE_LFS_BUCKET" ]; then
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store bucket name for lfs is not defined. Shall be set via CP_GITLAB_OBJ_STORE_LFS_BUCKET"
+else
+  echo "[WARN] object_store: Object store bucket name for lfs is set to $CP_GITLAB_OBJ_STORE_LFS_BUCKET"
+fi
+
+CP_GITLAB_OBJ_STORE_REGION=${CP_GITLAB_OBJ_STORE_REGION:-$CP_CLOUD_REGION_ID}
+if [ -z "$CP_GITLAB_OBJ_STORE_REGION" ]; then
+  export CP_GITLAB_OBJ_STORE_ENABLED=false
+  echo "[WARN] object_store: Object store bucket region is not not defined. Shall be set via CP_GITLAB_OBJ_STORE_REGION"
+else
+  echo "[WARN] object_store: Object store bucket region is set to $CP_GITLAB_OBJ_STORE_REGION"
+fi
+
+if [ "$CP_GITLAB_OBJ_STORE_ENABLED" == "true" ]; then
+  LFS_SETTINGS="gitlab_rails['object_store']['enabled'] = ${CP_GITLAB_OBJ_STORE_ENABLED:-true}
+gitlab_rails['object_store']['proxy_download'] = ${CP_GITLAB_OBJ_STORE_PROXY_DOWNLOAD:-false}
+gitlab_rails['object_store']['connection'] = {
+  'provider' => 'AWS',
+  'region' => 'us-east-1',
+  ${LFS_SETTINGS_CREDENTIALS}
+}
+gitlab_rails['object_store']['objects']['lfs']['enabled'] = true
+gitlab_rails['object_store']['objects']['lfs']['bucket'] = '${CP_GITLAB_OBJ_STORE_LFS_BUCKET}'
+gitlab_rails['object_store']['objects']['artifacts']['enabled'] = false
+gitlab_rails['object_store']['objects']['packages']['enabled'] = false
+gitlab_rails['object_store']['objects']['external_diffs']['enabled'] = false
+gitlab_rails['object_store']['objects']['uploads']['enabled'] = false
+gitlab_rails['object_store']['objects']['dependency_proxy']['enabled'] = false
+gitlab_rails['object_store']['objects']['terraform_state']['enabled'] = false
+gitlab_rails['object_store']['objects']['pages']['enabled'] = false"
+fi
+
+#######################
+
 cat > /etc/gitlab/gitlab.rb <<-EOF
 
 ${GIT_PROXIES}
@@ -112,6 +190,7 @@ gitlab_rails['db_password'] = '${GITLAB_DATABASE_PASSWORD}'
 external_url '${CP_GITLAB_EXTERNAL_URL}'
 nginx['ssl_certificate'] = "/opt/gitlab/pki/ssl-public-cert.pem"
 nginx['ssl_certificate_key'] = "/opt/gitlab/pki/ssl-private-key.pem"
+nginx['ssl_ciphers'] = "${CP_GITLAB_SSL_CIPHERS}"
 nginx['listen_port'] = ${CP_GITLAB_INTERNAL_PORT}
 prometheus_monitoring['enable'] = false
 
@@ -148,6 +227,7 @@ gitlab_rails['omniauth_providers'] = [
 ]
 
 ${SMTP_SETTINGS}
+${LFS_SETTINGS}
 EOF
 
 # Start the gitlab runner

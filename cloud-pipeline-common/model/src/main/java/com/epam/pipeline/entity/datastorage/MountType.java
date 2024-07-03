@@ -21,7 +21,7 @@ import lombok.Getter;
 @Getter
 public enum MountType {
 
-    NFS("nfs4"), SMB("cifs"), LUSTRE("lustre");;
+    NFS("nfs"), SMB("cifs"), LUSTRE("lustre");;
 
     private String protocol;
 

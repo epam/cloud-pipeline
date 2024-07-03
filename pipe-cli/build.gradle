@@ -83,10 +83,34 @@ task buildMac(type: Exec, dependsOn: ':pipe-cli:test') {
     environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
     environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
-    environment "PIPE_CLI_RUNTIME_TMP_DIR": "\\~/.pipe/tmp"
     environment "PYINSTALLER_PATH": "/tmp/pyinstaller"
 
     commandLine "bash", "$project.rootDir/pipe-cli/build_mac.sh"
+    doLast {
+        cleanCLIVersion()
+        delete("$project.rootDir/api/src/main/resources/static/pipe_osx")
+        copy {
+            from("$project.rootDir/pipe-cli/dist/dist-file/pipe_osx")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+        copy {
+            from("$project.rootDir/pipe-cli/dist/dist-folder/pipe_osx.tar.gz")
+            into("$project.rootDir/api/src/main/resources/static/")
+        }
+    }
+}
+
+task buildMacPy39(type: Exec) {
+    group = 'build'
+    doFirst {
+        setCLIVersion()
+    }
+    environment "PIPE_CLI_SOURCES_DIR": "$project.rootDir/pipe-cli"
+    environment "PIPE_CLI_LINUX_DIST_DIR": "$project.rootDir/pipe-cli"
+    environment "PIPE_MOUNT_SOURCES_DIR": "$project.rootDir/pipe-cli/mount"
+    environment "PYINSTALLER_PATH": "/tmp/pyinstaller"
+
+    commandLine "bash", "$project.rootDir/pipe-cli/build_mac_py39.sh"
     doLast {
         cleanCLIVersion()
         delete("$project.rootDir/api/src/main/resources/static/pipe_osx")

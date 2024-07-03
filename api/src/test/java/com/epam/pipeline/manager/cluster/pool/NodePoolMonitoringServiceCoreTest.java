@@ -55,8 +55,9 @@ public class NodePoolMonitoringServiceCoreTest {
     private final NodePoolManager nodePoolManager = mock(NodePoolManager.class);
     private final KubernetesManager kubernetesManager = mock(KubernetesManager.class);
     private final NotificationManager notificationManager = mock(NotificationManager.class);
+    private final KubernetesPoolService kubernetesPoolService = new KubernetesPoolService(kubernetesManager);
     private final NodePoolMonitoringServiceCore monitoringService =
-            new NodePoolMonitoringServiceCore(nodePoolManager, kubernetesManager, notificationManager);
+            new NodePoolMonitoringServiceCore(nodePoolManager, notificationManager, kubernetesPoolService);
 
     @Test
     public void shouldNotifyIfPoolIsFull() {

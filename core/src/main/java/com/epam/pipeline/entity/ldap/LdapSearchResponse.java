@@ -23,8 +23,8 @@ import java.util.List;
 
 @Value
 public class LdapSearchResponse {
-    private final List<LdapEntity> entities;
-    private final LdapSearchResponseType type;
+    List<LdapEntity> entities;
+    LdapSearchResponseType type;
 
     public static LdapSearchResponse completed(final List<LdapEntity> entities) {
         return new LdapSearchResponse(entities, LdapSearchResponseType.COMPLETED);

@@ -44,7 +44,16 @@ function useHCSImageState() {
     dispatch({ type: actions.setImage, ...options });
   }, [dispatch]);
   const setMesh = useCallback((mesh) => {
-    dispatch({ type: actions.setImage, mesh });
+    dispatch({ type: actions.setMesh, mesh });
+  }, [dispatch]);
+  const setOverlayImages = useCallback((overlayImages = []) => {
+    dispatch({ type: actions.setOverlayImages, overlayImages });
+  }, [dispatch]);
+  const setAnnotations = useCallback((annotations = []) => {
+    dispatch({ type: actions.setAnnotations, annotations });
+  }, [dispatch]);
+  const setSelectedAnnotation = useCallback((annotation) => {
+    dispatch({ type: actions.setSelectedAnnotation, selectedAnnotation: annotation });
   }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
@@ -55,6 +64,9 @@ function useHCSImageState() {
   }, [viewerDispatch]);
   const setChannelProperties = useCallback((channel, properties) => {
     viewerDispatch({ type: viewerActions.setChannelProperties, channel, properties });
+  }, [viewerDispatch]);
+  const setDefaultChannelsColors = useCallback((defaultColors = {}) => {
+    viewerDispatch({ type: viewerActions.setDefaultChannelsColors, defaultColors });
   }, [viewerDispatch]);
   const setColorMap = useCallback((colorMap) => {
     viewerDispatch({ type: viewerActions.setColorMap, colorMap });
@@ -77,24 +89,32 @@ function useHCSImageState() {
     setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
+    setDefaultChannelsColors,
     setColorMap,
     setLensEnabled,
     setLensChannel,
     setGlobalPosition,
     setLockChannels,
     setMesh,
+    setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
   }), [
     setData,
     setImage,
     setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
+    setDefaultChannelsColors,
     setColorMap,
     setLensEnabled,
     setLensChannel,
     setGlobalPosition,
     setLockChannels,
     setMesh,
+    setOverlayImages,
+    setAnnotations,
+    setSelectedAnnotation,
   ]);
   return {
     callbacks,

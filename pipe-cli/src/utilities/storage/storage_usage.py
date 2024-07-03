@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from treelib import Tree
+from src.model.datastorage_usage_model import StorageUsage
 
 
 class StorageUsageAccumulator(object):
@@ -27,15 +28,15 @@ class StorageUsageAccumulator(object):
         self.range_start = 1
         if relative_path:
             root_path = delimiter.join([bucket_name, relative_path])
-            self.root = self.result.create_node(root_path, root_path, data=StorageUsageItem())
+            self.root = self.result.create_node(root_path, root_path, data=StorageUsage())
             self.relative_path_len = len(relative_path.split(delimiter))
             self.range_start = self.relative_path_len + 1
         else:
-            self.root = self.result.create_node(bucket_name, bucket_name, data=StorageUsageItem())
+            self.root = self.result.create_node(bucket_name, bucket_name, data=StorageUsage())
 
-    def add_path(self, name, size):
+    def add_path(self, name, tier, size):
         tokens = name.split(self.delimiter)
-        self.root.data.add_item(size)
+        self.root.data.add_item(tier, size)
 
         if len(tokens) - self.relative_path_len > 1:
             if self.relative_path:
@@ -43,31 +44,15 @@ class StorageUsageAccumulator(object):
             else:
                 first_token = self.delimiter.join([self.bucket_name, tokens[0]])
             if not self.result.contains(first_token):
-                self.result.create_node(tokens[0], first_token, data=StorageUsageItem(), parent=self.root)
-            self.result[first_token].data.add_item(size)
+                self.result.create_node(tokens[0], first_token, data=StorageUsage(), parent=self.root)
+            self.result[first_token].data.add_item(tier, size)
             for i in range(self.range_start, min(self.max_depth, len(tokens) - 1)):
                 token = self.delimiter.join([self.bucket_name] + tokens[:i + 1])
                 parent_token = self.delimiter.join([self.bucket_name] + tokens[:i])
                 if not self.result.contains(token):
-                    self.result.create_node(tokens[i], token, parent=parent_token, data=StorageUsageItem())
-                self.result[token].data.add_item(size)
+                    self.result.create_node(tokens[i], token, parent=parent_token, data=StorageUsage())
+                self.result[token].data.add_item(tier, size)
 
     def get_tree(self):
         return self.result
 
-
-class StorageUsageItem(object):
-
-    def __init__(self):
-        self.size = 0
-        self.count = 0
-
-    def add_item(self, size):
-        self.size += size
-        self.count += 1
-
-    def get_size(self):
-        return self.size
-
-    def get_count(self):
-        return self.count

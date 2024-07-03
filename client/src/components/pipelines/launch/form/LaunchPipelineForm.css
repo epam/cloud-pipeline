@@ -61,7 +61,7 @@
 }
 
 .price {
-
+  margin: 0 5px;
 }
 
 .hidden-item {
@@ -261,4 +261,14 @@
   border: 1px dashed transparent;
   border-radius: 5px;
   padding: 20px;
+}
+
+.raw-edit-checkbox {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+ul.list {
+  list-style: disc inside;
 }

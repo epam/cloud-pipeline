@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-health
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-health: "true"
+        cloud-pipeline/core-component: "Deployment"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-health: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+        - name: cp-health
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:statping-monitor-$CP_VERSION
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 8080
+          command: ["/init"]
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -s http://localhost:8080/health | jq -r -e ".online==true"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 3
+          volumeMounts:
+            - mountPath: /opt/statping
+              name: health-data
+      volumes:
+        - name: health-data
+          hostPath:
+            path: /opt/statping
+      imagePullSecrets:
+        - name: ${CP_DOCKER_PULL_SECRET}

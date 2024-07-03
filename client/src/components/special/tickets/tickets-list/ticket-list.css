@@ -1,0 +1,97 @@
+/*
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.ticket-container {
+  display: grid;
+  padding: 3px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ticket-container.header {
+  cursor: default;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ticket-container .status {
+  grid-area: status;
+  display: flex;
+  align-items: center;
+  font-size: larger;
+  padding: 0 5px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.ticket-container:not(.header) .status {
+  height: 24px;
+  margin: auto;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.ticket-container .title {
+  grid-area: title;
+  display: flex;
+  flex-direction: column;
+  padding: 0 10px;
+}
+
+.ticket-container .controls {
+  grid-area: controls;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.ticket-container .controls .controls-icon {
+  cursor: pointer;
+  margin-right: 10px;
+  font-size: large;
+  font-weight: bold;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.tickets-table {
+  position: relative;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+.table-control {
+  margin-right: 5px;
+}
+
+.table-spin {
+  min-height: 35px;
+}
+
+.pagination-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 0;
+}

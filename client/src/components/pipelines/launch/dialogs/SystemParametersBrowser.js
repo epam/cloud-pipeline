@@ -97,10 +97,15 @@ export default class SystemParametersBrowser extends Component {
   }
 
   @computed
-  get currentParameters () {
-    if (!this.props.runDefaultParameters.loaded) {
+  get systemParameters () {
+    const {runDefaultParameters} = this.props;
+    if (!runDefaultParameters.loaded) {
       return [];
     }
+    return (runDefaultParameters.value || []).slice();
+  }
+
+  get currentParameters () {
     const checkUserRoles = (parameter) => {
       if (
         !parameter.roles ||
@@ -125,8 +130,7 @@ export default class SystemParametersBrowser extends Component {
         (parameter.description &&
           parameter.description.toLowerCase().includes(this.state.searchString.toLowerCase()));
     };
-    return (this.props.runDefaultParameters.value || [])
-      .map(t => t)
+    return this.systemParameters
       .filter(checkUserRoles)
       .filter(needToShow)
       .filter(parameterMatches)
@@ -142,12 +146,16 @@ export default class SystemParametersBrowser extends Component {
   }
 
   renderParametersTable = () => {
-    if (this.props.runDefaultParameters.error) {
-      return <Alert type="error" message={this.props.runDefaultParameters.error} />;
+    const {
+      runDefaultParameters,
+      authenticatedUserInfo
+    } = this.props;
+    if (runDefaultParameters.error) {
+      return <Alert type="error" message={runDefaultParameters.error} />;
     }
     if (
-      this.props.authenticatedUserInfo.pending &&
-      !this.props.authenticatedUserInfo.loaded
+      (authenticatedUserInfo.pending && !authenticatedUserInfo.loaded) ||
+      (runDefaultParameters.pending && !runDefaultParameters.loaded)
     ) {
       return (
         <LoadingView />
@@ -213,7 +221,6 @@ export default class SystemParametersBrowser extends Component {
           className={styles.table}
           dataSource={this.currentParameters}
           columns={columns}
-          loading={this.props.runDefaultParameters.pending}
           showHeader
           onRowClick={(parameter) => this.onSelect(parameter)}
           rowKey="name"

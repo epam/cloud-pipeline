@@ -32,7 +32,7 @@ export default function lockChannelsState(state, channelsInfo) {
     contrastLimits = EMPTY_ARRAY,
     ...rest
   } = channelsInfo || {};
-  if (!lockChannels) {
+  if (!lockChannels || (Array.isArray(lockChannels) && lockChannels.length === 0)) {
     return {
       ...rest,
       channels,
@@ -43,11 +43,18 @@ export default function lockChannelsState(state, channelsInfo) {
       channelsVisibility: channels.map(() => true),
     };
   }
+  if (channels.length === 0) {
+    return state;
+  }
+  const channelsToLock = Array.isArray(lockChannels)
+    ? lockChannels
+    : channels.slice();
   const currentChannelNames = currentChannels.slice();
   const lockedChannels = [];
   for (let c = 0; c < channels.length; c += 1) {
     const currentChannelIndex = currentChannelNames.indexOf(channels[c]);
-    if (currentChannelIndex === -1) {
+    const skip = !channelsToLock.includes(channels[c]);
+    if (skip || currentChannelIndex === -1) {
       lockedChannels.push({
         channel: channels[c],
         color: colors[c],

@@ -12,6 +12,7 @@ spec:
         cloud-pipeline/cp-edge: "true"
         cloud-pipeline/role: "EDGE"
         cloud-pipeline/region: $CP_CLOUD_ADDITIONAL_REGION_ID
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-edge: "true"
@@ -72,6 +73,10 @@ spec:
               name: edge-external-apps
             - mountPath: /opt/share-srv/pki
               name: share-pki
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       volumes:
         - name: edge-logs
           hostPath:

@@ -52,9 +52,11 @@ class ExportConsumer extends React.Component {
       period = 'month',
       range,
       user,
-      group,
+      billingGroup,
+      adGroup,
       types: typesPayload = [],
-      filters: extraFilters = {}
+      filters: extraFilters = {},
+      properties: extraProperties
     } = exportConfiguration;
     const {
       start,
@@ -62,7 +64,8 @@ class ExportConsumer extends React.Component {
     } = getPeriod(period, range);
     const filters = {
       owner: user,
-      billing_center: group,
+      billing_center: billingGroup,
+      groups: adGroup,
       ...extraFilters
     };
     const types = [];
@@ -88,7 +91,8 @@ class ExportConsumer extends React.Component {
       types,
       from: start.format('YYYY-MM-DD'),
       to: end.format('YYYY-MM-DD'),
-      filters
+      filters,
+      properties: extraProperties
     };
     return new Promise((resolve, reject) => {
       const request = new XMLHttpRequest();

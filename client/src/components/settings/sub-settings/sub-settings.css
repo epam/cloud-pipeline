@@ -21,10 +21,31 @@
   overflow: auto;
 }
 
-.list {
+.disabled-row,
+.disabled-row:hover,
+.disabled-row td,
+.disabled-row td:hover {
+  background: unset !important;
+}
+
+.list-container {
   height: 100%;
   overflow: auto;
   min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding-right: 5px;
+}
+
+.list-search {
+  margin-bottom: 5px;
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
 }
 
 .content {

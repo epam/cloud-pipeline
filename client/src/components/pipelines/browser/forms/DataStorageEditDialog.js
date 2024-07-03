@@ -40,6 +40,8 @@ import {
   DataStoragePathInput,
   parseFSMountPath
 } from './DataStoragePathInput';
+import LifeCycleRules from './life-cycle-rules';
+import dataStorageRestrictedAccessCheck from '../../../../utils/data-storage-restricted-access';
 import styles from './DataStorageEditDialog.css';
 
 export const ServiceTypes = {
@@ -70,7 +72,9 @@ export class DataStorageEditDialog extends React.Component {
     mountDisabled: false,
     versioningEnabled: false,
     sharingEnabled: false,
-    sensitive: false
+    sensitive: false,
+    restrictedAccess: true,
+    restrictedAccessCheckInProgress: false
   };
 
   formItemLayout = {
@@ -99,8 +103,11 @@ export class DataStorageEditDialog extends React.Component {
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
     if (loaded) {
-      const isAdmin = authenticatedUserInfo.value.admin;
-      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+      const isAdmin = authenticatedUserInfo.value.admin ||
+        roleModel.isManager.storageAdmin(this);
+      const isOwner = roleModel.isOwner(dataStorage);
+      return isAdmin ||
+        (isOwner && preferences.storagePolicyBackupVisibleNonAdmins);
     }
     return false;
   }
@@ -158,6 +165,41 @@ export class DataStorageEditDialog extends React.Component {
       : this.props.isNfsMount;
   }
 
+  get userPermissions () {
+    const {dataStorage} = this.props;
+    if (!dataStorage) {
+      return {read: false, write: false};
+    }
+    const readAllowed = roleModel.readAllowed(dataStorage);
+    const writeAllowed = roleModel.writeAllowed(dataStorage);
+    return {
+      read: roleModel.isManager.storageAdmin(this) || ((
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this) ||
+        roleModel.isManager.archiveReader(this)
+      ) && readAllowed),
+      write: roleModel.isManager.storageAdmin(this) || ((
+        roleModel.isOwner(dataStorage) ||
+        roleModel.isManager.archiveManager(this)
+      ) && writeAllowed)
+    };
+  }
+
+  @computed
+  get transitionRulesAvailable () {
+    const {
+      dataStorage
+    } = this.props;
+    return (this.userPermissions.read || this.userPermissions.write) &&
+      dataStorage &&
+      dataStorage.id &&
+      /^s3$/i.test(dataStorage.storageType || dataStorage.type);
+  }
+
+  get transitionRulesReadOnly () {
+    return this.userPermissions.read && !this.userPermissions.write;
+  }
+
   @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
@@ -211,18 +253,26 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getEditFooter = () => {
-    if (roleModel.writeAllowed(this.props.dataStorage)) {
+    if (
+      (roleModel.isManager.storageAdmin(this) || roleModel.isOwner(this.props.dataStorage)) &&
+      !this.state.restrictedAccess
+    ) {
       return (
         <Row type="flex" justify="space-between">
           <Col span={12}>
             <Row type="flex" justify="start">
               {
-                roleModel.manager.storage(
-                  <Button
-                    id="edit-storage-dialog-delete-button"
-                    type="danger"
-                    onClick={this.openDeleteDialog}>Delete</Button>
-                )
+                roleModel.isManager.storage(this) ||
+                roleModel.isManager.storageAdmin(this)
+                  ? (
+                    <Button
+                      id="edit-storage-dialog-delete-button"
+                      type="danger"
+                      onClick={this.openDeleteDialog}
+                    >
+                      DELETE
+                    </Button>
+                  ) : null
               }
             </Row>
           </Col>
@@ -230,12 +280,12 @@ export class DataStorageEditDialog extends React.Component {
             <Row type="flex" justify="end">
               <Button
                 id="edit-storage-dialog-cancel-button"
-                onClick={this.props.onCancel}>Cancel</Button>
+                onClick={this.props.onCancel}>CANCEL</Button>
               <Button
                 id="edit-storage-dialog-save-button"
                 type="primary"
                 htmlType="submit"
-                onClick={this.handleSubmit}>Save</Button>
+                onClick={this.handleSubmit}>SAVE</Button>
             </Row>
           </Col>
         </Row>
@@ -245,7 +295,7 @@ export class DataStorageEditDialog extends React.Component {
         <Row type="flex" justify="end">
           <Button
             id="edit-storage-dialog-cancel-button"
-            onClick={this.props.onCancel}>Cancel</Button>
+            onClick={this.props.onCancel}>CANCEL</Button>
         </Row>
       );
     }
@@ -309,11 +359,14 @@ export class DataStorageEditDialog extends React.Component {
     if (value && this.isNfsMount) {
       const parseResult = parseFSMountPath(value, this.fileShareMountsList);
       if (!parseResult || !parseResult.storagePath) {
+        // eslint-disable-next-line standard/no-callback-literal
         callback('Storage path is required');
       } else if (!parseResult.storagePath.startsWith('/')) {
+        // eslint-disable-next-line standard/no-callback-literal
         callback('Storage path must begin with \'/\'');
       }
     } else if (!value || !value.path) {
+      // eslint-disable-next-line standard/no-callback-literal
       callback('Storage path is required');
     }
     callback();
@@ -322,9 +375,14 @@ export class DataStorageEditDialog extends React.Component {
   render () {
     const {getFieldDecorator, resetFields} = this.props.form;
     const isReadOnly = this.props.dataStorage
-      ? this.props.dataStorage.locked || !roleModel.writeAllowed(this.props.dataStorage)
+      ? (
+        this.props.dataStorage.locked ||
+        this.state.restrictedAccess || (
+          !roleModel.isOwner(this.props.dataStorage) &&
+          !roleModel.isManager.storageAdmin(this)
+        ))
       : false;
-    const modalFooter = this.props.pending ? false : (
+    const modalFooter = this.props.pending || this.state.restrictedAccessCheckInProgress ? false : (
       this.props.dataStorage ? this.getEditFooter() : this.getCreateFooter()
     );
     const onClose = () => {
@@ -333,9 +391,9 @@ export class DataStorageEditDialog extends React.Component {
     };
     return (
       <Modal
-        maskClosable={!this.props.pending}
+        maskClosable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
         afterClose={() => onClose()}
-        closable={!this.props.pending}
+        closable={!this.props.pending && !this.state.restrictedAccessCheckInProgress}
         visible={this.props.visible}
         title={
           this.props.dataStorage
@@ -347,9 +405,10 @@ export class DataStorageEditDialog extends React.Component {
                 : 'Create object storage'))
         }
         onCancel={this.props.onCancel}
-        width={this.isNfsMount ? '50%' : '33%'}
+        style={{transition: 'width 0.2s ease'}}
+        width={(this.state.activeTab === 'transitionRules' || this.isNfsMount) ? '50%' : '33%'}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
-        <Spin spinning={this.props.pending}>
+        <Spin spinning={this.props.pending || this.state.restrictedAccessCheckInProgress}>
           <Tabs
             size="small"
             activeKey={this.state.activeTab}
@@ -362,7 +421,10 @@ export class DataStorageEditDialog extends React.Component {
                   label="Storage path">
                   {getFieldDecorator('path', {
                     rules: [{
-                      validator: (rule, value, callback) => this.validateStoragePath(value, callback)
+                      validator: (rule, value, callback) => this.validateStoragePath(
+                        value,
+                        callback
+                      )
                     }],
                     initialValue: this.props.dataStorage
                   })(
@@ -385,7 +447,7 @@ export class DataStorageEditDialog extends React.Component {
                     initialValue: this.props.dataStorage ? this.props.dataStorage.name : undefined
                   })(
                     <Input
-                      ref={!!this.props.dataStorage ? this.initializeNameInput : null}
+                      ref={this.props.dataStorage ? this.initializeNameInput : null}
                       onPressEnter={this.handleSubmit}
                       disabled={this.props.pending || isReadOnly} />
                   )}
@@ -454,38 +516,6 @@ export class DataStorageEditDialog extends React.Component {
                       )}
                     </Form.Item>
                   )
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="STS duration">
-                    {getFieldDecorator('shortTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.shortTermStorageDuration : undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="LTS duration">
-                    {getFieldDecorator('longTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.longTermStorageDuration: undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
                 }
                 {
                   !this.isNfsMount &&
@@ -605,6 +635,14 @@ export class DataStorageEditDialog extends React.Component {
                   objectType="DATA_STORAGE" />
               </Tabs.TabPane>
             }
+            {this.transitionRulesAvailable && (
+              <Tabs.TabPane key="transitionRules" tab="Transition rules">
+                <LifeCycleRules
+                  storageId={this.props.dataStorage.id}
+                  readOnly={this.transitionRulesReadOnly}
+                />
+              </Tabs.TabPane>
+            )}
           </Tabs>
         </Spin>
         <Modal
@@ -635,6 +673,7 @@ export class DataStorageEditDialog extends React.Component {
 
   componentDidMount () {
     this.checkStorageChanged();
+    this.checkRestrictedAccess();
   }
 
   initializeNameInput = (input) => {
@@ -662,5 +701,56 @@ export class DataStorageEditDialog extends React.Component {
     if (prevProps.visible !== this.props.visible) {
       this.focusNameInput();
     }
+    const dataStorageChanged = (a, b) => {
+      const {
+        id: aID
+      } = a || {};
+      const {
+        id: bID
+      } = b || {};
+      return aID !== bID;
+    };
+    if (dataStorageChanged(this.props.dataStorage, prevProps.dataStorage)) {
+      this.checkRestrictedAccess();
+    }
   }
+
+  componentWillUnmount () {
+    this.increaseCheckRestrictedAccessToken();
+  }
+
+  increaseCheckRestrictedAccessToken = () => {
+    this.checkRestrictedAccessToken = (this.checkRestrictedAccessToken || 0) + 1;
+    return this.checkRestrictedAccessToken;
+  };
+
+  checkRestrictedAccess = () => {
+    const {
+      dataStorage
+    } = this.props;
+    const {
+      id
+    } = dataStorage || {};
+    const token = this.increaseCheckRestrictedAccessToken();
+    this.setState({
+      restrictedAccessCheckInProgress: true,
+      restrictedAccess: true
+    }, async () => {
+      const state = {
+        restrictedAccessCheckInProgress: false
+      };
+      try {
+        state.restrictedAccess = await dataStorageRestrictedAccessCheck(id);
+      } catch (_) {
+        state.restrictedAccess = true;
+      } finally {
+        if (token === this.checkRestrictedAccessToken) {
+          if (state.restrictedAccess) {
+            console.log(`Storage #${id} is in the restricted access mode for current user`);
+          }
+          this.setState(state);
+        }
+      }
+    });
+  };
 }

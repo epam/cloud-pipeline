@@ -34,6 +34,7 @@ import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
 import io.fabric8.kubernetes.api.model.ServiceSpec;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
@@ -131,7 +132,6 @@ public class NatGatewayManager {
         this.defaultCustomDnsIP = defaultCustomDnsIP;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     @SchedulerLock(name = "NatGatewayManager_updateStatus", lockAtMostForString = "PT5M")
     @Scheduled(fixedDelayString = "${nat.gateway.auto.config.poll:60000}")
     public void updateStatus() {
@@ -871,11 +871,25 @@ public class NatGatewayManager {
             .collect(Collectors.toSet());
     }
 
+    @SneakyThrows
     private boolean checkNewDnsRecord(final String externalName, final String clusterIP) {
         if (!refreshKubeDns()) {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }
+        int attempts = preferenceManager.getPreference(SystemPreferences.SYSTEM_NAT_HOST_CHECK_ATTEMPTS);
+        final int retry = preferenceManager.getPreference(SystemPreferences.SYSTEM_NAT_HOST_CHECK_RETRY_MS);
+        while (attempts > 0) {
+            if (isDnsResolved(externalName, clusterIP)) {
+                return true;
+            }
+            Thread.sleep(retry);
+            attempts--;
+        }
+        return false;
+    }
+
+    private boolean isDnsResolved(final String externalName, final String clusterIP) {
         final Set<String> resolvedAddresses = resolveNameUsingSystemDefaultDns(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
     }

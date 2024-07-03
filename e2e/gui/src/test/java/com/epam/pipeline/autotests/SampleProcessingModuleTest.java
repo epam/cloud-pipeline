@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
                 .ensure(byText(metadataFolder), visible);
         String instanceDate = library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleSetFolder))
                 .validateFields("ID", createDateField, "Name", "Samples")
@@ -99,6 +100,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
     public void checkAnErrorOnDuplicatedMetadataEntitiesIDs() {
         String id = library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleFolder))
                 .getRow(1)
@@ -121,6 +123,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
                 .ensure(byText(metadataFolder), visible);
         library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleFolder))
                 .performForEachRow(sampleRow ->

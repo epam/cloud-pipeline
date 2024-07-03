@@ -18,8 +18,10 @@ package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.filter.FilterDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
+import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
@@ -34,6 +36,7 @@ import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
@@ -44,7 +47,6 @@ import com.epam.pipeline.manager.filter.FilterExpression;
 import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
@@ -76,6 +78,7 @@ import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -124,6 +127,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TAG_KEY_2 = "key2";
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
+    private static final String TAG_KEY_3 = "key3";
+    private static final String TAG_VALUE_3 = "value3";
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
@@ -132,6 +137,9 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String NODE_NAME = "node-12323";
     private static final String TEST_PLATFORM = "linux";
     private static final String TEST_REGION = "region";
+    private static final String NODE_TYPE = "m5.xlarge";
+    private static final String NODE_TYPE_2 = "r5.2xlarge";
+    private static final String TRUE = "True";
 
     private static final BigDecimal INITIAL_CLUSTER_PRICE_1 = BigDecimal.valueOf(1.9511111);
     private static final BigDecimal INITIAL_CLUSTER_PRICE_2 = BigDecimal.valueOf(123456.5666);
@@ -157,7 +165,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private CloudRegionDao regionDao;
 
     @Autowired
-    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+    private RunServiceUrlDao runServiceUrlDao;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -299,6 +307,36 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldSearchPipelineByTags() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = new HashMap<>();
+        tags1.put(TAG_KEY_1, TAG_VALUE_1);
+        tags1.put(TAG_KEY_2, TAG_VALUE_2);
+        tags1.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run1, tags1);
+
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = new HashMap<>();
+        tags2.put(TAG_KEY_1, TAG_VALUE_1);
+        tags2.put(TAG_KEY_2, TAG_VALUE_1);
+        tags2.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run2, tags2);
+
+        final Map<String, String> filterTags = new HashMap<>();
+        filterTags.put(TAG_KEY_1, TAG_VALUE_1);
+        filterTags.put(TAG_KEY_2, TAG_VALUE_2);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setTags(filterTags);
+        final List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filterVO);
+        assertFalse(runs.isEmpty());
+        assertEquals(1, runs.size());
+        assertEquals(run1.getId(), runs.get(0).getId());
+    }
+
+    @Test
     public void pipelineRunShouldContainsCmdTemplateAndActualCmd() {
         PipelineRun run = new PipelineRun();
 
@@ -387,7 +425,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     public void searchGroupingRun() {
         Pipeline testPipeline = getPipeline();
         PipelineRun parent = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
-        PipelineRun child = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
+        createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, parent.getId());
         PipelineRun lonely = createRun(testPipeline.getId(), null, TaskStatus.SUCCESS, null);
         parent.setTags(Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1));
         pipelineRunDao.updateRunTags(parent);
@@ -396,12 +434,12 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         filterVO.setPageSize(TEST_PAGE_SIZE);
         filterVO.setStatuses(Collections.singletonList(TaskStatus.SUCCESS));
 
-        List<PipelineRun> runs = pipelineRunDao.searchPipelineGroups(filterVO, null);
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineParentRuns(filterVO, null);
         assertEquals(2, runs.size());
         assertEquals(lonely.getId(), runs.get(0).getId());
         assertEquals(parent.getId(), runs.get(1).getId());
-        assertEquals(1, runs.get(1).getChildRuns().size());
-        assertEquals(child.getId(), runs.get(1).getChildRuns().get(0).getId());
+        assertEquals(1, runs.get(1).getChildRunsCount().intValue());
+        assertEquals(0, runs.get(1).getActiveChildRunsCount().intValue());
 
         assertThat(runs.get(1).getTags(), is(parent.getTags()));
         assertEquals(2L, pipelineRunDao.countRootRuns(filterVO, null).longValue());
@@ -889,6 +927,55 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void shouldCreatePipelineRunWithStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getStartDate());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithEndedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getEndDate());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
+    public void shouldCreatePipelineRunWithoutInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setInstanceStartDate(null);
+        pipelineRunDao.createPipelineRun(run);
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
+    public void shouldUpdatePipelineRunInstanceStartDateWithInstanceStartedDate() {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId());
+        run.setInstanceStartDate(null);
+        pipelineRunDao.createPipelineRun(run);
+
+        pipelineRunDao.updateRunInstanceStartDate(run.getId(), DateUtils.nowUTC());
+
+        final PipelineRun loadedRun = pipelineRunDao.loadPipelineRun(run.getId());
+        assertNotNull(loadedRun.getInstanceStartDateTime());
+    }
+
+    @Test
     public void shouldBatchUpdateRuns() {
         final PipelineRun run1 = buildPipelineRun(testPipeline.getId());
         final PipelineRun run2 = buildPipelineRun(testPipeline.getId());
@@ -1030,6 +1117,190 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertThat(loaded.get(0).getId(), is(run1.getId()));
     }
 
+    @Test
+    public void shouldUpdatePipelineNameForRuns() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run1 = buildPipelineRun(pipeline.getId());
+        run1.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = buildPipelineRun(pipeline.getId());
+        run2.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run2);
+
+        final String newName = "New";
+        pipelineRunDao.updatePipelineNameForRuns(newName, pipeline.getId());
+
+        final List<PipelineRun> runs = pipelineRunDao.loadAllRunsForPipeline(pipeline.getId());
+        runs.forEach(run -> assertThat(run.getPipelineName(), is(newName)));
+    }
+
+    @Test
+    public void shouldClearPipelineIdForRuns() {
+        final Pipeline pipeline = getPipeline();
+        final PipelineRun run1 = buildPipelineRun(pipeline.getId());
+        run1.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = buildPipelineRun(pipeline.getId());
+        run2.setPipelineName(TEST_PIPELINE_NAME);
+        pipelineRunDao.createPipelineRun(run2);
+
+        pipelineRunDao.clearPipelineIdForRuns(pipeline.getId());
+        assertThat(pipelineRunDao.loadAllRunsForPipeline(pipeline.getId()).isEmpty(), is(true));
+        assertThat(pipelineRunDao.loadPipelineRun(run1.getId()).getPipelineId(), is(nullValue()));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithStatusFilter() {
+        final Map<String, String> tags = Collections.singletonMap(TAG_KEY_1, TRUE);
+
+        final PipelineRun running = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(running);
+
+        final PipelineRun stopped = toolRun(TaskStatus.STOPPED, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(stopped);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(charts.size(), 4);
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithFullFilter() {
+        final HashMap<String, String> tags = new HashMap<>();
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
+
+        final PipelineRun run1 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(run1);
+        final PipelineRun run2 = toolRun(TaskStatus.RUNNING, ACTUAL_DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(run2);
+        final PipelineRun run3 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE_2, USER, tags);
+        pipelineRunDao.createPipelineRun(run3);
+        final PipelineRun run4 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags);
+        pipelineRunDao.createPipelineRun(run4);
+        final PipelineRun run5 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null);
+        pipelineRunDao.createPipelineRun(run5);
+        final PipelineRun run6 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER,
+                Collections.singletonMap(TAG_KEY_2, TRUE));
+        pipelineRunDao.createPipelineRun(run6);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(4, charts.size());
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithFilterWithAclOwner() {
+        final HashMap<String, String> tags = new HashMap<>();
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
+
+        final PipelineRun run1 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(run1);
+        final PipelineRun run2 = toolRun(TaskStatus.RUNNING, ACTUAL_DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(run2);
+        final PipelineRun run3 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE_2, USER, tags);
+        pipelineRunDao.createPipelineRun(run3);
+        final PipelineRun run4 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags);
+        pipelineRunDao.createPipelineRun(run4);
+        final PipelineRun run5 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null);
+        pipelineRunDao.createPipelineRun(run5);
+        final PipelineRun run6 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER,
+                Collections.singletonMap(TAG_KEY_2, TRUE));
+        pipelineRunDao.createPipelineRun(run6);
+        final PipelineRun run7 = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags);
+        pipelineRunDao.createPipelineRun(run7);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        filter.setOwnershipFilter(USER);
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(4, charts.size());
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithFilterWithAclPipeline() {
+        final Long allowedPipelineId = getPipeline().getId();
+        final Long notAllowedPipelineId = getPipeline().getId();
+
+        final HashMap<String, String> tags = new HashMap<>();
+        tags.put(TAG_KEY_1, TRUE);
+        tags.put(TAG_KEY_2, TRUE);
+
+        final PipelineRun run1 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags,
+                allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run1);
+        final PipelineRun run2 = pipelineRun(TaskStatus.RUNNING, ACTUAL_DOCKER_IMAGE, NODE_TYPE, USER, tags,
+                allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run2);
+        final PipelineRun run3 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE_2, USER, tags,
+                allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run3);
+        final PipelineRun run4 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, tags,
+                allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run4);
+        final PipelineRun run5 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null,
+                allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run5);
+        final PipelineRun run6 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER,
+                Collections.singletonMap(TAG_KEY_2, TAG_VALUE_2), allowedPipelineId);
+        pipelineRunDao.createPipelineRun(run6);
+        final PipelineRun run7 = pipelineRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags,
+                notAllowedPipelineId);
+        pipelineRunDao.createPipelineRun(run7);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setDockerImages(Collections.singletonList(DOCKER_IMAGE));
+        filter.setInstanceTypes(Collections.singletonList(NODE_TYPE));
+        filter.setOwners(Collections.singletonList(USER));
+        filter.setTags(Collections.singletonList(TAG_KEY_1));
+        filter.setOwnershipFilter(TEST_USER);
+        filter.setAllowedPipelines(Collections.singletonList(allowedPipelineId));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(4, charts.size());
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsChartsWithoutNonBooleanTags() {
+        final Map<String, String> tags = Collections.singletonMap(TAG_KEY_1, TAG_VALUE_1);
+
+        final PipelineRun running = toolRun(TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, tags);
+        pipelineRunDao.createPipelineRun(running);
+
+        final RunChartFilterVO filter = new RunChartFilterVO();
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        final List<RunChartInfoEntity> charts = pipelineRunDao.loadRunsCharts(filter);
+        assertEquals(charts.size(), 3);
+        charts.stream()
+                .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
+                .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }
@@ -1051,6 +1322,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineName(TEST_PIPELINE_NAME);
         run.setVersion("abcdefg");
         run.setStartDate(start);
+        run.setInstanceStartDate(start);
         run.setEndDate(end);
         run.setStatus(TaskStatus.RUNNING);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1134,6 +1406,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         run.setPipelineId(pipelineId);
         run.setVersion(TEST_REVISION_1);
         run.setStartDate(new Date());
+        run.setInstanceStartDate(run.getStartDate());
         run.setEndDate(new Date());
         run.setStatus(status);
         run.setCommitStatus(CommitStatus.NOT_COMMITTED);
@@ -1206,7 +1479,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertEquals(expectedFieldValue,
                 fieldFunction.apply(pipelineRunDao.searchPipelineRuns(pagingRunFilterVO).get(0)));
         assertEquals(expectedFieldValue,
-                fieldFunction.apply(pipelineRunDao.searchPipelineGroups(pagingRunFilterVO, null).get(0)));
+                fieldFunction.apply(pipelineRunDao.searchPipelineParentRuns(pagingRunFilterVO, null).get(0)));
     }
 
     private void createRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
@@ -1230,6 +1503,32 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         return pipelineRun;
     }
 
+    private PipelineRun toolRun(final TaskStatus status, final String dockerImage, final String instanceType,
+                                final String owner, final Map<String, String> tags) {
+        return pipelineRun(status, dockerImage, instanceType, owner, tags, null);
+    }
+
+    private PipelineRun pipelineRun(final TaskStatus status, final String dockerImage, final String instanceType,
+                                    final String owner, final Map<String, String> tags, final Long pipelineId) {
+        final PipelineRun pipelineRun = buildPipelineRun(null);
+        pipelineRun.setStatus(status);
+        pipelineRun.setDockerImage(dockerImage);
+        pipelineRun.setInstance(runInstance(instanceType));
+        pipelineRun.setOwner(owner);
+        pipelineRun.setTags(tags);
+        pipelineRun.setPipelineId(pipelineId);
+        return pipelineRun;
+    }
+
+    private RunInstance runInstance(final String instanceType) {
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setCloudProvider(CloudProvider.AWS);
+        runInstance.setCloudRegionId(cloudRegion.getId());
+        runInstance.setNodePlatform(TEST_PLATFORM);
+        runInstance.setNodeType(instanceType);
+        return runInstance;
+    }
+
     private RunSid runSid(final String sidName, final boolean principal) {
         final RunSid runSid = new RunSid();
         runSid.setName(sidName);
@@ -1243,7 +1542,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunServiceUrl.setServiceUrl(TEST_SERVICE_URL);
         pipelineRunServiceUrl.setRegion(TEST_REGION);
         pipelineRunServiceUrl.setPipelineRunId(runId);
-        pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
+        runServiceUrlDao.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
     }
 

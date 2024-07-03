@@ -17,9 +17,9 @@
 package com.epam.pipeline.app;
 
 import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.manager.user.ImpersonateFailureHandler;
-import com.epam.pipeline.manager.user.ImpersonateSuccessHandler;
-import com.epam.pipeline.manager.user.ImpersonationManager;
+import com.epam.pipeline.security.saml.impersonation.ImpersonateFailureHandler;
+import com.epam.pipeline.security.saml.impersonation.ImpersonateSuccessHandler;
+import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.security.saml.OptionalSAMLLogoutFilter;
 import com.epam.pipeline.security.saml.SAMLContexProviderCustomSingKey;
 import com.epam.pipeline.utils.URLUtils;
@@ -156,6 +156,9 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("${saml.validate.message.inresponse:true}")
     private boolean validateMessageInResponse;
 
+    @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
+    private String[] swaggerAccessRoles;
+
     @Autowired
     private SAMLUserDetailsService samlUserDetailsService;
 
@@ -178,8 +181,8 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
-                .antMatchers(getImpersonationStartUrl())
-                    .hasAuthority(DefaultRoles.ROLE_ADMIN.getName())
+                .antMatchers(getSwaggerResources())
+                .hasAnyAuthority(swaggerAccessRoles)
                 .antMatchers(getSecuredResourcesRoot())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName());
         http.logout().logoutSuccessUrl("/");
@@ -192,6 +195,15 @@ public class SAMLSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 "/error",
                 "/error/**");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+    }
+
+    protected String[] getSwaggerResources() {
+        final List<String> paths = Arrays.asList(
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**");
+        return paths.toArray(new String[0]);
     }
 
     public String[] getSecuredResourcesRoot() {

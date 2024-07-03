@@ -47,8 +47,22 @@ public class LustreFSController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<LustreFS> getOrCreateLustreFS(@PathVariable(value = RUN_ID) final Long runId,
-                                                @RequestParam(required = false) final Integer size) {
-        return Result.success(lustreFSApiService.getOrCreateLustreFS(runId, size));
+                                                @RequestParam(required = false) final Integer size,
+                                                @RequestParam(required = false) final String type,
+                                                @RequestParam(required = false) final Integer throughput) {
+        return Result.success(lustreFSApiService.getOrCreateLustreFS(runId, size, type, throughput));
+    }
+
+    @PutMapping(value = RUN_ID_PATH)
+    @ApiOperation(
+            value = "Changes size of lustre FS.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<LustreFS> updateLustreFsSize(@PathVariable(value = RUN_ID) final Long runId,
+                                               @RequestParam(required = false) final Integer size) {
+        return Result.success(lustreFSApiService.updateLustreFsSize(runId, size));
     }
 
     @GetMapping(value = RUN_ID_PATH)
@@ -61,6 +75,19 @@ public class LustreFSController extends AbstractRestController {
             })
     public Result<LustreFS> getLustreFS(@PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(lustreFSApiService.getLustreFS(runId));
+    }
+
+    @GetMapping
+    @ApiOperation(
+            value = "Returns lustreFs by id.",
+            notes = "Returns lustreFs by id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<LustreFS> getLustreFS(@RequestParam final String mountName,
+                                        @RequestParam final Long regionId) {
+        return Result.success(lustreFSApiService.getLustreFS(mountName, regionId));
     }
 
     @DeleteMapping(value = RUN_ID_PATH)

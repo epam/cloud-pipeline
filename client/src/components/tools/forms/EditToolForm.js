@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@ import {
 import classNames from 'classnames';
 
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
+import KubeLabels, {
+  kubeLabelsHasChanges,
+  prepareKubeLabelsPayload
+} from '../elements/KubeLabels';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import EditToolFormParameters from './EditToolFormParameters';
@@ -52,7 +56,9 @@ import {
   sparkEnabled,
   slurmEnabled,
   kubeEnabled,
-  getAutoScaledPriceTypeValue
+  getAutoScaledPriceTypeValue,
+  applyChildNodeInstanceParametersAsArray,
+  parseChildNodeInstanceConfiguration
 } from '../../pipelines/launch/form/utilities/launch-cluster';
 import {
   CP_CAP_LIMIT_MOUNTS,
@@ -62,17 +68,16 @@ import {
   CP_CAP_KUBE,
   CP_CAP_DIND_CONTAINER,
   CP_CAP_SYSTEMD_CONTAINER,
-  CP_CAP_MODULES,
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
   CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_CAP_SINGULARITY,
-  CP_CAP_DESKTOP_NM
+  CP_CAP_RESCHEDULE_RUN
 } from '../../pipelines/launch/form/utilities/parameters';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import RunCapabilities, {
   RUN_CAPABILITIES,
+  RUN_CAPABILITIES_MODE,
   getEnabledCapabilities,
   applyCapabilities,
   checkRunCapabilitiesModified,
@@ -86,6 +91,21 @@ import {
   getSkippedParameters as getGPUScalingSkippedParameters,
   readGPUScalingPreference
 } from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
+import JobNotifications from '../../pipelines/launch/dialogs/job-notifications';
+import {
+  notificationArraysAreEqual
+} from '../../pipelines/launch/dialogs/job-notifications/notifications-equal';
+import {
+  mapObservableNotification
+} from '../../pipelines/launch/dialogs/job-notifications/job-notification';
+import RescheduleRunControl, {
+  rescheduleRunParameterValue
+} from '../../pipelines/launch/form/utilities/reschedule-run-control';
+import {getValidationError} from '../elements/EndpointInput';
+import {getSelectOptions} from '../../special/instance-type-info';
+import {
+  correctLimitMountsParameterValue
+} from '../../../utils/limit-mounts/get-limit-mounts-storages';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -148,6 +168,11 @@ export default class EditToolForm extends React.Component {
 
   state = {
     labels: [],
+    kubeLabels: [],
+    initialKubeLabels: [],
+    notifications: [],
+    initialNotifications: [],
+    kubeLabelsHasErrors: false,
     labelInputVisible: false,
     labelInputValue: '',
     endpointInputVisible: false,
@@ -161,11 +186,13 @@ export default class EditToolForm extends React.Component {
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
     gpuScalingConfiguration: undefined,
+    childNodeInstanceConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
     kubeEnabled: false,
     launchCluster: false,
+    rescheduleRun: undefined,
     runCapabilities: []
   };
 
@@ -219,6 +246,13 @@ export default class EditToolForm extends React.Component {
     this.input = input;
   };
 
+  onKubeLabelsChange = (labels = [], errors = {}) => {
+    this.setState({
+      kubeLabels: labels,
+      kubeLabelsHasErrors: Object.keys(errors).length > 0
+    });
+  };
+
   handleSubmit = (e) => {
     e.preventDefault();
     this.props.form.validateFieldsAndScroll((err, values) => {
@@ -230,6 +264,19 @@ export default class EditToolForm extends React.Component {
         if (this.toolFormParameters && this.toolFormSystemParameters) {
           const params = [];
           params.push(...this.toolFormParameters.getValues(), ...this.toolFormSystemParameters.getValues());
+          const toggleParameter = (parameter, value) => {
+            const p = params.find((o) => o.name === parameter);
+            if (p) {
+              params.splice(params.indexOf(p), 1);
+            }
+            if (value) {
+              params.push({
+                name: parameter,
+                value: true,
+                type: 'boolean',
+              });
+            }
+          }
           if (values.limitMounts) {
             params.push({
               name: CP_CAP_LIMIT_MOUNTS,
@@ -237,11 +284,6 @@ export default class EditToolForm extends React.Component {
             });
           }
           if (this.state.launchCluster && this.state.autoScaledCluster) {
-            params.push({
-              name: CP_CAP_SGE,
-              type: 'boolean',
-              value: true
-            });
             params.push({
               name: CP_CAP_AUTOSCALE,
               type: 'boolean',
@@ -268,35 +310,19 @@ export default class EditToolForm extends React.Component {
             }
             if (this.state.gpuScalingConfiguration) {
               applyParametersArray(this.state.gpuScalingConfiguration, params);
+            } else if (this.state.childNodeInstanceConfiguration) {
+              applyChildNodeInstanceParametersAsArray(
+                params,
+                this.state.childNodeInstanceConfiguration,
+                this.state.hybridAutoScaledClusterEnabled
+              );
             }
           }
-          if (this.state.launchCluster && this.state.gridEngineEnabled) {
-            params.push({
-              name: CP_CAP_SGE,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.launchCluster && this.state.sparkEnabled) {
-            params.push({
-              name: CP_CAP_SPARK,
-              type: 'boolean',
-              value: true
-            });
-          }
-          if (this.state.launchCluster && this.state.slurmEnabled) {
-            params.push({
-              name: CP_CAP_SLURM,
-              type: 'boolean',
-              value: true
-            });
-          }
+          toggleParameter(CP_CAP_SGE, this.state.launchCluster && this.state.gridEngineEnabled);
+          toggleParameter(CP_CAP_SPARK, this.state.launchCluster && this.state.sparkEnabled);
+          toggleParameter(CP_CAP_SLURM, this.state.launchCluster && this.state.slurmEnabled);
+          toggleParameter(CP_CAP_KUBE, this.state.launchCluster && this.state.kubeEnabled);
           if (this.state.launchCluster && this.state.kubeEnabled) {
-            params.push({
-              name: CP_CAP_KUBE,
-              type: 'boolean',
-              value: true
-            });
             params.push({
               name: CP_CAP_DIND_CONTAINER,
               type: 'boolean',
@@ -308,7 +334,14 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(
+          if (this.state.rescheduleRun !== undefined) {
+            params.push({
+              name: CP_CAP_RESCHEDULE_RUN,
+              type: 'boolean',
+              value: this.state.rescheduleRun
+            });
+          }
+          parameters = applyCapabilities(
             parameters,
             this.state.runCapabilities,
             this.props.preferences,
@@ -342,7 +375,9 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
-          is_spot: `${values.is_spot}` === 'true'
+          is_spot: `${values.is_spot}` === 'true',
+          kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
+          notifications: this.state.notifications
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
@@ -400,6 +435,15 @@ export default class EditToolForm extends React.Component {
       return provider;
     }
     return null;
+  };
+
+  getCloudRegion = () => {
+    const instanceType = this.getInstanceTypeValue();
+    if (this.props.awsRegions.loaded) {
+      return this.awsRegions
+        .find(a => (instanceType && a.id === instanceType.regionId) || !instanceType);
+    }
+    return undefined;
   };
 
   getPriceTypeInitialValue = () => {
@@ -487,10 +531,19 @@ export default class EditToolForm extends React.Component {
             parameters: props.configuration.parameters
           }, this.props.preferences)
           : undefined;
+        state.childNodeInstanceConfiguration = parseChildNodeInstanceConfiguration({
+          gpuScaling: !!state.gpuScalingConfiguration,
+          autoScaled: state.autoScaledCluster,
+          hybrid: state.hybridAutoScaledClusterEnabled,
+          provider,
+          parameters: props.configuration.parameters
+        });
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
         state.kubeEnabled = props.configuration && kubeEnabled(props.configuration.parameters);
+        state.rescheduleRun = props.configuration &&
+          rescheduleRunParameterValue(props.configuration.parameters);
         state.autoScaledPriceType = props.configuration &&
           getAutoScaledPriceTypeValue(props.configuration.parameters);
         state.launchCluster = state.nodesCount > 0 || state.autoScaledCluster;
@@ -501,6 +554,15 @@ export default class EditToolForm extends React.Component {
         const gpuScalingParameters = state.gpuScalingConfiguration
           ? getGPUScalingSkippedParameters(this.props.preferences)
           : [];
+        const kubeLabels = Object
+          .entries((this.props.configuration || {}).kubeLabels || {})
+          .map(([key, value]) => ({key, value}));
+        state.kubeLabels = kubeLabels;
+        state.initialKubeLabels = kubeLabels;
+        state.notifications = props.configuration
+          ? (props.configuration.notifications || []).map(mapObservableNotification)
+          : [];
+        state.initialNotifications = (state.notifications || []).map(mapObservableNotification);
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -510,12 +572,10 @@ export default class EditToolForm extends React.Component {
             }
             if (key === CP_CAP_LIMIT_MOUNTS) {
               if (this.props.dataStorageAvailable.loaded) {
-                const availableMounts = new Set((this.props.dataStorageAvailable.value || [])
-                  .map(d => +d.id));
-                this.defaultLimitMounts = (props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '')
-                  .split(',')
-                  .filter(o => /^none$/i.test(o) || availableMounts.has(+o))
-                  .join(',');
+                this.defaultLimitMounts = correctLimitMountsParameterValue(
+                  props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value || '',
+                  this.props.dataStorageAvailable.value || []
+                );
               } else {
                 this.defaultLimitMounts = props.configuration.parameters[CP_CAP_LIMIT_MOUNTS].value;
               }
@@ -803,9 +863,16 @@ export default class EditToolForm extends React.Component {
         autoScaled: autoScaledCluster,
         hybrid: hybridAutoScaledCluster,
         provider: this.getCloudProvider(),
-        parameters: this.props.configuration.parameters
+        parameters: this.props.configuration ? this.props.configuration.parameters : {}
       }, this.props.preferences)
       : undefined;
+    const childNodeInstanceConfiguration = this.props.configuration
+      ? parseChildNodeInstanceConfiguration({
+        gpuScaling: !!gpuScalingConfiguration,
+        autoScaled: autoScaledCluster,
+        hybrid: hybridAutoScaledCluster,
+        parameters: this.props.configuration.parameters
+      }) : undefined;
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -814,6 +881,8 @@ export default class EditToolForm extends React.Component {
       slurmEnabled(this.props.configuration.parameters);
     const kubeEnabledValue = this.props.configuration &&
       kubeEnabled(this.props.configuration.parameters);
+    const rescheduleRunValue = this.props.configuration &&
+      rescheduleRunParameterValue(this.props.configuration.parameters);
     const autoScaledPriceTypeValue = this.props.configuration &&
       getAutoScaledPriceTypeValue(this.props.configuration.parameters);
     const launchCluster = nodesCount > 0 || autoScaledCluster;
@@ -840,14 +909,21 @@ export default class EditToolForm extends React.Component {
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
       configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
+      childNodeInstanceConfiguration !== this.state.childNodeInstanceConfiguration ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
       !!kubeEnabledValue !== !!this.state.kubeEnabled ||
+      rescheduleRunValue !== this.state.rescheduleRun ||
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      kubeLabelsHasChanges(
+        this.state.initialKubeLabels,
+        this.state.kubeLabels
+      ) ||
+      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
   };
 
   initializeEndpointsControl = (control) => {
@@ -888,6 +964,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -910,6 +987,7 @@ export default class EditToolForm extends React.Component {
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
       gpuScalingConfiguration,
+      childNodeInstanceConfiguration,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -1114,6 +1192,10 @@ export default class EditToolForm extends React.Component {
     }
   };
 
+  onChangeRescheduleRun = (value) => this.setState({
+    rescheduleRun: value
+  });
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
@@ -1153,29 +1235,7 @@ export default class EditToolForm extends React.Component {
                     filterOption={
                       (input, option) =>
                       option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0}>
-                    {
-                      this.allowedInstanceTypes
-                        .map(t => t.instanceFamily)
-                        .filter((familyName, index, array) => array.indexOf(familyName) === index)
-                        .map(instanceFamily => {
-                          return (
-                            <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
-                              {
-                                this.allowedInstanceTypes
-                                  .filter(t => t.instanceFamily === instanceFamily)
-                                  .map(t =>
-                                    <Select.Option
-                                      title={`${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`}
-                                      key={t.sku}
-                                      value={t.name}>
-                                      {t.name} (CPU: {this.cpuMapper(t.vcpu)}, RAM: {t.memory}{t.gpu ? `, GPU: ${t.gpu}` : ''})
-                                    </Select.Option>
-                                  )
-                              }
-                            </Select.OptGroup>
-                          );
-                        })
-                    }
+                    {getSelectOptions(this.allowedInstanceTypes)}
                   </Select>
                 )}
               </Form.Item>
@@ -1238,6 +1298,26 @@ export default class EditToolForm extends React.Component {
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Notifications:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <JobNotifications
+                    value={this.state.notifications}
+                    onChange={o => this.setState({notifications: o})}
+                    linkStyle={{margin: 0}}
+                  />
+                </Col>
+              </Row>
               {
                 !this.isWindowsPlatform && (
                   <Form.Item
@@ -1314,6 +1394,27 @@ export default class EditToolForm extends React.Component {
                     )}
                   </Form.Item>
                 )
+              }
+              {
+                <Row style={{marginBottom: 10, marginTop: 10}}>
+                  <Col
+                    xs={24}
+                    sm={6}
+                    style={{paddingRight: 10}}
+                    className={classNames(
+                      'cp-accent',
+                      styles.toolSettingsTitle
+                    )}
+                  >
+                    Runtime labels:
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <KubeLabels
+                      labels={this.state.kubeLabels}
+                      onChange={this.onKubeLabelsChange}
+                    />
+                  </Col>
+                </Row>
               }
               {
                 !this.isWindowsPlatform && (
@@ -1408,6 +1509,28 @@ export default class EditToolForm extends React.Component {
                   </Select>
                 )}
               </Form.Item>
+              <Row
+                type="flex"
+                align="middle"
+                style={{marginBottom: 10}}
+              >
+                <Col xs={24} sm={{span: 18}}>
+                  <Row type="flex" justify="center">
+                    Allow reschedule to different region in case of insufficient capacity:
+                  </Row>
+                </Col>
+              </Row>
+              <Row type="flex" align="middle" style={{marginBottom: 30}}>
+                <Col xs={24} sm={{span: 12, offset: 6}}>
+                  <Row type="flex" justify="start">
+                    <RescheduleRunControl
+                      disabled={this.state.pending || this.props.readOnly}
+                      value={this.state.rescheduleRun}
+                      onChange={this.onChangeRescheduleRun}
+                    />
+                  </Row>
+                </Col>
+              </Row>
               {
                 hasPlatformSpecificCapabilities(this.props.platform, this.props.preferences) && (
                   <Form.Item
@@ -1422,18 +1545,22 @@ export default class EditToolForm extends React.Component {
                       platform={this.props.platform}
                       dockerImageOS={this.props.dockerOSVersion}
                       provider={this.getCloudProvider()}
+                      region={this.getCloudRegion()}
+                      mode={RUN_CAPABILITIES_MODE.edit}
                     />
                   </Form.Item>
                 )
               }
               <ConfigureClusterDialog
                 instanceName={this.props.form.getFieldValue('instanceType')}
+                instanceTypes={this.allowedInstanceTypes}
                 launchCluster={this.state.launchCluster}
                 cloudRegionProvider={this.getCloudProvider()}
                 autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
                 gpuScalingConfiguration={this.state.gpuScalingConfiguration}
+                childNodeInstanceConfiguration={this.state.childNodeInstanceConfiguration}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
@@ -1510,9 +1637,20 @@ export default class EditToolForm extends React.Component {
     }
   };
 
+  endpointsAreValid () {
+    try {
+      const endpoints = this.props.form.getFieldValue('endpoints') || [];
+      return !endpoints.some((endpoint) => getValidationError(endpoint));
+    } catch (error) {
+      console.warn(error);
+      return false;
+    }
+  }
+
   render () {
     const {getFieldDecorator} = this.props.form;
     const isTool = this.props.mode === 'tool';
+    const endpointsAreValid = this.endpointsAreValid();
     return (
       <Form>
         {
@@ -1523,16 +1661,16 @@ export default class EditToolForm extends React.Component {
           <Row type="flex">
             <Col xs={24} sm={6} />
             <Col xs={24} sm={12}>
-            <Form.Item>
-              {getFieldDecorator('endpoints',
-                {
-                  initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
-                })(
-                <ToolEndpointsFormItem
-                  disabled={this.state.pending || this.props.readOnly}
-                  ref={this.initializeEndpointsControl} />
-              )}
-            </Form.Item>
+              <Form.Item>
+                {getFieldDecorator('endpoints',
+                  {
+                    initialValue: this.props.tool ? (this.props.tool.endpoints || []).map(e => e) : []
+                  })(
+                  <ToolEndpointsFormItem
+                    disabled={this.state.pending || this.props.readOnly}
+                    ref={this.initializeEndpointsControl} />
+                )}
+              </Form.Item>
             </Col>
           </Row>
         }
@@ -1594,7 +1732,9 @@ export default class EditToolForm extends React.Component {
                   this.props.readOnly ||
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
-                  (this.toolFormParameters && !this.toolFormParameters.isValid)
+                  (this.toolFormParameters && !this.toolFormParameters.isValid) ||
+                  this.state.kubeLabelsHasErrors ||
+                  !endpointsAreValid
                 }>
                 SAVE
               </Button>

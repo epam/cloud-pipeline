@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import {message, Table} from 'antd';
+import {message} from 'antd';
+import SectionsList from './sections-list';
 import styles from './sub-settings.css';
 
 class SubSettings extends React.Component {
@@ -167,39 +168,6 @@ class SubSettings extends React.Component {
       .then(navigate => navigate ? onNavigate() : undefined);
   };
 
-  renderSectionsList () {
-    const columns = [{
-      key: 'title',
-      dataIndex: 'title'
-    }];
-    const {sections = []} = this.props;
-    const {section} = this.state;
-    if (sections.length === 0) {
-      return null;
-    }
-    return (
-      <Table
-        className={classNames(styles.list, 'cp-divider', 'right')}
-        rowKey="key"
-        showHeader={false}
-        pagination={false}
-        dataSource={sections}
-        columns={columns}
-        rowClassName={
-          (item) => classNames(
-            `section-${(item.key.toString() || '').replace(/\s/g, '-').toLowerCase()}`,
-            'cp-settings-sidebar-element',
-            {
-              'cp-table-element-selected': item.key === section,
-              'cp-table-element-disabled': item.disabled
-            }
-          )
-        }
-        onRowClick={(item) => this.onSelectSection(item.key)}
-      />
-    );
-  }
-
   renderSectionContent () {
     const {section} = this.state;
     if (!section) {
@@ -215,6 +183,7 @@ class SubSettings extends React.Component {
       return null;
     }
     let content = children;
+    let extraContent;
     const props = {
       router,
       section: currentSection,
@@ -222,6 +191,7 @@ class SubSettings extends React.Component {
     };
     if (typeof currentSection.render === 'function') {
       content = currentSection.render(props);
+      extraContent = children;
     } else if (typeof children === 'function') {
       content = children(props);
     }
@@ -230,6 +200,7 @@ class SubSettings extends React.Component {
         className={styles.content}
       >
         {content}
+        {extraContent}
       </div>
     );
   }
@@ -237,7 +208,14 @@ class SubSettings extends React.Component {
     const {
       className,
       sections = [],
-      emptyDataPlaceholder
+      emptyDataPlaceholder,
+      showSectionsSearch,
+      sectionsSearchPlaceholder,
+      hideListForSingleSection,
+      sectionsListClassName,
+      beforeListRowRenderer,
+      searchControlsRenderer,
+      sectionListDisabled
     } = this.props;
     if (sections.length === 0) {
       return (
@@ -253,6 +231,21 @@ class SubSettings extends React.Component {
         </div>
       );
     }
+    const {section} = this.state;
+    if (sections.length === 1 && hideListForSingleSection && section) {
+      return (
+        <div
+          className={
+            classNames(
+              className,
+              styles.container
+            )
+          }
+        >
+          {this.renderSectionContent()}
+        </div>
+      );
+    }
     return (
       <div
         className={
@@ -262,7 +255,17 @@ class SubSettings extends React.Component {
           )
         }
       >
-        {this.renderSectionsList()}
+        <SectionsList
+          beforeListRowRenderer={beforeListRowRenderer}
+          activeSectionKey={section}
+          className={classNames(sectionsListClassName, 'cp-divider', 'right')}
+          sections={sections}
+          showSearch={showSectionsSearch}
+          searchPlaceholder={sectionsSearchPlaceholder}
+          onSectionChange={this.onSelectSection}
+          disabled={sectionListDisabled}
+          searchControlsRenderer={searchControlsRenderer}
+        />
         {this.renderSectionContent()}
       </div>
     );
@@ -271,11 +274,15 @@ class SubSettings extends React.Component {
 
 SubSettings.propTypes = {
   className: PropTypes.string,
+  sectionsListClassName: PropTypes.string,
   activeSectionKey: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onSectionChange: PropTypes.func,
+  showSectionsSearch: PropTypes.bool,
+  sectionsSearchPlaceholder: PropTypes.string,
   sections: PropTypes.arrayOf(PropTypes.shape({
     key: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-    title: PropTypes.string,
+    title: PropTypes.oneOfType([PropTypes.string, PropTypes.node]),
+    name: PropTypes.string,
     route: PropTypes.string,
     default: PropTypes.bool,
     render: PropTypes.func,
@@ -284,7 +291,11 @@ SubSettings.propTypes = {
   canNavigate: PropTypes.func,
   children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]),
   emptyDataPlaceholder: PropTypes.node,
-  router: PropTypes.object
+  router: PropTypes.object,
+  hideListForSingleSection: PropTypes.bool,
+  beforeListRowRenderer: PropTypes.func,
+  searchControlsRenderer: PropTypes.func,
+  sectionListDisabled: PropTypes.bool
 };
 
 export default observer(SubSettings);

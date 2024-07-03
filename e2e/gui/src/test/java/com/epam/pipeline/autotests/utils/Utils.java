@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,15 @@ import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
-import java.awt.AWTException;
-import java.awt.Color;
-import java.awt.Robot;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,6 +71,7 @@ public class Utils {
     public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
+    public static final String LATEST_VERSION = "latest";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -120,17 +121,17 @@ public class Utils {
         sleep(500, MILLISECONDS);
         final Actions action = actions().moveToElement(field).click();
         for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
+            action.sendKeys("\b").sendKeys(Keys.DELETE).perform();
         }
-        action.perform();
     }
 
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
         String selectAll = Keys.chord(Keys.CONTROL, "a");
-        final Actions action = actions().moveToElement(field).click().sendKeys(selectAll)
-                .sendKeys(Keys.DELETE);
-        action.perform();
+        actions().moveToElement(field).click()
+                .sendKeys(selectAll)
+                .sendKeys(Keys.DELETE)
+                .perform();
     }
 
     public static void sendKeysWithSlashes(final String text) {
@@ -155,6 +156,15 @@ public class Utils {
         //////////////////////////////////////////////////////////////////////////
     }
 
+    public static void pasteText(final SelenideElement field, final String text) {
+        final StringSelection stringSelection = new StringSelection(text);
+        Toolkit.getDefaultToolkit().getSystemClipboard()
+                .setContents(stringSelection, null);
+        actions().moveToElement(field).click()
+                .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                .perform();
+    }
+
     public static void sendKeysByChars(final SelenideElement field, final String text) {
         final char[] charArray = text.toCharArray();
         int charNumber = 0;
@@ -176,9 +186,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-pipeline")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-pipeline")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(pipelineName)))
                         .collect(toList());
@@ -197,9 +207,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(toolSelfName + ":latest")
@@ -221,9 +231,9 @@ public class Utils {
         return findRunId(new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
-                return context.findElements(className("run-table__run")).stream()
+                return context.findElements(className("un-table__run")).stream()
                         .filter(element ->
-                                element.findElements(byClassName("run-table__run-row-docker-image")).stream()
+                                element.findElements(byClassName("un-table-columns__run-row-docker-image")).stream()
                                         .map(WebElement::getText)
                                         .anyMatch(pipelineName -> pipelineName.equals(toolSelfName)
                                                 || pipelineName.equals(nameWithTag)
@@ -240,7 +250,7 @@ public class Utils {
     }
 
     private static String findRunId(final By runRowQualifier) {
-        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("run-table__run-row-name"));
+        final SelenideElement element = $(runRowQualifier).should(exist).find(byClassName("un-table-columns__run-row-name"));
         final String runName = element.text();
         return runNameToRunId(runName);
     }
@@ -260,6 +270,14 @@ public class Utils {
 
     public static File createTempFile() throws RuntimeException {
         return createTempFile("");
+    }
+
+    public static File createTempFileWithSpecificSize(final long sizeInBytes) throws IOException {
+        final File tempFile = createTempFile();
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(tempFile, "rw");
+        randomAccessFile.setLength(sizeInBytes);
+        randomAccessFile.close();
+        return tempFile;
     }
 
     public static File createTempFile(String suffix) throws RuntimeException {
