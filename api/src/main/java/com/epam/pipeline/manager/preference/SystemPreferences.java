@@ -49,7 +49,7 @@ import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
 import com.epam.pipeline.entity.sharing.StaticResourceSettings;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
-import com.epam.pipeline.entity.tool.ToolSizeLimits;
+import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -168,9 +168,9 @@ public class SystemPreferences {
             COMMIT_GROUP, isGreaterThan(0));
     public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
             COMMIT_GROUP, isGreaterThan(0));
-    public static final ObjectPreference<ToolSizeLimits> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
-            "commit.tool.size.limits", null, new TypeReference<ToolSizeLimits>() {},
-            COMMIT_GROUP, isNullOrValidJson(new TypeReference<ToolSizeLimits>() {}));
+    public static final ObjectPreference<TwoBoundaryLimit> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
+            "commit.container.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
+            COMMIT_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
 
     public static final IntPreference GET_CONTAINER_SIZE_TIMEOUT = new IntPreference("get.container.size.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
@@ -730,6 +730,10 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
+    public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
+            "launch.tool.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers

@@ -153,7 +153,7 @@ public class DockerContainerOperationManager {
     private String containerLayersCountScriptUrl;
 
     @Value("${container.size.script.url}")
-    private String getSizeCommandUrl;
+    private String containerSizeScriptUrl;
 
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
@@ -278,7 +278,7 @@ public class DockerContainerOperationManager {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
             final String getSizeCommand = SimpleDockerContainerCommand.builder()
-                    .runScriptUrl(getSizeCommandUrl)
+                    .runScriptUrl(containerSizeScriptUrl)
                     .containerId(containerId)
                     .build()
                     .getCommand();
@@ -289,7 +289,7 @@ public class DockerContainerOperationManager {
             Assert.state(isFinished && sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_SIZE_FAILED, run.getId()));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
-                final String result = reader.lines().collect(Collectors.joining());
+                final String result = reader.lines().collect(Collectors.joining()).trim();
                 size = Long.parseLong(result);
             }
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {

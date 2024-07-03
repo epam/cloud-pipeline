@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.run;
+package com.epam.pipeline.entity.utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
@@ -22,7 +22,7 @@ import lombok.Data;
 @Data
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CommitRunCheckResult {
-    private CommitRunCheck<Boolean> enoughSpace;
-    private CommitRunCheck<Long> containerSize;
+public class TwoBoundaryLimit {
+    private Long soft;
+    private Long hard;
 }

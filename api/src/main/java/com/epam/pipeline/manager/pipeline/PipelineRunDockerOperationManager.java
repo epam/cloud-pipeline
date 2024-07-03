@@ -26,9 +26,8 @@ import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import com.epam.pipeline.entity.run.CommitRunCheck;
-import com.epam.pipeline.entity.run.CommitRunCheckStatus;
-import com.epam.pipeline.entity.tool.ToolSizeLimits;
+import com.epam.pipeline.entity.utils.ConditionCheck;
+import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
@@ -39,6 +38,8 @@ import com.epam.pipeline.manager.quota.RunLimitsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +59,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class PipelineRunDockerOperationManager {
+    private static final String FREE_DISK_SPACE_IS_NOT_ENOUGH_MESSAGE = "Free disk space is not enough";
+
     private final DockerContainerOperationManager dockerContainerOperationManager;
     private final PipelineRunManager pipelineRunManager;
     private final DockerRegistryManager dockerRegistryManager;
@@ -85,7 +88,7 @@ public class PipelineRunDockerOperationManager {
                                  boolean stopPipeline, boolean checkSize) {
         checkAbilityToPerformOperation();
         if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(id),
+            Assert.state(BooleanUtils.isTrue(checkFreeSpaceAvailable(id).getValue()),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH));
         }
 
@@ -119,13 +122,14 @@ public class PipelineRunDockerOperationManager {
         return dockerContainerOperationManager.getContainerLayers(pipelineRun);
     }
 
-    public CommitRunCheck<Long> getContainerSize(final Long id) {
+    public ConditionCheck<Long> getContainerSize(final Long id) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         final long containerSize = dockerContainerOperationManager.getContainerSize(pipelineRun);
-        final ToolSizeLimits limits = preferenceManager.getPreference(SystemPreferences.COMMIT_TOOL_SIZE_LIMITS);
-        return CommitRunCheck.<Long>builder()
-                .status(getCommitRunCheckStatus(containerSize, limits))
-                .message(getCommitRunCheckMessage(containerSize, limits))
+        final TwoBoundaryLimit limits = preferenceManager.getPreference(SystemPreferences.COMMIT_TOOL_SIZE_LIMITS);
+        final Pair<ConditionCheck.Result, String> containerSizeCheck = getCommitRunCheckStatus(containerSize, limits);
+        return ConditionCheck.<Long>builder()
+                .result(containerSizeCheck.getKey())
+                .message(containerSizeCheck.getValue())
                 .value(containerSize)
                 .build();
     }
@@ -139,7 +143,10 @@ public class PipelineRunDockerOperationManager {
     public PipelineRun pauseRun(Long runId, boolean checkSize) {
         checkAbilityToPerformOperation();
         if (checkSize) {
-            Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
+            Assert.state(
+                    BooleanUtils.isTrue(checkFreeSpaceAvailable(runId).getValue()),
+                    MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH
+            );
         }
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.isTrue(pipelineRun.getInitialized(),
@@ -184,7 +191,7 @@ public class PipelineRunDockerOperationManager {
      * @param runId {@link PipelineRun} id for pipeline run
      * @return true if free space is enough
      */
-    public Boolean checkFreeSpaceAvailable(final Long runId) {
+    public ConditionCheck<Boolean> checkFreeSpaceAvailable(final Long runId) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
         final long availableDisk = getDiskSpaceAvailable(pipelineRun);
@@ -193,10 +200,14 @@ public class PipelineRunDockerOperationManager {
                         * preferenceManager.getPreference(SystemPreferences.CLUSTER_DOCKER_EXTRA_MULTI) / 2);
         log.debug("Run {} available disk: {} required for image size: {}", runId, availableDisk, requiredImageSize);
         if (availableDisk < requiredImageSize) {
-            log.warn("Free disk space is not enough");
-            return false;
+            log.warn(FREE_DISK_SPACE_IS_NOT_ENOUGH_MESSAGE);
+            return ConditionCheck.<Boolean>builder()
+                    .result(ConditionCheck.Result.FAIL)
+                    .message(FREE_DISK_SPACE_IS_NOT_ENOUGH_MESSAGE)
+                    .value(false)
+                    .build();
         }
-        return true;
+        return ConditionCheck.<Boolean>builder().result(ConditionCheck.Result.OK).value(true).build();
     }
 
     /**
@@ -305,22 +316,14 @@ public class PipelineRunDockerOperationManager {
         }
     }
 
-    private static String getCommitRunCheckMessage(final long containerSize, final ToolSizeLimits toolSizeLimits) {
-        if (toolSizeLimits == null) {
-            return null;
+    private static Pair<ConditionCheck.Result, String> getCommitRunCheckStatus(
+            final long containerSize, final TwoBoundaryLimit containerSizeLimits) {
+        if (containerSizeLimits == null || containerSize <= containerSizeLimits.getSoft()) {
+            return Pair.create(ConditionCheck.Result.OK, null);
+        } else if (containerSize <= containerSizeLimits.getHard()) {
+            return Pair.create(ConditionCheck.Result.WARN, "Container image size may be quite big!");
+        } else {
+            return Pair.create(ConditionCheck.Result.FAIL, "Container is too big for commit.");
         }
-        return containerSize <= toolSizeLimits.getCommitToolSoftLimit() ? null :
-                (containerSize <= toolSizeLimits.getRunToolHardLimit() ? "Container image will be too big." :
-                        "Container is too big for commit.");
-    }
-
-    private static CommitRunCheckStatus getCommitRunCheckStatus(final long containerSize,
-                                                                final ToolSizeLimits toolSizeLimits) {
-        if (toolSizeLimits == null) {
-            return CommitRunCheckStatus.OK;
-        }
-        return containerSize <= toolSizeLimits.getCommitToolSoftLimit() ? CommitRunCheckStatus.OK :
-                (containerSize <= toolSizeLimits.getRunToolHardLimit() ? CommitRunCheckStatus.WARN :
-                        CommitRunCheckStatus.FAIL);
     }
 }

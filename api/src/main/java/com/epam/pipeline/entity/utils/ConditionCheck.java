@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.tool;
+package com.epam.pipeline.entity.utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
@@ -22,9 +22,13 @@ import lombok.Data;
 @Data
 @Builder
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ToolSizeLimits {
-    private Long commitToolSoftLimit;
-    private Long commitToolHardLimit;
-    private Long runToolSoftLimit;
-    private Long runToolHardLimit;
+public class ConditionCheck<T> {
+
+    public enum Result {
+        FAIL, WARN, OK
+    }
+
+    private Result result;
+    private String message;
+    private T value;
 }

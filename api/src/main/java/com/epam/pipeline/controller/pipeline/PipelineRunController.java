@@ -48,7 +48,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
-import com.epam.pipeline.entity.run.CommitRunCheckResult;
+import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -254,11 +254,13 @@ public class PipelineRunController extends AbstractRestController {
 
     @GetMapping(value = "/run/{runId}/commit/check")
     @ApiOperation(
-            value = "Gets container size and checks if free disk space is available.",
-            notes = "Gets container size and checks if free disk space is available.",
+            value = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
+            notes = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<CommitRunCheckResult> getCommitRunCheckResult(@PathVariable(value = RUN_ID) Long runId) {
+    public Result<CommitRunConditions> getCommitRunCheckResult(@PathVariable(value = RUN_ID) Long runId) {
         return Result.success(runApiService.getCommitRunCheckResult(runId));
     }
 
