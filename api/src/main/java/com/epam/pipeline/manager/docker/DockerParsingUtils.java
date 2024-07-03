@@ -55,7 +55,8 @@ public final class DockerParsingUtils {
             .toFormatter();
     private static final String NOP_PREFIX = "#(nop)";
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final String ADD_TO_FROM_COMMAND_PATTERN = "ADD (file|multi|dir):[a-zA-Z0-9]* in /";
+    private static final String SPACE = " ";
+    private static final String ADD_TO_FROM_COMMAND_PATTERN = "(ADD|COPY) (file|multi|dir):[a-zA-Z0-9]* in /";
     private static final List<String> COMMANDS = Arrays.asList("ADD", "ARG", "CMD", "COPY", "ENTRYPOINT", "ENV",
             "EXPOSE", "FROM", "HEALTHCHECK", "LABEL", "MAINTAINER", "ONBUILD", "RUN", "SHELL", "STOPSIGNAL", "USER",
             "VOLUME", "WORKDIR");
@@ -91,7 +92,8 @@ public final class DockerParsingUtils {
             .filter(CollectionUtils::isNotEmpty)
             .map(commands -> String.join(StringUtils.EMPTY, commands))
             .map(DockerParsingUtils::cropNopPrefix)
-            .map(command -> command.replaceAll("\\t", StringUtils.EMPTY))
+            .map(String::trim)
+            .map(command -> command.replaceAll("\\t+", SPACE))
             .collect(Collectors.toList());
         Collections.reverse(commandsHistory);
         return commandsHistory;
@@ -111,7 +113,7 @@ public final class DockerParsingUtils {
         final List<String> result = new ArrayList<>();
 
         result.add(String.format(FROM_TEMPLATE, from));
-        // ONLY THE FIRST "ADD file:... / " line in the file has to be changed to "FROM <from>"
+        // ONLY THE FIRST "ADD file:... / " or "COPY file:... / " line in the file has to be changed to "FROM <from>"
         final int startIndex = prettifyCommand(commands.get(0)).matches(ADD_TO_FROM_COMMAND_PATTERN) ? 1 : 0;
 
         if (CollectionUtils.isEmpty(commands)) {
@@ -160,7 +162,7 @@ public final class DockerParsingUtils {
     }
 
     private static String prettifyCommand(final String command) {
-        return command.replaceAll("\\s+", " ").trim();
+        return command.replaceAll("\\s+", SPACE).trim();
     }
 
     public static String getLaunchPodPattern(final String command) {
@@ -209,7 +211,7 @@ public final class DockerParsingUtils {
     }
 
     private static LocalDateTime extractDateTime(String date, String time) {
-        return LocalDateTime.parse(date + " " + time, FORMATTER);
+        return LocalDateTime.parse(date + SPACE + time, FORMATTER);
     }
 
     private static <T> T getMinElement(Stream<T> stream, Comparator<T> comparator) {
