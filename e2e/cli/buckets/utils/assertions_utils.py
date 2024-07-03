@@ -71,3 +71,18 @@ def create_file_on_bucket(bucket_name, key, source):
     pipe_storage_cp(source, "cp://%s/%s" % (bucket_name, key))
     assert object_exists(bucket_name, key)
     return ObjectInfo(False).build(bucket_name, key)
+
+
+def assert_local_files_count(folder_path, expected_files_count, test_case):
+    command = ['ls "%s" | wc -l' % folder_path]
+    ls_process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  shell=True)
+    stdout, stderr = ls_process.communicate()
+    actual_files_count = int(str(stdout).strip())
+    if stderr:
+        pytest.fail("The test case {} failed.\n{}".format(test_case, stderr))
+    try:
+        assert actual_files_count == expected_files_count, \
+            "Expected files count: %d, actual %d" % (expected_files_count, actual_files_count)
+    except AssertionError as e:
+        pytest.fail("The test case {} failed.\n{}".format(test_case, e.message))

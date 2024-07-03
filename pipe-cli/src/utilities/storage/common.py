@@ -342,6 +342,20 @@ class AbstractListingManager:
         pass
 
     @abstractmethod
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        """
+        Lists files and folders on the specified page by a relative path in the current storage.
+
+        :param relative_path: Storage relative path to be listed.
+        :param recursive: Specifies if the listing has to be recursive.
+        :param page_size: Max number of items on the page.
+        :param start_token: Paging continuation token.
+        :param show_archive: Specifies if archived items have to be listed
+        """
+        pass
+
+    @abstractmethod
     def get_summary_with_depth(self, max_depth, relative_path=None):
         """
         Returns tree with storage usage statistic under the given relative path and according to given depth.
@@ -383,6 +397,10 @@ class AbstractListingManager:
             yield ('File', item.name, item_relative_path, item.size,
                    StorageOperations.get_item_modification_datetime_utc(item))
 
+    @abstractmethod
+    def get_paging_items(self, relative_path, start_token, page_size):
+        pass
+
     def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
         prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
         for item in self.list_items(prefix, show_all=True):
@@ -413,7 +431,8 @@ class AbstractDeleteManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         """
         Deletes all items under the given path.
 
@@ -423,6 +442,7 @@ class AbstractDeleteManager:
         :param include: Include item pattern.
         :param version: Version to be deleted.
         :param hard_delete: Specifies if all item versions have to be deleted.
+        :param page_size: Specifies page size for listing objects.
         """
         pass
 

@@ -33,6 +33,7 @@ class TestMoveWithFolders(object):
     test_file_1 = test_prefix + TestFiles.TEST_FILE1
     test_file_with_other_extension = test_prefix + TestFiles.TEST_FILE_WITH_OTHER_EXTENSION
     test_file_2 = test_prefix + TestFiles.TEST_FILE2
+    test_file_3 = "cp-folders-" + TestFiles.TEST_FILE3
     test_folder = test_prefix + TestFiles.TEST_FOLDER
     test_folder_2 = test_prefix + TestFiles.TEST_FOLDER2
     source_dir = "mv-folders-sources%s/" % get_test_prefix()
@@ -50,6 +51,10 @@ class TestMoveWithFolders(object):
         create_test_file(os.path.abspath(cls.source_dir + cls.test_file_1), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.txt
         create_test_file(os.path.abspath(cls.source_dir + cls.test_folder + cls.test_file_1), TestFiles.DEFAULT_CONTENT)
+        # ./test_folder/test_file2.txt
+        create_test_file(os.path.abspath(cls.test_folder + cls.test_file_2), TestFiles.DEFAULT_CONTENT)
+        # ./test_folder/test_file3.txt
+        create_test_file(os.path.abspath(cls.test_folder + cls.test_file_3), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.json
         create_test_file(os.path.abspath(cls.source_dir + cls.test_folder + cls.test_file_with_other_extension),
                          TestFiles.DEFAULT_CONTENT)
@@ -58,8 +63,13 @@ class TestMoveWithFolders(object):
                          TestFiles.DEFAULT_CONTENT)
         # ./test_file2.txt
         create_test_file(os.path.abspath(cls.source_dir + cls.test_file_2), TestFiles.COPY_CONTENT)
+        # ./test_file3.txt
+        create_test_file(os.path.abspath(cls.source_dir + cls.test_file_3), TestFiles.COPY_CONTENT)
         # ~/test_cp_home_dir/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.source_dir + cls.home_dir, cls.test_file_1),
+                         TestFiles.DEFAULT_CONTENT)
+        # ~/test_cp_home_dir/test_file2.txt
+        create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_2),
                          TestFiles.DEFAULT_CONTENT)
         # ~/test_cp_home_dir/other/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.source_dir + cls.home_dir, cls.test_folder_2,
@@ -99,6 +109,8 @@ class TestMoveWithFolders(object):
         if force:
             pipe_storage_cp(os.path.abspath(self.source_dir + self.test_file_2), destination + self.test_file_1,
                             expected_status=0)
+            pipe_storage_cp(os.path.abspath(self.source_dir + self.test_file_2), destination + self.test_file_2,
+                            expected_status=0)
             pipe_storage_cp(os.path.abspath(self.source_dir + self.test_file_2),
                             destination + self.test_folder + self.test_file_1,
                             expected_status=0)
@@ -108,7 +120,9 @@ class TestMoveWithFolders(object):
             source_for_checks = source
         if switch_dir:
             dir_path = os.path.abspath(self.checkout_dir)
-            create_test_files(TestFiles.DEFAULT_CONTENT, os.path.join(dir_path, self.test_file_1),
+            create_test_files(TestFiles.DEFAULT_CONTENT,
+                              os.path.join(dir_path, self.test_file_1),
+                              os.path.join(dir_path, self.test_file_2),
                               os.path.join(dir_path, self.test_folder, self.test_file_1))
             assert os.path.exists(os.path.join(dir_path, self.test_file_1))
             assert os.path.exists(os.path.join(dir_path, self.test_folder, self.test_file_1))
@@ -116,6 +130,7 @@ class TestMoveWithFolders(object):
             os.chdir(dir_path)
         else:
             create_test_file(os.path.join(source_for_checks, self.test_file_1), TestFiles.DEFAULT_CONTENT)
+            create_test_file(os.path.join(source_for_checks, self.test_file_2), TestFiles.DEFAULT_CONTENT)
             create_test_file(os.path.join(source_for_checks, self.test_folder, self.test_file_1),
                              TestFiles.DEFAULT_CONTENT)
         source_file_object = ObjectInfo(True).build(os.path.join(source_for_checks, self.test_file_1))
@@ -126,10 +141,14 @@ class TestMoveWithFolders(object):
         assert_copied_object_info(source_file_object,
                                   ObjectInfo(False).build(self.bucket_name, os.path.join(case, self.test_file_1)),
                                   case)
+        assert_copied_object_info(source_file_object,
+                                  ObjectInfo(False).build(self.bucket_name, os.path.join(case, self.test_file_2)),
+                                  case)
         assert_copied_object_info(source_folder_file_object,
                                   ObjectInfo(False).build(self.bucket_name, os.path.join(
                                       case, self.test_folder + self.test_file_1)), case)
         assert_files_deleted(None, os.path.join(source_for_checks, self.test_file_1))
+        assert_files_deleted(None, os.path.join(source_for_checks, self.test_file_2))
         assert_files_deleted(None, os.path.join(source_for_checks, self.test_folder, self.test_file_1))
         os.chdir(self.current_directory)
 
@@ -155,6 +174,7 @@ class TestMoveWithFolders(object):
         source = "cp://{}/{}/".format(self.bucket_name, case)
         if force:
             create_test_file(destination + self.test_file_1, TestFiles.COPY_CONTENT)
+            create_test_file(destination + self.test_file_2, TestFiles.COPY_CONTENT)
             create_test_file(destination + self.test_folder + self.test_file_1, TestFiles.COPY_CONTENT)
         if destination.startswith("~"):
             destination_for_checks = os.path.join(os.path.expanduser('~'), destination.strip("~/"))
@@ -172,10 +192,14 @@ class TestMoveWithFolders(object):
         assert_copied_object_info(source_file_object,
                                   ObjectInfo(True).build(os.path.join(destination_for_checks, self.test_file_1)),
                                   case)
+        assert_copied_object_info(source_file_object,
+                                  ObjectInfo(True).build(os.path.join(destination_for_checks, self.test_file_2)),
+                                  case)
         assert_copied_object_info(source_folder_file_object,
                                   ObjectInfo(True).build(os.path.join(destination_for_checks, self.test_folder,
                                                                       self.test_file_1)), case)
         assert_files_deleted(self.bucket_name, os.path.join(case, self.test_file_1))
+        assert_files_deleted(self.bucket_name, os.path.join(case, self.test_file_2))
         assert_files_deleted(self.bucket_name, os.path.join(case, self.test_folder + self.test_file_1))
         os.chdir(self.current_directory)
 
@@ -194,25 +218,34 @@ class TestMoveWithFolders(object):
         source = "cp://{}/{}/".format(self.bucket_name, test_case)
         destination = "cp://{}/{}/".format(self.other_bucket_name, test_case)
         pipe_storage_cp(self.source_dir + self.test_file_1, source + self.test_file_1, expected_status=0)
+        pipe_storage_cp(self.source_dir + self.test_file_2, source + self.test_file_2, expected_status=0)
         pipe_storage_cp(self.source_dir + self.test_folder + self.test_file_1, source + self.test_folder +
                         self.test_file_1, expected_status=0)
-        source_file_object = ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1))
+        source_file_object_1 = ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1))
+        source_file_object_2 = ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_2))
         source_folder_file_object = ObjectInfo(False).build(self.bucket_name, os.path.join(
             test_case, self.test_folder, self.test_file_1))
         if force:
-            pipe_storage_cp(self.source_dir + self.test_file_2, destination + self.test_file_1,
+            pipe_storage_cp(self.source_dir + self.test_file_1, destination + self.test_file_1,
+                            expected_status=0)
+            pipe_storage_cp(self.source_dir + self.test_file_2, destination + self.test_file_2,
                             expected_status=0)
             pipe_storage_cp(self.source_dir + self.test_file_2,
                             destination + self.test_folder + self.test_file_1, expected_status=0)
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_mv(source, destination, force=force, recursive=True, expected_status=0)
-        assert_copied_object_info(source_file_object,
+        assert_copied_object_info(source_file_object_1,
                                   ObjectInfo(False).build(self.other_bucket_name,
                                                           os.path.join(test_case, self.test_file_1)), test_case)
+        assert_copied_object_info(source_file_object_2,
+                                  ObjectInfo(False).build(self.other_bucket_name,
+                                                          os.path.join(test_case, self.test_file_2)), test_case)
+
         assert_copied_object_info(source_folder_file_object,
                                   ObjectInfo(False).build(self.other_bucket_name, os.path.join(
                                       test_case, self.test_folder, self.test_file_1)), test_case)
         assert_files_deleted(self.bucket_name, self.source_dir + self.test_file_1)
+        assert_files_deleted(self.bucket_name, self.source_dir + self.test_file_2)
         assert_files_deleted(self.bucket_name, self.source_dir + self.test_folder + self.test_file_1)
 
     @pytest.mark.run(order=1)
@@ -601,6 +634,7 @@ class TestMoveWithFolders(object):
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
+        source3 = os.path.join(source_folder, self.test_file_3)
         source = os.path.abspath(os.path.join(self.test_folder, case))
         destination = "cp://%s/%s" % (self.bucket_name, case)
         source, destination = prepare_paths_with_slash(source, destination, has_source_slash, has_destination_slash)
@@ -608,12 +642,15 @@ class TestMoveWithFolders(object):
             create_test_folder(source_folder)
             create_test_file(source1, TestFiles.DEFAULT_CONTENT)
             create_test_file(source2, TestFiles.COPY_CONTENT)
+            create_test_file(source3, TestFiles.COPY_CONTENT)
 
             pipe_storage_mv(source, destination, recursive=True)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
             assert not os.path.exists(source1)
             assert not os.path.exists(source2)
+            assert not os.path.exists(source3)
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
@@ -635,9 +672,11 @@ class TestMoveWithFolders(object):
             pipe_storage_mv(source, destination, recursive=True)
             assert os.path.exists(os.path.join(destination, self.test_file_1))
             assert os.path.exists(os.path.join(destination, self.test_file_2))
+            assert os.path.exists(os.path.join(destination, self.test_file_3))
 
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
@@ -661,9 +700,11 @@ class TestMoveWithFolders(object):
             pipe_storage_mv(source, destination, recursive=True)
             assert object_exists(self.other_bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.other_bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.other_bucket_name, os.path.join(case, self.test_file_3))
 
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
@@ -674,19 +715,23 @@ class TestMoveWithFolders(object):
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
+        source3 = os.path.join(source_folder, self.test_file_3)
         destination = "cp://%s/%s" % (self.bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         try:
             create_test_folder(source_folder)
             create_test_file(source1, TestFiles.DEFAULT_CONTENT)
             create_test_file(source2, TestFiles.COPY_CONTENT)
+            create_test_file(source3, TestFiles.COPY_CONTENT)
 
             expected = create_file_on_bucket(self.bucket_name, key1, source1)
 
             pipe_storage_mv(source_folder, destination, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
             actual = ObjectInfo(False).build(self.bucket_name, key1)
             assert expected.size == actual.size, \
                 "Sizes must be the same.\nExpected %s\nActual %s" % (expected.size, actual.size)
@@ -694,6 +739,7 @@ class TestMoveWithFolders(object):
                 "Last modified time of destination and source file must be the same.\n" \
                 "Expected %s\nActual %s".format(expected.last_modified, actual.last_modified)
             assert not os.path.exists(source2)
+            assert not os.path.exists(source3)
             assert os.path.exists(source1)
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
@@ -705,25 +751,30 @@ class TestMoveWithFolders(object):
         source_folder = os.path.abspath(os.path.join(self.test_folder, case))
         source1 = os.path.join(source_folder, self.test_file_1)
         source2 = os.path.join(source_folder, self.test_file_2)
+        source3 = os.path.join(source_folder, self.test_file_3)
         destination = "cp://%s/%s" % (self.bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         try:
             create_test_folder(source_folder)
             create_test_file(source1, TestFiles.DEFAULT_CONTENT)
             create_test_file(source2, TestFiles.COPY_CONTENT)
+            create_test_file(source3, TestFiles.COPY_CONTENT)
 
             expected = create_file_on_bucket(self.bucket_name, key1, source2)
 
             pipe_storage_mv(source_folder, destination, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
             actual = ObjectInfo(False).build(self.bucket_name, key1)
             assert not expected.size == actual.size, "Sizes must be the different."
             assert not expected.last_modified == actual.last_modified, \
                 "Last modified time of destination and source file must be different."
             assert not os.path.exists(source2)
             assert not os.path.exists(source1)
+            assert not os.path.exists(source3)
         except BaseException as e:
             pytest.fail("Test case {} failed. {}".format(case, e.message))
 
@@ -734,6 +785,7 @@ class TestMoveWithFolders(object):
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
+        destination3 = os.path.join(destination_folder, self.test_file_3)
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         try:
             create_test_file(destination1, TestFiles.DEFAULT_CONTENT)
@@ -742,12 +794,15 @@ class TestMoveWithFolders(object):
 
             pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_1)), source_folder)
             pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_2)), source_folder)
+            pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_3)), source_folder)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
 
             pipe_storage_mv(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert os.path.exists(destination1)
             assert os.path.exists(destination2)
+            assert os.path.exists(destination3)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             actual = ObjectInfo(True).build(destination1)
             assert expected.size == actual.size, \
@@ -765,6 +820,7 @@ class TestMoveWithFolders(object):
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
+        destination3 = os.path.join(destination_folder, self.test_file_3)
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         try:
             create_test_file(destination1, TestFiles.COPY_CONTENT)
@@ -773,12 +829,15 @@ class TestMoveWithFolders(object):
 
             pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_1)), source_folder)
             pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_2)), source_folder)
+            pipe_storage_cp(os.path.abspath(os.path.join(self.source_dir, self.test_file_3)), source_folder)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
 
             pipe_storage_mv(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert os.path.exists(destination1)
             assert os.path.exists(destination2)
+            assert os.path.exists(destination3)
             assert not object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             actual = ObjectInfo(True).build(destination1)
             assert not expected.size == actual.size, "Sizes must be the different."
@@ -795,21 +854,27 @@ class TestMoveWithFolders(object):
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         source_file1 = os.path.abspath(os.path.join(self.source_dir, self.test_file_1))
         source_file2 = os.path.abspath(os.path.join(self.source_dir, self.test_file_2))
+        source_file3 = os.path.abspath(os.path.join(self.source_dir, self.test_file_3))
         try:
             expected = create_file_on_bucket(self.other_bucket_name, key1, source_file1)
 
             pipe_storage_cp(source_file1, "cp://%s/%s" % (self.bucket_name, key1))
             pipe_storage_cp(source_file2, "cp://%s/%s" % (self.bucket_name, key2))
+            pipe_storage_cp(source_file2, "cp://%s/%s" % (self.bucket_name, key3))
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
 
             pipe_storage_mv(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.other_bucket_name, key1)
             assert object_exists(self.other_bucket_name, key2)
+            assert object_exists(self.other_bucket_name, key3)
             assert object_exists(self.bucket_name, key1)
             assert not object_exists(self.bucket_name, key2)
+            assert not object_exists(self.bucket_name, key3)
             actual = ObjectInfo(False).build(self.other_bucket_name, key1)
             assert expected.size == actual.size, \
                 "Sizes must be the same.\nExpected %s\nActual %s" % (expected.size, actual.size)
@@ -827,21 +892,27 @@ class TestMoveWithFolders(object):
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         source_file1 = os.path.abspath(os.path.join(self.source_dir, self.test_file_1))
         source_file2 = os.path.abspath(os.path.join(self.source_dir, self.test_file_2))
+        source_file3 = os.path.abspath(os.path.join(self.source_dir, self.test_file_3))
         try:
             expected = create_file_on_bucket(self.other_bucket_name, key1, source_file2)
 
             pipe_storage_cp(source_file1, "cp://%s/%s" % (self.bucket_name, key1))
             pipe_storage_cp(source_file2, "cp://%s/%s" % (self.bucket_name, key2))
+            pipe_storage_cp(source_file2, "cp://%s/%s" % (self.bucket_name, key3))
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
 
             pipe_storage_mv(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.other_bucket_name, key1)
             assert object_exists(self.other_bucket_name, key2)
+            assert object_exists(self.other_bucket_name, key3)
             assert not object_exists(self.bucket_name, key1)
             assert not object_exists(self.bucket_name, key2)
+            assert not object_exists(self.bucket_name, key3)
             actual = ObjectInfo(False).build(self.other_bucket_name, key1)
             assert not expected.size == actual.size, "Sizes must be the different."
             assert not expected.last_modified == actual.last_modified, \
@@ -853,5 +924,7 @@ class TestMoveWithFolders(object):
         source_files = os.path.abspath(self.source_dir)
         source1 = os.path.join(source_files, self.test_file_1)
         source2 = os.path.join(source_files, self.test_file_2)
+        source3 = os.path.join(source_files, self.test_file_3)
         pipe_storage_cp(source1, "cp://%s/%s/%s" % (self.bucket_name, case, self.test_file_1))
         pipe_storage_cp(source2, "cp://%s/%s/%s" % (self.bucket_name, case, self.test_file_2))
+        pipe_storage_cp(source3, "cp://%s/%s/%s" % (self.bucket_name, case, self.test_file_3))
