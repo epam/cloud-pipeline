@@ -150,7 +150,7 @@ public final class DockerParsingUtils {
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
                 command = String.format(RUN_TEMPLATE, command.trim());
             }
-            result.add(command.replaceAll("\\|[0-9]* ", StringUtils.EMPTY).trim());
+            result.add(command.replaceAll("\\|[0-9]+ ", StringUtils.EMPTY).trim());
         }
         if (StringUtils.isNotBlank(lastCmd)) {
             result.add(lastCmd);
