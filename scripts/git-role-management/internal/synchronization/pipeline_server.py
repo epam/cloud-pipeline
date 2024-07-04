@@ -36,7 +36,7 @@ class PipelineServer(object):
         self.__groups__ = []
         self.__git_servers__ = {}
 
-    def synchronize(self, pipeline_ids=[]):
+    def synchronize(self, pipeline_ids=[], force_synch_user_ssh_keys=True):
         try:
             self.__users__ = self.__users_api__.list()
             __users_with_email__ = filter(lambda x: x.email is not None, self.__users__)
@@ -54,7 +54,7 @@ class PipelineServer(object):
             self.__git_servers__ = {}
             for pipeline in self.list_pipelines():
                 if pipeline_ids is None or len(pipeline_ids) == 0 or pipeline.identifier in pipeline_ids:
-                    self.synchronize_pipeline(pipeline)
+                    self.synchronize_pipeline(pipeline, force_synch_user_ssh_keys)
                     print ''
         except RuntimeError as error:
             print error.message
@@ -63,7 +63,7 @@ class PipelineServer(object):
         except:
             print 'Error: ', traceback.format_exc()
 
-    def synchronize_users(self, git_servers=[]):
+    def synchronize_users(self, git_servers=[], force_synch_user_ssh_keys=True):
         try:
             self.__users__ = self.__users_api__.list()
             __users_with_email__ = filter(lambda x: x.email is not None, self.__users__)
@@ -83,7 +83,7 @@ class PipelineServer(object):
                 if git_server.initialized:
                     for user in self.__users__:
                         if user.username is not None:
-                            git_server.synchronize_user(user.username)
+                            git_server.synchronize_user(user.username, force_synch_user_ssh_keys)
         except RuntimeError as error:
             print error.message
         except KeyboardInterrupt:
@@ -91,7 +91,7 @@ class PipelineServer(object):
         except:
             print 'Error: ', traceback.format_exc()
 
-    def synchronize_pipeline(self, pipeline):
+    def synchronize_pipeline(self, pipeline, force_synch_user_ssh_keys):
         try:
             print 'Processing pipeline #{} {}.'.format(pipeline.identifier, pipeline.name)
             parse_result = urlparse(pipeline.repository)
@@ -101,7 +101,7 @@ class PipelineServer(object):
                 git_server.initialize()
                 self.__git_servers__[server] = git_server
             git_server = self.__git_servers__[server]
-            git_server.synchronize(pipeline)
+            git_server.synchronize(pipeline, force_synch_user_ssh_keys)
         except RuntimeError as error:
             print error.message
         except KeyboardInterrupt:
