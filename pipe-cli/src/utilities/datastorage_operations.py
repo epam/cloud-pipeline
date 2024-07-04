@@ -170,11 +170,7 @@ class DataStorageOperations(object):
         if not verify_destination and not file_list and source_wrapper.get_type() == WrapperType.S3:
             items_batch, next_token = source_wrapper.get_paging_items(start_token=None, page_size=BATCH_SIZE)
             if next_token:
-                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                          permission_to_check, include, exclude, force, quiet, skip_existing,
-                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                          on_empty_files)
-                cls._transfer_batch_items(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx,
+                cls._transfer_batch_items(items_batch, threads, manager, source_wrapper, destination_wrapper, audit_ctx,
                                           clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                           checksum_skip, next_token, permission_to_check, include, exclude, force,
                                           skip_existing, sync_newer, verify_destination, on_unsafe_chars,
@@ -188,69 +184,47 @@ class DataStorageOperations(object):
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
                                       on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
-        cls._transfer(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
-                      io_threads, on_failures, checksum_algorithm, checksum_skip)
-
-    @classmethod
-    def _transfer(cls, items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
-                  io_threads, on_failures, checksum_algorithm, checksum_skip):
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
                                              audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                              checksum_skip)
         else:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                audit_ctx, clean, quiet, tags, io_threads, on_failures,
-                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
+            cls._transfer_items_with_audit_ctx(items, manager, source_wrapper, destination_wrapper,
+                                               audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                               checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
 
     @classmethod
-    def _transfer_batch_items(cls, items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+    def _transfer_batch_items(cls, items_batch, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
                               quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, next_token,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         if threads:
             while True:
+                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                          permission_to_check, include, exclude, force, quiet, skip_existing,
+                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                          on_empty_files)
                 cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
                                                  audit_ctx, clean, quiet, tags, io_threads, on_failures,
                                                  checksum_algorithm,
                                                  checksum_skip)
                 if not next_token:
                     return
-                items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                          permission_to_check, include, exclude, force, quiet, skip_existing,
-                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                          on_empty_files)
-                next_token = new_next_token
+                items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+
         else:
             with audit_ctx:
                 while True:
-                    transfer_results = []
-                    fail_after_exception = None
-                    for item in items:
-                        transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                                    source_wrapper,
-                                                                                    destination_wrapper,
-                                                                                    transfer_results,
-                                                                                    clean, quiet, tags, io_threads,
-                                                                                    on_failures, None,
-                                                                                    checksum_algorithm,
-                                                                                    checksum_skip)
-                    if not destination_wrapper.is_local():
-                        cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                    transfer_results, clean=clean, flush_size=1)
-                    if fail_after_exception:
-                        raise fail_after_exception
-
-                    if not next_token:
-                        return
-                    items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
                     items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
                                               permission_to_check, include, exclude, force, quiet, skip_existing,
                                               sync_newer, verify_destination, on_unsafe_chars,
                                               on_unsafe_chars_replacement,
                                               on_empty_files)
-                    next_token = new_next_token
+                    cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                                        io_threads, on_failures, None, checksum_algorithm, checksum_skip)
+                    if not next_token:
+                        return
+                    items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -755,7 +729,7 @@ class DataStorageOperations(object):
 
         workers = []
         for i in range(threads):
-            process = multiprocessing.Process(target=cls._transfer_items,
+            process = multiprocessing.Process(target=cls._transfer_items_with_audit_ctx,
                                               args=(splitted_items[i],
                                                     manager,
                                                     source_wrapper,
@@ -774,23 +748,30 @@ class DataStorageOperations(object):
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
-                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
+    def _transfer_items_with_audit_ctx(cls, items, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+                                       quiet, tags, io_threads, on_failures, lock=None, checksum_algorithm='md5',
+                                       checksum_skip=False):
         with audit_ctx:
-            transfer_results = []
-            fail_after_exception = None
-            for item in items:
-                transfer_results, fail_after_exception = cls._transfer_item(item, manager,
-                                                                            source_wrapper, destination_wrapper,
-                                                                            transfer_results,
-                                                                            clean, quiet, tags, io_threads,
-                                                                            on_failures, lock, checksum_algorithm,
-                                                                            checksum_skip)
-            if not destination_wrapper.is_local():
-                cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                            transfer_results, clean=clean, flush_size=1)
-            if fail_after_exception:
-                raise fail_after_exception
+            cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                                io_threads, on_failures, lock, checksum_algorithm, checksum_skip)
+
+    @classmethod
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
+                        io_threads, on_failures, lock=None, checksum_algorithm='md5', checksum_skip=False):
+        transfer_results = []
+        fail_after_exception = None
+        for item in items:
+            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                        source_wrapper, destination_wrapper,
+                                                                        transfer_results,
+                                                                        clean, quiet, tags, io_threads,
+                                                                        on_failures, lock, checksum_algorithm,
+                                                                        checksum_skip)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                        transfer_results, clean=clean, flush_size=1)
+        if fail_after_exception:
+            raise fail_after_exception
 
     @classmethod
     def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
