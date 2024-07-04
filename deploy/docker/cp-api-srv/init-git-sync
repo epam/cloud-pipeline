@@ -20,6 +20,8 @@ SYNC_GIT_API="${1:-$SYNC_GIT_API}"
 # "JWT"
 SYNC_GIT_API_KEY="${2:-$SYNC_GIT_API_KEY}"
 
+SYNC_GIT_FORCE_USERS_FREQUENCY=${SYNC_GIT_FORCE_USERS_FREQUENCY:20}
+
 if [ -z $SYNC_GIT_API ] || [ -z $SYNC_GIT_API_KEY ]; then
     echo "API URL and KEY shall be specified"
     exit 1
@@ -34,13 +36,21 @@ python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_A
 # Start sync loop
 SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
 mkdir -p "$(dirname $SYNC_LOG_FILE_NAME)"
+
+FORCE_SYNC_NUM=0
 while "true"; do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
     python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
 
-    if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
+    if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true"]; then
+      if [ $FORCE_SYNC_NUM < $SYNC_GIT_FORCE_USERS_FREQUENCY ];
+      then
+        FORCE_SYNC_NUM=$(($FORCE_SYNC_NUM + 1))
+      else
         echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
         python $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
+        FORCE_SYNC_NUM = 0
+      fi
     fi
     
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Iteration done" | tee -a $SYNC_LOG_FILE_NAME
