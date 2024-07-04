@@ -67,7 +67,7 @@ class GitServer(object):
         except:
             print 'Initialization error. Pipelines with git server {} will be skipped'.format(self.__server__)
 
-    def synchronize(self, pipeline, force_synch_user_ssh_keys):
+    def synchronize(self, pipeline, force_sync_user_ssh_keys):
         if not self.initialized:
             print 'Skipping pipeline {} (#{})'.format(
                 pipeline.name,
@@ -85,9 +85,9 @@ class GitServer(object):
         if len(users_to_synchronize) > 0 or len(groups_to_synchronize) > 0:
             print 'Synchronizing users and groups for git server {}'.format(self.__server__)
         for user in users_to_synchronize:
-            self.synchronize_user(user, force_synch_user_ssh_keys)
+            self.synchronize_user(user, force_sync_user_ssh_keys)
         for group in groups_to_synchronize:
-            self.synchronize_group(group, self.__pipeline_server_.get_group_members(group), force_synch_user_ssh_keys)
+            self.synchronize_group(group, self.__pipeline_server_.get_group_members(group), force_sync_user_ssh_keys)
 
         self.synchronized_groups.extend(groups_to_synchronize)
         self.synchronized_users.extend(users_to_synchronize)
@@ -450,7 +450,7 @@ class GitServer(object):
             return None
         return matches[0]
 
-    def synchronize_user(self, username, force_synch_user_ssh_keys=True):
+    def synchronize_user(self, username, force_sync_user_ssh_keys=True):
         try:
             pipeline_user = self.__pipeline_server_.find_user_by_username(username)
             if pipeline_user is None:
@@ -497,7 +497,7 @@ class GitServer(object):
                     return result
                 else:
                     print 'User {} ({}) already exists at git'.format(git_user.name, git_user.email)
-                    if force_synch_user_ssh_keys:
+                    if force_sync_user_ssh_keys:
                         self.synchronize_ssh_keys(pipeline_user, git_user)
                     return git_user
             if pipeline_user.friendly_name is not None:
@@ -573,7 +573,7 @@ class GitServer(object):
         self.add_user_ssh_key(git_user, public_key)
         self.__pipeline_server_.update_user_keys(pipeline_user, private_key, public_key)
 
-    def synchronize_group(self, group, members, force_synch_user_ssh_keys):
+    def synchronize_group(self, group, members, force_sync_user_ssh_keys):
         git_group = self.find_git_group(group)
         if git_group is None:
             try:
@@ -607,7 +607,7 @@ class GitServer(object):
             except:
                 print 'General error (while fetching group users) occurred.'
             for user in members:
-                user_id = self.add_user_to_group(git_group, user, unused_users, group, force_synch_user_ssh_keys)
+                user_id = self.add_user_to_group(git_group, user, unused_users, group, force_sync_user_ssh_keys)
                 if user_id in unused_users:
                     unused_users.remove(user_id)
             for user_id in unused_users:
@@ -634,7 +634,7 @@ class GitServer(object):
                     except:
                         print 'General error removing user {} from group {}.'.format(git_user.name, group)
 
-    def add_user_to_group(self, group, username, group_members_ids, group_friendly_name, force_synch_user_ssh_keys):
+    def add_user_to_group(self, group, username, group_members_ids, group_friendly_name, force_sync_user_ssh_keys):
         pipeline_user = self.__pipeline_server_.find_user_by_username(username)
         if pipeline_user is None:
             print 'Unknown user {}'.format(username)
@@ -686,7 +686,7 @@ class GitServer(object):
                 )
             if not error_occurred:
                 try:
-                    if force_synch_user_ssh_keys:
+                    if force_sync_user_ssh_keys:
                         self.synchronize_ssh_keys(pipeline_user, git_user)
                 except GitLabException as error:
                     print 'Error synchronizing ssh keys for user {} ({}): {}'.format(

@@ -88,7 +88,7 @@ def main(argv):
         elif command == 'configure':
             configure(argv[1:])
         elif command == 'sync':
-            force_synch_user_ssh_keys = __str_to_bool(argv[1])
+            force_sync_user_ssh_keys = __str_to_bool(argv[1])
             try:
                 config = Config.instance()
                 if config.api is None:
@@ -106,13 +106,13 @@ def main(argv):
             start = time.time()
             pipeline_server = PipelineServer()
             try:
-                pipeline_server.synchronize(map(lambda pipeline_id: int(pipeline_id), argv[2:]), force_synch_user_ssh_keys)
+                pipeline_server.synchronize(map(lambda pipeline_id: int(pipeline_id), argv[2:]), force_sync_user_ssh_keys)
             except KeyboardInterrupt:
                 exit(2)
             print ''
             print 'Synchronization time: {} seconds'.format(time.time() - start)
         elif command == 'sync-users':
-            force_synch_user_ssh_keys = __str_to_bool(argv[1])
+            force_sync_user_ssh_keys = __str_to_bool(argv[1])
             try:
                 config = Config.instance()
                 if config.api is None:
@@ -130,7 +130,7 @@ def main(argv):
             start = time.time()
             pipeline_server = PipelineServer()
             try:
-                pipeline_server.synchronize_users(argv[2:], force_synch_user_ssh_keys)
+                pipeline_server.synchronize_users(argv[2:], force_sync_user_ssh_keys)
             except KeyboardInterrupt:
                 exit(2)
             print ''
