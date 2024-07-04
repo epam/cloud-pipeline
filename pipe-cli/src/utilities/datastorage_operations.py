@@ -42,7 +42,7 @@ from src.utilities.user_operations_manager import UserOperationsManager
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
 DEFAULT_BATCH_SIZE = 1000
-BATCH_SIZE = os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE)
+BATCH_SIZE = int(os.getenv('CP_CLI_STORAGE_BATCH_SIZE', DEFAULT_BATCH_SIZE))
 ASYNC_BATCH_ENABLE = str(os.getenv('CP_CLI_STORAGE_ASYNC_BATCH_ENABLE', 'false')).lower() == 'true'
 ARCHIVED_PERMISSION_ERROR_MASSAGE = 'Error: Failed to apply --show-archived option: Permission denied.'
 
