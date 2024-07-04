@@ -170,7 +170,11 @@ class DataStorageOperations(object):
         if not verify_destination and not file_list and source_wrapper.get_type() == WrapperType.S3:
             items_batch, next_token = source_wrapper.get_paging_items(start_token=None, page_size=BATCH_SIZE)
             if next_token:
-                cls._transfer_batch_items(items_batch, threads, manager, source_wrapper, destination_wrapper, audit_ctx,
+                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                          permission_to_check, include, exclude, force, quiet, skip_existing,
+                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                          on_empty_files)
+                cls._transfer_batch_items(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx,
                                           clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                           checksum_skip, next_token, permission_to_check, include, exclude, force,
                                           skip_existing, sync_newer, verify_destination, on_unsafe_chars,
@@ -194,37 +198,108 @@ class DataStorageOperations(object):
                                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
 
     @classmethod
-    def _transfer_batch_items(cls, items_batch, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+    def _transfer_batch_items(cls, items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
                               quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, next_token,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         if threads:
-            while True:
-                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                          permission_to_check, include, exclude, force, quiet, skip_existing,
-                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                          on_empty_files)
-                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                                 audit_ctx, clean, quiet, tags, io_threads, on_failures,
-                                                 checksum_algorithm,
-                                                 checksum_skip)
-                if not next_token:
-                    return
-                items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-
+            cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
+                                             destination_wrapper, exclude, force, include, io_threads, items,
+                                             manager, next_token, on_empty_files, on_failures, on_unsafe_chars,
+                                             on_unsafe_chars_replacement, permission_to_check, quiet,
+                                             skip_existing, source_wrapper, sync_newer, tags, threads,
+                                             verify_destination)
         else:
-            with audit_ctx:
-                while True:
-                    items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                              permission_to_check, include, exclude, force, quiet, skip_existing,
-                                              sync_newer, verify_destination, on_unsafe_chars,
-                                              on_unsafe_chars_replacement,
-                                              on_empty_files)
+            cls._transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
+                                exclude, force, include, io_threads, items, manager, next_token, on_empty_files,
+                                on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
+                                quiet, skip_existing, source_wrapper, sync_newer, tags, verify_destination)
+
+    @classmethod
+    def _transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper, exclude, force,
+                        include, io_threads, items, manager, next_token, on_empty_files, on_failures, on_unsafe_chars,
+                        on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing, source_wrapper,
+                        sync_newer, tags, verify_destination):
+        with audit_ctx:
+            while True:
+                if not next_token:
                     cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
                                         io_threads, on_failures, None, checksum_algorithm, checksum_skip)
-                    if not next_token:
-                        return
-                    items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+                    return
+                transfer_worker = multiprocessing.Process(target=cls._transfer_items,
+                                                          args=(items, manager, source_wrapper, destination_wrapper,
+                                                                clean, quiet, tags, io_threads, on_failures, None,
+                                                                checksum_algorithm, checksum_skip))
+                transfer_worker.start()
+                listing_worker, listing_results = cls._start_fetch_items(manager, source_wrapper,
+                                                                         destination_wrapper, permission_to_check,
+                                                                         include, exclude, force, quiet,
+                                                                         skip_existing, sync_newer,
+                                                                         verify_destination, on_unsafe_chars,
+                                                                         on_unsafe_chars_replacement,
+                                                                         on_empty_files, next_token)
+                workers = [transfer_worker, listing_worker]
+                cls._handle_keyboard_interrupt(workers)
+                items, next_token = listing_results.get()
+
+    @classmethod
+    def _multiprocess_transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
+                                     exclude, force, include, io_threads, items, manager, next_token, on_empty_files,
+                                     on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
+                                     quiet, skip_existing, source_wrapper, sync_newer, tags, threads,
+                                     verify_destination):
+        while True:
+            if not next_token:
+                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper,
+                                                 destination_wrapper, audit_ctx, clean, quiet, tags,
+                                                 io_threads, on_failures, checksum_algorithm,
+                                                 checksum_skip)
+                return
+            transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
+                                                                destination_wrapper, audit_ctx, clean, quiet, tags,
+                                                                io_threads, on_failures, checksum_algorithm,
+                                                                checksum_skip)
+            listing_worker, listing_results = cls._start_fetch_items(manager, source_wrapper,
+                                                                     destination_wrapper, permission_to_check,
+                                                                     include, exclude, force, quiet,
+                                                                     skip_existing, sync_newer,
+                                                                     verify_destination, on_unsafe_chars,
+                                                                     on_unsafe_chars_replacement,
+                                                                     on_empty_files, next_token)
+            workers = []
+            workers.extend(transfer_workers)
+            workers.append(listing_worker)
+            cls._handle_keyboard_interrupt(workers)
+            items, next_token = listing_results.get()
+
+    @classmethod
+    def _start_fetch_items(cls, manager, source_wrapper, destination_wrapper, permission_to_check, include, exclude,
+                           force, quiet, skip_existing, sync_newer, verify_destination, on_unsafe_chars,
+                           on_unsafe_chars_replacement, on_empty_files, next_token):
+        listing_results = multiprocessing.Queue()
+
+        def get_paging_items():
+            listing_results.put(cls._fetch_paging_items(manager, source_wrapper, destination_wrapper,
+                                                        permission_to_check, include, exclude, force,
+                                                        quiet, skip_existing, sync_newer,
+                                                        verify_destination, on_unsafe_chars,
+                                                        on_unsafe_chars_replacement,
+                                                        on_empty_files, next_token))
+
+        listing_worker = multiprocessing.Process(target=get_paging_items)
+        listing_worker.start()
+        return listing_worker, listing_results
+
+    @classmethod
+    def _fetch_paging_items(cls, manager, source_wrapper, destination_wrapper, permission_to_check, include, exclude,
+                            force, quiet, skip_existing, sync_newer, verify_destination, on_unsafe_chars,
+                            on_unsafe_chars_replacement, on_empty_files, next_token):
+        items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+        items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                  permission_to_check, include, exclude, force, quiet, skip_existing,
+                                  sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                  on_empty_files)
+        return items, next_token
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -719,7 +794,7 @@ class DataStorageOperations(object):
         return splitted_items
 
     @classmethod
-    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+    def _start_multiprocess_transfer(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
                                      audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
                                      checksum_skip):
         size_index = 3
@@ -745,6 +820,15 @@ class DataStorageOperations(object):
                                                     checksum_skip))
             process.start()
             workers.append(process)
+        return workers
+
+    @classmethod
+    def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                     audit_ctx, clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
+                                     checksum_skip):
+        workers = cls._start_multiprocess_transfer(sorted_items, threads, manager, source_wrapper, destination_wrapper,
+                                                   audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                                   checksum_algorithm, checksum_skip)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
