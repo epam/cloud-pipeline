@@ -208,17 +208,49 @@ class DataStorageOperations(object):
                               quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, next_token,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
-        while True:
-            cls._transfer(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
-                          io_threads, on_failures, checksum_algorithm, checksum_skip)
-            if not next_token:
-                return
-            items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-            items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                      permission_to_check, include, exclude, force, quiet, skip_existing,
-                                      sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                      on_empty_files)
-            next_token = new_next_token
+        if threads:
+            while True:
+                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
+                                                 audit_ctx, clean, quiet, tags, io_threads, on_failures,
+                                                 checksum_algorithm,
+                                                 checksum_skip)
+                if not next_token:
+                    return
+                items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                          permission_to_check, include, exclude, force, quiet, skip_existing,
+                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                          on_empty_files)
+                next_token = new_next_token
+        else:
+            with audit_ctx:
+                while True:
+                    transfer_results = []
+                    fail_after_exception = None
+                    for item in items:
+                        transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                                    source_wrapper,
+                                                                                    destination_wrapper,
+                                                                                    transfer_results,
+                                                                                    clean, quiet, tags, io_threads,
+                                                                                    on_failures, None,
+                                                                                    checksum_algorithm,
+                                                                                    checksum_skip)
+                    if not destination_wrapper.is_local():
+                        cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                                    transfer_results, clean=clean, flush_size=1)
+                    if fail_after_exception:
+                        raise fail_after_exception
+
+                    if not next_token:
+                        return
+                    items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+                    items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                              permission_to_check, include, exclude, force, quiet, skip_existing,
+                                              sync_newer, verify_destination, on_unsafe_chars,
+                                              on_unsafe_chars_replacement,
+                                              on_empty_files)
+                    next_token = new_next_token
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
