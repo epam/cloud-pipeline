@@ -90,10 +90,10 @@ public final class DockerParsingUtils {
             .map(HistoryEntryV1::getContainerConfig)
             .map(ContainerConfig::getCommands)
             .filter(CollectionUtils::isNotEmpty)
-            .map(commands -> String.join(StringUtils.EMPTY, commands))
+            .map(commands -> String.join(SPACE, commands))
             .map(DockerParsingUtils::cropNopPrefix)
             .map(String::trim)
-            .map(command -> command.replaceAll("\\t+", SPACE))
+            .map(command -> command.replaceAll("\\s+", SPACE))
             .collect(Collectors.toList());
         Collections.reverse(commandsHistory);
         return commandsHistory;
@@ -135,7 +135,7 @@ public final class DockerParsingUtils {
                 args.add(command.replace(ARG, StringUtils.EMPTY).split("=")[0]);
             } else if (args.stream().anyMatch(command::contains)) {
                 for (String arg: args) {
-                    command = command.replaceAll(String.format("%s=[^ ]* ", arg), StringUtils.EMPTY);
+                    command = command.replaceAll(String.format(" %s=[^ ]* ", arg), SPACE);
                 }
             } else if (command.startsWith(CMD)) {
                 lastCmd = command;
@@ -150,7 +150,7 @@ public final class DockerParsingUtils {
             } else if (COMMANDS.stream().noneMatch(command::startsWith)) {
                 command = String.format(RUN_TEMPLATE, command.trim());
             }
-            result.add(command.replaceAll("\\|[0-9]+ ", StringUtils.EMPTY).trim());
+            result.add(prettifyCommand(command.replaceAll(" \\|[0-9]+ ", SPACE)));
         }
         if (StringUtils.isNotBlank(lastCmd)) {
             result.add(lastCmd);
