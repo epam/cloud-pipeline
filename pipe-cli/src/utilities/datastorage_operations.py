@@ -209,30 +209,16 @@ class DataStorageOperations(object):
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         while True:
-            transfer_process = multiprocessing.Process(target=cls._transfer,
-                                                       args=(items, threads, manager, source_wrapper,
-                                                             destination_wrapper, audit_ctx, clean, quiet, tags,
-                                                             io_threads, on_failures, checksum_algorithm,
-                                                             checksum_skip))
+            cls._transfer(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet, tags,
+                          io_threads, on_failures, checksum_algorithm, checksum_skip)
             if not next_token:
-                transfer_process.start()
-                cls._handle_keyboard_interrupt([transfer_process])
                 return
-            listing_results = multiprocessing.Queue()
-
-            def get_paging_items():
-                items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                          permission_to_check, include, exclude, force, quiet, skip_existing,
-                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                          on_empty_files)
-                listing_results.put((items, new_next_token))
-
-            listing_process = multiprocessing.Process(target=get_paging_items)
-            transfer_process.start()
-            listing_process.start()
-            cls._handle_keyboard_interrupt([transfer_process, listing_process])
-            items_batch, next_token = listing_results.get()
+            items_batch, new_next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
+            items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
+                                      permission_to_check, include, exclude, force, quiet, skip_existing,
+                                      sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                      on_empty_files)
+            next_token = new_next_token
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
