@@ -94,7 +94,8 @@ if [ -z "$API_TOKEN" ]; then
 fi
 
 if [ -z "$node_ip" ]; then
-   node_ip=$API_URL
+   node_ip=$(echo $API_URL | grep -oP "(?<=https://)([^/]+)")
+ 
 fi 
 
 if [ -z "$configmap_name" ]; then
