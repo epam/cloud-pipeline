@@ -40,26 +40,20 @@ const LABELS_THRESHOLD = 25;
 
 @inject('reportThemes', 'usersInfo')
 @observer
-class RunsInfo extends React.Component {
-  _initialFilters = {
-    owners: [],
-    instanceTypes: [],
-    tags: [],
-    dockerImages: [],
-    statuses: []
-  };
-
-  state = {
-    filters: {...this._initialFilters}
-  };
-
+class RunsInfo extends React.PureComponent {
   @observable _filteredStatistics;
   @observable _filtersConfiguration;
   @observable _pending = false;
 
   componentDidMount () {
-    this.fetchFiltersConfiguration();
-    this.fetchStatistics();
+    (this.fetchFiltersConfiguration)();
+    (this.fetchStatistics)();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.filters !== this.props.filters) {
+      (this.fetchStatistics)();
+    }
   }
 
   @computed
@@ -88,12 +82,15 @@ class RunsInfo extends React.Component {
 
   get filtersApplied () {
     const {
-      owners,
-      instanceTypes,
-      tags,
-      dockerImages,
-      statuses
-    } = this.state.filters;
+      filters = {}
+    } = this.props;
+    const {
+      owners = [],
+      instanceTypes = [],
+      tags = [],
+      dockerImages = [],
+      statuses = []
+    } = filters;
     return [
       owners,
       instanceTypes,
@@ -124,12 +121,15 @@ class RunsInfo extends React.Component {
 
   fetchStatistics = async () => {
     const {
+      filters = {}
+    } = this.props;
+    const {
       owners,
       instanceTypes,
       tags,
       dockerImages,
       statuses
-    } = this.state.filters;
+    } = filters;
     const request = new RunsChartsInfo();
     this._pending = true;
     await request.send({
@@ -147,25 +147,31 @@ class RunsInfo extends React.Component {
   };
 
   clearFilters = () => {
-    this.setState({filters: {...this._initialFilters}}, this.fetchStatistics);
+    const {onFiltersChange} = this.props;
+    if (typeof onFiltersChange === 'function') {
+      onFiltersChange(undefined);
+    }
   };
 
   renderFilters = () => {
     const {
-      filters
-    } = this.state;
+      filters = {},
+      onFiltersChange
+    } = this.props;
     const {
       owners = [],
       dockerImages = [],
       instanceTypes = [],
       tags = []
     } = this.filtersConfiguration;
-    const onChangeFilter = (filterKey) => (values) => this.setState({
-      filters: {
-        ...this.state.filters,
-        [filterKey]: values
+    const onChangeFilter = (filterKey) => (values) => {
+      if (typeof onFiltersChange === 'function') {
+        onFiltersChange({
+          ...filters,
+          [filterKey]: values
+        });
       }
-    }, this.fetchStatistics);
+    };
     return (
       <div style={{display: 'flex', alignItems: 'flex-start', gap: 5}}>
         <Select
@@ -266,7 +272,7 @@ class RunsInfo extends React.Component {
   };
 
   onEntryClick (entry, field) {
-    const {filters} = this.state;
+    const {filters = {}} = this.props;
     const detailsFilters = {
       ...(filters || {}),
       [field]: [entry]
@@ -361,7 +367,9 @@ class RunsInfo extends React.Component {
 RunsInfo.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  onApplyFilters: PropTypes.func
+  onApplyFilters: PropTypes.func,
+  filters: PropTypes.object,
+  onFiltersChange: PropTypes.func
 };
 
 const RunsInfoWithThemes = (props) => {

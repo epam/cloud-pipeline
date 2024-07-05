@@ -59,6 +59,9 @@ const DEFAULT_COMPLETED_FILTERS = {
   showPersonalRuns: false
 };
 
+const CHARTS_INFO_TAB = 'info';
+const CHARTS_INFO_DETAILS = 'details';
+
 @roleModel.authenticationInfo
 @inject('counter', 'preferences')
 @inject(({routing}, {params}) => {
@@ -76,7 +79,8 @@ const DEFAULT_COMPLETED_FILTERS = {
 class AllRuns extends React.Component {
   state = {
     counters: {},
-    details: undefined
+    details: undefined,
+    chartsFilters: undefined
   };
 
   countersManagementToken = 0;
@@ -86,10 +90,24 @@ class AllRuns extends React.Component {
     (this.manageCounters)();
   }
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.status !== this.props.status &&
+      this.props.status !== CHARTS_INFO_TAB && this.props.status !== CHARTS_INFO_DETAILS) {
+      this.clearFilters();
+    }
+  }
+
   componentWillUnmount () {
     this.countersManagementToken += 1;
     this.stopCounters();
   }
+
+  clearFilters = () => {
+    this.setState({
+      chartsFilters: undefined
+    });
+  };
 
   manageCounters = async () => {
     this.countersManagementToken += 1;
@@ -308,7 +326,11 @@ class AllRuns extends React.Component {
       <div style={{paddingTop: 5}}>
         <div style={{margin: 5}}>
           <ActiveRunsFilterDescription filters={details} postfix={'. '} />
-          <Link to={SessionStorageWrapper.getRunsLink('info')}>Back to active runs info</Link>
+          <Link
+            to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+          >
+            Back to active runs info
+          </Link>
         </div>
         <RunTable
           filters={filters}
@@ -334,7 +356,13 @@ class AllRuns extends React.Component {
       tags: Object.fromEntries(tags.map(tag => ([tag, true]))),
       statuses
     }});
-    this.navigateToRuns('details');
+    this.navigateToRuns(CHARTS_INFO_DETAILS);
+  };
+
+  onChangeChartsFilters = (newFilters) => {
+    this.setState({
+      chartsFilters: newFilters
+    });
   };
 
   render () {
@@ -352,9 +380,9 @@ class AllRuns extends React.Component {
     if (current) {
       selectedKeys = [current.key];
     } else if (this.runsInfoChartsAvailable && isRunsInfoChartsPage) {
-      selectedKeys = ['info'];
+      selectedKeys = [CHARTS_INFO_TAB];
     } else if (this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage) {
-      selectedKeys = ['details'];
+      selectedKeys = [CHARTS_INFO_DETAILS];
     }
     return (
       <Card
@@ -408,7 +436,7 @@ class AllRuns extends React.Component {
                     <Menu.Item key="info">
                       <Link
                         id={`runs-info-charts-button`}
-                        to={SessionStorageWrapper.getRunsLink('info')}
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
                       >
                         Info
                       </Link>
@@ -420,7 +448,7 @@ class AllRuns extends React.Component {
                     <Menu.Item key="details">
                       <Link
                         id={`runs-info-charts-details-button`}
-                        to={SessionStorageWrapper.getRunsLink('details')}
+                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
                       >
                         Details
                       </Link>
@@ -447,7 +475,12 @@ class AllRuns extends React.Component {
         }
         {
           isRunsInfoChartsPage && this.runsInfoChartsAvailable && (
-            <RunsInfo onApplyFilters={this.onRunsChartsApplyFilters} style={{paddingTop: 5}} />
+            <RunsInfo
+              onApplyFilters={this.onRunsChartsApplyFilters}
+              style={{paddingTop: 5}}
+              filters={this.state.chartsFilters}
+              onFiltersChange={this.onChangeChartsFilters}
+            />
           )
         }
         {

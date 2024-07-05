@@ -87,7 +87,7 @@ const plugin = {
               );
             }
             return undefined;
-          }).filter(Boolean);
+          });
         }
         return [];
       });
