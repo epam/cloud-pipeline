@@ -18,6 +18,7 @@ get_tools() {
     export API_URL="${1}"
     export API_TOKEN="${2}"
     export output_dir="${3}/dockers-manifest" #Output directory where all output should reside
+    local resulted_exit_code=0
 
     registries_tree=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/dockerRegistry/loadTree")
     if [ $? -eq 0 ]; then
@@ -31,9 +32,15 @@ get_tools() {
                 local tool_group_data=$(echo "${registry_data}" | jq -r ".groups[] | select(.name==\"$tool_group\")")
                 if [ "$(echo "${tool_group_data}" | jq 'has("tools")')" == true ]; then
                     process_tool_group "${registry}" "${tool_group_data}"
+                    if [ $? -ne 0 ]; then
+                        resulted_exit_code=1
+                        echoerr "REGISTRY: $registry | Problem with processing tool group: '${tool_group}'!"
+                        continue
+                    fi
                 fi
             done
             echoerr "REGISTRY: $registry | Done"
+            exit $resulted_exit_code
         done
     else
         echoerr "REGISTRY: $registry | API request to load DockerRegistries failed! Exiting."
@@ -45,6 +52,7 @@ function process_tool_group() {
     local registry=$1
     local tool_group_data=$2
     local tool_group_output_dir="${registry_output_dir}/${tool_group}"
+    local resulted_exit_code=0
 
     echoerr "  TOOL GROUP: ${tool_group} | Tools metadata will be stored in ${tool_group_output_dir}"
     mkdir -p "${tool_group_output_dir}"
@@ -54,12 +62,14 @@ function process_tool_group() {
         process_tool "${tool_data}"
 
         if [ $? -ne 0 ]; then
+            resulted_exit_code=1
             echoerr "  TOOL GROUP: ${tool_group} | Problem with parsing tool metadata: '${tool}'!"
             echo "${registry}/${tool},${tool}" >> "${output_dir}/failed_manifest.txt"
             continue
         fi
     done
     echoerr "  TOOL GROUP: ${tool_group} | Done"
+    exit $resulted_exit_code
 }
 
 function process_tool() {
