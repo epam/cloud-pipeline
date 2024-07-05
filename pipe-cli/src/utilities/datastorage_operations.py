@@ -229,17 +229,15 @@ class DataStorageOperations(object):
                                         io_threads, on_failures, None, checksum_algorithm, checksum_skip)
                     return
                 if ASYNC_BATCH_ENABLE:
-                    transfer_worker = multiprocessing.Process(target=cls._transfer_items,
-                                                              args=(items, manager, source_wrapper, destination_wrapper,
-                                                                    clean, quiet, tags, io_threads, on_failures, None,
-                                                                    checksum_algorithm, checksum_skip))
-                    transfer_worker.start()
-                    items, next_token = cls._fetch_paging_items(manager, source_wrapper, destination_wrapper,
-                                                                permission_to_check, include, exclude, force, quiet,
-                                                                skip_existing, sync_newer, verify_destination,
-                                                                on_unsafe_chars, on_unsafe_chars_replacement,
-                                                                on_empty_files, next_token)
-                    cls._handle_keyboard_interrupt([transfer_worker])
+                    with concurrent.futures.ThreadPoolExecutor(1) as executor:
+                        future = executor.submit(cls._fetch_paging_items, manager, source_wrapper, destination_wrapper,
+                                                 permission_to_check, include, exclude, force, quiet, skip_existing,
+                                                 sync_newer, verify_destination, on_unsafe_chars,
+                                                 on_unsafe_chars_replacement, on_empty_files, next_token)
+                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                            clean, quiet, tags, io_threads, on_failures, None,
+                                            checksum_algorithm, checksum_skip)
+                        items, next_token = future.result()
                 else:
                     cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
                                         io_threads, on_failures, None, checksum_algorithm, checksum_skip)
