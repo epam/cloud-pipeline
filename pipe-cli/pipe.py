@@ -292,6 +292,8 @@ def cli():
       CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
       CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
       CP_TRACE=[True|False]                  Enables verbose errors.
+      CP_CLI_STORAGE_BATCH_SIZE              The number of objects per request for pipe storage operations (Default: 1000)
+      CP_CLI_STORAGE_ASYNC_BATCH_ENABLE      Enables asynchronous batch transfer
     """
     pass
 
