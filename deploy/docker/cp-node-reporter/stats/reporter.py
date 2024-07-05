@@ -193,7 +193,7 @@ viewer = JsonStatsViewer(host=host)
 
 gpu_metrics = os.getenv(
     'CP_NODE_REPORTER_GPU_STATS_METRIX',
-    'name,index,utilization.gpu,utilization.memory')
+    'name,index,utilization.gpu,memory.total,memory.used')
 gpu_processor = GPUStatProcessor(gpu_metrics)
 
 logging.info('Initializing...')
