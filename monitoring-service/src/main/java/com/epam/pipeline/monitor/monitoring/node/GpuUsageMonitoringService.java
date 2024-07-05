@@ -16,15 +16,23 @@
 
 package com.epam.pipeline.monitor.monitoring.node;
 
-import com.epam.pipeline.monitor.model.node.NodeGpuUsages;
+import com.epam.pipeline.entity.reporter.NodeReporterGpuUsages;
+import com.epam.pipeline.monitor.model.node.GpuUsageSummary;
+import com.epam.pipeline.monitor.model.node.GpuUsageStats;
+import com.epam.pipeline.monitor.model.node.GpuUsages;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import com.epam.pipeline.monitor.service.elasticsearch.MonitoringElasticsearchService;
+import com.epam.pipeline.monitor.service.reporter.NodeReporterService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.IntSummaryStatistics;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -53,7 +61,78 @@ public class GpuUsageMonitoringService implements MonitoringService {
             return;
         }
         log.info("Collecting gpu usages...");
-        final List<NodeGpuUsages> usages = nodeReporterService.collectGpuUsages();
-        monitoringElasticsearchService.saveGpuUsages(usages);
+        final List<GpuUsages> usages = nodeReporterService.collectGpuUsages();
+
+        if (CollectionUtils.isEmpty(usages)) {
+            log.info("Gpu usages not found. Finishing gpu usages monitoring.");
+            return;
+        }
+        final List<GpuUsages> usagesWithSummaries = usages.stream()
+                .map(this::tryFillSummaries)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        monitoringElasticsearchService.saveGpuUsages(usagesWithSummaries);
+        log.info("Finishing gpu usages monitoring.");
+    }
+
+    private GpuUsages tryFillSummaries(final GpuUsages usage) {
+        try {
+            if (CollectionUtils.isEmpty(usage.getUsages())) {
+                return null;
+            }
+            usage.setUsages(usage.getUsages().stream()
+                    .peek(value -> value.setMemoryUtilization(
+                            calculateUtilization(value.getMemoryUsed(), value.getMemoryTotal())))
+                    .collect(Collectors.toList()));
+            usage.setStats(collectSummaries(usage.getUsages()));
+            return usage;
+        } catch (Exception e) {
+            log.error("Failed to collect gpu statistics.", e);
+            return null;
+        }
+    }
+
+    private GpuUsageStats collectSummaries(final List<NodeReporterGpuUsages> usages) {
+        final IntSummaryStatistics gpuUtilizationSummary = usages.stream()
+                .mapToInt(NodeReporterGpuUsages::getUtilizationGpu)
+                .summaryStatistics();
+        final IntSummaryStatistics memoryUtilizationSummary = usages.stream()
+                .mapToInt(NodeReporterGpuUsages::getMemoryUtilization)
+                .summaryStatistics();
+        final IntSummaryStatistics memoryUsageSummary = usages.stream()
+                .mapToInt(NodeReporterGpuUsages::getMemoryUsed)
+                .summaryStatistics();
+
+        final GpuUsageSummary averagesSummary = GpuUsageSummary.builder()
+                .gpuUtilization((int) Math.round(gpuUtilizationSummary.getAverage()))
+                .memoryUtilization((int) Math.round(memoryUtilizationSummary.getAverage()))
+                .memoryUsage((int) Math.round(memoryUsageSummary.getAverage()))
+                .build();
+        final GpuUsageSummary minSummary = GpuUsageSummary.builder()
+                .gpuUtilization(gpuUtilizationSummary.getMin())
+                .memoryUtilization(memoryUtilizationSummary.getMin())
+                .memoryUsage(memoryUsageSummary.getMin())
+                .build();
+        final GpuUsageSummary maxSummary = GpuUsageSummary.builder()
+                .gpuUtilization(gpuUtilizationSummary.getMax())
+                .memoryUtilization(memoryUtilizationSummary.getMax())
+                .memoryUsage(memoryUsageSummary.getMax())
+                .build();
+
+        final long activeDevices = usages.stream()
+                .map(NodeReporterGpuUsages::getUtilizationGpu)
+                .filter(value -> value > 0)
+                .count();
+
+        return GpuUsageStats.builder()
+                .average(averagesSummary)
+                .min(minSummary)
+                .max(maxSummary)
+                .activeGpusUtilization(calculateUtilization((int) activeDevices, usages.size()))
+                .build();
+    }
+
+    private Integer calculateUtilization(final int value, final int totalValue) {
+        return (int) (((double) value / totalValue) * 100);
     }
 }

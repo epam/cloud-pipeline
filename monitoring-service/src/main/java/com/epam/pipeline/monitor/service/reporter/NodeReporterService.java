@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.node;
+package com.epam.pipeline.monitor.service.reporter;
 
-import com.epam.pipeline.monitor.model.node.NodeGpuUsages;
+import com.epam.pipeline.monitor.model.node.GpuUsages;
 import com.epam.pipeline.monitor.rest.NodeReporterAPIExecutor;
 import com.epam.pipeline.monitor.service.k8s.KubernetesUtils;
 import io.fabric8.kubernetes.api.model.Node;
@@ -65,7 +65,7 @@ public class NodeReporterService {
         this.nodeReporterClient = nodeReporterClient;
     }
 
-    public List<NodeGpuUsages> collectGpuUsages() {
+    public List<GpuUsages> collectGpuUsages() {
         try (KubernetesClient client = KubernetesUtils.getKubernetesClient()) {
             final Set<String> nodeNames = getMonitoringNodeNames(client);
             final List<Pod> pods = getReportingPods(client, nodeNames);
@@ -93,28 +93,28 @@ public class NodeReporterService {
                 .collect(Collectors.toList());
     }
 
-    private List<CompletableFuture<NodeGpuUsages>> requestUsages(final List<Pod> reporterPods) {
+    private List<CompletableFuture<GpuUsages>> requestUsages(final List<Pod> reporterPods) {
         return reporterPods.stream()
                 .map(pod -> requestUsages(pod)
                         .exceptionally(e -> {
                             log.error("Failed to collect usages from {} for {}.",
                                     KubernetesUtils.getPodName(pod),
                                     KubernetesUtils.getNodeName(pod), e);
-                            return NodeGpuUsages.builder().build();
+                            return GpuUsages.builder().build();
                         }))
                 .collect(Collectors.toList());
     }
 
-    private CompletableFuture<NodeGpuUsages> requestUsages(final Pod pod) {
+    private CompletableFuture<GpuUsages> requestUsages(final Pod pod) {
         return CompletableFuture.supplyAsync(() -> getStats(pod).orElseThrow(IllegalArgumentException::new), executor);
     }
 
-    private Optional<NodeGpuUsages> getStats(final Pod pod) {
+    private Optional<GpuUsages> getStats(final Pod pod) {
         final String nodename = KubernetesUtils.getNodeName(pod);
         log.info("Retrieving usages from {} for {}...", KubernetesUtils.getPodName(pod), nodename);
         return KubernetesUtils.getPodIp(pod)
                 .map(nodeReporterClient::loadGpuStats)
-                .map(stat -> NodeGpuUsages.builder()
+                .map(stat -> GpuUsages.builder()
                         .usages(stat)
                         .nodename(nodename)
                         .timestamp(LocalDateTime.now())

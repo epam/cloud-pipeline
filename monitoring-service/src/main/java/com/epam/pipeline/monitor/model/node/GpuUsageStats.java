@@ -16,17 +16,18 @@
 
 package com.epam.pipeline.monitor.model.node;
 
-import com.epam.pipeline.entity.reporter.NodeReporterGpuUsages;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-@Value
+@Data
 @Builder
-public class NodeGpuUsages {
-    List<NodeReporterGpuUsages> usages;
-    String nodename;
-    LocalDateTime timestamp;
+@NoArgsConstructor
+@AllArgsConstructor
+public class GpuUsageStats {
+    private GpuUsageSummary average;
+    private GpuUsageSummary min;
+    private GpuUsageSummary max;
+    private Integer activeGpusUtilization;
 }

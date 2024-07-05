@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.monitor.service.elasticsearch;
 
-import com.epam.pipeline.monitor.model.node.NodeGpuUsages;
+import com.epam.pipeline.monitor.model.node.GpuUsages;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -56,7 +56,7 @@ public class MonitoringElasticsearchService {
         this.indexMappingsFile = indexMappingsFile;
     }
 
-    public void saveGpuUsages(final List<NodeGpuUsages> usages) {
+    public void saveGpuUsages(final List<GpuUsages> usages) {
         if (CollectionUtils.isEmpty(usages)) {
             return;
         }

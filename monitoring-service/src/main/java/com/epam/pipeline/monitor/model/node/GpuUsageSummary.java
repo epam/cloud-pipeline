@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.reporter;
+package com.epam.pipeline.monitor.model.node;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Value;
 
-@Data
+@Value
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class NodeReporterGpuUsages {
-    String name;
-    String index;
-    Integer utilizationGpu;
-    Integer memoryUsed;
-    Integer memoryTotal;
+public class GpuUsageSummary {
+    Integer gpuUtilization;
     Integer memoryUtilization;
+    Integer memoryUsage;
 }

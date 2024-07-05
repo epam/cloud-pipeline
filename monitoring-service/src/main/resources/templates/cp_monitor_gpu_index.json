@@ -10,14 +10,21 @@
             "gpu/utilization_gpu": {
               "properties": {
                 "value": {
-                  "type": "float"
+                  "type": "double"
                 }
               }
             },
             "gpu/utilization_memory": {
               "properties": {
                 "value": {
-                  "type": "float"
+                  "type": "double"
+                }
+              }
+            },
+            "gpu/used_memory": {
+              "properties": {
+                "value": {
+                  "type": "double"
                 }
               }
             }
@@ -28,55 +35,6 @@
             "index": {
               "type": "text"
             },
-            "cluster_name": {
-              "type": "keyword"
-            },
-            "container_base_image": {
-              "type": "text",
-              "fields": {
-                "raw": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "container_name": {
-              "type": "text",
-              "fields": {
-                "raw": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "host_id": {
-              "type": "keyword"
-            },
-            "hostname": {
-              "type": "text",
-              "fields": {
-                "raw": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "labels": {
-              "type": "text",
-              "fields": {
-                "raw": {
-                  "type": "keyword"
-                }
-              }
-            },
-            "namespace_id": {
-              "type": "keyword"
-            },
-            "namespace_name": {
-              "type": "text",
-              "fields": {
-                "raw": {
-                  "type": "keyword"
-                }
-              }
-            },
             "nodename": {
               "type": "text",
               "fields": {
@@ -85,26 +43,99 @@
                 }
               }
             },
-            "pod_id": {
+            "type": {
               "type": "keyword"
+            }
+          }
+        }
+      }
+    },
+    "gpu_stats": {
+      "properties": {
+        "GpuStatsMetricsTimestamp": {
+          "type": "date"
+        },
+        "Metrics": {
+          "properties": {
+            "gpu/avg_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
             },
-            "pod_name": {
+            "gpu/avg_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/avg_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/active_gpus": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/min_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/min_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/min_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/max_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/max_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu/max_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "MetricsTags": {
+          "properties": {
+            "nodename": {
               "type": "text",
               "fields": {
                 "raw": {
                   "type": "keyword"
-                }
-              }
-            },
-            "resource_id": {
-              "type": "keyword"
-            },
-            "schedulable": {
-              "type": "text",
-              "fields": {
-                "keyword": {
-                  "type": "keyword",
-                  "ignore_above": 256
                 }
               }
             },

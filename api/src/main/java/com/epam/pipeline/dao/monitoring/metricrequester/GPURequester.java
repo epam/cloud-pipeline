@@ -79,7 +79,8 @@ public class GPURequester extends AbstractMetricRequester {
     }
 
     @Override
-    public SearchRequest buildRequest(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to, Map<String, String> additional) {
+    public SearchRequest buildRequest(Collection<String> resourceIds, LocalDateTime from, LocalDateTime to,
+                                      Map<String, String> additional) {
         return null;
     }
 
