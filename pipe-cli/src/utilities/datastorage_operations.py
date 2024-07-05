@@ -23,6 +23,7 @@ import sys
 from botocore.exceptions import ClientError
 from future.utils import iteritems
 from operator import itemgetter
+import concurrent.futures
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
@@ -233,15 +234,12 @@ class DataStorageOperations(object):
                                                                     clean, quiet, tags, io_threads, on_failures, None,
                                                                     checksum_algorithm, checksum_skip))
                     transfer_worker.start()
-                    listing_worker, items, next_token = cls._start_fetch_items(manager, source_wrapper,
-                                                                               destination_wrapper, permission_to_check,
-                                                                               include, exclude, force, quiet,
-                                                                               skip_existing, sync_newer,
-                                                                               verify_destination, on_unsafe_chars,
-                                                                               on_unsafe_chars_replacement,
-                                                                               on_empty_files, next_token)
-                    workers = [transfer_worker, listing_worker]
-                    cls._handle_keyboard_interrupt(workers)
+                    items, next_token = cls._fetch_paging_items(manager, source_wrapper, destination_wrapper,
+                                                                permission_to_check, include, exclude, force, quiet,
+                                                                skip_existing, sync_newer, verify_destination,
+                                                                on_unsafe_chars, on_unsafe_chars_replacement,
+                                                                on_empty_files, next_token)
+                    cls._handle_keyboard_interrupt([transfer_worker])
                 else:
                     cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
                                         io_threads, on_failures, None, checksum_algorithm, checksum_skip)
@@ -268,44 +266,22 @@ class DataStorageOperations(object):
                                                                 destination_wrapper, audit_ctx, clean, quiet, tags,
                                                                 io_threads, on_failures, checksum_algorithm,
                                                                 checksum_skip)
-            listing_worker, items, next_token = cls._start_fetch_items(manager, source_wrapper,
-                                                                       destination_wrapper, permission_to_check,
-                                                                       include, exclude, force, quiet,
-                                                                       skip_existing, sync_newer,
-                                                                       verify_destination, on_unsafe_chars,
-                                                                       on_unsafe_chars_replacement,
-                                                                       on_empty_files, next_token)
-            workers = []
-            workers.extend(transfer_workers)
-            workers.append(listing_worker)
-            cls._handle_keyboard_interrupt(workers)
-
-    @classmethod
-    def _start_fetch_items(cls, manager, source_wrapper, destination_wrapper, permission_to_check, include, exclude,
-                           force, quiet, skip_existing, sync_newer, verify_destination, on_unsafe_chars,
-                           on_unsafe_chars_replacement, on_empty_files, next_token):
-        listing_results = multiprocessing.Queue()
-        listing_worker = multiprocessing.Process(target=cls._fetch_paging_items,
-                                                 args=(manager, source_wrapper, destination_wrapper,
-                                                       permission_to_check, include, exclude, force,
-                                                       quiet, skip_existing, sync_newer,
-                                                       verify_destination, on_unsafe_chars,
-                                                       on_unsafe_chars_replacement,
-                                                       on_empty_files, next_token, listing_results))
-        listing_worker.start()
-        items, token = listing_results.get()
-        return listing_worker, items, token
+            items, next_token = cls._fetch_paging_items(manager, source_wrapper, destination_wrapper,
+                                                        permission_to_check, include, exclude, force, quiet,
+                                                        skip_existing, sync_newer, verify_destination, on_unsafe_chars,
+                                                        on_unsafe_chars_replacement, on_empty_files, next_token)
+            cls._handle_keyboard_interrupt(transfer_workers)
 
     @classmethod
     def _fetch_paging_items(cls, manager, source_wrapper, destination_wrapper, permission_to_check, include, exclude,
                             force, quiet, skip_existing, sync_newer, verify_destination, on_unsafe_chars,
-                            on_unsafe_chars_replacement, on_empty_files, next_token, listing_results):
+                            on_unsafe_chars_replacement, on_empty_files, next_token):
         items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
         items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
                                   permission_to_check, include, exclude, force, quiet, skip_existing,
                                   sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
                                   on_empty_files)
-        listing_results.put((items, next_token))
+        return items, next_token
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
