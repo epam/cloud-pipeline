@@ -23,6 +23,7 @@ source get_configmap.sh
 source get_pref.sh
 source get_services.sh
 source get_version.sh
+source get_tools.sh
 
 
 while [[ $# -gt 0 ]]
@@ -94,8 +95,7 @@ if [ -z "$API_TOKEN" ]; then
 fi
 
 if [ -z "$node_ip" ]; then
-   node_ip=$(echo $API_URL | grep -oP "(?<=https://)([^/]+)")
- 
+   node_ip=$(echo "$API_URL" | grep -oP "(?<=https://)([^/]+)")
 fi 
 
 if [ -z "$configmap_name" ]; then
@@ -125,37 +125,46 @@ echo "===Retrieving configmap from server==="
 get_configmap $ssh_key $user $node_ip $namespace $configmap_name $output_dir
 
 
-if [ $? -ne 0 ]; then
-    echo "Configmap,1" > $output_dir/revision_metadata.csv
+if [ $? -eq 0 ]; then
+    echo "Configmap,0" > $output_dir/revision_metadata.csv
 else
-    echo "Configmap,0" > $output_dir/revision_metadata.csv     
+    echo "Configmap,1" > $output_dir/revision_metadata.csv     
 fi
 
 echo "===Retrieving preferences from server==="
 get_pref $API_URL $API_TOKEN $output_dir
 
-if [ $? -ne 0 ]; then
-    echo "Application_preference,1" >> $output_dir/revision_metadata.csv
+if [ $? -eq 0 ]; then
+    echo "Application_preference,0" >> $output_dir/revision_metadata.csv
 else
-    echo "Application_preference,0" >> $output_dir/revision_metadata.csv     
+    echo "Application_preference,$?" >> $output_dir/revision_metadata.csv     
 fi
 
 echo "===Retrieving list on installed services from server==="
 get_services $ssh_key $user $node_ip $output_dir
 
-if [ $? -ne 0 ]; then
-    echo "Application_services,1" >> $output_dir/revision_metadata.csv
+if [ $? -eq 0 ]; then
+    echo "Application_services,0" >> $output_dir/revision_metadata.csv
 else
-    echo "Application_services,0" >> $output_dir/revision_metadata.csv     
+    echo "Application_services,$?" >> $output_dir/revision_metadata.csv     
 fi
 
 echo "===Retrieving installed pipectl version from server==="
 get_version $API_URL $API_TOKEN $output_dir
 
-if [ $? -ne 0 ]; then
-    echo "Application_version,1" >> $output_dir/revision_metadata.csv
+if [ $? -eq 0 ]; then
+    echo "Application_version,0" >> $output_dir/revision_metadata.csv
 else
-    echo "Application_version,0" >> $output_dir/revision_metadata.csv     
+    echo "Application_version,$?" >> $output_dir/revision_metadata.csv     
+fi
+
+echo "===Retrieving installed docker tools from server==="
+get_tools $API_URL $API_TOKEN $output_dir
+
+if [ $? -eq 0 ]; then
+    echo "Docker_tools,0" >> $output_dir/../revision_metadata.csv
+else
+    echo "Docker_tools,$?" >> $output_dir/../revision_metadata.csv     
 fi
 
 echo "*****All files saved in directory $output_dir*****"

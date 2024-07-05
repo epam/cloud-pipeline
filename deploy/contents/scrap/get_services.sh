@@ -22,7 +22,7 @@ get_services() {
 
     #SSH connection to the server
     ssh_responce=$(ssh -i $ssh_key -oStrictHostKeyChecking=no $user@$API_URL sudo kubectl get nodes -o json | jq -r '.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))')
-    if [ $? -eq 0 ]; then
+    if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_dir 
        echo "list of services from server $API_URL saved in file $output_dir" 
     else

@@ -24,7 +24,7 @@ get_configmap() {
     
 #SSH connection to the server
     ssh_responce=$(ssh -i $ssh_key -oStrictHostKeyChecking=no $user@$node_ip sudo kubectl get configmap $configmap_name -n $namespace -o yaml) 
-    if [ $? -eq 0 ]; then
+    if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_dir 
        echo "config-map from server $node_ip saved in file $output_dir" 
     else

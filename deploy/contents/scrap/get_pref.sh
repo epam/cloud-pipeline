@@ -18,15 +18,16 @@ get_pref() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)  
     local output_dir="${3}/preference.json" #Output directory and file name where preferences will be saved
-    local api_endpoint='pipeline/restapi/preferences'
+    local api_endpoint="preferences"
    
     # Perform curl request, parse HTTP response status code of good then to API GET request
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "https://${API_URL}/${api_endpoint}" | jq)   
-    if [ $? -eq 0 ]; then
-        echo "$get_responce" > $output_dir 
-        echo "preferences from server $API_URL saved in file $output_dir" 
+    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${api_endpoint}" | jq)
+
+    if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
+       echo "$get_responce" > $output_dir 
+       echo "Preferences from server $API_URL saved in file $output_dir"
     else
-        echo "API request failed with status $get_responce" 1>&2
-        exit 1
+       echo "API request failed or empty" 1>&2
+       exit 1   
     fi
 }
