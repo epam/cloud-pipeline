@@ -29,6 +29,7 @@ get_tools() {
             mkdir -p "${registry_output_dir}"
 
             for tool_group in $(echo "$registry_data" | jq -r '.groups[].name'); do
+                echoerr "REGISTRY: $registry | Processing tool group: $tool_group"
                 local tool_group_data=$(echo "${registry_data}" | jq -r ".groups[] | select(.name==\"$tool_group\")")
                 if [ "$(echo "${tool_group_data}" | jq 'has("tools")')" == true ]; then
                     process_tool_group "${registry}" "${tool_group_data}"
@@ -40,11 +41,11 @@ get_tools() {
                 fi
             done
             echoerr "REGISTRY: $registry | Done. Exit code $resulted_exit_code"
-            exit $resulted_exit_code
+            return $resulted_exit_code
         done
     else
         echoerr "REGISTRY: $registry | API request to load DockerRegistries failed! Exiting."
-        exit 1
+        return 1
     fi
 }
 
@@ -69,7 +70,7 @@ function process_tool_group() {
         fi
     done
     echoerr "  TOOL GROUP: ${tool_group} | Done. Exit code $resulted_exit_code"
-    exit $resulted_exit_code
+    return $resulted_exit_code
 }
 
 function process_tool() {
@@ -82,13 +83,13 @@ function process_tool() {
   collect_tool_resources "${tool_data}" "${tmp_tool_dir}"
   if [ $? -ne 0 ]; then
       echoerr "    TOOL: ${tool} | Cannot collect resources for the tool!"
-      exit 1
+      return 1
   fi
 
   local tool_versions=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/${tool_id}/tags" | jq -r '.payload[]')
   if [ $? -ne 0 ]; then
       echoerr "    TOOL: ${tool} | Cannot get versions for the tool"
-      exit 1
+      return 1
   fi
 
   for tag in ${tool_versions}; do
