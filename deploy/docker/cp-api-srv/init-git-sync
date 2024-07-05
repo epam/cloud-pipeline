@@ -38,21 +38,21 @@ SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
 mkdir -p "$(dirname $SYNC_LOG_FILE_NAME)"
 
 FORCE_SYNC_USER_SSH_KEYS="false"
-SYNC_NUM=0
+ITERATION=0
 
 while "true"; do
-    if [ $SYNC_NUM < $FORCE_SYNC_USER_SSH_KEYS_FREQUENCY ]; then
+    if [ "$ITERATION" -gt "$FORCE_SYNC_USER_SSH_KEYS_FREQUENCY" ]; then
       FORCE_SYNC_USER_SSH_KEYS="false"
-      SYNC_NUM=$(($SYNC_NUM + 1))
+      ITERATION=$((ITERATION + 1))
     else
       FORCE_SYNC_USER_SSH_KEYS="true"
-      SYNC_NUM=0
+      ITERATION=0
     fi
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
     python $SYNC_GIT_HOME/syncgit.py sync $FORCE_SYNC_USER_SSH_KEYS | tee -a $SYNC_LOG_FILE_NAME
 
-    if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true"]; then
+    if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
       echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
       python $SYNC_GIT_HOME/syncgit.py sync-users $FORCE_SYNC_USER_SSH_KEYS "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
     fi
