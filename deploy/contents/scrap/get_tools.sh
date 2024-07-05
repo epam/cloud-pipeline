@@ -39,7 +39,7 @@ get_tools() {
                     fi
                 fi
             done
-            echoerr "REGISTRY: $registry | Done"
+            echoerr "REGISTRY: $registry | Done. Exit code $resulted_exit_code"
             exit $resulted_exit_code
         done
     else
@@ -68,7 +68,7 @@ function process_tool_group() {
             continue
         fi
     done
-    echoerr "  TOOL GROUP: ${tool_group} | Done"
+    echoerr "  TOOL GROUP: ${tool_group} | Done. Exit code $resulted_exit_code"
     exit $resulted_exit_code
 }
 
