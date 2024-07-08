@@ -230,6 +230,4 @@ public class SystemPreferencesValidationTest extends AbstractManagerTest {
 
         preferences.validate(Arrays.asList(host, user, token, userId));
     }
-
-
 }

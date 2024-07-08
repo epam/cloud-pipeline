@@ -21,9 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Builder
-public class DockerContainerLayersCommand extends AbstractDockerCommand {
-    private static final String LAYERS_COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash " +
-            "--login /dev/stdin %s";
+public class SimpleDockerContainerCommand extends AbstractDockerCommand {
+    private static final String COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash --login /dev/stdin %s";
 
     private final String containerId;
 
@@ -31,7 +30,7 @@ public class DockerContainerLayersCommand extends AbstractDockerCommand {
 
     @Override
     public String getCommand() {
-        return getDockerCommand(LAYERS_COMMAND_TEMPLATE, runScriptUrl);
+        return getDockerCommand(COMMAND_TEMPLATE, runScriptUrl);
     }
 
     @Override
