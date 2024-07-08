@@ -20,10 +20,10 @@ get_version() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN) 
     local output_file="${3}/version.json" #Output directory name where config-map will be saved
-    local api_endpoint="app/info"
+    local API_ENDPOINT="app/info"
 
     # Send GET request to the server
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/${api_endpoint}" -H "Accept: application/json" | jq -r '.payload')   
+    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/${API_ENDPOINT}" -H "Accept: application/json" | jq '.payload')   
     
     if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
        echo "$get_responce" > $output_file

@@ -17,18 +17,18 @@
 source utils.sh
 
 get_configmap() {
-  local ssh_key="$1" #SSH Key for connection
-  local user="$2" #User whom connection  
-  local node_ip="$3"  #Server address name 
-  local namespace="$4" #Kubernetes namespace 
-  local configmap_name="$5" #Name of the dowloaded configmap
-  local output_dir="${6}/cp-config-global.yaml" #Output directory and file name where configmap will be saved
+  local CP_NODE_SSH_KEY="$1" #SSH Key for connection
+  local CP_NODE_USER="$2" #User whom connection  
+  local CP_NODE_IP="$3"  #Server address name 
+  local CP_KUBE_NAMESPACE="$4" #Kubernetes namespace 
+  local CP_KUBE_CONFIGMAP="$5" #Name of the dowloaded configmap
+  local output_dir="${6}/cp-config-global.properties" #Output directory and file name where configmap will be saved
     
     #SSH connection to the server
-    ssh_responce=$(ssh -i $ssh_key -oStrictHostKeyChecking=no $user@$node_ip sudo kubectl get configmap $configmap_name -n $namespace -o yaml) 
+    ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get configmap $CP_KUBE_CONFIGMAP -n $CP_KUBE_NAMESPACE -o json | jq -r '.data |to_entries[] | "\(.key)=\((.value|sub("^\""; "")|sub("\"$"; "")| "\"" + . + "\""))"') 
     if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_dir 
-       echo_ok "config-map from server $node_ip saved in file $output_dir"
+       echo_ok "config-map from server $CP_NODE_IP saved in file $output_dir"
     else
        echo_err "Error occured while connecting to the server"
        exit 1

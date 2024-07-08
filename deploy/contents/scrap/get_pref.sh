@@ -19,11 +19,11 @@ source utils.sh
 get_pref() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)  
-    local output_dir="${3}/preference.json" #Output directory and file name where preferences will be saved
-    local api_endpoint="preferences"
+    local output_dir="${3}/system-preferences.json" #Output directory and file name where preferences will be saved
+    local API_ENDPOINT="preferences"
    
     # Perform curl request, parse HTTP response status code of good then to API GET request
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${api_endpoint}" | jq)
+    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
 
     if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
        echo "$get_responce" > $output_dir 

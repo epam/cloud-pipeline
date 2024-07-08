@@ -17,16 +17,16 @@
 source utils.sh
 
 get_services() {
-    local ssh_key="$1" # SSH key
-    local user="$2" # USER
-    local API_URL="$3" # Server address
-    local output_file="${4}/cp-services.txt" #Output directory and file name where preferences will be saved
+    local CP_NODE_SSH_KEY="$1" # SSH key
+    local CP_NODE_USER="$2" # USER
+    local $CP_NODE_IP="$3" # Server address
+    local output_file="${4}/cp-services.json" #Output directory and file name where preferences will be saved
 
     #SSH connection to the server
-    ssh_responce=$(ssh -i $ssh_key -oStrictHostKeyChecking=no $user@$API_URL sudo kubectl get nodes -o json | jq -r '.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))')
+    ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get nodes -o json | jq ['.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))'])
     if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_file
-       echo_ok "list of services from server $API_URL saved in file $output_file"
+       echo_ok "list of services from server $CP_NODE_IP saved in file $output_file"
     else
        echo_err "Error occured while connecting to the server."
        exit 1
