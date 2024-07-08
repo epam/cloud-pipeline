@@ -169,8 +169,10 @@ public class SystemPreferences {
     public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
             COMMIT_GROUP, isGreaterThan(0));
     public static final ObjectPreference<TwoBoundaryLimit> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
-            "commit.container.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
-            COMMIT_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
+            "commit.container.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
+            new TypeReference<TwoBoundaryLimit>() {}, COMMIT_GROUP,
+            isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}), true
+    );
 
     public static final IntPreference GET_CONTAINER_SIZE_TIMEOUT = new IntPreference("get.container.size.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
@@ -732,8 +734,9 @@ public class SystemPreferences {
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
 
     public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
-            "launch.tool.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
-            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
+            "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
+            new TypeReference<TwoBoundaryLimit>() {}, LAUNCH_GROUP,
+            isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}), true);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers

@@ -25,4 +25,12 @@ import lombok.Data;
 public class TwoBoundaryLimit {
     private Long soft;
     private Long hard;
+
+    public boolean isSoftLimitDefined() {
+        return soft != null && soft > 0;
+    }
+
+    public boolean isHardLimitDefined() {
+        return hard != null && hard > 0;
+    }
 }
