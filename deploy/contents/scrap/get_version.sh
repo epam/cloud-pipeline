@@ -14,20 +14,22 @@
 # See the License for the specific language governing peKrmissions and
 # limitations under the License.
 
+source utils.sh
+
 get_version() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN) 
-    local output_dir="${3}/version" #Output directory name where config-map will be saved 
+    local output_file="${3}/version.json" #Output directory name where config-map will be saved
     local api_endpoint="app/info"
 
     # Send GET request to the server
     get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/${api_endpoint}" -H "Accept: application/json" | jq -r '.payload')   
     
     if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
-       echo "$get_responce" > $output_dir 
-       echo "Pipectl version from server $API_URL saved in file $output_dir"  
+       echo "$get_responce" > $output_file
+       echo_ok "Pipectl version from server $API_URL saved in file $output_file"
     else
-       echo "API request failed or empty" 1>&2  
+       echo_err "API request failed or empty"
        exit 1 
     fi
 }

@@ -14,6 +14,8 @@
 # See the License for the specific language governing peKrmissions and
 # limitations under the License.
 
+source utils.sh
+
 get_configmap() {
   local ssh_key="$1" #SSH Key for connection
   local user="$2" #User whom connection  
@@ -22,13 +24,13 @@ get_configmap() {
   local configmap_name="$5" #Name of the dowloaded configmap
   local output_dir="${6}/cp-config-global.yaml" #Output directory and file name where configmap will be saved
     
-#SSH connection to the server
+    #SSH connection to the server
     ssh_responce=$(ssh -i $ssh_key -oStrictHostKeyChecking=no $user@$node_ip sudo kubectl get configmap $configmap_name -n $namespace -o yaml) 
     if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_dir 
-       echo "config-map from server $node_ip saved in file $output_dir" 
+       echo_ok "config-map from server $node_ip saved in file $output_dir"
     else
-       echo "Error occured while connecting to the server" 1>&2
+       echo_err "Error occured while connecting to the server"
        exit 1
     fi      
 }

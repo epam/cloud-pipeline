@@ -14,6 +14,8 @@
 # See the License for the specific language governing peKrmissions and
 # limitations under the License.
 
+source utils.sh
+
 get_pref() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)  
@@ -25,9 +27,9 @@ get_pref() {
 
     if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
        echo "$get_responce" > $output_dir 
-       echo "Preferences from server $API_URL saved in file $output_dir"
+       echo_ok "Preferences from server $API_URL saved in file $output_dir"
     else
-       echo "API request failed or empty" 1>&2
+       echo_err "API request failed or empty"
        exit 1   
     fi
 }

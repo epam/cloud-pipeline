@@ -17,13 +17,26 @@
 #This script connects and gather Kubernetes ConfigMap, Cloud-Pipeline preferences, List of the installed cp services and installed pipectl version
 # from provided server address and (optionally) IP of the Kubernetes Node.
 
-#Example of usage ./scrap.sh  -k <ssh_key name>  -u <user who connect to server> -s <server adress name> -t <API_TOKEN> -o <output directory name> 
+#Example of usage ./scrap.sh  -k <CP_NODE_SSH_KEY name>  -u <CP_NODE_USER who connect to server> -s <server adress name> -t <API_TOKEN> -o <output directory name>
 
 source get_configmap.sh
 source get_pref.sh
 source get_services.sh
 source get_version.sh
 source get_tools.sh
+source utils.sh
+
+function write_scrap_result() {
+  local _data_to_scrap=$1
+  local _exit_code=$2
+  local _output_dir=$3
+
+  if [ "${_exit_code}" -eq 0 ]; then
+      echo "${_data_to_scrap},0" >> "${_output_dir}"/revision_metadata.csv
+  else
+      echo "${_data_to_scrap},${_exit_code}" >> "${_output_dir}"/revision_metadata.csv
+  fi
+}
 
 
 while [[ $# -gt 0 ]]
@@ -32,139 +45,118 @@ while [[ $# -gt 0 ]]
 
     case $key in
         -k)
-        ssh_key="$2"
+        export CP_NODE_SSH_KEY="$2"
         shift # past argument
         shift # past value
         ;;
         -u)
-        user="$2"
+        export CP_NODE_USER="$2"
         shift # past argument
         shift # past value
         ;;
         -s)
-        API_URL="$2"
+        export API_URL="$2"
         shift # past argument
         shift # past value
         ;;
         -i)
-        node_ip="$2"
+        export CP_NODE_IP="$2"
         shift # past argument
         shift # past value
         ;;
         -t)
-        API_TOKEN="$2"
+        export API_TOKEN="$2"
         shift # past argument
         shift # past value
         ;;
         -n)
-        namespace="$2"
+        export CP_KUBE_NAMESPACE="$2"
         shift # past argument
         shift # past value
         ;;
         -c)
-        configmap_name="$2"
+        export CP_KUBE_CONFIGMAP="$2"
         shift # past argument
         shift # past value
         ;;
         -o)
-        output_dir="$2"
+        export OUTPUT_DIR="$2"
         shift # past argument
         shift # past value
         ;;
         -f|--force)
-        export force_write=1
+        export FORCE_WRITE=1
         shift # past argument
         shift # past value
         ;;
 esac        
 done
 
-if [ -z "$ssh_key" ]; then
-    echo "Please provide the ssh key"
+if [ -z "$CP_NODE_SSH_KEY" ]; then
+    echo_warn "Please provide -k option with the ssh key to connect to the node with access to the Cloud-Pipeline kubectl cluster."
     exit 1
+else
+    if [ ! -f "$CP_NODE_SSH_KEY" ]; then
+        echo_warn "Can't find ssh key in path $CP_NODE_SSH_KEY. Please check the ssh key location."
+        exit 1
+    fi
 fi
 
 if [ -z "$API_URL" ]; then
-    echo "Please provide the API_URL"
+    echo_warn "Please provide the URL to the Cloud-Pipeline API endpoint by specifying -s option or API_URL environment variable."
     exit 1
 fi
 
 if [ -z "$API_TOKEN" ]; then
-    echo "Please provide a API_TOKEN"
+    echo_warn "Please provide JWT Token for the Cloud-Pipeline API endpoint by specifying -t option or API_TOKEN environment variable."
     exit 1
 fi
 
-if [ -z "$node_ip" ]; then
-   node_ip=$(echo "$API_URL" | grep -oP "(?<=https://)([^/]+)")
+if [ -z "$CP_NODE_IP" ]; then
+   CP_NODE_IP=$(echo "$API_URL" | grep -oP "(?<=https://)([^/]+)")
 fi 
 
-if [ -z "$configmap_name" ]; then
-   configmap_name="cp-config-global"
+if [ -z "$CP_KUBE_CONFIGMAP" ]; then
+   CP_KUBE_CONFIGMAP="cp-config-global"
 fi
 
-if [ -z "$namespace" ]; then
-   namespace="default"
+if [ -z "$CP_KUBE_NAMESPACE" ]; then
+   CP_KUBE_NAMESPACE="default"
 fi
 
-if [ ! -d "$output_dir" ]; then
-    echo "Checking if output directory exist. Directory does not exist. Creating directory"
-    mkdir -p "$output_dir"
-    echo "Directory $output_dir created."
+if [ ! -d "$OUTPUT_DIR" ]; then
+    echo_warn "Output directory does not exist."
+    mkdir -p "$OUTPUT_DIR"
+    echo_ok "Output directory $OUTPUT_DIR created."
 else
-    echo "Checking if output directory exist. Directory exists"
+    echo_ok "Output directory exists"
 fi
 
-if [ "$(ls -A $output_dir)" ]; then
-   if [ "$force_write" != 1 ]; then
-      echo "Directory is not empty, if you still want to write there please use -f or --force flags." 1>&2 
+if [ "$(ls -A "$OUTPUT_DIR")" ]; then
+   if [ "$FORCE_WRITE" != 1 ]; then
+      echo_warn "Output directory is not empty, if you still want to write there please use -f or --force flags."
       exit 1
    fi
-fi 
-
-echo "===Retrieving configmap from server==="
-get_configmap $ssh_key $user $node_ip $namespace $configmap_name $output_dir
-
-
-if [ $? -eq 0 ]; then
-    echo "Configmap,0" > $output_dir/revision_metadata.csv
-else
-    echo "Configmap,1" > $output_dir/revision_metadata.csv     
 fi
 
-echo "===Retrieving preferences from server==="
-get_pref $API_URL $API_TOKEN $output_dir
+echo_info "- Retrieving Cloud-Pipeline main configmap from server"
+get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "$OUTPUT_DIR"
+write_scrap_result "configmap" "$?" "$OUTPUT_DIR"
 
-if [ $? -eq 0 ]; then
-    echo "Application_preference,0" >> $output_dir/revision_metadata.csv
-else
-    echo "Application_preference,$?" >> $output_dir/revision_metadata.csv     
-fi
+echo_info "- Retrieving preferences from server"
+get_pref "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+write_scrap_result "system_preference" "$?" "$OUTPUT_DIR"
 
-echo "===Retrieving list on installed services from server==="
-get_services $ssh_key $user $node_ip $output_dir
+echo_info "- Retrieving list on installed services from server"
+get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$OUTPUT_DIR"
+write_scrap_result "app_services" "$?" "$OUTPUT_DIR"
 
-if [ $? -eq 0 ]; then
-    echo "Application_services,0" >> $output_dir/revision_metadata.csv
-else
-    echo "Application_services,$?" >> $output_dir/revision_metadata.csv     
-fi
+echo_info "- Retrieving installed pipectl version from server"
+get_version "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+write_scrap_result "app_version" "$?" "$OUTPUT_DIR"
 
-echo "===Retrieving installed pipectl version from server==="
-get_version $API_URL $API_TOKEN $output_dir
+echo_info "- Retrieving installed docker tools from server"
+get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+write_scrap_result "tools" "$?" "$OUTPUT_DIR"
 
-if [ $? -eq 0 ]; then
-    echo "Application_version,0" >> $output_dir/revision_metadata.csv
-else
-    echo "Application_version,$?" >> $output_dir/revision_metadata.csv     
-fi
-
-echo "===Retrieving installed docker tools from server==="
-get_tools $API_URL $API_TOKEN $output_dir
-
-if [ $? -eq 0 ]; then
-    echo "Docker_tools,0" >> $output_dir/../revision_metadata.csv
-else
-    echo "Docker_tools,$?" >> $output_dir/../revision_metadata.csv     
-fi
-
-echo "*****All files saved in directory $output_dir*****"
+echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath OUTPUT_DIR)"
