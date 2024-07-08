@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.entity.utils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Builder;
 import lombok.Data;
@@ -26,10 +27,12 @@ public class TwoBoundaryLimit {
     private Long soft;
     private Long hard;
 
+    @JsonIgnore
     public boolean isSoftLimitDefined() {
         return soft != null && soft > 0;
     }
 
+    @JsonIgnore
     public boolean isHardLimitDefined() {
         return hard != null && hard > 0;
     }
