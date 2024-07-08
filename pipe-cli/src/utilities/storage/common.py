@@ -397,10 +397,6 @@ class AbstractListingManager:
             yield ('File', item.name, item_relative_path, item.size,
                    StorageOperations.get_item_modification_datetime_utc(item))
 
-    @abstractmethod
-    def get_paging_items(self, relative_path, start_token, page_size):
-        pass
-
     def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
         prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
         for item in self.list_items(prefix, show_all=True):

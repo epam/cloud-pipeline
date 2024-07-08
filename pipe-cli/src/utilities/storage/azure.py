@@ -96,9 +96,6 @@ class AzureListingManager(AzureManager, AbstractListingManager):
                           start_token=None, show_archive=False):
         return self.list_items(relative_path, recursive, page_size, show_all=False, show_archive=show_archive), None
 
-    def get_paging_items(self, relative_path, start_token, page_size):
-        return self.get_items(relative_path), None
-
     def get_summary(self, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,

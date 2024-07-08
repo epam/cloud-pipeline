@@ -971,10 +971,6 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
-    def get_paging_items(self, relative_path, start_token, page_size):
-        return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, session=self.session,
-                                                   start_token=start_token)
-
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
             self.session, self.bucket, self.region_name, endpoint=self.endpoint), relative_path)
@@ -1099,11 +1095,6 @@ class S3BucketOperations(object):
 
     @classmethod
     def get_items(cls, storage_wrapper, session=None):
-        results, _ = cls.get_paging_items(storage_wrapper, session=session)
-        return results
-
-    @classmethod
-    def get_paging_items(cls, storage_wrapper, page_size=None, session=None, start_token=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
@@ -1117,30 +1108,14 @@ class S3BucketOperations(object):
 
         prefix = cls.get_prefix(delimiter, storage_wrapper.path)
         operation_parameters['Prefix'] = prefix
-
-        if page_size:
-            operation_parameters['PaginationConfig'] = {
-                'PageSize': page_size,
-                'MaxItems': page_size
-            }
-
-        if start_token:
-            operation_parameters['ContinuationToken'] = start_token
-
         page_iterator = paginator.paginate(**operation_parameters)
-        results = []
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = cls.get_item_name(file['Key'], prefix=prefix)
                     if name.endswith(delimiter):
                         continue
-                    results.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'],
-                                    file['LastModified']))
-        next_page_token = page.get('NextContinuationToken', None) if page else None
-        if page_size:
-            return results, next_page_token
-        return results, None
+                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'], file['LastModified'])
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import itertools
 
 import click
 import datetime
@@ -169,23 +170,21 @@ class DataStorageOperations(object):
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
                                                            events=audit_ctx.container, command=command)
 
-        if not verify_destination and not file_list and source_wrapper.get_type() == WrapperType.S3:
-            items_batch, next_token = source_wrapper.get_paging_items(start_token=None, page_size=BATCH_SIZE)
-            if next_token:
-                items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                          permission_to_check, include, exclude, force, quiet, skip_existing,
-                                          sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                          on_empty_files)
-                cls._transfer_batch_items(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx,
-                                          clean, quiet, tags, io_threads, on_failures, checksum_algorithm,
-                                          checksum_skip, next_token, permission_to_check, include, exclude, force,
-                                          skip_existing, sync_newer, verify_destination, on_unsafe_chars,
-                                          on_unsafe_chars_replacement, on_empty_files)
-                sys.exit(0)
-            else:
-                items = items_batch
-        else:
-            items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
+        batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.S3 or
+                                                                      destination_wrapper.get_type() == WrapperType.S3)
+        if batch_allowed:
+            items_iterator = iter(source_wrapper.get_items(quiet=quiet))
+            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                           permission_to_check, include, exclude, force, quiet, skip_existing,
+                                           sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                           on_empty_files)
+            cls._transfer_batch_items(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+                                      quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
+                                      items_iterator, permission_to_check, include, exclude, force, skip_existing,
+                                      sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                      on_empty_files)
+            sys.exit(0)
+        items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
             items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
@@ -201,85 +200,84 @@ class DataStorageOperations(object):
 
     @classmethod
     def _transfer_batch_items(cls, items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, next_token,
+                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, items_iterator,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
         if threads:
             cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
                                              destination_wrapper, exclude, force, include, io_threads, items,
-                                             manager, next_token, on_empty_files, on_failures, on_unsafe_chars,
+                                             manager, items_iterator, on_empty_files, on_failures, on_unsafe_chars,
                                              on_unsafe_chars_replacement, permission_to_check, quiet,
                                              skip_existing, source_wrapper, sync_newer, tags, threads,
                                              verify_destination)
         else:
             cls._transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
-                                exclude, force, include, io_threads, items, manager, next_token, on_empty_files,
+                                exclude, force, include, io_threads, items, manager, items_iterator, on_empty_files,
                                 on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
                                 quiet, skip_existing, source_wrapper, sync_newer, tags, verify_destination)
 
     @classmethod
     def _transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper, exclude, force,
-                        include, io_threads, items, manager, next_token, on_empty_files, on_failures, on_unsafe_chars,
-                        on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing, source_wrapper,
-                        sync_newer, tags, verify_destination):
+                        include, io_threads, items, manager, items_iterator, on_empty_files, on_failures,
+                        on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check, quiet, skip_existing,
+                        source_wrapper, sync_newer, tags, verify_destination):
         with audit_ctx:
             while True:
-                if not next_token:
-                    cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                                        io_threads, on_failures, None, checksum_algorithm, checksum_skip)
-                    return
-                if ASYNC_BATCH_ENABLE:
-                    with concurrent.futures.ThreadPoolExecutor(1) as executor:
-                        future = executor.submit(cls._fetch_paging_items, manager, source_wrapper, destination_wrapper,
-                                                 permission_to_check, include, exclude, force, quiet, skip_existing,
-                                                 sync_newer, verify_destination, on_unsafe_chars,
-                                                 on_unsafe_chars_replacement, on_empty_files, next_token)
-                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                            clean, quiet, tags, io_threads, on_failures, None,
-                                            checksum_algorithm, checksum_skip)
-                        items, next_token = future.result()
-                else:
-                    cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet, tags,
-                                        io_threads, on_failures, None, checksum_algorithm, checksum_skip)
-                    items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-                    items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                              permission_to_check, include, exclude, force, quiet, skip_existing,
-                                              sync_newer, verify_destination, on_unsafe_chars,
-                                              on_unsafe_chars_replacement, on_empty_files)
+                try:
+                    if ASYNC_BATCH_ENABLE:
+                        with concurrent.futures.ThreadPoolExecutor(1) as executor:
+                            future = executor.submit(cls._fetch_batch_items, items_iterator, manager,
+                                                     source_wrapper, destination_wrapper, permission_to_check,
+                                                     include, exclude, force, quiet, skip_existing,
+                                                     sync_newer, verify_destination, on_unsafe_chars,
+                                                     on_unsafe_chars_replacement, on_empty_files)
+                            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                                clean, quiet, tags, io_threads, on_failures, None,
+                                                checksum_algorithm, checksum_skip)
+                            items = future.result()
+                    else:
+                        cls._transfer_items(items, manager, source_wrapper, destination_wrapper, clean, quiet,
+                                            tags, io_threads, on_failures, None, checksum_algorithm,
+                                            checksum_skip)
+                        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper,
+                                                       destination_wrapper,
+                                                       permission_to_check, include, exclude, force, quiet,
+                                                       skip_existing,
+                                                       sync_newer, verify_destination, on_unsafe_chars,
+                                                       on_unsafe_chars_replacement, on_empty_files)
+                except StopIteration:
+                    break
 
     @classmethod
     def _multiprocess_transfer_batch(cls, audit_ctx, checksum_algorithm, checksum_skip, clean, destination_wrapper,
-                                     exclude, force, include, io_threads, items, manager, next_token, on_empty_files,
-                                     on_failures, on_unsafe_chars, on_unsafe_chars_replacement, permission_to_check,
-                                     quiet, skip_existing, source_wrapper, sync_newer, tags, threads,
-                                     verify_destination):
+                                     exclude, force, include, io_threads, items, manager, items_iterator,
+                                     on_empty_files, on_failures, on_unsafe_chars, on_unsafe_chars_replacement,
+                                     permission_to_check, quiet, skip_existing, source_wrapper, sync_newer, tags,
+                                     threads, verify_destination):
         while True:
-            if not next_token:
-                cls._multiprocess_transfer_items(items, threads, manager, source_wrapper,
-                                                 destination_wrapper, audit_ctx, clean, quiet, tags,
-                                                 io_threads, on_failures, checksum_algorithm,
-                                                 checksum_skip)
-                return
-            transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
-                                                                destination_wrapper, audit_ctx, clean, quiet, tags,
-                                                                io_threads, on_failures, checksum_algorithm,
-                                                                checksum_skip)
-            items, next_token = cls._fetch_paging_items(manager, source_wrapper, destination_wrapper,
-                                                        permission_to_check, include, exclude, force, quiet,
-                                                        skip_existing, sync_newer, verify_destination, on_unsafe_chars,
-                                                        on_unsafe_chars_replacement, on_empty_files, next_token)
-            cls._handle_keyboard_interrupt(transfer_workers)
+            try:
+                transfer_workers = cls._start_multiprocess_transfer(items, threads, manager, source_wrapper,
+                                                                    destination_wrapper, audit_ctx, clean, quiet, tags,
+                                                                    io_threads, on_failures, checksum_algorithm,
+                                                                    checksum_skip)
+                items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                               permission_to_check, include, exclude, force, quiet, skip_existing,
+                                               sync_newer, verify_destination, on_unsafe_chars,
+                                               on_unsafe_chars_replacement, on_empty_files)
+                cls._handle_keyboard_interrupt(transfer_workers)
+            except StopIteration:
+                break
 
     @classmethod
-    def _fetch_paging_items(cls, manager, source_wrapper, destination_wrapper, permission_to_check, include, exclude,
-                            force, quiet, skip_existing, sync_newer, verify_destination, on_unsafe_chars,
-                            on_unsafe_chars_replacement, on_empty_files, next_token):
-        items_batch, next_token = source_wrapper.get_paging_items(next_token, BATCH_SIZE)
-        items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper,
-                                  permission_to_check, include, exclude, force, quiet, skip_existing,
-                                  sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                  on_empty_files)
-        return items, next_token
+    def _fetch_batch_items(cls, items_iterator, manager, source_wrapper, destination_wrapper, permission_to_check,
+                           include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
+                           on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        batch_items_iterator = itertools.islice(items_iterator, BATCH_SIZE)
+        items_batch = itertools.chain([next(batch_items_iterator)], batch_items_iterator)
+        items = cls._filter_items(items_batch, manager, source_wrapper, destination_wrapper, permission_to_check,
+                                  include, exclude, force, quiet, skip_existing, sync_newer, verify_destination,
+                                  on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
+        return items
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
