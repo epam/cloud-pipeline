@@ -159,4 +159,4 @@ echo_info "- Retrieving installed docker tools from server"
 get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
 write_scrap_result "tools" "$?" "$OUTPUT_DIR"
 
-echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath OUTPUT_DIR)"
+echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath $OUTPUT_DIR)"
