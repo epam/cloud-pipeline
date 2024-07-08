@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
@@ -322,8 +323,11 @@ public class RunApiService {
     }
 
     @PreAuthorize(RUN_ID_READ)
-    public Boolean checkFreeSpaceAvailable(final Long runId) {
-        return pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId);
+    public CommitRunConditions getCommitRunCheckResult(final Long runId) {
+        return CommitRunConditions.builder()
+                .containerSize(pipelineRunDockerOperationManager.getContainerSize(runId))
+                .enoughSpace(pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId))
+                .build();
     }
 
     @PreAuthorize(RUN_ID_OWNER)

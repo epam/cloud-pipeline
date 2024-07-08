@@ -147,6 +147,7 @@ public final class MessageConstants {
     public static final String ERROR_RUN_PIPELINES_NOT_FOUND = "error.run.pipelines.not.found";
     public static final String ERROR_RUN_PIPELINES_COMMIT_FAILED = "error.run.pipeline.commit.failed";
     public static final String ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED = "error.container.layers.count.failed";
+    public static final String ERROR_GET_CONTAINER_SIZE_FAILED = "error.container.size.failed";
     public static final String ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND = "error.container.id.for.run.not.found";
     public static final String INFO_EXECUTE_COMMIT_RUN_PIPELINES = "info.execute.ssh.run.pipeline.command";
     public static final String ERROR_RUN_PIPELINES_PAUSE_FAILED = "error.run.pipeline.pause.failed";

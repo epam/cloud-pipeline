@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
+import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.exception.PipelineException;
@@ -159,6 +160,12 @@ public class SystemPreferences {
     public static final IntPreference GET_LAYERS_COUNT_TIMEOUT = new IntPreference("get.layers.count.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
     public static final IntPreference COMMIT_MAX_LAYERS = new IntPreference("commit.max.layers", 127,
+            COMMIT_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<TwoBoundaryLimit> COMMIT_TOOL_SIZE_LIMITS = new ObjectPreference<>(
+            "commit.container.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
+            COMMIT_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
+
+    public static final IntPreference GET_CONTAINER_SIZE_TIMEOUT = new IntPreference("get.container.size.timeout", 600,
             COMMIT_GROUP, isGreaterThan(0));
 
     // DATA_STORAGE_GROUP
@@ -684,6 +691,10 @@ public class SystemPreferences {
 
     public static final BooleanPreference LAUNCH_RUN_RESCHEDULE_ENABLED = new BooleanPreference(
             "launch.run.reschedule.enabled", true, LAUNCH_GROUP, pass);
+
+    public static final ObjectPreference<TwoBoundaryLimit> RUN_TOOL_SIZE_LIMITS = new ObjectPreference<>(
+            "launch.tool.size.limits", null, new TypeReference<TwoBoundaryLimit>() {},
+            LAUNCH_GROUP, isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}));
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers

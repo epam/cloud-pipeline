@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
+import com.epam.pipeline.entity.run.CommitRunConditions;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.acl.run.RunApiService;
@@ -259,12 +260,14 @@ public class PipelineRunController extends AbstractRestController {
 
     @GetMapping(value = "/run/{runId}/commit/check")
     @ApiOperation(
-            value = "Checks if free disk space is available.",
-            notes = "Checks if free disk space is available.",
+            value = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
+            notes = "Checks if user can commit a run without a problem. " +
+                    "Checks free disk space is available and size of the container is appropriate.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> checkFreeSpaceAvailable(@PathVariable(value = RUN_ID) Long runId) {
-        return Result.success(runApiService.checkFreeSpaceAvailable(runId));
+    public Result<CommitRunConditions> getCommitRunCheckResult(@PathVariable(value = RUN_ID) Long runId) {
+        return Result.success(runApiService.getCommitRunCheckResult(runId));
     }
 
     @PostMapping(value = "/run/{runId}/commitStatus")
