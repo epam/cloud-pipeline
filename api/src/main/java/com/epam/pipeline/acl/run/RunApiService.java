@@ -325,7 +325,7 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public CommitRunConditions getCommitRunCheckResult(final Long runId) {
         return CommitRunConditions.builder()
-                .containerSize(pipelineRunDockerOperationManager.getContainerSize(runId))
+                .containerSize(pipelineRunDockerOperationManager.checkContainerSizeForCommit(runId))
                 .enoughSpace(pipelineRunDockerOperationManager.checkFreeSpaceAvailable(runId))
                 .build();
     }

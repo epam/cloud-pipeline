@@ -122,11 +122,11 @@ public class PipelineRunDockerOperationManager {
         return dockerContainerOperationManager.getContainerLayers(pipelineRun);
     }
 
-    public ConditionCheck<Long> getContainerSize(final Long id) {
+    public ConditionCheck<Long> checkContainerSizeForCommit(final Long id) {
         final PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
         final long containerSize = dockerContainerOperationManager.getContainerSize(pipelineRun);
         final TwoBoundaryLimit limits = preferenceManager.getPreference(SystemPreferences.COMMIT_TOOL_SIZE_LIMITS);
-        final Pair<ConditionCheck.Result, String> containerSizeCheck = getCommitRunCheckStatus(containerSize, limits);
+        final Pair<ConditionCheck.Result, String> containerSizeCheck = mapContainerSizeOnLimits(containerSize, limits);
         return ConditionCheck.<Long>builder()
                 .result(containerSizeCheck.getKey())
                 .message(containerSizeCheck.getValue())
@@ -224,6 +224,23 @@ public class PipelineRunDockerOperationManager {
         ListUtils.emptyIfNull(resumingRuns).forEach(this::rerunResumeRun);
     }
 
+    static Pair<ConditionCheck.Result, String> mapContainerSizeOnLimits(
+            final long containerSize, final TwoBoundaryLimit containerSizeLimits) {
+        if (containerSizeLimits == null) {
+            return Pair.create(ConditionCheck.Result.OK, null);
+        }
+
+        if (containerSizeLimits.isHardLimitDefined() && containerSize >= containerSizeLimits.getHard()) {
+            return Pair.create(ConditionCheck.Result.FAIL, "Container is too big to commit!");
+        } else {
+            if (containerSizeLimits.isSoftLimitDefined() && containerSize >= containerSizeLimits.getSoft()) {
+                return Pair.create(ConditionCheck.Result.WARN,
+                        "Container image size may be quite big! Are you sure you want to commit?");
+            }
+        }
+        return Pair.create(ConditionCheck.Result.OK, null);
+    }
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void rerunPauseRun(final PipelineRun run) {
         try {
@@ -313,17 +330,6 @@ public class PipelineRunDockerOperationManager {
         } catch (Exception e) {
             log.error("Failed to load available disk space.", e);
             return Long.MAX_VALUE;
-        }
-    }
-
-    private static Pair<ConditionCheck.Result, String> getCommitRunCheckStatus(
-            final long containerSize, final TwoBoundaryLimit containerSizeLimits) {
-        if (containerSizeLimits == null || containerSize <= containerSizeLimits.getSoft()) {
-            return Pair.create(ConditionCheck.Result.OK, null);
-        } else if (containerSize <= containerSizeLimits.getHard()) {
-            return Pair.create(ConditionCheck.Result.WARN, "Container image size may be quite big!");
-        } else {
-            return Pair.create(ConditionCheck.Result.FAIL, "Container is too big for commit.");
         }
     }
 }
