@@ -35,6 +35,7 @@ class Config(object):
         self.admins_group_name = 'ROLE_ADMIN'
         self.git_group_prefix = 'PIPELINE-'
         self.git_ssh_title = 'Cloud Pipeline'
+        self.resync_user_ssh_keys = os.environ.get("SYNC_GIT_RESYNC_USER_SSH_KEYS", True)
         if self.api and self.access_key:
             return
 
