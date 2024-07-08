@@ -523,6 +523,8 @@ function configure_package_manager {
                               sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
                               sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
                               sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+                              
                               break
                         fi
                   done
@@ -2632,12 +2634,10 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 echo "Command text:"
 echo "${SCRIPT}"
 
-if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
-then
+if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
   timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
   CP_EXEC_RESULT=$?
-  if [ $CP_EXEC_RESULT -eq 124 ];
-  then
+  if [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
   fi
 else
