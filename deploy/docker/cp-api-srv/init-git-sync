@@ -20,7 +20,9 @@ SYNC_GIT_API="${1:-$SYNC_GIT_API}"
 # "JWT"
 SYNC_GIT_API_KEY="${2:-$SYNC_GIT_API_KEY}"
 
-FORCE_SYNC_USER_SSH_KEYS_FREQUENCY=${FORCE_SYNC_USER_SSH_KEYS_FREQUENCY:20}
+# How often to ask to try to resync users ssh keys, by default, if SYNC_GIT_PERIOD=300 and
+# SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY=12, it will be done each hour
+SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY=${SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY:12}
 
 if [ -z $SYNC_GIT_API ] || [ -z $SYNC_GIT_API_KEY ]; then
     echo "API URL and KEY shall be specified"
@@ -37,24 +39,25 @@ python $SYNC_GIT_HOME/syncgit.py configure --api=$SYNC_GIT_API --key=$SYNC_GIT_A
 SYNC_LOG_FILE_NAME="${SYNC_LOG_FILE_NAME:-/opt/git-sync/logs/syncgit.log}"
 mkdir -p "$(dirname $SYNC_LOG_FILE_NAME)"
 
-FORCE_SYNC_USER_SSH_KEYS="false"
+# syncgit.py used this env var to populate its config object
+export SYNC_GIT_RESYNC_USER_SSH_KEYS="false"
 ITERATION=0
 
 while "true"; do
-    if [ "$ITERATION" -gt "$FORCE_SYNC_USER_SSH_KEYS_FREQUENCY" ]; then
-      FORCE_SYNC_USER_SSH_KEYS="false"
-      ITERATION=$((ITERATION + 1))
+    if [ "$ITERATION" -gt "$SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY" ]; then
+        export SYNC_GIT_RESYNC_USER_SSH_KEYS="false"
+        ITERATION=$((ITERATION + 1))
     else
-      FORCE_SYNC_USER_SSH_KEYS="true"
-      ITERATION=0
+        export SYNC_GIT_RESYNC_USER_SSH_KEYS="true"
+        ITERATION=0
     fi
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
-    python $SYNC_GIT_HOME/syncgit.py sync $FORCE_SYNC_USER_SSH_KEYS | tee -a $SYNC_LOG_FILE_NAME
+    python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
 
     if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
-      echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
-      python $SYNC_GIT_HOME/syncgit.py sync-users $FORCE_SYNC_USER_SSH_KEYS "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Users sync iteration" | tee -a $SYNC_LOG_FILE_NAME
+        python $SYNC_GIT_HOME/syncgit.py sync-users "https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}"
     fi
 
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Iteration done" | tee -a $SYNC_LOG_FILE_NAME
