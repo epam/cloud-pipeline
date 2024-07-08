@@ -35,7 +35,7 @@ class Config(object):
         self.admins_group_name = 'ROLE_ADMIN'
         self.git_group_prefix = 'PIPELINE-'
         self.git_ssh_title = 'Cloud Pipeline'
-        self.resync_user_ssh_keys = os.environ.get("SYNC_GIT_RESYNC_USER_SSH_KEYS", True)
+        self.resync_user_ssh_keys = str(os.environ.get("SYNC_GIT_RESYNC_USER_SSH_KEYS", "true")).lower() == "true"
         if self.api and self.access_key:
             return
 
@@ -63,6 +63,13 @@ class Config(object):
                     self.git_group_prefix = data['git-group-prefix']
         elif not safe_initialization:
             raise ConfigNotFoundError()
+
+    def show(self):
+        props = dict(self.__dict__)
+        # Clean up sensitive values
+        props["access_key"] = "***"
+        config_string = json.dumps(props, indent=4)
+        return config_string
 
     @classmethod
     def store(cls, access_key, api, proxy, email_attribute_name, name_attribute_name, ssh_pub_attribute_name,
@@ -94,8 +101,11 @@ class Config(object):
         return config_file
 
     @classmethod
-    def instance(cls):
-        return cls()
+    def instance(cls, show=False):
+        config = cls()
+        if show:
+            print("Running with the following configuration: " + config.show())
+        return config
 
     @classmethod
     def safe_instance(cls):

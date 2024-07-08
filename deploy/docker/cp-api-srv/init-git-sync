@@ -22,7 +22,7 @@ SYNC_GIT_API_KEY="${2:-$SYNC_GIT_API_KEY}"
 
 # How often to ask to try to resync users ssh keys, by default, if SYNC_GIT_PERIOD=300 and
 # SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY=12, it will be done each hour
-SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY=${SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY:12}
+SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY=${SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY:-12}
 
 if [ -z $SYNC_GIT_API ] || [ -z $SYNC_GIT_API_KEY ]; then
     echo "API URL and KEY shall be specified"
@@ -44,7 +44,7 @@ export SYNC_GIT_RESYNC_USER_SSH_KEYS="false"
 ITERATION=0
 
 while "true"; do
-    if [ "$ITERATION" -gt "$SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY" ]; then
+    if [ "$ITERATION" -lt "$SYNC_GIT_RESYNC_USER_SSH_KEYS_FREQUENCY" ]; then
         export SYNC_GIT_RESYNC_USER_SSH_KEYS="false"
         ITERATION=$((ITERATION + 1))
     else
@@ -52,7 +52,9 @@ while "true"; do
         ITERATION=0
     fi
 
+
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] General sync iteration" | tee -a $SYNC_LOG_FILE_NAME
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Option SYNC_GIT_RESYNC_USER_SSH_KEYS=${SYNC_GIT_RESYNC_USER_SSH_KEYS}" | tee -a $SYNC_LOG_FILE_NAME
     python $SYNC_GIT_HOME/syncgit.py sync | tee -a $SYNC_LOG_FILE_NAME
 
     if [ "$SYNC_GIT_FORCE_USERS_ENABLED" == "true" ]; then
