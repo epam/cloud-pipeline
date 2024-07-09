@@ -20,17 +20,35 @@ export YELLOW='\033[1;33m'
 export SET='\033[0m'
 
 function echo_info() {
-  echo "$@" 1>&2;
+    echo "$@" 1>&2;
 }
 
 function echo_err() {
-  echo -e "${RED}$*${SET}" 1>&2;
+    echo -e "${RED}$*${SET}" 1>&2;
 }
 
 function echo_warn() {
-  echo -e "${YELLOW}$*${SET}" 1>&2;
+    echo -e "${YELLOW}$*${SET}" 1>&2;
 }
 
 function echo_ok() {
-  echo -e "${GREEN}$*${SET}" 1>&2;
+    echo -e "${GREEN}$*${SET}" 1>&2;
+}
+
+function call_cp_api() {
+    local API_URL="$1"  #Server address name
+    local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)
+    local API_ENDPOINT="$3"
+    local OUTPUT_FILE="$4"
+
+    # Perform curl request, parse HTTP response status code of good then to API GET request
+    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
+
+    if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
+       echo "$get_responce" > $OUTPUT_FILE
+       echo_ok "$API_ENDPOINT from server $API_URL saved in file $OUTPUT_FILE"
+    else
+       echo_err "API request failed or empty"
+       exit 1
+    fi
 }

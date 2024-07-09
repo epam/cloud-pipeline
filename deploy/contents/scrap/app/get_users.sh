@@ -19,17 +19,5 @@ source utils.sh
 get_users() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)  
-    local output_file="${3}/users.json"
-    local API_ENDPOINT="users"
-   
-    # Perform curl request, parse HTTP response status code of good then to API GET request
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
-
-    if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
-       echo "$get_responce" > $output_file
-       echo_ok "Users from server $API_URL saved in file $output_file"
-    else
-       echo_err "API request failed or empty"
-       exit 1   
-    fi
+    call_cp_api "$API_URL" "$API_TOKEN" "users" "${3}/users.json"
 }

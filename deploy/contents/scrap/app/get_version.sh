@@ -18,18 +18,6 @@ source utils.sh
 
 get_version() {
     local API_URL="$1"  #Server address name 
-    local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN) 
-    local output_file="${3}/version.json" #Output directory name where config-map will be saved
-    local API_ENDPOINT="app/info"
-
-    # Send GET request to the server
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" "${API_URL}/${API_ENDPOINT}" -H "Accept: application/json" | jq '.payload')   
-    
-    if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
-       echo "$get_responce" > $output_file
-       echo_ok "Pipectl version from server $API_URL saved in file $output_file"
-    else
-       echo_err "API request failed or empty"
-       exit 1 
-    fi
+    local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)
+    call_cp_api "$API_URL" "$API_TOKEN" "app/info" "${3}/app-version.json"
 }
