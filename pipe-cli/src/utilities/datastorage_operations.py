@@ -170,8 +170,8 @@ class DataStorageOperations(object):
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper,
                                                            events=audit_ctx.container, command=command)
 
-        batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.S3 or
-                                                                      destination_wrapper.get_type() == WrapperType.S3)
+        batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
+                                                                      or source_wrapper.get_type() == WrapperType.S3)
         if batch_allowed:
             items_iterator = iter(source_wrapper.get_items(quiet=quiet))
             items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
