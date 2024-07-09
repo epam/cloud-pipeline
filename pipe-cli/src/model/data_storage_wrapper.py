@@ -517,10 +517,9 @@ class LocalFileSystemWrapper(DataStorageWrapper):
 
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
-                return []
-            return [(FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))]
+                return
+            yield (FILE, self.path, leaf_path(self.path), os.path.getsize(self.path))
         else:
-            result = list()
             visited_symlinks = set()
 
             def list_items(path, parent, symlinks, visited_symlinks, root=False):
@@ -555,13 +554,14 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                         relative_path = os.path.join(parent, item)
                     if os.path.isfile(to_string(absolute_path)):
                         logging.debug(u'Collected path {}.'.format(absolute_path))
-                        result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
+                        yield (FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path)))
                     elif os.path.isdir(to_string(absolute_path)):
-                        list_items(absolute_path, relative_path, symlinks, visited_symlinks)
+                        for folder_item in list_items(absolute_path, relative_path, symlinks, visited_symlinks):
+                            yield folder_item
                     if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
                         visited_symlinks.remove(symlink_target)
-            list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True)
-            return result
+            for list_item in list_items(self.path, leaf_path(self.path), self.symlinks, visited_symlinks, root=True):
+                yield list_item
 
     def create_folder(self, relative_path):
         absolute_path = os.path.join(self.path, relative_path)

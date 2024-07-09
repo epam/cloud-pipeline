@@ -464,7 +464,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         super(DeleteManager, self).__init__(session, events=events, region_name=region_name, endpoint=endpoint)
         self.bucket = bucket
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=StorageOperations.DEFAULT_PAGE_SIZE):
         client = self._get_client()
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
@@ -481,7 +482,10 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         else:
             operation_parameters = {
                 'Bucket': bucket,
-                'Prefix': prefix
+                'Prefix': prefix,
+                'PaginationConfig': {
+                    'PageSize': page_size
+                }
             }
             if hard_delete:
                 paginator = client.get_paginator('list_object_versions')
@@ -538,6 +542,23 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return self.list_versions(client, prefix, operation_parameters, recursive, page_size, show_archive)
         else:
             return self.list_objects(client, prefix, operation_parameters, recursive, page_size, show_archive)
+
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self._get_client()
+        operation_parameters = {
+            'Bucket': self.bucket.bucket.path,
+            'PaginationConfig': {
+                'PageSize': page_size,
+                'MaxItems': page_size,
+            }
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+
+        return self.list_paging_objects(client, prefix, operation_parameters, recursive, start_token, show_archive)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -688,6 +709,32 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             if self.need_to_stop_paging(page, page_size, items_count):
                 break
         return items
+
+    def list_paging_objects(self, client, prefix, operation_parameters, recursive, start_token, show_archive):
+        if start_token:
+            operation_parameters['ContinuationToken'] = start_token
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+        lifecycle_manager = DataStorageLifecycleManager(self.bucket.bucket.identifier, prefix, self.bucket.is_file_flag)
+        items = []
+
+        for page in page_iterator:
+            if 'CommonPrefixes' in page:
+                for folder in page['CommonPrefixes']:
+                    name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
+                    items.append(self.get_folder_object(name))
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    name = self.get_file_name(file, prefix, recursive)
+                    lifecycle_status = None
+                    if file['StorageClass'] != 'STANDARD' and file['StorageClass'] != 'INTELLIGENT_TIERING':
+                        lifecycle_status, _ = lifecycle_manager.find_lifecycle_status(name)
+                        if not show_archive and not lifecycle_status:
+                            continue
+                    item = self.get_file_object(file, name, lifecycle_status=lifecycle_status)
+                    items.append(item)
+        return items, page.get('NextContinuationToken', None) if page else None
 
     def get_file_object(self, file, name, version=False, storage_class=True, lifecycle_status=None):
         item = DataStorageItemModel()
