@@ -173,16 +173,10 @@ class DataStorageOperations(object):
         batch_allowed = not verify_destination and not file_list and (source_wrapper.get_type() == WrapperType.LOCAL
                                                                       or source_wrapper.get_type() == WrapperType.S3)
         if batch_allowed:
-            items_iterator = iter(source_wrapper.get_items(quiet=quiet))
-            items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
-                                           permission_to_check, include, exclude, force, quiet, skip_existing,
-                                           sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                           on_empty_files)
-            cls._transfer_batch_items(items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                                      quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
-                                      items_iterator, permission_to_check, include, exclude, force, skip_existing,
-                                      sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
-                                      on_empty_files)
+            cls._transfer_batch_items(threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean, quiet,
+                                      tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
+                                      permission_to_check, include, exclude, force, skip_existing, sync_newer,
+                                      verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files)
             sys.exit(0)
         items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         if source_type not in [WrapperType.STREAM]:
@@ -199,10 +193,15 @@ class DataStorageOperations(object):
                                                checksum_algorithm=checksum_algorithm, checksum_skip=checksum_skip)
 
     @classmethod
-    def _transfer_batch_items(cls, items, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
-                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip, items_iterator,
+    def _transfer_batch_items(cls, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
+                              quiet, tags, io_threads, on_failures, checksum_algorithm, checksum_skip,
                               permission_to_check, include, exclude, force, skip_existing, sync_newer,
                               verify_destination, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files):
+        items_iterator = iter(source_wrapper.get_items(quiet=quiet))
+        items = cls._fetch_batch_items(items_iterator, manager, source_wrapper, destination_wrapper,
+                                       permission_to_check, include, exclude, force, quiet, skip_existing,
+                                       sync_newer, verify_destination, on_unsafe_chars, on_unsafe_chars_replacement,
+                                       on_empty_files)
         if threads:
             cls._multiprocess_transfer_batch(audit_ctx, checksum_algorithm, checksum_skip, clean,
                                              destination_wrapper, exclude, force, include, io_threads, items,
