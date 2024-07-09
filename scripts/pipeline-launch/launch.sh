@@ -2634,14 +2634,18 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 echo "Command text:"
 echo "${SCRIPT}"
 
+if [ "$CP_EXEC_AS_OWNER" == "true" ]; then
+      _RUN_AS_OWNER_COMMAND_PREFIX="/usr/bin/sudo -i -u "$OWNER""
+fi
+
 if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
-  timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
+  $_RUN_AS_OWNER_COMMAND_PREFIX timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
   CP_EXEC_RESULT=$?
   if [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
   fi
 else
-  bash -c "${SCRIPT}"
+  $_RUN_AS_OWNER_COMMAND_PREFIX bash -c "${SCRIPT}"
   CP_EXEC_RESULT=$?
 fi
 
