@@ -71,8 +71,10 @@ function build_and_push_tool {
         shift
     fi
 
+    ln -s dist "$docker_context_path/dist"
     docker build "$docker_context_path" -t "$docker_name" -f "$docker_file_path" "$@"
     docker push "$docker_name"
+    rm "$docker_context_path/dist"
 
     docker_manifest_file_path=$DOCKERS_MANIFEST_PATH/manifest.txt
     mkdir -p $DOCKERS_MANIFEST_PATH
@@ -88,6 +90,18 @@ function build_and_push_tool {
     [ -f "$docker_spec_file_path" ] && cp "$docker_spec_file_path" "$DOCKERS_MANIFEST_PATH/$docker_pretty_name/"
 
     return 0
+}
+
+function build_and_push_image {
+    local docker_context_path="$1"
+    local docker_name="$2"
+    shift
+    shift
+
+    ln -s dist "$docker_context_path/dist"
+    docker build "$docker_context_path" -t "$docker_name" "$@"
+    docker push "$docker_name"
+    rm "$docker_context_path/dist"
 }
 
 if [ -z "$DOCKERS_VERSION" ]; then
@@ -125,192 +139,132 @@ fi
 # Cloud Pipeline dockers
 ########################
 
-# API
-CP_API_DIST_NAME=${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}
-
 CP_API_DIST_URL_DEFAULT="https://s3.amazonaws.com/cloud-pipeline-oss-builds/builds/latest/develop/cloud-pipeline.latest.tgz"
 if [ -z "$CP_API_DIST_URL" ]; then
     echo "CP_API_DIST_URL is not set, trying to use latest public distribution $CP_API_DIST_URL_DEFAULT"
     CP_API_DIST_URL="$CP_API_DIST_URL_DEFAULT"
 fi
 
-docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
-                -t "$CP_API_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
-docker push "$CP_API_DIST_NAME"
+# todo: Get rid of cloud-pipeline.tgz usage in favor of service distributions
+wget "$CP_API_DIST_URL" -O /tmp/cloud-pipeline.tgz
+tar -xzf /tmp/cloud-pipeline.tgz -O dist
+rm -rf /tmp/cloud-pipeline.tgz
+unzip dist/bin/pipeline.jar -d /tmp/cloud-pipeline-jar
+cp /tmp/cloud-pipeline-jar/BOOT-INF/classes/static/pipe-common.tar.gz dist/pipe-common.tar.gz
+rm -rf /tmp/cloud-pipeline-jar
+
+# API
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-api-srv" \
+                     "${CP_API_DIST_NAME:-"$CP_DIST_REPO_NAME:api-srv-${DOCKERS_VERSION}"}"
 
 # Basic IdP
-CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-idp \
-                -t "$CP_IDP_DIST_NAME"
-docker push "$CP_IDP_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-idp" \
+                     "${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}"
 
 # Docker registry
-CP_IDP_DIST_NAME=${CP_DOCKER_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-docker-registry \
-                -t "$CP_IDP_DIST_NAME"
-docker push "$CP_IDP_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-docker-registry" \
+                     "${CP_REGISTRY_DIST_NAME:-"$CP_DIST_REPO_NAME:registry-${DOCKERS_VERSION}"}"
 
 # EDGE
-CP_EDGE_DIST_NAME=${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-edge \
-                -t "$CP_EDGE_DIST_NAME"
-docker push "$CP_EDGE_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-edge" \
+                     "${CP_EDGE_DIST_NAME:-"$CP_DIST_REPO_NAME:edge-${DOCKERS_VERSION}"}"
 
 # Docker comp
-CP_DOCKER_COMP_DIST_NAME=${CP_DOCKER_COMP_DIST_NAME:-"$CP_DIST_REPO_NAME:docker-comp-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-docker-comp \
-                -t "$CP_DOCKER_COMP_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_DOCKER_COMP_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-docker-comp" \
+                     "${CP_DOCKER_COMP_DIST_NAME:-"$CP_DIST_REPO_NAME:docker-comp-${DOCKERS_VERSION}"}"
 
 # Clair
-CP_CLAIR_DIST_NAME=${CP_CLAIR_DIST_NAME:-"$CP_DIST_REPO_NAME:clair-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-clair \
-                -t "$CP_CLAIR_DIST_NAME"
-docker push "$CP_CLAIR_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-clair" \
+                     "${CP_CLAIR_DIST_NAME:-"$CP_DIST_REPO_NAME:clair-${DOCKERS_VERSION}"}"
 
 # GitLab
 # 9.4.0 version
-CP_GITLAB_DIST_NAME=${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-9-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-git \
-                -t "$CP_GITLAB_DIST_NAME" \
-                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.9.4
-docker push "$CP_GITLAB_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-git" \
+                     "${CP_GITLAB_DIST_NAME:-"$CP_DIST_REPO_NAME:git-9-${DOCKERS_VERSION}"}" \
+                     -f "$CP_DIST_DIR/Dockerfile.9.4"
 
 # 15.4.3 version
-CP_GITLAB_15_DIST_NAME=${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-git \
-                -t "$CP_GITLAB_15_DIST_NAME" \
-                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.15.5 \
-                --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.5.4-ce.0"
-docker push "$CP_GITLAB_15_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-git" \
+                     "${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}" \
+                     -f "$CP_DIST_DIR/Dockerfile.15.5"
 
 # Notifier
-CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-notifier \
-                -t "$CP_NOTIFIER_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_NOTIFIER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-notifier" \
+                     "${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}"
 
 # Search
-CP_SEARCH_DIST_NAME=${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-search \
-                -t "$CP_SEARCH_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_SEARCH_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-search" \
+                     "${CP_SEARCH_DIST_NAME:-"$CP_DIST_REPO_NAME:search-${DOCKERS_VERSION}"}" \
 
 # Search ELK
-CP_SEARCH_ELK_DIST_NAME=${CP_SEARCH_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:search-elk-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-search-elk \
-                -t "$CP_SEARCH_ELK_DIST_NAME"
-docker push "$CP_SEARCH_ELK_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-search-elk" \
+                     "${CP_SEARCH_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:search-elk-${DOCKERS_VERSION}"}"
 
 # Heapster ELK
-CP_HEAPSTER_ELK_DIST_NAME=${CP_HEAPSTER_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:heapster-elk-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-heapster-elk \
-                -t "$CP_HEAPSTER_ELK_DIST_NAME"
-docker push "$CP_HEAPSTER_ELK_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-heapster-elk" \
+                     "${CP_HEAPSTER_ELK_DIST_NAME:-"$CP_DIST_REPO_NAME:heapster-elk-${DOCKERS_VERSION}"}"
 
 # Node logger
-CP_NODE_LOGGER_DIST_NAME=${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-node-logger \
-                -t "$CP_NODE_LOGGER_DIST_NAME"
-docker push "$CP_NODE_LOGGER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-node-logger" \
+                     "${CP_NODE_LOGGER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-logger-${DOCKERS_VERSION}"}"
 
 # Node Reporter
-CP_NODE_REPORTER_DIST_NAME=${CP_NODE_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-reporter-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-node-reporter \
-                -t "$CP_NODE_REPORTER_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_NODE_REPORTER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-node-reporter" \
+                     "${CP_NODE_REPORTER_DIST_NAME:-"$CP_DIST_REPO_NAME:node-reporter-${DOCKERS_VERSION}"}"
 
 # Backups manager
-CP_BKP_WORKER_DIST_NAME=${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-bkp-worker \
-                -t "$CP_BKP_WORKER_DIST_NAME"
-docker push "$CP_BKP_WORKER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-bkp-worker" \
+                     "${CP_BKP_WORKER_DIST_NAME:-"$CP_DIST_REPO_NAME:cp-bkp-worker-${DOCKERS_VERSION}"}"
 
 # VM Monitor
-CP_VM_MONITOR_DIST_NAME=${CP_VM_MONITOR_DIST_NAME:-"$CP_DIST_REPO_NAME:vm-monitor-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-vm-monitor \
-                -t "$CP_VM_MONITOR_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_VM_MONITOR_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-vm-monitor" \
+                     "${CP_VM_MONITOR_DIST_NAME:-"$CP_DIST_REPO_NAME:vm-monitor-${DOCKERS_VERSION}"}"
 
 # Drive Mapping
-CP_DRIVE_MAPPING_DIST_NAME=${CP_DRIVE_MAPPING_DIST_NAME:-"$CP_DIST_REPO_NAME:dav-${DOCKERS_VERSION}"}
-\cp -r $DOCKERS_SOURCES_PATH/../../scripts/nfs-roles-management $DOCKERS_SOURCES_PATH/cp-dav/
-docker build    $DOCKERS_SOURCES_PATH/cp-dav \
-                -t "$CP_DRIVE_MAPPING_DIST_NAME"
-docker push "$CP_DRIVE_MAPPING_DIST_NAME"
-rm -rf $DOCKERS_SOURCES_PATH/cp-dav
+\cp -r "$DOCKERS_SOURCES_PATH/../../scripts/nfs-roles-management" "$DOCKERS_SOURCES_PATH/cp-dav/"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-dav" \
+                     "${CP_DRIVE_MAPPING_DIST_NAME:-"$CP_DIST_REPO_NAME:dav-${DOCKERS_VERSION}"}"
+rm -rf "$DOCKERS_SOURCES_PATH/cp-dav/nfs-roles-management"
 
 # Share Service
-CP_SHARE_SRV_DIST_NAME=${CP_SHARE_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:share-srv-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-share-srv \
-                -t "$CP_SHARE_SRV_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_SHARE_SRV_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-share-srv" \
+                     "${CP_SHARE_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:share-srv-${DOCKERS_VERSION}"}"
 
 # Billing Service
-CP_BILLING_SRV_DIST_NAME=${CP_BILLING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:billing-srv-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-billing-srv \
-                -t "$CP_BILLING_SRV_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_BILLING_SRV_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-billing-srv" \
+                     "${CP_BILLING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:billing-srv-${DOCKERS_VERSION}"}"
 
 # GitLab Reader Service
-CP_GITLAB_READER_SRV_DIST_NAME=${CP_GITLAB_READER_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:gitlab-reader-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-gitlab-reader \
-                -t "$CP_GITLAB_READER_SRV_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_GITLAB_READER_SRV_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-gitlab-reader" \
+                     "${CP_GITLAB_READER_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:gitlab-reader-${DOCKERS_VERSION}"}"
 
 # Tinyproxy
-CP_TP_DIST_NAME=${CP_TP_DIST_NAME:-"$CP_DIST_REPO_NAME:tinyproxy-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-tinyproxy \
-                -t "$CP_TP_DIST_NAME"
-docker push "$CP_TP_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-tinyproxy" \
+                     "${CP_TP_DIST_NAME:-"$CP_DIST_REPO_NAME:tinyproxy-${DOCKERS_VERSION}"}"
 
 # Leader Elector
-CP_ELECTOR_DIST_NAME=${CP_ELECTOR_DIST_NAME:-"$CP_DIST_REPO_NAME:leader-elector-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-leader-elector \
-                -t "$CP_ELECTOR_DIST_NAME"
-docker push "$CP_ELECTOR_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-leader-elector" \
+                     "${CP_ELECTOR_DIST_NAME:-"$CP_DIST_REPO_NAME:leader-elector-${DOCKERS_VERSION}"}"
 
 # Run owner's policy manager
-CP_RUN_POLICY_MANAGER_DIST_NAME=${CP_RUN_POLICY_MANAGER_DIST_NAME:-"$CP_DIST_REPO_NAME:run-policy-manager-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-run-policy-manager \
-                -t "$CP_RUN_POLICY_MANAGER_DIST_NAME"
-docker push "$CP_RUN_POLICY_MANAGER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-run-policy-manager" \
+                     "${CP_RUN_POLICY_MANAGER_DIST_NAME:-"$CP_DIST_REPO_NAME:run-policy-manager-${DOCKERS_VERSION}"}"
 
 # Pods DNS sync
-CP_DNS_PODS_SYNC_DIST_NAME=${CP_DNS_PODS_SYNC_DIST_NAME:-"$CP_DIST_REPO_NAME:dns-hosts-sync-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-dns-hosts-sync \
-                -t "$CP_DNS_PODS_SYNC_DIST_NAME"
-docker push "$CP_DNS_PODS_SYNC_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-dns-hosts-sync" \
+                     "${CP_DNS_PODS_SYNC_DIST_NAME:-"$CP_DIST_REPO_NAME:dns-hosts-sync-${DOCKERS_VERSION}"}"
 
 # Monitoring service
-CP_MONITORING_SRV_DIST_NAME=${CP_MONITORING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:monitoring-service-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
-                -t "$CP_MONITORING_SRV_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_MONITORING_SRV_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-monitoring-srv" \
+                     "${CP_MONITORING_SRV_DIST_NAME:-"$CP_DIST_REPO_NAME:monitoring-service-${DOCKERS_VERSION}"}"
 
 # Deployment autoscaler
-CP_DEPLOYMENT_AUTOSCALER_DIST_NAME=${CP_DEPLOYMENT_AUTOSCALER_DIST_NAME:-"$CP_DIST_REPO_NAME:deployment-autoscaler-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-deployment-autoscaler \
-                -t "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-deployment-autoscaler" \
+                     "${CP_DEPLOYMENT_AUTOSCALER_DIST_NAME:-"$CP_DIST_REPO_NAME:deployment-autoscaler-${DOCKERS_VERSION}"}"
 
 # Storage Lifecycle Service
-CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME=${CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME:-"$CP_DIST_REPO_NAME:storage-lifecycle-service-${DOCKERS_VERSION}"}
-docker build    $DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service \
-                -t "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME" \
-                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
-docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
+build_and_push_image "$DOCKERS_SOURCES_PATH/cp-storage-lifecycle-service" \
+                     "${CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME:-"$CP_DIST_REPO_NAME:storage-lifecycle-service-${DOCKERS_VERSION}"}"
 
 ########################
 # Base tools dockers
@@ -322,7 +276,7 @@ BASE_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/base
 # - Vanilla
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-${DOCKERS_VERSION}" "library/centos:7"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-${DOCKERS_VERSION}" "library/centos:latest"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-optimized-${DOCKERS_VERSION}" "library/centos:7-optimized" --file "Dockerfile.optimized" --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_REPO_NAME:tools-base-centos-7-optimized-${DOCKERS_VERSION}" "library/centos:7-optimized" --file "Dockerfile.optimized"
 # - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda11-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda11" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda-${DOCKERS_VERSION}" "library/centos-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"

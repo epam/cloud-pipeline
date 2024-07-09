@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
+ARG BASE_IMAGE="centos:7"
+FROM $BASE_IMAGE
 
 # Prerequisites
 RUN yum install -y \
@@ -21,16 +22,9 @@ RUN yum install -y \
                 java-1.8.0-openjdk \
                 unzip
 
-# API distribution
-ARG CP_API_DIST_URL=""
 ENV CP_MONITORING_HOME="/opt/monitoring"
 
-RUN cd /tmp && \
-    wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
-    tar -zxf cloud-pipeline.tgz && \
-    mkdir -p $CP_MONITORING_HOME && \
-    mv bin/monitoring-service.jar $CP_MONITORING_HOME/ && \
-    rm -rf /tmp/*
+ADD dist/bin/monitoring-service.jar $CP_MONITORING_HOME/monitoring-service.jar
 
 ADD config $CP_MONITORING_HOME/config
 
