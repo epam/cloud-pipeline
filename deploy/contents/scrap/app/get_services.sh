@@ -19,7 +19,7 @@ source utils.sh
 get_services() {
     local CP_NODE_SSH_KEY="$1" # SSH key
     local CP_NODE_USER="$2" # USER
-    local $CP_NODE_IP="$3" # Server address
+    local CP_NODE_IP="$3" # Server address
     local output_file="${4}/cp-services.json" #Output directory and file name where preferences will be saved
 
     #SSH connection to the server

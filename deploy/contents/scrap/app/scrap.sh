@@ -24,6 +24,7 @@ source get_pref.sh
 source get_services.sh
 source get_version.sh
 source get_tools.sh
+source get_users.sh
 source utils.sh
 
 function write_scrap_result() {
@@ -32,9 +33,9 @@ function write_scrap_result() {
   local _output_dir=$3
 
   if [ "${_exit_code}" -eq 0 ]; then
-      echo "${_data_to_scrap},0" >> "${_output_dir}"/revision_metadata.csv
+      echo "${_data_to_scrap},0" >> "${_output_dir}"/_pitc.csv
   else
-      echo "${_data_to_scrap},${_exit_code}" >> "${_output_dir}"/revision_metadata.csv
+      echo "${_data_to_scrap},${_exit_code}" >> "${_output_dir}"/_pitc.csv
   fi
 }
 
@@ -139,6 +140,14 @@ if [ "$(ls -A "$OUTPUT_DIR")" ]; then
    fi
 fi
 
+echo_info "- Retrieving installed pipectl version from server"
+get_version "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+write_scrap_result "app_version" "$?" "$OUTPUT_DIR"
+
+echo_info "- Retrieving list on installed services from server"
+get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$OUTPUT_DIR"
+write_scrap_result "app_services" "$?" "$OUTPUT_DIR"
+
 echo_info "- Retrieving Cloud-Pipeline main configmap from server"
 get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "$OUTPUT_DIR"
 write_scrap_result "configmap" "$?" "$OUTPUT_DIR"
@@ -147,13 +156,9 @@ echo_info "- Retrieving preferences from server"
 get_pref "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
 write_scrap_result "system_preference" "$?" "$OUTPUT_DIR"
 
-echo_info "- Retrieving list on installed services from server"
-get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$OUTPUT_DIR"
-write_scrap_result "app_services" "$?" "$OUTPUT_DIR"
-
-echo_info "- Retrieving installed pipectl version from server"
-get_version "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-write_scrap_result "app_version" "$?" "$OUTPUT_DIR"
+echo_info "- Retrieving registered users from server"
+get_users "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+write_scrap_result "users" "$?" "$OUTPUT_DIR"
 
 echo_info "- Retrieving installed docker tools from server"
 get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
