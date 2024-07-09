@@ -167,8 +167,8 @@ class DataStorageOperations(object):
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
                                              audit_ctx, clean, quiet, tags, io_threads, on_failures)
         else:
-            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                audit_ctx, clean, quiet, tags, io_threads, on_failures)
+            cls._transfer_items_with_audit_ctx(items, manager, source_wrapper, destination_wrapper,
+                                               audit_ctx, clean, quiet, tags, io_threads, on_failures)
 
     @classmethod
     def _transfer_batch_items(cls, threads, manager, source_wrapper, destination_wrapper, audit_ctx, clean,
