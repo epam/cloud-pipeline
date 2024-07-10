@@ -16,6 +16,11 @@ ARG BASE_IMAGE="gitlab/gitlab-ce:9.4.0-ce.0"
 
 FROM $BASE_IMAGE
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
 
