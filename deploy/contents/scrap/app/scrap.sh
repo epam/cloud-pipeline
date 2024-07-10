@@ -39,6 +39,7 @@ function write_scrap_result() {
   fi
 }
 
+USE_SCRIPT="system_preferences,tools,users"
 
 while [[ $# -gt 0 ]]
     do
@@ -87,6 +88,11 @@ while [[ $# -gt 0 ]]
         ;;
         -f|--force)
         export FORCE_WRITE=1
+        shift # past argument
+        shift # past value
+        ;;
+        -use_script)
+        export USE_SCRIPT="$2"
         shift # past argument
         shift # past value
         ;;
@@ -152,16 +158,24 @@ echo_info "- Retrieving Cloud-Pipeline main configmap from server"
 get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "$OUTPUT_DIR"
 write_scrap_result "configmap" "$?" "$OUTPUT_DIR"
 
-echo_info "- Retrieving preferences from server"
-get_pref "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-write_scrap_result "system_preference" "$?" "$OUTPUT_DIR"
+if [[ "$USE_SCRIPT" =~ "system_preferences" ]]; then 
+   echo_info "- Retrieving preferences from server"
+   get_pref "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+   write_scrap_result "system_preference" "$?" "$OUTPUT_DIR"
+fi     
 
-echo_info "- Retrieving registered users from server"
-get_users "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-write_scrap_result "users" "$?" "$OUTPUT_DIR"
+if [[ "$USE_SCRIPT" =~ "users" ]]; then
+   echo_info "- Retrieving registered users from server"
+   get_users "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+   write_scrap_result "users" "$?" "$OUTPUT_DIR"
+fi   
+   
+if [[ "$USE_SCRIPT" =~ "tools" ]]; then   
+   echo_info "- Retrieving installed docker tools from server"
+   get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
+   write_scrap_result "tools" "$?" "$OUTPUT_DIR"
+fi
 
-echo_info "- Retrieving installed docker tools from server"
-get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-write_scrap_result "tools" "$?" "$OUTPUT_DIR"
+
 
 echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath $OUTPUT_DIR)"
