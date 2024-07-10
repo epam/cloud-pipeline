@@ -18,6 +18,13 @@ set -e
 
 echo -e "\n------------------ startup of Xfce4 window manager ------------------"
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
+RUN yum install -y curl python3
+
 ### disable screensaver and power management
 xset -dpms &
 xset s noblank &
