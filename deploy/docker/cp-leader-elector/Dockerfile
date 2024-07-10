@@ -15,6 +15,10 @@
 
 FROM centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
 
 RUN yum update -y && \
     yum install -y \
