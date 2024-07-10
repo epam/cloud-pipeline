@@ -53,7 +53,7 @@ elif [ "$operation" = "scrap" ]; then
   cmd_script="scrap.sh" 
 else 
   cmd_home=$tmp_location/install/app
-  cmd_script="install.sh"   
+  cmd_script="install.sh"
 fi
 if [ ! -d $cmd_home ]; then
   echo "ERROR: $cmd_home not found, corrupted installer"

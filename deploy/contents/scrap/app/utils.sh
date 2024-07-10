@@ -49,6 +49,6 @@ function call_cp_api() {
        echo_ok "$API_ENDPOINT from server $API_URL saved in file $OUTPUT_FILE"
     else
        echo_err "API request failed or empty"
-       exit 1
+       return 1
     fi
 }

@@ -28,7 +28,7 @@ get_services() {
        echo "$ssh_responce" > $output_file
        echo_ok "list of services from server $CP_NODE_IP saved in file $output_file"
     else
-       echo_err "Error occured while connecting to the server."
-       exit 1
+       echo_err "Error occurred while connecting to the server."
+       return 1
     fi    
 }

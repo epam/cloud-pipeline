@@ -31,6 +31,6 @@ get_configmap() {
        echo_ok "config-map from server $CP_NODE_IP saved in file $output_dir"
     else
        echo_err "Error occured while connecting to the server"
-       exit 1
+       return 1
     fi      
 }
