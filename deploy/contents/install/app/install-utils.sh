@@ -562,6 +562,41 @@ function array_contains_or_empty () {
     return 1
 }
 
+function count_services {
+    parse_env_option "$1"
+    services_count=$((services_count+1))
+    if [ -n "${CP_SERVICES_ENABLED}" ]; then 
+        export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${1}"
+    else 
+        export CP_SERVICES_ENABLED="${1}"
+    fi
+    }
+
+function export_service_all {
+        export CP_INSTALL_SERVICES_ALL=1
+        export CP_SERVICES_ENABLED="all"
+    }
+
+function services_from_pitc {
+    local services_list="$CP_POINT_IN_TIME_CONFIGURATION_DIR/cp-services.json"
+    if [ ! -s "$services_list" ]; then
+       export_service_all
+    else
+       while IFS=',' read -r app switch; do
+        if [ $app = "app_services" ]; then
+            if [ $switch -eq 0 ]; then
+                while read -r key; do 
+                    count_services "$key"
+                    echo "$key=${!key}"
+                done < <(cat "$services_list" | jq -r '.[]')
+            else 
+                export_service_all       
+            fi
+        fi
+        done < "$CP_POINT_IN_TIME_CONFIGURATION_DIR/_pitc.csv"
+    fi
+}    
+
 function parse_options {
     local services_count=0
     POSITIONAL=()
@@ -608,13 +643,7 @@ function parse_options {
         shift # past argument
         ;;
         -s|--service)
-        parse_env_option "$2"
-        services_count=$((services_count+1))
-        if [ -n "${CP_SERVICES_ENABLED}" ]; then 
-           export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${2}"
-        else 
-           export CP_SERVICES_ENABLED="${2}"
-        fi
+        count_services "$2"
         shift # past argument
         shift # past value
         ;;
@@ -622,6 +651,11 @@ function parse_options {
         # Here we only collect list of var=value options. The will applied (exported) after the config file (CP_INSTALL_CONFIG_FILE) will be sourced
         # so command line options will have higher priority compared to the file
         EXPLICIT_ENV_OPTIONS+=("$2")
+        shift # past argument
+        shift # past value
+        ;;
+        -pc|--point-in-time-configuration)
+        CP_POINT_IN_TIME_CONFIGURATION_DIR="$2"
         shift # past argument
         shift # past value
         ;;
@@ -747,10 +781,13 @@ function parse_options {
                             "$CP_EDGE_EXTERNAL_PORT"
     fi
 
+    if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
+        services_from_pitc
+    fi 
+
     if [ $services_count == 0 ]; then
-        print_warn "No specific services (-s|--service) are specified, ALL will be installed"
-        export CP_INSTALL_SERVICES_ALL=1
-        export CP_SERVICES_ENABLED="all"
+        print_warn "No specific services are specified, ALL will be installed"
+        export_service_all
     fi
 
     # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
