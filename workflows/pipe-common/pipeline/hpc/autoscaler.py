@@ -14,6 +14,7 @@
 
 import functools
 import operator
+import os
 import threading
 import traceback
 from collections import namedtuple
@@ -214,6 +215,7 @@ class GridEngineScaleUpHandler:
         instance_dynamic_launch_params = {
             self.owner_param_name: owner
         }
+        # todo: Use api client here
         pipe_run_command = 'pipe run --yes --quiet ' \
                            '--instance-disk %s ' \
                            '--instance-type %s ' \
@@ -230,6 +232,7 @@ class GridEngineScaleUpHandler:
                               self._pipe_cli_price_type(self.price_type), self.region_id,
                               self._parameters_str(self.instance_launch_params),
                               self._parameters_str(instance_dynamic_launch_params))
+        os.environ['API_TOKEN'] = self.api.token.get()
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker #%s (%s) has been launched.' % (run_id, instance))
         return run_id
@@ -246,7 +249,7 @@ class GridEngineScaleUpHandler:
 
     def _retrieve_pod_name(self, run_id):
         Logger.info('Retrieving pod name of additional worker #%s...' % run_id)
-        run = self.api.load_run(run_id)
+        run = self.api.load_run_efficiently(run_id)
         if 'podId' in run:
             name = run['podId']
             Logger.info('Additional worker #%s pod name %s has been retrieved.' % (run_id, name))
@@ -261,7 +264,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts != 0:
-            run = self.api.load_run(run_id)
+            run = self.api.load_run_efficiently(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker #%s is not running. Probably it has failed.' % run_id
                 Logger.warn(error_msg, crucial=True)
@@ -287,7 +290,7 @@ class GridEngineScaleUpHandler:
         attempts = self.polling_timeout / self.polling_delay if self.polling_delay \
             else GridEngineScaleUpHandler._POLL_ATTEMPTS
         while attempts > 0:
-            run = self.api.load_run(run_id)
+            run = self.api.load_run_efficiently(run_id)
             if run.get('status', 'RUNNING') != 'RUNNING':
                 error_msg = 'Additional worker #%s is not running. Probably it has failed.' % run_id
                 Logger.warn(error_msg, crucial=True)
@@ -338,17 +341,19 @@ class DoNothingScaleDownHandler:
 
 class GridEngineScaleDownHandler:
 
-    def __init__(self, cmd_executor, grid_engine, common_utils):
+    def __init__(self, cmd_executor, api, grid_engine, common_utils):
         """
         Grid engine scale down handler.
 
         Manages additional workers scaling down.
 
         :param cmd_executor: Cmd executor.
+        :param api: Cloud pipeline client.
         :param grid_engine: Grid engine client.
         :param common_utils: helpful stuff
         """
         self.executor = cmd_executor
+        self.api = api
         self.grid_engine = grid_engine
         self.common_utils = common_utils
 
@@ -387,7 +392,7 @@ class GridEngineScaleDownHandler:
     def _stop_run(self, host):
         run_id = self.common_utils.get_run_id_from_host(host)
         Logger.info('Stopping run #%s...' % run_id)
-        self.executor.execute('pipe stop --yes %s' % run_id)
+        self.api.stop_run(run_id)
         Logger.info('Run #%s was stopped.' % run_id)
 
     def _remove_host_from_hosts(self, host):

@@ -137,6 +137,13 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_entity_permissions(self, entity_id, entity_class):
         return self.api.get_entity_permissions(entity_id, entity_class)
 
+    def load_entity_metadata(self, entity_id, entity_class):
+        try:
+            return self.api.load_metadata(entity_id, entity_class)
+        except Exception as e:
+            self.logger.log("Fail to load metadata for class: {} by id: {}.".format(entity_class, str(entity_id)))
+            return None
+
     def _load_default_lifecycle_rule_notification(self):
         notification = self.load_notification(self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE)
         default_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")

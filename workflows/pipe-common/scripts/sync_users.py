@@ -16,11 +16,13 @@ import logging
 import os
 import shutil
 import stat
+import sys
 import time
 from functools import reduce
 
 from pipeline.api import PipelineAPI, APIError
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.api.token import RefreshingToken
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ResilientLogger
 from pipeline.utils.account import create_user
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
@@ -39,23 +41,46 @@ def sync_users():
     user_name_case = os.getenv('CP_CAP_USER_NAME_CASE', 'default')
     user_name_metadata_key = os.getenv('CP_CAP_USER_NAME_METADATA_KEY', 'local_user_name')
     sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
-    logging_directory = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
-    logging_level_local = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
-    logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
     owner_user_name = os.getenv('OWNER', 'root')
     sudo_enabled = os.getenv('CP_CAP_SUDO_ENABLE', 'true').lower().strip() in ['true', 'yes']
     sudo_user_names = os.getenv('CP_CAP_SUDO_USERS', 'PIPE_ADMIN').split(',')
     sudo_group_names = os.getenv('CP_CAP_SUDO_GROUPS', 'ROLE_ADMIN').split(',')
 
-    logging.basicConfig(level=logging_level_local, format=logging_format,
-                        filename=os.path.join(logging_directory, 'sync_users.log'))
+    logging_dir = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
+    logging_level_run = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_RUN', 'INFO')
+    logging_level_file = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
+    logging_level_console = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_CONSOLE', 'INFO')
+    logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_task = os.getenv('CP_CAP_SYNC_USERS_LOGGING_TASK', 'UsersSynchronization')
+    logging_file = os.path.join(logging_dir, 'sync_users.log')
 
-    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
+    mkdir(os.path.dirname(logging_file))
+
+    logging_formatter = logging.Formatter(logging_format)
+
+    logging_logger_root = logging.getLogger()
+    logging_logger_root.setLevel(logging.WARNING)
+
+    logging_logger = logging.getLogger(name=logging_task)
+    logging_logger.setLevel(logging.DEBUG)
+
+    if not logging_logger.handlers:
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging_level_console)
+        console_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(console_handler)
+
+        file_handler = logging.FileHandler(logging_file)
+        file_handler.setLevel(logging_level_file)
+        file_handler.setFormatter(logging_formatter)
+        logging_logger.addHandler(file_handler)
+
+    api = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
     logger = RunLogger(api=api, run_id=run_id)
-    logger = TaskLogger(task='UsersSynchronization', inner=logger)
-    logger = LevelLogger(level=logging_level, inner=logger)
-    logger = LocalLogger(inner=logger)
+    logger = TaskLogger(task=logging_task, inner=logger)
+    logger = LevelLogger(level=logging_level_run, inner=logger)
+    logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     logger.info('Initiating users synchronisation...')
 

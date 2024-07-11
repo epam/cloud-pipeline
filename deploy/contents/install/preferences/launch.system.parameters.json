@@ -514,5 +514,12 @@
         "type": "boolean",
         "description": "Enables rescheduling run to other regions",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_SSH_EXTRA_ARGS",
+        "type": "string",
+        "description": "Configures ssh extra args.",
+        "defaultValue": "-o ConnectTimeout=10 -o ConnectionAttempts=30 -v",
+        "passToWorkers": true
     }
 ]

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,8 +48,8 @@ class WaitForNode(Task):
         try:
             Logger.info('Waiting for node with parameters = {}, task: {}'.format(','.join(parameters if parameters else ['NA']), task_name),
                         task_name=self.task_name)
-            # approximately 10 minutes
-            attempts = 60
+            # approximately 20 minutes
+            attempts = int(os.getenv('CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS', 120))
             master = self.get_node_info(task_name, run_id, parameters=parameters)
             while (not master or not master.ip or not master.name) and attempts > 0:
                 master = self.get_node_info(task_name, run_id, parameters=parameters)
