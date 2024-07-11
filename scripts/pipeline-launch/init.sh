@@ -21,15 +21,25 @@ CP_GIT_CLONE_URL=$2
 PIPELINE_VERSION=$3
 CP_CMD=$4
 
+declare -px > /etc/cp_startup.env
+
 _CP_STARTUP_BASH_FILE=/opt/cp_startup.sh
 cat > $_CP_STARTUP_BASH_FILE << EOF
 #!/bin/bash
 
 CP_LAUNCH_SH_URL='$CP_LAUNCH_SH_URL'
 
-# Inherit environment variables from the PID 1 process
+# Inherit environment variables from the PID 1 process, which are dumped earlier into /etc/cp_startup.env
 # So that the SystemD option get a correct environment
-while IFS= read -rd '' var; do declare -x "\$var"; done </proc/1/environ
+# If no SystemD is requested - variables will inherited on their own
+if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+    if [ -f "/etc/cp_startup.env" ]; then
+        source /etc/cp_startup.env
+    else
+        echo "Environment file /etc/cp_startup.env not found"
+    fi
+fi
+rm -f /etc/cp_startup.env
 
 set -o pipefail
 
