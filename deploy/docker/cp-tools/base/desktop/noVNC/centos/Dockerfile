@@ -15,6 +15,11 @@
 ARG BASE_IMAGE=library/centos:7.7.1908
 FROM $BASE_IMAGE
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 RUN yum install -y wget \
                    bzip2 \
                    gcc \

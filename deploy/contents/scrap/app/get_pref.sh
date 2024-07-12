@@ -17,7 +17,7 @@
 source utils.sh
 
 get_pref() {
-    local API_URL="$1"  #Server address name 
-    local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)  
-    call_cp_api "$API_URL" "$API_TOKEN" "preferences" "${3}/system-preferences.json"
+    local API_URL="$1"  # Server address name
+    local API_TOKEN="$2" # Access key for pipe cli(API_TOKEN)
+    call_cp_api "$API_URL" "$API_TOKEN" "preferences" "${3}"
 }

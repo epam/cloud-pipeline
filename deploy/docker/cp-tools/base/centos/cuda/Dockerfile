@@ -16,6 +16,11 @@ ARG BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7"
 FROM ${BASE_IMAGE}
 WORKDIR /
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 RUN yum install -y wget \
                    curl \
                    python \

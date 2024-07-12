@@ -20,7 +20,7 @@ get_services() {
     local CP_NODE_SSH_KEY="$1" # SSH key
     local CP_NODE_USER="$2" # USER
     local CP_NODE_IP="$3" # Server address
-    local output_file="${4}/cp-services.json" #Output directory and file name where preferences will be saved
+    local output_file="${4}"
 
     #SSH connection to the server
     ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get nodes -o json | jq ['.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))'])
