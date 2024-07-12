@@ -81,7 +81,7 @@ function setup_swap_device {
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
-FS_TYPE="@FS_TYPE@"
+FS_TYPE="ext4"
 
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
 DRIVE_NUM=0
