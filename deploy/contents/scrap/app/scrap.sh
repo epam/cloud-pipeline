@@ -30,14 +30,11 @@ source utils.sh
 
 function write_scrap_result() {
   local _data_to_scrap=$1
-  local _exit_code=$2
-  local _output_dir=$3
+  local _data_output_file=$2
+  local _exit_code=$3
+  local _output_dir=$4
 
-  if [ "${_exit_code}" -eq 0 ]; then
-      echo "${_data_to_scrap},0" >> "${_output_dir}"/_pitc.csv
-  else
-      echo "${_data_to_scrap},${_exit_code}" >> "${_output_dir}"/_pitc.csv
-  fi
+  echo "${_data_to_scrap},${_data_output_file},${_exit_code}" >> "${_output_dir}"/_pitc.csv
 }
 
 function print_help() {
@@ -202,35 +199,39 @@ if [ "$(ls -A "$OUTPUT_DIR")" ]; then
 fi
 
 echo_info "- Retrieving application version from server"
-get_version "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-write_scrap_result "app_version" "$?" "$OUTPUT_DIR"
+_version_file="$OUTPUT_DIR/version.json"
+get_version "$API_URL" "$API_TOKEN" "$_version_file"
+write_scrap_result "version" "$(basename $_version_file)" "$?" "$OUTPUT_DIR"
 
 echo_info "- Retrieving list on installed services from server"
-get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$OUTPUT_DIR"
-write_scrap_result "app_services" "$?" "$OUTPUT_DIR"
+_services_file="$OUTPUT_DIR/services.json"
+get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "${_services_file}"
+write_scrap_result "services" "$(basename ${_services_file})" "$?" "$OUTPUT_DIR"
 
 echo_info "- Retrieving Cloud-Pipeline main configmap from server"
-get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "$OUTPUT_DIR"
-write_scrap_result "configmap" "$?" "$OUTPUT_DIR"
+_configmap_file="$OUTPUT_DIR/config.properties"
+get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "${_configmap_file}"
+write_scrap_result "configmap" "$(basename ${_configmap_file})" "$?" "$OUTPUT_DIR"
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "system_preferences" ]]; then
    echo_info "- Retrieving preferences from server"
-   get_pref "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-   write_scrap_result "system_preference" "$?" "$OUTPUT_DIR"
+   _system_pref_file="$OUTPUT_DIR/system-preferences.json"
+   get_pref "$API_URL" "$API_TOKEN" "${_system_pref_file}"
+   write_scrap_result "system_preference" "$(basename ${_system_pref_file})" "$?" "$OUTPUT_DIR"
 fi     
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "users" ]]; then
    echo_info "- Retrieving registered users from server"
-   get_users "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-   write_scrap_result "users" "$?" "$OUTPUT_DIR"
+   _users_file="$OUTPUT_DIR/users.json"
+   get_users "$API_URL" "$API_TOKEN" "${_users_file}"
+   write_scrap_result "users" "$(basename ${_users_file})" "$?" "$OUTPUT_DIR"
 fi   
    
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "tools" ]]; then
    echo_info "- Retrieving installed docker tools from server"
-   get_tools "$API_URL" "$API_TOKEN" "$OUTPUT_DIR"
-   write_scrap_result "tools" "$?" "$OUTPUT_DIR"
+   _tools_dir="$OUTPUT_DIR/dockers-manifest"
+   get_tools "$API_URL" "$API_TOKEN" "${_tools_dir}"
+   write_scrap_result "tools" "$(basename ${_tools_dir})" "$?" "$OUTPUT_DIR"
 fi
-
-
 
 echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath $OUTPUT_DIR)"

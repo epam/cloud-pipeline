@@ -17,7 +17,7 @@ source utils.sh
 get_tools() {
     export API_URL="${1}"
     export API_TOKEN="${2}"
-    export output_dir="${3}/dockers-manifest" #Output directory where all output should reside
+    export output_dir="${3}"
     local resulted_exit_code=0
 
     registries_tree=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/dockerRegistry/loadTree")
