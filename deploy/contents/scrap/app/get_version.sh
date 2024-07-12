@@ -19,5 +19,5 @@ source utils.sh
 get_version() {
     local API_URL="$1"  #Server address name 
     local API_TOKEN="$2" #Access key for pipe cli(API_TOKEN)
-    call_cp_api "$API_URL" "$API_TOKEN" "app/info" "${3}/app-version.json"
+    call_cp_api "$API_URL" "$API_TOKEN" "app/info" "${3}"
 }
