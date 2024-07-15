@@ -306,6 +306,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             storage_sheet = wb[storage.name]
         else:
             storage_sheet = wb.create_sheet(storage.name)
+            storage_sheet.append(['Estimated for ', self.config.get_estimate_for_date().strftime('%Y-%m-%d')])
             storage_sheet.append(['Storage ID',
                                 'Storage Name',
                                 'Source Tier',
