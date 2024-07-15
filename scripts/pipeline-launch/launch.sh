@@ -2480,6 +2480,12 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
             _old_pwd=$(pwd)
             cd "$CP_USR_BIN"
             for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_os=$(echo $CP_CAP_EXTRA_PKG_RHEL_URL | cut -d";" -f1)
+                  _pkg_os_url=$(echo $CP_CAP_EXTRA_PKG_RHEL_URL | cut -d";" -f2)
+                  if [ "$_pkg_os" != "$_pkg_os_url" ] && [ "$_pkg_os" != "$CP_VER_MAJOR" ]; then
+                        continue
+                  fi
+                  
                   _pkg_filename=$(basename "$_pkg")
                   _pkg_filename_ext="${_pkg_filename##*.}"
                   if [ -f "$_pkg_filename" ]; then
