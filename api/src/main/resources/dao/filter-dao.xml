@@ -60,6 +60,7 @@
                         r.prolonged_at_time,
                         r.last_notification_time,
                         r.last_idle_notification_time,
+                        r.last_network_consumption_notification_time,
                         r.exec_preferences,
                         r.pretty_url,
                         r.price_per_hour,

@@ -104,6 +104,7 @@ public class PipelineRun extends AbstractSecuredEntity {
      * Last time the notification on idle pipeline was issued
      */
     private LocalDateTime lastIdleNotificationTime;
+    private LocalDateTime lastNetworkConsumptionNotificationTime;
     private LocalDateTime prolongedAtTime;
     private ExecutionPreferences executionPreferences = ExecutionPreferences.getDefault();
     private String prettyUrl;
