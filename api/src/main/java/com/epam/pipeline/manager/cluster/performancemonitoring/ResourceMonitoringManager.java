@@ -454,7 +454,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                                     Double networkBandwidthLevel, List<PipelineRun> runsToUpdateTags) {
             if (shouldPerformActionOnNetworkConsumingRun(run, actionTimeout)) {
                 performActionOnNetworkConsumingRun(run, action, networkBandwidthLevel, pipelinesToNotify,
-                        runsToUpdateNotificationTime, runsToUpdateTags);
+                        runsToUpdateNotificationTime);
                 return;
             }
             if (Objects.isNull(run.getLastNetworkConsumptionNotificationTime())) {
@@ -518,12 +518,14 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                                         final NetworkConsumingRunAction action,
                                                         final double networkBandwidthLevel,
                                                         final List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                                        final List<PipelineRun> runsToUpdate,
-                                                        final List<PipelineRun> runsToUpdateTags) {
+                                                        final List<PipelineRun> runsToUpdate) {
             log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(),
                     networkBandwidthLevel, action));
             switch (action) {
-                default:
+                case LIMIT_BANDWIDTH:
+//                    TODO
+                    break;
+                case NOTIFY:
                     performHighNetworkConsumingNotify(run, networkBandwidthLevel, pipelinesToNotify);
             }
             runsToUpdate.add(run);

@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
  * {@code SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD}
  */
 public enum NetworkConsumingRunAction {
+    LIMIT_BANDWIDTH,
     /**
      * Just notify the owner of a Run
      */
