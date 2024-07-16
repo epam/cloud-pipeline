@@ -31,6 +31,8 @@ import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import io.swagger.annotations.Api;
@@ -67,6 +69,7 @@ public class ClusterController extends AbstractRestController {
     private static final String TO = "to";
     private static final String INTERVAL = "interval";
     private static final String REPORT_TYPE = "type";
+    private static final String FALSE = "false";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String REPORT_NAME_TEMPLATE = "%s_%s-%s-%s.%s";
     private static final char TIME_SEPARATION_CHAR = ':';
@@ -197,7 +200,7 @@ public class ClusterController extends AbstractRestController {
             })
     public Result<List<InstanceType>> loadAllInstanceTypes(
             @RequestParam(required = false) final Long regionId,
-            @RequestParam(required = false, defaultValue = "false") final boolean toolInstances,
+            @RequestParam(required = false, defaultValue = FALSE) final boolean toolInstances,
             @RequestParam(required = false) final Boolean spot) {
         return toolInstances
             ? Result.success(clusterApiService.getAllowedToolInstanceTypes(regionId, spot))
@@ -239,6 +242,27 @@ public class ClusterController extends AbstractRestController {
             @DateTimeFormat(pattern = DATE_TIME_FORMAT)
             @RequestParam(value = TO, required = false) final LocalDateTime to) {
         return Result.success(clusterApiService.getStatsForNode(name, from, to));
+    }
+
+    @GetMapping("/cluster/node/{name}/usage/gpus")
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns GPU stats from instance by given IP address",
+            notes = "Returns GPU stats from instance by given IP address",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GpuMonitoringStats> getNodeUsageGpuStatistics(
+            @PathVariable(value = NAME) final String name,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = FROM, required = false) final LocalDateTime from,
+            @DateTimeFormat(pattern = DATE_TIME_FORMAT)
+            @RequestParam(value = TO, required = false) final LocalDateTime to,
+            @RequestParam final List<GpuMetricsGranularity> granularity,
+            @RequestParam(required = false, defaultValue = FALSE)
+            final boolean squashCharts) {
+        return Result.success(clusterApiService.getGpuStatsForNode(name, from, to, granularity, squashCharts));
     }
 
     @GetMapping("/cluster/node/{name}/usage/report")
@@ -308,7 +332,7 @@ public class ClusterController extends AbstractRestController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION))
     public Result<PodDescription> loadPodDescription(@RequestParam final String podId,
-                                                     @RequestParam(required = false, defaultValue = "false")
+                                                     @RequestParam(required = false, defaultValue = FALSE)
                                                      final boolean detailed) {
         return Result.success(clusterApiService.getPodDescription(podId, detailed));
     }

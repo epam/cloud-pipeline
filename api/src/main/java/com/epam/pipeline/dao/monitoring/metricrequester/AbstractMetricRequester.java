@@ -38,6 +38,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.max.MaxAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.min.MinAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptPipelineAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -62,8 +63,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     private static final DateTimeFormatter DATE_FORMATTER =DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
-    private static final String HEAPSTER_INDEX_NAME_PATTERN = "heapster-%s";
-    private static final String GPU_STAT_INDEX_NAME_PATTERN = "cp-gpu-monitor-%s";
+    private static final String INDEX_NAME_PATTERN = "heapster-%s";
 
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
 
@@ -90,7 +90,6 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String DEFAULT = "default";
 
     protected static final String CPU_HISTOGRAM = "cpu_histogram";
-    protected static final String GPU_HISTOGRAM = "gpu_histogram";
     protected static final String MEMORY_HISTOGRAM = "memory_histogram";
     protected static final String NETWORK_HISTOGRAM = "network_histogram";
     protected static final String DISKS_HISTOGRAM = "disks_histogram";
@@ -104,6 +103,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     protected static final String AVG_AGGREGATION = "avg_";
     protected static final String MAX_AGGREGATION = "max_";
+    protected static final String MIN_AGGREGATION = "min_";
     protected static final String DIVISION_AGGREGATION = "division_";
     protected static final String AGGREGATION_POD_NAME = "pod_name";
     protected static final String FIELD_POD_NAME_RAW = "pod_name.raw";
@@ -115,9 +115,17 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String SWAP_FILESYSTEM = "tmpfs";
 
     private final HeapsterElasticRestHighLevelClient client;
+    private final String indexNamePattern;
 
     AbstractMetricRequester(final HeapsterElasticRestHighLevelClient client) {
         this.client = client;
+        this.indexNamePattern = INDEX_NAME_PATTERN;
+    }
+
+    AbstractMetricRequester(final HeapsterElasticRestHighLevelClient client,
+                            final String indexNamePattern) {
+        this.client = client;
+        this.indexNamePattern = indexNamePattern;
     }
 
     protected abstract ELKUsageMetric metric();
@@ -154,8 +162,6 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new PodFSRequester(client);
             case NETWORK:
                 return new NetworkRequester(client);
-            case GPU:
-                return new GPURequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }
@@ -202,14 +208,13 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 .indicesOptions(INDICES_OPTIONS);
     }
 
-    private static String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
+    private String[] getIndexNames(final LocalDateTime from, final LocalDateTime to) {
         final LocalDate fromDate = from.toLocalDate();
         final LocalDate toDate = to.toLocalDate();
         return Stream.iterate(fromDate, date -> date.plusDays(1))
                 .limit(Period.between(fromDate, toDate).getDays() + 1)
                 .map(date -> date.format(DATE_FORMATTER))
-                .flatMap(str -> Stream.of(String.format(HEAPSTER_INDEX_NAME_PATTERN, str),
-                        String.format(GPU_STAT_INDEX_NAME_PATTERN, str)))
+                .map(str -> String.format(indexNamePattern, str))
                 .toArray(String[]::new);
     }
 
@@ -254,12 +259,16 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     }
 
     protected AvgAggregationBuilder average(final String name, final String field) {
-        return AggregationBuilders.avg(name)
+        return AggregationBuilders.avg(AVG_AGGREGATION + name)
                 .field(field(field));
     }
 
     protected MaxAggregationBuilder max(final String name, final String field) {
-        return AggregationBuilders.max(name).field(field(field));
+        return AggregationBuilders.max(MAX_AGGREGATION + name).field(field(field));
+    }
+
+    protected MinAggregationBuilder min(final String name, final String field) {
+        return AggregationBuilders.min(MIN_AGGREGATION + name).field(field(field));
     }
 
     protected PipelineAggregationBuilder division(final String name, final String divider, final String divisor) {

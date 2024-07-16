@@ -38,24 +38,24 @@ import java.util.stream.Collectors;
 public final class GpuMonitorIndexHelper {
 
     private static final String GPU_INDEX_TYPE = "gpu";
-    private static final String GPU_STATS_INDEX_TYPE = "gpu_stats";
+    private static final String GPU_AGGS_INDEX_TYPE = "gpu_aggs";
     private static final String GPU_TIMESTAMP_FIELD = "GpuMetricsTimestamp";
-    private static final String GPU_STATS_TIMESTAMP_FIELD = "GpuStatsMetricsTimestamp";
+    private static final String GPU_STATS_TIMESTAMP_FIELD = "GpuAggsMetricsTimestamp";
     private static final String METRICS_FIELD = "Metrics";
     private static final String TAGS_FIELD = "MetricsTags";
     private static final String GPU_UTILIZATION_FIELD = "gpu/utilization_gpu";
     private static final String MEMORY_UTILIZATION_FIELD = "gpu/utilization_memory";
     private static final String MEMORY_USED_FIELD = "gpu/used_memory";
-    private static final String ACTIVE_GPUS_FIELD = "gpu/active_gpus";
-    private static final String AVG_GPU_UTILIZATION_FIELD = "gpu/avg_utilization_gpu";
-    private static final String AVG_MEMORY_UTILIZATION_FIELD = "gpu/avg_utilization_memory";
-    private static final String AVG_MEMORY_USED_FIELD = "gpu/avg_used_memory";
-    private static final String MIN_GPU_UTILIZATION_FIELD = "gpu/min_utilization_gpu";
-    private static final String MIN_MEMORY_UTILIZATION_FIELD = "gpu/min_utilization_memory";
-    private static final String MIN_MEMORY_USED_FIELD = "gpu/min_used_memory";
-    private static final String MAX_GPU_UTILIZATION_FIELD = "gpu/max_utilization_gpu";
-    private static final String MAX_MEMORY_UTILIZATION_FIELD = "gpu/max_utilization_memory";
-    private static final String MAX_MEMORY_USED_FIELD = "gpu/max_used_memory";
+    private static final String ACTIVE_GPUS_FIELD = "gpu_aggs/active_gpus";
+    private static final String AVG_GPU_UTILIZATION_FIELD = "gpu_aggs/avg_utilization_gpu";
+    private static final String AVG_MEMORY_UTILIZATION_FIELD = "gpu_aggs/avg_utilization_memory";
+    private static final String AVG_MEMORY_USED_FIELD = "gpu_aggs/avg_used_memory";
+    private static final String MIN_GPU_UTILIZATION_FIELD = "gpu_aggs/min_utilization_gpu";
+    private static final String MIN_MEMORY_UTILIZATION_FIELD = "gpu_aggs/min_utilization_memory";
+    private static final String MIN_MEMORY_USED_FIELD = "gpu_aggs/min_used_memory";
+    private static final String MAX_GPU_UTILIZATION_FIELD = "gpu_aggs/max_utilization_gpu";
+    private static final String MAX_MEMORY_UTILIZATION_FIELD = "gpu_aggs/max_utilization_memory";
+    private static final String MAX_MEMORY_USED_FIELD = "gpu_aggs/max_used_memory";
     private static final String INDEX_FIELD = "index";
     private static final String NODENAME_FIELD = "nodename";
     private static final String TYPE_FIELD = "type";
@@ -75,7 +75,7 @@ public final class GpuMonitorIndexHelper {
 
     private static IndexRequest buildGpuStatsIndexRequest(final String indexName, final GpuUsageStats stats,
                                                           final String nodename, final String timestamp) {
-        return buildIndexRequest(indexName, GPU_STATS_INDEX_TYPE, buildGpuStatDocument(stats, nodename, timestamp));
+        return buildIndexRequest(indexName, GPU_AGGS_INDEX_TYPE, buildGpuStatDocument(stats, nodename, timestamp));
     }
 
     private static IndexRequest buildGpuIndexRequest(final String indexName, final NodeReporterGpuUsages usages,
@@ -109,7 +109,7 @@ public final class GpuMonitorIndexHelper {
                     .field(INDEX_FIELD, usages.getIndex())
                     .field(NODENAME_FIELD, nodename)
                     .field(TYPE_FIELD, NODE_TYPE)
-            .endObject();
+                    .endObject();
 
             return jsonBuilder.endObject();
         } catch (IOException e) {
@@ -149,7 +149,7 @@ public final class GpuMonitorIndexHelper {
             throws IOException {
         builder.startObject(filed)
                 .field(VALUE_FIELD, value)
-        .endObject();
+                .endObject();
     }
 
     private static void fillSummaryMetricsValues(final XContentBuilder builder, final GpuUsageSummary summary,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,22 +16,13 @@
 
 package com.epam.pipeline.entity.cluster.monitoring;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Builder;
+import lombok.Data;
 
-@Getter
-@AllArgsConstructor
-public enum ELKUsageMetric {
-
-    CPU("cpu", "CpuMetricsTimestamp"),
-    MEM("memory", "MemoryMetricsTimestamp"),
-    FS("filesystem", "FilesystemMetricsTimestamp"),
-    POD_FS("filesystem", "FilesystemMetricsTimestamp"),
-    NETWORK("network", "NetworkMetricsTimestamp"),
-    GPU("gpu", "GpuMetricsTimestamp"),
-    GPU_AGGS("gpu_aggs", "GpuAggsMetricsTimestamp");
-
-    private final String name;
-    private final String timestamp;
-
+@Data
+@Builder
+public class MonitoringMetrics {
+    private Double average;
+    private Double min;
+    private Double max;
 }

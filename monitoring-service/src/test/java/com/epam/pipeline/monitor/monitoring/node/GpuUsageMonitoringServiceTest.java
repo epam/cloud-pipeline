@@ -47,6 +47,8 @@ class GpuUsageMonitoringServiceTest {
     private static final int MEMORY_USED = 2000;
     private static final int TOTAL_MEMORY = 20000;
     private static final int MEMORY_UTILIZATION_1 = 10;
+    private static final int TEST_VALUE_1 = 100;
+    private static final int TEST_VALUE_2 = 50;
 
     private final CloudPipelineAPIClient cloudPipelineClient = mock(CloudPipelineAPIClient.class);
     private final NodeReporterService nodeReporterService = mock(NodeReporterService.class);
@@ -154,7 +156,7 @@ class GpuUsageMonitoringServiceTest {
                 .average(average)
                 .min(min)
                 .max(max)
-                .activeGpusUtilization(100)
+                .activeGpusUtilization(TEST_VALUE_1)
                 .build();
 
         return GpuUsages.builder()
@@ -187,7 +189,7 @@ class GpuUsageMonitoringServiceTest {
                 .average(average)
                 .min(min)
                 .max(max)
-                .activeGpusUtilization(50)
+                .activeGpusUtilization(TEST_VALUE_2)
                 .build();
 
         return GpuUsages.builder()

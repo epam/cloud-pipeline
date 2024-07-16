@@ -19,6 +19,8 @@ package com.epam.pipeline.entity.cluster.monitoring;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Data;
+import lombok.Builder;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,6 +42,7 @@ public class MonitoringStats {
     private DisksUsage disksUsage;
     private NetworkUsage networkUsage;
     private GPUUsage gpuUsage;
+    private Map<String, GPUUsage> gpuDetails;
 
     @Setter
     @Getter
@@ -92,12 +95,12 @@ public class MonitoringStats {
         private int numberOfCores;
     }
 
-    @Setter
-    @Getter
+    @Data
+    @Builder
     public static class GPUUsage {
-        private double averageGpuUsage;
-        private double maxGpuUsage;
-        private double averageMemoryUsage;
-        private double maxMemoryUsage;
+        private MonitoringMetrics gpuUtilization;
+        private MonitoringMetrics gpuMemoryUtilization;
+        private MonitoringMetrics gpuMemoryUsed;
+        private MonitoringMetrics activeGpus;
     }
 }

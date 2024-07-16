@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class GpuUsageMonitoringService implements MonitoringService {
+    private static final int TO_PERCENTAGE = 100;
 
     private final String monitorEnabledPreferenceName;
     private final CloudPipelineAPIClient cloudPipelineClient;
@@ -75,6 +76,7 @@ public class GpuUsageMonitoringService implements MonitoringService {
         log.info("Finishing gpu usages monitoring.");
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private GpuUsages tryFillSummaries(final GpuUsages usage) {
         try {
             if (CollectionUtils.isEmpty(usage.getUsages())) {
@@ -133,6 +135,6 @@ public class GpuUsageMonitoringService implements MonitoringService {
     }
 
     private Integer calculateUtilization(final int value, final int totalValue) {
-        return (int) (((double) value / totalValue) * 100);
+        return (int) (((double) value / totalValue) * TO_PERCENTAGE);
     }
 }

@@ -64,8 +64,8 @@ public class NetworkRequester extends AbstractMetricRequester {
                 statsQuery(nodeName, NODE, from, to)
                         .size(0)
                         .aggregation(dateHistogram(NETWORK_HISTOGRAM, interval)
-                                .subAggregation(average(AVG_AGGREGATION + RX_RATE, RX_RATE))
-                                .subAggregation(average(AVG_AGGREGATION + TX_RATE, TX_RATE))));
+                                .subAggregation(average(RX_RATE, RX_RATE))
+                                .subAggregation(average(TX_RATE, TX_RATE))));
     }
 
     @Override

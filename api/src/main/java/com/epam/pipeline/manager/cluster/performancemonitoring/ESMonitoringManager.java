@@ -20,10 +20,14 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
+import com.epam.pipeline.dao.monitoring.metricrequester.GPUAggregationRequester;
+import com.epam.pipeline.dao.monitoring.metricrequester.GPUDetailsRequester;
 import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
@@ -32,7 +36,9 @@ import com.epam.pipeline.manager.cluster.writer.AbstractMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -40,20 +46,23 @@ import org.springframework.util.Assert;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 @ConditionalOnProperty(name = "monitoring.backend", havingValue = "elastic")
 public class ESMonitoringManager implements UsageMonitoringManager {
 
     private static final ELKUsageMetric[] MONITORING_METRICS = {ELKUsageMetric.CPU, ELKUsageMetric.MEM,
-        ELKUsageMetric.FS, ELKUsageMetric.NETWORK, ELKUsageMetric.GPU};
+        ELKUsageMetric.FS, ELKUsageMetric.NETWORK};
     private static final Duration FALLBACK_MONITORING_PERIOD = Duration.ofHours(1);
     private static final Duration FALLBACK_MINIMAL_INTERVAL = Duration.ofMinutes(1);
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
@@ -92,6 +101,22 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return end.isAfter(start) && end.isAfter(oldestMonitoring)
                 ? getStats(nodeName, start, end, interval)
                 : Collections.emptyList();
+    }
+
+    @Override
+    public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts) {
+        final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
+        final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
+        final Duration totalDuration = Duration.between(start, end);
+        final Duration interval = squashCharts ? totalDuration : interval(start, end);
+        return end.isAfter(start) && end.isAfter(oldestMonitoring)
+                ? getGpuStats(nodeName, start, end, interval, totalDuration, granularity)
+                : GpuMonitoringStats.builder().build();
     }
 
     @Override
@@ -157,6 +182,29 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private LocalDateTime fallbackMonitoringStart() {
         return DateUtils.nowUTC().minus(FALLBACK_MONITORING_PERIOD);
+    }
+
+    private GpuMonitoringStats getGpuStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
+                                           final Duration interval, final Duration totalDuration,
+                                           final List<GpuMetricsGranularity> granularity) {
+        try {
+            final GPUAggregationRequester aggregationRequester = new GPUAggregationRequester(client);
+            final GpuMonitoringStats.GpuMonitoringStatsBuilder results = GpuMonitoringStats.builder();
+            if (GpuMetricsGranularity.hasGlobal(granularity)) {
+                results.global(aggregationRequester.requestStats(nodeName, start, end, totalDuration).stream()
+                        .findFirst()
+                        .flatMap(stats -> statsWithinRegion(stats, start, end, totalDuration))
+                        .orElse(null));
+            }
+            return results.charts(getGpuCharts(granularity, aggregationRequester, interval, nodeName, start, end))
+                    .build();
+        } catch (ElasticsearchStatusException e) {
+            if (e.getDetailedMessage().contains("index_not_found_exception")) {
+                log.error("GPU monitor index doesn't exist for node '{}'", nodeName, e);
+                return GpuMonitoringStats.builder().build();
+            }
+            throw e;
+        }
     }
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
@@ -229,12 +277,18 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return first;
     }
 
+    private MonitoringStats mergeGpuStats(final MonitoringStats first, final MonitoringStats second) {
+        final Optional<MonitoringStats> original = Optional.of(first);
+        first.setGpuUsage(original.map(MonitoringStats::getGpuUsage).orElseGet(second::getGpuUsage));
+        first.setGpuDetails(original.map(MonitoringStats::getGpuDetails).orElseGet(second::getGpuDetails));
+        return first;
+    }
+
     private boolean isMonitoringStatsComplete(final MonitoringStats monitoringStats) {
         return monitoringStats.getCpuUsage() != null
                 && monitoringStats.getMemoryUsage() != null
                 && monitoringStats.getDisksUsage() != null
-                && monitoringStats.getNetworkUsage() != null
-                && monitoringStats.getGpuUsage() != null;
+                && monitoringStats.getNetworkUsage() != null;
     }
 
     private LocalDateTime asMonitoringDateTime(final String dateTimeString) {
@@ -263,5 +317,50 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         s3.setCapacity(s1.getCapacity() + s2.getCapacity());
         s3.setUsableSpace(s1.getUsableSpace() + s2.getUsableSpace());
         return s3;
+    }
+
+    private List<MonitoringStats> getGpuCharts(final List<GpuMetricsGranularity> loadTypes,
+                                               final GPUAggregationRequester aggregationRequester,
+                                               final Duration interval, final String nodeName,
+                                               final LocalDateTime start, final LocalDateTime end) {
+        if (!GpuMetricsGranularity.hasAggregations(loadTypes) && !GpuMetricsGranularity.hasDetails(loadTypes)) {
+            return null;
+        }
+        final List<MonitoringStats> charts = new ArrayList<>();
+        if (GpuMetricsGranularity.hasAggregations(loadTypes)) {
+            charts.addAll(requestCharts(aggregationRequester, interval, nodeName, start, end));
+        }
+        if (GpuMetricsGranularity.hasDetails(loadTypes)) {
+            final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
+            charts.addAll(requestCharts(detailsRequester, interval, nodeName, start, end));
+        }
+        if (GpuMetricsGranularity.hasDetails(loadTypes) && GpuMetricsGranularity.hasAggregations(loadTypes)) {
+            return charts.stream()
+                    .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
+                            Collectors.reducing(this::mergeGpuStats)))
+                    .values().stream()
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .filter(stats -> stats.getGpuUsage() != null && stats.getGpuDetails() != null)
+                    .map(stats -> statsWithinRegion(stats, start, end, interval))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .sorted(Comparator.comparing(MonitoringStats::getStartTime,
+                            Comparator.comparing(this::asMonitoringDateTime)))
+                    .collect(Collectors.toList());
+        }
+        return charts.stream()
+                .sorted(Comparator.comparing(MonitoringStats::getStartTime,
+                        Comparator.comparing(this::asMonitoringDateTime)))
+                .collect(Collectors.toList());
+    }
+
+    private List<MonitoringStats> requestCharts(final AbstractMetricRequester requester, final Duration interval,
+                                                final String nodeName, final LocalDateTime start,
+                                                final LocalDateTime end) {
+        return requester.requestStats(nodeName, start, end, interval).stream()
+                .map(stats -> statsWithinRegion(stats, start, end, interval).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

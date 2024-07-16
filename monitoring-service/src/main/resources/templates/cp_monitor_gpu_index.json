@@ -33,7 +33,12 @@
         "MetricsTags": {
           "properties": {
             "index": {
-              "type": "text"
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
             },
             "nodename": {
               "type": "text",
@@ -50,77 +55,77 @@
         }
       }
     },
-    "gpu_stats": {
+    "gpu_aggs": {
       "properties": {
-        "GpuStatsMetricsTimestamp": {
+        "GpuAggsMetricsTimestamp": {
           "type": "date"
         },
         "Metrics": {
           "properties": {
-            "gpu/avg_utilization_gpu": {
+            "gpu_aggs/avg_utilization_gpu": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/avg_utilization_memory": {
+            "gpu_aggs/avg_utilization_memory": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/avg_used_memory": {
+            "gpu_aggs/avg_used_memory": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/active_gpus": {
+            "gpu_aggs/active_gpus": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/min_utilization_gpu": {
+            "gpu_aggs/min_utilization_gpu": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/min_utilization_memory": {
+            "gpu_aggs/min_utilization_memory": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/min_used_memory": {
+            "gpu_aggs/min_used_memory": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/max_utilization_gpu": {
+            "gpu_aggs/max_utilization_gpu": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/max_utilization_memory": {
+            "gpu_aggs/max_utilization_memory": {
               "properties": {
                 "value": {
                   "type": "integer"
                 }
               }
             },
-            "gpu/max_used_memory": {
+            "gpu_aggs/max_used_memory": {
               "properties": {
                 "value": {
                   "type": "integer"

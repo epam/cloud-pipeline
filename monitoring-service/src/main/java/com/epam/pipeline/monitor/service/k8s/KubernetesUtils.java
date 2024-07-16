@@ -29,7 +29,7 @@ import org.apache.commons.collections4.ListUtils;
 import java.util.List;
 import java.util.Optional;
 
-public class KubernetesUtils {
+public final class KubernetesUtils {
     private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
     private static final String UNRESOLVED_POD = "unresolved pod";
     private static final String UNRESOLVED_NODE = "unresolved node";
