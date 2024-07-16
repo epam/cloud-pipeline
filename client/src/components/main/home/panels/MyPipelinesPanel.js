@@ -149,7 +149,7 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
           }
           actions={[
             {
-              title: 'RUN',
+              title: 'RUN3',
               icon: 'play-circle-o',
               action: launch
             },
