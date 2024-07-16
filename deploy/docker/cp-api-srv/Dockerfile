@@ -94,7 +94,11 @@ RUN pip install -I  portalocker==1.7.1 \
                     azure-cli-core==2.0.52
 
 # GCP - specific packages
-RUN pip install -I google-api-python-client
+RUN pip install -I google-api-core==1.32.0 \
+                   google-api-python-client==1.12.11 \
+                   google-auth==1.35.0 \
+                   google-auth-httplib2==0.1.0 \
+                   googleapis-common-protos==1.52.0
 
 # API distribution
 ARG CP_API_DIST_URL=""
