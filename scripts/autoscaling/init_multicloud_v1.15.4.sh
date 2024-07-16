@@ -7,6 +7,73 @@ function check_installed {
     return $?
 }
 
+# This function define the distribution name and version
+function define_distro_name_and_version {
+      # Get the distro name and version
+      CP_OS=
+      CP_OS_FAMILY=
+      CP_VER=
+      if [ -f /etc/os-release ]; then
+            # freedesktop.org and systemd
+            . /etc/os-release
+            CP_OS=$ID
+            CP_VER=$VERSION_ID
+      elif type lsb_release >/dev/null 2>&1; then
+            # linuxbase.org
+            CP_OS=$(lsb_release -si | tr '[:upper:]' '[:lower:]')
+            CP_VER=$(lsb_release -sc | tr '[:upper:]' '[:lower:]')
+      elif [ -f /etc/lsb-release ]; then
+            # For some versions of Debian/Ubuntu without lsb_release command
+            . /etc/lsb-release
+            CP_OS=$DISTRIB_ID
+            CP_VER=$DISTRIB_RELEASE
+      elif [ -f /etc/debian_version ]; then
+            # Older Debian/Ubuntu/etc.
+            CP_OS=debian
+            CP_VER=$(cat /etc/debian_version)
+      else
+            # Fall back to uname, e.g. "Linux <version>", also works for BSD, etc.
+            CP_OS=$(uname -s)
+            CP_VER=$(uname -r)
+      fi
+
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn | rhel)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
+
+      export CP_OS
+      export CP_OS_FAMILY
+      export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+}
+
+function disable_flannel_checksum_offloading() {
+    MAX_WAIT=1800
+    WAIT_INTERVAL=1
+    ELAPSED_TIME=0
+
+    while ! ip link show flannel.1 &> /dev/null; do
+      echo "Waiting for flannel.1 interface to become ready."
+      sleep $WAIT_INTERVAL
+      ELAPSED_TIME=$((ELAPSED_TIME + WAIT_INTERVAL))
+      if [ $ELAPSED_TIME -ge $MAX_WAIT ]; then
+        echo "Timed out waiting for flannel.1 interface to become ready."
+        return 1
+      fi
+    done
+
+    # Now that flannel.1 is up, run the ethtool command
+    ethtool -K flannel.1 tx-checksum-ip-generic off
+}
+
 function update_nameserver {
   local nameserver="$1"
   local ping_times="$2"
@@ -78,8 +145,17 @@ function setup_swap_device {
     fi
 }
 
+define_distro_name_and_version
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
+
+FS_TYPE="@FS_TYPE@"
+# RedHat doesn't have btrfs-progs packages, so we will use ext4 fs
+if [ "$CP_OS" == "rhel" ] && [ "$CP_VER_MAJOR" == "8" ]; then
+  FS_TYPE="ext4"
+fi
+
 
 UNMOUNTED_DRIVES=$(lsblk -sdrpn -o NAME,TYPE,MOUNTPOINT | awk '$2 == "disk" && $3 == "" { print $1 }')
 DRIVE_NUM=0
@@ -102,15 +178,22 @@ do
     MOUNT_POINT=$MOUNT_POINT$DRIVE_NUM
   fi
 
-  mkfs.btrfs -f -d single $DRIVE_NAME
   mkdir $MOUNT_POINT
-  mount $DRIVE_NAME $MOUNT_POINT
-  DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
-  echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+
+  if [[ $FS_TYPE == "ext4" ]]; then
+    mkfs -t ext4 $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    echo "$DRIVE_NAME $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+  else
+    mkfs.btrfs -f -d single $DRIVE_NAME
+    mount $DRIVE_NAME $MOUNT_POINT
+    DRIVE_UUID=$(btrfs filesystem show "$MOUNT_POINT" | head -n 1 | awk '{print $NF}')
+    echo "UUID=$DRIVE_UUID $MOUNT_POINT btrfs defaults,nofail 0 2" >> /etc/fstab
+  fi
+
   mkdir -p $MOUNT_POINT/runs
   mkdir -p $MOUNT_POINT/reference
   rm -rf $MOUNT_POINT/lost+found/
-
 done
 
 systemctl stop docker
@@ -121,19 +204,38 @@ _KUBE_SYSTEM_PODS_DISTR="@SYSTEM_PODS_DISTR_PREFIX@"
 if [ ! "$_KUBE_SYSTEM_PODS_DISTR" ] || [[ "$_KUBE_SYSTEM_PODS_DISTR" == "@"*"@" ]]; then
   _KUBE_SYSTEM_PODS_DISTR="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/kube/1.15.4/docker"
 fi
+
+
+# RedHat 8.x has different version of ip-tables package
+# So, based on https://github.com/kubernetes/kubernetes/issues/71305
+# we need to user updated images for kube-proxy, flannel and calico
+IMAGE_NAME_SUFFIX=""
+if [ "$CP_OS" == "rhel" ] && [ "$CP_VER_MAJOR" == "8" ]; then
+  IMAGE_NAME_SUFFIX="-nft"
+fi
+
 mkdir -p $_DOCKER_SYS_IMGS
 _WO="--timeout=10 --waitretry=1 --tries=10"
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-node-v3.14.1${IMAGE_NAME_SUFFIX}.tar" -O $_DOCKER_SYS_IMGS/calico-node-v3.14.1${IMAGE_NAME_SUFFIX}.tar && \
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-pod2daemon-flexvol-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-pod2daemon-flexvol-v3.14.1.tar &&
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/calico-cni-v3.14.1.tar" -O $_DOCKER_SYS_IMGS/calico-cni-v3.14.1.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4.tar && \
-wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-kube-proxy-v1.15.4${IMAGE_NAME_SUFFIX}.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-kube-proxy-v1.15.4${IMAGE_NAME_SUFFIX}.tar && \
+wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0${IMAGE_NAME_SUFFIX}.tar" -O $_DOCKER_SYS_IMGS/quay.io-coreos-flannel-v0.11.0${IMAGE_NAME_SUFFIX}.tar && \
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
 if [ $? -ne 0 ]; then
   _DOCKER_SYS_IMGS="/opt/docker-system-images"
 fi
 
 mkdir -p /etc/docker
+
+if [[ $FS_TYPE == "ext4" ]]; then
+  DOCKER_STORAGE_DRIVER="overlay2"
+  DOCKER_STORAGE_OPTS='"storage-opts": ["overlay2.override_kernel_check=true"],'
+else
+  DOCKER_STORAGE_DRIVER="btrfs"
+  DOCKER_STORAGE_OPTS=""
+fi
+
 if check_installed "nvidia-smi"; then
   nvidia-persistenced --persistence-mode
 
@@ -141,7 +243,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1,
   "default-runtime": "nvidia",
    "runtimes": {
@@ -157,7 +260,8 @@ cat <<EOT > /etc/docker/daemon.json
 {
   "exec-opts": ["native.cgroupdriver=systemd"],
   "data-root": "/ebs/docker",
-  "storage-driver": "btrfs",
+  "storage-driver": "$DOCKER_STORAGE_DRIVER",
+  $DOCKER_STORAGE_OPTS
   "max-concurrent-uploads": 1
 }
 EOT
@@ -310,13 +414,21 @@ rm -rf $_DOCKER_SYS_IMGS
 kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-verification --node-name $_KUBE_NODE_NAME --ignore-preflight-errors all
 systemctl start kubelet
 
+# RedHat 8.x has a problem with network package checksum calculation. This leads to problems with starting a container
+# (can't push a docker images).
+# Solution based on https://github.com/k3s-io/k3s/issues/5013:
+if [ "$CP_OS" == "rhel" ] && [ "$CP_VER_MAJOR" == "8" ]; then
+  disable_flannel_checksum_offloading
+fi
+
 update_nameserver "$nameserver_post_val" "infinity"
 
-_API_URL="@API_URL@"
-_API_TOKEN="@API_TOKEN@"
-_MOUNT_POINT="/ebs"
-_CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
+if [[ $FS_TYPE == "btrfs" ]]; then
+  _API_URL="@API_URL@"
+  _API_TOKEN="@API_TOKEN@"
+  _MOUNT_POINT="/ebs"
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  cp "$_CURRENT_DIR/fsautoscale" "/usr/bin/fsautoscale"
 cat >/etc/systemd/system/fsautoscale.service <<EOL
 [Unit]
 Description=Cloud Pipeline Filesystem Autoscaling Daemon
@@ -334,8 +446,9 @@ ExecStart=/usr/bin/fsautoscale \$API_ARGS \$NODE_ARGS \$MOUNT_POINT_ARGS
 [Install]
 WantedBy=multi-user.target
 EOL
-systemctl enable fsautoscale
-systemctl start fsautoscale
+  systemctl enable fsautoscale
+  systemctl start fsautoscale
+fi
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF
