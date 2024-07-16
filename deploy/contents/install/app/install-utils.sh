@@ -562,7 +562,7 @@ function array_contains_or_empty () {
     return 1
 }
 
-function enable_services {
+function enable_service {
     parse_env_option "$1"
     services_count=$((services_count+1))
     if [ -n "${CP_SERVICES_ENABLED}" ]; then 
@@ -577,29 +577,31 @@ function enable_all_services {
     export CP_SERVICES_ENABLED="all"
 }
 
-function check_data_to_scrap_file {
-  local csv_file="${1}/_pitc.csv"
-  local data_to_scrap="$2"
+function if_data_is_available_in_point_in_time_configuration {
+  local point_in_time_configuration_dir="${1}"
+  local point_in_time_configuration_module="${2}"
+  local pitc_metadata_file="$point_in_time_configuration_dir/_pitc.csv"
 
-  while IFS="," read -r data data_file exit_code; do
-  if [ "$data_to_scrap" == "$data" ] && [ -s "$data_file" ] && [ $exit_code -eq 0 ]; then
-    export json_file=$data_file
-    return 0
+  while IFS="," read -r data module_file exit_code; do
+  if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$module_file" ] && [ $exit_code -eq 0 ]; then
+     echo $module_file
+     return 0
   fi   
-    done < "$csv_file"
-    return 1
+  done < "$pitc_metadata_file"
+  return 1
 }
 
 function install_services_from_recovery_file {   
-    if check_data_to_scrap_file $CP_POINT_IN_TIME_CONFIGURATION_DIR services; then
+    local service_point_in_time_configuration=$(if_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services) 
+    if [ $? -eq 0 ]; then
        while read -r key; do 
-       enable_services "$key"
+       enable_service "$key"
        echo "$key=${!key}"
-       done < <(cat "$json_file" | jq -r '.[]')  
+       done < <(cat "$service_point_in_time_configuration" | jq -r '.[]')  
     else  
        enable_all_services
     fi
-}  
+}
 
 function parse_options {
     local services_count=0
@@ -647,7 +649,7 @@ function parse_options {
         shift # past argument
         ;;
         -s|--service)
-        enable_services "$2"
+        enable_service "$2"
         shift # past argument
         shift # past value
         ;;
@@ -786,7 +788,7 @@ function parse_options {
     fi
 
     if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
-        install_services_from_recovery_file
+        enable_services_from_point_in_time_configuration
     fi 
 
     if [ $services_count == 0 ]; then
