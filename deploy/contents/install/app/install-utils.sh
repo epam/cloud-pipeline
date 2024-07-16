@@ -591,7 +591,7 @@ function if_data_is_available_in_point_in_time_configuration {
   return 1
 }
 
-function install_services_from_recovery_file {   
+function enable_services_from_point_in_time_configuration {   
     local service_point_in_time_configuration=$(if_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services) 
     if [ $? -eq 0 ]; then
        while read -r key; do 
