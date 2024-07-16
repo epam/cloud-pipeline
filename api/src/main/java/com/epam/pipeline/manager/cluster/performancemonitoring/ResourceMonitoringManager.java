@@ -525,7 +525,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 case LIMIT_BANDWIDTH:
 //                    TODO
                     break;
-                case NOTIFY:
+                default:
                     performHighNetworkConsumingNotify(run, networkBandwidthLevel, pipelinesToNotify);
             }
             runsToUpdate.add(run);
