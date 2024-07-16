@@ -2489,7 +2489,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
                   if [ "$_pkg_os" != "$_pkg_os_url" ] && [ "$_pkg_os" != "$CP_VER_MAJOR" ]; then
                         continue
                   fi
-
+                  _pkg="$_pkg_os_url"
                   _pkg_filename=$(basename "$_pkg")
                   _pkg_filename_ext="${_pkg_filename##*.}"
                   if [ -f "$_pkg_filename" ]; then
