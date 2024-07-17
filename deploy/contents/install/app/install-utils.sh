@@ -562,6 +562,47 @@ function array_contains_or_empty () {
     return 1
 }
 
+function enable_service {
+    parse_env_option "$1"
+    services_count=$((services_count+1))
+    if [ -n "${CP_SERVICES_ENABLED}" ]; then 
+        export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${1}"
+    else 
+        export CP_SERVICES_ENABLED="${1}"
+    fi
+}
+
+function enable_all_services {
+    export CP_INSTALL_SERVICES_ALL=1
+    export CP_SERVICES_ENABLED="all"
+}
+
+function if_data_is_available_in_point_in_time_configuration {
+  local point_in_time_configuration_dir="${1}"
+  local point_in_time_configuration_module="${2}"
+  local pitc_metadata_file="$point_in_time_configuration_dir/_pitc.csv"
+
+  while IFS="," read -r data module_file exit_code; do
+  if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$module_file" ] && [ $exit_code -eq 0 ]; then
+     echo $module_file
+     return 0
+  fi   
+  done < "$pitc_metadata_file"
+  return 1
+}
+
+function enable_services_from_point_in_time_configuration {   
+    local service_point_in_time_configuration=$(if_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services) 
+    if [ $? -eq 0 ]; then
+       while read -r key; do 
+       enable_service "$key"
+       echo "$key=${!key}"
+       done < <(cat "$service_point_in_time_configuration" | jq -r '.[]')  
+    else  
+       enable_all_services
+    fi
+}
+
 function parse_options {
     local services_count=0
     POSITIONAL=()
@@ -608,13 +649,7 @@ function parse_options {
         shift # past argument
         ;;
         -s|--service)
-        parse_env_option "$2"
-        services_count=$((services_count+1))
-        if [ -n "${CP_SERVICES_ENABLED}" ]; then 
-           export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${2}"
-        else 
-           export CP_SERVICES_ENABLED="${2}"
-        fi
+        enable_service "$2"
         shift # past argument
         shift # past value
         ;;
@@ -622,6 +657,11 @@ function parse_options {
         # Here we only collect list of var=value options. The will applied (exported) after the config file (CP_INSTALL_CONFIG_FILE) will be sourced
         # so command line options will have higher priority compared to the file
         EXPLICIT_ENV_OPTIONS+=("$2")
+        shift # past argument
+        shift # past value
+        ;;
+        -pc|--point-in-time-configuration)
+        CP_POINT_IN_TIME_CONFIGURATION_DIR="$2"
         shift # past argument
         shift # past value
         ;;
@@ -747,10 +787,13 @@ function parse_options {
                             "$CP_EDGE_EXTERNAL_PORT"
     fi
 
+    if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
+        enable_services_from_point_in_time_configuration
+    fi 
+
     if [ $services_count == 0 ]; then
-        print_warn "No specific services (-s|--service) are specified, ALL will be installed"
-        export CP_INSTALL_SERVICES_ALL=1
-        export CP_SERVICES_ENABLED="all"
+        print_warn "No specific services are specified, ALL will be installed"
+        enable_all_services
     fi
 
     # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
