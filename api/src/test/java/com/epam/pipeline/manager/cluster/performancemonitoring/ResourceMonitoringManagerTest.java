@@ -123,6 +123,8 @@ public class ResourceMonitoringManagerTest {
     private static final int LONG_PAUSED_ACTION_TIMEOUT = 30;
     public static final long PAUSED_RUN_ID = 234L;
     public static final int ONE_HOUR = 60;
+    private static final int RX_BYTES = 101000;
+    private static final int TX_BYTES = 202000;
 
     @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -769,8 +771,8 @@ public class ResourceMonitoringManagerTest {
         final MonitoringStats stats = new MonitoringStats();
         final MonitoringStats.NetworkUsage networkUsage = new MonitoringStats.NetworkUsage();
         final MonitoringStats.NetworkUsage.NetworkStats value = new MonitoringStats.NetworkUsage.NetworkStats();
-        value.setRxBytes(101000);
-        value.setTxBytes(202000);
+        value.setRxBytes(RX_BYTES);
+        value.setTxBytes(TX_BYTES);
         networkUsage.setStatsByInterface(Collections.singletonMap("interface", value));
         stats.setNetworkUsage(networkUsage);
         return stats;

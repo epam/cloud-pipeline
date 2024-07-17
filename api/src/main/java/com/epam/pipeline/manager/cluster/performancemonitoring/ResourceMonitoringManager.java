@@ -117,6 +117,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final double PERCENT = 100.0;
         private static final double ONE_THOUSANDTH = 0.001;
         private static final long ONE = 1L;
+        private static final int BYTES_IN_KB = 1024;
 
         private final PipelineRunManager pipelineRunManager;
         private final RunStatusManager runStatusManager;
@@ -500,7 +501,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                         long rxMax = Collections.max(rxBytes);
                         long txMax = Collections.max(txBytes);
                         processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
-                                runsToUpdateNotificationTime, (double) (Math.max(rxMax, txMax) / 1024),
+                                runsToUpdateNotificationTime, (double) (Math.max(rxMax, txMax) / BYTES_IN_KB),
                                 runsToUpdateTags);
                     } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
                         // No action is longer needed, clear timeout
