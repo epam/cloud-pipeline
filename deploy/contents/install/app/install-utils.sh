@@ -577,7 +577,7 @@ function enable_all_services {
     export CP_SERVICES_ENABLED="all"
 }
 
-function if_data_is_available_in_point_in_time_configuration {
+function is_data_is_available_in_point_in_time_configuration {
   local point_in_time_configuration_dir="${1}"
   local point_in_time_configuration_module="${2}"
   local pitc_metadata_file="$point_in_time_configuration_dir/_pitc.csv"
@@ -592,12 +592,12 @@ function if_data_is_available_in_point_in_time_configuration {
 }
 
 function enable_services_from_point_in_time_configuration {   
-    local service_point_in_time_configuration=$(if_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services) 
+    local service_point_in_time_configuration=$(is_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services)
     if [ $? -eq 0 ]; then
        while read -r key; do 
-       enable_service "$key"
-       echo "$key=${!key}"
-       done < <(cat "$service_point_in_time_configuration" | jq -r '.[]')  
+         enable_service "$key"
+         echo "$key=${!key}"
+       done < <(cat "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$service_point_in_time_configuration" | jq -r '.[]')
     else  
        enable_all_services
     fi
