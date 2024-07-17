@@ -873,8 +873,8 @@ export class RunConfirmation extends React.Component {
   };
 
   render () {
-    const {versionSizeErrors = {}} = this.props;
-    const {soft, hard} = versionSizeErrors;
+    const {versionSizeErrors} = this.props;
+    const {soft, hard} = versionSizeErrors || {};
     return (
       <div>
         {!hard && soft ? (

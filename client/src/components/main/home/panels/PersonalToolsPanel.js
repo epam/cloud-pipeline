@@ -538,47 +538,61 @@ export default class PersonalToolsPanel extends React.Component {
           regionId: defaultPayload.cloudRegionId
         });
         if (allowedToExecute) {
-          const inputs = getInputPaths(null, defaultPayload.params);
-          const outputs = getOutputPaths(null, defaultPayload.params);
-          const {errors: permissionErrors} = await performAsyncCheck({
-            inputs,
-            outputs,
-            dockerImage: defaultPayload.dockerImage,
-            dockerRegistries: this.props.dockerRegistries,
-            dataStorages: this.props.dataStorageAvailable
-          });
-          defaultPayload.params = await applyUserCapabilities(
-            defaultPayload.params || {},
-            this.props.preferences,
-            tool.platform
-          );
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
-          const sizeErrors = await checkToolVersionSizeErrors(
-            defaultPayload.dockerImage,
-            this.props.preferences,
-            this.props.dockerRegistries
-          );
           this.setState({
+            pending: true,
             runToolInfo: {
               tool,
               image,
               tag: defaultTag,
               payload: defaultPayload,
               warning: launchTooltip,
-              sizeErrors,
               pricePerHour: estimatedPriceRequest.loaded
                 ? estimatedPriceRequest.value.pricePerHour
                 : false,
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
-              permissionErrors,
               runCapabilities,
               runCapabilitiesError: checkRequiredCapabilitiesErrors(
                 runCapabilities,
                 this.props.preferences
               )
             }
+          }, async () => {
+            const hide = message.loading('Checking tool size...', 0);
+            const inputs = getInputPaths(null, defaultPayload.params);
+            const outputs = getOutputPaths(null, defaultPayload.params);
+            const {errors: permissionErrors} = await performAsyncCheck({
+              inputs,
+              outputs,
+              dockerImage: defaultPayload.dockerImage,
+              dockerRegistries: this.props.dockerRegistries,
+              dataStorages: this.props.dataStorageAvailable
+            });
+            const params = await applyUserCapabilities(
+              defaultPayload.params || {},
+              this.props.preferences,
+              tool.platform
+            );
+            const versionSizeErrors = await checkToolVersionSizeErrors(
+              this.state.runToolInfo.payload.dockerImage,
+              this.props.preferences,
+              this.props.dockerRegistries
+            );
+            hide();
+            this.setState({
+              runToolInfo: {
+                ...this.state.runToolInfo,
+                permissionErrors,
+                versionSizeErrors,
+                payload: {
+                  ...this.state.runToolInfo.payload,
+                  params
+                }
+              },
+              pending: false
+            });
           });
         } else {
           message.error(tooltip);
@@ -863,7 +877,7 @@ export default class PersonalToolsPanel extends React.Component {
                       this.state.runToolInfo.permissionErrors.length > 0
                     ) ||
                     this.runCapabilitiesError ||
-                    this.state.runToolInfo?.sizeErrors?.hard ||
+                    this.state.runToolInfo?.versionSizeErrors?.hard ||
                     this.state.pending
                   }
                   onClick={this.runToolWithDefaultSettings}
@@ -882,7 +896,7 @@ export default class PersonalToolsPanel extends React.Component {
           {
             this.state.runToolInfo &&
               <RunConfirmation
-                versionSizeErrors={this.state.runToolInfo.sizeErrors}
+                versionSizeErrors={this.state.runToolInfo.versionSizeErrors}
                 cloudRegions={
                   this.props.awsRegions.loaded
                     ? (this.props.awsRegions.value || []).map(r => r)
