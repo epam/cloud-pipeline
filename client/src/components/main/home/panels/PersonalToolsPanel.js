@@ -100,6 +100,8 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
+    pending: false,
+    showLoading: false,
     runToolInfo: null
   };
 
@@ -239,7 +241,8 @@ export default class PersonalToolsPanel extends React.Component {
 
   runToolWithDefaultSettings = () => {
     this.setState({
-      pending: true
+      pending: true,
+      showLoading: true
     }, async () => {
       const payload = this.state.runToolInfo.payload;
       if (this.state.runToolInfo.isSpot !== undefined) {
@@ -282,7 +285,7 @@ export default class PersonalToolsPanel extends React.Component {
           runToolInfo: null
         }, this.props.refresh);
       }
-      this.setState({pending: false});
+      this.setState({pending: false, showLoading: false});
     });
   };
 
@@ -882,7 +885,7 @@ export default class PersonalToolsPanel extends React.Component {
                   }
                   onClick={this.runToolWithDefaultSettings}
                   type="primary"
-                  loading={this.state.pending}
+                  loading={this.state.showLoading}
                 >
                   RUN
                 </Button>

@@ -219,6 +219,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   static propTypes = {
+    pending: PropTypes.bool,
     pipeline: PropTypes.shape(),
     pipelines: PropTypes.array,
     version: PropTypes.string,
@@ -5454,6 +5455,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 dropdown={!!this.props.runConfigurationId}
                 dropdownRenderer={dropdownRenderer}
                 dropdownId="launch-metadata"
+                loading={this.props.pending}
+                disabled={this.props.pending}
               >
                 Launch
               </SubmitButton>

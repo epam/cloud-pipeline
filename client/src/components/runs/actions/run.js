@@ -426,11 +426,13 @@ function runFn (
       const ref = (element) => {
         component = element;
       };
+      const hide = message.loading('Checking tool size...', 0);
       const sizeErrors = await checkToolVersionSizeErrors(
         payload.dockerImage,
         stores.preferences,
         stores.dockerRegistries
       );
+      hide();
       RunModal.open({
         title: null,
         width: '50%',
