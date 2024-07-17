@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -79,12 +80,14 @@ public class MonitoringESDao {
         try {
             final Response response = requestIndices();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String indicesToDelete = indices(reader)
+                final String indicesToDelete = indices(reader, HEAPSTER_INDEX_NAME_TOKEN, GPU_STAT_INDEX_NAME_TOKEN)
                         .map(this::withParsedDate)
                         .filter(pair -> pair.right != null && olderThanRetentionPeriod(retentionPeriodDays, pair.right))
                         .map(pair -> pair.left)
                         .collect(Collectors.joining(","));
-
+                if (StringUtils.isBlank(indicesToDelete)) {
+                    return;
+                }
                 lowLevelClient.performRequest(HttpMethod.DELETE.name(), "/" + indicesToDelete);
             }
         } catch (IOException e) {
@@ -96,10 +99,10 @@ public class MonitoringESDao {
         return lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
     }
 
-    private Stream<String> indices(final BufferedReader reader) {
+    private Stream<String> indices(final BufferedReader reader, final String... indexNamePrefixes) {
         return reader.lines()
                 .flatMap(l -> Arrays.stream(l.split(" ")))
-                .filter(str -> str.startsWith(HEAPSTER_INDEX_NAME_TOKEN) || str.startsWith(GPU_STAT_INDEX_NAME_TOKEN));
+                .filter(str -> Arrays.stream(indexNamePrefixes).anyMatch(str::startsWith));
     }
 
     private ImmutablePair<String, LocalDateTime> withParsedDate(final String name) {
@@ -129,11 +132,11 @@ public class MonitoringESDao {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
     }
 
-    public Optional<LocalDateTime> oldestIndexDate() {
+    public Optional<LocalDateTime> oldestIndexDate(final String... indexPrefixes) {
         try {
             final Response response = requestIndices();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                return indices(reader)
+                return indices(reader, indexPrefixes)
                         .map(this::toLocalDateTime)
                         .filter(Optional::isPresent)
                         .map(Optional::get)

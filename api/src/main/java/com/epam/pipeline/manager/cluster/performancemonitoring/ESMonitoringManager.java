@@ -68,6 +68,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final int FALLBACK_INTERVALS_NUMBER = 10;
     private static final int TWO = 2;
     private static final String SWAP_FILESYSTEM = "tmpfs";
+    private static final String HEAPSTER_INDEX_NAME_TOKEN = "heapster-";
+    private static final String GPU_STAT_INDEX_NAME_TOKEN = "cp-gpu-monitor-";
 
     private final HeapsterElasticRestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
@@ -94,7 +96,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     public List<MonitoringStats> getStatsForNode(final String nodeName, final LocalDateTime from,
                                                  final LocalDateTime to) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
-        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate(HEAPSTER_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         final Duration interval = interval(start, end);
@@ -109,7 +111,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                                  final List<GpuMetricsGranularity> granularity,
                                                  final boolean squashCharts) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
-        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate(GPU_STAT_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         final Duration totalDuration = Duration.between(start, end);
@@ -126,7 +128,7 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                                                     final Duration interval,
                                                     final MonitoringReportType type) {
         final LocalDateTime requestedStart = Optional.ofNullable(from).orElseGet(() -> creationDate(nodeName));
-        final LocalDateTime oldestMonitoring = oldestMonitoringDate();
+        final LocalDateTime oldestMonitoring = oldestMonitoringDate(HEAPSTER_INDEX_NAME_TOKEN);
         final LocalDateTime start = requestedStart.isAfter(oldestMonitoring) ? requestedStart : oldestMonitoring;
         final LocalDateTime end = Optional.ofNullable(to).orElseGet(DateUtils::nowUTC);
         final Duration minDuration = minimalDuration();
@@ -169,8 +171,8 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return diskStats.getCapacity() - diskStats.getUsableSpace();
     }
 
-    private LocalDateTime oldestMonitoringDate() {
-        return monitoringDao.oldestIndexDate().orElseGet(this::fallbackMonitoringStart);
+    private LocalDateTime oldestMonitoringDate(final String... indexPrefixes) {
+        return monitoringDao.oldestIndexDate(indexPrefixes).orElseGet(this::fallbackMonitoringStart);
     }
 
     private LocalDateTime creationDate(final String nodeName) {

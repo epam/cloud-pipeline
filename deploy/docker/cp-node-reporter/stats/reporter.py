@@ -151,16 +151,24 @@ class GPUStatProcessor:
         self.header = metrics.split(',')
 
     def get_stat(self):
-        process = subprocess.Popen(['nvidia-smi', f'--query-gpu={self.metrics}', '--format=csv,noheader,nounits'],
-                                   stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        stdout = process.stdout
-        stderr = process.stderr
-        exit_code = process.wait()
-        if exit_code != 0:
-            raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
-        for stdout_line in stdout.readlines():
-            result_metrics = str(stdout_line).split(', ')
-            yield {self.header[i].replace('.', '_'): str(result_metrics[i]).strip() for i in range(len(self.header))}
+        try:
+            process = subprocess.Popen(['nvidia-smi',
+                                        f'--query-gpu={self.metrics}',
+                                        '--format=csv,noheader,nounits'],
+                                       stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            stdout = process.stdout
+            stderr = process.stderr
+            exit_code = process.wait()
+            if exit_code != 0:
+                raise RuntimeError(f"Process finished with exit code '{exit_code}': {stderr}")
+            for stdout_line in stdout.readlines():
+                result_metrics = str(stdout_line.decode().strip()).split(', ')
+                yield {
+                    self.header[i].replace('.', '_'): str(result_metrics[i]).strip() for i in range(len(self.header))
+                }
+        except FileNotFoundError:
+            # nvidia-smi not installed
+            yield {}
 
 
 logging_format = os.getenv('CP_LOGGING_FORMAT', default='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
