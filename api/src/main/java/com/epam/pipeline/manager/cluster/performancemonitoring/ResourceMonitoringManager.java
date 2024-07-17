@@ -24,15 +24,17 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
@@ -125,6 +127,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final PreferenceManager preferenceManager;
         private final StopServerlessRunManager stopServerlessRunManager;
         private final InstanceOfferManager instanceOfferManager;
+        private final ESMonitoringManager monitoringManager;
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -135,7 +138,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final PreferenceManager preferenceManager,
                                       final StopServerlessRunManager stopServerlessRunManager,
                                       final InstanceOfferManager instanceOfferManager,
-                                      final RunStatusManager runStatusManager) {
+                                      final RunStatusManager runStatusManager,
+                                      final ESMonitoringManager monitoringManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
@@ -145,6 +149,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             this.stopServerlessRunManager = stopServerlessRunManager;
             this.instanceOfferManager = instanceOfferManager;
             this.runStatusManager = runStatusManager;
+            this.monitoringManager = monitoringManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -430,14 +435,12 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     "NETWORK", running.size(), String.join(", ", running.keySet())));
 
             final LocalDateTime now = DateUtils.nowUTC();
-            final Map<String, Double> networkMetrics = monitoringDao.loadMetrics(ELKUsageMetric.NETWORK,
-                    running.keySet(), now.minusMinutes(bandwidthLimitTimeout + ONE), now);
-            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_NETWORK_RUN_METRICS_RECEIVED,
-                    networkMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-                            .collect(Collectors.joining(", ")))
-            );
+            final Map<String, List<MonitoringStats>> networkMetrics = running.keySet().stream()
+                    .collect(Collectors.toMap(nodeName -> nodeName, nodeName ->
+                            monitoringManager.getStats(new ELKUsageMetric[]{ELKUsageMetric.NETWORK},
+                    nodeName, now.minusMinutes(bandwidthLimitTimeout + ONE), now)));
 
-            final double bandwidthLimit = preferenceManager.getPreference(
+            final long bandwidthLimit = preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
             final int actionTimeout = preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
@@ -471,19 +474,34 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processHighNetworkConsumingRuns(Map<String, PipelineRun> running,
-                                                     Map<String, Double> networkMetrics,
-                                                     double bandwidthLimit,
+                                                     Map<String, List<MonitoringStats>> networkMetrics,
+                                                     long bandwidthLimit,
                                                      int actionTimeout, NetworkConsumingRunAction action) {
             final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
             final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
             final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
             for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
                 PipelineRun run = entry.getValue();
-                Double metric = networkMetrics.get(entry.getKey());
+                List<MonitoringStats> metric = networkMetrics.get(entry.getKey());
                 if (metric != null) {
-                    if (Precision.compareTo(metric, bandwidthLimit, ONE_THOUSANDTH) >= 0) {
+                    List<Long> rxBytes = metric.stream()
+                            .map(m -> m.getNetworkUsage().getStatsByInterface().values().stream()
+                                    .map(MonitoringStats.NetworkUsage.NetworkStats::getRxBytes)
+                                    .collect(Collectors.toList()))
+                            .flatMap(Collection::stream).collect(Collectors.toList());
+                    boolean rxExceeds = rxBytes.stream().allMatch(v -> v >= bandwidthLimit);
+                    List<Long> txBytes =  metric.stream()
+                            .map(m -> m.getNetworkUsage().getStatsByInterface().values().stream()
+                                    .map(MonitoringStats.NetworkUsage.NetworkStats::getTxBytes)
+                                    .collect(Collectors.toList()))
+                            .flatMap(Collection::stream).collect(Collectors.toList());
+                    boolean txExceeds = txBytes.stream().allMatch(v -> v >= bandwidthLimit);
+                    if (rxExceeds || txExceeds) {
+                        long rxMax = Collections.max(rxBytes);
+                        long txMax = Collections.max(txBytes);
                         processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
-                                runsToUpdateNotificationTime, metric, runsToUpdateTags);
+                                runsToUpdateNotificationTime, (double) (Math.max(rxMax, txMax) / 1024),
+                                runsToUpdateTags);
                     } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
                         // No action is longer needed, clear timeout
                         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING,

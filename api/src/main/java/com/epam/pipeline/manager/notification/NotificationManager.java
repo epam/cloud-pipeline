@@ -374,7 +374,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .collect(Collectors.toList());
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForHighNetworkConsumingRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
-                        pair.getRight(), bandwidthLimit, type))
+                        pair.getRight(), bandwidthLimit / 1024, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 
@@ -396,7 +396,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         log.debug("Sending high network consuming run notification for run '{}'.", run.getId());
         final NotificationMessage message = new NotificationMessage();
         message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
-        message.setTemplateParameters(parameterManager.build(type, run, bandwidth, bandwidthLimit));
+        message.setTemplateParameters(parameterManager.buildHighNetworkConsumingRunParams(type, run,
+                bandwidth, bandwidthLimit));
         if (settings.isKeepInformedOwner()) {
             message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
         }

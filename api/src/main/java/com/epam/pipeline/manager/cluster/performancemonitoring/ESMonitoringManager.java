@@ -161,7 +161,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
 
     private List<MonitoringStats> getStats(final String nodeName, final LocalDateTime start, final LocalDateTime end,
                                            final Duration interval) {
-        return Stream.of(MONITORING_METRICS)
+        return getStats(MONITORING_METRICS, nodeName, start, end, interval);
+    }
+
+    private List<MonitoringStats> getStats(final ELKUsageMetric[] monitoringMetrics, final String nodeName,
+                                           final LocalDateTime start, final LocalDateTime end,
+                                           final Duration interval) {
+        return Stream.of(monitoringMetrics)
                 .map(it -> AbstractMetricRequester.getStatsRequester(it, client))
                 .map(it -> it.requestStats(nodeName, start, end, interval))
                 .flatMap(List::stream)
@@ -177,6 +183,12 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime,
                         Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
+    }
+
+    public List<MonitoringStats> getStats(final ELKUsageMetric[] monitoringMetrics, final String nodeName,
+                                           final LocalDateTime start, final LocalDateTime end) {
+        final Duration interval = interval(start, end);
+        return getStats(monitoringMetrics, nodeName, start, end, interval);
     }
 
     private Duration interval(final LocalDateTime start, final LocalDateTime end) {
