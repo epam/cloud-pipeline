@@ -1154,7 +1154,7 @@ public class SystemPreferences {
             "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
     public static final DoublePreference SYSTEM_POD_BANDWIDTH_LIMIT = new DoublePreference(
-            "system.pod.bandwidth.limit", 300000.0, SYSTEM_GROUP, isGreaterThan(0));
+            "system.pod.bandwidth.limit", 0.0, SYSTEM_GROUP, isGreaterThanOrEquals(0.0f));
 
     public static final IntPreference SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES = new IntPreference(
             "system.max.pod.bandwidth.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
