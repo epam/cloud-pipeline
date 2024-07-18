@@ -181,6 +181,10 @@ public final class PreferenceValidators {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) > x;
     }
 
+    public static BiPredicate<String, Map<String, Preference>> isGreaterThanOrEquals(float x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) >= x;
+    }
+
     public static BiPredicate<String, Map<String, Preference>> isGreaterThanOrEquals(int x) {
         return (pref, dependencies) -> StringUtils.isNumeric(pref) && Integer.parseInt(pref) >= x;
     }
