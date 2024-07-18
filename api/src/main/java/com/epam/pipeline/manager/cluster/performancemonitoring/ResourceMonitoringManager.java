@@ -87,7 +87,7 @@ import javax.annotation.PostConstruct;
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     public static final String UTILIZATION_LEVEL_LOW = "IDLE";
-    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_CONSUMING";
+    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
 

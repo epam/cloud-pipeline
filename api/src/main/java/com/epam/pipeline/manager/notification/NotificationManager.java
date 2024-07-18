@@ -85,7 +85,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
 @Service
 @Slf4j
-public class NotificationManager implements NotificationService {
+public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
 
