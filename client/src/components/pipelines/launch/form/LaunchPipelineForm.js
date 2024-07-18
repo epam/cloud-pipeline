@@ -5951,7 +5951,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return null;
       }
       let configuration;
-      if (this.props.configurations.length > 0 && this.props.currentConfigurationName) {
+      if (this.props.configurations.length > 1 && this.props.currentConfigurationName) {
         const configurationChange = (configurationName) => {
           if (this.props.onConfigurationChanged) {
             this.props.onConfigurationChanged(configurationName);
