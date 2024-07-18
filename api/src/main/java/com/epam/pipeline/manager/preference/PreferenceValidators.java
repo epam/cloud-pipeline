@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.PipelineStringUtils;
@@ -270,6 +271,9 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidIdleAction =
         (pref, ignored) -> IdleRunAction.contains(pref);
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidNetworkConsumptionAction =
+        (pref, ignored) -> NetworkConsumingRunAction.contains(pref);
 
     public static final BiPredicate<String, Map<String, Preference>> isValidLongPauseRunAction =
             (pref, ignored) -> LongPausedRunAction.contains(pref);

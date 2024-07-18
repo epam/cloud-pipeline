@@ -133,6 +133,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
                 return new MemoryRequester(client);
             case FS:
                 return new FSRequester(client);
+            case NETWORK:
+                return new NetworkRequester(client);
             default:
                 throw new IllegalArgumentException("Metric type: " + metric.getName() + " isn't supported!");
         }

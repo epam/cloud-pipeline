@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -86,6 +87,7 @@ import javax.annotation.PostConstruct;
 public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
     public static final String UTILIZATION_LEVEL_LOW = "IDLE";
+    public static final String NETWORK_CONSUMING_LEVEL_HIGH = "NETWORK_PRESSURE";
     public static final String UTILIZATION_LEVEL_HIGH = "PRESSURE";
     public static final String TRUE_VALUE_STRING = "true";
 
@@ -156,6 +158,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         public void monitorResourceUsage() {
             List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
             processIdleRuns(runs);
+            processHighNetworkConsumingRuns(runs);
             processOverloadedRuns(runs);
             processPausingResumingRuns();
             processServerlessRuns();
@@ -415,6 +418,123 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                    List<Pair<PipelineRun, Double>> pipelinesToNotify) {
             run.setLastIdleNotificationTime(DateUtils.nowUTC());
             pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
+        }
+
+        private void processHighNetworkConsumingRuns(final List<PipelineRun> runs) {
+            final Map<String, PipelineRun> running = groupedByNode(runs);
+
+            final int bandwidthLimitTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES);
+
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_METRICS_REQUEST,
+                    "NETWORK", running.size(), String.join(", ", running.keySet())));
+
+            final LocalDateTime now = DateUtils.nowUTC();
+            final Map<String, Double> networkMetrics = monitoringDao.loadMetrics(ELKUsageMetric.NETWORK,
+                    running.keySet(), now.minusMinutes(bandwidthLimitTimeout + ONE), now);
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_NETWORK_RUN_METRICS_RECEIVED,
+                    networkMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
+                            .collect(Collectors.joining(", ")))
+            );
+
+            final double bandwidthLimit = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
+            final int actionTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
+            final NetworkConsumingRunAction action = NetworkConsumingRunAction.valueOf(preferenceManager
+                    .getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION));
+
+            processHighNetworkConsumingRuns(running, networkMetrics, bandwidthLimit, actionTimeout, action);
+        }
+
+        private void processHighNetworkConsumingRun(PipelineRun run, int actionTimeout,
+                                                    NetworkConsumingRunAction action,
+                                                    List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                                    List<PipelineRun> runsToUpdateNotificationTime,
+                                                    Double networkBandwidthLevel, List<PipelineRun> runsToUpdateTags) {
+            if (shouldPerformActionOnNetworkConsumingRun(run, actionTimeout)) {
+                performActionOnNetworkConsumingRun(run, action, networkBandwidthLevel, pipelinesToNotify,
+                        runsToUpdateNotificationTime);
+                return;
+            }
+            if (Objects.isNull(run.getLastNetworkConsumptionNotificationTime())) {
+                run.addTag(NETWORK_CONSUMING_LEVEL_HIGH, TRUE_VALUE_STRING);
+                Optional.ofNullable(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH))
+                        .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
+                runsToUpdateTags.add(run);
+                run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
+                runsToUpdateNotificationTime.add(run);
+            }
+            pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY,
+                    run.getPodId(), networkBandwidthLevel));
+        }
+
+        private void processHighNetworkConsumingRuns(Map<String, PipelineRun> running,
+                                                     Map<String, Double> networkMetrics,
+                                                     double bandwidthLimit,
+                                                     int actionTimeout, NetworkConsumingRunAction action) {
+            final List<PipelineRun> runsToUpdateNotificationTime = new ArrayList<>(running.size());
+            final List<Pair<PipelineRun, Double>> runsToNotify = new ArrayList<>(running.size());
+            final List<PipelineRun> runsToUpdateTags = new ArrayList<>(running.size());
+            for (Map.Entry<String, PipelineRun> entry : running.entrySet()) {
+                PipelineRun run = entry.getValue();
+                Double metric = networkMetrics.get(entry.getKey());
+                if (metric != null) {
+                    if (metric >= bandwidthLimit) {
+                        processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
+                                runsToUpdateNotificationTime, metric, runsToUpdateTags);
+                    } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
+                        // No action is longer needed, clear timeout
+                        log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING,
+                                run.getPodId(), metric));
+                        processFormerHighNetworkConsumingRun(run, runsToUpdateNotificationTime, runsToUpdateTags);
+                    }
+                }
+            }
+            notificationManager.notifyHighNetworkConsumingRuns(runsToNotify,
+                    NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH);
+            pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdateNotificationTime);
+            pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private void processFormerHighNetworkConsumingRun(final PipelineRun run,
+                                                          final List<PipelineRun> runsToUpdateNotificationTime,
+                                                          final List<PipelineRun> runsToUpdateTags) {
+            run.setLastNetworkConsumptionNotificationTime(null);
+            run.removeTag(NETWORK_CONSUMING_LEVEL_HIGH);
+            run.removeTag(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH));
+            runsToUpdateNotificationTime.add(run);
+            runsToUpdateTags.add(run);
+        }
+
+        private boolean shouldPerformActionOnNetworkConsumingRun(final PipelineRun run, final int actionTimeout) {
+            return Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
+                    run.getLastNetworkConsumptionNotificationTime()
+                            .isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
+        }
+
+        private void performActionOnNetworkConsumingRun(final PipelineRun run,
+                                                        final NetworkConsumingRunAction action,
+                                                        final double networkBandwidthLevel,
+                                                        final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                                        final List<PipelineRun> runsToUpdate) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(),
+                    networkBandwidthLevel, action));
+            switch (action) {
+                case LIMIT_BANDWIDTH:
+//                    TODO
+                    break;
+                default:
+                    performHighNetworkConsumingNotify(run, networkBandwidthLevel, pipelinesToNotify);
+            }
+            runsToUpdate.add(run);
+        }
+
+        private void performHighNetworkConsumingNotify(PipelineRun run, double networkBandwidthLevel,
+                                                       List<Pair<PipelineRun, Double>> pipelinesToNotify) {
+            run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
+            pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
         }
 
         private void performStop(final PipelineRun run,
