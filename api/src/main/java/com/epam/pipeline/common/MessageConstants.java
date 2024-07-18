@@ -220,7 +220,7 @@ public final class MessageConstants {
     public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY = "info.run.high.network.consumption.notify";
     public static final String DEBUG_NETWORK_RUN_METRICS_RECEIVED = "debug.network.run.metrics.received";
     public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING = "debug.run.not.network.consuming";
-
+    public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED = "debug.run.network.consuming.disabled";
 
     // Kubernetes messages
     public static final String ERROR_NODE_NOT_FOUND = "error.node.not.found";

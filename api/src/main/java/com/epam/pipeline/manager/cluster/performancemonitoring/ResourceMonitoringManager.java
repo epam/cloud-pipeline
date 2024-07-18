@@ -413,6 +413,18 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processHighNetworkConsumingRuns(final List<PipelineRun> runs) {
+            final double bandwidthLimit = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
+            final int actionTimeout = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
+            final NetworkConsumingRunAction action = NetworkConsumingRunAction.valueOf(preferenceManager
+                    .getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION));
+
+            if (bandwidthLimit <= 0) {
+                log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED));
+                return;
+            }
+
             final Map<String, PipelineRun> running = groupedByNode(runs);
 
             final int bandwidthLimitTimeout = preferenceManager.getPreference(
@@ -428,13 +440,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     networkMetrics.entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
                             .collect(Collectors.joining(", ")))
             );
-
-            final double bandwidthLimit = preferenceManager.getPreference(
-                    SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
-            final int actionTimeout = preferenceManager.getPreference(
-                    SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
-            final NetworkConsumingRunAction action = NetworkConsumingRunAction.valueOf(preferenceManager
-                    .getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION));
 
             processHighNetworkConsumingRuns(running, networkMetrics, bandwidthLimit, actionTimeout, action);
         }
