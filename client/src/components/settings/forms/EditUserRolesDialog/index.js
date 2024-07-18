@@ -1357,17 +1357,20 @@ export default class EditUserRolesDialog extends React.Component {
     if (!this.props.userInfo) {
       return null;
     }
+    const {activeTab} = this.state;
     return (
       <Modal
         width="80%"
-        closable={false}
+        closable={activeTab === 'permissions'}
         style={{
           top: 20
         }}
         bodyStyle={{
           height: '80vh'
         }}
-        footer={this.renderFooter()}
+        maskClosable={activeTab === 'permissions'}
+        onCancel={this.onClose}
+        footer={activeTab === 'permissions' ? false : this.renderFooter()}
         visible={this.props.visible}
       >
         <div className={styles.modalContainer}>
