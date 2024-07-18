@@ -18,15 +18,19 @@ package com.epam.pipeline.dao.monitoring.metricrequester;
 
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
-import org.apache.commons.lang.NotImplementedException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -49,13 +53,28 @@ public class NetworkRequester extends AbstractMetricRequester {
     @Override
     public SearchRequest buildRequest(final Collection<String> resourceIds, final LocalDateTime from,
                                       final LocalDateTime to, final Map<String, String> additional) {
-        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
+        return request(from, to,
+                new SearchSourceBuilder()
+                        .query(QueryBuilders.boolQuery()
+                                .filter(QueryBuilders.termsQuery(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW),
+                                        resourceIds))
+                                .filter(QueryBuilders.termQuery(path(FIELD_METRICS_TAGS, FIELD_TYPE), NODE))
+                                .filter(QueryBuilders.rangeQuery(metric().getTimestamp())
+                                        .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
+                                        .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
+                        .size(0)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
+                                .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
+                                .size(resourceIds.size())
+                                .subAggregation(average(AVG_AGGREGATION + RX_RATE, RX_RATE))
+                                .subAggregation(average(AVG_AGGREGATION + TX_RATE, TX_RATE))));
     }
 
     @Override
     public Map<String, Double> parseResponse(final SearchResponse response) {
-        throw new NotImplementedException("Method NetworkRequester::buildRequest is not implemented yet.");
-    }
+        return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
+                .collect(Collectors.toMap(MultiBucketsAggregation.Bucket::getKeyAsString, this::getNetworkUsage));
+        }
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
@@ -100,5 +119,12 @@ public class NetworkRequester extends AbstractMetricRequester {
         networkUsage.setStatsByInterface(statsMap);
         monitoringStats.setNetworkUsage(networkUsage);
         return monitoringStats;
+    }
+
+    private Double getNetworkUsage(final MultiBucketsAggregation.Bucket bucket) {
+        final List<Aggregation> aggregations = aggregations(bucket);
+        final Optional<Double> rxRate = doubleValue(aggregations, AVG_AGGREGATION + RX_RATE);
+        final Optional<Double> txRate = doubleValue(aggregations, AVG_AGGREGATION + TX_RATE);
+        return Math.max(rxRate.orElse(0.0), txRate.orElse(0.0));
     }
 }

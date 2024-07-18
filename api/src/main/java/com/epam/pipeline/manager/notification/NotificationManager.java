@@ -85,7 +85,7 @@ import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 
 @Service
 @Slf4j
-public class NotificationManager implements NotificationService { // TODO: rewrite with Strategy pattern?
+public class NotificationManager implements NotificationService {
 
     private static final Pattern MENTION_PATTERN = Pattern.compile("@([^ ]*\\b)");
 
@@ -374,7 +374,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                 .collect(Collectors.toList());
         final List<NotificationMessage> messages = filtered.stream()
                 .map(pair -> buildMessageForHighNetworkConsumingRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
-                        pair.getRight(), bandwidthLimit / 1024, type))
+                        pair.getRight(), bandwidthLimit, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
 

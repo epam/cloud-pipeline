@@ -20,7 +20,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
-import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
@@ -73,8 +72,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -99,7 +96,7 @@ public class ResourceMonitoringManagerTest {
     private static final long TEST_AUTOSCALE_RUN_ID = 6;
     private static final int TEST_HIGH_CONSUMING_RUN_LOAD = 80;
     private static final double TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD = 200.0;
-    private static final long TEST_POD_BANDWIDTH_LIMIT = 100000;
+    private static final double TEST_POD_BANDWIDTH_LIMIT = 300.0;
     private static final int TEST_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD = 30;
     private static final Integer TEST_RESOURCE_MONITORING_DELAY = 111;
     private static final int TEST_MAX_IDLE_MONITORING_TIMEOUT = 30;
@@ -123,8 +120,6 @@ public class ResourceMonitoringManagerTest {
     private static final int LONG_PAUSED_ACTION_TIMEOUT = 30;
     public static final long PAUSED_RUN_ID = 234L;
     public static final int ONE_HOUR = 60;
-    private static final int RX_BYTES = 101000;
-    private static final int TX_BYTES = 202000;
 
     @InjectMocks
     private ResourceMonitoringManager resourceMonitoringManager;
@@ -151,8 +146,6 @@ public class ResourceMonitoringManagerTest {
     private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     @Mock
     private RunStatusManager runStatusManager;
-    @Mock
-    private ESMonitoringManager monitoringManager;
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -185,8 +178,7 @@ public class ResourceMonitoringManagerTest {
                                                                         preferenceManager,
                                                                         stopServerlessRunManager,
                                                                         instanceOfferManager,
-                                                                        runStatusManager,
-                                                                        monitoringManager);
+                                                                        runStatusManager);
         resourceMonitoringManager = new ResourceMonitoringManager(core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
@@ -223,7 +215,6 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION))
                 .thenReturn(NetworkConsumingRunAction.NOTIFY.name());
-        when(monitoringManager.getStats(any(), any(), any(), any())).thenReturn(createStatsList());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -371,7 +362,7 @@ public class ResourceMonitoringManagerTest {
         when(pipelineRunManager.loadPipelineRun(idleRunToProlong.getId())).thenReturn(idleRunToProlong);
         when(monitoringESDao.loadMetrics(eq(ELKUsageMetric.CPU), any(), any(LocalDateTime.class),
                 any(LocalDateTime.class)))
-                .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(),
+                .thenReturn(Collections.singletonMap(idleRunToProlong.getInstance().getNodeName(), 
                         TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
                 .thenReturn(IdleRunAction.NOTIFY.name());
@@ -760,21 +751,6 @@ public class ResourceMonitoringManagerTest {
         HashMap<String, Double> stats = new HashMap<>();
         stats.put(highConsumingRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS + DELTA);
         stats.put(okayRun.getInstance().getNodeName(), TEST_HIGH_CONSUMING_RUN_LOAD / PERCENTS - DELTA);
-        return stats;
-    }
-
-    private List<MonitoringStats> createStatsList() {
-        return IntStream.range(0, 2).mapToObj(i -> createMonitoringStats()).collect(Collectors.toList());
-    }
-
-    private MonitoringStats createMonitoringStats() {
-        final MonitoringStats stats = new MonitoringStats();
-        final MonitoringStats.NetworkUsage networkUsage = new MonitoringStats.NetworkUsage();
-        final MonitoringStats.NetworkUsage.NetworkStats value = new MonitoringStats.NetworkUsage.NetworkStats();
-        value.setRxBytes(RX_BYTES);
-        value.setTxBytes(TX_BYTES);
-        networkUsage.setStatsByInterface(Collections.singletonMap("interface", value));
-        stats.setNetworkUsage(networkUsage);
         return stats;
     }
 }
