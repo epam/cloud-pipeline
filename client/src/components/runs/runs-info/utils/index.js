@@ -80,14 +80,22 @@ function extractDatasetByField (field, data = {}) {
     };
   }
   const categoriesKeys = Object.keys(dataField);
+  const getLabelSum = (label) => categoriesKeys
+    .reduce((sum, key) => sum + (dataField[key][label] || 0), 0);
   const labels = [...new Set(Object
     .values(dataField)
     .reduce((acc, cur) => [...acc, ...Object.keys(cur)], [])
-  )];
-  const dataSets = categoriesKeys.reduce((acc, key) => {
-    acc[key] = labels.map(label => (dataField[key] || {})[label] || 0);
-    return acc;
-  }, {});
+  )]
+    .map((label) => ({
+      label,
+      value: getLabelSum(label)
+    }))
+    .sort((a, b) => b.value - a.value)
+    .map((a) => a.label);
+  const dataSets = categoriesKeys.reduce((acc, key) => ({
+    ...acc,
+    [key]: labels.map(label => (dataField[key] || {})[label] || 0)
+  }), {});
   return {
     labels,
     ...dataSets
