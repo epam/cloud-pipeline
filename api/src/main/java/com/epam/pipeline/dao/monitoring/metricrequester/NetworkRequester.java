@@ -74,7 +74,7 @@ public class NetworkRequester extends AbstractMetricRequester {
     public Map<String, Double> parseResponse(final SearchResponse response) {
         return ((Terms) response.getAggregations().get(AGGREGATION_NODE_NAME)).getBuckets().stream()
                 .collect(Collectors.toMap(MultiBucketsAggregation.Bucket::getKeyAsString, this::getNetworkUsage));
-        }
+    }
 
     @Override
     protected SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
