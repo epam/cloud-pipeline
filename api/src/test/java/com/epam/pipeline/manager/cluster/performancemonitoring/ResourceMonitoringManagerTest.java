@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
@@ -94,8 +95,11 @@ public class ResourceMonitoringManagerTest {
     private static final long TEST_AUTOSCALE_RUN_ID = 6;
     private static final int TEST_HIGH_CONSUMING_RUN_LOAD = 80;
     private static final double TEST_IDLE_ON_DEMAND_RUN_CPU_LOAD = 200.0;
+    private static final double TEST_POD_BANDWIDTH_LIMIT = 300.0;
+    private static final int TEST_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD = 30;
     private static final Integer TEST_RESOURCE_MONITORING_DELAY = 111;
     private static final int TEST_MAX_IDLE_MONITORING_TIMEOUT = 30;
+    private static final int TEST_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES = 30;
     private static final int TEST_IDLE_THRESHOLD_PERCENT = 30;
     private static final double NON_IDLE_CPU_LOAD = 700.0;
     private static final double MILICORES_TO_CORES = 1000.0;
@@ -195,6 +199,14 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(LongPausedRunAction.NOTIFY.name());
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION_TIMEOUT_MINUTES))
                 .thenReturn(LONG_PAUSED_ACTION_TIMEOUT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES))
+                .thenReturn(TEST_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT))
+                .thenReturn(TEST_POD_BANDWIDTH_LIMIT);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD))
+                .thenReturn(TEST_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
+        when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION))
+                .thenReturn(NetworkConsumingRunAction.NOTIFY.name());
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");
@@ -305,10 +317,10 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleSpotRun.getPodId())));
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleOnDemandRun.getPodId())));
@@ -350,10 +362,10 @@ public class ResourceMonitoringManagerTest {
         //First time checks that notification is sent
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(1, updatedRuns.size());
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
@@ -368,7 +380,7 @@ public class ResourceMonitoringManagerTest {
         idleRunToProlong.setLastIdleNotificationTime(null);
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(2))
+        verify(pipelineRunManager, times(4))
                 .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager, times(2))
                 .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
@@ -385,12 +397,12 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager, times(3))
+        verify(pipelineRunManager, times(6))
                 .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager, times(3))
                 .notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        updatedRuns = runsToUpdateCaptor.getValue();
+        updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(1, updatedRuns.size());
         Assert.assertTrue(updatedRuns.stream().anyMatch(r -> r.getPodId().equals(idleRunToProlong.getPodId())));
 
@@ -398,8 +410,6 @@ public class ResourceMonitoringManagerTest {
         Assert.assertEquals(1, runsToNotify.size());
         Assert.assertTrue(runsToNotify.stream()
                 .anyMatch(r -> r.getLeft().getPodId().equals(idleRunToProlong.getPodId())));
-
-
     }
 
     @Test
@@ -413,10 +423,10 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
         Assert.assertFalse(updatedRuns.stream()
                                .anyMatch(r -> r.getLastIdleNotificationTime().equals(lastNotificationDate)));
@@ -452,11 +462,12 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2))
+                .updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
         Assert.assertFalse(updatedRuns.stream()
                                .anyMatch(r -> lastNotificationDate.equals(r.getLastIdleNotificationTime())));
@@ -503,12 +514,12 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_STOPPED));
         verify(notificationManager).notifyIdleRuns(any(), eq(NotificationType.IDLE_RUN_PAUSED));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
         Assert.assertNull(updatedRuns.stream()
                               .filter(r -> r.getPodId().equals(idleOnDemandRun.getPodId()))
@@ -534,14 +545,14 @@ public class ResourceMonitoringManagerTest {
 
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
         verify(notificationManager, times(2)).notifyIdleRuns(any(),
                                                                      eq(NotificationType.IDLE_RUN_STOPPED));
 
         Assert.assertTrue(runsToNotifyIdleCaptor.getValue().isEmpty());
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
 
         verify(pipelineRunManager).stop(TEST_IDLE_ON_DEMAND_RUN_ID);
@@ -561,10 +572,10 @@ public class ResourceMonitoringManagerTest {
         idleSpotRun.setTags(new HashMap<>());
         resourceMonitoringManager.monitorResourceUsage();
 
-        verify(pipelineRunManager).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
+        verify(pipelineRunManager, times(2)).updatePipelineRunsLastNotification(runsToUpdateCaptor.capture());
         verify(notificationManager).notifyIdleRuns(runsToNotifyIdleCaptor.capture(), eq(NotificationType.IDLE_RUN));
 
-        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getValue();
+        List<PipelineRun> updatedRuns = runsToUpdateCaptor.getAllValues().get(0);
         Assert.assertEquals(2, updatedRuns.size());
 
         Assert.assertNull(updatedRuns.stream()

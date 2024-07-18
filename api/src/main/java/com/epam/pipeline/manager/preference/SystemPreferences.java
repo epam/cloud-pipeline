@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.metadata.CommonInstanceTagsType;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
@@ -1033,6 +1034,20 @@ public class SystemPreferences {
             "system.notifications.exp.period", null, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
             "system.notifications.enable", false, SYSTEM_GROUP, pass);
+
+    public static final DoublePreference SYSTEM_POD_BANDWIDTH_LIMIT = new DoublePreference(
+            "system.pod.bandwidth.limit", 300000.0, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final IntPreference SYSTEM_MAX_POD_BANDWIDTH_LIMIT_TIMEOUT_MINUTES = new IntPreference(
+            "system.max.pod.bandwidth.minutes", 30, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final IntPreference SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD = new IntPreference(
+            "system.pod.bandwidth.action.backoff.period", 30, SYSTEM_GROUP,
+                    isGreaterThan(0));
+
+    public static final StringPreference SYSTEM_POD_BANDWIDTH_ACTION = new StringPreference(
+            "system.pod.bandwidth.action", NetworkConsumingRunAction.NOTIFY.name(),
+            SYSTEM_GROUP, PreferenceValidators.isValidNetworkConsumptionAction);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

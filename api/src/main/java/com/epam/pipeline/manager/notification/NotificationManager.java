@@ -341,6 +341,70 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         return message;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyHighNetworkConsumingRuns(final List<Pair<PipelineRun, Double>> pipelineNetworkBandwidthPairs,
+                                               final NotificationType type) {
+        if (CollectionUtils.isEmpty(pipelineNetworkBandwidthPairs)) {
+            return;
+        }
+
+        Assert.isTrue(NotificationGroup.RESOURCE_CONSUMING == type.getGroup(),
+                "Only RESOURCE_CONSUMING group notification types are allowed");
+
+        final NotificationSettings settings = settingsManager.load(type);
+        if (settings == null || !settings.isEnabled()) {
+            log.info("No template configured for high network consuming pipeline run notifications " +
+                    "or it was disabled!");
+            return;
+        }
+
+        final List<Long> ccUserIds = getCCUsers(settings);
+        final Map<String, PipelineUser> pipelineOwners = getPipelinesOwners(pipelineNetworkBandwidthPairs);
+
+        final double bandwidthLimit = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_POD_BANDWIDTH_LIMIT);
+        final String instanceTypesToExclude = preferenceManager.getPreference(SystemPreferences
+                .SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
+        final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
+
+        final List<Pair<PipelineRun, Double>> filtered = pipelineNetworkBandwidthPairs.stream()
+                .filter(pair -> shouldNotifyHighNetworkConsumingRun(pair.getLeft().getId(), type, settings))
+                .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
+                .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
+                .collect(Collectors.toList());
+        final List<NotificationMessage> messages = filtered.stream()
+                .map(pair -> buildMessageForHighNetworkConsumingRun(settings, ccUserIds, pipelineOwners, pair.getLeft(),
+                        pair.getRight(), bandwidthLimit, type))
+                .collect(Collectors.toList());
+        saveNotifications(messages);
+
+        if (NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH.equals(type)) {
+            final List<Long> runIds = filtered.stream()
+                    .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
+            monitoringNotificationDao.updateNotificationTimestamp(runIds,
+                    NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH);
+        }
+    }
+
+    private NotificationMessage buildMessageForHighNetworkConsumingRun(final NotificationSettings settings,
+                                                                       final List<Long> ccUserIds,
+                                                                       final Map<String, PipelineUser> pipelineOwners,
+                                                                       final PipelineRun run,
+                                                                       final double bandwidth,
+                                                                       final double bandwidthLimit,
+                                                                       final NotificationType type) {
+        log.debug("Sending high network consuming run notification for run '{}'.", run.getId());
+        final NotificationMessage message = new NotificationMessage();
+        message.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        message.setTemplateParameters(parameterManager.buildHighNetworkConsumingRunParams(type, run,
+                bandwidth, bandwidthLimit));
+        if (settings.isKeepInformedOwner()) {
+            message.setToUserId(pipelineOwners.getOrDefault(run.getOwner(), new PipelineUser()).getId());
+        }
+        message.setCopyUserIds(ccUserIds);
+        return message;
+    }
+
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyHighResourceConsumingRuns(final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> metrics,
@@ -829,6 +893,15 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
                                         final NotificationSettings notificationSettings) {
         if (!NotificationType.IDLE_RUN.equals(notificationType)) {
+            return true;
+        }
+        return shouldNotify(runId, notificationSettings);
+    }
+
+    private boolean shouldNotifyHighNetworkConsumingRun(final Long runId,
+                                                        final NotificationType notificationType,
+                                                        final NotificationSettings notificationSettings) {
+        if (!NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH.equals(notificationType)) {
             return true;
         }
         return shouldNotify(runId, notificationSettings);

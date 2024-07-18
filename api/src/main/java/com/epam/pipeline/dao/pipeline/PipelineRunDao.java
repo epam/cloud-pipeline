@@ -1012,6 +1012,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         LAST_NOTIFICATION_TIME,
         PROLONGED_AT_TIME,
         LAST_IDLE_NOTIFICATION_TIME,
+        LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME,
         PROJECT_PIPELINES,
         PROJECT_CONFIGS,
         EXEC_PREFERENCES,
@@ -1067,6 +1068,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
             params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
             params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
+            params.addValue(LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name(),
+                    run.getLastNetworkConsumptionNotificationTime());
             params.addValue(EXEC_PREFERENCES.name(),
                     JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
             params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
@@ -1208,9 +1211,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
             }
 
-            Timestamp lastIdleNotifiactionTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
+            Timestamp lastIdleNotificationTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
             if (!rs.wasNull()) {
-                run.setLastIdleNotificationTime(lastIdleNotifiactionTime.toLocalDateTime()); // convert to UTC
+                run.setLastIdleNotificationTime(lastIdleNotificationTime.toLocalDateTime()); // convert to UTC
+            }
+
+            Timestamp lastNetworkConsumptionNotificationTime = rs.getTimestamp(
+                    LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name());
+            if (!rs.wasNull()) {
+                // convert to UTC
+                run.setLastNetworkConsumptionNotificationTime(lastNetworkConsumptionNotificationTime.toLocalDateTime());
             }
 
             Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
