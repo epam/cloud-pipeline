@@ -3,11 +3,12 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Icon, Spin} from 'antd';
 import Chart from 'chart.js';
+import {computed} from 'mobx';
 import {BarchartDataLabelPlugin, ChartClickPlugin} from '../../billing/reports/charts/extensions';
 import ThemedReport from '../../billing/reports/themed-report';
 import 'chart.js/dist/Chart.css';
 
-@inject('reportThemes')
+@inject('reportThemes', 'themes')
 @observer
 class RunsInfoChart extends Component {
   static propTypes = {
@@ -17,6 +18,26 @@ class RunsInfoChart extends Component {
     style: PropTypes.object,
     onEntryClick: PropTypes.func
   };
+
+  componentDidMount() {
+    const {themes} = this.props;
+    if (themes) {
+      themes.addThemeChangedListener(this.updateChart);
+    }
+  }
+
+  componentWillUnmount() {
+    const {themes} = this.props;
+    if (themes) {
+      themes.removeThemeChangedListener(this.updateChart);
+    }
+  }
+
+  @computed
+  get fontColor () {
+    const {reportThemes} = this.props;
+    return reportThemes ? reportThemes.subTextColor : undefined;
+  }
 
   chart;
   ctx;
@@ -44,7 +65,7 @@ class RunsInfoChart extends Component {
         displayEmptyTitleRow !== prevDisplayEmptyTitleRow ||
         onEntryClick !== prevOnEntryClick
       ) {
-        this.chartRef(this.ctx, this.props);
+        this.updateChart();
       }
     }
   }
@@ -52,6 +73,10 @@ class RunsInfoChart extends Component {
   get noDataProvided () {
     const {data} = this.props;
     return (data.labels || []).length === 0;
+  }
+
+  updateChart = () => {
+    this.chartRef(this.ctx, this.props);
   }
 
   chartRef = (ctx, props) => {
@@ -64,6 +89,8 @@ class RunsInfoChart extends Component {
         displayEmptyTitleRow,
         onEntryClick
       } = props || this.props;
+      const {labels = []} = data;
+      const labelsCount = labels.length;
       const opts = {
         animation: {duration: 0},
         legend: {
@@ -71,7 +98,8 @@ class RunsInfoChart extends Component {
         },
         title: {
           display: !!title || displayEmptyTitleRow,
-          text: displayEmptyTitleRow ? '' : title
+          text: displayEmptyTitleRow ? '' : title,
+          fontColor: this.fontColor
         },
         scales: {
           xAxes: [{
@@ -79,6 +107,12 @@ class RunsInfoChart extends Component {
             stacked: true,
             gridLines: {
               display: false
+            },
+            ticks: {
+              autoSkip: false,
+              maxRotation: labelsCount > 5 ? 90 : undefined,
+              minRotation: labelsCount > 5 ? 90 : undefined,
+              fontColor: this.fontColor
             }
           }],
           yAxes: [
@@ -87,7 +121,8 @@ class RunsInfoChart extends Component {
               ticks: {
                 beginAtZero: true,
                 stepSize: 1,
-                maxTicksLimit: 5
+                maxTicksLimit: 5,
+                fontColor: this.fontColor
               }
             }
           ]
