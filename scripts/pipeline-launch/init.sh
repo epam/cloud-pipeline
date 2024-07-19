@@ -72,6 +72,8 @@ if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
         echo "[ERROR] Cannot stop current run, forcebly shutting down"
         shutdown -r now
     fi
+else
+    exit \$_launch_sh_result
 fi
 EOF
 chmod +x $_CP_STARTUP_BASH_FILE
