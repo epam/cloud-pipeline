@@ -17,7 +17,7 @@ CP_LAUNCH_SH_URL='$CP_LAUNCH_SH_URL'
 # Inherit environment variables from the PID 1 process, which are dumped earlier into /etc/cp_startup.env
 # So that the SystemD option get a correct environment
 # If no SystemD is requested - variables will inherited on their own
-if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
     if [ -f "/etc/cp_startup.env" ]; then
         source /etc/cp_startup.env
     else
