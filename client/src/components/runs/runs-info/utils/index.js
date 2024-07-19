@@ -36,14 +36,20 @@ function getDatasetStyles (key, reportThemes, b) {
   if (key === 'RUNNING') {
     return {
       backgroundColor: reportThemes.lightCurrent,
+      borderColor: reportThemes.current,
       flagColor: reportThemes.current,
+      textColor: reportThemes.textColor,
+      borderWidth: 2,
       ...common
     };
   }
   if (key === 'PAUSED') {
     return {
-      backgroundColor: fadeout(reportThemes.lightBlue, 0.65),
-      flagColor: reportThemes.lightBlue,
+      backgroundColor: reportThemes.lightPrevious,
+      borderColor: reportThemes.previous,
+      flagColor: reportThemes.previous,
+      textColor: reportThemes.textColor,
+      borderWidth: 2,
       ...common
     };
   }
