@@ -96,8 +96,8 @@ public class NotificationParameterManager {
         final Map<String, Object> parameters = build(type);
         parameters.putAll(buildEntities(NotificationEntityClass.RUN, run.getId()));
         parameters.putAll(PipelineRunMapper.map(run));
-        parameters.put("bandwidth", bandwidth / BYTES_IN_KB);
-        parameters.put("bandwidthLimit", bandwidthLimit / BYTES_IN_KB);
+        parameters.put("bandwidth", bandwidth);
+        parameters.put("bandwidthLimit", bandwidthLimit);
         return parameters;
     }
 
