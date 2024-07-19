@@ -16,7 +16,7 @@
 <body>
     <p>Dear user,</p>
     <p>*** This is a system generated email, do not reply to this email ***</p>
-    <p>Looks like a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, is high network consuming: network bandwidth ${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("bandwidth")) Kb/sec is over the limit ${CP_DOLLAR}templateParameters.get("bandwidthLimit") Kb/sec.</p>
+    <p>Looks like a job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, is high network consuming: network bandwidth ${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("bandwidth")/1048576) Mb/sec is over the limit ${CP_DOLLAR}numberTool.format("#0.00", ${CP_DOLLAR}templateParameters.get("bandwidthLimit")/1048576) Mb/sec.</p>
     <br />
     <p><b>Job details:</b></p>
     <table>
