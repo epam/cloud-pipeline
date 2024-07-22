@@ -50,6 +50,9 @@
             },
             "type": {
               "type": "keyword"
+            },
+            "device_name": {
+              "type": "keyword"
             }
           }
         }
@@ -145,6 +148,9 @@
               }
             },
             "type": {
+              "type": "keyword"
+            },
+            "device_name": {
               "type": "keyword"
             }
           }

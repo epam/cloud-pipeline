@@ -26,6 +26,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GpuUsageStats {
+    private String deviceName;
     private GpuUsageSummary average;
     private GpuUsageSummary min;
     private GpuUsageSummary max;

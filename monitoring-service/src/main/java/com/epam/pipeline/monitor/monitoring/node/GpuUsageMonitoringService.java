@@ -132,7 +132,13 @@ public class GpuUsageMonitoringService implements MonitoringService {
                 .filter(value -> value > 0)
                 .count();
 
+        final String deviceName = usages.stream()
+                .findFirst()
+                .map(NodeReporterGpuUsages::getName)
+                .orElse(null);
+
         return GpuUsageStats.builder()
+                .deviceName(deviceName)
                 .average(averagesSummary)
                 .min(minSummary)
                 .max(maxSummary)

@@ -160,6 +160,7 @@ class GpuUsageMonitoringServiceTest {
                 .min(min)
                 .max(max)
                 .activeGpusUtilization(TEST_VALUE_1)
+                .deviceName(TEST)
                 .build();
 
         return GpuUsages.builder()
@@ -189,6 +190,7 @@ class GpuUsageMonitoringServiceTest {
                 .memoryUtilization(MEMORY_UTILIZATION_1)
                 .build();
         final GpuUsageStats stats = GpuUsageStats.builder()
+                .deviceName(TEST)
                 .average(average)
                 .min(min)
                 .max(max)

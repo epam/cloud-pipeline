@@ -59,6 +59,7 @@ public final class GpuMonitorIndexHelper {
     private static final String INDEX_FIELD = "index";
     private static final String NODENAME_FIELD = "nodename";
     private static final String TYPE_FIELD = "type";
+    private static final String DEVICE_NAME_FIELD = "device_name";
     private static final String NODE_TYPE = "node";
     private static final String VALUE_FIELD = "value";
     private static final DateTimeFormatter TIMESTAMP_FIELD_FORMATTER =
@@ -109,6 +110,7 @@ public final class GpuMonitorIndexHelper {
                     .field(INDEX_FIELD, usages.getIndex())
                     .field(NODENAME_FIELD, nodename)
                     .field(TYPE_FIELD, NODE_TYPE)
+                    .field(DEVICE_NAME_FIELD, usages.getName())
                     .endObject();
 
             return jsonBuilder.endObject();
@@ -137,6 +139,7 @@ public final class GpuMonitorIndexHelper {
             jsonBuilder.startObject(TAGS_FIELD)
                     .field(NODENAME_FIELD, nodename)
                     .field(TYPE_FIELD, NODE_TYPE)
+                    .field(DEVICE_NAME_FIELD, stats.getDeviceName())
                     .endObject();
 
             return jsonBuilder.endObject();
