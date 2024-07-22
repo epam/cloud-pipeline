@@ -52,7 +52,8 @@ import javax.sql.DataSource;
         "com.epam.pipeline.manager",
         "com.epam.pipeline.security",
         "com.epam.pipeline.aspect",
-        "com.epam.pipeline.event"})
+        "com.epam.pipeline.event",
+        "com.epam.pipeline.eventsourcing"})
 @EnableSchedulerLock(interceptMode = EnableSchedulerLock.InterceptMode.PROXY_METHOD, defaultLockAtMostFor = "PT30S")
 public class AppConfiguration implements SchedulingConfigurer {
 

@@ -53,6 +53,7 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
+import com.epam.pipeline.eventsourcing.EventSourcingTopic;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -1094,6 +1095,11 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+
+    public static final ObjectPreference<List<EventSourcingTopic>> SYSTEM_EVENT_SOURCING_CONFIG =
+            new ObjectPreference<>("system.event.sourcing.config", Collections.emptyList(),
+                    new TypeReference<List<EventSourcingTopic>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<List<EventSourcingTopic>>() {}), false);
     /**
      * Controls which events will be ommitted from the OOM Logger output (
      * e.g. flannel, iptables and other system services)
