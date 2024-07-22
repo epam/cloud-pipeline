@@ -62,7 +62,7 @@ public class GPUAggregationRequester extends AbstractMetricRequester {
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                            final Duration interval) {
         final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
-                .size(0)
+                .size(1)
                 .aggregation(buildHistogram(interval));
         return request(from, to, aggregation);
     }
@@ -77,8 +77,10 @@ public class GPUAggregationRequester extends AbstractMetricRequester {
         if (CollectionUtils.isEmpty(aggregations)) {
             return Collections.emptyList();
         }
+        final String deviceName = getDeviceName(response.getHits());
         return getBucketStream(aggregations)
                 .map(this::bucketToChart)
+                .peek(monitoringStats -> monitoringStats.setGpuDeviceName(deviceName))
                 .collect(Collectors.toList());
     }
 
@@ -153,9 +155,5 @@ public class GPUAggregationRequester extends AbstractMetricRequester {
                 .min(getDoubleValue(aggregations, MIN_AGGREGATION + MIN_AGGREGATION + metricName))
                 .max(getDoubleValue(aggregations, MAX_AGGREGATION + MAX_AGGREGATION + metricName))
                 .build();
-    }
-
-    private Double getDoubleValue(final List<Aggregation> aggregations, final String metricName) {
-        return doubleValue(aggregations, metricName).orElse(null);
     }
 }

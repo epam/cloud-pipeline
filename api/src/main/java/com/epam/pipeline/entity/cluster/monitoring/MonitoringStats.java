@@ -43,6 +43,7 @@ public class MonitoringStats {
     private NetworkUsage networkUsage;
     private GPUUsage gpuUsage;
     private Map<String, GPUUsage> gpuDetails;
+    private String gpuDeviceName;
 
     @Setter
     @Getter

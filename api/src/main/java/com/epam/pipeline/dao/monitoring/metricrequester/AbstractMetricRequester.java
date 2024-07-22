@@ -26,6 +26,8 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -50,6 +52,7 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -110,6 +113,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String AGGREGATION_NODE_NAME = "nodename";
     protected static final String FIELD_NODENAME_RAW = "nodename.raw";
     protected static final String AGGREGATION_DISK_NAME = "disk_name";
+    protected static final String GPU_DEVICE_NAME = "device_name";
 
     protected static final String SYNTHETIC_NETWORK_INTERFACE = "summary";
     protected static final String SWAP_FILESYSTEM = "tmpfs";
@@ -298,5 +302,24 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
             throw new PipelineException(e);
         }
         return terms;
+    }
+
+    protected Double getDoubleValue(final List<Aggregation> aggregations, final String metricName) {
+        return doubleValue(aggregations, metricName).orElse(null);
+    }
+
+    protected String getDeviceName(final SearchHits hits) {
+        return Optional.ofNullable(hits)
+                .map(SearchHits::getHits)
+                .map(Arrays::stream)
+                .orElseGet(Stream::empty)
+                .findFirst()
+                .map(SearchHit::getSourceAsMap)
+                .map(sourceMap -> sourceMap.get(FIELD_METRICS_TAGS))
+                .filter(metricsTags -> metricsTags instanceof Map)
+                .map(Map.class::cast)
+                .map(metricsTags -> metricsTags.get(GPU_DEVICE_NAME))
+                .map(String.class::cast)
+                .orElse(null);
     }
 }

@@ -45,7 +45,7 @@ public class GPUDetailsRequester extends AbstractMetricRequester {
     private static final String UTILIZATION_GPU = "utilization_gpu";
     private static final String UTILIZATION_GPU_MEMORY = "utilization_memory";
     private static final String USED_GPU_MEMORY = "used_memory";
-    private static final String DEVICE_NAME_AGGREGATION = "device_name";
+    private static final String DEVICE_ID_AGGREGATION = "device_id";
     private static final String DEVICE_ID_RAW_FIELD = "index.raw";
     private static final String INDEX_NAME_PATTERN = "cp-gpu-monitor-%s";
 
@@ -62,8 +62,8 @@ public class GPUDetailsRequester extends AbstractMetricRequester {
     public SearchRequest buildStatsRequest(final String nodeName, final LocalDateTime from, final LocalDateTime to,
                                            final Duration interval) {
         final SearchSourceBuilder aggregation = statsQuery(nodeName, NODE, from, to)
-                .size(0)
-                .aggregation(ordered(AggregationBuilders.terms(DEVICE_NAME_AGGREGATION)
+                .size(1)
+                .aggregation(ordered(AggregationBuilders.terms(DEVICE_ID_AGGREGATION)
                         .field(path(FIELD_METRICS_TAGS, DEVICE_ID_RAW_FIELD))
                         .subAggregation(buildHistogram(interval))));
         return request(from, to, aggregation);
@@ -71,11 +71,12 @@ public class GPUDetailsRequester extends AbstractMetricRequester {
 
     @Override
     protected List<MonitoringStats> parseStatsResponse(final SearchResponse response) {
+        final String deviceName = getDeviceName(response.getHits());
         return Optional.ofNullable(response.getAggregations())
                 .map(Aggregations::asList)
                 .map(List::stream)
                 .orElseGet(Stream::empty)
-                .filter(agg -> DEVICE_NAME_AGGREGATION.equals(agg.getName()))
+                .filter(agg -> DEVICE_ID_AGGREGATION.equals(agg.getName()))
                 .filter(agg -> agg instanceof Terms)
                 .map(Terms.class::cast)
                 .findFirst()
@@ -89,6 +90,7 @@ public class GPUDetailsRequester extends AbstractMetricRequester {
                         .collect(Collectors.groupingBy(pair -> pair.getRight().getKeyAsString()))
                         .entrySet().stream()
                         .map(entry -> toChart(entry.getKey(), entry.getValue()))
+                        .peek(chart -> chart.setGpuDeviceName(deviceName))
                         .collect(Collectors.toList()))
                 .orElse(Collections.emptyList());
     }
@@ -165,9 +167,5 @@ public class GPUDetailsRequester extends AbstractMetricRequester {
                 .min(getDoubleValue(aggregations, MIN_AGGREGATION + metricName))
                 .max(getDoubleValue(aggregations, MAX_AGGREGATION + metricName))
                 .build();
-    }
-
-    private Double getDoubleValue(final List<Aggregation> aggregations, final String metricName) {
-        return doubleValue(aggregations, metricName).orElse(null);
     }
 }
