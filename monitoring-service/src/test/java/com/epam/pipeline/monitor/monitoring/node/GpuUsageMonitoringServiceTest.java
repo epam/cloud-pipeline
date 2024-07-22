@@ -21,6 +21,7 @@ import com.epam.pipeline.monitor.model.node.GpuUsageStats;
 import com.epam.pipeline.monitor.model.node.GpuUsageSummary;
 import com.epam.pipeline.monitor.model.node.GpuUsages;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.monitor.service.InstanceTypesLoader;
 import com.epam.pipeline.monitor.service.elasticsearch.MonitoringElasticsearchService;
 import com.epam.pipeline.monitor.service.reporter.NodeReporterService;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -54,8 +56,9 @@ class GpuUsageMonitoringServiceTest {
     private final NodeReporterService nodeReporterService = mock(NodeReporterService.class);
     private final MonitoringElasticsearchService monitoringElasticsearchService =
             mock(MonitoringElasticsearchService.class);
+    private final InstanceTypesLoader instanceTypesLoader = mock(InstanceTypesLoader.class);
     private final GpuUsageMonitoringService monitor = new GpuUsageMonitoringService(
-            TEST, cloudPipelineClient, nodeReporterService, monitoringElasticsearchService);
+            TEST, cloudPipelineClient, nodeReporterService, monitoringElasticsearchService, instanceTypesLoader);
 
     @Test
     void shouldSkipProcessIfNotRequired() {
@@ -67,7 +70,7 @@ class GpuUsageMonitoringServiceTest {
     @Test
     void shouldSkipProcessIfNoUsagesLoaded() {
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
-        when(nodeReporterService.collectGpuUsages()).thenReturn(null);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(null);
         monitor.monitor();
         verifyZeroInteractions(monitoringElasticsearchService);
     }
@@ -77,7 +80,7 @@ class GpuUsageMonitoringServiceTest {
     void shouldProcessEmptyUsages() {
         final List<GpuUsages> usages = Collections.singletonList(GpuUsages.builder().build());
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
-        when(nodeReporterService.collectGpuUsages()).thenReturn(usages);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
         monitor.monitor();
         verify(monitoringElasticsearchService).saveGpuUsages(Collections.emptyList());
     }
@@ -128,7 +131,7 @@ class GpuUsageMonitoringServiceTest {
 
         final List<GpuUsages> usages = Arrays.asList(gpuUsage1, gpuUsage2);
         when(cloudPipelineClient.getBooleanPreference(TEST)).thenReturn(true);
-        when(nodeReporterService.collectGpuUsages()).thenReturn(usages);
+        when(nodeReporterService.collectGpuUsages(any())).thenReturn(usages);
 
         monitor.monitor();
 

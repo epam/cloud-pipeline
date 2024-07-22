@@ -28,6 +28,7 @@ import org.apache.commons.collections4.ListUtils;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public final class KubernetesUtils {
     private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
@@ -60,9 +61,10 @@ public final class KubernetesUtils {
                 .map(PodStatus::getPodIP);
     }
 
-    public static List<Node> findNodesByLabel(final KubernetesClient client, final String key, final String value) {
+    public static List<Node> findNodesByLabel(final KubernetesClient client, final String key,
+                                              final Set<String> values) {
         return ListUtils.emptyIfNull(client.nodes()
-                .withLabel(key, value)
+                .withLabelIn(key, values.toArray(new String[0]))
                 .list()
                 .getItems());
     }

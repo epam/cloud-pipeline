@@ -43,31 +43,27 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NodeReporterService {
     private static final String NAME_LABEL = "name";
-    private static final String LABEL_ENABLED = "true";
+    private static final String CLOUD_INS_TYPE_LABEL = "cloud_ins_type";
 
-    private final String monitoringNodeLabel;
     private final String reportingPodName;
     private final String namespace;
     private final Executor executor;
     private final NodeReporterAPIExecutor nodeReporterClient;
 
-    public NodeReporterService(@Value("${monitoring.node.label:cloud-pipeline/cp-node-monitor}")
-                               final String monitoringNodeLabel,
-                               @Value("${node.reporter.srv.pod.name:cp-node-reporter}")
+    public NodeReporterService(@Value("${node.reporter.srv.pod.name:cp-node-reporter}")
                                final String reportingPodName,
                                @Value("${node.reporter.srv.namespace:default}") final String namespace,
                                @Value("${monitoring.gpu.usage.pool.size:1}") final int poolSize,
                                final NodeReporterAPIExecutor nodeReporterClient) {
-        this.monitoringNodeLabel = monitoringNodeLabel;
         this.reportingPodName = reportingPodName;
         this.namespace = namespace;
         this.executor = Executors.newFixedThreadPool(poolSize);
         this.nodeReporterClient = nodeReporterClient;
     }
 
-    public List<GpuUsages> collectGpuUsages() {
+    public List<GpuUsages> collectGpuUsages(final Set<String> gpuInstanceTypes) {
         try (KubernetesClient client = KubernetesUtils.getKubernetesClient()) {
-            final Set<String> nodeNames = getMonitoringNodeNames(client);
+            final Set<String> nodeNames = getGpuNodeNames(client, gpuInstanceTypes);
             final List<Pod> pods = getReportingPods(client, nodeNames);
             return requestUsages(pods).stream()
                     .map(CompletableFuture::join)
@@ -78,8 +74,8 @@ public class NodeReporterService {
         }
     }
 
-    private Set<String> getMonitoringNodeNames(final KubernetesClient client) {
-        return KubernetesUtils.findNodesByLabel(client, monitoringNodeLabel, LABEL_ENABLED).stream()
+    private Set<String> getGpuNodeNames(final KubernetesClient client, final Set<String> gpuInstanceTypes) {
+        return KubernetesUtils.findNodesByLabel(client, CLOUD_INS_TYPE_LABEL, gpuInstanceTypes).stream()
                 .map(Node::getMetadata)
                 .filter(Objects::nonNull)
                 .map(ObjectMeta::getName)

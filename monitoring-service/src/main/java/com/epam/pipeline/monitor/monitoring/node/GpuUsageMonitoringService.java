@@ -22,6 +22,7 @@ import com.epam.pipeline.monitor.model.node.GpuUsageStats;
 import com.epam.pipeline.monitor.model.node.GpuUsages;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.monitor.service.InstanceTypesLoader;
 import com.epam.pipeline.monitor.service.elasticsearch.MonitoringElasticsearchService;
 import com.epam.pipeline.monitor.service.reporter.NodeReporterService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.util.IntSummaryStatistics;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,16 +45,19 @@ public class GpuUsageMonitoringService implements MonitoringService {
     private final CloudPipelineAPIClient cloudPipelineClient;
     private final NodeReporterService nodeReporterService;
     private final MonitoringElasticsearchService monitoringElasticsearchService;
+    private final InstanceTypesLoader instanceTypesLoader;
 
     public GpuUsageMonitoringService(@Value("${preference.name.usage.node.gpu.enable}")
                                          final String monitorEnabledPreferenceName,
                                      final CloudPipelineAPIClient cloudPipelineClient,
                                      final NodeReporterService nodeReporterService,
-                                     final MonitoringElasticsearchService monitoringElasticsearchService) {
+                                     final MonitoringElasticsearchService monitoringElasticsearchService,
+                                     final InstanceTypesLoader instanceTypesLoader) {
         this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
         this.cloudPipelineClient = cloudPipelineClient;
         this.nodeReporterService = nodeReporterService;
         this.monitoringElasticsearchService = monitoringElasticsearchService;
+        this.instanceTypesLoader = instanceTypesLoader;
     }
 
     @Override
@@ -62,7 +67,8 @@ public class GpuUsageMonitoringService implements MonitoringService {
             return;
         }
         log.info("Collecting gpu usages...");
-        final List<GpuUsages> usages = nodeReporterService.collectGpuUsages();
+        final Set<String> gpuInstanceTypes = instanceTypesLoader.loadGpuInstanceTypes();
+        final List<GpuUsages> usages = nodeReporterService.collectGpuUsages(gpuInstanceTypes);
 
         if (CollectionUtils.isEmpty(usages)) {
             log.info("Gpu usages not found. Finishing gpu usages monitoring.");
