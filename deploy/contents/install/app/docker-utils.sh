@@ -80,15 +80,6 @@ function docker_register_image {
     fi
 }
 
-function does_docker_tool_subdir_exist {
-    local docker_tool_subdir_path="$1"
-    if [ -d "$docker_tool_subdir_path" ]; then
-        echo "$docker_tool_subdir_path"
-        return 0
-    fi
-    return 1
-}
-
 function docker_push_manifest {
     local manifest_dir="$1"
     local registry_id="$2"
@@ -123,7 +114,7 @@ function docker_push_manifest {
     do
     # Docker manifest dir can have different structure. For example, in point-in-time configuration has an additional layer of folders for the registry path.
     # So, due to this difference, we need to check which path to the tool metadata files to use:
-        if  does_docker_tool_subdir_exist "$manifest_dir/$docker_name"; then
+        if [ -d "$manifest_dir/$docker_name" ]; then
             local docker_tool_manifest_path="$manifest_dir/$docker_name"
         else
             local docker_tool_manifest_path="$manifest_dir/$docker_pretty_name"
