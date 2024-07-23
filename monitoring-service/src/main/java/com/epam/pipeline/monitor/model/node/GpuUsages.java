@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.client.reporter;
+package com.epam.pipeline.monitor.model.node;
 
 import com.epam.pipeline.entity.reporter.NodeReporterGpuUsages;
-import com.epam.pipeline.entity.reporter.NodeReporterHostStats;
-import retrofit2.Call;
-import retrofit2.http.GET;
+import lombok.Builder;
+import lombok.Data;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
-public interface NodeReporterClient {
-    @GET("/")
-    Call<NodeReporterHostStats> load();
-
-    @GET("/gpus")
-    Call<List<NodeReporterGpuUsages>> loadGpuStats();
+@Data
+@Builder
+public class GpuUsages {
+    private List<NodeReporterGpuUsages> usages;
+    private String nodename;
+    private LocalDateTime timestamp;
+    private GpuUsageStats stats;
 }

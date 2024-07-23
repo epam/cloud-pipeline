@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.client.reporter;
+package com.epam.pipeline.entity.cluster.monitoring;
 
-import com.epam.pipeline.entity.reporter.NodeReporterGpuUsages;
-import com.epam.pipeline.entity.reporter.NodeReporterHostStats;
-import retrofit2.Call;
-import retrofit2.http.GET;
-import java.util.List;
+import lombok.Builder;
+import lombok.Data;
 
-public interface NodeReporterClient {
-    @GET("/")
-    Call<NodeReporterHostStats> load();
-
-    @GET("/gpus")
-    Call<List<NodeReporterGpuUsages>> loadGpuStats();
+@Data
+@Builder
+public class MonitoringMetrics {
+    private Double average;
+    private Double min;
+    private Double max;
 }
