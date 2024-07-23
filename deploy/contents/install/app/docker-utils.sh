@@ -121,25 +121,7 @@ function docker_push_manifest {
     local push_result=0
     while IFS=, read -r docker_name docker_pretty_name
     do
-    # Docker manifest in point-in-time configuration has a different structure than the default one.
-    #
-    # Point-in-time configuration:
-    #  - <docker-manifest-dir>/
-    #     - manifest.txt
-    #     - <docker-registry>/
-    #       - <library>/
-    #         - <tool>/
-    #           - icon.png
-    #           - ...
-    #           
-    # Default:
-    #  - <docker-manifest-dir>/
-    #     - manifest.txt
-    #     - <library>/
-    #       - <tool>/
-    #         - icon.png
-    #         - ...
-    #         
+    # Docker manifest dir can have different structure. For example, in point-in-time configuration has an additional layer of folders for the registry path.
     # So, due to this difference, we need to check which path to the tool metadata files to use:
         if  does_docker_tool_subdir_exist "$manifest_dir/$docker_name"; then
             local docker_tool_manifest_path="$manifest_dir/$docker_name"
