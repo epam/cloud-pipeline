@@ -40,17 +40,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class GPUDetailsRequester extends AbstractMetricRequester {
+public class GPUDetailsRequester extends AbstractGPUMetricsRequester {
     private static final String DETAILS_HISTOGRAM = "details_histogram";
     private static final String UTILIZATION_GPU = "utilization_gpu";
     private static final String UTILIZATION_GPU_MEMORY = "utilization_memory";
     private static final String USED_GPU_MEMORY = "used_memory";
     private static final String DEVICE_ID_AGGREGATION = "device_id";
     private static final String DEVICE_ID_RAW_FIELD = "index.raw";
-    private static final String INDEX_NAME_PATTERN = "cp-gpu-monitor-%s";
 
     public GPUDetailsRequester(final HeapsterElasticRestHighLevelClient client) {
-        super(client, INDEX_NAME_PATTERN);
+        super(client);
     }
 
     @Override

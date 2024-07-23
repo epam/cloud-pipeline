@@ -19,14 +19,13 @@ package com.epam.pipeline.monitor.service;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.HashSet;
+import javax.annotation.PostConstruct;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -36,9 +35,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InstanceTypesLoader {
     private final CloudPipelineAPIClient client;
-    private final Set<String> gpuInstanceTypes = Collections.synchronizedSet(new HashSet<>());
+    private final Set<String> gpuInstanceTypes = ConcurrentHashMap.newKeySet();
 
-    @Scheduled(fixedDelayString = "${refresh.instances:86400000}")
+    @PostConstruct
+    public void init() {
+        refreshInstances();
+    }
+
+    @Scheduled(fixedDelayString = "${refresh.instances.timeout:86400000}")
     public void refreshInstances() {
         final Set<String> loadedTypes = client.loadAllInstanceTypes().stream()
                 .filter(it -> it.getGpu() > 0)
@@ -50,9 +54,6 @@ public class InstanceTypesLoader {
     }
 
     public Set<String> loadGpuInstanceTypes() {
-        if (CollectionUtils.isEmpty(gpuInstanceTypes)) {
-            refreshInstances();
-        }
         return gpuInstanceTypes;
     }
 }

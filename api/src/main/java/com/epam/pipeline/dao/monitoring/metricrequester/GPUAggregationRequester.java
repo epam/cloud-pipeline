@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class GPUAggregationRequester extends AbstractMetricRequester {
+public class GPUAggregationRequester extends AbstractGPUMetricsRequester {
     private static final String AVG_UTILIZATION_GPU_FIELD = "avg_utilization_gpu";
     private static final String AVG_UTILIZATION_MEMORY_FIELD = "avg_utilization_memory";
     private static final String MIN_UTILIZATION_GPU_FIELD = "min_utilization_gpu";
@@ -47,10 +47,9 @@ public class GPUAggregationRequester extends AbstractMetricRequester {
     private static final String MAX_UTILIZATION_MEMORY_FIELD = "max_utilization_memory";
     private static final String ACTIVE_GPUS_FIELD = "active_gpus";
     private static final String CHARTS_HISTOGRAM = "charts_histogram";
-    private static final String INDEX_NAME_PATTERN = "cp-gpu-monitor-%s";
 
     public GPUAggregationRequester(final HeapsterElasticRestHighLevelClient client) {
-        super(client, INDEX_NAME_PATTERN);
+        super(client);
     }
 
     @Override
