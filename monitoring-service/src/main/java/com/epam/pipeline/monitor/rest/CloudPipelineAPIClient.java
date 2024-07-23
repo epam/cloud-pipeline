@@ -19,6 +19,7 @@ package com.epam.pipeline.monitor.rest;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
@@ -89,5 +90,9 @@ public class CloudPipelineAPIClient {
 
     public boolean deleteExpiredNodePoolUsage(final LocalDate date) {
         return executor.execute(cloudPipelineAPI.deleteExpiredNodePoolUsage(date));
+    }
+
+    public List<InstanceType> loadAllInstanceTypes() {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllInstanceTypes()));
     }
 }

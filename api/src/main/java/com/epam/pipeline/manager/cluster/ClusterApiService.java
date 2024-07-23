@@ -31,6 +31,8 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.PodDescription;
 import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -94,6 +96,15 @@ public class ClusterApiService {
                                                  final LocalDateTime from,
                                                  final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(name, from, to);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public GpuMonitoringStats getGpuStatsForNode(final String name,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)

@@ -1280,6 +1280,11 @@ public class SystemPreferences {
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
 
+    public static final IntPreference MONITORING_GPU_USAGE_DELAY = new IntPreference(
+            "monitoring.gpu.usage.delay", 60000, MONITORING_GROUP, isGreaterThan(0));
+
+    public static final BooleanPreference MONITORING_GPU_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.gpu.usage.enable", false, MONITORING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
