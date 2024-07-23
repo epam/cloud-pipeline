@@ -15,14 +15,10 @@
 
 package com.epam.pipeline.app;
 
-import com.epam.pipeline.eventsourcing.EventHandler;
-import com.epam.pipeline.eventsourcing.EventSourcingEngine;
-import com.epam.pipeline.eventsourcing.EventType;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
+import com.epam.pipeline.eventsourcing.EventHandler;
+import com.epam.pipeline.eventsourcing.EventSourcingEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -44,39 +40,28 @@ public class EventSourcingConfiguration {
     private Integer redisPort;
 
     @Autowired
-    PreferenceManager preferenceManager;
+    private PreferenceManager preferenceManager;
 
     @Autowired(required = false)
-    List<EventHandler> eventHandlers;
+    private List<EventHandler> eventHandlers;
 
     @Bean
     public EventSourcingEngine eventSourcingEngine() {
-        final EventSourcingEngine eventSourcingEngine = new EventSourcingEngine(redissonClient());
+        final EventSourcingEngine eventSourcingEngine = new EventSourcingEngine(redisHost, redisPort);
         final Map<String, EventHandler> eventHandlersByType = eventHandlers.stream()
                 .collect(Collectors.toMap(EventHandler::getEventType, eventHandler -> eventHandler));
         preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-                .subscribe(eventSourcingTopics ->
-                        eventSourcingTopics.forEach(eventSourcingTopic -> {
-                            EventHandler eventHandler = eventHandlersByType.get(eventSourcingTopic.getEventType());
-                            if (eventHandler != null) {
-                                eventSourcingEngine.enableHandler(
-                                        eventSourcingTopic.getName(), 0, eventHandler,
-                                        eventSourcingTopic.getTimeout(), true
-                                );
-                            }
-                        })
-                );
+            .subscribe(eventSourcingTopics ->
+                eventSourcingTopics.forEach(eventSourcingTopic -> {
+                    final EventHandler eventHandler = eventHandlersByType.get(eventSourcingTopic.getEventType());
+                    if (eventHandler != null) {
+                        eventSourcingEngine.enableHandler(
+                                eventSourcingTopic.getName(), 0, eventHandler,
+                                eventSourcingTopic.getTimeout(), true
+                        );
+                    }
+                })
+            );
         return eventSourcingEngine;
     }
-
-
-    @Bean
-    public RedissonClient redissonClient() {
-        Config redissonConfig = new Config();
-        redissonConfig.useSingleServer()
-                .setAddress(String.format("redis://%s:%s", this.redisHost, this.redisPort));
-
-        return Redisson.create(redissonConfig);
-    }
-
 }

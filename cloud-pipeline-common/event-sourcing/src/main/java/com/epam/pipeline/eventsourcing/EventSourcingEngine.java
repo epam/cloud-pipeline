@@ -16,20 +16,17 @@
 
 package com.epam.pipeline.eventsourcing;
 
+import org.redisson.Redisson;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
 import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamReadArgs;
+import org.redisson.config.Config;
 
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class EventSourcingEngine {
 
@@ -38,17 +35,21 @@ public class EventSourcingEngine {
     private final ConcurrentHashMap<String, StreamMessageId> lastReadByHandler;
     private final ConcurrentHashMap<String, Future<?>> enabled;
 
-    public EventSourcingEngine(final RedissonClient redissonClient) {
-        this(redissonClient, Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
+    public EventSourcingEngine(final String redisHost, final int redisPort) {
+        this(redisHost, redisPort, Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
     }
 
-    public EventSourcingEngine(final RedissonClient redissonClient, final int threads) {
-        this(redissonClient, Executors.newScheduledThreadPool(threads));
+    public EventSourcingEngine(final String redisHost, final int redisPort, final int threads) {
+        this(redisHost, redisPort, Executors.newScheduledThreadPool(threads));
     }
 
-    public EventSourcingEngine(final RedissonClient redissonClient,
+    public EventSourcingEngine(final String redisHost, final int redisPort,
                                final ScheduledExecutorService executorService) {
-        this.redissonClient = redissonClient;
+        Config redissonConfig = new Config();
+        redissonConfig.useSingleServer()
+                .setAddress(String.format("redis://%s:%s", redisHost, redisPort));
+
+        this.redissonClient = Redisson.create(redissonConfig);
         this.executorService = executorService;
         this.lastReadByHandler = new ConcurrentHashMap<>();
         this.enabled = new ConcurrentHashMap<>();
