@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -50,7 +51,8 @@ import java.util.stream.Stream;
 public class MonitoringESDao {
     protected static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
-    private static final String INDEX_NAME_TOKEN = "heapster-";
+    private static final String HEAPSTER_INDEX_NAME_TOKEN = "heapster-";
+    private static final String GPU_STAT_INDEX_NAME_TOKEN = "cp-gpu-monitor-";
 
     private HeapsterElasticRestHighLevelClient heapsterClient;
     private RestClient lowLevelClient;
@@ -78,12 +80,14 @@ public class MonitoringESDao {
         try {
             final Response response = requestIndices();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                final String indicesToDelete = indices(reader)
+                final String indicesToDelete = indices(reader, HEAPSTER_INDEX_NAME_TOKEN, GPU_STAT_INDEX_NAME_TOKEN)
                         .map(this::withParsedDate)
                         .filter(pair -> pair.right != null && olderThanRetentionPeriod(retentionPeriodDays, pair.right))
                         .map(pair -> pair.left)
                         .collect(Collectors.joining(","));
-
+                if (StringUtils.isBlank(indicesToDelete)) {
+                    return;
+                }
                 lowLevelClient.performRequest(HttpMethod.DELETE.name(), "/" + indicesToDelete);
             }
         } catch (IOException e) {
@@ -95,10 +99,10 @@ public class MonitoringESDao {
         return lowLevelClient.performRequest(HttpMethod.GET.name(), "/_cat/indices");
     }
 
-    private Stream<String> indices(final BufferedReader reader) {
+    private Stream<String> indices(final BufferedReader reader, final String... indexNamePrefixes) {
         return reader.lines()
                 .flatMap(l -> Arrays.stream(l.split(" ")))
-                .filter(str -> str.startsWith(INDEX_NAME_TOKEN));
+                .filter(str -> Arrays.stream(indexNamePrefixes).anyMatch(str::startsWith));
     }
 
     private ImmutablePair<String, LocalDateTime> withParsedDate(final String name) {
@@ -108,7 +112,13 @@ public class MonitoringESDao {
     }
 
     private Optional<LocalDateTime> toLocalDateTime(final String name) {
-        final String datetimeString = name.substring(INDEX_NAME_TOKEN.length());
+        if (!(name.startsWith(HEAPSTER_INDEX_NAME_TOKEN) || name.startsWith(GPU_STAT_INDEX_NAME_TOKEN))) {
+            return Optional.empty();
+        }
+        final int indexTokenLength = name.startsWith(HEAPSTER_INDEX_NAME_TOKEN)
+                ? HEAPSTER_INDEX_NAME_TOKEN.length()
+                : GPU_STAT_INDEX_NAME_TOKEN.length();
+        final String datetimeString = name.substring(indexTokenLength);
         try {
             return Optional.of(LocalDate.parse(datetimeString, DATE_FORMATTER)
                     .atStartOfDay(ZoneOffset.UTC)
@@ -122,11 +132,11 @@ public class MonitoringESDao {
         return date.isBefore(DateUtils.nowUTC().minusDays(retentionPeriod + 1L));
     }
 
-    public Optional<LocalDateTime> oldestIndexDate() {
+    public Optional<LocalDateTime> oldestIndexDate(final String... indexPrefixes) {
         try {
             final Response response = requestIndices();
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
-                return indices(reader)
+                return indices(reader, indexPrefixes)
                         .map(this::toLocalDateTime)
                         .filter(Optional::isPresent)
                         .map(Optional::get)
