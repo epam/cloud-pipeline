@@ -2655,19 +2655,29 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 echo "Command text:"
 echo "${SCRIPT}"
 
+CP_EXEC_SCRIPT_PATH="${CP_EXEC_SCRIPT_PATH:-/cp-main.sh}"
+
 if [ "$CP_EXEC_AS_OWNER" == "true" ]; then
-      _RUN_AS_OWNER_COMMAND_PREFIX="/usr/bin/sudo -i -u "$OWNER""
+    _RUN_AS_OWNER_COMMAND_PREFIX="su - "$OWNER" -c '"
+    _RUN_AS_OWNER_COMMAND_SUFFIX="'"
+fi
+if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
+    _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
 fi
 
-if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
-  $_RUN_AS_OWNER_COMMAND_PREFIX timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
-  if [ $CP_EXEC_RESULT -eq 124 ]; then
+echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
+        "$_TIMEOUT_COMMAND_PREFIX" \
+        "bash -c \"${SCRIPT}\"" \
+        "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
+
+echo "Warapped command text:"
+cat "$CP_EXEC_SCRIPT_PATH"
+
+bash "$CP_EXEC_SCRIPT_PATH"
+
+CP_EXEC_RESULT=$?
+if [ "$CP_EXEC_TIMEOUT" ] && [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
-  fi
-else
-  $_RUN_AS_OWNER_COMMAND_PREFIX bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
 fi
 
 if [ "$CP_EXEC_RESULT" != "0" ]; then
