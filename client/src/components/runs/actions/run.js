@@ -23,7 +23,6 @@ import {
   Button,
   Icon,
   message,
-  Modal,
   Row,
   Select,
   Tooltip
@@ -72,6 +71,8 @@ import {
   getLimitMountsParameterValue,
   storageMatchesIdentifiers
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
+import RunModal from '../../main/RunModal';
+import checkToolVersionSizeErrors from '../utilities/check-tool-version-size-errors';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -425,9 +426,17 @@ function runFn (
       const ref = (element) => {
         component = element;
       };
-      Modal.confirm({
+      const hide = message.loading('Checking tool size...', 0);
+      const sizeErrors = await checkToolVersionSizeErrors(
+        payload.dockerImage,
+        stores.preferences,
+        stores.dockerRegistries
+      );
+      hide();
+      RunModal.open({
         title: null,
         width: '50%',
+        okDisabled: sizeErrors.hard,
         content: (
           <RunSpotConfirmationWithPrice
             runInfo={{
@@ -440,6 +449,7 @@ function runFn (
             ref={ref}
             platform={platform}
             warning={warning}
+            versionSizeErrors={sizeErrors}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
             isSpot={payload.isSpot}
@@ -469,8 +479,10 @@ function runFn (
           />
         ),
         style: {
-          wordWrap: 'break-word'
+          wordWrap: 'break-word',
+          paddingTop: 8
         },
+        closable: false,
         okText: 'Launch',
         onOk: async function () {
           if (component) {
@@ -575,6 +587,10 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    versionSizeErrors: PropTypes.shape({
+      soft: PropTypes.bool,
+      hard: PropTypes.bool
+    }),
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -681,7 +697,7 @@ export class RunConfirmation extends React.Component {
       .length > 0;
   }
 
-  getStoragesByIdentifiersString(identifiersString) {
+  getStoragesByIdentifiersString (identifiersString) {
     if (/^none$/i.test(identifiersString)) {
       return [];
     }
@@ -859,8 +875,29 @@ export class RunConfirmation extends React.Component {
   };
 
   render () {
+    const {versionSizeErrors} = this.props;
+    const {soft, hard} = versionSizeErrors || {};
     return (
       <div>
+        {!hard && soft ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="warning"
+            type="warning"
+            showIcon
+            // eslint-disable-next-line max-len
+            message="Сontainer size is too large and may lead to unpredictable run behavior."
+          />
+        ) : null}
+        {hard ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="error"
+            type="error"
+            showIcon
+            message="Container size exceeds limit."
+          />
+        ) : null}
         {
           this.props.warning &&
           <Alert
@@ -1212,6 +1249,10 @@ export class RunConfirmation extends React.Component {
 @observer
 export class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
+    versionSizeErrors: PropTypes.shape({
+      soft: PropTypes.bool,
+      hard: PropTypes.bool
+    }),
     warning: PropTypes.string,
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
@@ -1383,6 +1424,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            versionSizeErrors={this.props.versionSizeErrors}
             platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
@@ -1423,8 +1465,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
                 : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
-                (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
-                  .toFixed(2)
+                  (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
+                    .toFixed(2)
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
