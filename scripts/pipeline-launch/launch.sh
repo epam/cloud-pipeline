@@ -520,10 +520,15 @@ function configure_package_manager {
                                     sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
                               fi
                               # Use the "base" url for the other repos, as the mirrors may cause issues
-                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+                              for repo_file in /etc/yum.repos.d/*.repo; do
+                                    sed -i '/download.example/d' "$repo_file"
+                                    sed -i 's/mirror.centos.org/vault.centos.org/g' "$repo_file"
+                                    if grep -q 'baseurl' "$repo_file"; then
+                                          sed -i 's/^#baseurl=/baseurl=/g' "$repo_file"
+                                          sed -i 's/^metalink=/#metalink=/g' "$repo_file"
+                                          sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
+                                    fi
+                              done
                               
 
                               if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
