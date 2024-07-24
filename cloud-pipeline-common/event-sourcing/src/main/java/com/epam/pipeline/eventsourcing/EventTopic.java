@@ -16,6 +16,13 @@
 
 package com.epam.pipeline.eventsourcing;
 
-public enum EventType {
-    ACL_UPDATE
+import lombok.Builder;
+import lombok.Value;
+
+@Value
+@Builder
+public class EventTopic {
+    String stream;
+    boolean enabled;
+    int timeout;
 }

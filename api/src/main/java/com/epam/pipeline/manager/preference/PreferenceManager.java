@@ -35,12 +35,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,7 +64,7 @@ public class PreferenceManager {
     @Autowired
     private SystemPreferences systemPreferences;
 
-    private ConcurrentHashMap<AbstractSystemPreference, Subject> subjectMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<AbstractSystemPreference, List<Subject>> subjectMap = new ConcurrentHashMap<>();
 
     /**
      * Updates a list of preferences. Notifies all observers, if there are some for any of the updated preferences
@@ -85,11 +87,17 @@ public class PreferenceManager {
     }
 
     private void notifyPreferenceChanged(Preference p) {
-        Optional<AbstractSystemPreference<?>> opt = SystemPreferences.getSystemPreference(p.getName());
+        notifyPreferenceChanged(p.getName(), p.getValue());
+    }
+
+    private void notifyPreferenceChanged(String preferenceName, String value) {
+        Optional<AbstractSystemPreference<?>> opt = SystemPreferences.getSystemPreference(preferenceName);
         opt.ifPresent((sysPref) -> {
-            Subject subject = subjectMap.get(sysPref);
-            if (subject != null) {
-                subject.onNext(sysPref.parse(p.getValue()));
+            List<Subject> subjects = subjectMap.get(sysPref);
+            if (!CollectionUtils.isEmpty(subjects)) {
+                subjects.forEach(
+                        subject -> subject.onNext(value != null ? sysPref.parse(value) : sysPref.getDefaultValue())
+                );
             }
         });
     }
@@ -145,13 +153,7 @@ public class PreferenceManager {
     public void delete(String name) {
         preferenceDao.deletePreference(name);
 
-        Optional<AbstractSystemPreference<?>> opt = SystemPreferences.getSystemPreference(name);
-        opt.ifPresent((sysPref) -> {
-            Subject subject = subjectMap.get(sysPref);
-            if (subject != null) {
-                subject.onNext(sysPref.getDefaultValue());
-            }
-        });
+        notifyPreferenceChanged(name, null);
     }
 
     public Integer getIntPreference(String name) {
@@ -219,7 +221,7 @@ public class PreferenceManager {
         Subject<E> preferenceSubject;
         if (!subjectMap.contains(preference)) {
             preferenceSubject = PublishSubject.create();
-            subjectMap.put(preference, preferenceSubject);
+            subjectMap.computeIfAbsent(preference, p -> new CopyOnWriteArrayList<>()).add(preferenceSubject);
         } else {
             preferenceSubject = (Subject<E>) subjectMap.get(preference);
         }

@@ -17,5 +17,7 @@
 package com.epam.pipeline.eventsourcing;
 
 public interface EventProducer {
+    String getName();
+    String getEventType();
     long put(Event event);
 }

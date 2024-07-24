@@ -17,14 +17,15 @@
 package com.epam.pipeline.eventsourcing;
 
 import lombok.Builder;
+import lombok.ToString;
 import lombok.Value;
 
 import java.util.Map;
 
 @Value
 @Builder
+@ToString
 public class Event {
-    String type;
     Map<String, String> data;
 }
 

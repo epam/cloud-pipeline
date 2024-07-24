@@ -16,35 +16,41 @@
 
 package com.epam.pipeline.eventsourcing;
 
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.Redisson;
 import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.StreamMessageId;
-import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamReadArgs;
 import org.redisson.config.Config;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.concurrent.*;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-public class EventSourcingEngine {
+@Slf4j
+public class EventEngine {
 
     private final RedissonClient redissonClient;
     private final ScheduledExecutorService executorService;
     private final ConcurrentHashMap<String, StreamMessageId> lastReadByHandler;
     private final ConcurrentHashMap<String, Future<?>> enabled;
 
-    public EventSourcingEngine(final String redisHost, final int redisPort) {
+    public EventEngine(final String redisHost, final int redisPort) {
         this(redisHost, redisPort, Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
     }
 
-    public EventSourcingEngine(final String redisHost, final int redisPort, final int threads) {
+    public EventEngine(final String redisHost, final int redisPort, final int threads) {
         this(redisHost, redisPort, Executors.newScheduledThreadPool(threads));
     }
 
-    public EventSourcingEngine(final String redisHost, final int redisPort,
-                               final ScheduledExecutorService executorService) {
+    public EventEngine(final String redisHost, final int redisPort,
+                       final ScheduledExecutorService executorService) {
         Config redissonConfig = new Config();
         redissonConfig.useSingleServer()
                 .setAddress(String.format("redis://%s:%s", redisHost, redisPort));
@@ -58,39 +64,38 @@ public class EventSourcingEngine {
     public void enableHandler(final String stream, final long messagePointer, final EventHandler eventHandler,
                               final int frequencyInSec, final boolean force) {
 
-        final Future<?> previouslyConfigured = enabled.get(eventHandler.getName());
-        if (previouslyConfigured != null) {
-            if (!force) {
-                throw new IllegalStateException(String.format(
-                        "Handler %s already registered", eventHandler.getName()));
-            }
-            previouslyConfigured.cancel(true);
+        if (!force) {
+            throw new IllegalStateException(String.format(
+                    "Handler %s already registered", eventHandler.getName()));
         }
+        disableHandler(eventHandler);
 
         lastReadByHandler.put(eventHandler.getName(), calculateMessageToStartFrom(messagePointer));
-
-        ScheduledFuture<?> future = executorService.scheduleWithFixedDelay(() ->
-        {
+        final ScheduledFuture<?> future = executorService.scheduleWithFixedDelay(() -> {
             final RStream<String, String> rStream = redissonClient.getStream(stream);
             rStream.read(
                     StreamReadArgs.greaterThan(lastReadByHandler.get(eventHandler.getName()))
                             .count(Integer.MAX_VALUE)
                             .timeout(Duration.ZERO)
             ).forEach((streamMessageId, data) -> {
-                eventHandler.handle(new Event(eventHandler.getEventType(), data));
-                lastReadByHandler.put(eventHandler.getName(), streamMessageId);
+                final Event event = Event.builder().data(data).build();
+                try {
+                    eventHandler.handle(event);
+                    lastReadByHandler.put(eventHandler.getName(), streamMessageId);
+                } catch (Exception e) {
+                    log.error(String.format("Problem with accepting an event: %s", event), e);
+                }
             });
-        }, frequencyInSec, frequencyInSec, TimeUnit.SECONDS);
+        }, 0, frequencyInSec, TimeUnit.SECONDS);
         enabled.put(eventHandler.getName(), future);
     }
 
-    public EventProducer registerProducer(final String stream) {
-        final RStream<String, String> rStream = redissonClient.getStream(stream);
-        return event -> {
-            final HashMap<String, String> data = new HashMap<>(event.getData());
-            data.put("eventType", event.getType());
-            return rStream.add(StreamAddArgs.entries(data)).getId0();
-        };
+    public void disableHandler(final EventHandler eventHandler) {
+        Optional.ofNullable(enabled.remove(eventHandler.getName())).ifPresent(future -> future.cancel(true));
+    }
+
+    public EventProducer registerProducer(final String id, final String type, final String stream) {
+        return new StreamEventProducer(id, type, redissonClient.getStream(stream));
     }
 
     private static StreamMessageId calculateMessageToStartFrom(long messagePointer) {

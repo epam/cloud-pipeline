@@ -14,39 +14,42 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.eventsourcing;
+package com.epam.pipeline.eventsourcing.acl;
 
+import com.epam.pipeline.eventsourcing.Event;
+import com.epam.pipeline.eventsourcing.EventHandler;
+import com.epam.pipeline.eventsourcing.EventType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
+@Slf4j
 @Component
 public class ACLUpdateEventHandler implements EventHandler {
 
-    public static final String HANDLER_NAME = "ACLUpdate";
     @Autowired
     AclCache aclCache;
 
     @Override
     public String getName() {
-        return HANDLER_NAME;
+        return ACLUpdateEventHandler.class.getSimpleName();
     }
 
     @Override
     public String getEventType() {
-        return EventType.ACL_UPDATE.name();
+        return EventType.ACL.name();
     }
 
     @Override
-    public void handle(Event event) {
-        final ObjectIdentityImpl objectIdentity = new ObjectIdentityImpl(
-                event.getData().get("entityClass"),
-                event.getData().get("entityClass")
+    public void handle(final Event event) {
+        aclCache.evictFromCache(
+            new ObjectIdentityImpl(
+                event.getData().get("aclClass"),
+                event.getData().get("id")
+            )
         );
-        aclCache.evictFromCache(objectIdentity);
     }
 
 }

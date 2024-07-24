@@ -15,10 +15,10 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.eventsourcing.*;
+import com.epam.pipeline.eventsourcing.acl.ACLUpdateEventProducer;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.eventsourcing.EventHandler;
-import com.epam.pipeline.eventsourcing.EventSourcingEngine;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -46,22 +46,69 @@ public class EventSourcingConfiguration {
     private List<EventHandler> eventHandlers;
 
     @Bean
-    public EventSourcingEngine eventSourcingEngine() {
-        final EventSourcingEngine eventSourcingEngine = new EventSourcingEngine(redisHost, redisPort);
+    public EventEngine eventSourcingEngine() {
+        final EventEngine eventEngine = new EventEngine(redisHost, redisPort);
+
+        initEventHandlers(
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG),
+                eventEngine
+        );
+
+        // Re-initialize handlers on configuration change
+        preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
+            .subscribe(eventTopics -> initEventHandlers(eventTopics, eventEngine));
+
+        return eventEngine;
+    }
+
+    private void initEventHandlers(final Map<String, EventTopic> eventSourcingTopics,
+                                   final EventEngine eventEngine) {
         final Map<String, EventHandler> eventHandlersByType = eventHandlers.stream()
                 .collect(Collectors.toMap(EventHandler::getEventType, eventHandler -> eventHandler));
+        eventSourcingTopics.forEach((topicType, eventTopic) -> {
+            final EventHandler eventHandler = eventHandlersByType.get(topicType);
+            if (eventHandler != null) {
+                if (eventTopic.isEnabled()) {
+                    eventEngine.enableHandler(
+                            eventTopic.getStream(), Long.MAX_VALUE, eventHandler,
+                            eventTopic.getTimeout(), true
+                    );
+                } else {
+                    eventEngine.disableHandler(eventHandler);
+                }
+            }
+        });
+    }
+
+    @Bean
+    public ACLUpdateEventProducer aclEventSourcingProducer(final EventEngine eventEngine) {
+        final ACLUpdateEventProducer aclUpdateEventProducer = new ACLUpdateEventProducer();
+
         preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-            .subscribe(eventSourcingTopics ->
-                eventSourcingTopics.forEach(eventSourcingTopic -> {
-                    final EventHandler eventHandler = eventHandlersByType.get(eventSourcingTopic.getEventType());
-                    if (eventHandler != null) {
-                        eventSourcingEngine.enableHandler(
-                                eventSourcingTopic.getName(), 0, eventHandler,
-                                eventSourcingTopic.getTimeout(), true
-                        );
-                    }
-                })
-            );
-        return eventSourcingEngine;
+                .subscribe(eventTopics -> reconfigureACLEventProducer(eventEngine, aclUpdateEventProducer));
+
+        reconfigureACLEventProducer(eventEngine, aclUpdateEventProducer);
+
+        return aclUpdateEventProducer;
+    }
+
+    private void reconfigureACLEventProducer(final EventEngine eventEngine,
+                                             final ACLUpdateEventProducer aclEventProducer) {
+
+        final EventTopic aclTopic = preferenceManager
+                .getPreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
+                .get(aclEventProducer.getEventType());
+
+        if (aclTopic != null) {
+            if (aclTopic.isEnabled()) {
+                aclEventProducer.init(
+                    eventEngine.registerProducer(
+                        aclEventProducer.getName(), aclEventProducer.getEventType(), aclTopic.getStream()
+                    )
+                );
+            } else {
+                aclEventProducer.init(null);
+            }
+        }
     }
 }
