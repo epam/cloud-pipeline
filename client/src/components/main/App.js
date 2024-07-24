@@ -21,6 +21,7 @@ import {observer, Provider, inject} from 'mobx-react';
 import {observable} from 'mobx';
 import styles from './App.css';
 import Navigation from './navigation/Navigation';
+import RunModal from './RunModal';
 import NotificationCenter from './notification/NotificationCenter';
 import searchStyles from '../search/search.css';
 import {SearchDialog} from '../search';
@@ -138,6 +139,7 @@ export default class App extends Component {
             disableEmailNotifications={activeTabPath === Pages.notifications}
             router={this.props.router}
           />
+          <RunModal />
         </div>
       </LocaleProvider>
     );

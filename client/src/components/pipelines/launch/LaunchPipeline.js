@@ -86,7 +86,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     runPayload: null,
     showMetadataBrowser: false,
     currentProjectId: null,
-    currentMetadataEntity: null
+    currentMetadataEntity: null,
+    pending: false
   };
 
   @observable allowedInstanceTypes;
@@ -346,20 +347,24 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
   };
 
   launch = async (payload, hostedApplicationConfiguration, skipCheck) => {
-    payload.configurationName = this.currentConfiguration
-      ? this.currentConfiguration.name
-      : this.configurationName;
-    if (await run(this)(
-      payload,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      hostedApplicationConfiguration,
-      skipCheck
-    )) {
-      SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-    }
+    this.setState({pending: true}, async () => {
+      payload.configurationName = this.currentConfiguration
+        ? this.currentConfiguration.name
+        : this.configurationName;
+      const runResolved = await run(this)(
+        payload,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        hostedApplicationConfiguration,
+        skipCheck
+      );
+      this.setState({pending: false});
+      if (runResolved) {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      }
+    });
   };
 
   showMetadataBrowser = () => {
@@ -679,6 +684,7 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
         }
       >
         <LaunchPipelineForm
+          pending={this.state.pending}
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           editConfigurationMode={false}
           currentConfigurationName={

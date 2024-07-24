@@ -23,7 +23,6 @@ import {
   Button,
   Icon,
   message,
-  Modal,
   Row,
   Select,
   Tooltip
@@ -72,6 +71,8 @@ import {
   getLimitMountsParameterValue,
   storageMatchesIdentifiers
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
+import RunModal from '../../main/RunModal';
+import checkToolVersionSizeErrors from '../utilities/check-tool-version-size-errors';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -422,9 +423,17 @@ function runFn (
       const ref = (element) => {
         component = element;
       };
-      Modal.confirm({
+      const hide = message.loading('Checking tool size...', 0);
+      const sizeErrors = await checkToolVersionSizeErrors(
+        payload.dockerImage,
+        stores.preferences,
+        stores.dockerRegistries
+      );
+      hide();
+      RunModal.open({
         title: null,
         width: '50%',
+        okDisabled: sizeErrors.hard,
         content: (
           <RunSpotConfirmationWithPrice
             runInfo={{
@@ -436,6 +445,7 @@ function runFn (
             }}
             ref={ref}
             warning={warning}
+            versionSizeErrors={sizeErrors}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
             isSpot={payload.isSpot}
@@ -467,6 +477,7 @@ function runFn (
         style: {
           wordWrap: 'break-word'
         },
+        closable: false,
         okText: 'Launch',
         onOk: async function () {
           if (component) {
@@ -571,6 +582,10 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
+    versionSizeErrors: PropTypes.shape({
+      soft: PropTypes.bool,
+      hard: PropTypes.bool
+    }),
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
@@ -676,7 +691,7 @@ export class RunConfirmation extends React.Component {
       .length > 0;
   }
 
-  getStoragesByIdentifiersString(identifiersString) {
+  getStoragesByIdentifiersString (identifiersString) {
     if (/^none$/i.test(identifiersString)) {
       return [];
     }
@@ -854,8 +869,29 @@ export class RunConfirmation extends React.Component {
   };
 
   render () {
+    const {versionSizeErrors} = this.props;
+    const {soft, hard} = versionSizeErrors || {};
     return (
       <div>
+        {!hard && soft ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="warning"
+            type="warning"
+            showIcon
+            // eslint-disable-next-line max-len
+            message="Сontainer size is too large and may lead to unpredictable run behavior."
+          />
+        ) : null}
+        {hard ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="error"
+            type="error"
+            showIcon
+            message="Container size exceeds limit."
+          />
+        ) : null}
         {
           this.props.warning &&
           <Alert
@@ -1183,21 +1219,35 @@ export class RunConfirmation extends React.Component {
   }
 
   componentDidMount () {
-    this.updateState(this.props);
+    this.updateState();
   }
 
-  updateState = (props) => {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.limitMounts !== this.props.limitMounts
+    ) {
+      this.updateState();
+    }
+  }
+
+  updateState = () => {
     this.setState({
-      isSpot: props.isSpot,
-      instanceType: props.instanceType,
-      limitMounts: props.limitMounts
+      isSpot: this.props.isSpot,
+      instanceType: this.props.instanceType,
+      limitMounts: this.props.limitMounts
     });
   };
 }
 
 @observer
-export class RunSpotConfirmationWithPrice extends React.Component {
+class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
+    versionSizeErrors: PropTypes.shape({
+      soft: PropTypes.bool,
+      hard: PropTypes.bool
+    }),
     warning: PropTypes.string,
     isSpot: PropTypes.bool,
     isCluster: PropTypes.bool,
@@ -1367,6 +1417,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
+            versionSizeErrors={this.props.versionSizeErrors}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
             isCluster={this.props.isCluster}
@@ -1406,8 +1457,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
               this._estimatedPriceType.pending
                 ? <Row>Estimated price: <Icon type="loading" /></Row>
                 : <Row><JobEstimatedPriceInfo>Estimated price: <b>{
-                (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
-                  .toFixed(2)
+                  (Math.ceil(this._estimatedPriceType.value.pricePerHour * 100.0) / 100.0 * (this.props.nodeCount + 1))
+                    .toFixed(2)
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
@@ -1422,6 +1473,23 @@ export class RunSpotConfirmationWithPrice extends React.Component {
   }
 
   componentDidMount () {
+    this.updateFromProps();
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (
+      prevProps.runInfo !== this.props.runInfo ||
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.hddSize !== this.props.hddSize ||
+      prevProps.limitMounts !== this.props.limitMounts ||
+      prevProps.parameters !== this.props.parameters
+    ) {
+      this.updateFromProps();
+    }
+  }
+
+  updateFromProps = () => {
     this.setState({
       runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,

@@ -55,6 +55,14 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
     return false;
   }
 
+  @computed
+  get commitCheckPassed () {
+    if (this._commitRunForm) {
+      return this._commitRunForm.commitCheckPassed;
+    }
+    return false;
+  }
+
   handleSubmit = async (e) => {
     e.preventDefault();
     if (this._commitRunForm) {
@@ -87,14 +95,17 @@ export default class CommitRunDialog extends localization.LocalizedReactComponen
         { this.registries.length && <Button
           id="commit-pipeline-run-form-commit-button"
           type="primary" htmlType="submit"
-          disabled={!this.toolValid || !this.layersCheckPassed}
+          disabled={
+            !this.toolValid ||
+            !this.layersCheckPassed ||
+            !this.commitCheckPassed
+          }
           onClick={this.handleSubmit}>COMMIT</Button> }
       </Row>
     );
     const onClose = () => {
       this._commitRunForm && this._commitRunForm.reset();
     };
-
     return (
       <Modal
         width="50%"
