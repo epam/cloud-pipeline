@@ -138,7 +138,10 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
     @Override
     public void closeAll() {
-        $(xpath(".//button[.='APPLY']")).click();
+        SelenideElement applyButton = $(xpath(".//button[.='APPLY']"));
+        if(applyButton.isEnabled()) {
+            applyButton.click();
+        }
         clickOnInfoTabIfItIsVisible();
         parentAO.closeAll();
     }
