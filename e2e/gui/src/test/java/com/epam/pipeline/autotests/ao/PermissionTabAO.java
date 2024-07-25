@@ -27,8 +27,10 @@ import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
+import static org.openqa.selenium.By.xpath;
 
 public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO> {
     private final ClosableAO parentAO;
@@ -138,6 +140,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     @Override
     public void closeAll() {
         clickOnInfoTabIfItIsVisible();
+        $(By.xpath(".//button[.='APPLY']")).click();
         parentAO.closeAll();
     }
 
@@ -197,6 +200,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         @Override
         public void closeAll() {
+            $(xpath(".//button[.='APPLY']")).click();
             parentAO.closeAll();
         }
     }
