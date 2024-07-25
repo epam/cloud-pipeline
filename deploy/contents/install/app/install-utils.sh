@@ -738,7 +738,7 @@ function parse_options {
                         "$CP_CLOUD_REGION_ID"
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_CLOUD_INSTANCE_TYPE" \
-                        "$CP_CLOUD_INSTANCE_TYPE"                
+                        "$CP_CLOUD_INSTANCE_TYPE"
 
      # Once all config files are loaded - apply command line parameters to override config files values
     for exp_env_option in "${EXPLICIT_ENV_OPTIONS[@]}"; do
