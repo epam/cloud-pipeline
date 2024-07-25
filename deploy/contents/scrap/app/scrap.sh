@@ -209,7 +209,7 @@ get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "${_services_file}
 write_scrap_result "services" "$(basename ${_services_file})" "$?" "$OUTPUT_DIR"
 
 echo_info "- Retrieving Cloud-Pipeline main configmap from server"
-_configmap_file="$OUTPUT_DIR/config.properties"
+_configmap_file="$OUTPUT_DIR/install-config"
 get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "${_configmap_file}"
 write_scrap_result "configmap" "$(basename ${_configmap_file})" "$?" "$OUTPUT_DIR"
 
@@ -231,7 +231,7 @@ if [[ "$CONFIGURATIONS_TO_STORE" =~ "tools" ]]; then
    echo_info "- Retrieving installed docker tools from server"
    _tools_dir="$OUTPUT_DIR/dockers-manifest"
    get_tools "$API_URL" "$API_TOKEN" "${_tools_dir}"
-   write_scrap_result "tools" "$(basename ${_tools_dir})" "$?" "$OUTPUT_DIR"
+   write_scrap_result "tools" "$(basename ${_tools_dir})/manifest.txt" "$?" "$OUTPUT_DIR"
 fi
 
 echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath $OUTPUT_DIR)"
