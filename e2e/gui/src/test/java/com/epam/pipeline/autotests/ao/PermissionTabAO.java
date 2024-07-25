@@ -139,7 +139,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
     @Override
     public void closeAll() {
-        clickOnInfoTabIfItIsVisible();
+//        clickOnInfoTabIfItIsVisible();
         $(By.xpath(".//button[.='APPLY']")).click();
         parentAO.closeAll();
     }
