@@ -529,11 +529,7 @@ function configure_package_manager {
                                           sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
                                     fi
                               done
-                              
 
-                              if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
-                                    rm -f /etc/yum.repos.d/epel*.repo
-                              fi
                               break
                         fi
                   done
