@@ -47,18 +47,20 @@ public final class EventEngine {
     final ConcurrentHashMap<String, StreamMessageId> lastReadByHandler;
     final ConcurrentHashMap<String, Future<?>> enabled;
 
-    public EventEngine(final String redisHost, final int redisPort) {
-        this(redisHost, redisPort, Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
-    }
-
-    public EventEngine(final String redisHost, final int redisPort, final int threads) {
-        this(redisHost, redisPort, Executors.newScheduledThreadPool(threads));
+    public EventEngine(final String redisHost, final int redisPort, final int threads,
+                       final int redissonThreads, final int redissonNettyThreads) {
+        this(redisHost, redisPort, Executors.newScheduledThreadPool(threads),
+                redissonThreads, redissonNettyThreads);
     }
 
     public EventEngine(final String redisHost, final int redisPort,
-                       final ScheduledExecutorService executorService) {
+                       final ScheduledExecutorService executorService,
+                       final int redissonThreads, final int redissonNettyThreads) {
         Config redissonConfig = new Config();
-        redissonConfig.useSingleServer()
+        redissonConfig
+                .setThreads(redissonThreads)
+                .setNettyThreads(redissonNettyThreads)
+                .useSingleServer()
                 .setAddress(String.format("redis://%s:%s", redisHost, redisPort));
 
         this.redissonClient = Redisson.create(redissonConfig);
@@ -79,22 +81,22 @@ public final class EventEngine {
      * Enables {@param eventHandler} {@link EventHandler} to receive only newly published event
      * from the {@link RStream} with name {@param stream}.
      * -
-     * {@param frequencyInSec} period in seconds for {@link ScheduledExecutorService} to run polling task
+     * {@param frequencyInMills} period in mills for {@link ScheduledExecutorService} to run polling task
      * {@param force} if set to true, this method will enable provided handler and remove another one,
      *                with the same name if already exists.
      *                if false, and handler with the same name already registered,
      *                method will throw an {@link IllegalStateException}
      * */
     public void enableHandlerFromNow(final String stream, final EventHandler eventHandler,
-                                     final int frequencyInSec, final boolean force) {
-        enableHandler(stream, Long.MAX_VALUE, eventHandler, frequencyInSec, force);
+                                     final int frequencyInMills, final boolean force) {
+        enableHandler(stream, Long.MAX_VALUE, eventHandler, frequencyInMills, force);
     }
 
     /**
      * Enables {@param eventHandler} {@link EventHandler} to receive published event,
      * starting from {@param fromEventId} from the {@link RStream} with name {@param stream}.
      * -
-     * {@param frequencyInSec} period in seconds for {@link ScheduledExecutorService} to run polling task
+     * {@param frequencyInMills} period in seconds for {@link ScheduledExecutorService} to run polling task
      * {@param force} if set to true, this method will enable provided handler and remove another one,
      *                with the same name if already exists.
      *                if false, and handler with the same name already registered,
@@ -102,7 +104,7 @@ public final class EventEngine {
      * */
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void enableHandler(final String stream, final long fromEventId,
-                              final EventHandler eventHandler, final int frequencyInSec,
+                              final EventHandler eventHandler, final int frequencyInMills,
                               final boolean force) {
 
         if (enabled.containsKey(eventHandler.getId()) && !force) {
@@ -127,7 +129,7 @@ public final class EventEngine {
                     log.error(String.format("Problem with accepting an event: %s", event), e);
                 }
             });
-        }, 0, frequencyInSec, TimeUnit.SECONDS);
+        }, 0, frequencyInMills, TimeUnit.MILLISECONDS);
         enabled.put(eventHandler.getId(), future);
     }
 

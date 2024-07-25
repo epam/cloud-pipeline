@@ -33,9 +33,18 @@ public class EventSourcingConfiguration {
     @Value("${event.sourcing.redis.port:}")
     private Integer redisPort;
 
+    @Value("${event.sourcing.scheduler.threads:2}")
+    private Integer schedulerThreads;
+
+    @Value("${event.sourcing.redisson.netty.threads:2}")
+    private Integer redissonNettyThreads;
+
+    @Value("${event.sourcing.redisson.threads:2}")
+    private Integer redissonThreads;
+
     @Bean
     public EventEngine eventSourcingEngine() {
-        return new EventEngine(redisHost, redisPort);
+        return new EventEngine(redisHost, redisPort, schedulerThreads, redissonThreads, redissonNettyThreads);
     }
 
 }
