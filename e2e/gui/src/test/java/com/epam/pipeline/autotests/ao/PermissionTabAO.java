@@ -27,7 +27,6 @@ import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.openqa.selenium.By.xpath;
@@ -71,8 +70,8 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
         }
         UserAdditionPopupAO userAdditionPopupAO = clickAddNewUser()
                 .typeInField(userName);
-        $(byXpath(String
-                .format(".//ul[contains(@class, 'ant-select-dropdown-menu') and contains(., '%s')]", userName))).click();
+        $$(byXpath(".//li[contains(@class, 'ant-select-dropdown-menu-item')]"))
+                .filter(exactText(userName)).first().click();
         return userAdditionPopupAO.ok();
     }
 
@@ -139,8 +138,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
     @Override
     public void closeAll() {
-//        clickOnInfoTabIfItIsVisible();
-        $(By.xpath(".//button[.='APPLY']")).click();
+        clickOnInfoTabIfItIsVisible();
         parentAO.closeAll();
     }
 
