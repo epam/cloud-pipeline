@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.mixins;
 
+import static com.codeborne.selenide.Condition.exist;
 import com.codeborne.selenide.WebDriverRunner;
 import com.epam.pipeline.autotests.ao.AuthenticationPageAO;
 import com.epam.pipeline.autotests.ao.NavigationMenuAO;
@@ -50,10 +51,12 @@ public interface Authorization extends Navigation {
 
     default void givePermissions(Account account, Permission... permissions) {
         Arrays.stream(permissions).forEachOrdered(p -> p.set(getUserNameByAccountLogin(account.login)));
+        $(withText("APPLY")).shouldBe(exist, enabled).click();
     }
 
     default void givePermissions(String groupName, Permission... permissions) {
         Arrays.stream(permissions).forEachOrdered(p -> p.set(groupName));
+        $(withText("APPLY")).shouldBe(exist, enabled).click();
     }
 
     default NavigationMenuAO loginAs(Account account) {
