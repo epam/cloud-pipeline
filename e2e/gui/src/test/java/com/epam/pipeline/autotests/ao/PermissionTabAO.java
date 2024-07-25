@@ -27,6 +27,7 @@ import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import org.openqa.selenium.By;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.openqa.selenium.By.xpath;
@@ -76,9 +77,12 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO validateDeleteButtonIsDisplayedOppositeTo(String name) {
-        $$(byClassName("ant-table-tbody")).find(text(name))
-                .find(tagName("button"))
-                .find(tagName("i"))
+        $(byClassName("ant-modal-body"))
+                .$$(byClassName("ant-table-tbody")).get(0)
+                .$$(By.xpath(".//tr"))
+                .filter(exactText(name)).first()
+                .$(By.xpath(".//button"))
+                .$(xpath(".//i"))
                 .shouldHave(cssClass("anticon-delete"))
                 .shouldBe(visible);
         return this;
@@ -124,9 +128,11 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
     }
 
     public PermissionTabAO delete(String usersGroup) {
-        $$(byClassName("ant-table-tbody"))
-                .find(text(usersGroup))
-                .find(tagName("button"))
+        $(byClassName("ant-modal-body"))
+                .$$(byClassName("ant-table-tbody")).get(0)
+                .$$(By.xpath(".//tr"))
+                .filter(exactText(usersGroup)).first()
+                .$(By.xpath(".//button"))
                 .click();
         return this;
     }
