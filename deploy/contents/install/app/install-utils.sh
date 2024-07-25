@@ -585,7 +585,7 @@ function is_data_is_available_in_point_in_time_configuration {
 
      while IFS="," read -r data module_file exit_code; do
      if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
-        echo $module_file
+        echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
         return 0
      fi   
      done < "$pitc_metadata_file"
@@ -594,12 +594,12 @@ function is_data_is_available_in_point_in_time_configuration {
 }
 
 function enable_services_from_point_in_time_configuration {   
-    local service_point_in_time_configuration_file=$(is_data_is_available_in_point_in_time_configuration services)
-    if [ $service_point_in_time_configuration_file ]; then
+    local point_in_time_configuration_service_file=$(is_data_is_available_in_point_in_time_configuration services)
+    if [ $point_in_time_configuration_service_file ]; then
        while read -r key; do 
          enable_service "$key"
          echo "$key=${!key}"
-       done < <(cat "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$service_point_in_time_configuration_file" | jq -r '.[]')
+       done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
     else  
        enable_all_services
     fi
@@ -698,12 +698,12 @@ function parse_options {
     fi
 
     if [ -z $CP_INSTALL_CONFIG_FILE ]; then
-        is_data_is_available_in_point_in_time_configuration install-config
-        if [ $? -eq 0 ]; then
-           print_warn "To prevent data changes in $CP_POINT_IN_TIME_CONFIGURATION_DIR/install-config it will be copied to Temp directory before processing"
-           mkdir -p ~/temp/$CP_POINT_IN_TIME_CONFIGURATION_DIR/
-           cp $CP_POINT_IN_TIME_CONFIGURATION_DIR/install-config ~/temp/$CP_POINT_IN_TIME_CONFIGURATION_DIR
-           CP_INSTALL_CONFIG_FILE="~/temp/$CP_POINT_IN_TIME_CONFIGURATION_DIR/install-config"
+        local point_in_time_configuration_install_config=$(is_data_is_available_in_point_in_time_configuration install-config)
+        if [ $point_in_time_configuration_install_config ]; then
+           print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
+           install_config_temp_dir=$(mktemp -d) 
+           cp $point_in_time_configuration_install_config $install_config_temp_dir
+           CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
         else
            print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
            export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
@@ -728,7 +728,7 @@ function parse_options {
         print_err "Unable to load config from $CP_CLOUD_CONFIG_FILE"
         return 1
     fi
-    
+
     # Add cloud platform information
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_CLOUD_PLATFORM" \
@@ -738,7 +738,7 @@ function parse_options {
                         "$CP_CLOUD_REGION_ID"
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_CLOUD_INSTANCE_TYPE" \
-                        "$CP_CLOUD_INSTANCE_TYPE"                   
+                        "$CP_CLOUD_INSTANCE_TYPE"                
 
      # Once all config files are loaded - apply command line parameters to override config files values
     for exp_env_option in "${EXPLICIT_ENV_OPTIONS[@]}"; do
