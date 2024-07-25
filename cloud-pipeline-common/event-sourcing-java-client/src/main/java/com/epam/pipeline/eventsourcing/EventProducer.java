@@ -16,9 +16,27 @@
 
 package com.epam.pipeline.eventsourcing;
 
-public interface EventHandler {
+import java.util.Map;
+
+public interface EventProducer {
+    /**
+     * Unique identifier of the producer.
+     * */
     String getId();
+
+    /**
+     * See {@link Event}
+     * */
     String getApplicationId();
+
+    /**
+     * See {@link Event}
+     * */
     String getEventType();
-    void handle(long eventId, Event event);
+
+    /**
+     * Sends {@param data} to the message bus.
+     * */
+    long put(Map<String, String> data);
+
 }

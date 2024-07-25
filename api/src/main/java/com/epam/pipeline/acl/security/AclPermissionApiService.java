@@ -23,14 +23,10 @@ import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
 import com.epam.pipeline.eventsourcing.acl.ACLUpdateEventProducer;
-import com.epam.pipeline.eventsourcing.Event;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Service public class AclPermissionApiService {
 

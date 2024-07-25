@@ -43,11 +43,13 @@ class SingleStreamEventProducerTest {
     public void producerAddsIdAndApplicationIdToTheEvent() {
         eventProducer.put(Collections.singletonMap("key", "value"));
 
-        final Map<String, String> expected = new HashMap<String, String>() {{
-            put("key", "value");
-            put(Event.APPLICATION_ID_FIELD, APP_TEST_ID);
-            put(Event.EVENT_TYPE_FIELD, EVENT_TYPE);
-        }};
+        final Map<String, String> expected = new HashMap<String, String>() {
+            {
+                put("key", "value");
+                put(Event.APPLICATION_ID_FIELD, APP_TEST_ID);
+                put(Event.EVENT_TYPE_FIELD, EVENT_TYPE);
+            }
+        };
 
         Mockito.verify(mockedStream).add(dataCapture.capture());
         assertEquals(expected, dataCapture.getValue().getEntries());

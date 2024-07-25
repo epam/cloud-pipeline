@@ -12,6 +12,7 @@ class EventEngineTest {
 
     private static final int FROM_EVENT_ID = 15;
     private static final String HANDLER_ID = "testHandler";
+    public static final String TEST = "test";
 
     final EventHandler eventHandler = new EventHandler() {
         @Override
@@ -42,7 +43,7 @@ class EventEngineTest {
 
     @Test
     public void afterEnablingHandlerItsFeatureIsStoredInInternalState() {
-        eventEngine.enableHandler("test", FROM_EVENT_ID, eventHandler, 1, true);
+        eventEngine.enableHandler(TEST, FROM_EVENT_ID, eventHandler, 1, true);
         assertTrue(eventEngine.enabled.containsKey(eventHandler.getId()));
         final StreamMessageId streamMessageId = eventEngine.lastReadByHandler.get(eventHandler.getId());
         assertNotNull(streamMessageId);
@@ -52,11 +53,11 @@ class EventEngineTest {
     @Test
     public void enablingHandleFailsIfAlreadyExistsIfNotForced() {
         assertFalse(eventEngine.enabled.containsKey(eventHandler.getId()));
-        eventEngine.enableHandler("test", FROM_EVENT_ID, eventHandler, 1, false);
+        eventEngine.enableHandler(TEST, FROM_EVENT_ID, eventHandler, 1, false);
         assertTrue(eventEngine.enabled.containsKey(eventHandler.getId()));
         assertThrows(IllegalStateException.class,
-                () -> eventEngine.enableHandler("test", FROM_EVENT_ID, eventHandler,
-                        1, false));
+            () -> eventEngine.enableHandler(TEST, FROM_EVENT_ID, eventHandler,
+                    1, false));
     }
 
     @Test
@@ -64,7 +65,7 @@ class EventEngineTest {
         assertFalse(eventEngine.enabled.containsKey(eventHandler.getId()));
         assertFalse(eventEngine.lastReadByHandler.containsKey(eventHandler.getId()));
 
-        eventEngine.enableHandler("test", FROM_EVENT_ID, eventHandler, 1, false);
+        eventEngine.enableHandler(TEST, FROM_EVENT_ID, eventHandler, 1, false);
         assertTrue(eventEngine.enabled.containsKey(eventHandler.getId()));
         assertTrue(eventEngine.lastReadByHandler.containsKey(eventHandler.getId()));
 
@@ -76,12 +77,12 @@ class EventEngineTest {
     @Test
     public void enablingHandleDoesntFailIfAlreadyExistsAndForced() {
         assertFalse(eventEngine.enabled.containsKey(eventHandler.getId()));
-        eventEngine.enableHandler("test", FROM_EVENT_ID, eventHandler, 1, false);
+        eventEngine.enableHandler(TEST, FROM_EVENT_ID, eventHandler, 1, false);
         assertTrue(eventEngine.enabled.containsKey(eventHandler.getId()));
 
         int eventFromId = FROM_EVENT_ID + 1;
 
-        eventEngine.enableHandler("test", eventFromId, eventHandler, 1, true);
+        eventEngine.enableHandler(TEST, eventFromId, eventHandler, 1, true);
         final StreamMessageId streamMessageId = eventEngine.lastReadByHandler.get(eventHandler.getId());
         assertNotNull(streamMessageId);
         assertEquals(streamMessageId.getId0(), eventFromId);

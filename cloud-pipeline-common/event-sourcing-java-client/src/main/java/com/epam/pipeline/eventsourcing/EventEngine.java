@@ -33,6 +33,11 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * EventEngine is a central object to start working with event bus.
+ * Enables possibility to publish and handle Redis Streams messages
+ * <a href="https://redis.io/docs/latest/develop/data-types/streams/">Redis Streams</a>.
+ * */
 @Slf4j
 public final class EventEngine {
 
@@ -70,11 +75,32 @@ public final class EventEngine {
         this.enabled = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Enables {@param eventHandler} {@link EventHandler} to receive only newly published event
+     * from the {@link RStream} with name {@param stream}.
+     * -
+     * {@param frequencyInSec} period in seconds for {@link ScheduledExecutorService} to run polling task
+     * {@param force} if set to true, this method will enable provided handler and remove another one,
+     *                with the same name if already exists.
+     *                if false, and handler with the same name already registered,
+     *                method will throw an {@link IllegalStateException}
+     * */
     public void enableHandlerFromNow(final String stream, final EventHandler eventHandler,
                                      final int frequencyInSec, final boolean force) {
         enableHandler(stream, Long.MAX_VALUE, eventHandler, frequencyInSec, force);
     }
 
+    /**
+     * Enables {@param eventHandler} {@link EventHandler} to receive published event,
+     * starting from {@param fromEventId} from the {@link RStream} with name {@param stream}.
+     * -
+     * {@param frequencyInSec} period in seconds for {@link ScheduledExecutorService} to run polling task
+     * {@param force} if set to true, this method will enable provided handler and remove another one,
+     *                with the same name if already exists.
+     *                if false, and handler with the same name already registered,
+     *                method will throw an {@link IllegalStateException}
+     * */
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     public void enableHandler(final String stream, final long fromEventId,
                               final EventHandler eventHandler, final int frequencyInSec,
                               final boolean force) {
@@ -105,11 +131,23 @@ public final class EventEngine {
         enabled.put(eventHandler.getId(), future);
     }
 
+    /**
+     * Removes {@param eventHandler} with id {@param eventHandlerId} from receivers of published event
+     * */
     public void disableHandler(final String eventHandlerId) {
         lastReadByHandler.remove(eventHandlerId);
         Optional.ofNullable(enabled.remove(eventHandlerId)).ifPresent(future -> future.cancel(true));
     }
 
+    /**
+     * Enables and returns {@link EventProducer} with id {@param id} to publish events
+     * to the stream with name {@param stream}.
+     * -
+     * {@param applicationId} can be used to mark event with sign of application instance
+     *                        which is publishing these events.
+     *                        Can be useful when user need to skip from handling events in the {@link EventHandler}
+     *                        from the same application.
+     * */
     public EventProducer enableProducer(final String id, final String applicationId,
                                         final String type, final String stream) {
         return new SingleStreamEventProducer(id, applicationId, type, redissonClient.getStream(stream));

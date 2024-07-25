@@ -159,7 +159,9 @@ dependencies {
 
     // Core library
     compile project(":core")
-    compile project(":cloud-pipeline-common:event-sourcing")
+
+    // Event sourcing client module to work with Redis Streams
+    compile project(":cloud-pipeline-common:event-sourcing-java-client")
 
     //Kubernetes
     compile "io.fabric8:kubernetes-client:2.2.7"

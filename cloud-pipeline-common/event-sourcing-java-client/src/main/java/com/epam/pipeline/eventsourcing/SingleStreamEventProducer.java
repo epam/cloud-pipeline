@@ -24,6 +24,11 @@ import org.redisson.api.stream.StreamAddArgs;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Class to put events to specific stream.
+ * NOTE: Objects of this class can't be created with a constructor out of the library.
+ *       Please, use {@code EventEngine.enableProducer()} to obtain it.
+ * */
 @AllArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SingleStreamEventProducer implements EventProducer {
 
@@ -37,16 +42,28 @@ public final class SingleStreamEventProducer implements EventProducer {
         return id;
     }
 
+    /**
+     * See {@link Event}
+     * */
     @Override
     public String getApplicationId() {
         return applicationId;
     }
 
+    /**
+     * See {@link Event}
+     * */
     @Override
     public String getEventType() {
         return type;
     }
 
+    /**
+     * Puts {@param data} to the {@code this.stream} as a one message.
+     * Additionally, two key-value pairs would be added to the message:
+     *   Event.APPLICATION_ID_FIELD: this.getApplicationId()
+     *   Event.EVENT_TYPE_FIELD: this.getEventType()
+     * */
     @Override
     public long put(final Map<String, String> data) {
         final Map<String, String> event = new HashMap<>(data);

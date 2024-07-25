@@ -22,6 +22,9 @@ import lombok.Value;
 
 import java.util.Map;
 
+/**
+ * Represents a message in Redis Stream.
+ * */
 @Value
 @Builder
 @ToString
@@ -30,11 +33,24 @@ public class Event {
     public static final String EVENT_TYPE_FIELD = "eventType";
     public static final String APPLICATION_ID_FIELD = "applicationId";
 
-    String applicationId;
+    /**
+     * Type of the message.
+     * f.i.: ACL
+     * */
     String type;
+
+    /**
+     * Unique identifier of the application which sent this event.
+     * */
+    String applicationId;
+
+    /**
+     * Any sort of the data to transfer.
+     * */
     Map<String, String> data;
 
-    public static Event create(final String applicationId, final String type, final Map<String, String> data) {
+    public static Event create(final String applicationId, final String type,
+                               final Map<String, String> data) {
         return Event.builder()
                 .type(type)
                 .applicationId(applicationId)

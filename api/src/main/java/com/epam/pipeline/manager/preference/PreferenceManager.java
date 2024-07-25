@@ -96,7 +96,7 @@ public class PreferenceManager {
             List<Subject> subjects = subjectMap.get(sysPref);
             if (!CollectionUtils.isEmpty(subjects)) {
                 subjects.forEach(
-                        subject -> subject.onNext(value != null ? sysPref.parse(value) : sysPref.getDefaultValue())
+                    subject -> subject.onNext(value != null ? sysPref.parse(value) : sysPref.getDefaultValue())
                 );
             }
         });

@@ -35,21 +35,21 @@ public class ACLUpdateEventProducer {
         inner = new AtomicReference<>();
     }
 
-     public void init(final EventProducer producer) {
+    public void init(final EventProducer producer) {
         this.inner.set(producer);
-     }
+    }
 
     public String getEventType() {
         return EventType.ACL.name();
     }
 
     public long put(final Long id, final AclClass aclClass) {
-      if (inner.get() != null) {
-          final Map<String, String> data = new HashMap<>();
-          data.put(ACL_CLASS_FIELD, aclClass.name());
-          data.put(ENTITY_ID_FIELD, id.toString());
-         return inner.get().put(data);
-      }
-      return -1;
+        if (inner.get() != null) {
+            final Map<String, String> data = new HashMap<>();
+            data.put(ACL_CLASS_FIELD, aclClass.name());
+            data.put(ENTITY_ID_FIELD, id.toString());
+            return inner.get().put(data);
+        }
+        return -1;
     }
 }
