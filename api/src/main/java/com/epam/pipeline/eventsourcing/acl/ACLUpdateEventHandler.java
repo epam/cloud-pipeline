@@ -19,22 +19,33 @@ package com.epam.pipeline.eventsourcing.acl;
 import com.epam.pipeline.eventsourcing.Event;
 import com.epam.pipeline.eventsourcing.EventHandler;
 import com.epam.pipeline.eventsourcing.EventType;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.AclCache;
-import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 @Slf4j
-@Component
+@AllArgsConstructor
 public class ACLUpdateEventHandler implements EventHandler {
 
-    @Autowired
-    AclCache aclCache;
+    private static final String ACL_CLASS_FIELD = "aclClass";
+    private static final String ID_FIELD = "id";
+
+    private final String id;
+    private final String applicationId;
+    private final AclCache aclCache;
 
     @Override
-    public String getName() {
-        return ACLUpdateEventHandler.class.getSimpleName();
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public String getApplicationId() {
+        return applicationId;
     }
 
     @Override
@@ -43,13 +54,49 @@ public class ACLUpdateEventHandler implements EventHandler {
     }
 
     @Override
-    public void handle(final Event event) {
+    public void handle(final long eventId, final Event event) {
+        if (!validateEvent(event)) {
+            return;
+        }
+        log.debug(String.format("Processing event '%s'", event));
         aclCache.evictFromCache(
             new ObjectIdentityImpl(
-                event.getData().get("aclClass"),
-                event.getData().get("id")
+                event.getData().get(ACL_CLASS_FIELD),
+                event.getData().get(ID_FIELD)
             )
         );
+    }
+
+    private boolean validateEvent(Event event) {
+        if (Objects.equals(applicationId, event.getApplicationId())) {
+            log.info(String.format(
+                    "Skipping event %s with the same applicationId: %s", event, event.getApplicationId())
+            );
+            return false;
+        }
+
+        if (!Objects.equals(EventType.ACL.name(), event.getType())) {
+            log.warn(
+                String.format(
+                    "Skipping event %s with wrong eventType, expected %s, got %s",
+                        event, EventType.ACL.name(), event.getType()
+                )
+            );
+            return false;
+        }
+
+        if (!MapUtils.emptyIfNull(event.getData()).containsKey(ACL_CLASS_FIELD)
+                || !MapUtils.emptyIfNull(event.getData()).containsKey(ID_FIELD)) {
+            log.warn(
+                    String.format(
+                            "Skipping ACL event %s, because it doesn't have necessary fields: '[%s, %s]'",
+                            event, ACL_CLASS_FIELD, ID_FIELD
+                    )
+            );
+            return false;
+        }
+
+        return true;
     }
 
 }

@@ -26,6 +26,28 @@ import java.util.Map;
 @Builder
 @ToString
 public class Event {
+
+    public static final String EVENT_TYPE_FIELD = "eventType";
+    public static final String APPLICATION_ID_FIELD = "applicationId";
+
+    String applicationId;
+    String type;
     Map<String, String> data;
+
+    public static Event create(final String applicationId, final String type, final Map<String, String> data) {
+        return Event.builder()
+                .type(type)
+                .applicationId(applicationId)
+                .data(data)
+                .build();
+    }
+
+    public static Event fromRawData(final Map<String, String> data) {
+        return Event.builder()
+                .type(data.remove(EVENT_TYPE_FIELD))
+                .applicationId(data.remove(APPLICATION_ID_FIELD))
+                .data(data)
+                .build();
+    }
 }
 

@@ -17,7 +17,8 @@
 package com.epam.pipeline.eventsourcing;
 
 public interface EventHandler {
-    String getName();
+    String getId();
+    String getApplicationId();
     String getEventType();
-    void handle(Event event);
+    void handle(long eventId, Event event);
 }

@@ -78,12 +78,9 @@ import java.util.Map;
         return permissionManager.loadEntityPermission(aclClass, id);
     }
 
-    private void notifyACLChange(Long id, AclClass aclClass) {
+    private void notifyACLChange(final long id, final AclClass aclClass) {
         if (aclUpdateEventProducer != null) {
-            final Map<String, String> data = new HashMap<>();
-            data.put("aclClass", aclClass.name());
-            data.put("id", id.toString());
-            aclUpdateEventProducer.put(Event.builder().data(data).build());
+            aclUpdateEventProducer.put(id, aclClass);
         }
     }
 }

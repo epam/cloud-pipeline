@@ -15,22 +15,16 @@
 
 package com.epam.pipeline.app;
 
-import com.epam.pipeline.eventsourcing.*;
-import com.epam.pipeline.eventsourcing.acl.ACLUpdateEventProducer;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.epam.pipeline.eventsourcing.EventEngine;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Configuration
 @ConditionalOnProperty(value = "event.sourcing.enabled", havingValue = "true")
+@ComponentScan(basePackages = {"com.epam.pipeline.eventsourcing"})
 public class EventSourcingConfiguration {
 
     @Value("${event.sourcing.redis.host:}")
@@ -39,76 +33,9 @@ public class EventSourcingConfiguration {
     @Value("${event.sourcing.redis.port:}")
     private Integer redisPort;
 
-    @Autowired
-    private PreferenceManager preferenceManager;
-
-    @Autowired(required = false)
-    private List<EventHandler> eventHandlers;
-
     @Bean
     public EventEngine eventSourcingEngine() {
-        final EventEngine eventEngine = new EventEngine(redisHost, redisPort);
-
-        initEventHandlers(
-                preferenceManager.getPreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG),
-                eventEngine
-        );
-
-        // Re-initialize handlers on configuration change
-        preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-            .subscribe(eventTopics -> initEventHandlers(eventTopics, eventEngine));
-
-        return eventEngine;
+        return new EventEngine(redisHost, redisPort);
     }
 
-    private void initEventHandlers(final Map<String, EventTopic> eventSourcingTopics,
-                                   final EventEngine eventEngine) {
-        final Map<String, EventHandler> eventHandlersByType = eventHandlers.stream()
-                .collect(Collectors.toMap(EventHandler::getEventType, eventHandler -> eventHandler));
-        eventSourcingTopics.forEach((topicType, eventTopic) -> {
-            final EventHandler eventHandler = eventHandlersByType.get(topicType);
-            if (eventHandler != null) {
-                if (eventTopic.isEnabled()) {
-                    eventEngine.enableHandler(
-                            eventTopic.getStream(), Long.MAX_VALUE, eventHandler,
-                            eventTopic.getTimeout(), true
-                    );
-                } else {
-                    eventEngine.disableHandler(eventHandler);
-                }
-            }
-        });
-    }
-
-    @Bean
-    public ACLUpdateEventProducer aclEventSourcingProducer(final EventEngine eventEngine) {
-        final ACLUpdateEventProducer aclUpdateEventProducer = new ACLUpdateEventProducer();
-
-        preferenceManager.getObservablePreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-                .subscribe(eventTopics -> reconfigureACLEventProducer(eventEngine, aclUpdateEventProducer));
-
-        reconfigureACLEventProducer(eventEngine, aclUpdateEventProducer);
-
-        return aclUpdateEventProducer;
-    }
-
-    private void reconfigureACLEventProducer(final EventEngine eventEngine,
-                                             final ACLUpdateEventProducer aclEventProducer) {
-
-        final EventTopic aclTopic = preferenceManager
-                .getPreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-                .get(aclEventProducer.getEventType());
-
-        if (aclTopic != null) {
-            if (aclTopic.isEnabled()) {
-                aclEventProducer.init(
-                    eventEngine.registerProducer(
-                        aclEventProducer.getName(), aclEventProducer.getEventType(), aclTopic.getStream()
-                    )
-                );
-            } else {
-                aclEventProducer.init(null);
-            }
-        }
-    }
 }

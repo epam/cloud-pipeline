@@ -16,8 +16,11 @@
 
 package com.epam.pipeline.eventsourcing;
 
+import java.util.Map;
+
 public interface EventProducer {
-    String getName();
+    String getId();
+    String getApplicationId();
     String getEventType();
-    long put(Event event);
+    long put(Map<String, String> data);
 }

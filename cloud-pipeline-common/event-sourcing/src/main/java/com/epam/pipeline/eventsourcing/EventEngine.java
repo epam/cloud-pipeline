@@ -34,12 +34,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
-public class EventEngine {
+public final class EventEngine {
 
     private final RedissonClient redissonClient;
     private final ScheduledExecutorService executorService;
-    private final ConcurrentHashMap<String, StreamMessageId> lastReadByHandler;
-    private final ConcurrentHashMap<String, Future<?>> enabled;
+
+    final ConcurrentHashMap<String, StreamMessageId> lastReadByHandler;
+    final ConcurrentHashMap<String, Future<?>> enabled;
 
     public EventEngine(final String redisHost, final int redisPort) {
         this(redisHost, redisPort, Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
@@ -61,41 +62,48 @@ public class EventEngine {
         this.enabled = new ConcurrentHashMap<>();
     }
 
-    public void enableHandler(final String stream, final long messagePointer, final EventHandler eventHandler,
-                              final int frequencyInSec, final boolean force) {
+    public void enableHandlerFromNow(final String stream, final EventHandler eventHandler,
+                                     final int frequencyInSec, final boolean force) {
+        enableHandler(stream, Long.MAX_VALUE, eventHandler, frequencyInSec, force);
+    }
 
-        if (!force) {
+    public void enableHandler(final String stream, final long fromEventId,
+                              final EventHandler eventHandler, final int frequencyInSec,
+                              final boolean force) {
+
+        if (enabled.containsKey(eventHandler.getId()) && !force) {
             throw new IllegalStateException(String.format(
-                    "Handler %s already registered", eventHandler.getName()));
+                    "Handler %s already registered", eventHandler.getId()));
         }
-        disableHandler(eventHandler);
+        disableHandler(eventHandler.getId());
 
-        lastReadByHandler.put(eventHandler.getName(), calculateMessageToStartFrom(messagePointer));
+        lastReadByHandler.put(eventHandler.getId(), calculateMessageToStartFrom(fromEventId));
         final ScheduledFuture<?> future = executorService.scheduleWithFixedDelay(() -> {
             final RStream<String, String> rStream = redissonClient.getStream(stream);
             rStream.read(
-                    StreamReadArgs.greaterThan(lastReadByHandler.get(eventHandler.getName()))
+                    StreamReadArgs.greaterThan(lastReadByHandler.get(eventHandler.getId()))
                             .count(Integer.MAX_VALUE)
                             .timeout(Duration.ZERO)
             ).forEach((streamMessageId, data) -> {
-                final Event event = Event.builder().data(data).build();
+                final Event event = Event.fromRawData(data);
                 try {
-                    eventHandler.handle(event);
-                    lastReadByHandler.put(eventHandler.getName(), streamMessageId);
+                    eventHandler.handle(streamMessageId.getId0(), event);
+                    lastReadByHandler.put(eventHandler.getId(), streamMessageId);
                 } catch (Exception e) {
                     log.error(String.format("Problem with accepting an event: %s", event), e);
                 }
             });
         }, 0, frequencyInSec, TimeUnit.SECONDS);
-        enabled.put(eventHandler.getName(), future);
+        enabled.put(eventHandler.getId(), future);
     }
 
-    public void disableHandler(final EventHandler eventHandler) {
-        Optional.ofNullable(enabled.remove(eventHandler.getName())).ifPresent(future -> future.cancel(true));
+    public void disableHandler(final String eventHandlerId) {
+        Optional.ofNullable(enabled.remove(eventHandlerId)).ifPresent(future -> future.cancel(true));
     }
 
-    public EventProducer registerProducer(final String id, final String type, final String stream) {
-        return new StreamEventProducer(id, type, redissonClient.getStream(stream));
+    public EventProducer enableProducer(final String id, final String applicationId,
+                                        final String type, final String stream) {
+        return new SingleStreamEventProducer(id, applicationId, type, redissonClient.getStream(stream));
     }
 
     private static StreamMessageId calculateMessageToStartFrom(long messagePointer) {

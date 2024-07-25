@@ -1,0 +1,68 @@
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.Jar
+
+/*
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+group 'com.epam.pipeline'
+
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: 'jacoco'
+
+sourceCompatibility = 1.8
+
+repositories { mavenCentral() }
+
+dependencies {
+    //Event sourcing
+    compile group: 'org.redisson', name: 'redisson', version: '3.33.0'
+
+    //Lombok
+    compileOnly "org.projectlombok:lombok:1.16.16"
+    testCompileOnly "org.projectlombok:lombok:1.16.16"
+
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.2.0'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-params', version: '5.2.0'
+    testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.2.0'
+    testCompile group: 'org.junit.platform', name: 'junit-platform-engine', version: '1.2.0'
+    testCompile group: 'org.mockito', name: 'mockito-junit-jupiter', version: '2.19.0'
+    testCompile group: 'org.mockito', name: 'mockito-core', version: '2.19.0'
+}
+
+test {
+    useJUnitPlatform()
+    reports {
+        html.enabled = true
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    classifier = 'sources'
+}
+
+model {
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                from components.java
+                artifact sourcesJar
+            }
+        }
+    }
+}
