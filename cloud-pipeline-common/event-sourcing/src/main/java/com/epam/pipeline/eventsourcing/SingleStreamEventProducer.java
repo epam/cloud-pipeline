@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.eventsourcing;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import org.redisson.api.RStream;
 import org.redisson.api.stream.StreamAddArgs;
@@ -23,7 +24,7 @@ import org.redisson.api.stream.StreamAddArgs;
 import java.util.HashMap;
 import java.util.Map;
 
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PACKAGE)
 public final class SingleStreamEventProducer implements EventProducer {
 
     private final String id;

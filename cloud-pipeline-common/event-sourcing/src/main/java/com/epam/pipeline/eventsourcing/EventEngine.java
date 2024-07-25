@@ -62,6 +62,14 @@ public final class EventEngine {
         this.enabled = new ConcurrentHashMap<>();
     }
 
+    public EventEngine(final RedissonClient redissonClient,
+                       final ScheduledExecutorService executorService) {
+        this.redissonClient = redissonClient;
+        this.executorService = executorService;
+        this.lastReadByHandler = new ConcurrentHashMap<>();
+        this.enabled = new ConcurrentHashMap<>();
+    }
+
     public void enableHandlerFromNow(final String stream, final EventHandler eventHandler,
                                      final int frequencyInSec, final boolean force) {
         enableHandler(stream, Long.MAX_VALUE, eventHandler, frequencyInSec, force);
@@ -98,6 +106,7 @@ public final class EventEngine {
     }
 
     public void disableHandler(final String eventHandlerId) {
+        lastReadByHandler.remove(eventHandlerId);
         Optional.ofNullable(enabled.remove(eventHandlerId)).ifPresent(future -> future.cancel(true));
     }
 
