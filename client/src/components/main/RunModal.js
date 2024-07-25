@@ -108,6 +108,7 @@ export default class RunModal extends Component {
               onClick={this.handleOk}
               disabled={this.state.loading || okDisabled}
               loading={this.state.loading}
+              type="primary"
             >
               {okText || 'OK'}
             </Button>
