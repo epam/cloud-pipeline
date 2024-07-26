@@ -479,8 +479,7 @@ function runFn (
           />
         ),
         style: {
-          wordWrap: 'break-word',
-          paddingTop: 8
+          wordWrap: 'break-word'
         },
         closable: false,
         okText: 'Launch',

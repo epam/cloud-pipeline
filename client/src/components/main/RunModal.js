@@ -15,7 +15,7 @@
  */
 
 import React, {Component} from 'react';
-import {Modal, Button} from 'antd';
+import {Modal, Button, Icon} from 'antd';
 
 let openCallback;
 
@@ -79,20 +79,37 @@ export default class RunModal extends Component {
       title,
       width,
       closable = true,
-      okDisabled
+      maskClosable = false,
+      okDisabled,
+      okButtonProps = {},
+      cancelButtonProps = {},
+      bodyStyle
     } = opts || {};
     return (
       <Modal
+        className="ant-confirm ant-confirm-confirm"
         visible={visible}
         onCancel={this.handleCancel}
         okText={okText}
-        title={title}
+        title={false}
         width={width}
-        closabe={closable}
+        closable={closable}
+        maskClosable={maskClosable}
         onOk={this.handleOk}
         confirmLoading={loading}
-        footer={(
+        bodyStyle={bodyStyle}
+        footer={false}
+      >
+        <div className="ant-confirm-body-wrapper">
+          <div className="ant-confirm-body">
+            <Icon type="question-circle" />
+            <span className="ant-confirm-title">{title}</span>
+            <div className="ant-confirm-content" style={style}>
+              {content}
+            </div>
+          </div>
           <div
+            className="ant-confirm-btns"
             style={{
               display: 'flex',
               flexDirection: 'row',
@@ -100,23 +117,20 @@ export default class RunModal extends Component {
               justifyContent: 'flex-end'
             }}
           >
-            <Button onClick={this.handleCancel}>
+            <Button size="large" onClick={this.handleCancel} {...(cancelButtonProps || {})}>
               Cancel
             </Button>
             <Button
-              style={{marginLeft: 5}}
+              size="large"
               onClick={this.handleOk}
               disabled={this.state.loading || okDisabled}
               loading={this.state.loading}
               type="primary"
+              {...okButtonProps || {}}
             >
               {okText || 'OK'}
             </Button>
           </div>
-        )}
-      >
-        <div style={style}>
-          {content}
         </div>
       </Modal>
     );
