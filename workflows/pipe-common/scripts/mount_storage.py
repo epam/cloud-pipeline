@@ -313,17 +313,24 @@ class MountStorageTask:
                     initialized_mounters.append(mounter)
 
             initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
+            failed_storages = []
             for mnt in initialized_mounters:
                 try:
                     mnt.mount(mount_root, self.task_name)
-                except RuntimeError as e:
-                    Logger.warn(
-                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e),
-                        task_name=self.task_name)
+                except RuntimeError:
+                    Logger.warn('Data storage {} mounting has failed: {}'
+                                .format(mnt.storage.name, traceback.format_exc()),
+                                task_name=self.task_name)
+                    failed_storages.append(mnt.storage.name)
+            if failed_storages:
+                Logger.fail('The following data storages have not been mounted: {}'.format(', '.join(failed_storages)),
+                            task_name=self.task_name)
+                exit(1)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
-        except Exception as e:
-            Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
-            traceback.print_exc()
+        except Exception:
+            Logger.fail('Unhandled error during mount task: {}.'.format(traceback.format_exc()),
+                        task_name=self.task_name)
+            exit(1)
 
     def _load_mount_options_from_environ(self):
         result = {}
@@ -433,6 +440,7 @@ class StorageMounter:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
             Logger.warn('--> Failed mounting {path} to {mount}'.format(**params), task_name=task_name)
+            raise RuntimeError('Failed mounting {path} to {mount}'.format(**params))
 
     def get_path(self):
         return self.storage.path.replace(self.scheme(), '', 1)
