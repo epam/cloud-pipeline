@@ -506,7 +506,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private boolean shouldPerformActionOnNetworkConsumingRun(final PipelineRun run, final int actionTimeout) {
-            return Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
+            return  actionTimeout > 0 && Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
                     run.getLastNetworkConsumptionNotificationTime()
                             .isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
         }
