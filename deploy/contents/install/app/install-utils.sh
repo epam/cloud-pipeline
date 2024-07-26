@@ -578,26 +578,28 @@ function enable_all_services {
 }
 
 function is_data_is_available_in_point_in_time_configuration {
-  local point_in_time_configuration_dir="${1}"
-  local point_in_time_configuration_module="${2}"
-  local pitc_metadata_file="$point_in_time_configuration_dir/_pitc.csv"
+  local point_in_time_configuration_module="${1}"
 
-  while IFS="," read -r data module_file exit_code; do
-  if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$module_file" ] && [ $exit_code -eq 0 ]; then
-     echo $module_file
-     return 0
+  if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
+     local pitc_metadata_file="$CP_POINT_IN_TIME_CONFIGURATION_DIR/_pitc.csv"
+
+     while IFS="," read -r data module_file exit_code; do
+     if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
+        echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
+        return 0
+     fi   
+     done < "$pitc_metadata_file"
   fi   
-  done < "$pitc_metadata_file"
   return 1
 }
 
 function enable_services_from_point_in_time_configuration {   
-    local service_point_in_time_configuration=$(is_data_is_available_in_point_in_time_configuration $CP_POINT_IN_TIME_CONFIGURATION_DIR services)
-    if [ $? -eq 0 ]; then
+    local point_in_time_configuration_service_file=$(is_data_is_available_in_point_in_time_configuration services)
+    if [ $point_in_time_configuration_service_file ]; then
        while read -r key; do 
          enable_service "$key"
          echo "$key=${!key}"
-       done < <(cat "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$service_point_in_time_configuration" | jq -r '.[]')
+       done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
     else  
        enable_all_services
     fi
@@ -696,9 +698,17 @@ function parse_options {
     fi
 
     if [ -z $CP_INSTALL_CONFIG_FILE ]; then
-        print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
-        export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
-        mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
+        local point_in_time_configuration_install_config=$(is_data_is_available_in_point_in_time_configuration configmap)
+        if [ $point_in_time_configuration_install_config ]; then
+           print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
+           install_config_temp_dir=$(mktemp -d) 
+           cp $point_in_time_configuration_install_config $install_config_temp_dir
+           CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
+        else
+           print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
+           export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
+           mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
+        fi   
     fi
     load_install_config "$CP_INSTALL_CONFIG_FILE"
     if [ $? -ne 0 ]; then

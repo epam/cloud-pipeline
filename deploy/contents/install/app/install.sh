@@ -683,11 +683,14 @@ if is_service_requested cp-docker-registry; then
         fi
 
         print_info "-> Push base tools images into the docker registry"
-        if [ -z $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then 
-           CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
+        
+        local point_in_time_configuration_docker_manifest_file=$(is_data_is_available_in_point_in_time_configuration tools)
+        if [ $point_in_time_configuration_docker_manifest_file ]; then  
+              CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$point_in_time_configuration_docker_manifest_file"} 
         else 
-           CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$CP_POINT_IN_TIME_CONFIGURATION_DIR/dockers-manifest"}
-        fi 
+              CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
+        fi
+  
 
         if [ $CP_DOCKER_INSTALLED -eq 0 ] && [ -d "$CP_DOCKER_MANIFEST_PATH" ]; then
             docker_push_manifest "$(realpath $CP_DOCKER_MANIFEST_PATH)" "$CP_DOCKER_REGISTRY_ID"
