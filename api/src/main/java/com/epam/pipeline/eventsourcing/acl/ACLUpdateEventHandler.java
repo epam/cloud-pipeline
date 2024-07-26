@@ -31,8 +31,8 @@ import java.util.Objects;
 @AllArgsConstructor
 public class ACLUpdateEventHandler implements EventHandler {
 
-    private static final String ACL_CLASS_FIELD = "aclClass";
-    private static final String ID_FIELD = "id";
+    protected static final String ACL_CLASS_FIELD = "aclClass";
+    protected static final String ID_FIELD = "id";
 
     private final String id;
     private final String applicationId;
@@ -67,7 +67,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         );
     }
 
-    private boolean validateEvent(Event event) {
+    boolean validateEvent(Event event) {
         if (Objects.equals(applicationId, event.getApplicationId())) {
             log.info(String.format(
                     "Skipping event %s with the same applicationId: %s", event, event.getApplicationId())

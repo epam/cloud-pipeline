@@ -18,7 +18,6 @@ package com.epam.pipeline.eventsourcing.acl;
 
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.eventsourcing.EventProducer;
-import com.epam.pipeline.eventsourcing.EventType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ACLUpdateEventProducer {
 
-    public static final String ACL_CLASS_FIELD = "aclClass";
-    public static final String ENTITY_ID_FIELD = "id";
+    protected static final String ACL_CLASS_FIELD = "aclClass";
+    protected static final String ENTITY_ID_FIELD = "id";
 
     private final AtomicReference<EventProducer> inner;
 
@@ -37,10 +36,6 @@ public class ACLUpdateEventProducer {
 
     public void init(final EventProducer producer) {
         this.inner.set(producer);
-    }
-
-    public String getEventType() {
-        return EventType.ACL.name();
     }
 
     public long put(final Long id, final AclClass aclClass) {

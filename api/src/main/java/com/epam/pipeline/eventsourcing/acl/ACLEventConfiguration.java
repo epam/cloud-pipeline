@@ -17,6 +17,7 @@ package com.epam.pipeline.eventsourcing.acl;
 
 import com.epam.pipeline.eventsourcing.EventEngine;
 import com.epam.pipeline.eventsourcing.EventTopic;
+import com.epam.pipeline.eventsourcing.EventType;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,14 +65,14 @@ public class ACLEventConfiguration {
 
         final EventTopic aclTopic = preferenceManager
                 .getPreference(SystemPreferences.SYSTEM_EVENT_SOURCING_CONFIG)
-                .get(aclEventProducer.getEventType());
+                .get(EventType.ACL.name());
 
         if (aclTopic != null) {
             if (aclTopic.isEnabled()) {
                 aclEventProducer.init(
                     eventEngine.enableProducer(
                             String.format("%s:%s", applicationId, ACLUpdateEventProducer.class.getSimpleName()),
-                            applicationId, aclEventProducer.getEventType(), aclTopic.getStream()
+                            applicationId, EventType.ACL.name(), aclTopic.getStream()
                     )
                 );
             } else {
