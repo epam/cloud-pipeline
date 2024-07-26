@@ -605,6 +605,22 @@ function enable_services_from_point_in_time_configuration {
     fi
 }
 
+function set_preferences_from_point_in_time_configuration {
+  local point_in_time_configuration_preference_file=$(is_data_is_available_in_point_in_time_configuration system_preference)
+  
+  if [ $point_in_time_configuration_preference_file ]; then
+
+     local preferences_file_with_values=$(cat "$point_in_time_configuration_preference_file" | jq -c '[.[] | select(has("value"))]')
+     
+     payload=$(echo "$preferences_file_with_values" | jq -r '.[] | "\(.name) \(.value) \(.visible)"')
+     while IFS= read -r pref_name pref_value pref_visible; do
+       api_set_preference $pref_name $pref_value $pref_visible
+     done <<< "$payload"
+  else
+     exit 1
+  fi       
+}
+
 function parse_options {
     local services_count=0
     POSITIONAL=()
