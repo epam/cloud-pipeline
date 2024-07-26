@@ -2205,11 +2205,18 @@ echo "------"
 ######################################################
 MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
 DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE=${CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE:-true}
 
 echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
 rm -Rf $DATA_STORAGE_MOUNT_ROOT
 create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
+if ! mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME; then
+    if check_cp_cap CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE; then
+        echo "--> It is requested to continue running on storage mount failure"
+    else
+        exit_init 1
+    fi
+fi
 
 echo "------"
 echo
