@@ -698,7 +698,7 @@ function parse_options {
     fi
 
     if [ -z $CP_INSTALL_CONFIG_FILE ]; then
-        local point_in_time_configuration_install_config=$(is_data_is_available_in_point_in_time_configuration install-config)
+        local point_in_time_configuration_install_config=$(is_data_is_available_in_point_in_time_configuration configmap)
         if [ $point_in_time_configuration_install_config ]; then
            print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
            install_config_temp_dir=$(mktemp -d) 
