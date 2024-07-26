@@ -66,7 +66,8 @@ export default class RunModal extends Component {
       onCancel();
     }
     this.setState({
-      visible: false
+      visible: false,
+      opts: undefined
     });
   };
 
