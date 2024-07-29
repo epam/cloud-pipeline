@@ -17,7 +17,7 @@ module "cp_rds" {
   version = "6.4.0"
 
 
-  identifier = "${local.resource_name_prefix}-rds"
+  identifier = "${local.rds_resource_name_prefix}-rds"
 
   create_db_instance        = var.deploy_rds
   create_db_option_group    = false
@@ -54,7 +54,7 @@ module "cp_rds" {
 }
 
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "${local.resource_name_prefix}-db-subnet-group"
+  name       = "${local.rds_resource_name_prefix}-db-subnet-group"
   subnet_ids = var.subnet_ids
 
   tags = local.tags
@@ -69,7 +69,7 @@ resource "random_password" "rds_default_db_password" {
 
 resource "aws_secretsmanager_secret" "rds_root_secret" {
   count                   = var.deploy_rds ? 1 : 0
-  name                    = "rds/${local.resource_name_prefix}_${var.rds_default_db_name}_db/${var.rds_root_username}"
+  name                    = "rds/${local.rds_resource_name_prefix}_${var.rds_default_db_name}_db/${var.rds_root_username}"
   recovery_window_in_days = 0 // Overriding the default recovery window of 30 days
 }
 
@@ -92,7 +92,7 @@ resource "random_password" "this" {
 
 resource "aws_secretsmanager_secret" "this" {
   for_each                = { for db in local.cloud_pipeline_db_configuration : db.username => db if db.password == null }
-  name                    = "rds/${local.resource_name_prefix}_${each.value.database}_db/${each.value.username}"
+  name                    = "rds/${local.rds_resource_name_prefix}_${each.value.database}_db/${each.value.username}"
   description             = "Password for ${each.value.username} to RDS Database ${each.value.database}"
   recovery_window_in_days = 0
 }
