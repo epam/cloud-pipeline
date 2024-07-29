@@ -583,12 +583,14 @@ function is_data_is_available_in_point_in_time_configuration {
   if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
      local pitc_metadata_file="$CP_POINT_IN_TIME_CONFIGURATION_DIR/_pitc.csv"
 
-     while IFS="," read -r data module_file exit_code; do
-     if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
-        echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
-        return 0
+     if [ -z $CP_POINT_IN_TIME_CONFIGURATION_MODULES ] || [[ $CP_POINT_IN_TIME_CONFIGURATION_MODULES == *"$point_in_time_configuration_module"* ]]; then 
+        while IFS="," read -r data module_file exit_code; do
+        if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
+           echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
+           return 0
+        fi   
+        done < "$pitc_metadata_file"
      fi   
-     done < "$pitc_metadata_file"
   fi   
   return 1
 }
@@ -677,7 +679,12 @@ function parse_options {
         shift # past value
         ;;
         -pc|--point-in-time-configuration)
-        CP_POINT_IN_TIME_CONFIGURATION_DIR="$2"
+        export CP_POINT_IN_TIME_CONFIGURATION_DIR="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -pcm|--point-in-time-configuration-modules)
+        export CP_POINT_IN_TIME_CONFIGURATION_MODULES="$2"
         shift # past argument
         shift # past value
         ;;
