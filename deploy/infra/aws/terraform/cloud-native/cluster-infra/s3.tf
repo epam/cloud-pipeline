@@ -15,7 +15,7 @@
 module "s3_etc" {
   source                   = "terraform-aws-modules/s3-bucket/aws"
   version                  = "3.15.1"
-  bucket                   = "${local.resource_name_prefix}-etc"
+  bucket                   = lower(replace("${local.resource_name_prefix}-etc", "_", "-"))
   control_object_ownership = true
   object_ownership         = "BucketOwnerEnforced"
   force_destroy            = true
@@ -42,7 +42,7 @@ module "s3_etc" {
 module "s3_docker" {
   source                   = "terraform-aws-modules/s3-bucket/aws"
   version                  = "3.15.1"
-  bucket                   = "${local.resource_name_prefix}-docker"
+  bucket                   = lower(replace("${local.resource_name_prefix}-docker", "_", "-"))
   control_object_ownership = true
   object_ownership         = "BucketOwnerEnforced"
   force_destroy            = true

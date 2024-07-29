@@ -24,8 +24,8 @@ mkdir -p $_TMP_ASSETS_LOCATION/common/pki $_TMP_ASSETS_LOCATION/api/pki $_TMP_AS
  
 # Move your certificates to common/pki directory, for example using command:
 if [ -f $_SSL_CERT ] && [ -f $_SSL_KEY ]; then
-   cp $_SSL_CERT $_TMP_ASSETS_LOCATION/common/pki/ca-public-cert.pem
-   cp $_SSL_KEY $_TMP_ASSETS_LOCATION/common/pki/ca-private-key.pem
+   cp $_SSL_CERT $_TMP_ASSETS_LOCATION/common/pki/common-ssl-public-cert.pem
+   cp $_SSL_KEY $_TMP_ASSETS_LOCATION/common/pki/common-ssl-private-key.pem
    else
    echo "Certificate and key not provided nothing will be copied to common/pki"
 fi

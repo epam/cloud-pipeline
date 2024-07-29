@@ -26,6 +26,8 @@ locals {
   }
 
   resource_name_prefix = "${var.deployment_name}-${var.deployment_env}"
+  rds_resource_name_prefix = lower(replace("${var.deployment_name}-${var.deployment_env}", "_", "-"))
+
   cluster_name         = "${local.resource_name_prefix}-eks-cluster"
   efs_name             = "${local.resource_name_prefix}-efs-file-system"
 

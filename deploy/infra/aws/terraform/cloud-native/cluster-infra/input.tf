@@ -87,6 +87,11 @@ variable "eks_system_node_group_volume_type" {
   description = "Volume type of Cloud-Pipeline system EKS node."
 }
 
+variable "eks_system_node_prepend_user_data" {
+  default     = ""
+  description = "User data that is injected into the user data script ahead of the EKS bootstrap script. Can be used to setup proxies, as an example."
+}
+
 variable "eks_additional_role_mapping" {
   type = list(object({
     iam_role_arn  = string
@@ -336,5 +341,5 @@ variable "cp_default_admin_name" {
 variable "cp_api_srv_saml_user_attr" {
   type        = string
   description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
-  default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
+  default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"
 }
