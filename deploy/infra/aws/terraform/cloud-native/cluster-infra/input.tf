@@ -341,5 +341,5 @@ variable "cp_default_admin_name" {
 variable "cp_api_srv_saml_user_attr" {
   type        = string
   description = "Option CP_API_SRV_SAML_USER_ATTRIBUTES for use with external IDP service. Default for Azure AD."
-  default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname)"
+  default     = "Email=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress,FirstName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname,LastName=http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname"
 }

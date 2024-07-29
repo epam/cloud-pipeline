@@ -656,21 +656,21 @@ Resources:
                   -password pass:changeit
                  # Symlink SSL to API
                   mkdir -p /opt/api/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/api/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/api/pki/ssl-private-key.pem
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/api/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/api/pki/ssl-private-key.pem
                   ln -s /opt/common/pki/common-ssl.p12 /opt/api/pki/cp-api-srv-ssl.p12
                  # Symlink SSL to Docker Registry
                   mkdir -p /opt/docker-registry/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/docker-registry/pki/docker-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/docker-registry/pki/docker-private-key.pem
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/docker-registry/pki/docker-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/docker-registry/pki/docker-private-key.pem
                  # Symlink SSL to EDGE
                   mkdir -p /opt/edge/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/edge/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/edge/pki/ssl-private-key.pem
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/edge/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/edge/pki/ssl-private-key.pem
                  # Symlink SSL to Git
                   mkdir -p /opt/gitlab/pki
-                  ln -s /opt/common/pki/ca-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
-                  ln -s /opt/common/pki/ca-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
+                  ln -s /opt/common/pki/common-ssl-public-cert.pem /opt/gitlab/pki/ssl-public-cert.pem
+                  ln -s /opt/common/pki/common-ssl-private-key.pem /opt/gitlab/pki/ssl-private-key.pem
               fi
             
               cd $PIPECTL_DEPLOY_DIR
