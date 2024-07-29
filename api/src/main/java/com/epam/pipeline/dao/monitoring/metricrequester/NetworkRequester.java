@@ -66,8 +66,8 @@ public class NetworkRequester extends AbstractMetricRequester {
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
-                                .subAggregation(average(AVG_AGGREGATION + RX_RATE, RX_RATE))
-                                .subAggregation(average(AVG_AGGREGATION + TX_RATE, TX_RATE))));
+                                .subAggregation(average(RX_RATE, RX_RATE))
+                                .subAggregation(average(TX_RATE, TX_RATE))));
     }
 
     @Override
