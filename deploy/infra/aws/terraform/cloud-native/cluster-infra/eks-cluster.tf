@@ -37,7 +37,7 @@ module "eks" {
   cluster_addons = merge(
     {
       coredns = {
-        most_recent = true
+        most_recent          = true
         configuration_values = jsonencode({
           replicaCount = 3
           nodeSelector : local.eks_system_node_labels
@@ -55,12 +55,12 @@ module "eks" {
   }
 
   eks_managed_node_group_defaults = {
-    ami_type               = "AL2_x86_64"
-    create_iam_role        = false
-    iam_role_arn           = aws_iam_role.eks_cp_system_node_execution.arn
-    vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
-    subnet_ids             = data.aws_subnets.this.ids
-    pre_bootstrap_user_data  = var.eks_system_node_prepend_user_data
+    ami_type                = "AL2_x86_64"
+    create_iam_role         = false
+    iam_role_arn            = aws_iam_role.eks_cp_system_node_execution.arn
+    vpc_security_group_ids  = [module.internal_cluster_access_sg.security_group_id]
+    subnet_ids              = data.aws_subnets.this.ids
+    pre_bootstrap_user_data = var.eks_system_node_prepend_user_data
     metadata_options = {
       "http_endpoint" : "enabled",
       "http_put_response_hop_limit" : 1,
@@ -89,7 +89,7 @@ module "eks-aws-auth" {
     {
       rolearn  = aws_iam_role.eks_cp_system_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
-      groups = [
+      groups   = [
         "system:bootstrappers",
         "system:nodes",
       ]
@@ -97,13 +97,13 @@ module "eks-aws-auth" {
     {
       rolearn  = aws_iam_role.eks_cp_worker_node_execution.arn
       username = "system:node:{{EC2PrivateDNSName}}"
-      groups = [
+      groups   = [
         "system:bootstrappers",
         "system:nodes",
         "eks:kube-proxy-windows"
       ]
     }
-    ],
+  ],
     local.sso_additional_role_mapping
   )
 

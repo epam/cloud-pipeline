@@ -21,6 +21,7 @@ module "cp_system_efs" {
   name           = local.efs_name
   creation_token = local.efs_name
   encrypted      = true
+  kms_key_arn    = module.kms.key_arn
 
   performance_mode = var.efs_performance_mode
   throughput_mode  = var.efs_throughput_mode
