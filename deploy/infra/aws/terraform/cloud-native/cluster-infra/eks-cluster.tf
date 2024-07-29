@@ -60,6 +60,7 @@ module "eks" {
     iam_role_arn           = aws_iam_role.eks_cp_system_node_execution.arn
     vpc_security_group_ids = [module.internal_cluster_access_sg.security_group_id]
     subnet_ids             = data.aws_subnets.this.ids
+    pre_bootstrap_user_data  = var.eks_system_node_prepend_user_data
     metadata_options = {
       "http_endpoint" : "enabled",
       "http_put_response_hop_limit" : 1,

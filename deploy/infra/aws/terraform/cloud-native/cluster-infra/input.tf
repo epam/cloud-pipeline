@@ -87,6 +87,11 @@ variable "eks_system_node_group_volume_type" {
   description = "Volume type of Cloud-Pipeline system EKS node."
 }
 
+variable "eks_system_node_prepend_user_data" {
+  default     = ""
+  description = "User data that is injected into the user data script ahead of the EKS bootstrap script. Can be used to setup proxies, as an example."
+}
+
 variable "eks_additional_role_mapping" {
   type = list(object({
     iam_role_arn  = string
