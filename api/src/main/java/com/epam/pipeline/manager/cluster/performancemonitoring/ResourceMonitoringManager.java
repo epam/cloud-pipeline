@@ -491,8 +491,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     if (bandwidth >= bandwidthLimit) {
                         processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
                                 runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
-                    } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
-                                runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
                     } else if (run.getLastNetworkConsumptionNotificationTime() != null &&
                             !run.getTags().containsKey(getNetworkLimitDateTag()) &&
                             !run.getTags().containsKey(NETWORK_LIMIT)) {
