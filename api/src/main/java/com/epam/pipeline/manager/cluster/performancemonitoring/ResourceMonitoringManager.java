@@ -72,6 +72,8 @@ import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 
 import javax.annotation.PostConstruct;
 
+import static com.epam.pipeline.manager.pipeline.PipelineRunManager.NETWORK_LIMIT;
+
 /**
  * A service component for monitoring resource usage.
  * Polls cpu usage of running pipelines statistics from Kubernetes on a configured schedule.
@@ -489,7 +491,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     if (bandwidth >= bandwidthLimit) {
                         processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
                                 runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
-                    } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
+                    } else if (run.getLastNetworkConsumptionNotificationTime() != null &&
+                            !run.getTags().containsKey(getNetworkLimitDateTag()) &&
+                            !run.getTags().containsKey(NETWORK_LIMIT)) {
                         // No action is longer needed, clear timeout
                         log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_NOT_NETWORK_CONSUMING,
                                 run.getPodId(), bandwidth));
@@ -501,6 +505,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH);
             pipelineRunManager.updatePipelineRunsLastNotification(runsToUpdateNotificationTime);
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private String getNetworkLimitDateTag() {
+            final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
+            return String.format("%s_%s", NETWORK_LIMIT, suffix);
         }
 
         private void processFormerHighNetworkConsumingRun(final PipelineRun run,

@@ -211,6 +211,12 @@ if [ $? -ne 0 ]; then
   _DOCKER_SYS_IMGS="/opt/docker-system-images"
 fi
 
+
+cd /bin
+git clone https://github.com/magnific0/wondershaper.git
+cd wondershaper
+sudo make install
+
 mkdir -p /etc/docker
 
 if [[ $FS_TYPE == "ext4" ]]; then

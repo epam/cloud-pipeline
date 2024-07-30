@@ -156,6 +156,7 @@ public class PipelineRunManager {
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_GPU_COUNT = "CP_GPU_COUNT";
+    public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -370,7 +371,6 @@ public class PipelineRunManager {
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }
-
 
     /**
      * Internal method for creating a pipeline run,
@@ -1336,6 +1336,22 @@ public class PipelineRunManager {
                 .instanceTypes(charts.get(RunChartInfoEntity.ColumnName.node_type))
                 .tags(charts.get(RunChartInfoEntity.ColumnName.tags))
                 .build();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setLimitBoundary(final Long runId, final Boolean limit, final Integer boundary) {
+        Assert.isTrue(!limit || boundary != null, "Boundary value should be specified to limit network bandwidth");
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+        if (limit) {
+            tags.put(NETWORK_LIMIT, String.valueOf(boundary));
+        } else {
+            tags.remove(NETWORK_LIMIT);
+        }
+        run.setTags(tags);
+        pipelineRunDao.updateRunTags(run);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {

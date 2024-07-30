@@ -89,6 +89,8 @@ public class DockerContainerOperationManager {
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
+    private static final String LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION =
+            "ssh session to limit pipeline run network bandwidth";
     private static final String CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION =
             "ssh session to get docker container layers count";
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occurred during to pause pipeline run";
@@ -103,6 +105,7 @@ public class DockerContainerOperationManager {
     private static final String CP_NODE_SSH_PORT = "CP_NODE_SSH_PORT";
 
     public static final String PAUSE_RUN_TASK = "PausePipelineRun";
+    private static final int BYTES_IN_KB = 1024;
 
     @Autowired
     private PipelineRunManager runManager;
@@ -157,6 +160,9 @@ public class DockerContainerOperationManager {
 
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
+
+    @Value("${limit.run.bandwidth.script.url}")
+    private String limitRunBandwidthScriptUrl;
 
     private Lock resumeLock = new ReentrantLock();
 
@@ -300,6 +306,37 @@ public class DockerContainerOperationManager {
             return -1;
         }
         return size;
+    }
+
+    public void limitNetworkBandwidth(final PipelineRun run, final Integer boundary, final Boolean limit) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+            final int boundaryKBitsPerSec = limit ? boundary * 8 / BYTES_IN_KB : 0;
+            final String getSizeCommand = LimitBandwidthCommand.builder()
+                    .runScriptUrl(limitRunBandwidthScriptUrl)
+                    .containerId(containerId)
+                    .limit(String.valueOf(limit))
+                    .uploadRate(String.valueOf(boundaryKBitsPerSec))
+                    .downloadRate(String.valueOf(boundaryKBitsPerSec))
+                    .build()
+                    .getCommand();
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
+                    getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.LIMIT_NETWORK_BANDWIDTH_TIMEOUT),
+                    TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_LIMIT_NETWORK_BANDWIDTH_FAILED, run.getId()));
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            log.error(e.getMessage());
+            throw new CmdExecutionException(LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CmdExecutionException(LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION, e);
+        }
     }
 
     @Async("pauseRunExecutor")

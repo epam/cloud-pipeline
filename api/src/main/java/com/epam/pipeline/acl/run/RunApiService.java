@@ -385,4 +385,9 @@ public class RunApiService {
     public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
         return runManager.loadActiveRunsCharts(filter);
     }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void setLimitBoundary(final Long runId, final Boolean limit, final Integer boundary) {
+        runManager.setLimitBoundary(runId, limit, boundary);
+    }
 }
