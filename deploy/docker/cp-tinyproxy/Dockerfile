@@ -46,7 +46,7 @@ RUN yum install -y nginx nginx-mod-stream
 
 # 3. SMTP proxy setup
 RUN yum install -y nginx-mod-mail gettext && \
-    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
+    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh --no-check-certificate && \
     bash /tmp/miniconda.sh -b -p /opt/miniconda && \
     source /opt/miniconda/etc/profile.d/conda.sh && \
     conda create -y -n auth-srv python=3.7 && \

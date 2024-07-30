@@ -24,7 +24,7 @@ function is_jq_null() {
 }
 
 _OWNER_ATTRIBUTES_ENV_FILE="$1"
-_OWNER_ATTRIBUTES_BLACKLIST="confirmed_notifications ssh_prv ssh_pub"
+_OWNER_ATTRIBUTES_BLACKLIST="${CP_OWNER_ATTRIBUTES_BLACKLIST:-"confirmed_notifications ssh_prv ssh_pub"}"
 _OWNER_ATTRIBUTES_FILE_PATTERN="\"(.*)\" > \"(\\/.*)\""
 
 echo "Starting env setup from the user profile"
@@ -92,14 +92,27 @@ for _CURRENT_USER in ${_OWNER_ATTRIBUTS_USERS_LIST[@]}; do
         _ATTRIBUTE_ENV_NAME=${_ATTRIBUTE_NAME//[^a-zA-Z_0-9]/_}
         _ATTRIBUTE_ENV_VALUE=$(echo $_OWNER_ATTRIBUTES | jq ".payload[].data.\"$_ATTRIBUTE_NAME\".value" -r)
 
-        if [ "${!_ATTRIBUTE_ENV_NAME}" ]; then
-            echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is already set from the outside, skipping it"
-            continue
-        fi
-
         if is_jq_null "$_ATTRIBUTE_ENV_VALUE"; then
             echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME has no value set, skipping it"
             continue
+        fi
+
+        if [ "${!_ATTRIBUTE_ENV_NAME}" ]; then
+            if [ "$CP_OWNER_ATTRIBUTES_APPEND_VALUES" != "true" ]; then
+                echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is already set from the outside, skipping it"
+                continue
+            fi
+            
+            _ATTRIBUTE_ENV_NAME_PARAM_TYPE_ENV_NAME="${_ATTRIBUTE_ENV_NAME}_PARAM_TYPE"
+            _ATTRIBUTE_ENV_NAME_PARAM_TYPE="${!_ATTRIBUTE_ENV_NAME_PARAM_TYPE_ENV_NAME}"
+
+            if [ "$_ATTRIBUTE_ENV_NAME_PARAM_TYPE" == "string" ]; then
+                _ATTRIBUTE_ENV_VALUE="${!_ATTRIBUTE_ENV_NAME},${_ATTRIBUTE_ENV_VALUE}"
+                echo "[INFO] Variable $_ATTRIBUTE_ENV_NAME value is merged between user profile and existing value"
+            else
+                echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is already set and its type is ${_ATTRIBUTE_ENV_NAME_PARAM_TYPE}. Skipping it."
+                continue
+            fi
         fi
 
         if [ -z "$CP_OWNER_ATTRIBUTES_WHITELIST" ] || \

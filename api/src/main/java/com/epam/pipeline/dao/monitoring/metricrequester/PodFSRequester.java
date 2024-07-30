@@ -77,8 +77,8 @@ public class PodFSRequester extends FSRequester {
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                 .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
-                                        .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))
-                                        .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT)))));
+                                        .subAggregation(average(USAGE, USAGE))
+                                        .subAggregation(average(LIMIT, LIMIT)))));
     }
 
     @Override

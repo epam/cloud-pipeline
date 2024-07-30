@@ -520,15 +520,16 @@ function configure_package_manager {
                                     sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
                               fi
                               # Use the "base" url for the other repos, as the mirrors may cause issues
-                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
-                              
+                              for repo_file in /etc/yum.repos.d/*.repo; do
+                                    sed -i '/download.example/d' "$repo_file"
+                                    sed -i 's/mirror.centos.org/vault.centos.org/g' "$repo_file"
+                                    if grep -q 'baseurl' "$repo_file"; then
+                                          sed -i 's/^#baseurl=/baseurl=/g' "$repo_file"
+                                          sed -i 's/^metalink=/#metalink=/g' "$repo_file"
+                                          sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
+                                    fi
+                              done
 
-                              if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
-                                    rm -f /etc/yum.repos.d/epel*.repo
-                              fi
                               break
                         fi
                   done
@@ -2204,11 +2205,18 @@ echo "------"
 ######################################################
 MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
 DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE=${CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE:-true}
 
 echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
 rm -Rf $DATA_STORAGE_MOUNT_ROOT
 create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
+if ! mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME; then
+    if check_cp_cap CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE; then
+        echo "--> It is requested to continue running on storage mount failure"
+    else
+        exit_init 1
+    fi
+fi
 
 echo "------"
 echo
@@ -2650,19 +2658,29 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 echo "Command text:"
 echo "${SCRIPT}"
 
+CP_EXEC_SCRIPT_PATH="${CP_EXEC_SCRIPT_PATH:-/cp-main.sh}"
+
 if [ "$CP_EXEC_AS_OWNER" == "true" ]; then
-      _RUN_AS_OWNER_COMMAND_PREFIX="/usr/bin/sudo -i -u "$OWNER""
+    _RUN_AS_OWNER_COMMAND_PREFIX="su - "$OWNER" -c '"
+    _RUN_AS_OWNER_COMMAND_SUFFIX="'"
+fi
+if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
+    _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
 fi
 
-if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
-  $_RUN_AS_OWNER_COMMAND_PREFIX timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
-  if [ $CP_EXEC_RESULT -eq 124 ]; then
+echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
+        "$_TIMEOUT_COMMAND_PREFIX" \
+        "bash -c \"${SCRIPT}\"" \
+        "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
+
+echo "Warapped command text:"
+cat "$CP_EXEC_SCRIPT_PATH"
+
+bash "$CP_EXEC_SCRIPT_PATH"
+
+CP_EXEC_RESULT=$?
+if [ "$CP_EXEC_TIMEOUT" ] && [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
-  fi
-else
-  $_RUN_AS_OWNER_COMMAND_PREFIX bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
 fi
 
 if [ "$CP_EXEC_RESULT" != "0" ]; then

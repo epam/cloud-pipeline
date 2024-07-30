@@ -148,6 +148,11 @@ task installDist() {
         }
 
         copy {
+            from "$rootDir/monitoring-service/src/main/resources/templates"
+            into "$distFolder/monitoring-index-mappings"
+        }
+
+        copy {
             from "$rootDir/vm-monitor/src/main/resources/templates"
             into "$distFolder/vm-monitor-templates"
         }

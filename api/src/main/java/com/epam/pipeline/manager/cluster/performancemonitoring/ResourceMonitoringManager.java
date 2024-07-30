@@ -491,6 +491,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     if (bandwidth >= bandwidthLimit) {
                         processHighNetworkConsumingRun(run, actionTimeout, action, runsToNotify,
                                 runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
+                    } else if (run.getLastNetworkConsumptionNotificationTime() != null) {
+                                runsToUpdateNotificationTime, bandwidth, runsToUpdateTags);
                     } else if (run.getLastNetworkConsumptionNotificationTime() != null &&
                             !run.getTags().containsKey(getNetworkLimitDateTag()) &&
                             !run.getTags().containsKey(NETWORK_LIMIT)) {
@@ -523,7 +525,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private boolean shouldPerformActionOnNetworkConsumingRun(final PipelineRun run, final int actionTimeout) {
-            return Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
+            return  actionTimeout > 0 && Objects.nonNull(run.getLastNetworkConsumptionNotificationTime()) &&
                     run.getLastNetworkConsumptionNotificationTime()
                             .isBefore(DateUtils.nowUTC().minusMinutes(actionTimeout));
         }

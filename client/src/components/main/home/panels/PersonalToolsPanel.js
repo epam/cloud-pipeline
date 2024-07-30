@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ import {
   getLimitMountsParameterValue,
   getLimitMountsStorages
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import checkToolVersionSizeErrors from '../../../runs/utilities/check-tool-version-size-errors';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -99,6 +100,8 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
+    pending: false,
+    showLoading: false,
     runToolInfo: null
   };
 
@@ -236,48 +239,54 @@ export default class PersonalToolsPanel extends React.Component {
     return false;
   }
 
-  runToolWithDefaultSettings = async () => {
-    const payload = this.state.runToolInfo.payload;
-    if (this.state.runToolInfo.isSpot !== undefined) {
-      payload.isSpot = this.state.runToolInfo.isSpot;
-    }
-    if (this.state.runToolInfo.instanceType !== undefined) {
-      payload.instanceType = this.state.runToolInfo.instanceType;
-    }
-    if (this.state.runToolInfo.hddSize !== undefined) {
-      payload.hddSize = this.state.runToolInfo.hddSize;
-    }
-    if (this.state.runToolInfo.limitMounts !== undefined) {
-      if (!payload.params) {
-        payload.params = {};
+  runToolWithDefaultSettings = () => {
+    this.setState({
+      pending: true,
+      showLoading: true
+    }, async () => {
+      const payload = this.state.runToolInfo.payload;
+      if (this.state.runToolInfo.isSpot !== undefined) {
+        payload.isSpot = this.state.runToolInfo.isSpot;
       }
-      if (this.state.runToolInfo.limitMounts.value) {
-        payload.params[CP_CAP_LIMIT_MOUNTS] = this.state.runToolInfo.limitMounts;
-      } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
-        delete payload.params[CP_CAP_LIMIT_MOUNTS];
+      if (this.state.runToolInfo.instanceType !== undefined) {
+        payload.instanceType = this.state.runToolInfo.instanceType;
       }
-    }
-    if (this.state.runToolInfo.runNameAlias) {
-      payload.runNameAlias = this.state.runToolInfo.runNameAlias;
-    }
-    payload.params = await applyUserCapabilities(
-      payload.params || {},
-      this.props.preferences,
-      this.state.runToolInfo.tool.platform
-    );
-    if (this.state.runToolInfo.runCapabilities) {
-      payload.params = updateCapabilities(
-        payload.params,
-        this.state.runToolInfo.runCapabilities,
+      if (this.state.runToolInfo.hddSize !== undefined) {
+        payload.hddSize = this.state.runToolInfo.hddSize;
+      }
+      if (this.state.runToolInfo.limitMounts !== undefined) {
+        if (!payload.params) {
+          payload.params = {};
+        }
+        if (this.state.runToolInfo.limitMounts.value) {
+          payload.params[CP_CAP_LIMIT_MOUNTS] = this.state.runToolInfo.limitMounts;
+        } else if (payload.params[CP_CAP_LIMIT_MOUNTS]) {
+          delete payload.params[CP_CAP_LIMIT_MOUNTS];
+        }
+      }
+      if (this.state.runToolInfo.runNameAlias) {
+        payload.runNameAlias = this.state.runToolInfo.runNameAlias;
+      }
+      payload.params = await applyUserCapabilities(
+        payload.params || {},
         this.props.preferences,
         this.state.runToolInfo.tool.platform
       );
-    }
-    if (await run(this)(payload, false)) {
-      this.setState({
-        runToolInfo: null
-      }, this.props.refresh);
-    }
+      if (this.state.runToolInfo.runCapabilities) {
+        payload.params = updateCapabilities(
+          payload.params,
+          this.state.runToolInfo.runCapabilities,
+          this.props.preferences,
+          this.state.runToolInfo.tool.platform
+        );
+      }
+      if (await run(this)(payload, false)) {
+        this.setState({
+          runToolInfo: null
+        }, this.props.refresh);
+      }
+      this.setState({pending: false, showLoading: false});
+    });
   };
 
   runToolWithCustomSettings = (toolId, version, warning) => {
@@ -532,22 +541,9 @@ export default class PersonalToolsPanel extends React.Component {
           regionId: defaultPayload.cloudRegionId
         });
         if (allowedToExecute) {
-          const inputs = getInputPaths(null, defaultPayload.params);
-          const outputs = getOutputPaths(null, defaultPayload.params);
-          const {errors: permissionErrors} = await performAsyncCheck({
-            inputs,
-            outputs,
-            dockerImage: defaultPayload.dockerImage,
-            dockerRegistries: this.props.dockerRegistries,
-            dataStorages: this.props.dataStorageAvailable
-          });
-          defaultPayload.params = await applyUserCapabilities(
-            defaultPayload.params || {},
-            this.props.preferences,
-            tool.platform
-          );
           const runCapabilities = getEnabledCapabilities(defaultPayload.params);
           this.setState({
+            pending: true,
             runToolInfo: {
               tool,
               image,
@@ -560,13 +556,46 @@ export default class PersonalToolsPanel extends React.Component {
               nodeCount: defaultPayload.nodeCount || 0,
               availableInstanceTypes,
               availablePriceTypes,
-              permissionErrors,
               runCapabilities,
               runCapabilitiesError: checkRequiredCapabilitiesErrors(
                 runCapabilities,
                 this.props.preferences
               )
             }
+          }, async () => {
+            const hide = message.loading('Checking tool size...', 0);
+            const inputs = getInputPaths(null, defaultPayload.params);
+            const outputs = getOutputPaths(null, defaultPayload.params);
+            const {errors: permissionErrors} = await performAsyncCheck({
+              inputs,
+              outputs,
+              dockerImage: defaultPayload.dockerImage,
+              dockerRegistries: this.props.dockerRegistries,
+              dataStorages: this.props.dataStorageAvailable
+            });
+            const params = await applyUserCapabilities(
+              defaultPayload.params || {},
+              this.props.preferences,
+              tool.platform
+            );
+            const versionSizeErrors = await checkToolVersionSizeErrors(
+              this.state.runToolInfo.payload.dockerImage,
+              this.props.preferences,
+              this.props.dockerRegistries
+            );
+            hide();
+            this.setState({
+              runToolInfo: {
+                ...this.state.runToolInfo,
+                permissionErrors,
+                versionSizeErrors,
+                payload: {
+                  ...this.state.runToolInfo.payload,
+                  params
+                }
+              },
+              pending: false
+            });
           });
         } else {
           message.error(tooltip);
@@ -850,10 +879,14 @@ export default class PersonalToolsPanel extends React.Component {
                       this.state.runToolInfo.permissionErrors &&
                       this.state.runToolInfo.permissionErrors.length > 0
                     ) ||
-                    this.runCapabilitiesError
+                    this.runCapabilitiesError ||
+                    this.state.runToolInfo?.versionSizeErrors?.hard ||
+                    this.state.pending
                   }
                   onClick={this.runToolWithDefaultSettings}
-                  type="primary">
+                  type="primary"
+                  loading={this.state.showLoading}
+                >
                   RUN
                 </Button>
               </Col>
@@ -866,6 +899,7 @@ export default class PersonalToolsPanel extends React.Component {
           {
             this.state.runToolInfo &&
               <RunConfirmation
+                versionSizeErrors={this.state.runToolInfo.versionSizeErrors}
                 cloudRegions={
                   this.props.awsRegions.loaded
                     ? (this.props.awsRegions.value || []).map(r => r)
@@ -922,7 +956,7 @@ export default class PersonalToolsPanel extends React.Component {
                 <Row>
                   <JobEstimatedPriceInfo>
                     Estimated price: <b>{
-                      Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1)* 100.0) / 100.0
+                      Math.ceil(this.state.runToolInfo.pricePerHour * (this.state.runToolInfo.nodeCount + 1) * 100.0) / 100.0
                     }$</b> per hour.
                   </JobEstimatedPriceInfo>
                 </Row>

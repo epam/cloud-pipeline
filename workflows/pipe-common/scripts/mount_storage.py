@@ -51,6 +51,7 @@ S3_PROVIDER = 'S3'
 READ_ONLY_MOUNT_OPT = 'ro'
 MOUNT_LIMITS_NONE = 'none'
 MOUNT_LIMITS_USER_DEFAULT = 'user_default'
+MOUNT_LIMITS_PARENT_FOLDER_ID = 'folder:'
 SENSITIVE_POLICY_PREFERENCE = 'storage.mounts.nfs.sensitive.policy'
 STORAGE_MOUNT_OPTIONS_ENV_PREFIX = 'CP_CAP_MOUNT_OPTIONS_'
 STORAGE_MOUNT_PATH_ENV_PREFIX = 'CP_CAP_MOUNT_PATH_'
@@ -120,6 +121,7 @@ class MountStorageTask:
         self.run_id = int(os.getenv('RUN_ID', 0))
         self.region_id = int(os.getenv('CLOUD_REGION_ID', 0))
         self.task_name = task
+        self.available_storages = None
         if platform.system() == 'Windows':
             available_mounters = [S3Mounter, GCPMounter]
         else:
@@ -136,6 +138,24 @@ class MountStorageTask:
                     Logger.info('User default storage is parsed as {}'.format(str(storage_id)), task_name=self.task_name)
             elif placeholder.lower() == MOUNT_LIMITS_NONE:
                 Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE), task_name=self.task_name)
+            elif placeholder.lower().startswith(MOUNT_LIMITS_PARENT_FOLDER_ID):
+                folder_parts = placeholder.split(':')
+                
+                parent_folder_id = 0
+                if len(folder_parts) == 2:
+                    try:
+                        parent_folder_id = int(folder_parts[1])
+                    except:
+                        Logger.warn('Unable to parse {} placeholder to a parent folder ID, cannot convert it to integer.'.format(placeholder), task_name=self.task_name)
+                    
+                    if parent_folder_id != 0 and self.available_storages:
+                        storage_id = [ x.storage.id for x in self.available_storages if x.storage.parentId == parent_folder_id ]
+                        if len(storage_id) == 0:
+                            storage_id = None
+                        else:
+                            Logger.info('Parent folder ID {} is parsed into {} storage IDs'.format(placeholder, storage_id), task_name=self.task_name)
+                else:
+                    Logger.warn('Unable to parse {} placeholder to a parent folder ID, it is malformed.'.format(placeholder), task_name=self.task_name)
             else:
                 storage_identifier = placeholder.strip()
                 if storage_identifier.isdigit():
@@ -151,7 +171,10 @@ class MountStorageTask:
         for item in csv_storages.split(','):
             storage_id = self.parse_storage(item, available_storages)
             if storage_id:
-                result.append(storage_id)
+                if type(storage_id) is list:
+                    result = result + storage_id
+                else:
+                    result.append(storage_id)
         return result
 
     # Any conditions to wait for before starting the mount procedure
@@ -215,6 +238,11 @@ class MountStorageTask:
             # filtering out all nfs storages if region id is missing
             if not self.region_id:
                 available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE]
+
+            # Backup a full filtered list, before removing storage to be skipped
+            # We can further refer to this list, if any storage detail is required
+            # Otherwise we need to call API once again
+            self.available_storages = list(available_storages_with_mounts)
 
             # Filter out storages, which are requested to be skipped
             # NOTE: Any storage, defined by CP_CAP_FORCE_MOUNTS will still be mounted
@@ -304,17 +332,24 @@ class MountStorageTask:
                     initialized_mounters.append(mounter)
 
             initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
+            failed_storages = []
             for mnt in initialized_mounters:
                 try:
                     mnt.mount(mount_root, self.task_name)
-                except RuntimeError as e:
-                    Logger.warn(
-                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e),
-                        task_name=self.task_name)
+                except RuntimeError:
+                    Logger.warn('Data storage {} mounting has failed: {}'
+                                .format(mnt.storage.name, traceback.format_exc()),
+                                task_name=self.task_name)
+                    failed_storages.append(mnt.storage.name)
+            if failed_storages:
+                Logger.fail('The following data storages have not been mounted: {}'.format(', '.join(failed_storages)),
+                            task_name=self.task_name)
+                exit(1)
             Logger.success('Finished data storage mounting', task_name=self.task_name)
-        except Exception as e:
-            Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
-            traceback.print_exc()
+        except Exception:
+            Logger.fail('Unhandled error during mount task: {}.'.format(traceback.format_exc()),
+                        task_name=self.task_name)
+            exit(1)
 
     def _load_mount_options_from_environ(self):
         result = {}
@@ -455,6 +490,7 @@ class StorageMounter:
             Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
         else:
             Logger.warn('--> Failed mounting {path} to {mount}'.format(**params), task_name=task_name)
+            raise RuntimeError('Failed mounting {path} to {mount}'.format(**params))
 
     def get_path(self):
         return self.storage.path.replace(self.scheme(), '', 1)

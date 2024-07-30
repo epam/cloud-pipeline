@@ -1162,7 +1162,7 @@ public class SystemPreferences {
 
     public static final IntPreference SYSTEM_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD = new IntPreference(
             "system.pod.bandwidth.action.backoff.period", 30, SYSTEM_GROUP,
-                    isGreaterThan(0));
+                    isGreaterThanOrEquals(-1));
 
     public static final StringPreference SYSTEM_POD_BANDWIDTH_ACTION = new StringPreference(
             "system.pod.bandwidth.action", NetworkConsumingRunAction.NOTIFY.name(),
@@ -1425,6 +1425,13 @@ public class SystemPreferences {
             isGreaterThan(0));
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
+    public static final IntPreference MONITORING_GPU_USAGE_DELAY = new IntPreference(
+            "monitoring.gpu.usage.delay", 60000, MONITORING_GROUP, isGreaterThan(0));
+
+    public static final BooleanPreference MONITORING_GPU_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.gpu.usage.enable", false, MONITORING_GROUP, pass);
+
 
     // Cloud
     public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =
