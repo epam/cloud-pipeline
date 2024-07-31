@@ -80,7 +80,6 @@ class S3Bucket:
         result = []
         if not listing or 'Name' not in listing[0]:
             raise ValueError('File {} not found while listing storage'.format(target))
-        file_path_start = listing[0].index('Name')
         for path in listing[1:]:
             fields = path.strip().split()
             if not fields:
@@ -89,7 +88,10 @@ class S3Bucket:
             size = None
             if line_type == 'File':
                 size = fields[4]
-            item_path = path[file_path_start:].strip()
+                file_path_start = 5
+            else:
+                file_path_start = 1
+            item_path = ' '.join(fields[file_path_start:]).strip()
             result.append((line_type, item_path, size))
         return result
 
