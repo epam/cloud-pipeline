@@ -340,7 +340,9 @@ function watch_and_log_omics_workflow_run() {
     local _workflow_run_id=$1
     local _workflow_run_status="RUNNING"
     local _waiting_time=0
-    
+
+    assume_omics_service_role
+
     while [ "$_workflow_run_status" != "COMPLETED" ] && [ "$_workflow_run_status" != "FAILED" ] && [ "$_workflow_run_status" != "CANCELLED" ]; do
         local _task_status
         local _total_tasks
@@ -367,10 +369,15 @@ function watch_and_log_omics_workflow_run() {
     pipe_log_success "Workflow run: ${_workflow_run_id}, status: ${_workflow_run_status}" "${LOG_TASK_NAME}"
 }
 
-
-TIME_TO_UPDATE_CREDS=2700
 WORKFLOW_PARAMETERS_TEMPLATE="$SCRIPTS_DIR/src/parameters_template.json"
 WORKFLOW_PARAMETERS="$SCRIPTS_DIR/src/parameters.json"
+
+CP_OMICS_ROLE_ASSUME_SESSION_DURATION=${CP_OMICS_ROLE_ASSUME_SESSION_DURATION:-3600}
+if [ "$CP_OMICS_ROLE_ASSUME_SESSION_DURATION" -lt 1800 ]; then
+    CP_OMICS_ROLE_ASSUME_SESSION_DURATION=1800
+fi
+TIME_TO_UPDATE_CREDS=$(( CP_OMICS_ROLE_ASSUME_SESSION_DURATION - 600 ))
+pipe_log_success "Workflow run: Temporary credentials will  issued for ${CP_OMICS_ROLE_ASSUME_SESSION_DURATION}, and then be updated each ${TIME_TO_UPDATE_CREDS}" "${LOG_TASK_NAME}"
 
 parse_options "$@" && \
 build_and_run_workflow
