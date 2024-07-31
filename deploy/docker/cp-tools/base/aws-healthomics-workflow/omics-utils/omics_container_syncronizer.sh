@@ -130,6 +130,7 @@ if [ -n "$IMAGE_PULL_CONFIG" ] && [ -f "$IMAGE_PULL_CONFIG" ]; then
                 exit 1
             else
                 echo "Private ECR repo: $_ECR_REPO_NAME was created."
+                _EXISTING_ECR_REPOS="${_EXISTING_ECR_REPOS}|${_ECR_REPO_NAME}"
             fi
         else
             echo "Private ECR repo: $_ECR_REPO_NAME already exists"
