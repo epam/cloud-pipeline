@@ -39,6 +39,7 @@ function parse_options {
 function build_and_run_workflow() {
     preflight_checks
 
+    pipe_log_info "Workflow run: Temporary credentials will  issued for ${CP_OMICS_ROLE_ASSUME_SESSION_DURATION}, and then be updated each ${TIME_TO_UPDATE_CREDS}" "${LOG_TASK_NAME}"
     obtain_omics_service_role
     assume_omics_service_role
 
@@ -377,7 +378,6 @@ if [ "$CP_OMICS_ROLE_ASSUME_SESSION_DURATION" -lt 1800 ]; then
     CP_OMICS_ROLE_ASSUME_SESSION_DURATION=1800
 fi
 TIME_TO_UPDATE_CREDS=$(( CP_OMICS_ROLE_ASSUME_SESSION_DURATION - 600 ))
-pipe_log_success "Workflow run: Temporary credentials will  issued for ${CP_OMICS_ROLE_ASSUME_SESSION_DURATION}, and then be updated each ${TIME_TO_UPDATE_CREDS}" "${LOG_TASK_NAME}"
 
 parse_options "$@" && \
 build_and_run_workflow

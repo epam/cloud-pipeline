@@ -15,6 +15,15 @@
 ARG BASE_IMAGE=library/centos:7.7.1908
 FROM ${BASE_IMAGE}
 
+# Configure cloud-pipeline yum repository
+RUN curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/centos/7/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
+    yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y && \
+    yum-config-manager --save --setopt=\*.skip_if_unavailable=true && \
+    sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf && \
+    sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+
 RUN yum update -y && \
     yum install -y git wget curl zip unzip gettext openssh-server python3 && \
     python3 -m pip install boto3
