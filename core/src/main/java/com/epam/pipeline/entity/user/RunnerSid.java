@@ -18,7 +18,6 @@ package com.epam.pipeline.entity.user;
 
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 @Setter
 @NoArgsConstructor
 @Builder
-@AllArgsConstructor
 public class RunnerSid {
 
     private String name;
@@ -54,6 +52,23 @@ public class RunnerSid {
     private String pipelinesList;
     @JsonIgnore
     private String toolsList;
+
+    // All args constructor added manually due to incompatibility between jackson and lombok annotations
+    public RunnerSid(final String name,
+                     final boolean principal,
+                     final RunAccessType accessType,
+                     final Boolean pipelinesAllowed,
+                     final Boolean toolsAllowed,
+                     final String pipelinesList,
+                     final String toolsList) {
+        this.name = name;
+        this.principal = principal;
+        this.accessType = accessType;
+        this.pipelinesAllowed = pipelinesAllowed;
+        this.toolsAllowed = toolsAllowed;
+        this.pipelinesList = pipelinesList;
+        this.toolsList = toolsList;
+    }
 
     public List<Long> getPipelines() {
         return parse(pipelinesList);
