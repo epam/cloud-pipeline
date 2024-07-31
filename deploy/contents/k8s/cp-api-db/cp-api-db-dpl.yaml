@@ -4,6 +4,9 @@ metadata:
   name: cp-api-db
   namespace: default
 spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-api-db: "true"
   replicas: 1
   template:
     metadata:
