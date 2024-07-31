@@ -162,19 +162,27 @@ public class PipelineRunAsManager {
                 MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
         final Long pipelineId = runVO.getPipelineId();
         if (Objects.nonNull(pipelineId)) {
-            Assert.isTrue(isNullOrTrue(allowedRunnerSid.getPipelinesAllowed()),
-                    messageHelper.getMessage(
-                            MessageConstants.ERROR_RUN_AS_PIPELINES_NOT_ALLOWED, currentUser, runAsUser));
-            if (CollectionUtils.isNotEmpty(allowedRunnerSid.getPipelines())) {
-                Assert.isTrue(allowedRunnerSid.getPipelines().contains(pipelineId),
-                        messageHelper.getMessage(MessageConstants.ERROR_RUN_AS_PIPELINE_NOT_ALLOWED,
-                                currentUser, pipelineId, runAsUser));
-            }
-            final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
-            validateTool(currentUserConfiguration.getDockerImage(), runAsUser, allowedRunnerSid, currentUser);
+            validatePipeline(runVO, runAsUser, allowedRunnerSid, currentUser, pipelineId);
         } else {
             validateTool(runVO.getDockerImage(), runAsUser, allowedRunnerSid, currentUser);
         }
+    }
+
+    private void validatePipeline(final PipelineStart runVO,
+                                  final String runAsUser,
+                                  final RunnerSid allowedRunnerSid,
+                                  final String currentUser,
+                                  final Long pipelineId) {
+        Assert.isTrue(isNullOrTrue(allowedRunnerSid.getPipelinesAllowed()),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_RUN_AS_PIPELINES_NOT_ALLOWED, currentUser, runAsUser));
+        if (CollectionUtils.isNotEmpty(allowedRunnerSid.getPipelines())) {
+            Assert.isTrue(allowedRunnerSid.getPipelines().contains(pipelineId),
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_AS_PIPELINE_NOT_ALLOWED,
+                            currentUser, pipelineId, runAsUser));
+        }
+        final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
+        validateTool(currentUserConfiguration.getDockerImage(), runAsUser, allowedRunnerSid, currentUser);
     }
 
     private void validateTool(final String dockerImage,
