@@ -17,15 +17,23 @@
 package com.epam.pipeline.entity.user;
 
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import javax.persistence.Embeddable;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Embeddable
 @Getter
@@ -40,4 +48,29 @@ public class RunnerSid {
 
     @Enumerated(EnumType.STRING)
     private RunAccessType accessType = RunAccessType.ENDPOINT;
+    private Boolean pipelinesAllowed;
+    private Boolean toolsAllowed;
+    @JsonIgnore
+    private String pipelinesList;
+    @JsonIgnore
+    private String toolsList;
+
+    public List<Long> getPipelines() {
+        return parse(pipelinesList);
+    }
+
+    public List<Long> getTools() {
+        return parse(toolsList);
+    }
+
+    private List<Long> parse(String pipelinesList) {
+        if (StringUtils.isBlank(pipelinesList)) {
+            return Collections.emptyList();
+        }
+        return Arrays.stream(pipelinesList.split(","))
+                .map(item -> StringUtils.defaultString(item, "").trim())
+                .filter(NumberUtils::isDigits)
+                .map(Long::parseLong)
+                .collect(Collectors.toList());
+    }
 }
