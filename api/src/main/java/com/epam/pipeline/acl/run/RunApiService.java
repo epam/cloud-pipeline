@@ -387,7 +387,7 @@ public class RunApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public void setLimitBoundary(final Long runId, final Boolean limit, final Integer boundary) {
-        runManager.setLimitBoundary(runId, limit, boundary);
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        runManager.setLimitBoundary(runId, enable, boundary);
     }
 }

@@ -1339,13 +1339,13 @@ public class PipelineRunManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void setLimitBoundary(final Long runId, final Boolean limit, final Integer boundary) {
-        Assert.isTrue(!limit || boundary != null, "Boundary value should be specified to limit network bandwidth");
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        Assert.isTrue(!enable || boundary != null, "Boundary value should be specified to limit network bandwidth");
         final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
         final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
-        if (limit) {
+        if (enable) {
             tags.put(NETWORK_LIMIT, String.valueOf(boundary));
         } else {
             tags.remove(NETWORK_LIMIT);

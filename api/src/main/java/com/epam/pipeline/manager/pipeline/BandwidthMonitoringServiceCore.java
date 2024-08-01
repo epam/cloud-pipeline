@@ -58,8 +58,6 @@ public class BandwidthMonitoringServiceCore {
                 run.removeTag(NETWORK_CONSUMING_LEVEL_HIGH);
                 run.removeTag(NETWORK_LIMIT);
                 run.removeTag(networkLimitDateTag);
-            } else {
-                return;
             }
             pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
         }
@@ -70,7 +68,7 @@ public class BandwidthMonitoringServiceCore {
     }
 
     private boolean shouldCleanLimit(final Map<String, String> tags) {
-        return !shouldLimit(tags);
+        return !tags.containsKey(NETWORK_LIMIT) && tags.containsKey(getNetworkLimitDateTag());
     }
 
     private String getNetworkLimitDateTag() {

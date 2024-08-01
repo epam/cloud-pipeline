@@ -596,17 +596,17 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
 
-    @PostMapping("/run/{runId}/network")
+    @PostMapping("/run/{runId}/network/limit")
     @ApiOperation(
             value = "Set limit boundary",
             notes = "Sets a special tag for a run based on boundary param: NETWORK_LIMIT: <boundary> (Bytes/s) " +
-                    "in case of limit = true, otherwise removes the tag.",
+                    "in case of enable = true, otherwise removes the tag.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Boolean> setLimitBoundary(@PathVariable(value = RUN_ID) final Long runId,
-                                         @RequestParam(defaultValue = "true") final Boolean limit,
-                                         @RequestParam(required = false) final Integer boundary) {
-        runApiService.setLimitBoundary(runId, limit, boundary);
+                                            @RequestParam(defaultValue = "true") final Boolean enable,
+                                            @RequestParam(required = false) final Integer boundary) {
+        runApiService.setLimitBoundary(runId, enable, boundary);
         return Result.success();
     }
 }

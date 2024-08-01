@@ -212,10 +212,16 @@ if [ $? -ne 0 ]; then
 fi
 
 
-cd /bin
-git clone https://github.com/magnific0/wondershaper.git
-cd wondershaper
+cd /bin && \
+git clone https://github.com/magnific0/wondershaper.git && \
+cd wondershaper && \
 sudo make install
+if check_installed "wondershaper"; then
+  echo "[INFO] Wondershaper was installed successfully."
+else
+  echo "[ERROR] Wondershaper installation failed."
+fi
+
 
 mkdir -p /etc/docker
 

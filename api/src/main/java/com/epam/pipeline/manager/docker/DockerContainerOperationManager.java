@@ -308,17 +308,18 @@ public class DockerContainerOperationManager {
         return size;
     }
 
-    public void limitNetworkBandwidth(final PipelineRun run, final Integer boundary, final Boolean limit) {
+    public void limitNetworkBandwidth(final PipelineRun run, final Integer boundary, final Boolean enable) {
         final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
                 run.getActualDockerImage());
         try {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-            final int boundaryKBitsPerSec = limit ? boundary * 8 / BYTES_IN_KB : 0;
+            final int boundaryKBitsPerSec = enable ? boundary * 8 / BYTES_IN_KB : 0;
             final String getSizeCommand = LimitBandwidthCommand.builder()
                     .runScriptUrl(limitRunBandwidthScriptUrl)
+                    .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
-                    .limit(String.valueOf(limit))
+                    .enable(String.valueOf(enable))
                     .uploadRate(String.valueOf(boundaryKBitsPerSec))
                     .downloadRate(String.valueOf(boundaryKBitsPerSec))
                     .build()
