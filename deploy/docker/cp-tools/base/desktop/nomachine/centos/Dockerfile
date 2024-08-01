@@ -93,9 +93,10 @@ ADD centos/scripts/libreoffice.sh /opt/libreoffice.sh
 RUN chmod +x /opt/libreoffice.sh && /opt/libreoffice.sh && rm -f /opt/libreoffice.sh
 
 # Install Chrome
-RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
-    yum install -y /opt/google-chrome-stable_current_*.rpm && \
-    rm -f /opt/google-chrome-stable_current_*.rpm
+# Does not work anymore on centos
+# RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
+#     yum install -y /opt/google-chrome-stable_current_*.rpm && \
+#     rm -f /opt/google-chrome-stable_current_*.rpm
 
 
 # Add Chrome desktop icon
