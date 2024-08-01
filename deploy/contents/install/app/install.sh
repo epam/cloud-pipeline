@@ -683,14 +683,13 @@ if is_service_requested cp-docker-registry; then
         fi
 
         print_info "-> Push base tools images into the docker registry"
-        
-        local point_in_time_configuration_docker_manifest_file=$(is_data_is_available_in_point_in_time_configuration tools)
-        if [ $point_in_time_configuration_docker_manifest_file ]; then  
-              CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$point_in_time_configuration_docker_manifest_file"} 
-        else 
-              CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
+
+        # if CP_DOCKER_MANIFEST_PATH provided explicitly - use it, otherwise check for the manifest
+        # from point-in-time configuration or use default value
+        if [ -z "${CP_DOCKER_MANIFEST_PATH}" ]; then
+          docker_manifest_import_users_from_point_in_time_configuration=$(is_module_available_in_point_in_time_configuration tools)
+          CP_DOCKER_MANIFEST_PATH=${docker_manifest_import_users_from_point_in_time_configuration:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
         fi
-  
 
         if [ $CP_DOCKER_INSTALLED -eq 0 ] && [ -d "$CP_DOCKER_MANIFEST_PATH" ]; then
             docker_push_manifest "$(realpath $CP_DOCKER_MANIFEST_PATH)" "$CP_DOCKER_REGISTRY_ID"
@@ -1378,7 +1377,6 @@ if is_service_requested cp-storage-lifecycle-service; then
 fi
 
 set_preferences_from_point_in_time_configuration
-
 import_users_from_point_in_time_configuration
 
 print_ok "Installation done"

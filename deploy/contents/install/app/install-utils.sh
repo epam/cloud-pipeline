@@ -577,7 +577,7 @@ function enable_all_services {
     export CP_SERVICES_ENABLED="all"
 }
 
-function is_data_is_available_in_point_in_time_configuration {
+function is_module_available_in_point_in_time_configuration {
   local point_in_time_configuration_module="${1}"
 
   if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
@@ -596,37 +596,41 @@ function is_data_is_available_in_point_in_time_configuration {
 }
 
 function enable_services_from_point_in_time_configuration {   
-    local point_in_time_configuration_service_file=$(is_data_is_available_in_point_in_time_configuration services)
-    if [ $point_in_time_configuration_service_file ]; then
-       while read -r key; do 
-         enable_service "$key"
-         echo "$key=${!key}"
-       done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
+    local point_in_time_configuration_service_file=$(is_module_available_in_point_in_time_configuration services)
+    if [ "$point_in_time_configuration_service_file" ]; then
+        print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
+        while read -r key; do
+            enable_service "$key"
+            echo "$key=${!key}"
+        done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
     else  
        enable_all_services
     fi
 }
 
 function set_preferences_from_point_in_time_configuration {
-  local point_in_time_configuration_preference_file=$(is_data_is_available_in_point_in_time_configuration system_preference)
-  
-  if [ $point_in_time_configuration_preference_file ]; then
-
-     local preferences_file_with_values=$(cat "$point_in_time_configuration_preference_file" | jq -c '[.[] | select(has("value"))]')
-     
-     local payload=$(echo "$preferences_file_with_values" | jq -r '.[] | "\(.name) \(.value) \(.visible)"')
-     while IFS= read -r pref_name pref_value pref_visible; do
-       api_set_preference $pref_name $pref_value $pref_visible
-     done <<< "$payload"
-  fi       
+    local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
+    if [ "$point_in_time_configuration_preference_file" ]; then
+        print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
+        local preferences_file_with_values=$(cat "$point_in_time_configuration_preference_file" | jq -c '[.[] | select(has("value"))]')
+        local payload=$(echo "$preferences_file_with_values" | jq -r '.[] | "\(.name) \(.value) \(.visible)"')
+        while IFS= read -r pref_name pref_value pref_visible; do
+            api_set_preference $pref_name $pref_value $pref_visible
+        done <<< "$payload"
+    fi
 }
 
 function import_users_from_point_in_time_configuration {
   local api_url="https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/users/import"
-  local point_in_time_configuration_users_file=$(is_data_is_available_in_point_in_time_configuration users)
+  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users)
   
-  if [ $point_in_time_configuration_users_file ]; then
-    curl -X POST -H "Authorization: Bearer ${$CP_API_JWT_ADMIN}" -H "Content-Type: multipart/form-data" -H "Accept: application/json" -F "file=@$point_in_time_configuration_users_file;type=text/csv" "${api_url}?createUser=true&createGroup=true"
+  if [ "$point_in_time_configuration_users_file" ]; then
+      print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
+      curl -X POST -H "Authorization: Bearer ${$CP_API_JWT_ADMIN}" \
+           -H "Content-Type: multipart/form-data" \
+           -H "Accept: application/json" \
+           -F "file=@$point_in_time_configuration_users_file;type=text/csv" \
+           "${api_url}?createUser=true&createGroup=true"
   fi      
 }
 
@@ -727,17 +731,18 @@ function parse_options {
         return 1
     fi
 
-    if [ -z $CP_INSTALL_CONFIG_FILE ]; then
-        local point_in_time_configuration_install_config=$(is_data_is_available_in_point_in_time_configuration configmap)
-        if [ $point_in_time_configuration_install_config ]; then
-           print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
-           install_config_temp_dir=$(mktemp -d) 
-           cp $point_in_time_configuration_install_config $install_config_temp_dir
-           CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
+    if [ -z "$CP_INSTALL_CONFIG_FILE" ]; then
+        local point_in_time_configuration_install_config=$(is_module_available_in_point_in_time_configuration configmap)
+        if [ "$point_in_time_configuration_install_config" ]; then
+            print_info "install-config from point-in-time configuration: ${point_in_time_configuration_install_config} will be used."
+            print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
+            install_config_temp_dir=$(mktemp -d)
+            cp $point_in_time_configuration_install_config $install_config_temp_dir
+            CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
         else
-           print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
-           export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
-           mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
+            print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
+            export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
+            mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
         fi   
     fi
     load_install_config "$CP_INSTALL_CONFIG_FILE"
@@ -827,9 +832,7 @@ function parse_options {
                             "$CP_EDGE_EXTERNAL_PORT"
     fi
 
-    if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
-        enable_services_from_point_in_time_configuration
-    fi 
+    enable_services_from_point_in_time_configuration
 
     if [ $services_count == 0 ]; then
         print_warn "No specific services are specified, ALL will be installed"
