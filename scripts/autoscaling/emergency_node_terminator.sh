@@ -40,20 +40,20 @@ get_run_image() {
     grep -v "^null$"
 }
 
-terminate_run() {
+terminate_node() {
   _API="$1"
   _API_TOKEN="$2"
-  _RUN_ID="$3"
-  call_api "$_API" "$_API_TOKEN" "run/$_RUN_ID" "POST"
+  _NODE="$3"
+  call_api "$_API" "$_API_TOKEN" "cluster/node/$_NODE" "DELETE"
 }
 
 export API="$1"
 export API_TOKEN="$2"
 export NODE="$3"
+export LOG_TASK="DefunctRunMonitor"
 DISTRIBUTION_URL=${API%"/restapi"}
 
 SCRIPTS_DIR="$(pwd)/common"
-
 download_file "${DISTRIBUTION_URL}/common/utils.sh"
 
 _DOWNLOAD_RESULT=$?
@@ -64,22 +64,36 @@ fi
 chmod +x $SCRIPTS_DIR/* && \
 source $SCRIPTS_DIR/utils.sh
 
-docker ps --format '{{.ID}} {{.Image}}' | while read container_id image_name; do
-    defunct=$(sudo docker top $container_id | awk 'NR>1 {print $NF}' | grep "<defunct>")
-    if [ ! -z "$defunct" ]; then
-      RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
-      if [ -z "$RUN_ID" ]; then
-        pipe_log_debug "No run is assigned to the node."
-        continue
+PREFERENCES=$(get_system_preferences "$API" "$API_TOKEN")
+MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-cluster.instance.defunct.container.monitoring.delay}"
+MONITORING_DELAY_PREFERENCE_DEFAULT="${MONITORING_DELAY_PREFERENCE_DEFAULT:-300}"
+MONITORING_DELAY=$(resolve_system_preference "$PREFERENCES" "$MONITORING_DELAY_PREFERENCE" "$MONITORING_DELAY_PREFERENCE_DEFAULT")
+
+pipe_log_debug "Starting defunct container monitoring $NODE..."
+while true
+do
+  sleep "$MONITORING_DELAY"
+  pipe_log_debug "Start monitoring cycle for $NODE..."
+  docker ps --format '{{.ID}} {{.Image}}' | while read container_id image_name; do
+      defunct=$(sudo docker top $container_id | awk 'NR>1 {print $0}' | grep "<defunct>" | wc -l )
+      non_defunct=$(sudo docker top $container_id | awk 'NR>1 {print $0}' | grep -v "<defunct>" | wc -l )
+      if [ "$defunct" -gt 0 ] && [ "${non_defunct}" -eq 0 ]; then
+        pipe_log_debug "Found zombie container container_id=${container_id} image_name=${image_name}."
+        RUN_ID=$(get_current_run_id "$API" "$API_TOKEN" "$NODE")
+        if [ -z "$RUN_ID" ]; then
+          pipe_log_debug "No run is assigned to the node."
+          continue
+        fi
+        run_image=$(get_run_image "$API" "$API_TOKEN" "$RUN_ID" | awk -F ':' '{print $1}')
+        if [ -z "$run_image" ]; then
+          pipe_log_debug "No image found for "$RUN_ID" run id."
+          continue
+        fi
+        if [ "$image_name" -eq "$run_image" ]; then
+          pipe_log_error "Run "$RUN_ID" becomes a zombie and will be forcefully finished."
+          terminate_node "$API" "$API_TOKEN" "$NODE"
+        fi
       fi
-      run_image=$(get_run_image "$API" "$API_TOKEN" "$RUN_ID" | awk -F ':' '{print $1}')
-      if [ -z "$run_image" ]; then
-        pipe_log_debug "No image found for "$RUN_ID" run id."
-        continue
-      fi
-      if [ "$image_name" -eq "$run_image" ]; then
-        pipe_log_error "Run "$RUN_ID" becomes a zombie and will be forcefully finished."
-        terminate_run "$API" "$API_TOKEN" "$RUN_ID"
-      fi
-    fi
+  done
+  pipe_log_debug "Finish monitoring cycle for $NODE..."
 done

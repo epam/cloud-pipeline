@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ERROR_LOG_LEVEL="ERROR"
-INFO_LOG_LEVEL="INFO"
-DEBUG_LOG_LEVEL="DEBUG"
-
+##############################
+# Work with local commands
+##############################
 check_last_exit_code() {
    exit_code=$1
    msg_if_fail=$2
@@ -63,6 +62,9 @@ run_command_and_check_result() {
     fi
 }
 
+##############################
+# Work with CP API
+##############################
 function call_api() {
   _API="$1"
   _API_TOKEN="$2"
@@ -85,6 +87,14 @@ function call_api() {
       "$_API$_API_METHOD"
   fi
 }
+
+
+##############################
+# Run logging
+##############################
+ERROR_LOG_LEVEL="ERROR"
+INFO_LOG_LEVEL="INFO"
+DEBUG_LOG_LEVEL="DEBUG"
 
 function pipe_api_log() {
   _MESSAGE="$1"
@@ -133,5 +143,31 @@ function pipe_log() {
   if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
   then
     pipe_api_log "$_MESSAGE" "$_STATUS"
+  fi
+}
+
+##############################
+# System Preferences
+##############################
+function get_system_preferences() {
+  _API="$1"
+  _API_TOKEN="$2"
+  call_api "$_API" "$_API_TOKEN" "preferences" "GET" |
+    jq -r '.payload[] | .name + "=" + .value' |
+    grep -v "^null$"
+}
+
+function resolve_system_preference() {
+  _PREFERENCES="$1"
+  _PREFERENCE="$2"
+  _DEFAULT_VALUE="$3"
+
+  NAME_AND_VALUE=$(echo "$_PREFERENCES" | grep "$_PREFERENCE=")
+  VALUE="${NAME_AND_VALUE#$_PREFERENCE=}"
+  if [[ "$VALUE" ]]
+  then
+    echo "$VALUE"
+  else
+    echo "$_DEFAULT_VALUE"
   fi
 }
