@@ -314,10 +314,16 @@ public class DockerContainerOperationManager {
         try {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+
+            final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
+
             final int boundaryKBitsPerSec = enable ? boundary * 8 / BYTES_IN_KB : 0;
             final String getSizeCommand = LimitBandwidthCommand.builder()
                     .runScriptUrl(limitRunBandwidthScriptUrl)
                     .runId(String.valueOf(run.getId()))
+                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                    .apiToken(apiToken)
+                    .distributionUrl(commitScriptsDistributionsUrl)
                     .containerId(containerId)
                     .enable(String.valueOf(enable))
                     .uploadRate(String.valueOf(boundaryKBitsPerSec))

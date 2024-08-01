@@ -26,6 +26,9 @@ public class LimitBandwidthCommand extends AbstractDockerCommand {
     private static final String COMMAND_TEMPLATE = "curl -k -s \"%s\" | sudo -E /bin/bash --login /dev/stdin %s";
 
     private final String runId;
+    private final String api;
+    private final String apiToken;
+    private final String distributionUrl;
     private final String containerId;
     private final String enable;
     private final String uploadRate;
@@ -42,6 +45,9 @@ public class LimitBandwidthCommand extends AbstractDockerCommand {
     protected List<String> buildCommandArguments() {
         final List<String> command = new ArrayList<>();
         command.add(runId);
+        command.add(api);
+        command.add(apiToken);
+        command.add(distributionUrl);
         command.add(containerId);
         command.add(enable);
         command.add(uploadRate);
