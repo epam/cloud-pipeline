@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,26 +60,6 @@ run_command_and_check_result() {
     else
         pipe_log_info "$_MSG_IF_SUCCESS"
         echo $_RESULT
-    fi
-}
-
-kill_on_timeout() {
-    pid_to_kill=$!
-    description=$1
-    pgid_to_kill=$(ps -o pgid= $pid_to_kill | grep -o '[0-9]*')
-
-    echo "[INFO] $description process with PID: $pid_to_kill ($pgid_to_kill) will be killed after timeout: ${TIMEOUT} secs"
-
-    # TODO: Poll pgid, if committed fine - shall not sleep for the whole $TIMEOUT, just return
-    sleep ${TIMEOUT}
-
-    kill -0 $pgid_to_kill
-    if [[ $? -eq 0 ]]; then
-        pipe_log_error "[ERROR] $description timeout elapsed (${TIMEOUT} sec). $description process is going to be killed"
-
-        # TODO: Are we killing a job if a pipeline is stopped?
-        # TODO: (Low) Introduce commit cancelation from API, as it can last for hours
-        kill -9 -$pgid_to_kill
     fi
 }
 

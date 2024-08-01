@@ -17,7 +17,7 @@
 
 download_file() {
     local _FILE_URL=$1
-    wget -q --no-check-certificate -O ${_FILE_URL} 2>/dev/null || curl -s -k -O ${_FILE_URL}
+    wget -q --no-check-certificate -O "${_FILE_URL}" 2>/dev/null || curl -s -k -O "${_FILE_URL}"
     _DOWNLOAD_RESULT=$?
     return "$_DOWNLOAD_RESULT"
 }
@@ -50,10 +50,11 @@ terminate_run() {
 export API="$1"
 export API_TOKEN="$2"
 export NODE="$3"
-distribution_url="$4"
-SCRIPTS_DIR="$(pwd)/autoscaling"
+DISTRIBUTION_URL=${API%"/restapi"}
 
-download_file "${distribution_url}common_utils.sh"
+SCRIPTS_DIR="$(pwd)/common"
+
+download_file "${DISTRIBUTION_URL}/common/utils.sh"
 
 _DOWNLOAD_RESULT=$?
 if [ "$_DOWNLOAD_RESULT" -ne 0 ]; then
@@ -61,7 +62,7 @@ if [ "$_DOWNLOAD_RESULT" -ne 0 ]; then
     exit "$_DOWNLOAD_RESULT"
 fi
 chmod +x $SCRIPTS_DIR/* && \
-source $SCRIPTS_DIR/common_utils.sh
+source $SCRIPTS_DIR/utils.sh
 
 docker ps --format '{{.ID}} {{.Image}}' | while read container_id image_name; do
     defunct=$(sudo docker top $container_id | awk 'NR>1 {print $NF}' | grep "<defunct>")
