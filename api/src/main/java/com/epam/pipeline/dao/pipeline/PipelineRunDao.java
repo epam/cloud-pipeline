@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
@@ -124,6 +125,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String countRunGroupsQuery;
     private String createPipelineRunSidsQuery;
     private String deleteRunSidsByRunIdQuery;
+    private String deleteRunSidsByRunIdsQuery;
     private String loadRunSidsQuery;
     private String loadRunSidsQueryForList;
     private String updatePodStatusQuery;
@@ -144,6 +146,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadRunsByParentRunsIdsQuery;
     private String loadRunsByPoolIdQuery;
     private String loadRunsChartsQuery;
+    private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
+    private String deleteRunsByIdInQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -451,6 +455,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteRunSidsByRunIdQuery, runId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunSidsByRunIdIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteRunSidsByRunIdsQuery, params);
+    }
+
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -541,6 +551,31 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         final String query = wherePattern.matcher(loadRunsChartsQuery).replaceFirst(whereClause);
         return getNamedParameterJdbcTemplate().query(whereTagsPattern.matcher(query).replaceFirst(tagsWhereClause),
                 params, RunChartParameters.getRunChartMapper());
+    }
+
+    public List<PipelineRun> loadRunsByOwnerAndEndDateBeforeAndStatusIn(final Map<String, Date> ownersAndDates,
+                                                                        final List<Long> statuses) {
+        if (MapUtils.isEmpty(ownersAndDates)) {
+            return Collections.emptyList();
+        }
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, statuses);
+
+        final String query = wherePattern.matcher(loadRunsByOwnerAndEndDateBeforeAndStatusInQuery)
+                .replaceFirst(buildOwnersAndDatesClause(ownersAndDates));
+
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(query, params, PipelineRunParameters.getRowMapper()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunByIdIn(final List<Long> runIds) {
+        if (CollectionUtils.isEmpty(runIds)) {
+            return;
+        }
+
+        getNamedParameterJdbcTemplate().update(deleteRunsByIdInQuery,
+                new MapSqlParameterSource(LIST_PARAMETER, runIds));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
@@ -881,6 +916,14 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
     }
 
+    private String buildOwnersAndDatesClause(final Map<String, Date> ownersAndDates) {
+        return ownersAndDates.entrySet().stream()
+                .map(entry -> String.format("(end_date < '%s' AND lower(owner) = '%s')",
+                        Timestamp.from(entry.getValue().toInstant()),
+                        entry.getKey().toLowerCase()))
+                .collect(Collectors.joining(" OR "));
+    }
+
     private String makeRunSidsCondition(PipelineUser user, MapSqlParameterSource params) {
         StringBuilder whereBuilder = new StringBuilder(STRING_BUFFER_SIZE);
         whereBuilder.append(WHERE);
@@ -938,7 +981,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return runs;
     }
 
-    private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
+    public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
                 .toArray(MapSqlParameterSource[]::new);
@@ -1599,5 +1642,21 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsChartsQuery(final String loadRunsChartsQuery) {
         this.loadRunsChartsQuery = loadRunsChartsQuery;
+    }
+
+    @Required
+    public void setLoadRunsByOwnerAndEndDateBeforeAndStatusInQuery(
+            final String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery) {
+        this.loadRunsByOwnerAndEndDateBeforeAndStatusInQuery = loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
+    }
+
+    @Required
+    public void setDeleteRunsByIdInQuery(final String deleteRunsByIdInQuery) {
+        this.deleteRunsByIdInQuery = deleteRunsByIdInQuery;
+    }
+
+    @Required
+    public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
+        this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
     }
 }

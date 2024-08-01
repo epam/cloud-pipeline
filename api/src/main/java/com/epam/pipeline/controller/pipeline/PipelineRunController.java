@@ -595,4 +595,14 @@ public class PipelineRunController extends AbstractRestController {
     public Result<RunChartInfo> loadActiveRunsCharts(@RequestBody final RunChartFilterVO filter) {
         return Result.success(runApiService.loadActiveRunsCharts(filter));
     }
+
+    @PostMapping("/runs/archive")
+    @ApiOperation(
+            value = "Migrate runs to archive table according to owner's metadata configuration",
+            notes = "Migrate runs to archive table according to owner's metadata configuration",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void archiveRuns() {
+        runApiService.archiveRuns();
+    }
 }

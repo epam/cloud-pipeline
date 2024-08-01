@@ -75,5 +75,15 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRunStatusByIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.run_status_change
+                    WHERE
+                        run_id IN (:list)
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

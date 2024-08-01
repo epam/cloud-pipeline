@@ -59,21 +59,12 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -1299,6 +1290,56 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         charts.stream()
                 .peek(chart -> assertEquals(chart.getStatus(), TaskStatus.RUNNING))
                 .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
+    }
+
+    @Test
+    public void shouldLoadRunsByOwnerAndEndDateBeforeAndStatusIn() {
+        final Date testDate = new Date(2024, Calendar.JULY, 29, 2, 0, 0);
+        final Date afterTestDate = org.apache.commons.lang3.time.DateUtils.setHours(testDate, 3);
+        final Date beforeTestDate = org.apache.commons.lang3.time.DateUtils.setHours(testDate, 1);
+
+        final PipelineRun running = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        running.setStartDate(beforeTestDate);
+        running.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(running);
+
+        final PipelineRun childRun = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        childRun.setStartDate(beforeTestDate);
+        childRun.setEndDate(beforeTestDate);
+        childRun.setParentRunId(running.getId());
+        pipelineRunDao.createPipelineRun(childRun);
+
+        final PipelineRun stopped = pipelineRun(
+                TaskStatus.STOPPED, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        stopped.setStartDate(beforeTestDate);
+        stopped.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(stopped);
+
+        final PipelineRun anotherOwner = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, null, null);
+        anotherOwner.setStartDate(beforeTestDate);
+        anotherOwner.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(anotherOwner);
+
+        final PipelineRun runAfter = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        runAfter.setStartDate(afterTestDate);
+        runAfter.setEndDate(afterTestDate);
+        pipelineRunDao.createPipelineRun(runAfter);
+
+        final PipelineRun notOwnerChildRun = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        notOwnerChildRun.setStartDate(afterTestDate);
+        notOwnerChildRun.setEndDate(afterTestDate);
+        notOwnerChildRun.setParentRunId(anotherOwner.getId());
+        pipelineRunDao.createPipelineRun(notOwnerChildRun);
+
+        final List<PipelineRun> runs = pipelineRunDao.loadRunsByOwnerAndEndDateBeforeAndStatusIn(
+                Collections.singletonMap(USER, testDate),
+                Collections.singletonList(TaskStatus.RUNNING.getId()));
+        assertThat(runs.size(), is(1));
     }
 
     private PipelineRun createTestPipelineRun() {

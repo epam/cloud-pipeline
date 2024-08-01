@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.pipeline;
 
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import org.springframework.beans.factory.annotation.Required;
@@ -33,6 +34,7 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     private String loadRunStatusQuery;
     private String loadRunStatusByListQuery;
     private String deleteRunStatusQuery;
+    private String deleteRunStatusByIdsQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void saveStatus(RunStatus runStatus) {
@@ -55,6 +57,12 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteRunStatus(Long runId) {
         getJdbcTemplate().update(deleteRunStatusQuery, runId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunStatusByRunIdsIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteRunStatusByIdsQuery, params);
     }
 
     enum RunStatusParameters {
@@ -108,5 +116,10 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunStatusQuery(final String deleteRunStatusQuery) {
         this.deleteRunStatusQuery = deleteRunStatusQuery;
+    }
+
+    @Required
+    public void setDeleteRunStatusByIdsQuery(final String deleteRunStatusByIdsQuery) {
+        this.deleteRunStatusByIdsQuery = deleteRunStatusByIdsQuery;
     }
 }

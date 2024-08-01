@@ -54,12 +54,7 @@ import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
-import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
-import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.pipeline.RunLogManager;
+import com.epam.pipeline.manager.pipeline.*;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -104,6 +99,7 @@ public class RunApiService {
     private final PipelineRunAsManager pipelineRunAsManager;
     private final RunPermissionManager runPermissionManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final ArchiveRunService archiveRunService;
 
     @AclMask
     @QuotaLaunchCheck
@@ -384,5 +380,10 @@ public class RunApiService {
     @AclFilter
     public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
         return runManager.loadActiveRunsCharts(filter);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns() {
+        archiveRunService.archiveRuns();
     }
 }

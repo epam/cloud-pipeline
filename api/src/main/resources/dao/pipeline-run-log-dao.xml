@@ -203,5 +203,12 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRunLogByRunIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.pipeline_run_log WHERE run_id IN (:list)
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>
