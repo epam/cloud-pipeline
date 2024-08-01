@@ -222,7 +222,7 @@ fi
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "users" ]]; then
    echo_info "- Retrieving registered users from server"
-   _users_file="$OUTPUT_DIR/users.json"
+   _users_file="$OUTPUT_DIR/users.csv"
    get_users "$API_URL" "$API_TOKEN" "${_users_file}"
    write_scrap_result "users" "$(basename ${_users_file})" "$?" "$OUTPUT_DIR"
 fi   

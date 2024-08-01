@@ -44,11 +44,11 @@ function call_cp_api() {
     # Perform curl request, parse HTTP response status code of good then to API GET request
     get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
 
-    if [ $? -eq 0 ] && [ -n "$get_responce" ]; then
+    if [ -n "$get_responce" ]; then
        echo "$get_responce" > $OUTPUT_FILE
        echo_ok "$API_ENDPOINT from server $API_URL saved in file $OUTPUT_FILE"
     else
-       echo_err "API request failed or empty"
+       echo_err "API request failed or empty from ${API_URL}/${API_ENDPOINT}"
        return 1
     fi
 }
