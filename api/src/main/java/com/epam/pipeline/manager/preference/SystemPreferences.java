@@ -1171,8 +1171,8 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_POD_BANDWIDTH_MONITOR_DELAY = new IntPreference(
             "system.pod.bandwidth.monitor.delay", 30000, SYSTEM_GROUP, pass);
 
-    public static final IntPreference LIMIT_NETWORK_BANDWIDTH_TIMEOUT = new IntPreference(
-            "limit.network.bandwidth.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT = new IntPreference(
+            "limit.network.bandwidth.command.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

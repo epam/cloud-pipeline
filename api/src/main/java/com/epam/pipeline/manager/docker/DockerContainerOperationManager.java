@@ -333,7 +333,7 @@ public class DockerContainerOperationManager {
             final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
                     getSshPort(run));
             final boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.LIMIT_NETWORK_BANDWIDTH_TIMEOUT),
+                    preferenceManager.getPreference(SystemPreferences.LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT),
                     TimeUnit.SECONDS);
             Assert.state(isFinished && sshConnection.exitValue() == 0,
                     messageHelper.getMessage(MessageConstants.ERROR_LIMIT_NETWORK_BANDWIDTH_FAILED, run.getId()));
