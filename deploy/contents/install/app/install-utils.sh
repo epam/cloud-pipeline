@@ -621,6 +621,15 @@ function set_preferences_from_point_in_time_configuration {
   fi       
 }
 
+function import_users_from_point_in_time_configuration {
+  local api_url="https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/users/import"
+  local point_in_time_configuration_users_file=$(is_data_is_available_in_point_in_time_configuration users)
+  
+  if [ $point_in_time_configuration_users_file ]; then
+    curl -X POST -H "Authorization: Bearer ${$CP_API_JWT_ADMIN}" -H "Content-Type: multipart/form-data" -H "Accept: application/json" -F "file=@$point_in_time_configuration_users_file;type=text/csv" "${api_url}?createUser=true&createGroup=true"
+  fi      
+}
+
 function parse_options {
     local services_count=0
     POSITIONAL=()

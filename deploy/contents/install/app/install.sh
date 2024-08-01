@@ -1379,5 +1379,7 @@ fi
 
 set_preferences_from_point_in_time_configuration
 
+import_users_from_point_in_time_configuration
+
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
