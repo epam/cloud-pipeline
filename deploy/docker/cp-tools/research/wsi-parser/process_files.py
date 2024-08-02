@@ -1427,7 +1427,7 @@ def process_wsi_files():
                 continue
             file_to_skip_full_path = os.path.join(root_dir_path, file_to_skip)
             skip_files.append(file_to_skip_full_path)
-            log_info('The following files will be skipped: {}'.format(skip_files))
+    log_info('The following files will be skipped: {}'.format(skip_files))
 
     file_generator = SingleThreadWsiProcessingFileGenerator(lookup_paths_set, target_file_formats) \
         if processing_pool is None \
