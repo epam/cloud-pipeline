@@ -190,9 +190,10 @@ class WsiParsingUtils:
 
 class WsiProcessingFileGenerator(object):
 
-    def __init__(self, lookup_paths, target_file_formats):
+    def __init__(self, lookup_paths, target_file_formats, skip_files):
         self.lookup_paths = lookup_paths
         self.target_file_formats = target_file_formats
+        self.skip_files = skip_files
 
     @staticmethod
     def is_modified_after(file_path_a, modification_date):
@@ -253,10 +254,11 @@ class WsiProcessingFileGenerator(object):
 
 class DirListingParams:
 
-    def __init__(self, absolute_dir_path, filter_dir_names, target_extensions):
+    def __init__(self, absolute_dir_path, filter_dir_names, target_extensions, skip_files):
         self.absolute_dir_path = absolute_dir_path
         self.filter_dir_names = filter_dir_names
         self.target_extensions = target_extensions
+        self.skip_files = skip_files
 
 
 class DirListingResult:
@@ -272,7 +274,15 @@ def search_in_directory(search_params):
     for (dir_path, nested_dir_names, file_names) in os.walk(search_params.absolute_dir_path):
         for file_name in file_names:
             if file_name.endswith(search_params.target_extensions):
-                files.add(os.path.join(dir_path, file_name))
+                full_file_path = os.path.join(dir_path, file_name)
+                shall_skip_file = False
+                for file_to_skip in search_params.skip_files:
+                    file_to_skip_full_path = os.path.join(search_params.absolute_dir_path)
+                    if full_file_path == file_to_skip_full_path:
+                        shall_skip_file = True
+                        break
+                if not shall_skip_file:
+                    files.add(full_file_path)
         for nested_dir_name in nested_dir_names:
             if nested_dir_name not in search_params.filter_dir_names:
                 nested_dirs.add(os.path.join(dir_path, nested_dir_name))
@@ -326,7 +336,7 @@ class ParallelWsiProcessingFileGenerator(WsiProcessingFileGenerator):
             dirs_to_check = list()
             for i in range(0, min(self.processing_pool._processes, len(path_check_list))):
                 dirs_to_check.append(path_check_list.pop())
-            search_params_list = [DirListingParams(dir_path, self.filter_dir_names, self.target_file_formats)
+            search_params_list = [DirListingParams(dir_path, self.filter_dir_names, self.target_file_formats, self.skip_files)
                                   for dir_path
                                   in dirs_to_check]
             dir_search_results = self.processing_pool.map(search_in_directory, search_params_list)
@@ -1399,6 +1409,8 @@ def process_wsi_files():
         log_success('No paths for WSI processing specified')
         exit(0)
     target_file_formats = tuple(['.' + extension for extension in os.getenv('WSI_FILE_FORMATS', 'vsi,mrxs').split(',')])
+    # WSI_SKIP_FILES shall be set relative to the WSI_TARGET_DIRECTORIES
+    skip_files = os.getenv('WSI_SKIP_FILES', '').split(',')
     log_info('Following paths are specified for processing: {}'.format(lookup_paths))
     processing_pool = get_processing_pool()
     log_info('Lookup for unprocessed files')
