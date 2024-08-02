@@ -18,8 +18,10 @@ package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.mapper.user.RunnerSidMapper;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -31,12 +33,14 @@ import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class UserRunnersManager {
     private final PipelineUserRepository pipelineUserRepository;
     private final MessageHelper messageHelper;
+    private final RunnerSidMapper mapper;
 
     public List<RunnerSid> getRunners(final Long id) {
         return getUserOrThrow(id).getAllowedRunners();
@@ -48,10 +52,14 @@ public class UserRunnersManager {
     }
 
     @Transactional
-    public List<RunnerSid> saveRunners(final Long id, final List<RunnerSid> runners) {
+    public List<RunnerSidVO> saveRunners(final Long id, final List<RunnerSidVO> runners) {
         final PipelineUser user = getUserOrThrow(id);
         ListUtils.emptyIfNull(runners).forEach(this::validateRunner);
-        user.setAllowedRunners(ListUtils.emptyIfNull(runners));
+        final List<RunnerSid> entities = ListUtils.emptyIfNull(runners)
+                .stream()
+                .map(mapper::toEntity)
+                .collect(Collectors.toList());
+        user.setAllowedRunners(entities);
         pipelineUserRepository.save(user);
         return runners;
     }
@@ -94,7 +102,7 @@ public class UserRunnersManager {
                 .anyMatch(authority -> StringUtils.equalsIgnoreCase(authority, runnersAclSid.getName()));
     }
 
-    private void validateRunner(final RunnerSid runnerSid) {
+    private void validateRunner(final RunnerSidVO runnerSid) {
         Assert.state(StringUtils.isNotBlank(runnerSid.getName()), messageHelper.getMessage(
                 MessageConstants.ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND));
     }
