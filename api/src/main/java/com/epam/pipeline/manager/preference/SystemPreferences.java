@@ -519,10 +519,11 @@ public class SystemPreferences {
                                                                                            false, CLUSTER_GROUP, pass);
 
     public static final IntPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_DELAY = new IntPreference(
-            "cluster.instance.defunct.container.monitoring.delay", 300, CLUSTER_GROUP, isGreaterThan(0));
+            "cluster.instance.defunct.container.monitoring.delay", 300,
+            CLUSTER_GROUP, isGreaterThan(0), true);
 
     public static final BooleanPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_ENABLED = new BooleanPreference(
-            "cluster.instance.defunct.container.monitoring.enabled", false, CLUSTER_GROUP, pass);
+            "cluster.instance.defunct.container.monitoring.enabled", false, CLUSTER_GROUP, pass, true);
 
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));

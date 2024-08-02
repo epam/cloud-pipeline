@@ -263,4 +263,5 @@ dependencies {
 
 // >>>>> processes profiles
 processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
-                                   copyLocalDtsStartupScripts, generateComponentsVersions])
+                                   copyLocalDtsStartupScripts, generateComponentsVersions,
+                                   copyEmergencyNodeTerminationScript])
