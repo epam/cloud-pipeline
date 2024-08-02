@@ -46,7 +46,7 @@ class TimelineChart extends React.Component {
     }
   };
 
-  renderer = new TimelineChartRenderer();
+  renderer = new TimelineChartRenderer(this.props.options);
   hoverPosition = undefined;
   hoverContainer;
 
@@ -297,6 +297,9 @@ class TimelineChart extends React.Component {
         unix: toUnix,
         date: toDate
       } = parseDate(to) || {};
+      if (from === this.props.from && to === this.props.to) {
+        return;
+      }
       if (fromUnix !== undefined && toUnix !== undefined) {
         onRangeChanged({
           from: fromUnix,
@@ -449,6 +452,9 @@ class TimelineChart extends React.Component {
 }
 
 TimelineChart.propTypes = {
+  options: PropTypes.shape({
+    showHorizontalLines: PropTypes.bool
+  }),
   className: PropTypes.string,
   style: PropTypes.object,
   datasets: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

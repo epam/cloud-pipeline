@@ -314,7 +314,7 @@ class ClusterNode extends Component {
               >
                 <a style={{
                   whiteSpace: 'nowrap',
-                  left: this.labelRefs[labelsToShow]?.offsetLeft + 10,
+                  left: (this.labelRefs[labelsToShow]?.offsetLeft || 0) + 10,
                   position: 'absolute',
                   top: '50%',
                   transform: 'translateY(-50%)',

@@ -17,7 +17,10 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import GeneralInfoTab from './general-info';
+import GPUInfoTab from './gpu-info';
 import SubSettings from '../../settings/sub-settings';
+
+const NODE_NAME_MOCK = 'i-0e387f7a3f7ec88d0';
 
 @inject('preferences')
 @observer
@@ -38,7 +41,9 @@ class ClusterNodeMonitor extends React.Component {
       {
         key: 'gpu',
         title: 'GPU statistics',
-        render: () => <div>GPU statistics</div>
+        render: () => <GPUInfoTab
+          nodeName={NODE_NAME_MOCK}
+        />
       }
     ];
     return (

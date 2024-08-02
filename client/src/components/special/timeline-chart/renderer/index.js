@@ -73,6 +73,7 @@ class TimelineChartRenderer {
    * @property {string} [selectionColor=#666666]
    * @property {boolean} [adaptValueAxis=true]
    * @property {boolean} [showHoveredCoordinateLine=false]
+   * @property {boolean} [showHorizontalLines=false]
    */
   /**
    * @param {TimelineChartOptions} [options]
@@ -87,6 +88,7 @@ class TimelineChartRenderer {
       adaptValueAxis = true,
       showHoveredCoordinateLine = false
     } = options || {};
+    this.options = options || {};
     this.container = undefined;
     this.canvas = undefined;
     this.textCanvas = undefined;
@@ -1155,6 +1157,14 @@ class TimelineChartRenderer {
           x2: this.xAxis.pixelsOffset,
           color: this.coordinatesSystemColor
         });
+        if (this.options?.showHorizontalLines) {
+          this.horizontalLine({
+            y: this.yAxis.getPixelForValue(tick.value),
+            x1: this.xAxis.pixelsOffset,
+            x2: this.width,
+            color: this.coordinatesSystemColor
+          });
+        }
       }
     });
   }
