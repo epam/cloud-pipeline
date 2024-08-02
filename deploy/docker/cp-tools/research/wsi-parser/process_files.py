@@ -278,8 +278,7 @@ def search_in_directory(search_params):
                 for file_to_skip in search_params.skip_files:
                     if not file_to_skip or file_to_skip == '':
                         continue
-                    file_to_skip_full_path = os.path.join(search_params.absolute_dir_path, file_to_skip)
-                    if full_file_path == file_to_skip_full_path:
+                    if full_file_path == file_to_skip:
                         shall_skip_file = True
                         break
                 if not shall_skip_file:
@@ -1415,12 +1414,21 @@ def process_wsi_files():
         log_success('No paths for WSI processing specified')
         exit(0)
     target_file_formats = tuple(['.' + extension for extension in os.getenv('WSI_FILE_FORMATS', 'vsi,mrxs').split(',')])
-    # WSI_SKIP_FILES shall be set relative to the WSI_TARGET_DIRECTORIES
-    skip_files = os.getenv('WSI_SKIP_FILES', '').split(',')
     log_info('Following paths are specified for processing: {}'.format(lookup_paths))
     processing_pool = get_processing_pool()
     log_info('Lookup for unprocessed files')
     lookup_paths_set = set(lookup_paths.split(','))
+    
+    # WSI_SKIP_FILES shall be set relative to the WSI_TARGET_DIRECTORIES
+    skip_files = []
+    for root_dir_path in lookup_paths_set:
+        for file_to_skip in os.getenv('WSI_SKIP_FILES', '').split(','):
+            if not file_to_skip or file_to_skip == '':
+                continue
+            file_to_skip_full_path = os.path.join(root_dir_path, file_to_skip)
+            skip_files.append(file_to_skip_full_path)
+            log_info('The following files will be skipped: {}'.format(skip_files))
+
     file_generator = SingleThreadWsiProcessingFileGenerator(lookup_paths_set, target_file_formats) \
         if processing_pool is None \
         else ParallelWsiProcessingFileGenerator(lookup_paths_set, target_file_formats, processing_pool, skip_files)
