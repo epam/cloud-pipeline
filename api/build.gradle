@@ -35,11 +35,6 @@ task copyCommitRunScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/commit-run-scripts"
 }
 
-task copyCommonScripts(type: Copy) {
-    from "$rootDir/scripts/common/"
-    into "$rootDir/api/src/main/resources/static/common"
-}
-
 task copyFsAutoscalerScripts(type: Copy) {
     from "$rootDir/scripts/autoscaling/fsautoscale.sh"
     into "$rootDir/api/src/main/resources/static/"

@@ -14,12 +14,114 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+##############################
+# Work with CP API
+##############################
+function call_api() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _API_METHOD="$3"
+  _HTTP_METHOD="$4"
+  _HTTP_BODY="$5"
+  if [[ "$_HTTP_BODY" ]]
+  then
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      --data "$_HTTP_BODY" \
+      "$_API$_API_METHOD"
+  else
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      "$_API$_API_METHOD"
+  fi
+}
 
-download_file() {
-    local _FILE_URL=$1
-    wget -q --no-check-certificate -O "${_FILE_URL}" 2>/dev/null || curl -s -k -O "${_FILE_URL}"
-    _DOWNLOAD_RESULT=$?
-    return "$_DOWNLOAD_RESULT"
+
+##############################
+# Run logging
+##############################
+ERROR_LOG_LEVEL="ERROR"
+INFO_LOG_LEVEL="INFO"
+DEBUG_LOG_LEVEL="DEBUG"
+
+function pipe_api_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  if [[ "$RUN_ID" ]] && [[ "$LOG_TASK" ]]
+  then
+    if [[ "$_STATUS" == "$ERROR_LOG_LEVEL" ]]
+    then
+      STATUS="FAILURE"
+    else
+      STATUS="RUNNING"
+    fi
+    call_api "$_API" "$_API_TOKEN" "run/$RUN_ID/log" "POST" '{
+        "date": "'"$(get_current_date)"'",
+        "logText": "'"$_MESSAGE"'",
+        "runId": '"$RUN_ID"',
+        "status": "'"$STATUS"'",
+        "taskName": "'"$LOG_TASK"'"
+      }'
+  fi
+}
+
+function get_current_date() {
+  date '+%Y-%m-%d %H:%M:%S.%N' | cut -b1-23
+}
+
+function pipe_log_debug() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$DEBUG_LOG_LEVEL"
+}
+
+function pipe_log_info() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$INFO_LOG_LEVEL"
+}
+
+function pipe_log_error() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$ERROR_LOG_LEVEL"
+}
+
+function pipe_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  echo "$(get_current_date): [$_STATUS] $_MESSAGE"
+  if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
+  then
+    pipe_api_log "$_MESSAGE" "$_STATUS"
+  fi
+}
+
+##############################
+# System Preferences
+##############################
+function get_system_preferences() {
+  _API="$1"
+  _API_TOKEN="$2"
+  call_api "$_API" "$_API_TOKEN" "preferences" "GET" |
+    jq -r '.payload[] | .name + "=" + .value' |
+    grep -v "^null$"
+}
+
+function resolve_system_preference() {
+  _PREFERENCES="$1"
+  _PREFERENCE="$2"
+  _DEFAULT_VALUE="$3"
+
+  NAME_AND_VALUE=$(echo "$_PREFERENCES" | grep "$_PREFERENCE=")
+  VALUE="${NAME_AND_VALUE#$_PREFERENCE=}"
+  if [[ "$VALUE" ]]
+  then
+    echo "$VALUE"
+  else
+    echo "$_DEFAULT_VALUE"
+  fi
 }
 
 get_current_run_id() {
@@ -51,18 +153,6 @@ export API="$1"
 export API_TOKEN="$2"
 export NODE="$3"
 export LOG_TASK="DefunctRunMonitor"
-DISTRIBUTION_URL=${API%"/restapi"}
-
-SCRIPTS_DIR="$(pwd)/common"
-download_file "${DISTRIBUTION_URL}/common/utils.sh"
-
-_DOWNLOAD_RESULT=$?
-if [ "$_DOWNLOAD_RESULT" -ne 0 ]; then
-    echo "[ERROR] Helper scripts download failed. Exiting"
-    exit "$_DOWNLOAD_RESULT"
-fi
-chmod +x $SCRIPTS_DIR/* && \
-source $SCRIPTS_DIR/utils.sh
 
 PREFERENCES=$(get_system_preferences "$API" "$API_TOKEN")
 MONITORING_DELAY_PREFERENCE="${MONITORING_DELAY_PREFERENCE:-cluster.instance.defunct.container.monitoring.delay}"
