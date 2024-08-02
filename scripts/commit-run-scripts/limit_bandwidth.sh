@@ -14,39 +14,110 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+check_last_exit_code() {
+   exit_code=$1
+   msg_if_fail=$2
+   msg_if_success=$3
+
+   if [[ "$#" -ge 4 ]]; then
+       cmd_on_failure=${@:4}
+   fi
+
+   if [[ "$exit_code" -ne 0 ]]; then
+        pipe_log_error "$msg_if_fail"
+
+        if [[ ${cmd_on_failure} ]]; then
+           eval "${cmd_on_failure}"
+        fi
+        exit 1
+    else
+        pipe_log_info "$msg_if_success"
+    fi
+}
+
+function call_api() {
+  _API="$1"
+  _API_TOKEN="$2"
+  _API_METHOD="$3"
+  _HTTP_METHOD="$4"
+  _HTTP_BODY="$5"
+  if [[ "$_HTTP_BODY" ]]
+  then
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      --data "$_HTTP_BODY" \
+      "$_API$_API_METHOD"
+  else
+    curl -f -s -k -X "$_HTTP_METHOD" \
+      --header 'Accept: application/json' \
+      --header 'Authorization: Bearer '"$_API_TOKEN" \
+      --header 'Content-Type: application/json' \
+      "$_API$_API_METHOD"
+  fi
+}
+
+ERROR_LOG_LEVEL="ERROR"
+INFO_LOG_LEVEL="INFO"
+DEBUG_LOG_LEVEL="DEBUG"
+
+function pipe_api_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  if [ "$RUN_ID" ] && [ "$LOG_TASK" ]; then
+    if [ "$_STATUS" == "$ERROR_LOG_LEVEL" ]; then
+      STATUS="FAILURE"
+    else
+      STATUS="RUNNING"
+    fi
+    call_api "$API" "$API_TOKEN" "run/$RUN_ID/log" "POST" '{
+        "date": "'"$(get_current_date)"'",
+        "logText": "'"$_MESSAGE"'",
+        "runId": '"$RUN_ID"',
+        "status": "'"$STATUS"'",
+        "taskName": "'"$LOG_TASK"'"
+      }'
+  fi
+}
+
+function get_current_date() {
+  date '+%Y-%m-%d %H:%M:%S.%N' | cut -b1-23
+}
+
+function pipe_log_info() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$INFO_LOG_LEVEL"
+}
+
+function pipe_log_error() {
+  _MESSAGE="$1"
+  pipe_log "$_MESSAGE" "$ERROR_LOG_LEVEL"
+}
+
+function pipe_log() {
+  _MESSAGE="$1"
+  _STATUS="$2"
+  echo "$(get_current_date): [$_STATUS] $_MESSAGE"
+  if [[ "$DEBUG" ]] || [[ "$_STATUS" != "$DEBUG_LOG_LEVEL" ]]
+  then
+    pipe_api_log "$_MESSAGE" "$_STATUS"
+  fi
+}
 
 export LOG_TASK="LimitNetworkBandwidth"
+
 export RUN_ID="$1"
 export API="$2"
 export API_TOKEN="$3"
-distribution_url="$4"
-container_id="$5"
-enable="$6"
-upload_rate="$7"
-download_rate="$8"
+container_id="$4"
+enable="$5"
+upload_rate="$6"
+download_rate="$7"
 
 COMMAND="/bin/wondershaper"
-SCRIPTS_DIR="$(pwd)/commit-run-scripts"
 
 set -x
-
-download_file() {
-    local _FILE_URL=$1
-    wget -q --no-check-certificate -O ${_FILE_URL} 2>/dev/null || curl -s -k -O ${_FILE_URL}
-    _DOWNLOAD_RESULT=$?
-    return "$_DOWNLOAD_RESULT"
-}
-
-download_file "${distribution_url}common_utils.sh"
-
-_DOWNLOAD_RESULT=$?
-if [ "$_DOWNLOAD_RESULT" -ne 0 ];
-then
-    echo "[ERROR] Helper scripts download failed. Exiting"
-    exit "$_DOWNLOAD_RESULT"
-fi
-chmod +x $SCRIPTS_DIR/* && \
-source $SCRIPTS_DIR/common_utils.sh
 
 wondershaper_installed=$([ -f $COMMAND ])
 check_last_exit_code "${wondershaper_installed}" "[INFO] ${COMMAND} exists. Proceeding." \

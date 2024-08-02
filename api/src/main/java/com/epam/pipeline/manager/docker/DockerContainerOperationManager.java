@@ -323,7 +323,6 @@ public class DockerContainerOperationManager {
                     .runId(String.valueOf(run.getId()))
                     .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
                     .apiToken(apiToken)
-                    .distributionUrl(commitScriptsDistributionsUrl)
                     .containerId(containerId)
                     .enable(String.valueOf(enable))
                     .uploadRate(String.valueOf(boundaryKBitsPerSec))
