@@ -517,6 +517,13 @@ public class SystemPreferences {
      */
     public static final BooleanPreference CLUSTER_RANDOM_SCHEDULING = new BooleanPreference("cluster.random.scheduling",
                                                                                            false, CLUSTER_GROUP, pass);
+
+    public static final IntPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_DELAY = new IntPreference(
+            "cluster.instance.defunct.container.monitoring.delay", 300, CLUSTER_GROUP, isGreaterThan(0));
+
+    public static final BooleanPreference CLUSTER_INSTANCE_DEFUNCT_CONTAINER_MONITORING_ENABLED = new BooleanPreference(
+            "cluster.instance.defunct.container.monitoring.enabled", false, CLUSTER_GROUP, pass);
+
     public static final IntPreference CLUSTER_INSTANCE_HDD = new IntPreference("cluster.instance.hdd", 10,
                                                                                CLUSTER_GROUP, isGreaterThan(0));
     public static final BooleanPreference CLUSTER_INSTANCE_HDD_SCALE_ENABLED = new BooleanPreference(
