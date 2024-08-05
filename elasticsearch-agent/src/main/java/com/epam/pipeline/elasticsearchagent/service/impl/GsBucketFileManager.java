@@ -26,7 +26,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
