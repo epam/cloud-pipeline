@@ -60,7 +60,7 @@ class MasterNode:
             raise
 
     def get_master_node_info(self, master_id, task_name):
-        run = self.pipe_api.load_run_efficiently(master_id)
+        run = self.pipe_api.load_run(master_id)
         if run.get('status') != 'RUNNING':
             return None
         task_logs = self.pipe_api.load_task(master_id, task_name)
