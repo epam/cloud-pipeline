@@ -103,7 +103,7 @@ class HeatMapChart extends React.Component {
     const {
       datasets = []
     } = this.props;
-    if (this.renderer) {
+    if (this.renderer && datasets?.length) {
       this.renderer.registerDatasets(datasets);
     }
   }
