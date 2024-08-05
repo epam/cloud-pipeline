@@ -143,10 +143,6 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         file.setVersion(null);
         file.setDeleteMarker(null);
         final Map<String, String> labels = new HashMap<>(MapUtils.emptyIfNull(blob.getMetadata()));
-        final StorageClass storageClass = blob.getStorageClass();
-        if (storageClass != null) {
-            labels.put(ESConstants.STORAGE_CLASS_LABEL, storageClass.name());
-        }
         file.setLabels(labels);
         return file;
     }
