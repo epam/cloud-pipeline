@@ -12,29 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pipeline import Logger, TaskStatus, PipelineAPI, StatusEntry
-from pipeline import Kubernetes
 import argparse
 import os
-import subprocess
+import traceback
+
 import time
 
-class Task:
+from pipeline import Logger, PipelineAPI
+
+
+class Node:
+    def __init__(self, run):
+        self.run_id = run.get('id')
+        self.name = run.get('podId')
+        self.ip = run.get('podIP')
+
+
+class MasterNode:
 
     def __init__(self):
-        self.task_name = 'Task'
-
-    def fail_task(self, message):
-        error_text = '{} task failed: {}.'.format(self.task_name, message)
-        Logger.fail(error_text, task_name=self.task_name)
-        raise RuntimeError(error_text)
-
-class MasterNode(Task):
-
-    def __init__(self):
-        Task.__init__(self)
         self.task_name = 'WaitForMasterNode'
-        self.kube = Kubernetes()
         self.pipe_api = PipelineAPI(os.environ['API'], 'logs')
 
     def await_master_start(self, master_id, task_name):
@@ -49,48 +46,43 @@ class MasterNode(Task):
             while not master and attempts > 0:
                 master = self.get_master_node_info(master_id, task_name)
                 attempts -= 1
+                Logger.info('Waiting for node ...', task_name=self.task_name)
                 time.sleep(10)
             if not master:
                 raise RuntimeError('Failed to attach to master node')
 
             Logger.success('Attached to master node (run id {})'.format(master_id), task_name=self.task_name)
+            if not master.name or not master.ip:
+                Logger.warn('Master name or ip cannot be determined. IP: {}. Name: {}'.format(master.ip, master.name), task_name=self.task_name)
             return master
-        except Exception as e:
-            self.fail_task(e.message)
+        except Exception:
+            Logger.fail('{} task failed: {}.'.format(self.task_name, traceback.format_exc()), task_name=self.task_name)
+            raise
 
     def get_master_node_info(self, master_id, task_name):
-        pod = self.kube.get_pod(master_id)
-        if pod and pod.status == 'Running':
-            task_logs = self.pipe_api.load_task(master_id, task_name)
-            if not task_logs:
-                return None
-            task_status = task_logs[-1]['status']
-            if task_status == 'SUCCESS':
-                return pod
-            elif task_status != 'RUNNING':
-                raise RuntimeError('Worker failed to start as it cannot attach to master node (run id {})'.format(master_id))
+        run = self.pipe_api.load_run_efficiently(master_id)
+        if run.get('status') != 'RUNNING':
+            return None
+        task_logs = self.pipe_api.load_task(master_id, task_name)
+        if not task_logs:
+            return None
+        task_status = task_logs[-1]['status']
+        if task_status == 'SUCCESS':
+            return Node(run)
+        elif task_status != 'RUNNING':
+            raise RuntimeError('Worker failed to start as it cannot attach to master node (run id {})'.format(master_id))
         return None
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--master-id', type=int, required=True)
     parser.add_argument('--task-name', required=True)
     args = parser.parse_args()
-    run_id = os.environ['RUN_ID']
 
-    status = StatusEntry(TaskStatus.SUCCESS)
-    workers = []
-    try:
-        master = MasterNode().await_master_start(args.master_id, args.task_name)
-        print(master.name + " " + master.ip)
-        exit(0)
-    except Exception as e:
-        Logger.warn(e.message)
-        status = StatusEntry(TaskStatus.FAILURE)
-    if status.status == TaskStatus.FAILURE:
-        raise RuntimeError('Failed to setup cluster')
+    node = MasterNode().await_master_start(args.master_id, args.task_name)
+    print(node.name + " " + node.ip)
 
-    
-    
+
 if __name__ == '__main__':
     main()
