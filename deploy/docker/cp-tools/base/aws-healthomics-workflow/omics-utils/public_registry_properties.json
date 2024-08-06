@@ -1,0 +1,19 @@
+{
+  "public.ecr.aws": { "namespace": "ecr-public", "pull_through": true },
+  "ecr-public": { "namespace": "ecr-public", "pull_through": true },
+
+  "quay.io": { "namespace": "quay", "pull_through": true },
+  "quay": { "namespace": "quay", "pull_through": true },
+
+  "us.gcr.io": { "namespace": "gcr", "pull_through": false },
+  "eu.gcr.io": { "namespace": "gcr", "pull_through": false },
+  "asia.gcr.io": { "namespace": "gcr", "pull_through": false },
+  "pkg.dev": { "namespace": "gar", "pull_through": false },
+  "nvcr.io": { "namespace": "nvcr", "pull_through": false},
+
+  "ghcr.io": { "namespace": "ghcr", "pull_through": false },
+  "mcr.microsoft.com": { "namespace": "mcr", "pull_through": false },
+
+  "dockerhub": { "namespace": "dockerhub", "pull_through": false },
+  "": { "namespace": "dockerhub", "pull_through": false }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsReferenceDataStorage;
+import com.epam.pipeline.entity.datastorage.aws.AWSOmicsSequenceDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -101,6 +103,20 @@ public abstract class AbstractDataStorageFactory {
                             mountPoint);
                     gsBucketStorage.setRegionId(regionId);
                     return gsBucketStorage;
+                case AWS_OMICS_REF:
+                    final AWSOmicsReferenceDataStorage omicsRefStore = new AWSOmicsReferenceDataStorage(id, name, path);
+                    omicsRefStore.setKmsKeyArn(kmsKey);
+                    omicsRefStore.setRegionId(regionId);
+                    omicsRefStore.setTempCredentialsRole(tempRole);
+                    omicsRefStore.setUseAssumedCredentials(useAssumedCreds);
+                    return omicsRefStore;
+                case AWS_OMICS_SEQ:
+                    final AWSOmicsSequenceDataStorage omicsSeqStore = new AWSOmicsSequenceDataStorage(id, name, path);
+                    omicsSeqStore.setKmsKeyArn(kmsKey);
+                    omicsSeqStore.setRegionId(regionId);
+                    omicsSeqStore.setTempCredentialsRole(tempRole);
+                    omicsSeqStore.setUseAssumedCredentials(useAssumedCreds);
+                    return omicsSeqStore;
                 default:
                     throw new IllegalArgumentException("Unsupported data storage type: " + type);
             }

@@ -195,6 +195,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-fsx
     compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.321'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
+    compile group: "com.amazonaws", name: "aws-java-sdk-omics", version: "1.12.717"
 
 
     // https://mvnrepository.com/artifact/com.microsoft.azure/azure-mgmt-resources

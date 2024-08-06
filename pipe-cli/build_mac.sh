@@ -82,6 +82,31 @@ python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
 chmod +x /tmp/ntlmaps/dist/ntlmaps/ntlmaps
 
 ###
+# Build pipe-omics
+###
+source ~/venv3.10*/bin/activate
+python3 -m pip install pyinstaller==6.5.0
+python3 -m pip install -r ${PIPE_OMICS_SOURCES_DIR}/requirements.txt
+cd $PIPE_OMICS_SOURCES_DIR && \
+pyinstaller \
+  --paths "${PIPE_OMICS_SOURCES_DIR}" \
+  --hidden-import=itertools \
+  --hidden-import=collections \
+  --hidden-import=base64 \
+  --hidden-import=math \
+  --hidden-import=reprlib \
+  --hidden-import=functools \
+  --hidden-import=re \
+  --hidden-import=subprocess \
+  -y \
+  --clean \
+  --distpath /tmp/pipe-omics/dist \
+  ${PIPE_OMICS_SOURCES_DIR}/pipe-omics.py
+
+chmod +x /tmp/pipe-omics/dist/pipe-omics/pipe-omics
+deactivate
+
+###
 # Build pipe
 ###
 function build_pipe {
@@ -128,6 +153,7 @@ function build_pipe {
                                     --distpath $distpath \
                                     --add-data /tmp/ntlmaps/dist/ntlmaps:ntlmaps \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
+                                    --add-data /tmp/pipe-omics/dist/pipe-omics:pipe-omics \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py $onefile
 }
 build_pipe $PIPE_CLI_LINUX_DIST_DIR/dist/dist-file --onefile
