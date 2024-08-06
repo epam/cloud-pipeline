@@ -54,7 +54,13 @@ import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
-import com.epam.pipeline.manager.pipeline.*;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
+import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
+import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunKubernetesManager;
+import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.pipeline.RunLogManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.security.acl.AclFilter;
 import com.epam.pipeline.manager.security.acl.AclMask;
@@ -224,8 +230,9 @@ public class RunApiService {
 
     @PreAuthorize(ADMIN_ONLY)
     @AclMask
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        return runManager.loadRunsActivityStats(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        return runManager.loadRunsActivityStats(start, end, archive);
     }
 
     @AclFilter

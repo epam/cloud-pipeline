@@ -61,7 +61,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -504,8 +510,9 @@ public class PipelineRunController extends AbstractRestController {
         @RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         final LocalDateTime start,
         @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        final LocalDateTime end) {
-        return Result.success(runApiService.loadRunsActivityStats(start, end));
+        final LocalDateTime end,
+        @RequestParam(defaultValue = "false", required = false) final boolean archive) {
+        return Result.success(runApiService.loadRunsActivityStats(start, end, archive));
     }
 
     @PostMapping(value = "/run/cmd")

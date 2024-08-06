@@ -138,6 +138,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadRunByPrettyUrlQuery;
     private String updateTagsQuery;
     private String loadAllRunsPossiblyActiveInPeriodQuery;
+    private String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     private String loadAllRunsByStatusQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
@@ -189,7 +190,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineRun> loadPipelineRunsActiveInPeriod(final LocalDateTime start, final LocalDateTime end) {
+    public List<PipelineRun> loadPipelineRunsActiveInPeriod(final LocalDateTime start, final LocalDateTime end,
+                                                            final boolean archive) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("PERIOD_START", start);
         params.addValue("PERIOD_END", end);
@@ -198,8 +200,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                                                             TaskStatus.PAUSED.getId(),
                                                             TaskStatus.RESUMING.getId());
         params.addValue("TARGET_LAST_STATUSES", targetLastStatuses);
-        return addServiceUrls(getNamedParameterJdbcTemplate().query(loadAllRunsPossiblyActiveInPeriodQuery,
-                params, PipelineRunParameters.getRowMapper()));
+        final String query = archive
+                ? loadAllRunsPossiblyActiveInPeriodWithArchiveQuery
+                : loadAllRunsPossiblyActiveInPeriodQuery;
+        return addServiceUrls(getNamedParameterJdbcTemplate()
+                .query(query, params, PipelineRunParameters.getRowMapper()));
     }
 
     public String loadSshPassword(Long id) {
@@ -1592,6 +1597,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadAllRunsPossiblyActiveInPeriodQuery(final String loadAllRunsPossiblyActiveInPeriodQuery) {
         this.loadAllRunsPossiblyActiveInPeriodQuery = loadAllRunsPossiblyActiveInPeriodQuery;
+    }
+
+    @Required
+    public void setLoadAllRunsPossiblyActiveInPeriodWithArchiveQuery(
+            final String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery) {
+        this.loadAllRunsPossiblyActiveInPeriodWithArchiveQuery = loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     }
 
     @Required

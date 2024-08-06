@@ -1072,11 +1072,13 @@ public class PipelineRunManager {
      *
      * @param start beginning of evaluating period
      * @param end ending of evaluating period
+     * @param archive optional archived runs loading
      * @return run with statuses adjusted
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end, archive);
         final List<Long> runIds = runs.stream()
             .map(BaseEntity::getId)
             .collect(Collectors.toList());

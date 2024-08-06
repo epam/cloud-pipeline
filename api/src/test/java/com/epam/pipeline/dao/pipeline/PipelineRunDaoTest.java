@@ -59,12 +59,22 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.epam.pipeline.test.creator.CommonCreatorConstants.*;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -158,6 +168,9 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Autowired
     private RunServiceUrlDao runServiceUrlDao;
 
+    @Autowired
+    private ArchiveRunDao archiveRunDao;
+
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
 
@@ -211,6 +224,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         createRunWithStartEndDates(afterSyncStart, afterSyncStart.plusHours(6));
         createRunWithStartEndDates(beforeSyncStart, null);
         createRunWithStartEndDates(afterSyncStart, null);
+        archiveRunWithStartEndDates(beforeSyncStart, afterSyncStart.plusHours(6));
 
         pipelineRunDao.loadAllRunsForPipeline(testPipeline.getId())
             .forEach(run -> {
@@ -224,8 +238,15 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 }
             });
         final List<PipelineRun> pipelineRuns = pipelineRunDao.loadPipelineRunsActiveInPeriod(SYNC_PERIOD_START,
-                                                                                             SYNC_PERIOD_END);
+                                                                                             SYNC_PERIOD_END,
+                                                                                     false);
         assertEquals(4, pipelineRuns.size());
+
+        final List<PipelineRun> pipelineRunsWithArchive = pipelineRunDao.loadPipelineRunsActiveInPeriod(
+                SYNC_PERIOD_START,
+                SYNC_PERIOD_END,
+                true);
+        assertEquals(5, pipelineRunsWithArchive.size());
     }
 
     @Test
@@ -1533,6 +1554,15 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
             run.setStatus(TaskStatus.STOPPED);
         }
         pipelineRunDao.createPipelineRun(run);
+    }
+
+    private void archiveRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(),
+                TestUtils.convertLocalDateTimeToDate(startDate),
+                TestUtils.convertLocalDateTimeToDate(endDate));
+        run.setStatus(TaskStatus.STOPPED);
+        run.setId(pipelineRunDao.createRunId());
+        archiveRunDao.batchInsertArchiveRuns(Collections.singletonList(run));
     }
 
     private PipelineRun buildRunWithTool(final Long pipelineId, final String prettyUrl, final List<RunSid> sids) {

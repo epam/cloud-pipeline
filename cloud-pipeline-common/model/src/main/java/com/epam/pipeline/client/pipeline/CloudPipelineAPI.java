@@ -285,7 +285,8 @@ public interface CloudPipelineAPI {
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
     @GET("run/activity")
-    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+    Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to,
+                                                          @Query("archive") boolean archive);
 
     @GET("run/pools/{id}")
     Call<Result<List<PipelineRun>>> loadRunsByPool(@Path(ID) Long poolId);
