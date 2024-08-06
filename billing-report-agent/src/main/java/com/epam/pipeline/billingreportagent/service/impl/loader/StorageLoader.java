@@ -20,6 +20,8 @@ import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.billingreportagent.service.impl.converter.FileShareMountsService;
+import com.epam.pipeline.entity.datastorage.AWSOmicsRefStorage;
+import com.epam.pipeline.entity.datastorage.AWSOmicsSeqStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
@@ -79,6 +81,10 @@ public class StorageLoader implements EntityLoader<AbstractDataStorage> {
     private Long getRegionId(final AbstractDataStorage storage) {
         if (storage instanceof S3bucketDataStorage) {
             return ((S3bucketDataStorage) storage).getRegionId();
+        } else if (storage instanceof AWSOmicsSeqStorage) {
+            return ((AWSOmicsSeqStorage) storage).getRegionId();
+        } else if (storage instanceof AWSOmicsRefStorage) {
+            return ((AWSOmicsRefStorage) storage).getRegionId();
         } else if (storage instanceof AzureBlobStorage) {
             return ((AzureBlobStorage) storage).getRegionId();
         } else if (storage instanceof GSBucketStorage) {

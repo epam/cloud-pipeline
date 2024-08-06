@@ -34,8 +34,11 @@ from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.audit import auditing
 from src.utilities.datastorage_du_operation import DataUsageHelper, DataUsageCommand, DuOutput
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
+from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
+from src.utilities.printing.storage import print_storage_listing
+from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 from src.utilities.user_operations_manager import UserOperationsManager
@@ -69,9 +72,14 @@ class EmptyFilesValues(object):
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-           clean=False, skip_existing=False, verify_destination=False):
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks,
+           additional_options, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+           on_empty_files, on_failures, clean=False, skip_existing=False, verify_destination=False):
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'cp', locals()):
+            sys.exit(0)
+
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -439,6 +447,11 @@ class DataStorageOperations(object):
     def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended, show_archive):
         """Lists storage contents
         """
+
+        # Check if any external extension should handle this call
+        if ExtensionHandlerRegistry.accept('storage', 'ls', locals()):
+            sys.exit(0)
+
         if path:
             root_bucket = None
             original_path = ''

@@ -1,0 +1,4 @@
+boto3==1.28.83
+requests==2.31.0
+amazon-omics-tools==0.3
+jsonpickle==3.0.3

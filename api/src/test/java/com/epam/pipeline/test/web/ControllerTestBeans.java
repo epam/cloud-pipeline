@@ -22,6 +22,8 @@ import com.epam.pipeline.acl.cluster.InstanceOfferApiService;
 import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lifecycle.DataStorageLifecycleApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
+import com.epam.pipeline.acl.datastorage.omics.AWSOmicsStoreApiService;
+import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.log.storage.StorageRequestApiService;
 import com.epam.pipeline.acl.notification.UserNotificationApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
@@ -47,7 +49,6 @@ import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
 import com.epam.pipeline.manager.issue.IssueApiService;
 import com.epam.pipeline.manager.ldap.LdapApiService;
-import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.manager.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.manager.metadata.MetadataApiService;
 import com.epam.pipeline.manager.metadata.MetadataEntityApiService;
@@ -259,4 +260,6 @@ public class ControllerTestBeans {
     @MockBean
     protected InstanceOfferApiService instanceOfferApiService;
 
+    @MockBean
+    protected AWSOmicsStoreApiService awsOmicsStoreApiService;
 }
