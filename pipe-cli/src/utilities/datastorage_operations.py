@@ -37,7 +37,6 @@ from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.extension.ext_handler_registry import ExtensionHandlerRegistry
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.printing.storage import print_storage_listing
 from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
