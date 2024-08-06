@@ -16,6 +16,7 @@ import os
 import re
 
 from abc import abstractmethod, ABCMeta
+from collections import namedtuple
 
 import click
 import jwt
@@ -23,6 +24,10 @@ import jwt
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.encoding_utilities import is_safe_chars, to_ascii, to_string
+
+TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
+
+UploadResult = namedtuple('UploadResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
 
 class StorageOperations:
@@ -304,20 +309,6 @@ class AbstractListingManager:
         :param recursive: Specifies if the listing has to be recursive.
         :param page_size: Max number of items to return. The argument is ignored if show_all argument is specified.
         :param show_all: Specifies if all items have to be listed.
-        :param show_archive: Specifies if archived items have to be listed
-        """
-        pass
-
-    @abstractmethod
-    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
-                          start_token=None, show_archive=False):
-        """
-        Lists files and folders on the specified page by a relative path in the current storage.
-
-        :param relative_path: Storage relative path to be listed.
-        :param recursive: Specifies if the listing has to be recursive.
-        :param page_size: Max number of items on the page.
-        :param start_token: Paging continuation token.
         :param show_archive: Specifies if archived items have to be listed
         """
         pass
