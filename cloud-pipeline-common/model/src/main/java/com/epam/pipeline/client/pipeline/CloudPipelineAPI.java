@@ -342,4 +342,7 @@ public interface CloudPipelineAPI {
 
     @POST("log/group")
     Call<Result<Map<String, Long>>> getSystemLogsGrouped(@Body LogRequest logRequest);
+
+    @POST("runs/archive")
+    Call<Result<Boolean>> archiveRuns();
 }
