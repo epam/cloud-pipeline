@@ -61,13 +61,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -602,7 +596,21 @@ public class PipelineRunController extends AbstractRestController {
             notes = "Migrate runs to archive table according to owner's metadata configuration",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public void archiveRuns() {
+    public Result<Boolean> archiveRuns() {
         runApiService.archiveRuns();
+        return Result.success(true);
+    }
+
+    @PostMapping("/runs/archive/owners")
+    @ApiOperation(
+            value = "Migrate runs to archive table for specified user (or group).",
+            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
+                                              @RequestParam final boolean principal,
+                                              @RequestParam(required = false) final Integer days) {
+        runApiService.archiveRuns(ownerSid, principal, days);
+        return Result.success(true);
     }
 }

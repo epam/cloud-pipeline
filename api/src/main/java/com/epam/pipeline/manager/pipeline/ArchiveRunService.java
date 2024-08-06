@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
@@ -31,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -38,7 +41,7 @@ import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -46,12 +49,15 @@ import org.apache.commons.math3.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -67,6 +73,7 @@ import static java.util.stream.Collectors.toMap;
 public class ArchiveRunService {
 
     private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
     private final MetadataDao metadataDao;
     private final UserManager userManager;
     private final RoleManager roleManager;
@@ -79,18 +86,35 @@ public class ArchiveRunService {
     private final StopServerlessRunDao stopServerlessRunDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
+    public void archiveRuns(final String identifier, final boolean principal, final Integer days) {
+        final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
+
+        final Map<String, Date> ownersAndDates = principal
+                ? findOwnersByUser(identifier, metadataKey, days)
+                : findOwnersByRole(identifier, metadataKey, days);
+
+        archiveRunsForOwners(ownersAndDates);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns() {
         final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
-        final List<Long> terminalStates = Arrays.stream(TaskStatus.values())
-                .filter(TaskStatus::isFinal)
-                .map(TaskStatus::getId)
-                .collect(toList());
 
-        final Map<String, Date> ownersAndDates = findOwnersAndDates(metadataKey);
+        final Map<String, Date> ownersAndDates = findAllOwnersAndDates(metadataKey);
+
+        archiveRunsForOwners(ownersAndDates);
+    }
+
+    private void archiveRunsForOwners(final Map<String, Date> ownersAndDates) {
         if (MapUtils.isEmpty(ownersAndDates)) {
             log.debug("No run owners found to archive runs.");
             return;
         }
+
+        final List<Long> terminalStates = Arrays.stream(TaskStatus.values())
+                .filter(TaskStatus::isFinal)
+                .map(TaskStatus::getId)
+                .collect(toList());
 
         final List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(
                 pipelineRunDao.loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates));
@@ -115,7 +139,8 @@ public class ArchiveRunService {
         if (!NumberUtils.isDigits(value)) {
             log.error("Metadata value for key '{}' is not numeric for '{}'='{}'", key, entry.getEntityClass(),
                     entry.getEntityId());
-            throw new IllegalStateException(String.format("Metadata value for key '%s' is not numeric.", key));
+            throw new IllegalStateException(messageHelper.getMessage(
+                    MessageConstants.ERROR_ARCHIVE_RUN_METADATA_NOT_NUMERIC, key));
         }
         return Integer.parseInt(value);
     }
@@ -135,7 +160,7 @@ public class ArchiveRunService {
         pipelineRunDao.deleteRunByIdIn(runIds);
     }
 
-    private Map<String, Date> findOwnersAndDates(final String metadataKey) {
+    private Map<String, Date> findAllOwnersAndDates(final String metadataKey) {
         final Map<Long, List<PipelineUser>> usersByRole = Optional.ofNullable(
                 roleManager.loadAllRoles(true).stream()).orElse(Stream.empty())
                 .filter(role -> role instanceof ExtendedRole)
@@ -161,5 +186,35 @@ public class ArchiveRunService {
                 .filter(entry -> pipelineUsers.containsKey(entry.getKey()))
                 .collect(toMap(entry -> pipelineUsers.get(entry.getKey()).toLowerCase(), entry ->
                         daysToDate(entry.getValue())));
+    }
+
+    private int findDaysInMetadata(final Long entityId, final AclClass entityClass, final String metadataKey) {
+        final EntityVO entityVO = new EntityVO(entityId, entityClass);
+        final MetadataEntry metadataEntry = metadataDao.loadMetadataItem(entityVO);
+        Assert.state(Objects.nonNull(metadataEntry)
+                && MapUtils.isNotEmpty(metadataEntry.getData())
+                && metadataEntry.getData().containsKey(metadataKey),
+                messageHelper.getMessage(MessageConstants.ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND,
+                        metadataKey, entityId, entityClass.name()));
+        return metadataToDays(metadataEntry.getData(), metadataKey, entityVO);
+    }
+
+    private Map<String, Date> findOwnersByUser(final String userIdentifier, final String metadataKey,
+                                               final Integer specifiedDays) {
+        final PipelineUser user = userManager.loadByNameOrId(userIdentifier);
+        final int days = Objects.nonNull(specifiedDays)
+                ? specifiedDays :
+                findDaysInMetadata(user.getId(), AclClass.PIPELINE_USER, metadataKey);
+        return Collections.singletonMap(user.getUserName(), daysToDate(Optional.of(days)));
+    }
+
+    private Map<String, Date> findOwnersByRole(final String roleIdentifier, final String metadataKey,
+                                               final Integer specifiedDays) {
+        final Role role = roleManager.loadRoleByNameOrId(roleIdentifier);
+        final int days = Objects.nonNull(specifiedDays)
+                ? specifiedDays
+                : findDaysInMetadata(role.getId(), AclClass.ROLE, metadataKey);
+        return ListUtils.emptyIfNull(roleManager.loadRoleWithUsers(role.getId()).getUsers()).stream()
+                .collect(toMap(PipelineUser::getUserName, user -> daysToDate(Optional.of(days))));
     }
 }

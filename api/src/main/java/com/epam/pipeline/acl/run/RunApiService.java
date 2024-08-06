@@ -386,4 +386,9 @@ public class RunApiService {
     public void archiveRuns() {
         archiveRunService.archiveRuns();
     }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns(final String name, final boolean principal, final Integer days) {
+        archiveRunService.archiveRuns(name, principal, days);
+    }
 }

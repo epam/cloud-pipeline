@@ -1430,7 +1430,7 @@ public class SystemPreferences {
     public static final IntPreference MONITORING_ARCHIVE_RUNS_DELAY = new IntPreference(
             "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
     public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
-            "monitoring.archive.runs.delay", false, MONITORING_GROUP, pass);
+            "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
 
     // Cloud
     public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =
