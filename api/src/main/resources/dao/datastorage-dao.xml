@@ -713,7 +713,6 @@
                         description,
                         datastorage_type,
                         path,
-                        datastorage_root_id,
                         sts_duration,
                         lts_duration,
                         incomplete_upload_cleanup_days,
@@ -730,13 +729,10 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
-                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
                         s3_temp_creds_role,
-                        mount_status,
-                        source_datastorage_id,
-                        masking_rules
+                        mount_status
                     FROM
                         pipeline.datastorage
                     WHERE
