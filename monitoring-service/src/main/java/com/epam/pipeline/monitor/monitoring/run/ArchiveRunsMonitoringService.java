@@ -20,8 +20,10 @@ import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 @Slf4j
+@Service
 public class ArchiveRunsMonitoringService implements MonitoringService {
 
     private final CloudPipelineAPIClient client;

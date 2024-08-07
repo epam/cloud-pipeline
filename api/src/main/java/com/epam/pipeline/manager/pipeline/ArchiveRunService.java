@@ -161,6 +161,22 @@ public class ArchiveRunService {
     }
 
     private Map<String, Date> findAllOwnersAndDates(final String metadataKey) {
+        final Map<Long, Optional<Integer>> daysByUser = findAllOwnersByRole(metadataKey);
+
+        final List<MetadataEntry> usersMetadata = ListUtils.emptyIfNull(metadataDao
+                .searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, metadataKey));
+        usersMetadata.forEach(entry -> daysByUser.put(entry.getEntity().getEntityId(),
+                Optional.of(metadataToDays(entry.getData(), metadataKey, entry.getEntity()))));
+
+        final Map<Long, String> owners = userManager.loadUsersById(new ArrayList<>(daysByUser.keySet())).stream()
+                .collect(toMap(PipelineUser::getId, PipelineUser::getUserName));
+        return daysByUser.entrySet().stream()
+                .filter(entry -> owners.containsKey(entry.getKey()))
+                .collect(toMap(entry -> owners.get(entry.getKey()).toLowerCase(), entry ->
+                        daysToDate(entry.getValue())));
+    }
+
+    private Map<Long, Optional<Integer>> findAllOwnersByRole(final String metadataKey) {
         final Map<Long, List<PipelineUser>> usersByRole = Optional.ofNullable(
                 roleManager.loadAllRoles(true).stream()).orElse(Stream.empty())
                 .filter(role -> role instanceof ExtendedRole)
@@ -170,22 +186,11 @@ public class ArchiveRunService {
                         .searchMetadataEntriesByClassAndKey(AclClass.ROLE, metadataKey)).stream()
                 .collect(toMap(entry -> entry.getEntity().getEntityId(), entry ->
                         metadataToDays(entry.getData(), metadataKey, entry.getEntity())));
-        final Map<Long, Optional<Integer>> daysByUser = usersByRole.entrySet().stream()
+        return usersByRole.entrySet().stream()
+                .filter(entry -> daysByRole.containsKey(entry.getKey()))
                 .flatMap(entry -> entry.getValue().stream()
                         .map(user -> Pair.create(user.getId(), daysByRole.get(entry.getKey()))))
                 .collect(groupingBy(Pair::getKey, mapping(Pair::getValue, reducing(Integer::min))));
-
-        final List<MetadataEntry> usersMetadata = ListUtils.emptyIfNull(metadataDao
-                .searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, metadataKey));
-        usersMetadata.forEach(entry -> daysByUser.put(entry.getEntity().getEntityId(),
-                Optional.of(metadataToDays(entry.getData(), metadataKey, entry.getEntity()))));
-
-        final Map<Long, String> pipelineUsers = userManager.loadUsersById(new ArrayList<>(daysByUser.keySet())).stream()
-                .collect(toMap(PipelineUser::getId, PipelineUser::getUserName));
-        return daysByUser.entrySet().stream()
-                .filter(entry -> pipelineUsers.containsKey(entry.getKey()))
-                .collect(toMap(entry -> pipelineUsers.get(entry.getKey()).toLowerCase(), entry ->
-                        daysToDate(entry.getValue())));
     }
 
     private int findDaysInMetadata(final Long entityId, final AclClass entityClass, final String metadataKey) {

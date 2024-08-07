@@ -19,6 +19,7 @@ package com.epam.pipeline.monitor.service;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class InstanceTypesLoader {
     private final CloudPipelineAPIClient client;
     private final Set<String> gpuInstanceTypes = ConcurrentHashMap.newKeySet();
@@ -44,13 +47,17 @@ public class InstanceTypesLoader {
 
     @Scheduled(fixedDelayString = "${refresh.instances.timeout:86400000}")
     public void refreshInstances() {
-        final Set<String> loadedTypes = client.loadAllInstanceTypes().stream()
-                .filter(it -> it.getGpu() > 0)
-                .map(InstanceType::getName)
-                .filter(StringUtils::isNotBlank)
-                .collect(Collectors.toSet());
-        gpuInstanceTypes.clear();
-        gpuInstanceTypes.addAll(loadedTypes);
+        try {
+            final Set<String> loadedTypes = client.loadAllInstanceTypes().stream()
+                    .filter(it -> it.getGpu() > 0)
+                    .map(InstanceType::getName)
+                    .filter(StringUtils::isNotBlank)
+                    .collect(Collectors.toSet());
+            gpuInstanceTypes.clear();
+            gpuInstanceTypes.addAll(loadedTypes);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     public Set<String> loadGpuInstanceTypes() {
