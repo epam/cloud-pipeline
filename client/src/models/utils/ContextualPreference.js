@@ -23,7 +23,8 @@ export const names = {
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
   allowedPriceTypes: 'cluster.allowed.price.types',
   jobsVisibility: 'launch.run.visibility',
-  jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold'
+  jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold',
+  storageManagementRestrictedAccess: 'storage.management.restricted.access'
 };
 
 export class ContextualPreferenceLoad extends Remote {
@@ -44,6 +45,13 @@ export class ContextualPreferenceUpdate extends RemotePost {
       credentials: 'include',
       method: 'PUT'
     };
+    this.url = '/contextual/preference';
+  }
+}
+
+export class ContextualPreferenceSearch extends RemotePost {
+  constructor () {
+    super();
     this.url = '/contextual/preference';
   }
 }

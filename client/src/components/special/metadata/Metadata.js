@@ -237,7 +237,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
     restrictedKeys: PropTypes.array,
     extraKeys: PropTypes.arrayOf(PropTypes.string),
     extraInfo: PropTypes.arrayOf(PropTypes.node),
-    specialTagsProperties: PropTypes.object
+    specialTagsProperties: PropTypes.object,
+    showMetadata: PropTypes.bool,
+    jobList: PropTypes.node
   };
 
   static defaultProps = {
@@ -1616,7 +1618,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
     };
     const renderActions = () => {
       const actions = [];
-      if (editable && !this.state.addKey) {
+      if (editable && !this.state.addKey && this.props.showMetadata) {
         actions.push(
           <Button
             id="add-key-button"
@@ -1725,20 +1727,25 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     }
     const result = [header];
-    if (this.props.dataStorageTags && this.props.showContent) {
+    if ((this.props.dataStorageTags && this.props.showContent) ||
+      this.props.jobList) {
       result.push(
         <SplitPanel
           key="split"
           style={{flex: 1, overflow: 'auto'}}
           orientation="vertical">
-          <div key="file preview" style={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%'
-          }}>
-            {this.renderFilePreview()}
-          </div>
-          {this.props.hideMetadataTags ? null : metadata}
+          {
+            (this.props.dataStorageTags && this.props.showContent) &&
+            <div key="file preview" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%'
+            }}>
+              {this.renderFilePreview()}
+            </div>
+          }
+          {this.props.showMetadata && !this.props.hideMetadataTags ? metadata : null}
+          {this.props.jobList ? this.props.jobList : null}
         </SplitPanel>
       );
     } else {
