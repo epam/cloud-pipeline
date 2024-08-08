@@ -163,10 +163,9 @@ public class ArchiveRunService {
     private Map<String, Date> findAllOwnersAndDates(final String metadataKey) {
         final Map<Long, Optional<Integer>> daysByUser = findAllOwnersByRole(metadataKey);
 
-        final List<MetadataEntry> usersMetadata = ListUtils.emptyIfNull(metadataDao
-                .searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, metadataKey));
-        usersMetadata.forEach(entry -> daysByUser.put(entry.getEntity().getEntityId(),
-                Optional.of(metadataToDays(entry.getData(), metadataKey, entry.getEntity()))));
+        ListUtils.emptyIfNull(metadataDao.searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, metadataKey))
+                .forEach(entry -> daysByUser.put(entry.getEntity().getEntityId(),
+                        Optional.of(metadataToDays(entry.getData(), metadataKey, entry.getEntity()))));
 
         final Map<Long, String> owners = userManager.loadUsersById(new ArrayList<>(daysByUser.keySet())).stream()
                 .collect(toMap(PipelineUser::getId, PipelineUser::getUserName));
@@ -219,7 +218,16 @@ public class ArchiveRunService {
         final int days = Objects.nonNull(specifiedDays)
                 ? specifiedDays
                 : findDaysInMetadata(role.getId(), AclClass.ROLE, metadataKey);
-        return ListUtils.emptyIfNull(roleManager.loadRoleWithUsers(role.getId()).getUsers()).stream()
-                .collect(toMap(PipelineUser::getUserName, user -> daysToDate(Optional.of(days))));
+        final List<PipelineUser> users = ListUtils.emptyIfNull(roleManager.loadRoleWithUsers(role.getId()).getUsers());
+        final List<Long> userIds = users.stream().map(PipelineUser::getId).collect(toList());
+        final Map<Long, Integer> usersDays = Objects.nonNull(specifiedDays)
+                ? Collections.emptyMap()
+                : ListUtils.emptyIfNull(metadataDao
+                .searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, metadataKey)).stream()
+                .filter(entry -> userIds.contains(entry.getEntity().getEntityId()))
+                .collect(toMap(entry -> entry.getEntity().getEntityId(), entry ->
+                        metadataToDays(entry.getData(), metadataKey, entry.getEntity())));
+        return users.stream().collect(toMap(PipelineUser::getUserName, user ->
+                daysToDate(Optional.of(usersDays.getOrDefault(user.getId(), days)))));
     }
 }
