@@ -10,12 +10,12 @@ function correctRunAsPermission (permission) {
     tools = [],
     ...rest
   } = permission;
-  if (pipelinesAllowed) {
+  if (!pipelinesAllowed) {
     pipelines = [];
   } else {
     pipelines = correctIdentifiers(pipelines);
   }
-  if (toolsAllowed) {
+  if (!toolsAllowed) {
     tools = [];
   } else {
     tools = correctIdentifiers(tools);
