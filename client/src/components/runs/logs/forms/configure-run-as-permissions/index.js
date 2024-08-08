@@ -110,9 +110,9 @@ class ConfigureRunAsPermissions extends React.Component {
   }
 
   onChangePipelinesAllowed = (pipelinesAllowedEvent) => {
-    const allPipelinesAllowed = pipelinesAllowedEvent.target.checked;
+    const pipelinesAllowed = pipelinesAllowedEvent.target.checked;
     this.setState({
-      pipelinesAllowed: allPipelinesAllowed
+      pipelinesAllowed
     }, this.onChange);
   };
 
@@ -123,9 +123,9 @@ class ConfigureRunAsPermissions extends React.Component {
   };
 
   onChangeToolsAllowed = (toolsAllowedEvent) => {
-    const allToolsAllowed = toolsAllowedEvent.target.checked;
+    const toolsAllowed = toolsAllowedEvent.target.checked;
     this.setState({
-      toolsAllowed: allToolsAllowed
+      toolsAllowed
     }, this.onChange);
   };
 
@@ -189,11 +189,11 @@ class ConfigureRunAsPermissions extends React.Component {
             checked={pipelinesAllowed}
             disabled={disabled}
             onChange={this.onChangePipelinesAllowed}>
-            Allow all pipelines
+            Allow pipelines
           </Checkbox>
         </div>
         {
-          !pipelinesAllowed && (
+          pipelinesAllowed && (
             <div style={{marginTop: 5}}>
               {
                 pipelines.map(this.renderPipelineSelector)
@@ -256,11 +256,11 @@ class ConfigureRunAsPermissions extends React.Component {
             checked={toolsAllowed}
             disabled={disabled}
             onChange={this.onChangeToolsAllowed}>
-            Allow all docker images
+            Allow docker images
           </Checkbox>
         </div>
         {
-          !toolsAllowed && (
+          toolsAllowed && (
             <div style={{marginTop: 5}}>
               {
                 tools.map(this.renderToolSelector)
