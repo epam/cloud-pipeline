@@ -45,6 +45,7 @@ import java.util.Map;
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -62,6 +63,7 @@ public class ArchiveRunServiceUnitTest {
     private static final EntityVO USER_ENTITY1 = new EntityVO(USER_ID1, AclClass.PIPELINE_USER);
     private static final EntityVO GROUP_ENTITY1 = new EntityVO(GROUP_ID1, AclClass.ROLE);
     private static final EntityVO GROUP_ENTITY2 = new EntityVO(GROUP_ID2, AclClass.ROLE);
+    private static final int CHUNK_SIZE = 3;
 
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
@@ -82,8 +84,8 @@ public class ArchiveRunServiceUnitTest {
     @Before
     public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
+        doReturn(CHUNK_SIZE).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
     }
-
 
     @Test
     public void shouldArchiveRunsForSpecifiedUserWithoutDays() {
@@ -166,7 +168,7 @@ public class ArchiveRunServiceUnitTest {
 
         archiveRunService.archiveRuns(GROUP1, false, INPUT_DAYS);
 
-        notInvoked(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(any(), any());
+        notInvoked(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(any(), any(), anyInt());
     }
 
     @Test
@@ -211,7 +213,7 @@ public class ArchiveRunServiceUnitTest {
 
     private void verifyDays(final int expectedDays) {
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any());
+        verify(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
         final Map<String, Date> results = argument.getValue();
         assertThat(results).hasSize(1);
         assertDays(results.get(USER1), expectedDays);

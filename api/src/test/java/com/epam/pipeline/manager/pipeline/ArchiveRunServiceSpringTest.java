@@ -79,12 +79,14 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SuppressWarnings("unused")
 @Transactional
-public class ArchiveRunServiceTest extends AbstractManagerTest {
+public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private static final String TEST = "test";
     private static final String OWNER = "OWNER";
     private static final String POD = "pod-id";
@@ -105,6 +107,7 @@ public class ArchiveRunServiceTest extends AbstractManagerTest {
     private static final int GROUP_DAYS_1 = 10;
     private static final int GROUP_DAYS_2 = 15;
     private static final String STRING = "string";
+    private static final int CHUNK_SIZE = 3;
 
     @MockBean
     private EntityManager entityManager;
@@ -165,6 +168,7 @@ public class ArchiveRunServiceTest extends AbstractManagerTest {
     @Before
     public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
+        doReturn(CHUNK_SIZE).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
     }
 
     @Test
@@ -426,8 +430,9 @@ public class ArchiveRunServiceTest extends AbstractManagerTest {
                 .hasSize(3);
 
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any());
-        final Map<String, Date> results = argument.getValue();
+        verify(pipelineRunDao, times(2))
+                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
+        final Map<String, Date> results = argument.getAllValues().get(0);
         assertThat(results).hasSize(3);
         assertDays(results.get(USER1), DAYS);
         assertDays(results.get(USER2), GROUP_DAYS_1);

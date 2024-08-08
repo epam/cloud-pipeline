@@ -77,6 +77,9 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Value("${pause.pool.size:10}")
     private int pausePoolSize;
 
+    @Value("${run.archive.pool.size:10}")
+    private int archiveRunPoolSize;
+
     @Value("${run.as.pool.size:5}")
     private int runAsPoolSize;
 
@@ -174,6 +177,11 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Bean
     public Executor pauseRunExecutor() {
         return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun", pausePoolSize));
+    }
+
+    @Bean
+    public Executor archiveRunExecutor() {
+        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("ArchiveRun", archiveRunPoolSize));
     }
 
     @Bean

@@ -2423,6 +2423,7 @@
                     FROM
                         pipeline.pipeline_run
                     WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )
+                    LIMIT :LIMIT
                 ]]>
             </value>
         </property>

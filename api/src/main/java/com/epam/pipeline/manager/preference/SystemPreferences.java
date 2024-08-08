@@ -1168,6 +1168,8 @@ public class SystemPreferences {
             SYSTEM_GROUP, PreferenceValidators.isValidNetworkConsumptionAction);
     public static final StringPreference SYSTEM_ARCHIVE_RUN_METADATA_KEY = new StringPreference(
             "system.archive.run.metadata.key", "run_archive_days", SYSTEM_GROUP, isNotBlank);
+    public static final IntPreference SYSTEM_ARCHIVE_RUN_CHUNK_SIZE = new IntPreference(
+            "system.archive.run.chunk.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

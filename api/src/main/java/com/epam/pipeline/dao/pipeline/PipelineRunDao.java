@@ -84,6 +84,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
     private static final String LIST_PARAMETER = "list";
+    private static final String LIMIT = "LIMIT";
     private static final int CLAUSE_LENGTH = 200;
 
     @Autowired
@@ -559,12 +560,13 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<PipelineRun> loadRunsByOwnerAndEndDateBeforeAndStatusIn(final Map<String, Date> ownersAndDates,
-                                                                        final List<Long> statuses) {
+                                                                        final List<Long> statuses, final int limit) {
         if (MapUtils.isEmpty(ownersAndDates)) {
             return Collections.emptyList();
         }
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, statuses);
+        params.addValue(LIMIT, limit);
 
         final String query = wherePattern.matcher(loadRunsByOwnerAndEndDateBeforeAndStatusInQuery)
                 .replaceFirst(buildOwnersAndDatesClause(ownersAndDates));

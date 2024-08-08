@@ -46,6 +46,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.math3.util.Pair;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,7 +86,6 @@ public class ArchiveRunService {
     private final RunStatusDao runStatusDao;
     private final StopServerlessRunDao stopServerlessRunDao;
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns(final String identifier, final boolean principal, final Integer days) {
         final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
 
@@ -96,7 +96,6 @@ public class ArchiveRunService {
         archiveRunsForOwners(ownersAndDates);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns() {
         final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
 
@@ -105,7 +104,9 @@ public class ArchiveRunService {
         archiveRunsForOwners(ownersAndDates);
     }
 
-    private void archiveRunsForOwners(final Map<String, Date> ownersAndDates) {
+    @Transactional(propagation = Propagation.REQUIRED)
+    @Async("archiveRunExecutor")
+    public void archiveRunsForOwners(final Map<String, Date> ownersAndDates) {
         if (MapUtils.isEmpty(ownersAndDates)) {
             log.debug("No run owners found to archive runs.");
             return;
@@ -116,20 +117,32 @@ public class ArchiveRunService {
                 .map(TaskStatus::getId)
                 .collect(toList());
 
-        final List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(
-                pipelineRunDao.loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates));
+        final Integer chunkSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
+
+        List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
+                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
 
         if (CollectionUtils.isEmpty(runsToArchive)) {
             log.debug("No runs found to archive.");
             return;
         }
-        log.debug("Transferring '{}' runs to archive.", runsToArchive.size());
-        final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(toList());
-        final List<PipelineRun> children = ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(runIds));
-        runsToArchive.addAll(children);
-        runIds.addAll(children.stream().map(PipelineRun::getId).collect(toList()));
-        archiveRunDao.batchInsertArchiveRuns(runsToArchive);
-        deleteRunsAndDependents(runIds);
+
+        int totalArchivedRuns = 0;
+        while (!runsToArchive.isEmpty()) {
+            final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(toList());
+            final List<PipelineRun> children = ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(runIds));
+            runsToArchive.addAll(children);
+            runIds.addAll(children.stream().map(PipelineRun::getId).collect(toList()));
+
+            log.debug("Transferring '{}' runs to archive.", runsToArchive.size());
+            archiveRunDao.batchInsertArchiveRuns(runsToArchive);
+            deleteRunsAndDependents(runIds);
+            totalArchivedRuns += runIds.size();
+
+            runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
+                    .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
+        }
+        log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", totalArchivedRuns);
     }
 
     private Integer metadataToDays(final Map<String, PipeConfValue> metadata, final String key,
