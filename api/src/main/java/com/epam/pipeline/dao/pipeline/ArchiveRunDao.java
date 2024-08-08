@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Required;
@@ -25,6 +26,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -32,7 +34,8 @@ public class ArchiveRunDao extends NamedParameterJdbcDaoSupport  {
 
     private final PipelineRunDao pipelineRunDao;
 
-    private String createArchiveRunsQuery;
+    private String createArchiveRunQuery;
+    private String createArchiveRunStatusChangeQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void batchInsertArchiveRuns(final List<PipelineRun> runs) {
@@ -40,11 +43,31 @@ public class ArchiveRunDao extends NamedParameterJdbcDaoSupport  {
             return;
         }
         final MapSqlParameterSource[] params = pipelineRunDao.getParamsForBatchUpdate(runs);
-        getNamedParameterJdbcTemplate().batchUpdate(createArchiveRunsQuery, params);
+        getNamedParameterJdbcTemplate().batchUpdate(createArchiveRunQuery, params);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void batchInsertArchiveRunsStatusChange(final List<RunStatus> runStatuses) {
+        if (CollectionUtils.isEmpty(runStatuses)) {
+            return;
+        }
+        final MapSqlParameterSource[] params = getRunStatusParamsForBatchUpdate(runStatuses);
+        getNamedParameterJdbcTemplate().batchUpdate(createArchiveRunStatusChangeQuery, params);
+    }
+
+    private MapSqlParameterSource[] getRunStatusParamsForBatchUpdate(final Collection<RunStatus> runStatuses) {
+        return runStatuses.stream()
+                .map(RunStatusDao.RunStatusParameters::getParameters)
+                .toArray(MapSqlParameterSource[]::new);
     }
 
     @Required
-    public void setCreateArchiveRunsQuery(final String createArchiveRunsQuery) {
-        this.createArchiveRunsQuery = createArchiveRunsQuery;
+    public void setCreateArchiveRunQuery(final String createArchiveRunQuery) {
+        this.createArchiveRunQuery = createArchiveRunQuery;
+    }
+
+    @Required
+    public void setCreateArchiveRunStatusChangeQuery(final String createArchiveRunStatusChangeQuery) {
+        this.createArchiveRunStatusChangeQuery = createArchiveRunStatusChangeQuery;
     }
 }

@@ -19,7 +19,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="com.epam.pipeline.dao.pipeline.ArchiveRunDao" id="archiveRunDao" autowire="byName">
-        <property name="createArchiveRunsQuery">
+        <property name="createArchiveRunQuery">
             <value>
                 <![CDATA[
                     INSERT INTO pipeline.archive_run (
@@ -126,6 +126,22 @@
                         :SENSITIVE,
                         :PIPELINE_NAME,
                         :NODE_START_DATE)
+                ]]>
+            </value>
+        </property>
+        <property name="createArchiveRunStatusChangeQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.archive_run_status_change (
+                        run_id,
+                        status,
+                        reason,
+                        date)
+                    VALUES (
+                        :RUN_ID,
+                        :STATUS,
+                        :REASON,
+                        :DATE)
                 ]]>
             </value>
         </property>
