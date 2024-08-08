@@ -821,7 +821,7 @@ public class PipelineRunManager {
         }
         if (CollectionUtils.isNotEmpty(result.getElements())) {
             Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(result.getElements().stream()
-                    .map(PipelineRun::getId).collect(Collectors.toList()));
+                    .map(PipelineRun::getId).collect(Collectors.toList()), false);
             for (final PipelineRun run : result.getElements()) {
                 run.setRunStatuses(runStatuses.get(run.getId()));
             }
@@ -1087,7 +1087,7 @@ public class PipelineRunManager {
             return Collections.emptyList();
         }
 
-        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds);
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds, archive);
 
         return runs.stream()
             .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))

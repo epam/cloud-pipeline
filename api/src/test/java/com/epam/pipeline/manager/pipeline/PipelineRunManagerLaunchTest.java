@@ -400,7 +400,7 @@ public class PipelineRunManagerLaunchTest {
     public void shouldLoadRunsActivityStats() {
         doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
                 .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18), eq(false));
-        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
+        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
 
         Map<Long, PipelineRun> runMap = pipelineRunManager
                 .loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18, false).stream()
@@ -411,7 +411,7 @@ public class PipelineRunManagerLaunchTest {
 
         verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(
                 any(LocalDateTime.class), any(LocalDateTime.class), anyBoolean());
-        verify(runStatusManager).loadRunStatus(anyListOf(Long.class));
+        verify(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
     }
 
     private void mock(final InstancePrice price) {

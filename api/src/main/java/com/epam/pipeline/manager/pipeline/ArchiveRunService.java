@@ -136,7 +136,7 @@ public class ArchiveRunService {
 
             log.debug("Transferring '{}' runs to archive.", runsToArchive.size());
             archiveRunDao.batchInsertArchiveRuns(runsToArchive);
-            archiveRunDao.batchInsertArchiveRunsStatusChange(runStatusDao.loadRunStatus(runIds));
+            archiveRunDao.batchInsertArchiveRunsStatusChange(runStatusDao.loadRunStatus(runIds, false));
             deleteRunsAndDependents(runIds);
             totalArchivedRuns += runIds.size();
 

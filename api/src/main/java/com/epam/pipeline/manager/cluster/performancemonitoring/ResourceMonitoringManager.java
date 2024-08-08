@@ -607,7 +607,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final Map<Long, List<RunStatus>> statuses = runStatusManager.loadRunStatus(
                     pausedRuns.stream()
                     .map(PipelineRun::getId)
-                    .collect(Collectors.toList()));
+                    .collect(Collectors.toList()), false);
 
             pausedRuns.forEach(run -> run.setRunStatuses(statuses.get(run.getId())));
             processLongPausedRuns(pausedRuns, action, actionTimeout);

@@ -33,6 +33,7 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     private String createRunStatusQuery;
     private String loadRunStatusQuery;
     private String loadRunStatusByListQuery;
+    private String loadRunStatusByListWithArchivedQuery;
     private String deleteRunStatusQuery;
     private String deleteRunStatusByIdsQuery;
 
@@ -46,12 +47,15 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
         return getJdbcTemplate().query(loadRunStatusQuery, RunStatusParameters.getRowMapper(), runId);
     }
 
-    public List<RunStatus> loadRunStatus(List<Long> runIds) {
-        MapSqlParameterSource params = new MapSqlParameterSource();
+    public List<RunStatus> loadRunStatus(final List<Long> runIds, final boolean archive) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("IDS", runIds);
 
-        return getNamedParameterJdbcTemplate().query(loadRunStatusByListQuery, params,
-                RunStatusParameters.getRowMapper());
+        final String query = archive
+                ? loadRunStatusByListWithArchivedQuery
+                : loadRunStatusByListQuery;
+
+        return getNamedParameterJdbcTemplate().query(query, params, RunStatusParameters.getRowMapper());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -121,5 +125,10 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunStatusByIdsQuery(final String deleteRunStatusByIdsQuery) {
         this.deleteRunStatusByIdsQuery = deleteRunStatusByIdsQuery;
+    }
+
+    @Required
+    public void setLoadRunStatusByListWithArchivedQuery(final String loadRunStatusByListWithArchivedQuery) {
+        this.loadRunStatusByListWithArchivedQuery = loadRunStatusByListWithArchivedQuery;
     }
 }
