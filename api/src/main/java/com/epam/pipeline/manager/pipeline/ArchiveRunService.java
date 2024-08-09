@@ -19,16 +19,8 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
-import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
-import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
-import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.ExtendedRole;
@@ -42,14 +34,10 @@ import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.math3.util.Pair;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
@@ -78,13 +66,7 @@ public class ArchiveRunService {
     private final MetadataDao metadataDao;
     private final UserManager userManager;
     private final RoleManager roleManager;
-    private final ArchiveRunDao archiveRunDao;
-    private final PipelineRunDao pipelineRunDao;
-    private final RunLogDao runLogDao;
-    private final RestartRunDao restartRunDao;
-    private final RunServiceUrlDao runServiceUrlDao;
-    private final RunStatusDao runStatusDao;
-    private final StopServerlessRunDao stopServerlessRunDao;
+    private final ArchiveRunAsynchronousService archiveRunAsyncService;
 
     public void archiveRuns(final String identifier, final boolean principal, final Integer days) {
         final String metadataKey = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
@@ -104,9 +86,7 @@ public class ArchiveRunService {
         archiveRunsForOwners(ownersAndDates);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED)
-    @Async("archiveRunExecutor")
-    public void archiveRunsForOwners(final Map<String, Date> ownersAndDates) {
+    private void archiveRunsForOwners(final Map<String, Date> ownersAndDates) {
         if (MapUtils.isEmpty(ownersAndDates)) {
             log.debug("No run owners found to archive runs.");
             return;
@@ -119,31 +99,7 @@ public class ArchiveRunService {
 
         final Integer chunkSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
 
-        List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
-                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
-
-        if (CollectionUtils.isEmpty(runsToArchive)) {
-            log.debug("No runs found to archive.");
-            return;
-        }
-
-        int totalArchivedRuns = 0;
-        while (!runsToArchive.isEmpty()) {
-            final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(toList());
-            final List<PipelineRun> children = ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(runIds));
-            runsToArchive.addAll(children);
-            runIds.addAll(children.stream().map(PipelineRun::getId).collect(toList()));
-
-            log.debug("Transferring '{}' runs to archive.", runsToArchive.size());
-            archiveRunDao.batchInsertArchiveRuns(runsToArchive);
-            archiveRunDao.batchInsertArchiveRunsStatusChange(runStatusDao.loadRunStatus(runIds, false));
-            deleteRunsAndDependents(runIds);
-            totalArchivedRuns += runIds.size();
-
-            runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
-                    .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
-        }
-        log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", totalArchivedRuns);
+        archiveRunAsyncService.archiveRunsAsynchronous(ownersAndDates, terminalStates, chunkSize);
     }
 
     private Integer metadataToDays(final Map<String, PipeConfValue> metadata, final String key,
@@ -162,16 +118,6 @@ public class ArchiveRunService {
     private Date daysToDate(final Optional<Integer> optionalDays) {
         final Integer days = optionalDays.orElseThrow(IllegalArgumentException::new);
         return DateUtils.convertLocalDateTimeToDate(DateUtils.nowUTC().minusDays(days));
-    }
-
-    private void deleteRunsAndDependents(final List<Long> runIds) {
-        pipelineRunDao.deleteRunSidsByRunIdIn(runIds);
-        runLogDao.deleteTaskByRunIdsIn(runIds);
-        restartRunDao.deleteRestartRunByIdsIn(runIds);
-        runServiceUrlDao.deleteByRunIdsIn(runIds);
-        runStatusDao.deleteRunStatusByRunIdsIn(runIds);
-        stopServerlessRunDao.deleteByRunIdIn(runIds);
-        pipelineRunDao.deleteRunByIdIn(runIds);
     }
 
     private Map<String, Date> findAllOwnersAndDates(final String metadataKey) {

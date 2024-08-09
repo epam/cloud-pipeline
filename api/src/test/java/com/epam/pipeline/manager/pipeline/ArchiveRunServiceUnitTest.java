@@ -18,13 +18,6 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
-import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
-import com.epam.pipeline.dao.pipeline.PipelineRunDao;
-import com.epam.pipeline.dao.pipeline.RestartRunDao;
-import com.epam.pipeline.dao.pipeline.RunLogDao;
-import com.epam.pipeline.dao.pipeline.RunStatusDao;
-import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
-import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -75,16 +68,9 @@ public class ArchiveRunServiceUnitTest {
     private final MetadataDao metadataDao = mock(MetadataDao.class);
     private final UserManager userManager = mock(UserManager.class);
     private final RoleManager roleManager = mock(RoleManager.class);
-    private final ArchiveRunDao archiveRunDao = mock(ArchiveRunDao.class);
-    private final PipelineRunDao pipelineRunDao = mock(PipelineRunDao.class);
-    private final RunLogDao runLogDao = mock(RunLogDao.class);
-    private final RestartRunDao restartRunDao = mock(RestartRunDao.class);
-    private final RunServiceUrlDao runServiceUrlDao = mock(RunServiceUrlDao.class);
-    private final RunStatusDao runStatusDao = mock(RunStatusDao.class);
-    private final StopServerlessRunDao stopServerlessRunDao = mock(StopServerlessRunDao.class);
+    private final ArchiveRunAsynchronousService archiveRunAsyncService = mock(ArchiveRunAsynchronousService.class);
     private final ArchiveRunService archiveRunService = new ArchiveRunService(preferenceManager, messageHelper,
-            metadataDao, userManager, roleManager, archiveRunDao, pipelineRunDao, runLogDao, restartRunDao,
-            runServiceUrlDao, runStatusDao, stopServerlessRunDao);
+            metadataDao, userManager, roleManager, archiveRunAsyncService);
 
     @Before
     public void setUp() {
@@ -173,7 +159,7 @@ public class ArchiveRunServiceUnitTest {
 
         archiveRunService.archiveRuns(GROUP1, false, INPUT_DAYS);
 
-        notInvoked(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(any(), any(), anyInt());
+        notInvoked(archiveRunAsyncService).archiveRunsAsynchronous(any(), any(), anyInt());
     }
 
     @Test
@@ -218,7 +204,7 @@ public class ArchiveRunServiceUnitTest {
 
     private void verifyDays(final int expectedDays) {
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao).loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
+        verify(archiveRunAsyncService).archiveRunsAsynchronous(argument.capture(), any(), any());
         final Map<String, Date> results = argument.getValue();
         assertThat(results).hasSize(1);
         assertDays(results.get(USER1), expectedDays);
