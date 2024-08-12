@@ -426,7 +426,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public SelenideElement waitForMountBuckets() {
         return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("cp-runs-table-icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+                .waitUntil(not(cssClass("cp-runs-table-icon-blue")), BUCKETS_MOUNTING_TIMEOUT);
     }
 
     public static By runId() {
