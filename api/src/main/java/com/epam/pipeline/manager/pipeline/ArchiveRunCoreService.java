@@ -23,6 +23,7 @@ import com.epam.pipeline.dao.pipeline.RunStatusDao;
 import com.epam.pipeline.dao.pipeline.StopServerlessRunDao;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -52,8 +53,8 @@ public class ArchiveRunCoreService {
     @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
                             final Integer chunkSize) {
-        List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
-                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
+        log.debug("Starting archive processing for '{}' owners.", ownersAndDates.size());
+        List<PipelineRun> runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, chunkSize);
 
         if (CollectionUtils.isEmpty(runsToArchive)) {
             log.debug("No runs found to archive.");
@@ -63,29 +64,53 @@ public class ArchiveRunCoreService {
         int totalArchivedRuns = 0;
         while (!runsToArchive.isEmpty()) {
             final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(toList());
+            log.debug("Loading child runs to archive...");
             final List<PipelineRun> children = ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(runIds));
+            log.debug("Loaded '{}' child runs to archive.", children.size());
             runsToArchive.addAll(children);
             runIds.addAll(children.stream().map(PipelineRun::getId).collect(toList()));
+            log.debug("Loading runs statuses to archive...");
+            final List<RunStatus> runStatuses = runStatusDao.loadRunStatus(runIds, false);
+            log.debug("Loaded '{}' run statuses to archive.", runStatuses.size());
 
-            log.debug("Transferring '{}' runs to archive.", runsToArchive.size());
+            log.debug("Transferring '{}' runs to archive...", runsToArchive.size());
             archiveRunDao.batchInsertArchiveRuns(runsToArchive);
-            archiveRunDao.batchInsertArchiveRunsStatusChange(runStatusDao.loadRunStatus(runIds, false));
+            log.debug("'{}' runs inserted to archive. Transferring run statuses...", runsToArchive.size());
+            archiveRunDao.batchInsertArchiveRunsStatusChange(runStatuses);
+            log.debug("'{}' run statuses inserted to archive", runStatuses.size());
             deleteRunsAndDependents(runIds);
             totalArchivedRuns += runIds.size();
 
-            runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
-                    .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
+            runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, chunkSize);
         }
         log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", totalArchivedRuns);
     }
 
     private void deleteRunsAndDependents(final List<Long> runIds) {
+        log.debug("Deleting run sids...");
         pipelineRunDao.deleteRunSidsByRunIdIn(runIds);
+        log.debug("Run sids deleted. Deleting run logs...");
         runLogDao.deleteTaskByRunIdsIn(runIds);
+        log.debug("Run logs deleted. Deleting restart runs...");
         restartRunDao.deleteRestartRunByIdsIn(runIds);
+        log.debug("Restart runs deleted. Deleting run service urls...");
         runServiceUrlDao.deleteByRunIdsIn(runIds);
+        log.debug("Run service urls deleted. Deleting run statuses...");
         runStatusDao.deleteRunStatusByRunIdsIn(runIds);
+        log.debug("Run statuses deleted. Deleting stop serverless runs info...");
         stopServerlessRunDao.deleteByRunIdIn(runIds);
+        log.debug("Stop serverless runs info deleted. Deleting runs...");
         pipelineRunDao.deleteRunByIdIn(runIds);
+        log.debug("'{}' runs deleted.", runIds.size());
+    }
+
+    private List<PipelineRun> fetchRunsToArchive(final Map<String, Date> ownersAndDates,
+                                                 final List<Long> terminalStates,
+                                                 final Integer chunkSize) {
+        log.debug("Loading master runs to archive...");
+        final List<PipelineRun> runsToArchive = ListUtils.emptyIfNull(pipelineRunDao
+                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(ownersAndDates, terminalStates, chunkSize));
+        log.debug("Loaded '{}' master runs to archive.", runsToArchive.size());
+        return runsToArchive;
     }
 }
