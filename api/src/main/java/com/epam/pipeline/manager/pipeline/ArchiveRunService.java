@@ -97,9 +97,12 @@ public class ArchiveRunService {
                 .map(TaskStatus::getId)
                 .collect(toList());
 
-        final Integer chunkSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
+        final Integer runsChunkSize = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
+        final Integer ownersChunkSize = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE);
 
-        archiveRunAsyncService.archiveRunsAsynchronous(ownersAndDates, terminalStates, chunkSize);
+        archiveRunAsyncService.archiveRunsAsynchronous(ownersAndDates, terminalStates, runsChunkSize, ownersChunkSize);
     }
 
     private Integer metadataToDays(final Map<String, PipeConfValue> metadata, final String key,

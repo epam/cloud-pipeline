@@ -107,7 +107,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private static final int GROUP_DAYS_1 = 10;
     private static final int GROUP_DAYS_2 = 15;
     private static final String STRING = "string";
-    private static final int CHUNK_SIZE = 3;
+    private static final int CHUNK_SIZE = 2;
 
     @MockBean
     private EntityManager entityManager;
@@ -168,7 +168,10 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @Before
     public void setUp() {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
-        doReturn(CHUNK_SIZE).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_CHUNK_SIZE);
+        doReturn(CHUNK_SIZE).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
+        doReturn(CHUNK_SIZE).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE);
     }
 
     @Test
@@ -430,13 +433,15 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 .hasSize(3);
 
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao, times(2))
+        verify(pipelineRunDao, times(3))
                 .loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
-        final Map<String, Date> results = argument.getAllValues().get(0);
-        assertThat(results).hasSize(3);
-        assertDays(results.get(USER1), DAYS);
-        assertDays(results.get(USER2), GROUP_DAYS_1);
-        assertDays(results.get(USER3), GROUP_DAYS_2);
+        final Map<String, Date> firstChunkResults = argument.getAllValues().get(0);
+        assertThat(firstChunkResults).hasSize(2);
+        assertDays(firstChunkResults.get(USER1), DAYS);
+        assertDays(firstChunkResults.get(USER2), GROUP_DAYS_1);
+        final Map<String, Date> thirdChunkResults = argument.getAllValues().get(2);
+        assertThat(thirdChunkResults).hasSize(1);
+        assertDays(thirdChunkResults.get(USER3), GROUP_DAYS_2);
     }
 
     private PipelineRun run() {

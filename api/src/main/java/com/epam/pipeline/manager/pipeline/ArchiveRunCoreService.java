@@ -32,11 +32,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.stream.Collectors.toList;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -52,23 +53,37 @@ public class ArchiveRunCoreService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void archiveRuns(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
-                            final Integer chunkSize) {
-        log.debug("Starting archive processing for '{}' owners.", ownersAndDates.size());
-        List<PipelineRun> runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, chunkSize);
+                            final Integer runsChunkSize, final Integer ownersChunkSize) {
+        final AtomicInteger counter = new AtomicInteger();
+
+        ListUtils.partition(Arrays.asList(ownersAndDates.keySet().toArray()), ownersChunkSize).forEach(chunk -> {
+            final Map<String, Date> ownersAndDatesChunk = ownersAndDates.entrySet().stream()
+                    .filter(entry -> chunk.contains(entry.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            log.debug("Starting archive processing for '{}'/'{}' owners.",
+                    ownersAndDatesChunk.size(), ownersAndDates.size());
+            archiveRunsChunk(ownersAndDatesChunk, terminalStates, runsChunkSize, counter);
+        });
+
+        log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", counter.get());
+    }
+
+    private void archiveRunsChunk(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
+                                  final Integer runsChunkSize, final AtomicInteger counter) {
+        List<PipelineRun> runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, runsChunkSize);
 
         if (CollectionUtils.isEmpty(runsToArchive)) {
             log.debug("No runs found to archive.");
             return;
         }
 
-        int totalArchivedRuns = 0;
         while (!runsToArchive.isEmpty()) {
-            final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(toList());
+            final List<Long> runIds = runsToArchive.stream().map(PipelineRun::getId).collect(Collectors.toList());
             log.debug("Loading child runs to archive...");
             final List<PipelineRun> children = ListUtils.emptyIfNull(pipelineRunDao.loadRunsByParentRuns(runIds));
             log.debug("Loaded '{}' child runs to archive.", children.size());
             runsToArchive.addAll(children);
-            runIds.addAll(children.stream().map(PipelineRun::getId).collect(toList()));
+            runIds.addAll(children.stream().map(PipelineRun::getId).collect(Collectors.toList()));
             log.debug("Loading runs statuses to archive...");
             final List<RunStatus> runStatuses = runStatusDao.loadRunStatus(runIds, false);
             log.debug("Loaded '{}' run statuses to archive.", runStatuses.size());
@@ -79,11 +94,10 @@ public class ArchiveRunCoreService {
             archiveRunDao.batchInsertArchiveRunsStatusChange(runStatuses);
             log.debug("'{}' run statuses inserted to archive", runStatuses.size());
             deleteRunsAndDependents(runIds);
-            totalArchivedRuns += runIds.size();
+            counter.addAndGet(runIds.size());
 
-            runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, chunkSize);
+            runsToArchive = fetchRunsToArchive(ownersAndDates, terminalStates, runsChunkSize);
         }
-        log.debug("Transferring runs to archive completed. Total archived runs count: '{}'", totalArchivedRuns);
     }
 
     private void deleteRunsAndDependents(final List<Long> runIds) {
