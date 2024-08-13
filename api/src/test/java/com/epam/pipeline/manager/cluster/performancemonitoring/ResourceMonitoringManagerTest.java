@@ -712,7 +712,7 @@ public class ResourceMonitoringManagerTest {
         final PipelineRun longPausedRun = getPausedRun(LONG_PAUSED_ACTION_TIMEOUT + 1);
         final List<PipelineRun> runs = Collections.singletonList(longPausedRun);
         when(pipelineRunManager.loadRunsByStatuses(any())).thenReturn(runs);
-        when(runStatusManager.loadRunStatus(eq(Collections.singletonList(PAUSED_RUN_ID))))
+        when(runStatusManager.loadRunStatus(eq(Collections.singletonList(PAUSED_RUN_ID)), eq(false)))
                 .thenReturn(Collections.singletonMap(PAUSED_RUN_ID, longPausedRun.getRunStatuses()));
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_LONG_PAUSED_ACTION))
                 .thenReturn(LongPausedRunAction.STOP.name());

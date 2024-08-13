@@ -60,7 +60,7 @@ public class CloudPipelineAPIClient {
     }
 
     public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final String from, final String to) {
-        return retryingApiExecutor.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadRunsActivityStats(from, to, true));
     }
 
     public List<AbstractDataStorage> loadAllDataStorages() {

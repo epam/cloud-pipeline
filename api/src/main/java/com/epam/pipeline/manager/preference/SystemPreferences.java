@@ -1174,6 +1174,13 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_POD_BANDWIDTH_ACTION = new StringPreference(
             "system.pod.bandwidth.action", NetworkConsumingRunAction.NOTIFY.name(),
             SYSTEM_GROUP, PreferenceValidators.isValidNetworkConsumptionAction);
+    public static final StringPreference SYSTEM_ARCHIVE_RUN_METADATA_KEY = new StringPreference(
+            "system.archive.run.metadata.key", "run_archive_days", SYSTEM_GROUP, isNotBlank);
+    public static final IntPreference SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE = new IntPreference(
+            "system.archive.run.runs.chunk.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE = new IntPreference(
+            "system.archive.run.owners.chunk.size", 100, SYSTEM_GROUP, isGreaterThan(0));
+
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -1433,6 +1440,10 @@ public class SystemPreferences {
     public static final BooleanPreference MONITORING_GPU_USAGE_ENABLE = new BooleanPreference(
             "monitoring.gpu.usage.enable", false, MONITORING_GROUP, pass);
 
+    public static final IntPreference MONITORING_ARCHIVE_RUNS_DELAY = new IntPreference(
+            "monitoring.archive.runs.delay", 24 * 60 * 60 * 1000, MONITORING_GROUP, isGreaterThan(0));
+    public static final BooleanPreference MONITORING_ARCHIVE_RUNS_ENABLE = new BooleanPreference(
+            "monitoring.archive.runs.enable", false, MONITORING_GROUP, pass);
 
     // Cloud
     public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =

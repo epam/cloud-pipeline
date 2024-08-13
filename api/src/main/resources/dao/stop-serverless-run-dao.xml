@@ -52,6 +52,13 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteByRunIdsServerlessRunQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.stop_serverless_run WHERE run_id IN (:list)
+                ]]>
+            </value>
+        </property>
         <property name="loadAllServerlessRunsQuery">
             <value>
                 <![CDATA[
@@ -65,7 +72,7 @@
                 ]]>
             </value>
         </property>
-        <property name="loadServerlessunByRunIdQuery">
+        <property name="loadServerlessRunByRunIdQuery">
             <value>
                 <![CDATA[
                     SELECT
@@ -75,6 +82,7 @@
                         stop_after
                     FROM
                         pipeline.stop_serverless_run
+                    WHERE run_id = ?
                 ]]>
             </value>
         </property>

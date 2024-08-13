@@ -77,6 +77,9 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Value("${pause.pool.size:10}")
     private int pausePoolSize;
 
+    @Value("${background.api.jobs.pool.size:10}")
+    private int backgroundJobsPoolSize;
+
     @Value("${run.as.pool.size:5}")
     private int runAsPoolSize;
 
@@ -174,6 +177,12 @@ public class AppConfiguration implements SchedulingConfigurer {
     @Bean
     public Executor pauseRunExecutor() {
         return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("PauseRun", pausePoolSize));
+    }
+
+    @Bean
+    public Executor backgroundJobsExecutor() {
+        return new DelegatingSecurityContextExecutor(getThreadPoolTaskExecutor("BackgroundJobs",
+                backgroundJobsPoolSize));
     }
 
     @Bean

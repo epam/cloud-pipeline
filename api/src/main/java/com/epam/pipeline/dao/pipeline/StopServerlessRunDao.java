@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +41,9 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     private String updateServerlessRunQuery;
     private String loadAllServerlessRunsQuery;
     private String deleteByRunIdServerlessRunQuery;
-    private String loadServerlessunByRunIdQuery;
+    private String loadServerlessRunByRunIdQuery;
     private String loadServerlessByStatusRunningQuery;
+    private String deleteByRunIdsServerlessRunQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createServerlessRunId() {
@@ -67,8 +69,8 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public Optional<StopServerlessRun> loadByRunId(final Long runId) {
-        return getJdbcTemplate().query(loadServerlessunByRunIdQuery, StopServerlessRunParameters.getRowMapper())
-                .stream()
+        return getJdbcTemplate()
+                .query(loadServerlessRunByRunIdQuery, StopServerlessRunParameters.getRowMapper(), runId).stream()
                 .findFirst();
     }
 
@@ -80,6 +82,12 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteByRunId(final Long runId) {
         getJdbcTemplate().update(deleteByRunIdServerlessRunQuery, runId);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteByRunIdIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteByRunIdsServerlessRunQuery, params);
     }
 
     public enum StopServerlessRunParameters {
@@ -135,12 +143,17 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-    public void setLoadServerlessunByRunIdQuery(final String loadServerlessunByRunIdQuery) {
-        this.loadServerlessunByRunIdQuery = loadServerlessunByRunIdQuery;
+    public void setLoadServerlessRunByRunIdQuery(final String loadServerlessRunByRunIdQuery) {
+        this.loadServerlessRunByRunIdQuery = loadServerlessRunByRunIdQuery;
     }
 
     @Required
     public void setLoadServerlessByStatusRunningQuery(final String loadServerlessByStatusRunningQuery) {
         this.loadServerlessByStatusRunningQuery = loadServerlessByStatusRunningQuery;
+    }
+
+    @Required
+    public void setDeleteByRunIdsServerlessRunQuery(final String deleteByRunIdsServerlessRunQuery) {
+        this.deleteByRunIdsServerlessRunQuery = deleteByRunIdsServerlessRunQuery;
     }
 }

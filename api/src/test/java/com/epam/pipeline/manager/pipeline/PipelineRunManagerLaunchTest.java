@@ -399,17 +399,19 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void shouldLoadRunsActivityStats() {
         doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
-                .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
-        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
+                .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18), eq(false));
+        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
 
-        Map<Long, PipelineRun> runMap = pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
+        Map<Long, PipelineRun> runMap = pipelineRunManager
+                .loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18, false).stream()
                 .collect(toMap(BaseEntity::getId, identity()));
 
         assertEquals(asList(TEST_STATUS_1, TEST_STATUS_2), runMap.get(ID).getRunStatuses());
         assertEquals(singletonList(TEST_STATUS_3), runMap.get(ID_2).getRunStatuses());
 
-        verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(any(LocalDateTime.class), any(LocalDateTime.class));
-        verify(runStatusManager).loadRunStatus(anyListOf(Long.class));
+        verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(
+                any(LocalDateTime.class), any(LocalDateTime.class), anyBoolean());
+        verify(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
     }
 
     private void mock(final InstancePrice price) {

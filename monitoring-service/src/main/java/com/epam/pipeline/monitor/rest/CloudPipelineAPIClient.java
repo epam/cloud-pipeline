@@ -95,4 +95,8 @@ public class CloudPipelineAPIClient {
     public List<InstanceType> loadAllInstanceTypes() {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllInstanceTypes()));
     }
+
+    public void archiveRuns() {
+        executor.execute(cloudPipelineAPI.archiveRuns());
+    }
 }

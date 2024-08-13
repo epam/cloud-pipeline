@@ -49,6 +49,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
+import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
@@ -493,4 +494,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected KubernetesMapper kubernetesMapper;
+
+    @MockBean
+    protected ArchiveRunDao archiveRunDao;
 }
