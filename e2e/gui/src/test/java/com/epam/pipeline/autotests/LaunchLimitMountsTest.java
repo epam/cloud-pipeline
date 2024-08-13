@@ -113,6 +113,8 @@ public class LaunchLimitMountsTest
     @BeforeMethod
     public void openPage() {
         open(C.ROOT_ADDRESS);
+        logoutIfNeeded();
+        loginAs(admin);
     }
 
     @AfterClass(alwaysRun = true)
