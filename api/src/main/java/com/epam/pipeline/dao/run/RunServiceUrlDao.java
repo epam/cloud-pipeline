@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.run;
 
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -41,6 +42,7 @@ public class RunServiceUrlDao extends NamedParameterJdbcDaoSupport {
     private final String updateServiceUrlQuery;
     private final String deleteServiceUrlByRunIdQuery;
     private final String deleteServiceUrlByIdQuery;
+    private final String deleteServiceUrlByRunIdsQuery;
 
     public List<PipelineRunServiceUrl> findByRunIds(final List<Long> runIds) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -92,6 +94,12 @@ public class RunServiceUrlDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteById(final Long id) {
         getJdbcTemplate().update(deleteServiceUrlByIdQuery, id);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteByRunIdsIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteServiceUrlByRunIdsQuery, params);
     }
 
     enum Parameters {

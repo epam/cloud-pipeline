@@ -53,6 +53,7 @@ import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.filter.WrongFilterException;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.PipelineRunAsManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
@@ -97,6 +98,7 @@ public class RunApiService {
     private final PipelineRunAsManager pipelineRunAsManager;
     private final RunPermissionManager runPermissionManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final ArchiveRunService archiveRunService;
 
     @AclMask
     @QuotaLaunchCheck
@@ -222,8 +224,9 @@ public class RunApiService {
 
     @PreAuthorize(ADMIN_ONLY + OR + RUN_ADMIN_ONLY)
     @AclMask
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        return runManager.loadRunsActivityStats(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        return runManager.loadRunsActivityStats(start, end, archive);
     }
 
     @AclRunFilter
@@ -394,5 +397,15 @@ public class RunApiService {
     @PreAuthorize(RUN_ID_READ)
     public PipelineRunPerformanceMetrics loadPipelineRunPerformanceMetrics(final Long runId) {
         return runManager.loadPipelineRunPerformanceMetrics(runId);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns() {
+        archiveRunService.archiveRuns();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void archiveRuns(final String name, final boolean principal, final Integer days) {
+        archiveRunService.archiveRuns(name, principal, days);
     }
 }

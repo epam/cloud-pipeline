@@ -534,8 +534,9 @@ public class PipelineRunController extends AbstractRestController {
         @RequestParam(value = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         final LocalDateTime start,
         @RequestParam(value = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-        final LocalDateTime end) {
-        return Result.success(runApiService.loadRunsActivityStats(start, end));
+        final LocalDateTime end,
+        @RequestParam(defaultValue = "false", required = false) final boolean archive) {
+        return Result.success(runApiService.loadRunsActivityStats(start, end, archive));
     }
 
     @PostMapping(value = "/run/cmd")
@@ -643,5 +644,29 @@ public class PipelineRunController extends AbstractRestController {
     public Result<PipelineRunPerformanceMetrics> loadPipelineRunPerformanceMetrics(
             @PathVariable(value = RUN_ID) final Long runId) {
         return Result.success(runApiService.loadPipelineRunPerformanceMetrics(runId));
+    }
+
+    @PostMapping("/runs/archive")
+    @ApiOperation(
+            value = "Migrate runs to archive table according to owner's metadata configuration",
+            notes = "Migrate runs to archive table according to owner's metadata configuration",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRuns() {
+        runApiService.archiveRuns();
+        return Result.success(true);
+    }
+
+    @PostMapping("/runs/archive/owners")
+    @ApiOperation(
+            value = "Migrate runs to archive table for specified user (or group).",
+            notes = "If no 'days' specified try to find days in metadata. Otherwise, ignore metadata configuration.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> archiveRunsByOwner(@RequestParam final String ownerSid,
+                                              @RequestParam final boolean principal,
+                                              @RequestParam(required = false) final Integer days) {
+        runApiService.archiveRuns(ownerSid, principal, days);
+        return Result.success(true);
     }
 }
