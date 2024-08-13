@@ -482,4 +482,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected PipelineRunMetricsDao pipelineRunMetricsDao;
+
+    @MockBean
+    protected ArchiveRunDao archiveRunDao;
 }

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -41,6 +42,7 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     private String loadTasksByRunIdQuery;
     private String loadTaskForInstanceQuery;
     private String loadTaskStatusQuery;
+    private String deleteRunLogByRunIdsQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {
@@ -80,6 +82,12 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     public List<PipelineTask> loadTaskByInstance(Long runId, String instance) {
         return getJdbcTemplate().query(loadTaskForInstanceQuery,
                 PipelineLogParameters.getTaskRowMapper(false), runId, instance);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteTaskByRunIdsIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteRunLogByRunIdsQuery, params);
     }
 
     enum PipelineLogParameters {
@@ -187,6 +195,11 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadTaskStatusQuery(String loadTaskStatusQuery) {
         this.loadTaskStatusQuery = loadTaskStatusQuery;
+    }
+
+    @Required
+    public void setDeleteRunLogByRunIdsQuery(String deleteRunLogByRunIdsQuery) {
+        this.deleteRunLogByRunIdsQuery = deleteRunLogByRunIdsQuery;
     }
 
 }

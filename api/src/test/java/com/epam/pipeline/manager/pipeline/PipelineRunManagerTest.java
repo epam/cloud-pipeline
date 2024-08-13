@@ -594,7 +594,7 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         saveStatusForRun(run6.getId(), TaskStatus.PAUSED, beforeSyncStart.minusHours(HOURS_12));
 
         final Map<Long, PipelineRun> stats =
-            pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END).stream()
+            pipelineRunManager.loadRunsActivityStats(SYNC_PERIOD_START, SYNC_PERIOD_END, false).stream()
                 .collect(Collectors.toMap(BaseEntity::getId,
                                           Function.identity()));
 

@@ -105,4 +105,8 @@ public class CloudPipelineAPIClient {
     public AllowedInstanceAndPriceTypes loadAllowedInstanceAndPriceTypesForRegion(final Long regionId) {
         return executor.execute(cloudPipelineAPI.loadAllowedInstanceAndPriceTypesForRegion(regionId));
     }
+
+    public void archiveRuns() {
+        executor.execute(cloudPipelineAPI.archiveRuns());
+    }
 }

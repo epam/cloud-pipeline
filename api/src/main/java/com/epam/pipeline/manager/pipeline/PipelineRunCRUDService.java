@@ -98,4 +98,9 @@ public class PipelineRunCRUDService {
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
         return pipelineRunDao.loadRunsByPoolId(poolId);
     }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void deleteRunsByIdIn(final List<Long> ids) {
+        pipelineRunDao.deleteRunByIdIn(ids);
+    }
 }

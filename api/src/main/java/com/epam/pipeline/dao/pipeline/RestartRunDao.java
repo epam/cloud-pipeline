@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dao.pipeline;
 
+import com.epam.pipeline.dao.DaoUtils;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
@@ -40,6 +41,7 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     private String loadAllRestartedRunsQuery;
     private String loadAllRestartedRunsForInitialRunQuery;
     private String loadRestartRunByIdQuery;
+    private String deleteRestartRunByIdsQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createPipelineRestartRun(RestartRun restartRun) {
@@ -71,6 +73,12 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
         return ListUtils.emptyIfNull(getJdbcTemplate()
                 .query(loadRestartRunByIdQuery, PipelineRestartRunParameters.getRowMapper(), id)).stream()
                 .findFirst();
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRestartRunByIdsIn(final List<Long> runIds) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate().update(deleteRestartRunByIdsQuery, params);
     }
 
     enum PipelineRestartRunParameters {
@@ -128,5 +136,10 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRestartRunByIdQuery(final String loadRestartRunByIdQuery) {
         this.loadRestartRunByIdQuery = loadRestartRunByIdQuery;
+    }
+
+    @Required
+    public void setDeleteRestartRunByIdsQuery(final String deleteRestartRunByIdsQuery) {
+        this.deleteRestartRunByIdsQuery = deleteRestartRunByIdsQuery;
     }
 }
