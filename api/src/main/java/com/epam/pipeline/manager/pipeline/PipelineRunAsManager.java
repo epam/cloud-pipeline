@@ -21,6 +21,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.configuration.PipeConfValueVO;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
@@ -34,6 +35,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.security.concurrent.DelegatingSecurityContextCallable;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -69,6 +72,7 @@ public class PipelineRunAsManager {
     private final CheckPermissionHelper permissionHelper;
     private final Executor runAsExecutor;
     private final PreferenceManager preferenceManager;
+    private final ToolManager toolManager;
 
     public boolean runAsAnotherUser(final PipelineStart runVO) {
         return !StringUtils.isEmpty(getRunAsUserName(runVO));
@@ -146,9 +150,53 @@ public class PipelineRunAsManager {
     private void configureRunnerSids(final PipelineStart runVO, final String runAsUser) {
         final String currentUser = authManager.getAuthorizedUser();
         final RunnerSid allowedRunnerSid = userRunnersManager.findRunnerSid(currentUser, runAsUser);
+        validateRunner(runVO, runAsUser, allowedRunnerSid, currentUser);
+        runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
+    }
+
+    private void validateRunner(final PipelineStart runVO,
+                                final String runAsUser,
+                                final RunnerSid allowedRunnerSid,
+                                final String currentUser) {
         Assert.notNull(allowedRunnerSid, messageHelper.getMessage(
                 MessageConstants.ERROR_RUN_ALLOWED_SID_NOT_FOUND, runAsUser));
-        runVO.setRunSids(buildRunSids(runVO.getRunSids(), currentUser, allowedRunnerSid.getAccessType()));
+        final Long pipelineId = runVO.getPipelineId();
+        if (Objects.nonNull(pipelineId)) {
+            validatePipeline(runVO, runAsUser, allowedRunnerSid, currentUser, pipelineId);
+        } else {
+            validateTool(runVO.getDockerImage(), runAsUser, allowedRunnerSid, currentUser);
+        }
+    }
+
+    private void validatePipeline(final PipelineStart runVO,
+                                  final String runAsUser,
+                                  final RunnerSid allowedRunnerSid,
+                                  final String currentUser,
+                                  final Long pipelineId) {
+        Assert.isTrue(isNullOrTrue(allowedRunnerSid.getPipelinesAllowed()),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_RUN_AS_PIPELINES_NOT_ALLOWED, currentUser, runAsUser));
+        if (CollectionUtils.isNotEmpty(allowedRunnerSid.getPipelines())) {
+            Assert.isTrue(allowedRunnerSid.getPipelines().contains(pipelineId),
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_AS_PIPELINE_NOT_ALLOWED,
+                            currentUser, pipelineId, runAsUser));
+        }
+        final PipelineConfiguration currentUserConfiguration = configurationManager.getPipelineConfiguration(runVO);
+        validateTool(currentUserConfiguration.getDockerImage(), runAsUser, allowedRunnerSid, currentUser);
+    }
+
+    private void validateTool(final String dockerImage,
+                              final String runAsUser,
+                              final RunnerSid allowedRunnerSid,
+                              final String currentUser) {
+        Assert.isTrue(isNullOrTrue(allowedRunnerSid.getToolsAllowed()),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_AS_TOOLS_NOT_ALLOWED, currentUser, runAsUser));
+        if (CollectionUtils.isNotEmpty(allowedRunnerSid.getTools())) {
+            final Tool tool = toolManager.loadByNameOrId(dockerImage);
+            Assert.isTrue(allowedRunnerSid.getTools().contains(tool.getId()),
+                    messageHelper.getMessage(MessageConstants.ERROR_RUN_AS_TOOL_NOT_ALLOWED,
+                            currentUser, dockerImage, runAsUser));
+        }
     }
 
     private List<RunSid> buildRunSids(final List<RunSid> runSidsFromVO, final String currentUser,
@@ -162,5 +210,9 @@ public class PipelineRunAsManager {
         runSids.add(runSid);
 
         return new ArrayList<>(runSids);
+    }
+
+    private boolean isNullOrTrue(final Boolean value) {
+        return Objects.isNull(value) || value;
     }
 }
