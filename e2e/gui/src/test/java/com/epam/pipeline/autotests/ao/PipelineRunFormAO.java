@@ -157,6 +157,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO setCommand(String command) {
+        if(get(START_IDLE).$x("./span").has(cssClass("ant-checkbox-checked"))) {
+            click(START_IDLE);
+        }
         SelenideElement defaultCommand = get(DEFAULT_COMMAND);
         Utils.selectAllAndClearTextField(defaultCommand);
         Utils.pasteText(defaultCommand, command);
