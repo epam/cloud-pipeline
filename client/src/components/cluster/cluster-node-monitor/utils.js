@@ -15,76 +15,101 @@
  */
 
 import moment from 'moment-timezone';
+import {parseDate} from '../../special/timeline-chart/renderer/date-utilities';
 
-function extractTimelineData (data = {}, measure, hideDatasets = []) {
-  if (!Object.keys(data).length || !measure) {
-    return [];
-  }
-  const extractByKey = (data, key) => {
-    return data.charts.map(record => {
-      const startUnix = moment(record.startTime).unix();
-      const endUnix = moment(record.endTime).unix();
+export const COLORS = {
+  activeGpus: '#108ee9',
+  gpuUtilization: '#09ab5a',
+  gpuMemoryUtilization: '#f04134'
+};
+
+function extractTimelineData ({
+  metrics = {},
+  measure,
+  hideDatasets = [],
+  from,
+  to
+}) {
+  const extractByKey = (metrics, key) => {
+    const data = (metrics.charts || []).map(record => {
+      const {unix: startUnix} = parseDate(record.startTime);
+      const {unix: endUnix} = parseDate(record.endTime);
       return ({
         record,
         value: (record.gpuUsage[key] || {})[measure],
         date: startUnix + ((endUnix - startUnix) / 2)
       });
     });
+    return [
+      ...(from ? [{date: moment(from).unix(), value: null, record: {}}] : []),
+      ...data,
+      ...(to ? [{date: moment(to).unix(), value: null, record: {}}] : [])
+    ];
   };
   return [{
-    data: extractByKey(data, 'activeGpus'),
-    color: '#108ee9'
+    data: extractByKey(metrics, 'activeGpus'),
+    color: COLORS.activeGpus
   }, {
-    data: extractByKey(data, 'gpuUtilization'),
-    color: '#09ab5a'
+    data: extractByKey(metrics, 'gpuUtilization'),
+    color: COLORS.gpuUtilization
   }, {
-    data: extractByKey(data, 'gpuMemoryUtilization'),
-    color: '#f04134'
+    data: extractByKey(metrics, 'gpuMemoryUtilization'),
+    color: COLORS.gpuMemoryUtilization
   }].filter((el, index) => !hideDatasets.includes(index));
 };
 
-function extractHeatmapData (data = {}, measure) {
-  if (!Object.keys(data).length || !measure) {
-    return [];
-  }
+function extractHeatmapData ({metrics = {}, measure, from, to}) {
   const extractHeatMapDataByKey = (
-    data,
+    metrics,
     key,
     type = 'average',
     mapValue = (v) => v
   ) => {
-    const gpuKeys = Object.keys(data.charts[0].gpuDetails);
+    const gpuDetails = (metrics.charts || [])[0]?.gpuDetails || {};
+    const gpuKeys = Object.keys(gpuDetails);
     return gpuKeys.map(gpuKey => ({
       name: gpuKey,
-      records: data.charts.map(record => {
+      records: [{
+        start: moment(from).unix(),
+        end: moment(from).unix(),
+        value: undefined,
+        hide: true
+      }, ...(metrics.charts || []).map(record => {
         const details = ((record.gpuDetails || {})[gpuKey] || {})[key] || {};
         const value = details[type];
+        const {unix: startUnix} = parseDate(record.startTime);
+        const {unix: endUnix} = parseDate(record.endTime);
         return {
-          start: record.startTime,
-          end: record.endTime,
+          start: startUnix,
+          end: endUnix,
           value: mapValue(value)
         };
-      })
+      }), {
+        start: moment(to).unix(),
+        end: moment(to).unix(),
+        value: undefined,
+        hide: true
+      }]
     }));
   };
   return [
     {
-      key: 'gpuUtilization',
-      data: extractHeatMapDataByKey(data, 'gpuUtilization', measure, (v) => v > 0 ? 1 : 0),
-      color: '#108ee9',
+      key: 'gpuActive',
+      data: extractHeatMapDataByKey(metrics, 'gpuUtilization', measure, (v) => v > 0 ? 1 : 0),
+      color: COLORS.activeGpus,
       max: 1,
       min: 0
     },
     {
       key: 'gpuUtilization',
-      data: extractHeatMapDataByKey(data, 'gpuUtilization', measure),
-      color: '#09ab5a',
+      data: extractHeatMapDataByKey(metrics, 'gpuUtilization', measure),
+      color: COLORS.gpuUtilization,
       max: 100,
       min: 0
     }, {
       key: 'gpuMemoryUtilization',
-      data: extractHeatMapDataByKey(data, 'gpuMemoryUtilization', measure),
-      color: '#f04134',
+      data: extractHeatMapDataByKey(metrics, 'gpuMemoryUtilization', measure),
+      color: COLORS.gpuMemoryUtilization,
       max: 100,
       min: 0
     }

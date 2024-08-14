@@ -287,12 +287,15 @@ class TimelineChart extends React.Component {
     if (typeof onRangeChanged === 'function') {
       const {
         from,
-        to
+        to,
+        fromZoom,
+        fromDrag
       } = range;
       const {
         unix: fromUnix,
         date: fromDate
       } = parseDate(from) || {};
+
       const {
         unix: toUnix,
         date: toDate
@@ -307,7 +310,9 @@ class TimelineChart extends React.Component {
           fromDateString: fromDate.format('YYYY-MM-DD HH:mm:ss'),
           to: toUnix,
           toDate: toDate,
-          toDateString: toDate.format('YYYY-MM-DD HH:mm:ss')
+          toDateString: toDate.format('YYYY-MM-DD HH:mm:ss'),
+          fromZoom,
+          fromDrag
         });
       }
     }
@@ -402,7 +407,8 @@ class TimelineChart extends React.Component {
 
   renderHoveredInfo = () => {
     const {
-      hover
+      hover,
+      hoverContainerClassName
     } = this.props;
     if (!hover) {
       return null;
@@ -416,9 +422,12 @@ class TimelineChart extends React.Component {
         className={
           classNames(
             styles.hoverContainer,
-            'cp-panel',
-            'cp-dark-background',
-            'semi-transparent'
+            hoverContainerClassName,
+            {
+              'cp-panel': !hoverContainerClassName,
+              'cp-dark-background': !hoverContainerClassName,
+              'semi-transparent': !hoverContainerClassName
+            }
           )
         }
         ref={initialize}
@@ -456,6 +465,7 @@ TimelineChart.propTypes = {
     showHorizontalLines: PropTypes.bool
   }),
   className: PropTypes.string,
+  hoverContainerClassName: PropTypes.string,
   style: PropTypes.object,
   datasets: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),
   datasetOptions: PropTypes.oneOfType([PropTypes.array, PropTypes.object]),

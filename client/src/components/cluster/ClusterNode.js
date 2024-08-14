@@ -240,7 +240,7 @@ class ClusterNode extends Component {
           {
             node: this.props.node,
             chartsData: this.props.chartsData,
-            nodeName: this.props.nodeName
+            nodeName: this.props.name
           }
         )
       )

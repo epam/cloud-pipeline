@@ -43,7 +43,6 @@
   font-size: x-large;
 }
 
-.telemetry-controls,
 .chart-controls {
   display: flex;
   flex-wrap: nowrap;
@@ -53,13 +52,21 @@
   padding-left: 50px;
 }
 
+.range-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+}
+
 .telemetry-controls {
   gap: 10px;
 }
 
 .legend {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   flex-wrap: nowrap;
 }
 

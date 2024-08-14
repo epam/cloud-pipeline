@@ -25,21 +25,20 @@ import {
 const dpr = window.devicePixelRatio || 1;
 const CELL_HEIGHT = 10;
 const ROW_MARGIN = 5;
-const LEFT_PADDING = 90;
 
 export const HeatmapTimelineChartEvents = {
-  scaleChanged: 'SCALE_CHANGED'
+  scaleChanged: 'SCALE_CHANGED',
+  onItemClick: 'ON_ITEM_CLICK',
+  onItemsHover: 'ON_ITEMS_HOVER'
 };
 
 const DEFAULT_OPTIONS = {
   coordinatesSystemColor: '#999999',
-  coordinatesColor: '#666666',
-  backgroundColor: '#ffffff'
+  coordinatesColor: '#666666'
 };
 
 class Renderer {
   datasets;
-  grid;
   options = {};
   container;
   canvas;
@@ -49,8 +48,14 @@ class Renderer {
   checkRAF;
   renderRAF;
   _listeners;
+  _hoverInfo = {};
+  timelineStart;
+  yLabelsPadding = 40;
+  xLabelsPadding = 40;
 
-  scaleFactor = 1;
+  _coordinatesSystemColor;
+  _coordinatesColor;
+  _selectionColor;
 
   constructor (options = {}) {
     this.options = Object.assign(DEFAULT_OPTIONS, options);
@@ -64,7 +69,9 @@ class Renderer {
         minimumRatio: 50.0 // 50 pixels for 1 second,
       }
     );
-    this.xAxis.addScaleChangedListener(this.onScaleChange.bind(this, true));
+    this.xAxis.addScaleChangedListener(
+      (fromZoom, fromDrag) => this.onScaleChange(fromZoom, fromDrag)
+    );
     this.mouseMoveHandler = this.onMouseMove.bind(this);
     this.mouseUpHandler = this.onMouseUp.bind(this);
     this.mouseOutHandler = this.onMouseOut.bind(this);
@@ -72,6 +79,46 @@ class Renderer {
     window.addEventListener('mouseup', this.mouseUpHandler);
     window.addEventListener('mouseout', this.mouseOutHandler);
     this._listeners = [];
+    this._hoveredItems = [];
+    this._hoverEvents = true;
+    this._coordinatesSystemColor = options.coordinatesSystemColor;
+    this._coordinatesColor = options.coordinatesColor;
+    this._selectionColor = options.selectionColor;
+  }
+
+  get coordinatesSystemColor () {
+    return this._coordinatesSystemColor;
+  }
+
+  set coordinatesSystemColor (color) {
+    if (color !== this._coordinatesSystemColor) {
+      this._coordinatesSystemColor = color;
+      this.xAxis.ticksChanged = true;
+      this.requestRender();
+    }
+  }
+
+  get coordinatesColor () {
+    return this._coordinatesColor;
+  }
+
+  set coordinatesColor (color) {
+    if (color !== this._coordinatesColor) {
+      this._coordinatesColor = color;
+      this.xAxis.ticksChanged = true;
+      this.requestRender();
+    }
+  }
+
+  get selectionColor () {
+    return this._selectionColor;
+  }
+
+  set selectionColor (color) {
+    if (color !== this._selectionColor) {
+      this._selectionColor = color;
+      this.requestRender();
+    }
   }
 
   get from () {
@@ -108,6 +155,20 @@ class Renderer {
     }
   }
 
+  get hoverEvents () {
+    return this._hoverEvents;
+  }
+
+  set hoverEvents (hoverEvents) {
+    if (hoverEvents !== this._hoverEvents) {
+      this._hoverEvents = hoverEvents;
+    }
+  }
+
+  get hoveredItems () {
+    return this._hoveredItems;
+  }
+
   registerDatasets (datasets) {
     if (!datasets) {
       return;
@@ -119,8 +180,10 @@ class Renderer {
         flatData.push({
           ...data,
           y: height,
+          yEnd: height + CELL_HEIGHT,
           color: datasetGroup.color,
-          max: datasetGroup.max
+          max: datasetGroup.max,
+          key: datasetGroup.key
         });
         height = height + CELL_HEIGHT + ROW_MARGIN;
       });
@@ -197,16 +260,59 @@ class Renderer {
         shift: this.timelineStart
       }
     );
-    this.xAxis.setPixelsOffset(50, false);
+    this.xAxis.setPixelsOffset(this.yLabelsPadding + 8, false);
     this.requestReCheck();
   }
 
-  onScaleChange () {
+  onScaleChange (fromZoom = false, fromDrag = false) {
     this.reportEvent(HeatmapTimelineChartEvents.scaleChanged, {
       from: this.from,
-      to: this.to
+      to: this.to,
+      fromZoom,
+      fromDrag
     });
     this.requestRender();
+  }
+
+  unHoverItems () {
+    this._hoverInfo = {};
+    this.requestRender();
+    this.reportEvent(HeatmapTimelineChartEvents.onItemsHover, undefined);
+  }
+
+  hoverItems (hoverInfo) {
+    const {position = {}, ...info} = hoverInfo || {};
+    const {
+      gpuId,
+      key,
+      recordIdx
+    } = info || {};
+    const {x, y} = position;
+    if (this.hoverEvents) {
+      if (!hoverInfo) {
+        return this.unHoverItems();
+      }
+      if (
+        gpuId !== undefined &&
+        key !== undefined &&
+        recordIdx !== undefined && (
+          gpuId !== this._hoverInfo.gpuId ||
+          key !== this._hoverInfo.key ||
+          x !== this._hoverInfo.position.x ||
+          y !== this._hoverInfo.position.y
+        )) {
+        if (isNaN(hoverInfo.position.y)) {
+          return this.unHoverItems();
+        }
+        this._hoverInfo = hoverInfo;
+        this.reportEvent(HeatmapTimelineChartEvents.onItemsHover, {
+          position,
+          info
+        });
+      }
+      return;
+    }
+    this.unHoverItems();
   }
 
   addEventListener (event, listener) {
@@ -275,15 +381,51 @@ class Renderer {
       width = canvasWidth;
       height = canvasHeight;
     }
+    const valueX = this.xAxis.getValueForPixel(x);
+    const hitX = this.xAxis.valueFitsRange(valueX);
     return {
       x,
       y,
+      valueX,
       xAxisCenter: this.xAxis.center,
-      yAxisCenter: this.height / 2,
+      hit: !!hitX,
+      hitX,
       hitCanvas: x >= 0 && x <= width && y >= 0 && y <= height,
       shiftKey
     };
   }
+
+  getHoverInfo = (event) => {
+    const {
+      valueX,
+      x,
+      y,
+      hit
+    } = this.getMousePosition(event);
+    if (hit && this.datasets) {
+      const hoveredDataset = this.datasets.find(dataset => {
+        return y >= dataset.y && y <= dataset.yEnd;
+      });
+      const hoveredRecordIdx = (hoveredDataset?.data || [])
+        .filter(d => !d.hide)
+        .findIndex(d => valueX >= d.xStart && valueX <= d.xEnd);
+      if (!hoveredDataset || hoveredRecordIdx === undefined) {
+        return undefined;
+      }
+      const position = {
+        x,
+        y: hoveredDataset.y + (hoveredDataset.yEnd - hoveredDataset.y)
+      };
+      return {
+        gpuId: hoveredDataset.name,
+        key: hoveredDataset.key,
+        recordIdx: hoveredRecordIdx,
+        color: hoveredDataset.color,
+        position
+      };
+    }
+    return undefined;
+  };
 
   onMouseWheel (event) {
     const info = this.getMousePosition(event);
@@ -319,6 +461,8 @@ class Renderer {
       } else {
         this.xAxis.center = this.dragEvent.xAxisCenter + valueDX;
       }
+    } else {
+      this.hoverItems(this.getHoverInfo(event), event);
     }
   }
 
@@ -336,7 +480,10 @@ class Renderer {
         end = start;
         start = tmp;
       }
-      this.xAxis.setRange({from: start, to: end}, {animate: true});
+      this.xAxis.setRange(
+        {from: start, to: end},
+        {animate: false, fromZoom: true}
+      );
     } else if (this.dragEvent && this.dragEvent.moved) {
       this.onMouseMove(event);
     }
@@ -358,14 +505,14 @@ class Renderer {
     }
     ctx.save();
     this.datasets.forEach((dataset) => {
-      dataset.data.forEach((data, dataIdx) => {
+      dataset.data.forEach((data) => {
         const from = this.xAxis.getPixelForValue(data.xStart);
         const to = this.xAxis.getPixelForValue(data.xEnd);
         const valuePercentage = data.value / dataset.max * 100;
         ctx.fillStyle = `${dataset.color}${percentToHexAlpha(valuePercentage)}`;
-        const offset = Math.min(0, from - 50);
+        const offset = Math.min(0, from - this.yLabelsPadding - 8);
         ctx.fillRect(
-          correctPixels(Math.max(50, from)),
+          correctPixels(Math.max(this.yLabelsPadding + 8, from)),
           correctPixels(dataset.y + 0.5),
           correctPixels(Math.max(0, (to - from + offset))),
           correctPixels(CELL_HEIGHT)
@@ -377,11 +524,16 @@ class Renderer {
 
   drawGridLines (ctx) {
     ctx.save();
-    ctx.strokeStyle = this.options.coordinatesSystemColor;
+    ctx.strokeStyle = this.coordinatesSystemColor;
     ctx.beginPath();
-    // TODO: refactor leftPadding
-    ctx.moveTo(correctPixels(LEFT_PADDING - 40), correctPixels(this.dataHeight));
-    ctx.lineTo(correctPixels(this.canvas.width), correctPixels(this.dataHeight));
+    ctx.moveTo(
+      correctPixels(this.yLabelsPadding + 8),
+      correctPixels(this.dataHeight)
+    );
+    ctx.lineTo(
+      correctPixels(this.canvas.width),
+      correctPixels(this.dataHeight)
+    );
     ctx.stroke();
     this.xAxis.ticks.forEach((tick) => {
       if (this.xAxis.valueFitsRange(tick.value)) {
@@ -394,6 +546,36 @@ class Renderer {
       }
     });
     ctx.restore();
+  }
+
+  drawSelection () {
+    if (this.dragEvent && this.dragEvent.shiftKey && this.dragEvent.shiftEnd) {
+      const ctx = this.textCanvas.getContext('2d');
+      ctx.fillStyle = this.selectionColor;
+      ctx.clearRect(
+        correctPixels(this.yLabelsPadding + 8),
+        0,
+        correctPixels(this.width - this.yLabelsPadding),
+        correctPixels(this.dataHeight)
+      );
+      const delta = this.dragEvent.shiftEnd.x - this.dragEvent.x;
+      const x = delta > 0
+        ? this.dragEvent.x
+        : this.dragEvent.shiftEnd.x;
+      const start = Math.max(x, this.yLabelsPadding + 8);
+      const offset = Math.min(
+        0,
+        this.dragEvent.shiftEnd.x - this.yLabelsPadding - 8
+      );
+      ctx.beginPath();
+      ctx.fillRect(
+        correctPixels(start),
+        0,
+        correctPixels(Math.abs(delta) + offset),
+        correctPixels(this.dataHeight)
+      );
+      ctx.stroke();
+    }
   }
 
   drawText () {
@@ -409,6 +591,17 @@ class Renderer {
     ) {
       return;
     }
+    this.datasets.forEach(dataset => {
+      context.save();
+      context.fillStyle = this.coordinatesColor;
+      context.font = `${this.xAxis.fontSize * dpr}pt ${this.xAxis.fontFamily}`;
+      context.fillText(
+        dataset.name,
+        correctPixels(this.yLabelsPadding - 5),
+        correctPixels(dataset.yEnd)
+      );
+      context.restore();
+    });
     context.save();
     drawVisibleLabels(
       (this.xAxis.ticks || []),
@@ -419,17 +612,18 @@ class Renderer {
           x: this.xAxis.getPixelForValue(tick.value),
           y: this.dataHeight + 15
         }),
-        color: this.options.coordinatesColor
+        color: this.coordinatesColor
       }
     );
     context.restore();
   }
 
   draw (ctx) {
-    ctx.clearRect(-0.5, -0.5, this.canvas.width, this.canvas.height);
+    ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     this.drawDatasets(ctx);
     this.drawGridLines(ctx);
     this.drawText();
+    this.drawSelection();
   }
 
   requestRender () {
@@ -446,7 +640,7 @@ class Renderer {
     if (container) {
       container.style.position = 'relative';
       container.style.overflow = 'hidden';
-      container.style.minHeight = `300px`;
+      container.style.minHeight = `50px`;
       const attachCanvas = (z = 0) => {
         const canvas = document.createElement('canvas');
         canvas.style.position = 'absolute';
@@ -459,8 +653,8 @@ class Renderer {
       const textCanvas = attachCanvas();
       const canvas = attachCanvas(1);
       this.canvas = canvas;
-      canvas.height = dpr * 300;
-      canvas.style.height = `${300}px`;
+      canvas.height = dpr * 50;
+      canvas.style.height = `${50}px`;
       canvas.addEventListener('wheel', this.onMouseWheel.bind(this));
       canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
       window.addEventListener('mouseup', this.onMouseUp.bind(this));
@@ -468,7 +662,7 @@ class Renderer {
       this.textCanvas = textCanvas;
       const textContext = textCanvas.getContext('2d');
       this.xAxis.attachTextContext(textContext);
-      this.xAxis.setPixelsOffset(50, false);
+      this.xAxis.setPixelsOffset(this.yLabelsPadding + 8, false);
       const ctx = canvas.getContext('2d');
       // ctx.scale(dpr, dpr);
       let width, height;
@@ -479,19 +673,19 @@ class Renderer {
           container.clientWidth !== width
         ) {
           this._requestReCheck = false;
-          width = container.clientWidth;
-          height = container.clientHeight;
           this.width = Math.max(width || 0, 1);
           canvas.width = dpr * width;
-          canvas.height = dpr * (this.dataHeight + 40);
+          canvas.height = dpr * (this.dataHeight + this.xLabelsPadding);
           canvas.style.width = `${width}px`;
-          canvas.style.height = `${(this.dataHeight || 0) + 40}px`;
+          canvas.style.height = `${(this.dataHeight || 0) + this.xLabelsPadding}px`;
+          container.style.minHeight = canvas.style.height;
+          width = container.clientWidth;
+          height = container.clientHeight;
           textCanvas.width = dpr * width;
-          textCanvas.height = dpr * (this.dataHeight + 40);
+          textCanvas.height = dpr * (this.dataHeight + this.xLabelsPadding);
           textCanvas.style.width = `${width}px`;
-          textCanvas.style.height = `${(this.dataHeight || 0) + 40}px`;
+          textCanvas.style.height = `${(this.dataHeight || 0) + this.xLabelsPadding}px`;
           this.canvasBox = canvas.getBoundingClientRect();
-          // ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.translate(0.5, 0.5);
           this.onResize();
         }

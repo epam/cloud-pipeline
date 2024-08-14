@@ -26,3 +26,13 @@
 .renderer {
   flex: 1;
 }
+
+.hover-container {
+  position: absolute;
+  padding: 5px;
+  pointer-events: none;
+  z-index: 2;
+  display: none;
+  border-radius: 3px;
+  transition: transform 250ms;
+}
