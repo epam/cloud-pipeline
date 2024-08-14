@@ -2058,6 +2058,7 @@ export default class Tool extends localization.LocalizedReactComponent {
   };
 
   render () {
+    console.log('T', this.props)
     if ((!this.props.tool.loaded && this.props.tool.pending) ||
       (!this.props.docker.loaded && this.props.docker.pending) ||
       (!this.props.versionSettings.loaded && this.props.versionSettings.pending)) {
