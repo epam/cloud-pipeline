@@ -415,14 +415,15 @@ class GPUInfoTab extends React.Component {
             })}
           </div>
           <div style={{display: 'flex', gap: '15px', marginLeft: 'auto', alignItems: 'center'}}>
-            <div style={{display: 'flex', gap: '5px'}}>
+            {/* //TODO: wait for API support */}
+            {/* <div style={{display: 'flex', gap: '5px'}}>
               <span>GPU:</span>
               <Dropdown overlay={gpuMenu}>
                 <a>
                   {this.state.selectedGPU} <Icon type="down" />
                 </a>
               </Dropdown>
-            </div>
+            </div> */}
             <div style={{display: 'flex', gap: '5px'}}>
               <span>Measure:</span>
               <Dropdown overlay={menu}>
