@@ -15,23 +15,27 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
   Icon,
   Dropdown,
   Menu,
   message,
   DatePicker,
-  Button
+  Button,
+  Spin,
+  Alert
 } from 'antd';
 import classNames from 'classnames';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
+import moment from 'moment-timezone';
 import ClusterNodeGPUUsage from '../../../models/cluster/ClusterNodeGPUUsage';
 import TimelineChart from '../../special/timeline-chart';
 import HeatMapChart from '../../special/heat-map-chart';
 import {extractHeatmapData, extractTimelineData} from './utils';
 import {renderHeatmapTooltip, renderTimelineTooltip} from './tooltips';
-import moment from 'moment-timezone';
+import {parseDate} from '../../special/heat-map-chart/utils';
 import styles from './gpu-info.css';
 
 const METRICS_TYPES = {
@@ -48,7 +52,7 @@ const MEASURES = {
 const DATASET_TYPES = {
   gpuActive: 'Time GPU Active',
   gpuUtilization: 'GPU Utilization',
-  memory: 'GPU Memory'
+  gpuMemoryUtilization: 'GPU Memory'
 };
 
 const RANGES = {
@@ -60,7 +64,7 @@ const RANGES = {
 const DATASET_COLORS = {
   [DATASET_TYPES.gpuActive]: '#108ee9',
   [DATASET_TYPES.gpuUtilization]: '#09ab5a',
-  [DATASET_TYPES.memory]: '#f04134'
+  [DATASET_TYPES.gpuMemoryUtilization]: '#f04134'
 };
 
 const FETCH_DELAY = 1000;
@@ -85,8 +89,7 @@ class GPUInfoTab extends React.Component {
     to: undefined,
     chartsFrom: undefined,
     chartsTo: undefined,
-    metrics: undefined,
-    rangeKey: undefined
+    metrics: undefined
   };
 
   rangeChangeTimer;
@@ -103,17 +106,6 @@ class GPUInfoTab extends React.Component {
     }
   }
 
-  initRanges = () => {
-    const from = moment.utc('2024-08-12 23:59:59').local()
-      .subtract(1, 'days').format('YYYY-MM-DD HH:mm:ss');
-    const to = '2024-08-12 23:59:59';
-    this.setState({
-      from,
-      to,
-      rangeKey: RANGES.day
-    }, () => this.fetchMetrics(true));
-  };
-
   @computed
   get themeConfiguration () {
     const {themes} = this.props;
@@ -124,20 +116,35 @@ class GPUInfoTab extends React.Component {
   }
 
   @computed
-  get nodeCreationDate () {
-    const {node} = this.props;
-    if (node && node.loaded) {
-      const mock = moment.utc('2024-08-12 23:59:59').local()
-        .subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
-      return mock;
-      return node.value?.creationTimestamp;
-    }
+  get chartsData () {
+    const {chartsData} = this.props;
+    return chartsData;
+  }
+
+  @computed
+  get chartsBounds () {
+    return {
+      min: this.chartsData.instanceFrom,
+      max: this.chartsData.instanceTo || parseDate(moment()).unix
+    };
   }
 
   get GPUDeviceName () {
     const {metrics} = this.state;
     return metrics?.global?.gpuDeviceName;
   }
+
+  initRanges = () => {
+    const to = this.chartsBounds.max;
+    const from = Math.max(
+      moment.unix(to).local().subtract(1, 'days').unix(),
+      this.chartsBounds.min
+    );
+    this.setState({
+      from,
+      to
+    }, () => this.fetchMetrics(true));
+  };
 
   fetchMetricsDelayed = (updateChartsRange) => {
     if (this.fetchTimer) {
@@ -154,14 +161,15 @@ class GPUInfoTab extends React.Component {
     if (!nodeName) {
       return;
     }
-    const nodeNameMock = 'i-016c2dfd271b1254b';
     this.setState({pending: true}, async () => {
       const {nodeName} = this.props;
       const {from, to} = this.state;
+      const fromString = moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss');
+      const toString = moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss');
       const request = new ClusterNodeGPUUsage(
-        nodeNameMock,
-        from,
-        to
+        nodeName,
+        fromString,
+        toString
       );
       await request.fetch();
       if (request.error) {
@@ -172,12 +180,8 @@ class GPUInfoTab extends React.Component {
       return this.setState({
         metrics: request.value || {},
         pending: false,
-        chartsFrom: updateChartsRange
-          ? moment(this.state.from).unix()
-          : this.state.chartsFrom,
-        chartsTo: updateChartsRange
-          ? moment(this.state.to).unix()
-          : this.state.chartsTo
+        ...(updateChartsRange ? {chartsFrom: this.state.from} : {}),
+        ...(updateChartsRange ? {chartsTo: this.state.to} : {})
       });
     });
   };
@@ -197,11 +201,12 @@ class GPUInfoTab extends React.Component {
       this.rangeChangeTimer = setTimeout(() => this.setState({
         chartsFrom: from,
         chartsTo: to,
-        from: moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss')
+        from: Math.max(from, this.chartsBounds.min),
+        to: Math.min(to, this.chartsBounds.max)
       }, () => {
         clearTimeout(this.rangeChangeTimer);
         this.rangeChangeTimer = undefined;
-        if (fromZoom) {
+        if (fromZoom || fromDrag) {
           this.fetchMetricsDelayed();
         }
       }));
@@ -249,11 +254,11 @@ class GPUInfoTab extends React.Component {
     const {hideDatasets, measure, metrics} = this.state;
     const onMeasureChange = ({key}) => this.setState({measure: key});
     const onGPUChange = ({key}) => this.setState({selectedGPU: key});
-    const toggleDataset = (index) => {
+    const toggleDataset = (key) => {
       const {hideDatasets} = this.state;
-      this.setState({hideDatasets: hideDatasets.includes(index)
-        ? hideDatasets.filter(i => i !== index)
-        : [...hideDatasets, index]
+      this.setState({hideDatasets: hideDatasets.includes(key)
+        ? hideDatasets.filter(k => k !== key)
+        : [...hideDatasets, key]
       });
     };
     const menu = (
@@ -294,33 +299,54 @@ class GPUInfoTab extends React.Component {
       </svg>
     );
     const onStartChange = (date) => {
-      this.setState({
-        from: date.startOf('day').format('YYYY-MM-DD HH:mm:ss')
-      }, () => this.fetchMetrics(true));
+      const from = Math.max(
+        this.chartsBounds.min,
+        moment(date.startOf('day')).unix()
+      );
+      this.setState({from}, () => this.fetchMetrics(true));
     };
     const onEndChange = (date) => {
-      this.setState({
-        to: date.endOf('day').format('YYYY-MM-DD HH:mm:ss')
-      }, () => this.fetchMetrics(true));
+      const to = Math.min(
+        this.chartsBounds.max,
+        moment(date.startOf('day')).unix()
+      );
+      this.setState({to}, () => this.fetchMetrics(true));
     };
     const setRange = ({key}) => {
-      const toMock = moment('2024-08-12 23:59:59');
+      const to = this.chartsBounds.max;
       let from;
       if (key === RANGES.hour) {
-        from = moment.utc(toMock).local().subtract(1, 'hours').format('YYYY-MM-DD HH:mm:ss');
+        from = Math.max(
+          moment.unix(to).local().subtract(1, 'hours').unix(),
+          this.chartsBounds.min
+        );
       }
       if (key === RANGES.day) {
-        from = moment.utc(toMock).local().subtract(1, 'days').format('YYYY-MM-DD HH:mm:ss');
+        from = Math.max(
+          moment.unix(to).local().subtract(1, 'days').unix(),
+          this.chartsBounds.min
+        );
       }
       if (key === RANGES.week) {
-        from = moment.utc(toMock).local().subtract(7, 'days').format('YYYY-MM-DD HH:mm:ss');
+        from = Math.max(
+          moment.unix(to).local().subtract(7, 'days').unix(),
+          this.chartsBounds.min
+        );
       }
       this.setState({
         from,
-        chartsFrom: moment(from).unix(),
-        chartsTo: moment(toMock).unix(),
-        rangeKey: key
+        to,
+        chartsFrom: from,
+        chartsTo: to
       }, this.fetchMetrics());
+    };
+    const disabledDate = (date) => {
+      return date &&
+        this.chartsData?.instanceFrom &&
+        (
+          date.unix() < this.chartsBounds.min ||
+          date.unix() > this.chartsBounds.max
+        );
     };
     const renderRangeControls = () => (
       <div className={styles.rangeControls}>
@@ -349,24 +375,26 @@ class GPUInfoTab extends React.Component {
           format="YYYY-MM-DD HH:mm"
           placeholder="Start"
           onChange={onStartChange}
-          value={moment.utc(this.state.from)}
+          value={moment.unix(this.state.from)}
+          disabledDate={disabledDate}
         />
         <Divider />
         <DatePicker
           format="YYYY-MM-DD HH:mm"
           placeholder="End"
           onChange={onEndChange}
-          value={moment.utc(this.state.to)}
+          value={moment.unix(this.state.to)}
+          disabledDate={disabledDate}
         />
       </div>
     );
     return (
       <div style={{display: 'flex', flexDirection: 'column'}}>
         <div className={styles.chartControls}>
-          <b>{this.GPUDeviceName}</b>
+          <b style={{marginRight: 10}}>{this.GPUDeviceName}</b>
           <div className={styles.legend}>
-            {Object.entries(DATASET_TYPES).map(([key, value], index) => {
-              const color = hideDatasets.includes(index)
+            {Object.entries(DATASET_TYPES).map(([key, value]) => {
+              const color = hideDatasets.includes(key)
                 ? this.themeConfiguration['@application-color-disabled'] || '#8c8c8c'
                 : DATASET_COLORS[value];
               return (
@@ -378,7 +406,7 @@ class GPUInfoTab extends React.Component {
                   <span
                     className={styles.legendItem}
                     style={{color}}
-                    onClick={() => toggleDataset(index)}
+                    onClick={() => toggleDataset(key)}
                   >
                     {value}
                   </span>
@@ -416,35 +444,32 @@ class GPUInfoTab extends React.Component {
       metrics,
       chartsFrom,
       chartsTo,
-      hideDatasets,
-      to
+      hideDatasets
     } = this.state;
     const timelineDataset = extractTimelineData({
       metrics,
       measure,
       hideDatasets,
-      from: this.nodeCreationDate,
-      to
+      from: this.chartsBounds.min,
+      to: this.chartsBounds.max
     });
     const heatmapDataset = extractHeatmapData({
       metrics,
       measure,
-      from: this.nodeCreationDate,
-      to
-    });
-    console.log('datasets', {
-      timelineDataset,
-      heatmapDataset
+      hideDatasets,
+      from: this.chartsBounds.min,
+      to: this.chartsBounds.max
     });
     return (
       <div className={styles.telemetry}>
         {this.renderChartControls()}
         <TimelineChart
-          options={{showHorizontalLines: true, animateZoom: false}}
-          style={{flex: 1, width: '100%', height: '300px'}}
+          options={{showHorizontalLines: true, animateZoom: true, shiftWheel: true}}
+          style={{flex: 1, width: '100%', maxHeight: '50vh', minHeight: '50vh'}}
           datasets={timelineDataset}
           datasetOptions={timelineDataset.map(d => ({
-            color: d.color
+            color: d.color,
+            key: d.key
           }))}
           onRangeChanged={this.onRangeChanged}
           from={chartsFrom}
@@ -453,37 +478,57 @@ class GPUInfoTab extends React.Component {
             hoveredItems,
             styles,
             measure,
-            themeConfiguration: this.themeConfiguration
+            themeConfiguration: this.themeConfiguration,
+            hideDatasets
           })}}
           hoverContainerClassName="cp-panel"
         />
-        <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
-          <HeatMapChart
-            datasets={heatmapDataset}
-            onRangeChanged={this.onRangeChanged}
-            from={chartsFrom}
-            to={chartsTo}
-            hover={{getHoveredElementsInfo: (hoveredItem, styles) => renderHeatmapTooltip({
-              hoveredItem,
-              styles,
-              measure,
-              metrics,
-              themeConfiguration: this.themeConfiguration
-            })}}
-          />
-        </div>
+        {heatmapDataset.length ? (
+          <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
+            <HeatMapChart
+              options={{shiftWheel: true}}
+              datasets={heatmapDataset}
+              onRangeChanged={this.onRangeChanged}
+              from={chartsFrom}
+              to={chartsTo}
+              hover={{getHoveredElementsInfo: (hoveredItem, styles) => renderHeatmapTooltip({
+                hoveredItem,
+                styles,
+                measure,
+                metrics,
+                themeConfiguration: this.themeConfiguration,
+                hideDatasets
+              })}}
+            />
+          </div>
+        ) : null}
       </div>
     );
   };
 
   render () {
+    const {gpuStatisticsAvailable} = this.props;
+    if (!gpuStatisticsAvailable) {
+      return (
+        <Alert type="warning" message="GPU statistics is not available for this node" />
+      );
+    }
     return (
       <div className={styles.container}>
-        {this.renderOverallMetrics()}
-        {this.renderTelemetry()}
+        <Spin wrapperClassName={styles.spin} spinning={this.state.pending}>
+          {this.renderOverallMetrics()}
+          {this.renderTelemetry()}
+        </Spin>
       </div>
     );
   }
 }
+
+GPUInfoTab.propTypes = {
+  nodeName: PropTypes.string,
+  chartsData: PropTypes.object,
+  node: PropTypes.object,
+  gpuStatisticsAvailable: PropTypes.bool
+};
 
 export default GPUInfoTab;

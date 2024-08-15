@@ -25,17 +25,17 @@ import SubSettings from '../../settings/sub-settings';
 @observer
 class ClusterNodeMonitor extends React.Component {
   @computed
-  get showGpuStatisticsTab () {
+  get gpuStatisticsAvailable () {
     const {allowedInstanceTypes, node} = this.props;
     if (allowedInstanceTypes.loaded && node.loaded) {
       const types = (allowedInstanceTypes.value || {})['cluster.allowed.instance.types'] || [];
       const gpuTypes = types
         .filter(instance => instance.gpu || instance.gpuDevice)
-        .map(instance => instance.name);
+        .map(instance => (instance.name || '').toLowerCase());
       const nodeType = node.value?.labels?.cloud_ins_type;
-      return nodeType && gpuTypes.includes(nodeType);
+      return nodeType && gpuTypes.includes(nodeType.toLowerCase());
     }
-    return false;
+    return true;
   }
 
   render () {
@@ -49,19 +49,19 @@ class ClusterNodeMonitor extends React.Component {
           node={node}
           nodeName={nodeName}
           preferences={this.props.preferences}
-        />,
-        visible: () => true
+        />
       },
       {
         key: 'gpu',
         title: 'GPU statistics',
         render: () => <GPUInfoTab
           nodeName={nodeName}
+          chartsData={chartsData}
           node={node}
-        />,
-        visible: () => this.showGpuStatisticsTab
+          gpuStatisticsAvailable={this.gpuStatisticsAvailable}
+        />
       }
-    ].filter(tab => tab.visible());
+    ];
     return (
       <div style={{display: 'flex', flex: 1, height: 300, overflow: 'hidden'}}>
         <SubSettings

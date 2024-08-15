@@ -35,109 +35,108 @@ const convertKilobytesToGb = (kb = 0) => {
   return Gb.toFixed(1);
 };
 
+function renderCircle (className, style) {
+  return (
+    <svg style={style} className={className} height="10" width="10">
+      <circle cx="5" cy="5" r="4"
+        strokeWidth={1}
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
 function renderStatisticsGrid ({
   record,
   measure,
   hoveredItem = {},
-  themeConfiguration = {}
+  themeConfiguration = {},
+  hideDatasets = []
 }) {
   const {gpuId, key} = hoveredItem;
   const {gpuUsage = {}, gpuDetails = {}} = record || {};
   const columns = Math.min(MAX_CELLS_IN_ROW, Math.max(1, Object.keys(gpuDetails).length));
   const primaryColor = themeConfiguration['@primary-color'] || '#108ee9';
-  const renderCircle = (className, style) => {
+  const greyColor = themeConfiguration['@color-grey-semi-transparent'] || '#777';
+  const renderGrid = ({
+    title,
+    dataKey,
+    valueFn
+  }) => {
+    if (hideDatasets.includes(dataKey)) {
+      return null;
+    }
     return (
-      <svg style={style} className={className} height="10" width="10">
-        <circle cx="5" cy="5" r="4"
-          strokeWidth={1}
-          fill="currentColor"
-        />
-      </svg>
-    );
-  };
-  return (
-    <div>
       <div style={{display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: 5}}>
         <div style={{display: 'flex', justifyContent: 'space-between'}}>
           <span>
             {renderCircle('cp-success', {marginRight: 5})}
-            GPU Utilization
+            {title}
           </span>
-          <span>{Math.round((gpuUsage.gpuUtilization || {})[measure] || 0)}%</span>
+          <span>{Math.round((gpuUsage[dataKey] || {})[measure] || 0)}%</span>
         </div>
         <div style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${columns}, 1fr)`
         }}>
           {Object.entries(gpuDetails)
-            .map(([gpuKey, {gpuUtilization}], index) => (
-              <div
-                key={index}
-                style={{
-                  minWidth: 50,
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  marginRight: 1,
-                  marginBottom: 1,
-                  background: getColorWithAlpha(
-                    COLORS.gpuUtilization,
-                    gpuUtilization[measure]
-                  ),
-                  border: `2px solid ${key === 'gpuUtilization' && gpuKey === gpuId
-                    ? primaryColor
-                    : 'transparent'
-                  }`
-                }}
-              >
-                {Math.round(gpuUtilization[measure])}%
-              </div>
-            ))}
+            .map(([gpuKey, details], index) => {
+              const data = details[dataKey];
+              if (!data) {
+                return;
+              }
+              const highlighted = key === dataKey && gpuKey === gpuId;
+              const borderColor = highlighted ? primaryColor : greyColor;
+              return (
+                <div
+                  key={index}
+                  style={{
+                    minWidth: 85,
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginRight: 1,
+                    marginBottom: 1,
+                    background: getColorWithAlpha(
+                      COLORS[dataKey],
+                      data[measure]
+                    ),
+                    border: `${highlighted ? '2px' : '1px'} solid ${borderColor}`
+                  }}
+                >
+                  {valueFn ? valueFn(details, measure) : `${Math.round(data[measure])}%`}
+                </div>
+              );
+            })}
         </div>
       </div>
-      <div style={{display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: 5}}>
-        <div style={{display: 'flex', justifyContent: 'space-between'}}>
-          <span>
-            {renderCircle('cp-error', {marginRight: 5})}
-            GPU Memory
-          </span>
-          <span>{Math.round((gpuUsage.gpuMemoryUtilization || {})[measure] || 0)}%</span>
-        </div>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`
-        }}>
-          {Object.entries(gpuDetails).map(([gpuKey, gpuDetails = {}], index) => (
-            <div
-              key={index}
-              style={{
-                minWidth: 90,
-                display: 'flex',
-                marginRight: 1,
-                marginBottom: 1,
-                justifyContent: 'center',
-                alignItems: 'center',
-                background: getColorWithAlpha(
-                  COLORS.gpuMemoryUtilization,
-                  gpuDetails.gpuMemoryUtilization[measure]
-                ),
-                border: `2px solid ${key === 'gpuMemoryUtilization' && gpuKey === gpuId
-                  ? primaryColor
-                  : 'transparent'
-                }`
-              }}
-            >
+    );
+  };
+  return (
+    <div>
+      {renderGrid({
+        title: 'GPU Utilization',
+        dataKey: 'gpuUtilization'
+      })}
+      {renderGrid({
+        title: 'GPU Memory',
+        dataKey: 'gpuMemoryUtilization',
+        valueFn: (details = {}, measure) => {
+          const {gpuMemoryUtilization = {}, gpuMemoryUsed = {}} = details;
+          const utilization = Math.round(gpuMemoryUtilization[measure] || 0);
+          return (
+            <div style={{display: 'flex', flexWrap: 'nowrap'}}>
               <span>
-                {Math.round(gpuDetails.gpuMemoryUtilization[measure])}%
+                {utilization}%
               </span>
               <span style={{padding: '0 3px'}}>/</span>
               <span>
-                {convertKilobytesToGb(Math.round(gpuDetails.gpuMemoryUsed[measure]))}Gb
+                {convertKilobytesToGb(Math.round(gpuMemoryUsed[measure] || 0))}Gb
               </span>
             </div>
-          ))}
-        </div>
-      </div>
+          );
+        }
+      })}
     </div>
   );
 }
@@ -145,7 +144,8 @@ function renderStatisticsGrid ({
 export const renderTimelineTooltip = ({
   hoveredItems,
   measure,
-  themeConfiguration
+  themeConfiguration,
+  hideDatasets = []
 }) => {
   const hoveredItem = hoveredItems[0];
   if (!hoveredItem?.item?.record) {
@@ -164,7 +164,12 @@ export const renderTimelineTooltip = ({
           {displayDate(record.endTime)}
         </span>
       </div>
-      {renderStatisticsGrid({record, measure, themeConfiguration})}
+      {renderStatisticsGrid({
+        record,
+        measure,
+        themeConfiguration,
+        hideDatasets
+      })}
     </div>
   );
 };
@@ -173,7 +178,8 @@ export const renderHeatmapTooltip = ({
   hoveredItem,
   measure,
   metrics,
-  themeConfiguration
+  themeConfiguration,
+  hideDatasets
 }) => {
   const record = (metrics.charts || [])[hoveredItem.recordIdx];
   if (!record) {
@@ -191,7 +197,13 @@ export const renderHeatmapTooltip = ({
           {displayDate(record.endTime)}
         </span>
       </div>
-      {renderStatisticsGrid({record, measure, hoveredItem, themeConfiguration})}
+      {renderStatisticsGrid({
+        record,
+        measure,
+        hoveredItem,
+        themeConfiguration,
+        hideDatasets
+      })}
     </div>
   );
 };

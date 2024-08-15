@@ -94,13 +94,22 @@ class TimelineChart extends React.Component {
     };
     if (datasets !== prevProps.datasets) {
       this.updateDatasets();
+      this.updateColors()
+        .then(() => {
+          this.updateDatasets();
+          this.updateColorsConfig();
+          this.updateOtherConfig();
+        });
     } else if (datasetOptions !== prevProps.datasetOptions) {
       this.updateDatasetsOptions();
     } else if (themeColorsChanged()) {
       this.updateDefaultDatasetsOptions();
     }
     this.updateOtherConfig();
-    if (from !== prevProps.from || to !== prevProps.to) {
+    if (
+      from !== prevProps.from ||
+      to !== prevProps.to
+    ) {
       this.updateRange();
     }
   }
@@ -462,7 +471,9 @@ class TimelineChart extends React.Component {
 
 TimelineChart.propTypes = {
   options: PropTypes.shape({
-    showHorizontalLines: PropTypes.bool
+    showHorizontalLines: PropTypes.bool,
+    shiftWheel: PropTypes.bool,
+    animateZoom: PropTypes.bool
   }),
   className: PropTypes.string,
   hoverContainerClassName: PropTypes.string,

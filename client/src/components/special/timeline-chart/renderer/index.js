@@ -88,7 +88,8 @@ class TimelineChartRenderer {
       selectionColor = '#666666',
       adaptValueAxis = true,
       showHoveredCoordinateLine = false,
-      animateZoom = true
+      animateZoom = true,
+      shiftWheel = false
     } = options || {};
     this.options = options || {};
     this.container = undefined;
@@ -115,6 +116,7 @@ class TimelineChartRenderer {
     this._adaptValueAxis = adaptValueAxis;
     this._showHoveredCoordinateLine = showHoveredCoordinateLine;
     this._animateZoom = animateZoom;
+    this._shiftWheel = shiftWheel;
     this._hoverEvents = true;
     this.xAxis = new RendererAxis(
       (item) => item.x,
@@ -579,7 +581,14 @@ class TimelineChartRenderer {
 
   onMouseWheel (event) {
     const info = this.getMousePosition(event);
-    const zoom = this.xAxis.zoomBy(-event.deltaY / 100, info.valueX);
+    let delta = -event.deltaY / 100;
+    if (this._shiftWheel) {
+      delta = event.wheelDelta / 400;
+    }
+    if (this._shiftWheel && !info.shiftKey) {
+      return;
+    }
+    const zoom = this.xAxis.zoomBy(delta, info.valueX);
     if (zoom) {
       event.stopPropagation();
       event.preventDefault();

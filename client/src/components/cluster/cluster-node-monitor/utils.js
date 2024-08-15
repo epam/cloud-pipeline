@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import moment from 'moment-timezone';
-import {parseDate} from '../../special/timeline-chart/renderer/date-utilities';
+import {parseDate} from '../../special/heat-map-chart/utils';
 
 export const COLORS = {
   activeGpus: '#108ee9',
@@ -41,56 +40,74 @@ function extractTimelineData ({
       });
     });
     return [
-      ...(from ? [{date: moment(from).unix(), value: null, record: {}}] : []),
+      ...(from ? [{date: from, value: null, record: {}}] : []),
       ...data,
-      ...(to ? [{date: moment(to).unix(), value: null, record: {}}] : [])
+      ...(to ? [{date: to, value: null, record: {}}] : [])
     ];
   };
   return [{
+    key: 'gpuActive',
     data: extractByKey(metrics, 'activeGpus'),
     color: COLORS.activeGpus
   }, {
+    key: 'gpuUtilization',
     data: extractByKey(metrics, 'gpuUtilization'),
     color: COLORS.gpuUtilization
   }, {
+    key: 'gpuMemoryUtilization',
     data: extractByKey(metrics, 'gpuMemoryUtilization'),
     color: COLORS.gpuMemoryUtilization
-  }].filter((el, index) => !hideDatasets.includes(index));
+  }].filter(dataset => !hideDatasets.includes(dataset.key));
 };
 
-function extractHeatmapData ({metrics = {}, measure, from, to}) {
+function extractHeatmapData ({
+  metrics = {},
+  measure,
+  from,
+  to,
+  hideDatasets = []
+}) {
   const extractHeatMapDataByKey = (
     metrics,
     key,
-    type = 'average',
+    measure = 'average',
     mapValue = (v) => v
   ) => {
     const gpuDetails = (metrics.charts || [])[0]?.gpuDetails || {};
     const gpuKeys = Object.keys(gpuDetails);
-    return gpuKeys.map(gpuKey => ({
-      name: gpuKey,
-      records: [{
-        start: moment(from).unix(),
-        end: moment(from).unix(),
-        value: undefined,
-        hide: true
-      }, ...(metrics.charts || []).map(record => {
-        const details = ((record.gpuDetails || {})[gpuKey] || {})[key] || {};
-        const value = details[type];
-        const {unix: startUnix} = parseDate(record.startTime);
-        const {unix: endUnix} = parseDate(record.endTime);
-        return {
-          start: startUnix,
-          end: endUnix,
-          value: mapValue(value)
-        };
-      }), {
-        start: moment(to).unix(),
-        end: moment(to).unix(),
-        value: undefined,
-        hide: true
-      }]
-    }));
+    let prevEndUnix;
+    return gpuKeys.map(gpuKey => {
+      prevEndUnix = undefined;
+      return ({
+        name: gpuKey,
+        records: [{
+          start: from,
+          end: from,
+          value: undefined,
+          hide: true
+        }, ...(metrics.charts || []).map(record => {
+          const details = ((record.gpuDetails || {})[gpuKey] || {})[key] || {};
+          const value = details[measure];
+          const {unix: start} = parseDate(record.startTime);
+          const {unix: endUnix} = parseDate(record.endTime);
+          let startUnix = start;
+          if (prevEndUnix && start < prevEndUnix) {
+            startUnix = prevEndUnix;
+          }
+          prevEndUnix = endUnix;
+          return {
+            start: startUnix,
+            end: endUnix,
+            value: mapValue(value)
+          };
+        }), {
+          start: to,
+          end: to,
+          value: undefined,
+          hide: true
+        }]
+      });
+    });
   };
   return [
     {
@@ -113,7 +130,7 @@ function extractHeatmapData ({metrics = {}, measure, from, to}) {
       max: 100,
       min: 0
     }
-  ];
+  ].filter(dataset => !hideDatasets.includes(dataset.key));
 };
 
 export {extractHeatmapData, extractTimelineData};

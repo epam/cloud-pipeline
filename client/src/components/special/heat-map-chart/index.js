@@ -75,13 +75,17 @@ class HeatMapChart extends React.Component {
   }
 
   componentWillUnmount () {
+    this.destroy();
+  }
+
+  destroy = () => {
     cancelAnimationFrame(this.hoverPositionRAF);
     if (this.renderer) {
       this.renderer.destroy();
       this.renderer = undefined;
     }
     this.hoverContainer = undefined;
-  }
+  };
 
   onThemesChanged = () => {
     this.updateColors();
@@ -226,9 +230,13 @@ class HeatMapChart extends React.Component {
           0,
           positionY - (hoverHeight / 2.0)
         );
+        const offset = Math.min(
+          0,
+          this.hoverContainer.parentNode.clientHeight - newY - hoverHeight
+        );
         if (newX !== x || newY !== y) {
           x = newX;
-          y = newY;
+          y = newY + offset;
           this.hoverContainer.style.transform = `translate(${x}px, ${y}px)`;
         }
       }
@@ -313,11 +321,12 @@ class HeatMapChart extends React.Component {
 }
 
 HeatMapChart.propTypes = {
+  options: PropTypes.shape({
+    shiftWheel: PropTypes.bool
+  }),
   datasets: PropTypes.arrayOf(PropTypes.shape({
     color: PropTypes.string,
     key: PropTypes.string,
-    max: PropTypes.number,
-    min: PropTypes.number,
     data: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string,
       records: PropTypes.arrayOf(PropTypes.shape({
@@ -329,7 +338,10 @@ HeatMapChart.propTypes = {
   })),
   onRangeChanged: PropTypes.func,
   from: PropTypes.oneOfType([PropTypes.number, PropTypes.string, PropTypes.object]),
-  to: PropTypes.oneOfType([PropTypes.number, PropTypes.string, PropTypes.object])
+  to: PropTypes.oneOfType([PropTypes.number, PropTypes.string, PropTypes.object]),
+  hover: PropTypes.shape({
+    getHoveredElementsInfo: PropTypes.func
+  })
 };
 
 export default HeatMapChart;

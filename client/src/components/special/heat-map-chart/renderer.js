@@ -396,6 +396,7 @@ class Renderer {
   }
 
   getHoverInfo = (event) => {
+    this.canvasBox = this.canvas.getBoundingClientRect();
     const {
       valueX,
       x,
@@ -429,7 +430,15 @@ class Renderer {
 
   onMouseWheel (event) {
     const info = this.getMousePosition(event);
-    if (this.xAxis.zoomBy(-event.deltaY / 100, info.valueX)) {
+    let delta = -event.deltaY / 100;
+    if (this.options.shiftWheel) {
+      delta = event.wheelDelta / 400;
+    }
+    if (this.options.shiftWheel && !info.shiftKey) {
+      return;
+    }
+    const zoom = this.xAxis.zoomBy(delta, info.valueX);
+    if (zoom) {
       event.stopPropagation();
       event.preventDefault();
     }
@@ -482,7 +491,7 @@ class Renderer {
       }
       this.xAxis.setRange(
         {from: start, to: end},
-        {animate: false, fromZoom: true}
+        {animate: true, fromZoom: true}
       );
     } else if (this.dragEvent && this.dragEvent.moved) {
       this.onMouseMove(event);

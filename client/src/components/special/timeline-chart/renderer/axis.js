@@ -515,7 +515,7 @@ class RendererAxis {
     if (newFrom !== this._from || newTo !== this._to) {
       this.stopSetRangeAnimation();
       if (animate) {
-        this.startSetRangeAnimation(newFrom, newTo);
+        this.startSetRangeAnimation(newFrom, newTo, fromZoom);
       } else {
         this._from = newFrom;
         this._to = newTo;
@@ -539,7 +539,7 @@ class RendererAxis {
     return false;
   }
 
-  startSetRangeAnimation (from, to) {
+  startSetRangeAnimation (from, to, fromZoom) {
     this.stopSetRangeAnimation();
     let currentFrom = this.from;
     let currentTo = this.to;
@@ -552,7 +552,7 @@ class RendererAxis {
       this._from = from;
       this._to = to;
       this.updateTicks();
-      this.reportScaleChanged();
+      this.reportScaleChanged(fromZoom);
       return;
     }
     const DURATION_MS = 250;
@@ -572,6 +572,7 @@ class RendererAxis {
         request = false;
         this._from = from;
         this._to = to;
+        this.reportScaleChanged(fromZoom);
       } else {
         const ratio = easeInOut(Math.max(0, Math.min(1.0, duration / DURATION_MS)));
         this._from = currentFrom + (from - currentFrom) * ratio;
