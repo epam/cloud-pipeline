@@ -790,6 +790,57 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 break
         return accumulator.get_tree()
 
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        bucket_name = self.bucket.bucket.path
+        client = self._get_client()
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+
+        operation_parameters = {
+            'Bucket': bucket_name,
+            'Delimiter': delimiter
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+            paginator = client.get_paginator('list_objects_v2')
+            page_iterator = paginator.paginate(**operation_parameters)
+            for page in page_iterator:
+                if 'CommonPrefixes' not in page:
+                    return
+                for folder in page.get('CommonPrefixes'):
+                    for item in self._list_folders(S3BucketOperations.get_prefix(delimiter, folder['Prefix']),
+                                                   delimiter, 1, max_depth, operation_parameters, client):
+                        yield item
+
+        else:
+            for item in self._list_folders(prefix, delimiter, 1, max_depth, operation_parameters, client):
+                yield item
+
+    def _list_folders(self, prefix, delimiter, current_depth, max_depth, operation_parameters, client):
+        if current_depth > max_depth:
+            return
+
+        if prefix != delimiter:
+            operation_parameters['Prefix'] = prefix
+            yield prefix
+        else:
+            yield ''
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+
+        for page in page_iterator:
+            if 'CommonPrefixes' not in page:
+                return
+            for folder in page.get('CommonPrefixes'):
+                folder_prefix = S3BucketOperations.get_prefix(delimiter, folder['Prefix'])
+                if current_depth == max_depth:
+                    yield folder_prefix
+                else:
+                    for item in self._list_folders(folder_prefix, delimiter, current_depth + 1, max_depth,
+                                                   operation_parameters, client):
+                        yield item
+
     def get_summary(self, relative_path=None):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         client = self._get_client()
