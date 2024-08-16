@@ -178,6 +178,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
         $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
+        $(byText("Run capabilities")).click();
         return this;
     }
 
