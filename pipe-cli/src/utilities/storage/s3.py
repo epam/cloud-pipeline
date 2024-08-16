@@ -810,6 +810,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         }
         prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
         if relative_path:
+            if relative_path.endswith(delimiter):
+                yield relative_path
             operation_parameters['Prefix'] = prefix
             paginator = client.get_paginator('list_objects_v2')
             page_iterator = paginator.paginate(**operation_parameters)
