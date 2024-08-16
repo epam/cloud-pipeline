@@ -31,7 +31,6 @@ public final class GitRepositoryUrl {
     // Password could be either placeholder ${GIT_TOKEN} or a real password
     private static final String PASS_PATTERN = "\\$\\{GIT_TOKEN}|[-_A-Za-z0-9]++";
     private static final String HOST_PATTERN = "[-._A-Za-z0-9]++(?::[0-9]++)?";
-    private static final String HOST_API_PATTERN = "[-._A-Za-z0-9]+/[0-9]+\\.[0-9]+?";
     private static final String PATH_PART_PATTERN = "[-_A-Za-z0-9]++";
     private static final Pattern GIT_REPOSITORY_URL_PATTERN = Pattern.compile(
         "^(?<protocol>" + PROTOCOL_PATTERN + "://)"      // Any url supposed to start with protocol
