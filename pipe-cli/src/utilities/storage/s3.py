@@ -14,6 +14,7 @@
 
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
+from treelib import Tree
 
 from src.model.datastorage_usage_model import StorageUsage
 from src.utilities.audit import DataAccessEvent, DataAccessType
@@ -770,14 +771,18 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             'Bucket': bucket_name
         }
         prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        root_path = relative_path
         if relative_path:
             operation_parameters['Prefix'] = prefix
-            max_depth += len(prefix.split(delimiter))
+            prefix_tokens = prefix.split(delimiter)
+            prefix_tokens_len = len(prefix_tokens)
+            max_depth += prefix_tokens_len
+            root_path = '' if prefix_tokens_len == 1 else delimiter.join(prefix_tokens[:-1])
 
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)
 
-        accumulator = StorageUsageAccumulator(bucket_name, relative_path, delimiter, max_depth)
+        accumulator = StorageUsageAccumulator(bucket_name, root_path, delimiter, max_depth)
 
         for page in page_iterator:
             if 'Contents' in page:
@@ -788,7 +793,11 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                     accumulator.add_path(name, tier, size)
             if not page['IsTruncated']:
                 break
-        return accumulator.get_tree()
+        result_tree = accumulator.get_tree()
+        if relative_path and root_path != relative_path and not relative_path.endswith(delimiter):
+            root_path = delimiter.join([bucket_name, root_path]) if root_path else bucket_name
+            result_tree[root_path].data = None
+        return result_tree
 
     def get_listing_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
