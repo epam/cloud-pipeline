@@ -357,6 +357,11 @@ public class SystemPreferences {
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+
+    public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
+            new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
+    public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
+            "bitbucket.cloud.api.version", "2.0", GIT_GROUP, pass);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
