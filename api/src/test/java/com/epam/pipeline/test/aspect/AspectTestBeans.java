@@ -85,6 +85,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationRegistration
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -472,6 +473,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected BitbucketMapper bitbucketMapper;
+
+    @MockBean
+    protected BitbucketCloudMapper bitbucketCloudMapper;
 
     @MockBean
     protected DataStorageLifecycleManager storageLifecycleManager;
