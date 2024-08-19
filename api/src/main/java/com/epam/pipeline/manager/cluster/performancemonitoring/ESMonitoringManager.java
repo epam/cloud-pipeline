@@ -329,14 +329,10 @@ public class ESMonitoringManager implements UsageMonitoringManager {
             return null;
         }
         final List<MonitoringStats> charts = new ArrayList<>();
-        if (GpuMetricsGranularity.hasAggregations(loadTypes)) {
-            charts.addAll(requestCharts(aggregationRequester, interval, nodeName, start, end));
-        }
-        if (GpuMetricsGranularity.hasDetails(loadTypes)) {
-            final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
-            charts.addAll(requestCharts(detailsRequester, interval, nodeName, start, end));
-        }
         if (GpuMetricsGranularity.hasDetails(loadTypes) && GpuMetricsGranularity.hasAggregations(loadTypes)) {
+            charts.addAll(aggregationRequester.requestStats(nodeName, start, end, interval));
+            final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
+            charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval));
             return charts.stream()
                     .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
                             Collectors.reducing(this::mergeGpuStats)))
@@ -350,6 +346,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                     .sorted(Comparator.comparing(MonitoringStats::getStartTime,
                             Comparator.comparing(this::asMonitoringDateTime)))
                     .collect(Collectors.toList());
+        }
+        if (GpuMetricsGranularity.hasAggregations(loadTypes)) {
+            charts.addAll(requestCharts(aggregationRequester, interval, nodeName, start, end));
+        }
+        if (GpuMetricsGranularity.hasDetails(loadTypes)) {
+            final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
+            charts.addAll(requestCharts(detailsRequester, interval, nodeName, start, end));
         }
         return charts.stream()
                 .sorted(Comparator.comparing(MonitoringStats::getStartTime,
