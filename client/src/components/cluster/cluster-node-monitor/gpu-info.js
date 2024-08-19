@@ -67,7 +67,7 @@ const DATASET_COLORS = {
   [DATASET_TYPES.gpuMemoryUtilization]: '#f04134'
 };
 
-const FETCH_DELAY = 1000;
+const FETCH_DELAY = 500;
 
 function Divider () {
   return (
@@ -164,8 +164,12 @@ class GPUInfoTab extends React.Component {
     this.setState({pending: true}, async () => {
       const {nodeName} = this.props;
       const {from, to} = this.state;
-      const fromString = moment.unix(from).utc().format('YYYY-MM-DD HH:mm:ss');
-      const toString = moment.unix(to).utc().format('YYYY-MM-DD HH:mm:ss');
+      const {min, max} = this.chartsBounds;
+      const range = to - from;
+      const newFrom = Math.max(min, from - range);
+      const newTo = Math.min(max, to + range);
+      const fromString = moment.unix(newFrom).utc().format('YYYY-MM-DD HH:mm:ss');
+      const toString = moment.unix(newTo).utc().format('YYYY-MM-DD HH:mm:ss');
       const request = new ClusterNodeGPUUsage(
         nodeName,
         fromString,
@@ -251,9 +255,9 @@ class GPUInfoTab extends React.Component {
   };
 
   renderChartControls = () => {
-    const {hideDatasets, measure, metrics} = this.state;
+    const {hideDatasets, measure} = this.state;
     const onMeasureChange = ({key}) => this.setState({measure: key});
-    const onGPUChange = ({key}) => this.setState({selectedGPU: key});
+    // const onGPUChange = ({key}) => this.setState({selectedGPU: key});
     const toggleDataset = (key) => {
       const {hideDatasets} = this.state;
       this.setState({hideDatasets: hideDatasets.includes(key)
@@ -270,16 +274,16 @@ class GPUInfoTab extends React.Component {
         ))}
       </Menu>
     );
-    const gpuKeys = Object.keys((metrics?.charts || [])[0]?.gpuDetails || {});
-    const gpuMenu = (
-      <Menu onClick={onGPUChange}>
-        {['All', ...gpuKeys].map(key => (
-          <Menu.Item style={{minWidth: 80}} key={key}>
-            {key}
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
+    // const gpuKeys = Object.keys((metrics?.charts || [])[0]?.gpuDetails || {});
+    // const gpuMenu = (
+    //   <Menu onClick={onGPUChange}>
+    //     {['All', ...gpuKeys].map(key => (
+    //       <Menu.Item style={{minWidth: 80}} key={key}>
+    //         {key}
+    //       </Menu.Item>
+    //     ))}
+    //   </Menu>
+    // );
     const renderLegendMarker = (stroke) => (
       <svg height="10" width="20">
         <line
