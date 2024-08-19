@@ -69,8 +69,8 @@ public class BitbucketCloudClient {
                 .updateRepository(apiVersion, projectName, repositoryName, bitbucketRepository));
     }
 
-    public ResponseBody deleteRepository() {
-        return RestApiUtils.execute(bitbucketServerApi.deleteRepository(apiVersion, projectName, repositoryName));
+    public void deleteRepository() {
+        RestApiUtils.execute(bitbucketServerApi.deleteRepository(apiVersion, projectName, repositoryName));
     }
 
     public BitbucketCloudUser findUser(final String username) {

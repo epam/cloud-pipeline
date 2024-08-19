@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.git.bitbucketcloud;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
-import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
@@ -46,6 +45,7 @@ import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,6 +62,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
@@ -70,14 +71,6 @@ public class BitbucketCloudService implements GitClientService {
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
 
-
-    public BitbucketCloudService(final BitbucketCloudMapper mapper,
-                                 final MessageHelper messageHelper,
-                                 final PreferenceManager preferenceManager) {
-        this.mapper = mapper;
-        this.messageHelper = messageHelper;
-        this.preferenceManager = preferenceManager;
-    }
 
     @Override
     public RepositoryType getType() {
@@ -309,9 +302,9 @@ public class BitbucketCloudService implements GitClientService {
         }
         final BitbucketCloudClient client = getClient(pipeline);
 
-        for (final PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
-            client.upsertFile(sourceItemVO.getPath(), sourceItemVO.getContents(), message, pipeline.getBranch());
-        }
+        ListUtils.emptyIfNull(sourceItemVOList.getItems()).forEach(sourceItemVO ->
+                client.upsertFile(sourceItemVO.getPath(), sourceItemVO.getContents(), message, pipeline.getBranch()));
+        //TODO we need to return commit info
         return new GitCommitEntry();
     }
 

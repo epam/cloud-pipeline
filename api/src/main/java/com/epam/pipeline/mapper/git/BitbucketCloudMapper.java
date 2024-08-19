@@ -109,11 +109,7 @@ public interface BitbucketCloudMapper {
 
     @SneakyThrows
     default Date fillDate(final BitbucketCloudCommit commit) {
-        if (TextUtils.isBlank(commit.getDate())) {
-            return null;
-        }
-        final SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX");
-        return parser.parse(commit.getDate());
+        return TextUtils.isBlank(commit.getDate()) ? null : DATE_FORMAT.parse(commit.getDate());
     }
 
     default String fillCommitDate(final BitbucketCloudCommit commit) {
