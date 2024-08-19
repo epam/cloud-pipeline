@@ -165,9 +165,9 @@ class GPUInfoTab extends React.Component {
       const {nodeName} = this.props;
       const {from, to} = this.state;
       const {min, max} = this.chartsBounds;
-      const range = to - from;
-      const newFrom = Math.max(min, from - range);
-      const newTo = Math.min(max, to + range);
+      const offsetRange = (to - from) / 5;
+      const newFrom = Math.max(min, from - offsetRange);
+      const newTo = Math.min(max, to + offsetRange);
       const fromString = moment.unix(newFrom).utc().format('YYYY-MM-DD HH:mm:ss');
       const toString = moment.unix(newTo).utc().format('YYYY-MM-DD HH:mm:ss');
       const request = new ClusterNodeGPUUsage(
@@ -303,17 +303,19 @@ class GPUInfoTab extends React.Component {
       </svg>
     );
     const onStartChange = (date) => {
-      const from = Math.max(
-        this.chartsBounds.min,
-        moment(date.startOf('day')).unix()
-      );
+      const from = date
+        ? Math.max(
+          this.chartsBounds.min,
+          moment(date.startOf('day')).unix())
+        : this.chartsBounds.min;
       this.setState({from}, () => this.fetchMetrics(true));
     };
     const onEndChange = (date) => {
-      const to = Math.min(
-        this.chartsBounds.max,
-        moment(date.startOf('day')).unix()
-      );
+      const to = date
+        ? Math.min(
+          this.chartsBounds.max,
+          moment(date.endOf('day')).unix())
+        : this.chartsBounds.max;
       this.setState({to}, () => this.fetchMetrics(true));
     };
     const setRange = ({key}) => {
