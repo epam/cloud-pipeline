@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
 import traceback
 from datetime import datetime, timedelta
 
@@ -33,6 +34,49 @@ class CloudPipelineInstanceProvider(GridEngineInstanceProvider):
         allowed_instance_types = self.api.get_allowed_instance_types(self.region_id, self.price_type == 'spot')
         docker_instance_types = allowed_instance_types['cluster.allowed.instance.types.docker']
         return [Instance.from_cp_response(instance) for instance in docker_instance_types]
+
+
+class CloudPipelineReservationInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner,
+                 kube_mem_ratio, kube_mem_min_mib, kube_mem_max_mib,
+                 system_mem_ratio, system_mem_min_mib, system_mem_max_mib,
+                 extra_mem_ratio, extra_mem_min_mib, extra_mem_max_mib):
+        self.inner = inner
+        self.kube_mem_ratio = kube_mem_ratio
+        self.kube_mem_min_mib = kube_mem_min_mib
+        self.kube_mem_max_mib = kube_mem_max_mib
+        self.system_mem_ratio = system_mem_ratio
+        self.system_mem_min_mib = system_mem_min_mib
+        self.system_mem_max_mib = system_mem_max_mib
+        self.extra_mem_ratio = extra_mem_ratio
+        self.extra_mem_min_mib = extra_mem_min_mib
+        self.extra_mem_max_mib = extra_mem_max_mib
+
+    def provide(self):
+        for instance in self.inner.provide():
+            total_mem_gib = instance.mem
+            total_mem_mib = total_mem_gib * 1024
+
+            kube_mem_mib = self._resolve(total_mem_mib,
+                                         self.kube_mem_ratio, self.kube_mem_min_mib, self.kube_mem_max_mib)
+            system_mem_mib = self._resolve(total_mem_mib,
+                                           self.system_mem_ratio, self.system_mem_min_mib, self.system_mem_max_mib)
+            extra_mem_mib = self._resolve(total_mem_mib,
+                                          self.extra_mem_ratio, self.extra_mem_min_mib, self.extra_mem_max_mib)
+
+            container_limit_mem_mib = max(0, total_mem_mib - kube_mem_mib - system_mem_mib - extra_mem_mib)
+            container_limit_mem_gib = int(container_limit_mem_mib / 1024)
+
+            yield Instance(name=instance.name,
+                           price_type=instance.price_type,
+                           cpu=instance.cpu,
+                           mem=container_limit_mem_gib,
+                           gpu=instance.gpu,
+                           gpu_device=instance.gpu_device)
+
+    def _resolve(self, total, ratio, min_, max_):
+        return int(min(max(min_, math.ceil(total * ratio)), max_))
 
 
 class GridEngineWorkerRecorder:

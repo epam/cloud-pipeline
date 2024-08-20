@@ -259,6 +259,9 @@ class GridEngineAdvancedAutoscalingParametersGroup(GridEngineParametersGroup):
         self.custom_requirements_purge = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_CUSTOM_REQUIREMENTS_PURGE', type=PARAM_BOOL, default=False,
             help='Enables custom requirements purge.')
+        self.node_mem_reservations = GridEngineParameter(
+            name='CP_CAP_AUTOSCALE_NODE_MEM_RESERVATIONS', type=PARAM_BOOL, default=False,
+            help='Enables node memory reservations processing.')
         self.grid_engine = GridEngineParameter(
             name='CP_CAP_AUTOSCALE_GRID_ENGINE', type=PARAM_STR, default=None,
             help='Specifies grid engine type.\n'
