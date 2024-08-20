@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.bitbucket;
+package com.epam.pipeline.entity.git.bitbucketcloud;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
-public class BitbucketLinks {
-    private List<BitbucketCloneEntry> clone;
-    private BitbucketCloneEntry html;
+@AllArgsConstructor
+@Builder
+public class BitbucketCloudAuthor {
+    private String raw;
+    private BitbucketCloudUser user;
 }

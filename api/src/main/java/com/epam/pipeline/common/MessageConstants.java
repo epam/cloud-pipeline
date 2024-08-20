@@ -395,6 +395,9 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
     public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
     public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
+            "error.parse.bitbucket.cloud.repository.path";
+    public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages

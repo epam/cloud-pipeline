@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.bitbucket;
+package com.epam.pipeline.entity.git.bitbucketcloud;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 import java.util.List;
 
 @Data
-public class BitbucketLinks {
-    private List<BitbucketCloneEntry> clone;
-    private BitbucketCloneEntry html;
+public class BitbucketCloudPagedResponse<T> {
+    private List<T> values;
+    private Integer size;
+    private Integer page;
+    @JsonProperty("pagelen")
+    private Integer pageLen;
+    private String next;
+    private String previous;
+    private boolean isLastPage;
 }
