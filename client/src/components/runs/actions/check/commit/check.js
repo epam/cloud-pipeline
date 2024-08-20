@@ -25,7 +25,8 @@ export default async function commitCheck (runId, options, skipContainerCheck = 
   await checkRequest.fetch();
   if (checkRequest.loaded) {
     const {enoughSpace = {}, containerSize = {}} = checkRequest.value || {};
-    const sizeCheck = `${containerSize.result || ''}`.toLowerCase() === 'ok';
+    const sizeCheck = `${containerSize.result || ''}`.toLowerCase() === 'ok' ||
+      `${containerSize.result || ''}`.toLowerCase() === 'warn';
     const spaceCheck = `${enoughSpace.result || ''}`.toLowerCase() === 'ok' ||
       `${enoughSpace.result || ''}`.toLowerCase() === 'warn';
     return {
