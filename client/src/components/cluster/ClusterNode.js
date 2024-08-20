@@ -217,10 +217,12 @@ class ClusterNode extends Component {
   onResize = () => {
     const containerWidth = this.containerRef?.offsetWidth - 60;
     const {show} = (this.labelRefs || []).reduce((acc, label) => {
-      const nextWidth = label.offsetLeft + label.getBoundingClientRect().width;
-      if (nextWidth < containerWidth) {
-        acc.show += 1;
-        acc.totalWidth = nextWidth;
+      if (label) {
+        const nextWidth = label.offsetLeft + label.getBoundingClientRect().width;
+        if (nextWidth < containerWidth) {
+          acc.show += 1;
+          acc.totalWidth = nextWidth;
+        }
       }
       return acc;
     }, {show: 0, totalWidth: 0});
