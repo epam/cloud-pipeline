@@ -93,7 +93,7 @@ class DataStorage(API):
         params = urlencode({'id': name})
         response_data = api.call('datastorage/find?' + params, None)
         if 'payload' in response_data:
-            return DataStorageModel.load(response_data['payload'])
+            return DataStorageModel.load_with_region(response_data['payload'], cls.get_region_info())
         return None
 
     @classmethod
