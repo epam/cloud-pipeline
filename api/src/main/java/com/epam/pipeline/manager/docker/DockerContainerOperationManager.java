@@ -318,7 +318,7 @@ public class DockerContainerOperationManager {
             final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
 
             final int boundaryKBitsPerSec = enable ? boundary * 8 / BYTES_IN_KB : 0;
-            final String getSizeCommand = LimitBandwidthCommand.builder()
+            final String limitNetworkCommand = LimitBandwidthCommand.builder()
                     .runScriptUrl(limitRunBandwidthScriptUrl)
                     .runId(String.valueOf(run.getId()))
                     .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
@@ -329,7 +329,7 @@ public class DockerContainerOperationManager {
                     .downloadRate(String.valueOf(boundaryKBitsPerSec))
                     .build()
                     .getCommand();
-            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), limitNetworkCommand,
                     getSshPort(run));
             final boolean isFinished = sshConnection.waitFor(
                     preferenceManager.getPreference(SystemPreferences.LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT),

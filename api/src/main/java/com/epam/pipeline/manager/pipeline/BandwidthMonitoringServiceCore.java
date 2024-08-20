@@ -45,25 +45,21 @@ public class BandwidthMonitoringServiceCore {
     public void monitor() {
         final List<PipelineRun> runs = pipelineRunManager.loadRunningPipelineRuns();
         final String networkLimitDateTag = getNetworkLimitDateTag();
-        Map<String, String> tags;
-        int boundary;
         for (PipelineRun run: runs) {
-            tags = run.getTags();
-            if (shouldLimit(tags)) {
-                boundary = Integer.parseInt(tags.get(NETWORK_LIMIT));
+            final Map<String, String> tags = run.getTags();
+            if (shouldSetLimit(tags)) {
+                final int boundary = Integer.parseInt(tags.get(NETWORK_LIMIT));
                 dockerContainerOperationManager.limitNetworkBandwidth(run, boundary, true);
                 run.addTag(networkLimitDateTag, DateUtils.nowUTCStr());
             } else if (shouldCleanLimit(tags)) {
                 dockerContainerOperationManager.limitNetworkBandwidth(run, 0, false);
-                run.removeTag(NETWORK_CONSUMING_LEVEL_HIGH);
-                run.removeTag(NETWORK_LIMIT);
                 run.removeTag(networkLimitDateTag);
             }
-            pipelineRunManager.updateTags(run.getId(), new TagsVO(tags), false);
+            pipelineRunManager.updateTags(run.getId(), new TagsVO(run.getTags()), true);
         }
     }
 
-    private boolean shouldLimit(final Map<String, String> tags) {
+    private boolean shouldSetLimit(final Map<String, String> tags) {
         return tags.containsKey(NETWORK_LIMIT) && !tags.containsKey(getNetworkLimitDateTag());
     }
 

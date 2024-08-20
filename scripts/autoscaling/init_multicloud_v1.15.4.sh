@@ -254,13 +254,16 @@ fi
 
 
 cd /bin && \
-git clone https://github.com/magnific0/wondershaper.git && \
+wget https://github.com/magnific0/wondershaper/archive/refs/heads/master.zip -O wondershaper.zip && \
+unzip wondershaper.zip && \
+mv wondershaper-master wondershaper && \
+rm -rf wondershaper.zip && \
 cd wondershaper && \
 sudo make install
 if check_installed "wondershaper"; then
   echo "[INFO] Wondershaper was installed successfully."
 else
-  echo "[ERROR] Wondershaper installation failed."
+  echo "[WARN] Wondershaper installation failed."
 fi
 
 
