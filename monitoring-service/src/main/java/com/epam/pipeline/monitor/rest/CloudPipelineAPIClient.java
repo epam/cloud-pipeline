@@ -19,10 +19,12 @@ package com.epam.pipeline.monitor.rest;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import org.apache.commons.collections4.ListUtils;
@@ -94,5 +96,17 @@ public class CloudPipelineAPIClient {
 
     public List<InstanceType> loadAllInstanceTypes() {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllInstanceTypes()));
+    }
+
+    public List<? extends AbstractCloudRegion> loadAllRegions() {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllRegions()));
+    }
+
+    public AllowedInstanceAndPriceTypes loadAllowedInstanceAndPriceTypesForRegion(final Long regionId) {
+        return executor.execute(cloudPipelineAPI.loadAllowedInstanceAndPriceTypesForRegion(regionId));
+    }
+
+    public void archiveRuns() {
+        executor.execute(cloudPipelineAPI.archiveRuns());
     }
 }

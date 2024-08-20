@@ -53,8 +53,8 @@ public class RunStatusManager {
         return runStatusDao.loadRunStatus(runId);
     }
 
-    public Map<Long, List<RunStatus>> loadRunStatus(final List<Long> runId) {
-        return runStatusDao.loadRunStatus(runId).stream().collect(Collectors.groupingBy(RunStatus::getRunId));
+    public Map<Long, List<RunStatus>> loadRunStatus(final List<Long> runIds, final boolean archive) {
+        return runStatusDao.loadRunStatus(runIds, archive).stream().collect(Collectors.groupingBy(RunStatus::getRunId));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

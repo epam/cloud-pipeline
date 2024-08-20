@@ -113,6 +113,8 @@ public class PipelineManager implements SecuredEntityManager {
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
             Assert.isTrue(RepositoryType.BITBUCKET != pipelineVO.getRepositoryType(),
                     "Bitbucket repository creation supported from urls only");
+            Assert.isTrue(RepositoryType.BITBUCKET_CLOUD != pipelineVO.getRepositoryType(),
+                    "Bitbucket Cloud repository creation supported from urls only");
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
             final GitProject project = createGitRepository(pipelineVO);

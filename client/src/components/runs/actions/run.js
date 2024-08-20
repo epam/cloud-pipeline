@@ -1233,20 +1233,30 @@ export class RunConfirmation extends React.Component {
   }
 
   componentDidMount () {
-    this.updateState(this.props);
+    this.updateState();
   }
 
-  updateState = (props) => {
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.limitMounts !== this.props.limitMounts
+    ) {
+      this.updateState();
+    }
+  }
+
+  updateState = () => {
     this.setState({
-      isSpot: props.isSpot,
-      instanceType: props.instanceType,
-      limitMounts: props.limitMounts
+      isSpot: this.props.isSpot,
+      instanceType: this.props.instanceType,
+      limitMounts: this.props.limitMounts
     });
   };
 }
 
 @observer
-export class RunSpotConfirmationWithPrice extends React.Component {
+class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
     versionSizeErrors: PropTypes.shape({
       soft: PropTypes.bool,
@@ -1480,6 +1490,23 @@ export class RunSpotConfirmationWithPrice extends React.Component {
   }
 
   componentDidMount () {
+    this.updateFromProps();
+  }
+
+  componentDidUpdate(prevProps, prevState, snapshot) {
+    if (
+      prevProps.runInfo !== this.props.runInfo ||
+      prevProps.isSpot !== this.props.isSpot ||
+      prevProps.instanceType !== this.props.instanceType ||
+      prevProps.hddSize !== this.props.hddSize ||
+      prevProps.limitMounts !== this.props.limitMounts ||
+      prevProps.parameters !== this.props.parameters
+    ) {
+      this.updateFromProps();
+    }
+  }
+
+  updateFromProps = () => {
     this.setState({
       runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,

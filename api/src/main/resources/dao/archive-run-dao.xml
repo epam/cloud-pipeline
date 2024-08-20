@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.pipeline.ArchiveRunDao" id="archiveRunDao" autowire="byName">
+        <property name="createArchiveRunQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.archive_run (
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        ssh_password,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        env_vars,
+                        prolonged_at_time,
+                        last_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        pipeline_name,
+                        node_start_date)
+                    VALUES (
+                        :RUN_ID,
+                        :PIPELINE_ID,
+                        :VERSION,
+                        :START_DATE,
+                        :END_DATE,
+                        :PARAMETERS,
+                        :STATUS,
+                        :TERMINATING,
+                        :POD_ID,
+                        :NODE_TYPE,
+                        :NODE_DISK,
+                        :NODE_IP,
+                        :NODE_ID,
+                        :NODE_NAME,
+                        :NODE_IMAGE,
+                        :NODE_CLOUD_REGION,
+                        :NODE_PLATFORM,
+                        :DOCKER_IMAGE,
+                        :ACTUAL_DOCKER_IMAGE,
+                        :PLATFORM,
+                        :CMD_TEMPLATE,
+                        :ACTUAL_CMD,
+                        :TIMEOUT,
+                        :OWNER,
+                        :POD_IP,
+                        :SSH_PASSWORD,
+                        :COMMIT_STATUS,
+                        :LAST_CHANGE_COMMIT_TIME,
+                        :CONFIG_NAME,
+                        :NODE_COUNT,
+                        :PARENT_ID,
+                        :ENTITIES_IDS,
+                        :IS_SPOT,
+                        :CONFIGURATION_ID,
+                        :POD_STATUS,
+                        to_jsonb(:ENV_VARS::jsonb),
+                        :PROLONGED_AT_TIME,
+                        :LAST_NOTIFICATION_TIME,
+                        :EXEC_PREFERENCES,
+                        :PRETTY_URL,
+                        :PRICE_PER_HOUR,
+                        :COMPUTE_PRICE_PER_HOUR,
+                        :DISK_PRICE_PER_HOUR,
+                        :STATE_REASON,
+                        :NON_PAUSE,
+                        :NODE_REAL_DISK,
+                        :NODE_CLOUD_PROVIDER,
+                        to_jsonb(:TAGS::jsonb),
+                        :SENSITIVE,
+                        :PIPELINE_NAME,
+                        :NODE_START_DATE)
+                ]]>
+            </value>
+        </property>
+        <property name="createArchiveRunStatusChangeQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.archive_run_status_change (
+                        run_id,
+                        status,
+                        reason,
+                        date)
+                    VALUES (
+                        :RUN_ID,
+                        :STATUS,
+                        :REASON,
+                        :DATE)
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>

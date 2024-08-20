@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -251,7 +252,7 @@ public class UserApiService {
      * @return the list of the runners
      */
     @PreAuthorize(ADMIN_ONLY)
-    public List<RunnerSid> updateRunners(final Long id, final List<RunnerSid> runners) {
+    public List<RunnerSidVO> updateRunners(final Long id, final List<RunnerSidVO> runners) {
         return userRunnersManager.saveRunners(id, runners);
     }
 

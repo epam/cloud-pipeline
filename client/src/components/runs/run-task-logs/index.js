@@ -222,25 +222,27 @@ class RunTaskLogs extends React.Component {
       searchResults = [],
       searchResultIndex
     } = this.state;
+    const sliceFrom = Math.max(0, logs.length - this.maxLinesToDisplay);
     return logs
-      .slice(Math.max(0, logs.length - this.maxLinesToDisplay))
+      .slice(sliceFrom)
       .map((log, index) => {
-        const lineSearchResult = searchResults.filter((aResult) => aResult.lineIndex === log.index);
+        const realIndex = index + sliceFrom;
+        const lineSearchResult = searchResults.filter((aResult) => aResult.lineIndex === realIndex);
         if (lineSearchResult.length === 0) {
-          return {...log, index};
+          return {...log, index: realIndex};
         }
         const current = lineSearchResult.find((aLine) => aLine.index === searchResultIndex);
         if (current) {
           return {
             ...log,
-            index,
+            index: realIndex,
             logHTML: current.activeLogHTML
           };
         }
         const [any] = lineSearchResult;
         return {
           ...log,
-          index,
+          index: realIndex,
           logHTML: any.logHTML
         };
       });

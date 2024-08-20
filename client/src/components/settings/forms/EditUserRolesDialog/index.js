@@ -59,6 +59,9 @@ import ShareWithForm from '../../../runs/logs/forms/ShareWithForm';
 import {CP_CAP_RUN_CAPABILITIES} from '../../../pipelines/launch/form/utilities/parameters';
 import MuteEmailNotifications from '../../../special/metadata/special/mute-email-notifications';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
+import {
+  runAsPermissionsEqual
+} from '../../../runs/logs/forms/configure-run-as-permissions/utilities';
 import styles from './EditUserRolesDialog.css';
 
 const RESTRICTED_METADATA_KEYS = [
@@ -354,12 +357,7 @@ export default class EditUserRolesDialog extends React.Component {
     if (runnersInitial.length === runners.length) {
       for (let i = 0; i < runnersInitial.length; i++) {
         const runner = runnersInitial[i];
-        if (
-          !runners.find(r => r.name === runner.name &&
-            r.accessType === runner.accessType &&
-            r.principal === runner.principal
-          )
-        ) {
+        if (!runners.find(r => runAsPermissionsEqual(r, runner))) {
           return true;
         }
       }
@@ -519,12 +517,18 @@ export default class EditUserRolesDialog extends React.Component {
   };
 
   saveShareSids = async (sids = []) => {
+    const mapSid = (sid) => {
+      const {
+        isPrincipal,
+        ...rest
+      } = sid;
+      return {
+        principal: isPrincipal,
+        ...rest
+      };
+    };
     this.setState({
-      runners: sids.map(sid => ({
-        name: sid.name,
-        principal: sid.isPrincipal,
-        accessType: sid.accessType
-      }))
+      runners: sids.map(mapSid)
     }, this.closeShareDialog);
   };
 
@@ -1084,6 +1088,7 @@ export default class EditUserRolesDialog extends React.Component {
                 pending={runnersPending}
                 onSave={this.saveShareSids}
                 onClose={this.closeShareDialog}
+                runAsUserConfiguration
               />
             </div>
             <InstanceTypesManagementForm

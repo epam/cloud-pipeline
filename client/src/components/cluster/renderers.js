@@ -28,7 +28,14 @@ export function renderNodeLabels (labels, config) {
   if (!labels) {
     return null;
   }
-  const {onlyKnown = false, pipelineRun, className, additionalStyle, location} = config;
+  const {
+    onlyKnown = false,
+    pipelineRun,
+    className,
+    additionalStyle,
+    location,
+    sortFn = (a, b) => {}
+  } = config;
   const renderItems = [];
   const displayTag =
     (label, value, role = 0) =>
@@ -58,29 +65,32 @@ export function renderNodeLabels (labels, config) {
       >
         {value.toUpperCase()}
       </span>;
-  for (let key in labels) {
-    if (labels.hasOwnProperty(key)) {
-      const info = parseLabel(key, labels[key], config);
-      if (testRole(info.role, nodeRoles.run)) {
-        const labelKey = pipelineRun ? key.toUpperCase() : 'default';
-        if (location && pipelineRun) {
-          renderItems.push(
-            <AdaptedLink
-              id="label-link-run-id"
-              key={key}
-              to={`/run/${pipelineRun.id}`}
-              location={location}
-            >
-              {displayTag(labelKey, info.value, info.role)}
-            </AdaptedLink>
-          );
-        } else {
-          renderItems.push(displayTag(key, info.value, info.role));
-        }
-      } else if (!onlyKnown || roleIsDefined(info.role)) {
-        renderItems.push(displayTag(info.name, info.value, info.role));
+  const labelsInfo = Object.keys(labels)
+    .map(key => ({
+      key,
+      info: parseLabel(key, labels[key], config)
+    }))
+    .sort(sortFn);
+  labelsInfo.forEach(({key, info}) => {
+    if (testRole(info.role, nodeRoles.run)) {
+      const labelKey = pipelineRun ? key.toUpperCase() : 'default';
+      if (location && pipelineRun) {
+        renderItems.push(
+          <AdaptedLink
+            id="label-link-run-id"
+            key={key}
+            to={`/run/${pipelineRun.id}`}
+            location={location}
+          >
+            {displayTag(labelKey, info.value, info.role)}
+          </AdaptedLink>
+        );
+      } else {
+        renderItems.push(displayTag(key, info.value, info.role));
       }
+    } else if (!onlyKnown || roleIsDefined(info.role)) {
+      renderItems.push(displayTag(info.name, info.value, info.role));
     }
-  }
+  });
   return renderItems.reduce((array, item) => ([...array, ' ', item]), []);
 }

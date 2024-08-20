@@ -822,7 +822,7 @@ public class PipelineRunManager {
         }
         if (CollectionUtils.isNotEmpty(result.getElements())) {
             Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(result.getElements().stream()
-                    .map(PipelineRun::getId).collect(Collectors.toList()));
+                    .map(PipelineRun::getId).collect(Collectors.toList()), false);
             for (final PipelineRun run : result.getElements()) {
                 run.setRunStatuses(runStatuses.get(run.getId()));
             }
@@ -1073,11 +1073,13 @@ public class PipelineRunManager {
      *
      * @param start beginning of evaluating period
      * @param end ending of evaluating period
+     * @param archive optional archived runs loading
      * @return run with statuses adjusted
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end, archive);
         final List<Long> runIds = runs.stream()
             .map(BaseEntity::getId)
             .collect(Collectors.toList());
@@ -1086,7 +1088,7 @@ public class PipelineRunManager {
             return Collections.emptyList();
         }
 
-        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds);
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds, archive);
 
         return runs.stream()
             .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))

@@ -61,6 +61,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -167,6 +168,9 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     @Autowired
     private RunServiceUrlDao runServiceUrlDao;
 
+    @Autowired
+    private ArchiveRunDao archiveRunDao;
+
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
 
@@ -220,6 +224,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         createRunWithStartEndDates(afterSyncStart, afterSyncStart.plusHours(6));
         createRunWithStartEndDates(beforeSyncStart, null);
         createRunWithStartEndDates(afterSyncStart, null);
+        archiveRunWithStartEndDates(beforeSyncStart, afterSyncStart.plusHours(6));
 
         pipelineRunDao.loadAllRunsForPipeline(testPipeline.getId())
             .forEach(run -> {
@@ -233,8 +238,15 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 }
             });
         final List<PipelineRun> pipelineRuns = pipelineRunDao.loadPipelineRunsActiveInPeriod(SYNC_PERIOD_START,
-                                                                                             SYNC_PERIOD_END);
+                                                                                             SYNC_PERIOD_END,
+                                                                                     false);
         assertEquals(4, pipelineRuns.size());
+
+        final List<PipelineRun> pipelineRunsWithArchive = pipelineRunDao.loadPipelineRunsActiveInPeriod(
+                SYNC_PERIOD_START,
+                SYNC_PERIOD_END,
+                true);
+        assertEquals(5, pipelineRunsWithArchive.size());
     }
 
     @Test
@@ -1301,6 +1313,56 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
                 .forEach(chart -> assertEquals(chart.getCount().longValue(), 1L));
     }
 
+    @Test
+    public void shouldLoadRunsByOwnerAndEndDateBeforeAndStatusIn() {
+        final Date testDate = new Date(2024, Calendar.JULY, 29, 2, 0, 0);
+        final Date afterTestDate = org.apache.commons.lang3.time.DateUtils.setHours(testDate, 3);
+        final Date beforeTestDate = org.apache.commons.lang3.time.DateUtils.setHours(testDate, 1);
+
+        final PipelineRun running = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        running.setStartDate(beforeTestDate);
+        running.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(running);
+
+        final PipelineRun childRun = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        childRun.setStartDate(beforeTestDate);
+        childRun.setEndDate(beforeTestDate);
+        childRun.setParentRunId(running.getId());
+        pipelineRunDao.createPipelineRun(childRun);
+
+        final PipelineRun stopped = pipelineRun(
+                TaskStatus.STOPPED, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        stopped.setStartDate(beforeTestDate);
+        stopped.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(stopped);
+
+        final PipelineRun anotherOwner = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, TEST_USER, null, null);
+        anotherOwner.setStartDate(beforeTestDate);
+        anotherOwner.setEndDate(beforeTestDate);
+        pipelineRunDao.createPipelineRun(anotherOwner);
+
+        final PipelineRun runAfter = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        runAfter.setStartDate(afterTestDate);
+        runAfter.setEndDate(afterTestDate);
+        pipelineRunDao.createPipelineRun(runAfter);
+
+        final PipelineRun notOwnerChildRun = pipelineRun(
+                TaskStatus.RUNNING, DOCKER_IMAGE, NODE_TYPE, USER, null, null);
+        notOwnerChildRun.setStartDate(afterTestDate);
+        notOwnerChildRun.setEndDate(afterTestDate);
+        notOwnerChildRun.setParentRunId(anotherOwner.getId());
+        pipelineRunDao.createPipelineRun(notOwnerChildRun);
+
+        final List<PipelineRun> runs = pipelineRunDao.loadRunsByOwnerAndEndDateBeforeAndStatusIn(
+                Collections.singletonMap(USER, testDate),
+                Collections.singletonList(TaskStatus.RUNNING.getId()), TEST_PAGE_SIZE);
+        assertThat(runs.size(), is(1));
+    }
+
     private PipelineRun createTestPipelineRun() {
         return createTestPipelineRun(testPipeline.getId());
     }
@@ -1492,6 +1554,15 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
             run.setStatus(TaskStatus.STOPPED);
         }
         pipelineRunDao.createPipelineRun(run);
+    }
+
+    private void archiveRunWithStartEndDates(final LocalDateTime startDate, final LocalDateTime endDate) {
+        final PipelineRun run = buildPipelineRun(testPipeline.getId(),
+                TestUtils.convertLocalDateTimeToDate(startDate),
+                TestUtils.convertLocalDateTimeToDate(endDate));
+        run.setStatus(TaskStatus.STOPPED);
+        run.setId(pipelineRunDao.createRunId());
+        archiveRunDao.batchInsertArchiveRuns(Collections.singletonList(run));
     }
 
     private PipelineRun buildRunWithTool(final Long pipelineId, final String prettyUrl, final List<RunSid> sids) {

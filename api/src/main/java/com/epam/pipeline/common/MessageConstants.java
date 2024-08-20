@@ -184,9 +184,15 @@ public final class MessageConstants {
     public static final String ERROR_STOP_START_INSTANCE_TERMINATED = "error.stop.start.instance.reason.terminated";
     public static final String WARN_INSTANCE_STOPPING = "warn.instance.stopping";
     public static final String ERROR_RUN_ALLOWED_SID_NOT_FOUND = "error.run.allowed.sid.not.found";
+    public static final String ERROR_RUN_AS_PIPELINES_NOT_ALLOWED = "error.run.as.pipelines.not.allowed";
+    public static final String ERROR_RUN_AS_PIPELINE_NOT_ALLOWED = "error.run.as.pipeline.not.allowed";
+    public static final String ERROR_RUN_AS_TOOLS_NOT_ALLOWED = "error.run.as.tools.not.allowed";
+    public static final String ERROR_RUN_AS_TOOL_NOT_ALLOWED = "error.run.as.tool.not.allowed";
     public static final String ERROR_RUN_ALLOWED_SID_NAME_NOT_FOUND = "error.run.allowed.sid.name.not.found";
     public static final String ERROR_IMAGE_NOT_FOUND_FOR_VERSIONED_STORAGE =
             "error.image.not.found.for.versioned.storage";
+    public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
+    public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_NUMERIC = "error.archive.run.metadata.not.numeric";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
@@ -390,6 +396,9 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
     public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
     public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
+            "error.parse.bitbucket.cloud.repository.path";
+    public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages

@@ -1677,6 +1677,13 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRunSidsByRunIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.run_user WHERE run_id IN (:list)
+                ]]>
+            </value>
+        </property>
         <property name="loadEnvVarsQuery">
             <value>
                 <![CDATA[
@@ -1757,6 +1764,136 @@
                     ON r.run_id = last_statuses.run_id
                     WHERE last_statuses.status IN (:TARGET_LAST_STATUSES)
                             OR r.end_date BETWEEN :PERIOD_START AND :PERIOD_END
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllRunsPossiblyActiveInPeriodWithArchiveQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        r.run_id as run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        r.status as status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_name,
+                        node_id,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        last_network_consumption_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price,
+                        node_pool_id,
+                        node_start_date
+                    FROM
+                        pipeline.pipeline_run r
+                    INNER JOIN (SELECT DISTINCT ON (run_id) run_id, status
+									FROM pipeline.run_status_change
+										WHERE date < :PERIOD_END
+											ORDER BY run_id, date DESC
+                                 ) as last_statuses
+                    ON r.run_id = last_statuses.run_id
+                    WHERE last_statuses.status IN (:TARGET_LAST_STATUSES)
+                            OR r.end_date BETWEEN :PERIOD_START AND :PERIOD_END
+                    UNION ALL
+                    SELECT
+                        ar.run_id,
+                        ar.pipeline_id,
+                        ar.version,
+                        ar.start_date,
+                        ar.end_date,
+                        ar.parameters,
+                        ar.status,
+                        ar.terminating,
+                        ar.pod_id,
+                        ar.node_type,
+                        ar.node_disk,
+                        ar.node_ip,
+                        ar.node_name,
+                        ar.node_id,
+                        ar.node_image,
+                        ar.node_cloud_region,
+                        ar.node_platform,
+                        ar.docker_image,
+                        ar.actual_docker_image,
+                        ar.platform,
+                        ar.cmd_template,
+                        ar.actual_cmd,
+                        ar.timeout,
+                        ar.owner,
+                        ar.pod_ip,
+                        ar.commit_status,
+                        ar.last_change_commit_time,
+                        ar.config_name,
+                        ar.node_count,
+                        ar.parent_id,
+                        ar.entities_ids,
+                        ar.is_spot,
+                        ar.configuration_id,
+                        ar.pod_status,
+                        ar.prolonged_at_time,
+                        ar.last_notification_time,
+                        ar.last_idle_notification_time,
+                        ar.last_network_consumption_notification_time,
+                        ar.exec_preferences,
+                        ar.pretty_url,
+                        ar.price_per_hour,
+                        ar.compute_price_per_hour,
+                        ar.disk_price_per_hour,
+                        ar.state_reason,
+                        ar.non_pause,
+                        ar.node_real_disk,
+                        ar.node_cloud_provider,
+                        ar.tags,
+                        ar.sensitive,
+                        ar.kube_service_enabled,
+                        ar.pipeline_name,
+                        ar.cluster_price,
+                        ar.node_pool_id,
+                        ar.node_start_date
+                    FROM
+                        pipeline.archive_run ar
+                    WHERE ar.end_date BETWEEN :PERIOD_START AND :PERIOD_END
                 ]]>
             </value>
         </property>
@@ -2222,6 +2359,78 @@
                     FROM filtered, jsonb_each(filtered.tags) AS tags
                     WHERE lower(tags.value::text) = '"true"' @WHERE_TAGS@
                     GROUP BY status, tags.key
+                ]]>
+            </value>
+        </property>
+        <property name="loadRunsByOwnerAndEndDateBeforeAndStatusInQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        pipeline_id,
+                        version,
+                        start_date,
+                        end_date,
+                        parameters,
+                        status,
+                        terminating,
+                        pod_id,
+                        node_type,
+                        node_disk,
+                        node_ip,
+                        node_id,
+                        node_name,
+                        node_image,
+                        node_cloud_region,
+                        node_platform,
+                        docker_image,
+                        actual_docker_image,
+                        platform,
+                        cmd_template,
+                        actual_cmd,
+                        timeout,
+                        owner,
+                        pod_ip,
+                        commit_status,
+                        last_change_commit_time,
+                        config_name,
+                        node_count,
+                        parent_id,
+                        entities_ids,
+                        is_spot,
+                        configuration_id,
+                        pod_status,
+                        prolonged_at_time,
+                        last_notification_time,
+                        last_idle_notification_time,
+                        last_network_consumption_notification_time,
+                        exec_preferences,
+                        pretty_url,
+                        price_per_hour,
+                        compute_price_per_hour,
+                        disk_price_per_hour,
+                        state_reason,
+                        non_pause,
+                        node_real_disk,
+                        node_cloud_provider,
+                        tags,
+                        sensitive,
+                        kube_service_enabled,
+                        pipeline_name,
+                        cluster_price,
+                        node_pool_id,
+                        node_start_date
+                    FROM
+                        pipeline.pipeline_run
+                    WHERE parent_id ISNULL AND status IN (:list) AND ( @WHERE@ )
+                    LIMIT :LIMIT
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRunsByIdInQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.pipeline_run WHERE run_id IN (:list)
                 ]]>
             </value>
         </property>

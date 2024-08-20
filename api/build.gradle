@@ -40,6 +40,11 @@ task copyFsAutoscalerScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/"
 }
 
+task copyEmergencyNodeTerminationScript(type: Copy) {
+    from "$rootDir/scripts/autoscaling/emergency_node_terminator.sh"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 task copyLocalDtsStartupScripts(type: Copy) {
     from "$rootDir/scripts/dts/DeployDts.ps1", "$rootDir/scripts/dts/deploy_dts.sh"
     into "$rootDir/api/src/main/resources/static/"
@@ -258,4 +263,5 @@ dependencies {
 
 // >>>>> processes profiles
 processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
-                                   copyLocalDtsStartupScripts, generateComponentsVersions])
+                                   copyLocalDtsStartupScripts, generateComponentsVersions,
+                                   copyEmergencyNodeTerminationScript])

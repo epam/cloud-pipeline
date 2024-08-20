@@ -49,6 +49,7 @@ import com.epam.pipeline.dao.notification.MonitoringNotificationDao;
 import com.epam.pipeline.dao.notification.NotificationDao;
 import com.epam.pipeline.dao.notification.NotificationSettingsDao;
 import com.epam.pipeline.dao.notification.NotificationTemplateDao;
+import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.DocumentGenerationPropertyDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
@@ -85,6 +86,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationRegistration
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.mapper.cluster.KubernetesMapper;
+import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.security.saml.impersonation.ImpersonationManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
@@ -474,6 +476,9 @@ public class AspectTestBeans {
     protected BitbucketMapper bitbucketMapper;
 
     @MockBean
+    protected BitbucketCloudMapper bitbucketCloudMapper;
+
+    @MockBean
     protected DataStorageLifecycleManager storageLifecycleManager;
 
     @MockBean
@@ -493,4 +498,7 @@ public class AspectTestBeans {
 
     @MockBean
     protected KubernetesMapper kubernetesMapper;
+
+    @MockBean
+    protected ArchiveRunDao archiveRunDao;
 }
