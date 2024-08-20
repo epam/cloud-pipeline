@@ -328,12 +328,12 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         if (!GpuMetricsGranularity.hasAggregations(loadTypes) && !GpuMetricsGranularity.hasDetails(loadTypes)) {
             return null;
         }
-        final List<MonitoringStats> charts = new ArrayList<>();
         if (GpuMetricsGranularity.hasDetails(loadTypes) && GpuMetricsGranularity.hasAggregations(loadTypes)) {
-            charts.addAll(aggregationRequester.requestStats(nodeName, start, end, interval));
+            final List<MonitoringStats> charts = new ArrayList<>(aggregationRequester
+                    .requestStats(nodeName, start, end, interval));
             final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
             charts.addAll(detailsRequester.requestStats(nodeName, start, end, interval));
-            return charts.stream()
+            return sortGpuCharts(charts.stream()
                     .collect(Collectors.groupingBy(MonitoringStats::getStartTime,
                             Collectors.reducing(this::mergeGpuStats)))
                     .values().stream()
@@ -342,22 +342,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
                     .filter(stats -> stats.getGpuUsage() != null && stats.getGpuDetails() != null)
                     .map(stats -> statsWithinRegion(stats, start, end, interval))
                     .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .sorted(Comparator.comparing(MonitoringStats::getStartTime,
-                            Comparator.comparing(this::asMonitoringDateTime)))
-                    .collect(Collectors.toList());
+                    .map(Optional::get));
         }
         if (GpuMetricsGranularity.hasAggregations(loadTypes)) {
-            charts.addAll(requestCharts(aggregationRequester, interval, nodeName, start, end));
+            return sortGpuCharts(requestCharts(aggregationRequester, interval, nodeName, start, end).stream());
         }
-        if (GpuMetricsGranularity.hasDetails(loadTypes)) {
-            final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
-            charts.addAll(requestCharts(detailsRequester, interval, nodeName, start, end));
-        }
-        return charts.stream()
-                .sorted(Comparator.comparing(MonitoringStats::getStartTime,
-                        Comparator.comparing(this::asMonitoringDateTime)))
-                .collect(Collectors.toList());
+        final GPUDetailsRequester detailsRequester = new GPUDetailsRequester(client);
+        return sortGpuCharts(requestCharts(detailsRequester, interval, nodeName, start, end).stream());
     }
 
     private List<MonitoringStats> requestCharts(final AbstractMetricRequester requester, final Duration interval,
@@ -366,6 +357,13 @@ public class ESMonitoringManager implements UsageMonitoringManager {
         return requester.requestStats(nodeName, start, end, interval).stream()
                 .map(stats -> statsWithinRegion(stats, start, end, interval).orElse(null))
                 .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private List<MonitoringStats> sortGpuCharts(final Stream<MonitoringStats> stats) {
+        return stats
+                .sorted(Comparator.comparing(MonitoringStats::getStartTime,
+                        Comparator.comparing(this::asMonitoringDateTime)))
                 .collect(Collectors.toList());
     }
 }
