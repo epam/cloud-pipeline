@@ -30,16 +30,26 @@ const CLOSE_POPOVER_DELAY_MS = 200;
 const RepositoryTypes = {
   GitLab: 'GITLAB',
   GitHub: 'GITHUB',
-  BitBucket: 'BITBUCKET'
+  BitBucket: 'BITBUCKET',
+  ButBucketCloud: 'BITBUCKET_CLOUD'
 };
+
+const availableRepositoryTypes = [
+  RepositoryTypes.GitLab,
+  // temporary disable GitHub
+  // RepositoryTypes.GitHub,
+  RepositoryTypes.BitBucket,
+  RepositoryTypes.ButBucketCloud
+];
 
 const RepositoryTypeNames = {
   [RepositoryTypes.GitLab]: 'GitLab',
   [RepositoryTypes.GitHub]: 'GitHub',
-  [RepositoryTypes.BitBucket]: 'BitBucket'
+  [RepositoryTypes.BitBucket]: 'BitBucket',
+  [RepositoryTypes.ButBucketCloud]: 'BitBucket Cloud'
 };
 
-export {RepositoryTypes, RepositoryTypeNames};
+export {RepositoryTypes, RepositoryTypeNames, availableRepositoryTypes};
 
 export default @observer
 class GitRepositoryControl extends React.Component {
