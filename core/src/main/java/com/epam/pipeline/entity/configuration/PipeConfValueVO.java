@@ -37,11 +37,17 @@ public class PipeConfValueVO {
     public static final boolean DEFAULT_REQUIRED = false;
     protected static final  List<String> DEFAULT_AVAIL_VALUES = new ArrayList<>();
 
+    @JsonProperty(value = "pretty_name")
+    private String prettyName;
+
     @JsonProperty(value = "value")
     private String value;
 
     @JsonProperty(value = "type")
     private String type;
+
+    @JsonProperty(value = "icon")
+    private String icon;
 
     @JsonProperty(value = "section")
     private String section;
