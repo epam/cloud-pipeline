@@ -252,6 +252,21 @@ if [ $? -ne 0 ]; then
   _DOCKER_SYS_IMGS="/opt/docker-system-images"
 fi
 
+
+cd /bin && \
+wget https://github.com/magnific0/wondershaper/archive/refs/heads/master.zip -O wondershaper.zip && \
+unzip wondershaper.zip && \
+mv wondershaper-master wondershaper && \
+rm -rf wondershaper.zip && \
+cd wondershaper && \
+sudo make install
+if check_installed "wondershaper"; then
+  echo "[INFO] Wondershaper was installed successfully."
+else
+  echo "[WARN] Wondershaper installation failed."
+fi
+
+
 mkdir -p /etc/docker
 
 if [[ $FS_TYPE == "ext4" ]]; then

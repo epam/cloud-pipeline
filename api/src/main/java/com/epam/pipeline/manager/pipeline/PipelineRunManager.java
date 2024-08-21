@@ -151,11 +151,13 @@ public class PipelineRunManager {
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
-    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_GPU_COUNT = "CP_GPU_COUNT";
+
+    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
+    public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -370,7 +372,6 @@ public class PipelineRunManager {
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }
-
 
     /**
      * Internal method for creating a pipeline run,
@@ -1338,6 +1339,27 @@ public class PipelineRunManager {
                 .instanceTypes(charts.get(RunChartInfoEntity.ColumnName.node_type))
                 .tags(charts.get(RunChartInfoEntity.ColumnName.tags))
                 .build();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        Assert.isTrue(!enable || boundary != null, "Boundary value should be specified to limit network bandwidth");
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+        if (enable) {
+            tags.put(NETWORK_LIMIT, String.valueOf(boundary));
+            // Clear tag with timestamp of applied limit, to re-enable it with a new bound.
+            final String timestampTagSuffix = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX
+            );
+            tags.remove(String.format("%s_%s", NETWORK_LIMIT, timestampTagSuffix));
+        } else {
+            tags.remove(NETWORK_LIMIT);
+        }
+        run.setTags(tags);
+        pipelineRunDao.updateRunTags(run);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {

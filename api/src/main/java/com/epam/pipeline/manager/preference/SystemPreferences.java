@@ -1166,6 +1166,7 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
             "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
+    //in bytes per second
     public static final DoublePreference SYSTEM_POD_BANDWIDTH_LIMIT = new DoublePreference(
             "system.pod.bandwidth.limit", 0.0, SYSTEM_GROUP, isGreaterThanOrEquals(0.0f));
 
@@ -1186,6 +1187,12 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE = new IntPreference(
             "system.archive.run.owners.chunk.size", 100, SYSTEM_GROUP, isGreaterThan(0));
 
+
+    public static final IntPreference SYSTEM_POD_BANDWIDTH_MONITOR_DELAY = new IntPreference(
+            "system.pod.bandwidth.monitor.delay", 30000, SYSTEM_GROUP, pass);
+
+    public static final IntPreference LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT = new IntPreference(
+            "limit.network.bandwidth.command.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
