@@ -1350,6 +1350,11 @@ public class PipelineRunManager {
         final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
         if (enable) {
             tags.put(NETWORK_LIMIT, String.valueOf(boundary));
+            // Clear tag with timestamp of applied limit, to re-enable it with a new bound.
+            final String timestampTagSuffix = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX
+            );
+            tags.remove(String.format("%s_%s", NETWORK_LIMIT, timestampTagSuffix));
         } else {
             tags.remove(NETWORK_LIMIT);
         }

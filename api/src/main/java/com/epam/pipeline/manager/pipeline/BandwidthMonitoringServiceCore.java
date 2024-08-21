@@ -30,7 +30,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import static com.epam.pipeline.manager.cluster.performancemonitoring.ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH;
 import static com.epam.pipeline.manager.pipeline.PipelineRunManager.NETWORK_LIMIT;
 
 @Service

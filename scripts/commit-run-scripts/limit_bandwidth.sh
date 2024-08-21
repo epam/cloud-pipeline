@@ -99,7 +99,7 @@ COMMAND="/bin/wondershaper/wondershaper"
 if [ -f "$COMMAND" ]; then
   pipe_log_info "[INFO] ${COMMAND} exists. Proceeding."
 else
-  pipe_log_error "[WARN] No ${COMMAND} found. Trying to install."
+  pipe_log_info "[WARN] No ${COMMAND} found. Trying to install."
 
   cd /bin && \
   wget https://github.com/magnific0/wondershaper/archive/refs/heads/master.zip -O wondershaper.zip && \
@@ -110,14 +110,14 @@ else
   sudo make install
 
   if [ -f "$COMMAND" ]; then
-    pipe_log_info "[INFO] ${COMMAND} exists. Proceeding."
+    pipe_log_info "[INFO] ${COMMAND} installed successfully. Proceeding."
   else
     pipe_log_error "[ERROR] Fail to install wondershaper. Exiting."
     exit 1
   fi
 fi
 
-interfaces=$(sudo docker exec -it "$container_id" ls /sys/class/net | tr -d '\r')
+interfaces=($(sudo docker exec "$container_id" ls /sys/class/net))
 if [ "$?" -eq 0 ]; then
   pipe_log_info "[INFO] Network bandwidth limitation will be applied."
 else
@@ -125,16 +125,17 @@ else
   exit 1
 fi
 
-for i in $interfaces
-  do
-    if [ "$i" == "lo" ]; then
+for i in "${interfaces[@]}"; do
+    if [ "$i" == "lo" ] || [ -z "$i" ]; then
       continue
     fi
 
-    link_num=$(sudo docker exec -it $container_id cat /sys/class/net/$i/iflink | tr -d '\r')
+    link_num=$(sudo docker exec $container_id cat /sys/class/net/$i/iflink | tr -d '\r')
     interface_id=$(sudo ip ad | grep "^$link_num:" | awk -F ': ' '{print $2}' | awk -F '@' '{print $1}')
     if [ ! -z "$interface_id" ]; then
       if [ $enable == "true" ]; then
+        pipe_log_info "[INFO] Clearing the old limit for run network interface $i and its node network interface $interface_id, if it exists"
+        "$COMMAND" -c -a "$interface_id"
         pipe_log_info "[INFO] Enabling limit for run network interface $i and its node network interface $interface_id"
         # download_rate and upload_rate in kilobits per second
         result=$("$COMMAND" -a "$interface_id" -d "$download_rate" -u "$upload_rate")
@@ -143,20 +144,21 @@ for i in $interfaces
           pipe_log_error "[WARN] ${result}"
           exit 1
         else
-          pipe_log_info "[INFO] Bandwidth limiting -d $download_rate -u $upload_rate applied successfully"
+          pipe_log_info "[INFO] Bandwidth limiting -d $download_rate -u $upload_rate (Kbit/sec) applied successfully"
         fi
       else
         pipe_log_info "[INFO] Clearing limit for run network interface $i and its node network interface $interface_id"
         result=$("$COMMAND" -c -a "$interface_id")
-        if [ "$?" -ne 0 ]; then
+        result_code=$?
+        if [ "$result_code" -ne 0 ] && [ "$result_code" -ne 2 ]; then
           pipe_log_error "[WARN] Failed to clear bandwidth limitation"
-          pipe_log_error "[WARN] ${result}"
+          pipe_log_error "[WARN] Output: ${result}"
           exit 1
         else
           pipe_log_info "[INFO] Bandwidth limitation cleared"
         fi
       fi
     else
-      pipe_log_error "[WARN] Interface id wasn't found for "$i" interface"
+      pipe_log_info "[WARN] Interface id wasn't found for "$i" interface"
     fi
 done
