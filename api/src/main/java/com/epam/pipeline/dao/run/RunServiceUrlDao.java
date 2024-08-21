@@ -17,12 +17,14 @@
 package com.epam.pipeline.dao.run;
 
 import com.epam.pipeline.dao.DaoUtils;
+import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.transaction.annotation.Propagation;
@@ -34,6 +36,8 @@ import java.util.Optional;
 
 @RequiredArgsConstructor
 public class RunServiceUrlDao extends NamedParameterJdbcDaoSupport {
+
+    private final JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
 
     private final String loadByRunIdsQuery;
     private final String loadByRunIdQuery;
@@ -97,9 +101,9 @@ public class RunServiceUrlDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteByRunIdsIn(final List<Long> runIds) {
+    public void deleteByRunIdsIn(final List<Long> runIds, final boolean dryRun) {
         final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
-        getNamedParameterJdbcTemplate().update(deleteServiceUrlByRunIdsQuery, params);
+        getNamedParameterJdbcTemplate(dryRun).update(deleteServiceUrlByRunIdsQuery, params);
     }
 
     enum Parameters {
@@ -127,5 +131,9 @@ public class RunServiceUrlDao extends NamedParameterJdbcDaoSupport {
                 return pipelineRunServiceUrl;
             };
         }
+    }
+
+    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
+        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }

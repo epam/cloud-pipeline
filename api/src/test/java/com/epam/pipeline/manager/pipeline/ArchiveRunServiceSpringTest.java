@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -66,6 +67,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -79,7 +82,9 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -142,6 +147,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
+    @SpyBean
+    private JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
     @Autowired
     private ArchiveRunDao archiveRunDao;
     @Autowired
@@ -172,6 +179,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE);
+        doReturn(false).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
     }
 
     @Test
@@ -433,8 +442,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 .hasSize(3);
 
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao, times(3))
-                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
+        verify(pipelineRunDao, times(3)).loadRunsByOwnerAndEndDateBeforeAndStatusIn(
+                argument.capture(), any(), anyInt(), anyBoolean(), anyInt());
         final Map<String, Date> firstChunkResults = argument.getAllValues().get(0);
         assertThat(firstChunkResults).hasSize(2);
         assertDays(firstChunkResults.get(USER1), DAYS);
@@ -442,6 +451,40 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         final Map<String, Date> thirdChunkResults = argument.getAllValues().get(2);
         assertThat(thirdChunkResults).hasSize(1);
         assertDays(thirdChunkResults.get(USER3), GROUP_DAYS_2);
+    }
+
+    @Test
+    @Transactional
+    public void shouldNotArchiveRunsChunksIfDryRun() {
+        doReturn(true).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
+        doReturn(usersMetadata()).when(metadataDao).searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, TEST);
+        doReturn(Collections.singletonList(user(USER_ID, OWNER))).when(userManager)
+                .loadUsersById(Collections.singletonList(USER_ID));
+
+        final PipelineRun run1 = run();
+        run1.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = run();
+        run2.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run2);
+
+        final PipelineRun run3 = run();
+        run3.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run3);
+
+        final PipelineRun runAfterTestDate = run();
+        runAfterTestDate.setEndDate(AFTER_TEST_DATE);
+        pipelineRunDao.createPipelineRun(runAfterTestDate);
+
+        archiveRunService.archiveRuns();
+
+        assertThat(pipelineRunDao.loadPipelineRuns(
+                Arrays.asList(run1.getId(), run2.getId(), run3.getId(), runAfterTestDate.getId())))
+                .hasSize(4);
+
+        verifyDryRunInvoked(7, 6 * 2);
     }
 
     private PipelineRun run() {
@@ -548,5 +591,11 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
     private static Date nowMinusDays(final int days) {
         return DateUtils.convertLocalDateTimeToDate(DateUtils.nowUTC().minusDays(days));
+    }
+
+    private void verifyDryRunInvoked(final int queryTimes, final int updateTimes) {
+        verify(jdbcTemplateReadOnlyWrapper, times(queryTimes))
+                .query(anyString(), (SqlParameterSource) any(), (RowMapper<Object>) any());
+        verify(jdbcTemplateReadOnlyWrapper, times(updateTimes)).update(anyString(), (SqlParameterSource) any());
     }
 }
