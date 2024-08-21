@@ -626,7 +626,7 @@ function import_users_from_point_in_time_configuration {
   
   if [ "$point_in_time_configuration_users_file" ]; then
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
-      curl -X POST -H "Authorization: Bearer ${CP_API_JWT_ADMIN}" \
+      curl -X POST -k -s -H "Authorization: Bearer ${CP_API_JWT_ADMIN}" \
            -H "Content-Type: multipart/form-data" \
            -H "Accept: application/json" \
            -F "file=@$point_in_time_configuration_users_file;type=text/csv" \
