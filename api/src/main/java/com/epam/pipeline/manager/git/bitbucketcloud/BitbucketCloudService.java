@@ -316,7 +316,7 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public boolean fileExists(final Pipeline pipeline, final String filePath) {
-        return fileExists(getClient(pipeline), filePath, pipeline.getBranch());
+        return fileExists(getClient(pipeline), filePath, pipeline);
     }
 
     private BitbucketCloudClient getClient(final Pipeline pipeline) {
@@ -370,7 +370,7 @@ public class BitbucketCloudService implements GitClientService {
         return results.getSize() - results.getPage() * results.getPageLen();
     }
 
-    private boolean fileExists(final BitbucketCloudClient client, final String path, final String branch) {
-        return client.getFileContent(GitUtils.getBranchRefOrDefault(branch), path) != null;
+    private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
+        return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
     }
 }

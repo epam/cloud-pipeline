@@ -49,6 +49,7 @@ public interface BitbucketCloudServerApi {
     String TAG_NAME = "tagName";
     String PAGE = "page";
     String PAGE_LENGTH = "pagelen";
+    String BRANCH = "branch";
 
 
     @GET("{api_version}/repositories/{workspace}/{repository}")
@@ -139,4 +140,11 @@ public interface BitbucketCloudServerApi {
                                                                      @Path(REPOSITORY) String repository,
                                                                      @Query(PAGE) Integer page,
                                                                      @Query(PAGE_LENGTH) Integer pageLength);
+
+    @GET("{api_version}/repositories/{workspace}/{repository}/commits/{branch}")
+    Call<BitbucketCloudPagedResponse<BitbucketCloudCommit>> search(@Path(API_VERSION) String apiVersion,
+                                                                   @Path(WORKSPACE) String workspace,
+                                                                   @Path(REPOSITORY) String repository,
+                                                                   @Path(BRANCH) String branch,
+                                                                   @Query(value = PATH, encoded = true) String path);
 }

@@ -134,6 +134,10 @@ public class BitbucketCloudClient {
                 repositoryName, page, LIMIT));
     }
 
+    public BitbucketCloudPagedResponse<BitbucketCloudCommit> searchFile(final String branch, final String path) {
+        return RestApiUtils.execute(bitbucketServerApi.search(apiVersion, projectName, repositoryName, branch, path));
+    }
+
     private BitbucketCloudServerApi buildClient(final String baseUrl, final String credentials,
                                                 final String dataFormat) {
         return new ApiBuilder<>(BitbucketCloudServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();

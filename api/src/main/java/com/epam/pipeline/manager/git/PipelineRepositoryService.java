@@ -143,7 +143,7 @@ public class PipelineRepositoryService {
         final Revision commit = providerService.getLastCommit(pipeline, ref);
         final List<Revision> revisions = new ArrayList<>(tags.size());
         if (isDraftCommit(tags, commit)) {
-            commit.setName(GitUtils.DRAFT_PREFIX + commit.getName());
+            commit.setName(GitUtils.DRAFT_PREFIX + commit.getCommitId().substring(0, 6));
             commit.setDraft(true);
             revisions.add(commit);
         }
