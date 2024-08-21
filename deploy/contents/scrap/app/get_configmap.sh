@@ -25,8 +25,8 @@ get_configmap() {
   local output_file="${6}"
     
     #SSH connection to the server
-    ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get configmap $CP_KUBE_CONFIGMAP -n $CP_KUBE_NAMESPACE -o json | jq -r '.data |to_entries[] | "\(.key)=\((.value|sub("^\""; "")|sub("\"$"; "")| "\"" + . + "\""))"') 
-    if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
+    ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get configmap $CP_KUBE_CONFIGMAP -n $CP_KUBE_NAMESPACE -o json | jq -r '.data |to_entries[] | "\(.key)=\((.value))"') 
+    if [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_file
        echo_ok "config-map from server $CP_NODE_IP saved in file $output_file"
     else

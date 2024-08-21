@@ -24,7 +24,7 @@ get_services() {
 
     #SSH connection to the server
     ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get nodes -o json | jq ['.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))'])
-    if [ $? -eq 0 ] && [ -n "$ssh_responce" ]; then
+    if [ -n "$ssh_responce" ]; then
        echo "$ssh_responce" > $output_file
        echo_ok "list of services from server $CP_NODE_IP saved in file $output_file"
     else
