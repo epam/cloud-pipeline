@@ -40,9 +40,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_USAGE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
 
 @Service
@@ -89,14 +89,14 @@ public class ClusterApiService {
         return nodesManager.terminateNode(name);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(name, from, to);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final MonitoringReportType type) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
