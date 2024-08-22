@@ -50,7 +50,7 @@
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Incorrect behavior of the global search filter](#incorrect-behavior-of-the-global-search-filter)
-    - ["COMMITING..." status hangs](#commiting-status-hangs)
+    - ["COMMITING..." status hangs](#committing-status-hangs)
     - [Instances of Metadata entity aren't correctly sorted](#instances-of-metadata-entity-arent-correctly-sorted)
     - [Tool group cannot be deleted until all child tools are removed](#tool-group-cannot-be-deleted-until-all-child-tools-are-removed)
     - [Missing region while estimating a run price](#missing-region-while-estimating-a-run-price)

@@ -40,6 +40,7 @@
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
+- [Completed runs archiving](#completed-runs-archiving)
 - [Cluster run usage](#cluster-run-usage)
 - [Cluster run estimation price](#cluster-run-estimation-price)
 - [Terminal view](#terminal-view)
@@ -1490,6 +1491,29 @@ Userjourney looks like:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_SystemJobs_8.png)
 
 For more details see [here](../../manual/12_Manage_Settings/12.15._System_jobs.md).
+
+## Completed runs archiving
+
+Currently, **Cloud Pipeline** does not allow users to remove runs.  
+But for large deployments, a huge runs count can affect queries performance.  
+To avoid such cases, in **`v0.17`**, a mechanism of the runs archiving was implemented.  
+This mechanism allows to place records of the completed runs and their statuses into special DB tables for archived runs.  
+
+Details:
+
+- archived runs are not available via the platform GUI
+- archiving can be configured for specific users and/or user groups
+- period in days after which runs will be archived is being configured individually for each user/group
+
+Behavior of the archiving monitor is defined by the following main preferences:
+
+- **`monitoring.archive.runs.enable`** - enables archiving mechanism for completed runs
+- **`monitoring.archive.runs.delay`** - manipulates the frequency of archiving operations. Operations of runs archiving are asynchronous and performed after each period of time specified via this preference
+- **`system.archive.run.metadata.key`** - defines the name of the metadata key that shall be specified for users/groups which runs shall be archived. Default value - `run_archive_days`
+
+Archiving monitor checks every **`monitoring.archive.runs.delay`** period of time whether there are any users/user groups with `run_archive_days` metadata key. If so, info about all completed runs of such users/users from such groups (if these runs were completed more than count of days specified as value of `run_archive_days`) is being placed to special DB tables for archived runs and is being removed from DB tables for general runs.
+
+For more details and usage example see [here](../../manual/11_Manage_Runs/11.5._Archive_runs.md).
 
 ## Cluster run usage
 

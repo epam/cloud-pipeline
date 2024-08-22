@@ -151,7 +151,7 @@ If it is set, all new storages will be created with this prefix (e.g. "*ds*"):
 
 ![CP_v.0.14_ReleaseNotes](attachments/RN014_StorageMandatoryPrefix_3.png)
 
-For more information see [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#create-s3-storage).
+For more information see [8.1. Create and edit storage](../../manual/08_Manage_Data_Storage/8.1._Create_and_edit_storage.md#create-object-storage).
 
 ## "White list" for docker images
 
