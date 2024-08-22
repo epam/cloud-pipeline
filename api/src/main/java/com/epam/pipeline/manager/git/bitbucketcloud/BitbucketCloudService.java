@@ -65,7 +65,8 @@ public class BitbucketCloudService implements GitClientService {
     private static final String PROJECT_NAME = "project name";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
-    private static final Integer MAX_DEPTH = 20;
+    private static final int MAX_DEPTH = 20;
+    public static final String PAGE_PARAMETER = "page=";
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -231,14 +232,15 @@ public class BitbucketCloudService implements GitClientService {
         final BitbucketCloudClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
-        BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version, null, MAX_DEPTH);
+        final int maxDepth = recursive ? MAX_DEPTH : 1;
+        BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version, null, maxDepth);
         final List<BitbucketCloudSource> values = response.getValues();
         while (response.getNext() != null) {
-            String[] params = response.getNext().split("page=");
+            String[] params = response.getNext().split(PAGE_PARAMETER);
             if (params.length < 2) {
                 break;
             }
-            response = client.getFiles(path, version, params[1], MAX_DEPTH);
+            response = client.getFiles(path, version, params[1], maxDepth);
             values.addAll(response.getValues());
         }
 
