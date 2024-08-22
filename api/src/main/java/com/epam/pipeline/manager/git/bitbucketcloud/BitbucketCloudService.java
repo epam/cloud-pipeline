@@ -231,15 +231,24 @@ public class BitbucketCloudService implements GitClientService {
         final BitbucketCloudClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
-        final BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version);
+        BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version, null);
+        final List<BitbucketCloudSource> values = response.getValues();
+        while (response.getNext() != null) {
+            String[] params = response.getNext().split("\\?page=");
+            if (params.length < 2) {
+                break;
+            }
+            response = client.getFiles(path, version, params[1]);
+            values.addAll(response.getValues());
+        }
 
-        final List<GitRepositoryEntry> files = response.getValues().stream()
+        final List<GitRepositoryEntry> files = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FILE_MARKER))
                 .map(BitbucketCloudSource::getPath)
                 .map(value -> buildGitRepositoryEntry(value, GitUtils.FILE_MARKER))
                 .collect(Collectors.toList());
 
-        final List<String> folders = response.getValues().stream()
+        final List<String> folders = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FOLDER_MARKER))
                 .map(BitbucketCloudSource::getPath)
                 .filter(StringUtils::isNotBlank)

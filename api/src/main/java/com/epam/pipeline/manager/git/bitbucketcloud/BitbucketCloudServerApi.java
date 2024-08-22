@@ -132,7 +132,8 @@ public interface BitbucketCloudServerApi {
                                                                      @Path(WORKSPACE) String workspace,
                                                                      @Path(REPOSITORY) String repository,
                                                                      @Path(value = PATH) String path,
-                                                                     @Path(value = COMMIT) String commit);
+                                                                     @Path(value = COMMIT) String commit,
+                                                                     @Query(PAGE) String page);
 
     @GET("{api_version}/repositories/{workspace}/{repository}/refs/branches")
     Call<BitbucketCloudPagedResponse<BitbucketCloudRef>> getBranches(@Path(API_VERSION) String apiVersion,
