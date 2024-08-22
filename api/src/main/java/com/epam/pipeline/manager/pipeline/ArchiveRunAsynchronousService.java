@@ -33,7 +33,8 @@ public class ArchiveRunAsynchronousService {
 
     @Async("backgroundJobsExecutor")
     public void archiveRunsAsynchronous(final Map<String, Date> ownersAndDates, final List<Long> terminalStates,
-                                        final Integer runsChunkSize, final Integer ownersChunkSize) {
-        archiveRunCoreService.archiveRuns(ownersAndDates, terminalStates, runsChunkSize, ownersChunkSize);
+                                        final Integer runsChunkSize, final Integer ownersChunkSize,
+                                        final boolean dryRun) {
+        archiveRunCoreService.archiveRuns(ownersAndDates, terminalStates, runsChunkSize, ownersChunkSize, dryRun);
     }
 }

@@ -1409,7 +1409,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
 
         final List<PipelineRun> runs = pipelineRunDao.loadRunsByOwnerAndEndDateBeforeAndStatusIn(
                 Collections.singletonMap(USER, testDate),
-                Collections.singletonList(TaskStatus.RUNNING.getId()), TEST_PAGE_SIZE);
+                Collections.singletonList(TaskStatus.RUNNING.getId()), TEST_PAGE_SIZE, false, 0);
         assertThat(runs.size(), is(1));
     }
 

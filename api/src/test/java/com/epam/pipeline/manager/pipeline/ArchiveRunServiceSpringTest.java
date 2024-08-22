@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.dao.JdbcTemplateDryRunWrapper;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -63,6 +64,8 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -73,10 +76,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -134,9 +140,13 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private BlockedUsersMonitoringService blockedUsersMonitoringService;
     @MockBean
     private InactiveUsersMonitoringService inactiveUsersMonitoringService;
+    @MockBean
+    private BandwidthMonitoringService bandwidthMonitoringService;
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
+    @SpyBean
+    private JdbcTemplateDryRunWrapper jdbcTemplateDryRunWrapper;
     @Autowired
     private ArchiveRunDao archiveRunDao;
     @Autowired
@@ -165,6 +175,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE);
+        doReturn(false).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
     }
 
     @Test
@@ -180,10 +192,12 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
         final PipelineRun childRun1 = run();
         childRun1.setParentRunId(run.getId());
+        childRun1.setEndDate(TEST_DATE);
         pipelineRunDao.createPipelineRun(childRun1);
 
         final PipelineRun childRun2 = run();
         childRun2.setParentRunId(run.getId());
+        childRun2.setEndDate(TEST_DATE);
         pipelineRunDao.createPipelineRun(childRun2);
 
         final PipelineRun runAfterTestDate = run();
@@ -195,6 +209,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         assertThat(pipelineRunDao.loadPipelineRuns(Arrays.asList(run.getId(), childRun1.getId(), childRun2.getId())))
                 .isNullOrEmpty();
         assertThat(pipelineRunDao.loadPipelineRun(runAfterTestDate.getId())).isNotNull();
+        assertArchivedRuns(run, childRun1, childRun2);
     }
 
     @Test
@@ -231,6 +246,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         assertThat(pipelineRunDao.loadPipelineRun(restart2.getId())).isNotNull();
         assertThat(restartRunDao.loadRestartedRunById(restartRun1.getRestartedRunId())).isEqualTo(Optional.empty());
         assertThat(restartRunDao.loadRestartedRunById(restartRun2.getRestartedRunId())).isNotNull();
+        assertArchivedRuns(run, restart1);
     }
 
     @Test
@@ -262,6 +278,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         assertThat(pipelineRunDao.loadPipelineRun(runAfterTestDate.getId())).isNotNull();
         assertThat(runLogDao.loadTasksForRun(run1.getId())).isNullOrEmpty();
         assertThat(runLogDao.loadTasksForRun(run2.getId())).isNullOrEmpty();
+        assertArchivedRuns(run1, run2);
     }
 
     @Test
@@ -289,6 +306,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
         assertThat(pipelineRunDao.loadPipelineRuns(Arrays.asList(run1.getId(), run2.getId()))).isNullOrEmpty();
         assertThat(pipelineRunDao.loadPipelineRun(runAfterTestDate.getId())).isNotNull();
+        assertArchivedRuns(run1, run2);
     }
 
     @Test
@@ -320,6 +338,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         assertThat(runServiceUrlDao.findByRunId(runAfterTestDate.getId())).isNotNull();
         assertThat(pipelineRunDao.loadPipelineRuns(Arrays.asList(run1.getId(), run2.getId()))).isNullOrEmpty();
         assertThat(pipelineRunDao.loadPipelineRun(runAfterTestDate.getId())).isNotNull();
+        assertArchivedRuns(run1, run2);
     }
 
     @Test
@@ -346,11 +365,14 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
         archiveRunService.archiveRuns();
 
+        final List<Long> expectedArchivedRuns = Arrays.asList(run1.getId(), run2.getId());
         assertThat(runStatusDao.loadRunStatus(run1.getId())).isNullOrEmpty();
         assertThat(runStatusDao.loadRunStatus(run2.getId())).isNullOrEmpty();
         assertThat(runStatusDao.loadRunStatus(runAfterTestDate.getId())).isNotNull();
-        assertThat(pipelineRunDao.loadPipelineRuns(Arrays.asList(run1.getId(), run2.getId()))).isNullOrEmpty();
+        assertThat(pipelineRunDao.loadPipelineRuns(expectedArchivedRuns)).isNullOrEmpty();
         assertThat(pipelineRunDao.loadPipelineRun(runAfterTestDate.getId())).isNotNull();
+        assertArchivedRuns(run1, run2);
+        assertArchiveRunsStatuses(expectedArchivedRuns);
     }
 
     @Test
@@ -395,8 +417,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
                 .hasSize(3);
 
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(pipelineRunDao, times(3))
-                .loadRunsByOwnerAndEndDateBeforeAndStatusIn(argument.capture(), any(), anyInt());
+        verify(pipelineRunDao, times(3)).loadRunsByOwnerAndEndDateBeforeAndStatusIn(
+                argument.capture(), any(), anyInt(), anyBoolean(), anyInt());
         final Map<String, Date> firstChunkResults = argument.getAllValues().get(0);
         assertThat(firstChunkResults).hasSize(2);
         assertDays(firstChunkResults.get(USER1), DAYS);
@@ -404,6 +426,41 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
         final Map<String, Date> thirdChunkResults = argument.getAllValues().get(2);
         assertThat(thirdChunkResults).hasSize(1);
         assertDays(thirdChunkResults.get(USER3), GROUP_DAYS_2);
+        assertArchivedRuns(run1);
+    }
+
+    @Test
+    @Transactional
+    public void shouldNotArchiveRunsChunksIfDryRun() {
+        doReturn(true).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
+        doReturn(usersMetadata()).when(metadataDao).searchMetadataEntriesByClassAndKey(AclClass.PIPELINE_USER, TEST);
+        doReturn(Collections.singletonList(user(USER_ID, OWNER))).when(userManager)
+                .loadUsersById(Collections.singletonList(USER_ID));
+
+        final PipelineRun run1 = run();
+        run1.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run1);
+
+        final PipelineRun run2 = run();
+        run2.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run2);
+
+        final PipelineRun run3 = run();
+        run3.setEndDate(TEST_DATE);
+        pipelineRunDao.createPipelineRun(run3);
+
+        final PipelineRun runAfterTestDate = run();
+        runAfterTestDate.setEndDate(AFTER_TEST_DATE);
+        pipelineRunDao.createPipelineRun(runAfterTestDate);
+
+        archiveRunService.archiveRuns();
+
+        assertThat(pipelineRunDao.loadPipelineRuns(
+                Arrays.asList(run1.getId(), run2.getId(), run3.getId(), runAfterTestDate.getId())))
+                .hasSize(4);
+
+        verifyDryRunInvoked(7, 6 * 2);
     }
 
     private PipelineRun run() {
@@ -502,5 +559,27 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
 
     private static Date nowMinusDays(final int days) {
         return DateUtils.convertLocalDateTimeToDate(DateUtils.nowUTC().minusDays(days));
+    }
+
+    private void verifyDryRunInvoked(final int queryTimes, final int updateTimes) {
+        verify(jdbcTemplateDryRunWrapper, times(queryTimes))
+                .query(anyString(), (SqlParameterSource) any(), (RowMapper<Object>) any());
+        verify(jdbcTemplateDryRunWrapper, times(updateTimes)).update(anyString(), (SqlParameterSource) any());
+    }
+
+    private void assertArchivedRuns(final PipelineRun... expectedRuns) {
+        final Date maxDate = Arrays.stream(expectedRuns).map(PipelineRun::getEndDate).max(Date::compareTo).get();
+        final Date minDate = Arrays.stream(expectedRuns).map(PipelineRun::getEndDate).min(Date::compareTo).get();
+        final LocalDateTime from = DateUtils.convertDateToLocalDateTime(minDate).minusHours(12);
+        final LocalDateTime to = DateUtils.convertDateToLocalDateTime(maxDate).plusHours(12);
+        final Long[] expectedIds = Arrays.stream(expectedRuns).map(PipelineRun::getId).toArray(Long[]::new);
+        final List<PipelineRun> pipelineRuns = pipelineRunDao.loadPipelineRunsActiveInPeriod(from, to, true);
+        assertThat(pipelineRuns.stream().map(PipelineRun::getId).collect(Collectors.toList()))
+                .contains(expectedIds);
+    }
+
+    private void assertArchiveRunsStatuses(final List<Long> expectedRuns) {
+        assertThat(runStatusDao.loadRunStatus(expectedRuns, true))
+                .hasSize(expectedRuns.size());
     }
 }

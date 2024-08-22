@@ -42,8 +42,7 @@ import java.util.Map;
 
 import static com.epam.pipeline.util.CustomAssertions.notInvoked;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -77,6 +76,8 @@ public class ArchiveRunServiceUnitTest {
         doReturn(TEST).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_METADATA_KEY);
         doReturn(CHUNK_SIZE).when(preferenceManager)
                 .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
+        doReturn(false).when(preferenceManager)
+                .getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
     }
 
     @Test
@@ -160,7 +161,7 @@ public class ArchiveRunServiceUnitTest {
 
         archiveRunService.archiveRuns(GROUP1, false, INPUT_DAYS);
 
-        notInvoked(archiveRunAsyncService).archiveRunsAsynchronous(any(), any(), anyInt(), anyInt());
+        notInvoked(archiveRunAsyncService).archiveRunsAsynchronous(any(), any(), anyInt(), anyInt(), anyBoolean());
     }
 
     @Test
@@ -205,7 +206,7 @@ public class ArchiveRunServiceUnitTest {
 
     private void verifyDays(final int expectedDays) {
         final ArgumentCaptor<Map<String, Date>> argument = ArgumentCaptor.forClass((Class) Map.class);
-        verify(archiveRunAsyncService).archiveRunsAsynchronous(argument.capture(), any(), any(), any());
+        verify(archiveRunAsyncService).archiveRunsAsynchronous(argument.capture(), any(), any(), any(), anyBoolean());
         final Map<String, Date> results = argument.getValue();
         assertThat(results).hasSize(1);
         assertDays(results.get(USER1), expectedDays);
