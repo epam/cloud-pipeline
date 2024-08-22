@@ -144,6 +144,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     private BlockedUsersMonitoringService blockedUsersMonitoringService;
     @MockBean
     private InactiveUsersMonitoringService inactiveUsersMonitoringService;
+    @MockBean
+    private BandwidthMonitoringService bandwidthMonitoringService;
 
     @SpyBean
     private PipelineRunDao pipelineRunDao;
