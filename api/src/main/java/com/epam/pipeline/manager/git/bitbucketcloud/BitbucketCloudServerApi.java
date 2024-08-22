@@ -47,6 +47,7 @@ public interface BitbucketCloudServerApi {
     String COMMIT_ID = "commitId";
     String USERNAME = "username";
     String TAG_NAME = "tagName";
+    String MAX_DEPTH = "max_depth";
     String PAGE = "page";
     String PAGE_LENGTH = "pagelen";
     String BRANCH = "branch";
@@ -133,7 +134,8 @@ public interface BitbucketCloudServerApi {
                                                                      @Path(REPOSITORY) String repository,
                                                                      @Path(value = PATH) String path,
                                                                      @Path(value = COMMIT) String commit,
-                                                                     @Query(PAGE) String page);
+                                                                     @Query(PAGE) String page,
+                                                                     @Query(MAX_DEPTH) Integer maxDepth);
 
     @GET("{api_version}/repositories/{workspace}/{repository}/refs/branches")
     Call<BitbucketCloudPagedResponse<BitbucketCloudRef>> getBranches(@Path(API_VERSION) String apiVersion,

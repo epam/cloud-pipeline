@@ -124,10 +124,10 @@ public class BitbucketCloudClient {
         return RestApiUtils.execute(bitbucketServerApi.getTag(apiVersion, projectName, repositoryName, tagName));
     }
 
-    public BitbucketCloudPagedResponse<BitbucketCloudSource> getFiles(final String path,
-                                                                      final String version, final String page) {
+    public BitbucketCloudPagedResponse<BitbucketCloudSource> getFiles(final String path, final String version,
+                                                                      final String page, final Integer maxDepth) {
         return RestApiUtils.execute(bitbucketServerApi
-                .getFiles(apiVersion, projectName, repositoryName, path, version, page));
+                .getFiles(apiVersion, projectName, repositoryName, path, version, page, maxDepth));
     }
 
     public BitbucketCloudPagedResponse<BitbucketCloudRef> getBranches(final Integer page) {
