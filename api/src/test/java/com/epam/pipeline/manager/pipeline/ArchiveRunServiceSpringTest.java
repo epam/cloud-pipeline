@@ -16,7 +16,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.JdbcTemplateDryRunWrapper;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.ArchiveRunDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -150,7 +150,7 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     @SpyBean
     private PipelineRunDao pipelineRunDao;
     @SpyBean
-    private JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
+    private JdbcTemplateDryRunWrapper jdbcTemplateDryRunWrapper;
     @Autowired
     private ArchiveRunDao archiveRunDao;
     @Autowired
@@ -596,8 +596,8 @@ public class ArchiveRunServiceSpringTest extends AbstractManagerTest {
     }
 
     private void verifyDryRunInvoked(final int queryTimes, final int updateTimes) {
-        verify(jdbcTemplateReadOnlyWrapper, times(queryTimes))
+        verify(jdbcTemplateDryRunWrapper, times(queryTimes))
                 .query(anyString(), (SqlParameterSource) any(), (RowMapper<Object>) any());
-        verify(jdbcTemplateReadOnlyWrapper, times(updateTimes)).update(anyString(), (SqlParameterSource) any());
+        verify(jdbcTemplateDryRunWrapper, times(updateTimes)).update(anyString(), (SqlParameterSource) any());
     }
 }

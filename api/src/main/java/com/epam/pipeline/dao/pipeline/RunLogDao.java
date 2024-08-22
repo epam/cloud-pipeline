@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
 import com.epam.pipeline.dao.DaoUtils;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -37,15 +37,11 @@ import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
-public class RunLogDao extends NamedParameterJdbcDaoSupport {
-
-    private final JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
+public class RunLogDao extends DryRunJdbcDaoSupport {
 
     @Setter(onMethod_={@Required}) private String createPipelineLogQuery;
     @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryDesc;
@@ -208,9 +204,5 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
                 return runLog;
             };
         }
-    }
-
-    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
-        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }

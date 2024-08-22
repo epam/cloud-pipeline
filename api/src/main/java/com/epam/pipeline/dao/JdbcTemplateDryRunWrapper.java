@@ -33,9 +33,9 @@ import java.util.List;
  */
 @Service
 @Slf4j
-public class JdbcTemplateReadOnlyWrapper extends NamedParameterJdbcTemplate {
+public class JdbcTemplateDryRunWrapper extends NamedParameterJdbcTemplate {
 
-    public JdbcTemplateReadOnlyWrapper(final DataSource dataSource) {
+    public JdbcTemplateDryRunWrapper(final DataSource dataSource) {
         super(dataSource);
     }
 

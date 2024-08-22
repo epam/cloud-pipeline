@@ -18,28 +18,23 @@ package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.DaoUtils;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
-public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
+public class StopServerlessRunDao extends DryRunJdbcDaoSupport {
 
     @Autowired
     private DaoHelper daoHelper;
-
-    @Autowired
-    private JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
 
     private String serverlessRunSequenceQuery;
     private String saveServerlessRunQuery;
@@ -160,9 +155,5 @@ public class StopServerlessRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteByRunIdsServerlessRunQuery(final String deleteByRunIdsServerlessRunQuery) {
         this.deleteByRunIdsServerlessRunQuery = deleteByRunIdsServerlessRunQuery;
-    }
-
-    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
-        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }

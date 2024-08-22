@@ -22,7 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.DaoUtils;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
@@ -52,8 +52,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,7 +75,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
+public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
     private Pattern whereTagsPattern = Pattern.compile("@WHERE_TAGS@");
@@ -95,9 +93,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
     @Autowired
     private RunServiceUrlDao serviceUrlDao;
-
-    @Autowired
-    private JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
 
     @Value("${run.pipeline.init.task.name?:InitializeEnvironment}")
     private String initTaskName;
@@ -1682,9 +1677,5 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
         this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
-    }
-
-    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
-        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }

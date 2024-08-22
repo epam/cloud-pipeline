@@ -17,15 +17,13 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoUtils;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -37,9 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @RequiredArgsConstructor
-public class RestartRunDao extends NamedParameterJdbcDaoSupport {
-
-    private final JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
+public class RestartRunDao extends DryRunJdbcDaoSupport {
 
     private String createPipelineRestartRunQuery;
     private String countPipelineRestartRunQuery;
@@ -147,9 +143,5 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteRestartRunByIdsQuery(final String deleteRestartRunByIdsQuery) {
         this.deleteRestartRunByIdsQuery = deleteRestartRunByIdsQuery;
-    }
-
-    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
-        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }

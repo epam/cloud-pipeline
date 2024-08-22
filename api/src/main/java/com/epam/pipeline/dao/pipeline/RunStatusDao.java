@@ -17,24 +17,20 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoUtils;
-import com.epam.pipeline.dao.JdbcTemplateReadOnlyWrapper;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @RequiredArgsConstructor
-public class RunStatusDao extends NamedParameterJdbcDaoSupport {
-
-    private final JdbcTemplateReadOnlyWrapper jdbcTemplateReadOnlyWrapper;
+public class RunStatusDao extends DryRunJdbcDaoSupport {
 
     private String createRunStatusQuery;
     private String loadRunStatusQuery;
@@ -140,9 +136,5 @@ public class RunStatusDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunStatusByListWithArchivedQuery(final String loadRunStatusByListWithArchivedQuery) {
         this.loadRunStatusByListWithArchivedQuery = loadRunStatusByListWithArchivedQuery;
-    }
-
-    private NamedParameterJdbcTemplate getNamedParameterJdbcTemplate(final boolean dryRun) {
-        return dryRun ? jdbcTemplateReadOnlyWrapper : getNamedParameterJdbcTemplate();
     }
 }
