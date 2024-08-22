@@ -143,7 +143,7 @@ public class PipelineRepositoryService {
         final Revision commit = providerService.getLastCommit(pipeline, ref);
         final List<Revision> revisions = new ArrayList<>(tags.size());
         if (isDraftCommit(tags, commit)) {
-            commit.setName(GitUtils.DRAFT_PREFIX + commit.getName());
+            commit.setName(getCommitName(commit, repositoryType));
             commit.setDraft(true);
             revisions.add(commit);
         }
@@ -529,5 +529,12 @@ public class PipelineRepositoryService {
 
     private String buildBranchRefOrNull(final String branch) {
         return StringUtils.isNotBlank(branch) ? String.format(GitUtils.BRANCH_REF_PATTERN, branch) : null;
+    }
+
+    private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
+        return GitUtils.DRAFT_PREFIX +
+                (RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
+                        commit.getCommitId().substring(0, 6) :
+                        commit.getName());
     }
 }

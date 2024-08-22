@@ -65,7 +65,8 @@ public class BitbucketCloudService implements GitClientService {
     private static final String PROJECT_NAME = "project name";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
-
+    private static final int MAX_DEPTH = 20;
+    public static final String PAGE_PARAMETER = "page=";
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -231,18 +232,32 @@ public class BitbucketCloudService implements GitClientService {
         final BitbucketCloudClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
-        final BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version);
+        final int maxDepth = recursive ? MAX_DEPTH : 1;
+        BitbucketCloudPagedResponse<BitbucketCloudSource> response = client.getFiles(path, version, null, maxDepth);
+        final List<BitbucketCloudSource> values = response.getValues();
+        while (response.getNext() != null) {
+            String[] params = response.getNext().split(PAGE_PARAMETER);
+            if (params.length < 2) {
+                break;
+            }
+            response = client.getFiles(path, version, params[1], maxDepth);
+            values.addAll(response.getValues());
+        }
 
-        final List<GitRepositoryEntry> files = response.getValues().stream()
+        final List<GitRepositoryEntry> files = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FILE_MARKER))
                 .map(BitbucketCloudSource::getPath)
+                .map(p -> getRelativePath(path, p))
+                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
                 .map(value -> buildGitRepositoryEntry(value, GitUtils.FILE_MARKER))
                 .collect(Collectors.toList());
 
-        final List<String> folders = response.getValues().stream()
+        final List<String> folders = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FOLDER_MARKER))
                 .map(BitbucketCloudSource::getPath)
                 .filter(StringUtils::isNotBlank)
+                .map(p -> getRelativePath(path, p))
+                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
                 .distinct()
                 .collect(Collectors.toList());
         final List<GitRepositoryEntry> results = folders.stream()
@@ -316,7 +331,7 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public boolean fileExists(final Pipeline pipeline, final String filePath) {
-        return fileExists(getClient(pipeline), filePath, pipeline.getBranch());
+        return fileExists(getClient(pipeline), filePath, pipeline);
     }
 
     private BitbucketCloudClient getClient(final Pipeline pipeline) {
@@ -370,7 +385,11 @@ public class BitbucketCloudService implements GitClientService {
         return results.getSize() - results.getPage() * results.getPageLen();
     }
 
-    private boolean fileExists(final BitbucketCloudClient client, final String path, final String branch) {
-        return client.getFileContent(GitUtils.getBranchRefOrDefault(branch), path) != null;
+    private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
+        return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
+    }
+
+    private static String getRelativePath(final String folder, final String path) {
+        return path.startsWith(folder + ProviderUtils.DELIMITER) ? path.substring(folder.length() + 1) : path;
     }
 }

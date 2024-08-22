@@ -47,8 +47,10 @@ public interface BitbucketCloudServerApi {
     String COMMIT_ID = "commitId";
     String USERNAME = "username";
     String TAG_NAME = "tagName";
+    String MAX_DEPTH = "max_depth";
     String PAGE = "page";
     String PAGE_LENGTH = "pagelen";
+    String BRANCH = "branch";
 
 
     @GET("{api_version}/repositories/{workspace}/{repository}")
@@ -131,7 +133,9 @@ public interface BitbucketCloudServerApi {
                                                                      @Path(WORKSPACE) String workspace,
                                                                      @Path(REPOSITORY) String repository,
                                                                      @Path(value = PATH) String path,
-                                                                     @Path(value = COMMIT) String commit);
+                                                                     @Path(value = COMMIT) String commit,
+                                                                     @Query(PAGE) String page,
+                                                                     @Query(MAX_DEPTH) Integer maxDepth);
 
     @GET("{api_version}/repositories/{workspace}/{repository}/refs/branches")
     Call<BitbucketCloudPagedResponse<BitbucketCloudRef>> getBranches(@Path(API_VERSION) String apiVersion,
@@ -139,4 +143,11 @@ public interface BitbucketCloudServerApi {
                                                                      @Path(REPOSITORY) String repository,
                                                                      @Query(PAGE) Integer page,
                                                                      @Query(PAGE_LENGTH) Integer pageLength);
+
+    @GET("{api_version}/repositories/{workspace}/{repository}/commits/{branch}")
+    Call<BitbucketCloudPagedResponse<BitbucketCloudCommit>> search(@Path(API_VERSION) String apiVersion,
+                                                                   @Path(WORKSPACE) String workspace,
+                                                                   @Path(REPOSITORY) String repository,
+                                                                   @Path(BRANCH) String branch,
+                                                                   @Query(value = PATH, encoded = true) String path);
 }
