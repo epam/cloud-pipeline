@@ -1186,7 +1186,8 @@ public class SystemPreferences {
             "system.archive.run.runs.chunk.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE = new IntPreference(
             "system.archive.run.owners.chunk.size", 100, SYSTEM_GROUP, isGreaterThan(0));
-
+    public static final BooleanPreference SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME = new BooleanPreference(
+            "system.archive.run.dry-run.regime", false, SYSTEM_GROUP, pass);
 
     public static final IntPreference SYSTEM_POD_BANDWIDTH_MONITOR_DELAY = new IntPreference(
             "system.pod.bandwidth.monitor.delay", 30000, SYSTEM_GROUP, pass);

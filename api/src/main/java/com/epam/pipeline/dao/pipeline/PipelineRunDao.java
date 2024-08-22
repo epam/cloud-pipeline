@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.DaoUtils;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
@@ -51,7 +52,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,7 +75,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
+public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
     private Pattern whereTagsPattern = Pattern.compile("@WHERE_TAGS@");
@@ -85,6 +85,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private static final int STRING_BUFFER_SIZE = 70;
     private static final String LIST_PARAMETER = "list";
     private static final String LIMIT = "LIMIT";
+    private static final String OFFSET = "OFFSET";
     private static final int CLAUSE_LENGTH = 200;
 
     @Autowired
@@ -462,9 +463,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunSidsByRunIdIn(final List<Long> runIds) {
+    public void deleteRunSidsByRunIdIn(final List<Long> runIds, final boolean dryRun) {
         final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
-        getNamedParameterJdbcTemplate().update(deleteRunSidsByRunIdsQuery, params);
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRunSidsByRunIdsQuery, params);
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -525,6 +526,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds) {
+        return loadRunsByParentRuns(parentIds, false);
+    }
+
+    public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds, final boolean dryRun) {
         if (CollectionUtils.isEmpty(parentIds)) {
             return Collections.emptyList();
         }
@@ -532,7 +537,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, parentIds);
 
-        return getNamedParameterJdbcTemplate()
+        return getNamedParameterJdbcTemplate(dryRun)
                 .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
     }
 
@@ -560,35 +565,36 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<PipelineRun> loadRunsByOwnerAndEndDateBeforeAndStatusIn(final Map<String, Date> ownersAndDates,
-                                                                        final List<Long> statuses, final int limit) {
+                                                                        final List<Long> statuses, final int limit,
+                                                                        final boolean dryRun, final int offset) {
         if (MapUtils.isEmpty(ownersAndDates)) {
             return Collections.emptyList();
         }
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, statuses);
         params.addValue(LIMIT, limit);
+        params.addValue(OFFSET, offset);
 
         final String query = wherePattern.matcher(loadRunsByOwnerAndEndDateBeforeAndStatusInQuery)
                 .replaceFirst(buildOwnersAndDatesClause(ownersAndDates));
-
-        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate(dryRun)
                 .query(query, params, PipelineRunParameters.getRowMapper()));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRunByIdIn(final List<Long> runIds) {
+    public void deleteRunByIdIn(final List<Long> runIds, final boolean dryRun) {
         if (CollectionUtils.isEmpty(runIds)) {
             return;
         }
 
-        getNamedParameterJdbcTemplate().update(deleteRunsByIdInQuery,
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRunsByIdInQuery,
                 new MapSqlParameterSource(LIST_PARAMETER, runIds));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("LIMIT", filter.getPageSize());
-        params.addValue("OFFSET", (filter.getPage() - 1) * filter.getPageSize());
+        params.addValue(LIMIT, filter.getPageSize());
+        params.addValue(OFFSET, (filter.getPage() - 1) * filter.getPageSize());
         addTaskStatusParams(params);
         return params;
     }

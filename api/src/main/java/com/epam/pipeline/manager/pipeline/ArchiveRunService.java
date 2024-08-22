@@ -101,8 +101,10 @@ public class ArchiveRunService {
                 SystemPreferences.SYSTEM_ARCHIVE_RUN_RUNS_CHUNK_SIZE);
         final Integer ownersChunkSize = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_ARCHIVE_RUN_OWNERS_CHUNK_SIZE);
+        final boolean dryRun = preferenceManager.getPreference(SystemPreferences.SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME);
 
-        archiveRunAsyncService.archiveRunsAsynchronous(ownersAndDates, terminalStates, runsChunkSize, ownersChunkSize);
+        archiveRunAsyncService.archiveRunsAsynchronous(ownersAndDates, terminalStates, runsChunkSize, ownersChunkSize,
+                dryRun);
     }
 
     private Integer metadataToDays(final Map<String, PipeConfValue> metadata, final String key,

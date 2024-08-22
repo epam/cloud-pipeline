@@ -17,12 +17,13 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.dao.DaoUtils;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -33,7 +34,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RestartRunDao extends NamedParameterJdbcDaoSupport {
+@RequiredArgsConstructor
+public class RestartRunDao extends DryRunJdbcDaoSupport {
 
     private String createPipelineRestartRunQuery;
     private String countPipelineRestartRunQuery;
@@ -76,9 +78,9 @@ public class RestartRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteRestartRunByIdsIn(final List<Long> runIds) {
+    public void deleteRestartRunByIdsIn(final List<Long> runIds, final boolean dryRun) {
         final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
-        getNamedParameterJdbcTemplate().update(deleteRestartRunByIdsQuery, params);
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRestartRunByIdsQuery, params);
     }
 
     enum PipelineRestartRunParameters {
