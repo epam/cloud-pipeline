@@ -382,7 +382,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             switch (action) {
                 case PAUSE:
                     if (run.getInstance().getSpot()) {
-                        addRunWithMetricToNotifyList(run, cpuUsageRate, pipelinesToNotify);
+                        performNotify(run, cpuUsageRate, pipelinesToNotify);
                     } else {
                         performPause(run, cpuUsageRate);
                     }
@@ -400,16 +400,16 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                     performStop(run, cpuUsageRate);
                     break;
                 default:
-                    addRunWithMetricToNotifyList(run, cpuUsageRate, pipelinesToNotify);
+                    performNotify(run, cpuUsageRate, pipelinesToNotify);
             }
 
             runsToUpdate.add(run);
         }
 
-        private void addRunWithMetricToNotifyList(PipelineRun run, double metric,
-                                                  List<Pair<PipelineRun, Double>> pipelinesToNotify) {
+        private void performNotify(PipelineRun run, double cpuUsageRate,
+                                   List<Pair<PipelineRun, Double>> pipelinesToNotify) {
             run.setLastIdleNotificationTime(DateUtils.nowUTC());
-            pipelinesToNotify.add(new ImmutablePair<>(run, metric));
+            pipelinesToNotify.add(new ImmutablePair<>(run, cpuUsageRate));
         }
 
         private void processHighNetworkConsumingRuns(final List<PipelineRun> runs) {
@@ -523,9 +523,15 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 //                    TODO
                     break;
                 default:
-                    addRunWithMetricToNotifyList(run, bandwidth, pipelinesToNotify);
+                    performHighNetworkConsumingNotify(run, bandwidth, pipelinesToNotify);
             }
             runsToUpdate.add(run);
+        }
+
+        private void performHighNetworkConsumingNotify(PipelineRun run, double networkBandwidthLevel,
+                                                       List<Pair<PipelineRun, Double>> pipelinesToNotify) {
+            run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
+            pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
         }
 
         private void performStop(PipelineRun run, double cpuUsageRate) {
