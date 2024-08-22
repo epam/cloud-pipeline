@@ -612,25 +612,16 @@ function set_preferences_from_point_in_time_configuration {
     local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
     if [ "$point_in_time_configuration_preference_file" ]; then
         print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
-        local preferences_file_with_values=$(cat "$point_in_time_configuration_preference_file" | jq -c '[.[] | select(has("value"))]')
-        local payload=$(echo "$preferences_file_with_values" | jq -r '.[] | "\(.name) \(.value) \(.visible)"')
-        while IFS= read -r pref_name pref_value pref_visible; do
-            api_set_preference $pref_name $pref_value $pref_visible
-        done <<< "$payload"
+        local payload=$(jq '[.[] | select(has("value")) | select(.name != ("git.token","cluster.networks.config"))]' $point_in_time_configuration_preference_file)
+        call_api "/preferences" "$CP_API_JWT_ADMIN" "$payload"
     fi
 }
 
 function import_users_from_point_in_time_configuration {
-  local api_url="https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/users/import"
-  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users)
-  
+  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users) 
   if [ "$point_in_time_configuration_users_file" ]; then
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
-      curl -X POST -k -s -H "Authorization: Bearer ${CP_API_JWT_ADMIN}" \
-           -H "Content-Type: multipart/form-data" \
-           -H "Accept: application/json" \
-           -F "file=@$point_in_time_configuration_users_file;type=text/csv" \
-           "${api_url}?createUser=true&createGroup=true"
+      call_api "users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file"
   fi      
 }
 
