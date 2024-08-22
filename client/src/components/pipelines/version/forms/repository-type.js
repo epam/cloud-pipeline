@@ -17,7 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
-import {RepositoryTypeNames, RepositoryTypes} from '../../../special/git-repository-control';
+import {
+  RepositoryTypeNames,
+  availableRepositoryTypes
+} from '../../../special/git-repository-control';
 
 class RepositoryTypeSelector extends React.Component {
   componentDidMount () {
@@ -75,7 +78,7 @@ class RepositoryTypeSelector extends React.Component {
           value={value}
         >
           {
-            Object.values(RepositoryTypes || {})
+            availableRepositoryTypes
               .map((type) => (
                 <Select.Option key={type} value={type}>
                   {RepositoryTypeNames[type] || type}

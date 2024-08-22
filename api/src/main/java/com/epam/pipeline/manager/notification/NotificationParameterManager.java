@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 public class NotificationParameterManager {
 
     private static final double PERCENT = 100.0;
-    private static final int BYTES_IN_KB = 1024;
 
     private final JsonMapper jsonMapper;
 

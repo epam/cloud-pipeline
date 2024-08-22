@@ -398,4 +398,9 @@ public class RunApiService {
     public void archiveRuns(final String name, final boolean principal, final Integer days) {
         archiveRunService.archiveRuns(name, principal, days);
     }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        runManager.setLimitBoundary(runId, enable, boundary);
+    }
 }

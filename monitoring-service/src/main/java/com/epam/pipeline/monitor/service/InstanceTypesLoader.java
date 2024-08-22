@@ -17,20 +17,24 @@
 package com.epam.pipeline.monitor.service;
 
 import com.epam.pipeline.entity.cluster.InstanceType;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * Refreshes GPU instance types
+ * Refreshes GPU instance types across all regions
  */
 @Service
 @RequiredArgsConstructor
@@ -42,22 +46,28 @@ public class InstanceTypesLoader {
 
     @PostConstruct
     public void init() {
-        refreshInstances();
+        try {
+            refreshInstances();
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     @Scheduled(fixedDelayString = "${refresh.instances.timeout:86400000}")
     public void refreshInstances() {
-        try {
-            final Set<String> loadedTypes = client.loadAllInstanceTypes().stream()
-                    .filter(it -> it.getGpu() > 0)
-                    .map(InstanceType::getName)
-                    .filter(StringUtils::isNotBlank)
-                    .collect(Collectors.toSet());
-            gpuInstanceTypes.clear();
-            gpuInstanceTypes.addAll(loadedTypes);
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
+        final Set<String> loadedTypes = client.loadAllRegions().stream()
+                .map(AbstractCloudRegion::getId)
+                .map(client::loadAllowedInstanceAndPriceTypesForRegion)
+                .filter(Objects::nonNull)
+                .flatMap(data -> Stream.concat(
+                        ListUtils.emptyIfNull(data.getAllowedInstanceDockerTypes()).stream(),
+                        ListUtils.emptyIfNull(data.getAllowedInstanceTypes()).stream()))
+                .filter(it -> it.getGpu() > 0)
+                .map(InstanceType::getName)
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toSet());
+        gpuInstanceTypes.clear();
+        gpuInstanceTypes.addAll(loadedTypes);
     }
 
     public Set<String> loadGpuInstanceTypes() {

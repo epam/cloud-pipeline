@@ -460,6 +460,9 @@ class GsListingManager(GsManager, AbstractListingManager):
             accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
 
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        raise NotImplementedError("List items with depth is not implemented yet")
+
     def _to_storage_file(self, blob):
         item = DataStorageItemModel()
         item.name = blob.name

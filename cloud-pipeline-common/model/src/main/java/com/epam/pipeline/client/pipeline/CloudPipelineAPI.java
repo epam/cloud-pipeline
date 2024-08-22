@@ -17,6 +17,7 @@
 package com.epam.pipeline.client.pipeline;
 
 import com.epam.pipeline.entity.app.ApplicationInfo;
+import com.epam.pipeline.entity.cluster.AllowedInstanceAndPriceTypes;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -296,6 +297,10 @@ public interface CloudPipelineAPI {
 
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypes();
+
+    @GET("cluster/instance/allowed")
+    Call<Result<AllowedInstanceAndPriceTypes>> loadAllowedInstanceAndPriceTypesForRegion(
+            @Query(REGION_ID) Long regionId);
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);

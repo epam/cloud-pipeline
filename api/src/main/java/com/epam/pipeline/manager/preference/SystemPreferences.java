@@ -357,6 +357,11 @@ public class SystemPreferences {
             "bitbucket.default.src.directory", "/", GIT_GROUP, pass, true);
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
+
+    public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
+            new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
+    public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
+            "bitbucket.cloud.api.version", "2.0", GIT_GROUP, pass);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
             "git.gitlab.repo.visibility", "private", GIT_GROUP, pass, true);
     public static final StringPreference GITLAB_ISSUE_PROJECT = new StringPreference(
@@ -1161,6 +1166,7 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_NOTIFICATIONS_ENABLE = new BooleanPreference(
             "system.notifications.enable", false, SYSTEM_GROUP, pass);
 
+    //in bytes per second
     public static final DoublePreference SYSTEM_POD_BANDWIDTH_LIMIT = new DoublePreference(
             "system.pod.bandwidth.limit", 0.0, SYSTEM_GROUP, isGreaterThanOrEquals(0.0f));
 
@@ -1182,6 +1188,12 @@ public class SystemPreferences {
             "system.archive.run.owners.chunk.size", 100, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_ARCHIVE_RUN_DRY_RUN_REGIME = new BooleanPreference(
             "system.archive.run.dry-run.regime", false, SYSTEM_GROUP, pass);
+
+    public static final IntPreference SYSTEM_POD_BANDWIDTH_MONITOR_DELAY = new IntPreference(
+            "system.pod.bandwidth.monitor.delay", 30000, SYSTEM_GROUP, pass);
+
+    public static final IntPreference LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT = new IntPreference(
+            "limit.network.bandwidth.command.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

@@ -367,6 +367,17 @@ class AbstractListingManager:
         pass
 
     @abstractmethod
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        """
+        Returns paths list under the given relative path and according to given depth.
+
+        :param max_depth: returns N or fewer levels below
+        :param relative_path: Storage relative path to be processed
+        :return: the list of paths
+        """
+        pass
+
+    @abstractmethod
     def get_summary(self, relative_path=None):
         """
         Calculates storage usage statistic according to relative path
