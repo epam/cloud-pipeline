@@ -62,7 +62,8 @@ export function getPermissionChanges (state) {
   const removedPermissions = originalPermissions
     .filter(p => !permissions.some(findPermissionByPermission(p)));
   const updatedPermissions = permissions
-    .filter(p => originalPermissions.some(findPermissionByPermission(p)));
+    .filter(p => originalPermissions.some((op) => permissionSidsEqual(p.sid, op.sid) &&
+      p.mask !== op.mask));
   const createdPermissions = permissions
     .filter(p => !originalPermissions.some(findPermissionByPermission(p)));
   return {
