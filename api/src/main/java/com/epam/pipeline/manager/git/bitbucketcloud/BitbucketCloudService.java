@@ -247,8 +247,6 @@ public class BitbucketCloudService implements GitClientService {
         final List<GitRepositoryEntry> files = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FILE_MARKER))
                 .map(BitbucketCloudSource::getPath)
-                .map(p -> getRelativePath(path, p))
-                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
                 .map(value -> buildGitRepositoryEntry(value, GitUtils.FILE_MARKER))
                 .collect(Collectors.toList());
 
@@ -256,8 +254,6 @@ public class BitbucketCloudService implements GitClientService {
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FOLDER_MARKER))
                 .map(BitbucketCloudSource::getPath)
                 .filter(StringUtils::isNotBlank)
-                .map(p -> getRelativePath(path, p))
-                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
                 .distinct()
                 .collect(Collectors.toList());
         final List<GitRepositoryEntry> results = folders.stream()
@@ -387,9 +383,5 @@ public class BitbucketCloudService implements GitClientService {
 
     private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
         return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
-    }
-
-    private static String getRelativePath(final String folder, final String path) {
-        return path.startsWith(folder + ProviderUtils.DELIMITER) ? path.substring(folder.length() + 1) : path;
     }
 }
