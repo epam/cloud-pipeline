@@ -1354,7 +1354,7 @@ public class PipelineRunManager {
             final String timestampTagSuffix = preferenceManager.getPreference(
                     SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX
             );
-            tags.remove(String.format("%s_%s", NETWORK_LIMIT, timestampTagSuffix));
+            tags.remove(String.format("%s%s", NETWORK_LIMIT, timestampTagSuffix));
         } else {
             tags.remove(NETWORK_LIMIT);
         }
