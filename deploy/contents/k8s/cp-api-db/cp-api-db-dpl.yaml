@@ -19,7 +19,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-api-db
-          image: postgres:9.6
+          image: postgres:16.4
           imagePullPolicy: "IfNotPresent"
           args:
             - --shared_buffers=${PSG_SHARED_BUFFERS}
