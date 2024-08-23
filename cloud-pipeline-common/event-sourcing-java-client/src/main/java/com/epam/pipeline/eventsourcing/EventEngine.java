@@ -106,6 +106,7 @@ public final class EventEngine {
     public void enableHandler(final String stream, final long fromEventId,
                               final EventHandler eventHandler, final int frequencyInMills,
                               final boolean force) {
+        log.debug("Enabling event handler {}...", eventHandler.getId());
 
         if (enabled.containsKey(eventHandler.getId()) && !force) {
             throw new IllegalStateException(String.format(
@@ -137,6 +138,7 @@ public final class EventEngine {
      * Removes {@param eventHandler} with id {@param eventHandlerId} from receivers of published event
      * */
     public void disableHandler(final String eventHandlerId) {
+        log.debug("Disabling event handler {}...", eventHandlerId);
         lastReadByHandler.remove(eventHandlerId);
         Optional.ofNullable(enabled.remove(eventHandlerId)).ifPresent(future -> future.cancel(true));
     }
@@ -152,6 +154,7 @@ public final class EventEngine {
      * */
     public EventProducer enableProducer(final String id, final String applicationId,
                                         final String type, final String stream) {
+        log.debug("Enabling event producer {}...", id);
         return new SingleStreamEventProducer(id, applicationId, type, redissonClient.getStream(stream));
     }
 

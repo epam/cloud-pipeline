@@ -18,11 +18,13 @@ package com.epam.pipeline.eventsourcing.acl;
 
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.eventsourcing.EventProducer;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class ACLUpdateEventProducer {
 
     protected static final String ACL_CLASS_FIELD = "aclClass";
@@ -39,11 +41,14 @@ public class ACLUpdateEventProducer {
     }
 
     public long put(final Long id, final AclClass aclClass) {
+        log.debug("Publishing ACL update event {}#{}", aclClass, id);
         if (inner.get() != null) {
             final Map<String, String> data = new HashMap<>();
             data.put(ACL_CLASS_FIELD, aclClass.name());
             data.put(ENTITY_ID_FIELD, id.toString());
-            return inner.get().put(data);
+            final long eventId = inner.get().put(data);
+            log.debug("Published ACL update event #{}", eventId);
+            return eventId;
         }
         return -1;
     }

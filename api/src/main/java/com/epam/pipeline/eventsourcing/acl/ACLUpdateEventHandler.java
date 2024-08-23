@@ -55,10 +55,10 @@ public class ACLUpdateEventHandler implements EventHandler {
 
     @Override
     public void handle(final long eventId, final Event event) {
+        log.debug("Consuming ACL update event #{} '{}'", eventId, event);
         if (!validateEvent(event)) {
             return;
         }
-        log.debug(String.format("Processing event '%s'", event));
         aclCache.evictFromCache(
             new ObjectIdentityImpl(
                 event.getData().get(ACL_CLASS_FIELD),
