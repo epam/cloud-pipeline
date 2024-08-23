@@ -29,6 +29,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.SetUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +50,8 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = "notification.enable.ui", havingValue = "true")
 public class UserNotificationManager implements NotificationManager {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(UserNotificationManager.class);
+
     private final UserNotificationRepository notificationRepository;
     private final TemplateService templateService;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -55,14 +59,22 @@ public class UserNotificationManager implements NotificationManager {
     @Override
     @Transactional
     public void notifySubscribers(final NotificationMessage message) {
-        notificationRepository.save(toNotifications(message));
+        final Long messageId = message.getId();
+        LOGGER.info("Trying to send message with id: {}", messageId);
+        final List<UserNotificationEntity> notifications = toNotifications(message);
+        LOGGER.debug("Generated {} notification(s) from message with id: {}", notifications.size(), messageId);
+        notificationRepository.save(notifications);
+        LOGGER.info("Message with id: {} was successfully sent", messageId);
     }
 
     private List<UserNotificationEntity> toNotifications(final NotificationMessage message) {
         final MessageText messageText = templateService.buildMessageText(message);
+        LOGGER.debug("Successfully built message form the template");
         final Set<Long> userIds = new HashSet<>();
-        if (message.getToUserId() != null) {
-            userIds.add(message.getToUserId());
+        final Long toUserId = message.getToUserId();
+        if (toUserId != null) {
+            LOGGER.debug("User with id: {} was added as a receiver for message: {}", toUserId, message.getId());
+            userIds.add(toUserId);
         }
         userIds.addAll(ListUtils.emptyIfNull(message.getCopyUserIds()));
         return SetUtils.emptyIfNull(userIds).stream()
