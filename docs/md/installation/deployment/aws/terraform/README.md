@@ -78,12 +78,12 @@ To create DynamoDB table you can use AWS Console or aws cli command:
    This EIP also should be used to request DNS records creation from you DNS provider. The following scheme of the
    records is proposed:
 
-| DNS record                                 | Record type | Value                               |
-|--------------------------------------------|-------------|-------------------------------------|
-| <cloud-pipeline-name>.<your-domain>        | A           | < EIP value >                       |
-| edge.<cloud-pipeline-name>.<your-domain>   | CNAME       | <cloud-pipeline-name>.<your-domain> |
-| docker.<cloud-pipeline-name>.<your-domain> | CNAME       | <cloud-pipeline-name>.<your-domain> |
-| git.<cloud-pipeline-name>.<your-domain>    | CNAME       | <cloud-pipeline-name>.<your-domain> |
+| DNS record                                     | Record type | Value                                   |
+|------------------------------------------------|-------------|-----------------------------------------|
+| < cloud-pipeline-name >.< your-domain >        | A           | < EIP value >                           |
+| edge.< cloud-pipeline-name >.< your-domain >   | CNAME       | < cloud-pipeline-name >.< your-domain > |
+| docker.< cloud-pipeline-name >.< your-domain > | CNAME       | < cloud-pipeline-name >.< your-domain > |
+| git.< cloud-pipeline-name >.< your-domain >    | CNAME       | < cloud-pipeline-name >.< your-domain > |
 
 ### Jump-server deployment
 
@@ -219,27 +219,27 @@ provider "aws" {
 }
 
 provider "kubernetes" {
-  host                   = module.cluster-infra.cluster_endpoint
+  host = module.cluster-infra.cluster_endpoint
   cluster_ca_certificate = base64decode(module.cluster-infra.cluster_certificate_authority_data)
 
   exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command = "aws"
     # This requires the awscli to be installed locally where Terraform is executed
-    args        = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+    args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
   }
 }
 
 provider "helm" {
   kubernetes {
-    host                   = module.cluster-infra.cluster_endpoint
+    host = module.cluster-infra.cluster_endpoint
     cluster_ca_certificate = base64decode(module.cluster-infra.cluster_certificate_authority_data)
 
     exec {
       api_version = "client.authentication.k8s.io/v1beta1"
       command = "aws"
       # This requires the awscli to be installed locally where Terraform is executed
-      args        = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
+      args = ["eks", "get-token", "--cluster-name", module.cluster-infra.cluster_name]
     }
   }
 }
@@ -253,29 +253,29 @@ provider "postgresql" {
 }
 
 module "cluster-infra" {
-  source                             = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=<branch-tag-or-commit>"
-  deployment_name                    = "xxxxxxxxxxxx"
-  deployment_env                     = "xxxxxxxxxxxx"
-  vpc_id                             = "vpc-xxxxxxxxxxxx"
+  source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/cluster-infra?ref=<branch-tag-or-commit>"
+  deployment_name                   = "xxxxxxxxxxxx"
+  deployment_env                    = "xxxxxxxxxxxx"
+  vpc_id                            = "vpc-xxxxxxxxxxxx"
   external_access_security_group_ids = ["xxxxxxxxxxxx"]
-  subnet_ids                         = ["subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx"]
-  iam_role_permissions_boundary_arn  = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
-  eks_system_node_group_subnet_ids   = ["subnet-xxxxxxxxxxxx"]
-  deploy_filesystem_type             = "xxxxxxxxxxxx"
-  cp_deployment_id                   = "xxxxxxxxxxxx"
-  cp_edge_elb_schema                 = "xxxxxxxxxxxx"
-  cp_edge_elb_subnet                 = "xxxxxxxxxxxx"
-  cp_edge_elb_ip                     = "xxxxxxxxxxxx"
-  cp_api_srv_host                    = "xxxxxxxxxxxx"
-  cp_idp_host                        = "xxxxxxxxxxxx"
-  cp_docker_host                     = "xxxxxxxxxxxx"
-  cp_edge_host                       = "xxxxxxxxxxxx"
-  cp_gitlab_host                     = "xxxxxxxxxxxx"
-  eks_additional_role_mapping        = [
+  subnet_ids = ["subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx", "subnet-xxxxxxxxxxxx"]
+  iam_role_permissions_boundary_arn = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
+  eks_system_node_group_subnet_ids = ["subnet-xxxxxxxxxxxx"]
+  deploy_filesystem_type            = "xxxxxxxxxxxx"
+  cp_deployment_id                  = "xxxxxxxxxxxx"
+  cp_edge_elb_schema                = "xxxxxxxxxxxx"
+  cp_edge_elb_subnet                = "xxxxxxxxxxxx"
+  cp_edge_elb_ip                    = "xxxxxxxxxxxx"
+  cp_api_srv_host                   = "xxxxxxxxxxxx"
+  cp_idp_host                       = "xxxxxxxxxxxx"
+  cp_docker_host                    = "xxxxxxxxxxxx"
+  cp_edge_host                      = "xxxxxxxxxxxx"
+  cp_gitlab_host                    = "xxxxxxxxxxxx"
+  eks_additional_role_mapping = [
     {
       iam_role_arn  = "arn:aws:iam::xxxxxxxxxxxx:role/xxxxxxxxxx-BastionExecutionRole"
       eks_role_name = "system:node:{{EC2PrivateDNSName}}"
-      eks_groups    = ["system:bootstrappers", "system:nodes"]
+      eks_groups = ["system:bootstrappers", "system:nodes"]
     }
   ]
 }  
@@ -475,13 +475,11 @@ filesystem_type = "efs"
 
 #### Outputs table of `cluster-infrastructure` module
 
-| Name | Description |
-|------|-------------|
-
-| `filesystem_mount`  | Filesystem mount endpoint that can be used to mount ElasticFileSystem in EC2 JumpServer |
-| `filesystem_type`   | Type of the created internet file system |
-| `cp_pipectl_script` | Example of the pipeline install script with all necessary values from infrastructure
-deployment |
+| Name                | Description                                                                                     |
+|---------------------|-------------------------------------------------------------------------------------------------|
+| `filesystem_mount`  | Filesystem mount endpoint that can be used to mount ElasticFileSystem in EC2 JumpServer         |
+| `filesystem_type`   | Type of the created internet file system                                                        |
+| `cp_pipectl_script` | Example of the pipeline install script with all necessary values from infrastructure deployment |
 
 > User can call terraform output again by run command:
 
