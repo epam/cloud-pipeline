@@ -48,6 +48,7 @@
 
 .form-item-row {
   margin: 2px 0 !important;
+  flex: 1;
 }
 
 .form-item-action {
@@ -65,7 +66,7 @@
 }
 
 .hidden-item {
-  display: none;
+  display: none !important;
 }
 
 .code-editor {
@@ -81,15 +82,32 @@
   cursor: pointer;
 }
 
+.parameter-name-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  cursor: text;
+}
+
+.parameter-name-container.disabled {
+  cursor: default;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover {
+  outline: 1px solid #ccc;
+  background-color: #f7f7f7;
+}
+
 .parameter-name {
-  margin-left: -10px;
-  text-align: right;
   border: 1px dashed #777;
   font-size: 0.9rem;
 }
 
 .parameter-value {
   font-size: 0.9rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .system-parameter-name {
@@ -103,7 +121,6 @@
 }
 
 .remove-parameter {
-  padding-left: 10px;
   vertical-align: middle;
   height: 36px;
 }

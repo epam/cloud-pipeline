@@ -357,7 +357,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     userRunCapabilitiesPending: true,
     useResolvedParameters: false,
     runNameAlias: undefined,
-    isRawEditEnabled: false
+    isRawEditEnabled: false,
+    selectedParameter: undefined
   };
 
   formItemLayout = {
@@ -1143,7 +1144,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               enum: parameter.initialEnumeration,
               visible: parameter.visible,
               validation: parameter.validation,
-              no_override: parameter.noOverride
+              no_override: parameter.noOverride,
+              pretty_name: parameter.pretty_name
             };
           }
         }
@@ -1590,8 +1592,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   @computed
   get instanceTypesMergedForRegions () {
-    return this.props.allowedInstanceTypes
-      && this.props.allowedInstanceTypes.regionsMerged;
+    return this.props.allowedInstanceTypes &&
+      this.props.allowedInstanceTypes.regionsMerged;
   }
 
   @computed
@@ -3062,31 +3064,36 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       return this.state.currentMetadataEntity.length > 0 && (
         <FormItem
           key="root_entity_type_select"
-          className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}>
-          <Row
-            style={{marginTop: 10}}
-            key="root_entity_type_row"
-            align="middle"
-            type="flex">
-            <Col span={4} offset={isSystemParametersSection ? 1 : 2}>Root entity type:</Col>
-            <Col
-              key="root_entity_type"
-              span={isSystemParametersSection ? 16 : 15}>
-              <Select
-                allowClear
-                value={this.state.rootEntityId}
-                onChange={this.onChangeRootEntity}
-                placeholder="Select root entity type">
-                {this.state.currentMetadataEntity.map(entity => {
-                  return (
-                    <Select.Option key={entity.metadataClass.id}>
-                      {entity.metadataClass.name}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
-            </Col>
-          </Row>
+          className={`${styles.formItemRow} ${styles.rootEntityTypeContainer} root_entity`}
+        >
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            alignItems: 'center',
+            marginBottom: 10
+          }}>
+            <span style={{
+              width: '50%',
+              paddingRight: 30
+            }}>
+              Root entity type
+            </span>
+            <Select
+              style={{width: '50%', paddingRight: 30}}
+              allowClear
+              value={this.state.rootEntityId}
+              onChange={this.onChangeRootEntity}
+              placeholder="Select root entity type">
+              {this.state.currentMetadataEntity.map(entity => {
+                return (
+                  <Select.Option key={entity.metadataClass.id}>
+                    {entity.metadataClass.name}
+                  </Select.Option>
+                );
+              })}
+            </Select>
+          </div>
         </FormItem>
       );
     };
@@ -3101,27 +3108,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         <Row
           type="flex"
           style={{
-            marginBottom: '10px'
+            marginBottom: '10px',
+            justifyContent: 'center'
           }}
           key="use-resolved-parameters_row"
         >
-          <Col
-            span={isSystemParametersSection ? 16 : 15}
-            offset={isSystemParametersSection ? 4 : 6}
-            style={{
-              textAlign: 'right'
-            }}
-          >
+          <div style={{width: '50%'}}>
             <Checkbox
               checked={this.state.useResolvedParameters}
               onChange={this.toggleResolvedParameters}
-              style={{
-                userSelect: 'none'
-              }}
+              style={{userSelect: 'none'}}
             >
               Use resolved values
             </Checkbox>
-          </Col>
+          </div>
         </Row>
       );
     };
@@ -3134,6 +3134,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const renderParametersGroup = (keys, params) => keys.map(key => {
           const parameter = (params ? params[key] : undefined) ||
             this.addedParameters[key];
+          const isAddedParameter = !!this.addedParameters[key];
           let name = parameter ? parameter.name : '';
           let value = parameter ? parameter.value : '';
           const resolvedValue = parameter ? parameter.resolvedValue : '';
@@ -3154,6 +3155,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
           let description = parameter ? parameter.description : undefined;
           let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
+          const prettyName = parameter ? parameter.pretty_name : undefined;
           let visible = parameter ? parameter.visible : undefined;
           let validation = parameter ? parameter.validation : undefined;
           const validator = validation
@@ -3172,11 +3174,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
           const systemParameter = this.getSystemParameter(parameter);
           const parameterHint = systemParameter ? systemParameter.description : description;
-          const parameterHintFn = parameterHint
-            ? () => { return parameterHint; } : undefined;
-          let nameDisabled = (this.props.readOnly && !this.props.canExecute) ||
-            required || isSystemParametersSection ||
-            (!!this.state.pipeline && this.props.detached);
+          let nameDisabled = !isAddedParameter || (
+            (!!this.state.pipeline && this.props.detached)
+          );
+          if (this.props.editConfigurationMode) {
+            nameDisabled = false;
+          }
+          if (
+            (this.props.readOnly && !this.props.canExecute) ||
+            required ||
+            isSystemParametersSection
+          ) {
+            nameDisabled = true;
+          }
           let readOnlyCorrectedValue = readOnly;
           let requiredCorrectedValue = required;
           if (this.state.isRawEditEnabled) {
@@ -3186,6 +3196,84 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             requiredCorrectedValue = false;
             visible = true;
           }
+          const selectParameter = (e, key) => {
+            if (nameDisabled) {
+              return;
+            }
+            this.setState({selectedParameter: key});
+          };
+          const unselectParameter = () => {
+            if (nameDisabled) {
+              return;
+            }
+            this.setState({selectedParameter: undefined});
+          };
+          const onKeyDown = (e) => {
+            if (e.key.toLowerCase() === 'escape' || e.key.toLowerCase() === 'enter') {
+              unselectParameter();
+            }
+          };
+          const renderNamePlaceholder = () => {
+            const content = (
+              <div
+                className={classNames({
+                  'cp-text-not-important': !prettyName && !name
+                })}
+                style={{lineHeight: '28px'}}
+              >
+                {prettyName || name || '<parameter name>'}
+              </div>
+            );
+            return (
+              <div>
+                {prettyName ? (
+                  <Popover
+                    content={(
+                      <span>
+                        {name}
+                      </span>
+                    )}
+                  >
+                    {content}
+                  </Popover>
+                ) : (
+                  content
+                )}
+              </div>
+            );
+          };
+          const renderRemoveButton = () => (
+            <div className={
+              systemParameterValueIsBlocked
+                ? styles.hiddenItem
+                : styles.removeParameter
+            }>
+              {
+                this.state.isRawEditEnabled || (
+                  !required &&
+                !(this.props.readOnly && !this.props.canExecute) &&
+                !(this.state.pipeline && this.props.detached) &&
+                removeAllowed
+                )
+                  ? (
+                    <Icon
+                      id="remove-parameter-button"
+                      className="dynamic-delete-button"
+                      type="minus-circle-o"
+                      onClick={() => this.removeParameter(sectionName, key)}
+                      style={{marginLeft: 15, width: 15}}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        marginLeft: 15,
+                        width: 15,
+                        display: 'inline-block'
+                      }}>{'\u00A0'}</div>
+                  )
+              }
+            </div>
+          );
           let formItem;
           switch (type.toLowerCase()) {
             case 'path':
@@ -3281,7 +3369,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 )
               }
               {...this.parameterItemLayout}
-              hasFeedback>
+              hasFeedback
+            >
               <FormItem className={styles.hiddenItem}>
                 {
                   this.getSectionFieldDecorator(sectionName)(
@@ -3386,98 +3475,164 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
-              <Col
-                span={4}
-                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
-                offset={isSystemParametersSection ? 0 : 2}>
-                <FormItem
-                  className={styles.formItemRow}
-                  required={required && parameterIsVisible}>
-                  {this.getSectionFieldDecorator(sectionName)(
-                    `params.${key}.name`,
-                    {
-                      rules: [
-                        {
-                          required: parameterIsVisible,
-                          message: 'Required'
-                        },
-                        {
-                          pattern: /^[\da-zA-Z_]+$/,
-                          message: 'Name can contain only letters, digits and \'_\'.'
-                        },
-                        {
-                          validator: this.validateParameterName(
-                            sectionName,
-                            key,
-                            isSystemParametersSection
-                          )
-                        }],
-                      initialValue: name
-                    }
-                  )(
-                    <Input
-                      disabled={nameDisabled}
-                      placeholder="Name"
-                      className={
-                        classNames(
-                          'cp-parameter-name',
+              <div
+                onKeyDown={onKeyDown}
+                tabIndex="0"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 10
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '50%'
+                }}>
+                  <div
+                    className={classNames({
+                      [styles.hiddenItem]: systemParameterValueIsBlocked,
+                      [styles.parameterNameContainer]: !systemParameterValueIsBlocked,
+                      [styles.collapsed]: this.state.selectedParameter !== key,
+                      [styles.disabled]: nameDisabled
+                    })}
+                    tabIndex="0"
+                    onFocus={(e) => {
+                      const currentTarget = e.currentTarget;
+                      setTimeout(() => {
+                        const focused = document.activeElement;
+                        if (focused && currentTarget.contains(focused)) {
+                          selectParameter(e, key);
+                        }
+                      });
+                    }}
+                    onBlur={e => {
+                      const currentTarget = e.currentTarget;
+                      setTimeout(() => {
+                        const focused = document.activeElement;
+                        if (!focused || !currentTarget.contains(focused)) {
+                          unselectParameter();
+                        }
+                      });
+                    }}
+                    style={{marginRight: 30, borderRadius: '3px'}}
+                  >
+                    {this.state.selectedParameter !== key
+                      ? renderNamePlaceholder()
+                      : null}
+                    <div
+                      className={classNames({
+                        [styles.hiddenItem]: this.state.selectedParameter !== key
+                      })}
+                      style={{display: 'flex', flex: 1, flexWrap: 'nowrap', alignItems: 'flex-start', gap: '5px'}}
+                    >
+                      <span style={{lineHeight: '34px'}}>
+                        Name:
+                      </span>
+                      <FormItem
+                        className={styles.formItemRow}
+                        required={required && parameterIsVisible}
+                        style={{flex: 1}}
+                      >
+                        {this.getSectionFieldDecorator(sectionName)(
+                          `params.${key}.name`,
                           {
-                            [styles.parameterName]: !isSystemParametersSection,
-                            [styles.systemParameterName]: isSystemParametersSection,
-                            disabled: nameDisabled,
-                            'cp-system-parameter-name-input': isSystemParametersSection
+                            rules: [
+                              {
+                                required: parameterIsVisible,
+                                message: 'Required'
+                              },
+                              {
+                                pattern: /^[\da-zA-Z_]+$/,
+                                message: 'Name can contain only letters, digits and \'_\'.'
+                              },
+                              {
+                                validator: this.validateParameterName(
+                                  sectionName,
+                                  key,
+                                  isSystemParametersSection
+                                )
+                              }
+                            ],
+                            initialValue: name
                           }
-                        )
-                      } />
-                  )}
-                </FormItem>
-              </Col>
-              <Col
-                span={isSystemParametersSection ? 16 : 15}
-                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}>
-                {formItem}
-              </Col>
-              <Col
-                span={3}
-                className={
-                  systemParameterValueIsBlocked
-                    ? styles.hiddenItem
-                    : styles.removeParameter
-                }>
-                {
-                  this.state.isRawEditEnabled || (
-                    !required &&
-                    !(this.props.readOnly && !this.props.canExecute) &&
-                    !(this.state.pipeline && this.props.detached) &&
-                    removeAllowed
-                  )
-                    ? (
-                      <Icon
-                        id="remove-parameter-button"
-                        className="dynamic-delete-button"
-                        type="minus-circle-o"
-                        onClick={() => this.removeParameter(sectionName, key)}
-                        style={{marginLeft: 15, width: 15}}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          marginLeft: 15,
-                          width: 15,
-                          display: 'inline-block'
-                        }}>{'\u00A0'}</div>
-                    )
-                }
-                {
-                  parameterHintFn &&
-                  hints.renderHint(
-                    this.localizedStringWithSpotDictionaryFn,
-                    parameterHintFn,
-                    null,
-                    {marginLeft: 15}
-                  )
-                }
-              </Col>
+                        )(
+                          <Input
+                            disabled={nameDisabled}
+                            placeholder="Name"
+                            onPressEnter={unselectParameter}
+                            style={{margin: 0, flex: 1}}
+                            className={
+                              classNames(
+                                'cp-parameter-name',
+                                {
+                                  [styles.parameterName]: !isSystemParametersSection,
+                                  [styles.systemParameterName]: isSystemParametersSection,
+                                  disabled: nameDisabled,
+                                  'cp-system-parameter-name-input': isSystemParametersSection
+                                }
+                              )
+                            } />
+                        )}
+                      </FormItem>
+                    </div>
+                    <div
+                      className={classNames({
+                        [styles.hiddenItem]: this.state.selectedParameter !== key
+                      })}
+                      style={{display: 'flex', flex: 1, flexWrap: 'nowrap', alignItems: 'flex-start', gap: '5px'}}
+                    >
+                      <span style={{lineHeight: '34px', textWrap: 'nowrap'}}>
+                        Pretty Name:
+                      </span>
+                      <FormItem
+                        className={styles.formItemRow}
+                        style={{flex: 1}}
+                      >
+                        {
+                          this.getSectionFieldDecorator(sectionName)(
+                            `params.${key}.pretty_name`,
+                            {initialValue: prettyName}
+                          )(
+                            <Input
+                              disabled={this.props.readOnly && !this.props.canExecute}
+                              placeholder="Pretty name"
+                              onPressEnter={unselectParameter}
+                              style={{margin: 0, flex: 1}}
+                              className={
+                                classNames(
+                                  'cp-parameter-name',
+                                  {
+                                    [styles.parameterName]: !isSystemParametersSection,
+                                    [styles.systemParameterName]: isSystemParametersSection,
+                                    disabled: nameDisabled,
+                                    'cp-system-parameter-name-input': isSystemParametersSection
+                                  }
+                                )
+                              }
+                            />)
+                        }
+                      </FormItem>
+                    </div>
+                  </div>
+                  <div className={classNames(styles.parameterValue, {
+                    [styles.hiddenItem]: systemParameterValueIsBlocked
+                  })}>
+                    {formItem}
+                    {renderRemoveButton()}
+                  </div>
+                  {parameterHint ? (
+                    <div
+                      style={{lineHeight: '18px'}}
+                      className="cp-text-not-important"
+                    >
+                      {parameterHint}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </FormItem>
           );
         }).filter(parameter => !!parameter);
