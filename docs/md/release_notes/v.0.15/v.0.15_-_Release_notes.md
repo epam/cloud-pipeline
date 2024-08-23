@@ -288,7 +288,7 @@ Two preferences are introduced:
     - This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.
 - If a corresponding pre/post script is not found in the docker image - it will not be executed.
 
-For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#committing-features).
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#prepost-commit-hooks).
 
 ## Restricting manual installation of the nvidia tools
 

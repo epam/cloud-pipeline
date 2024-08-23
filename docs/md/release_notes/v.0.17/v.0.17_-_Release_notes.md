@@ -44,6 +44,7 @@
 - [Cluster run usage](#cluster-run-usage)
 - [Cluster run estimation price](#cluster-run-estimation-price)
 - [Terminal view](#terminal-view)
+- [Container limits](#container-limits-for-commitlaunch-tool-operations)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 - [AWS: switching of regions for launched jobs in case of insufficient capacity](#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity)
@@ -1570,6 +1571,25 @@ Required color schema can be configured in two ways:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_TerminalView_4.png)
 
 For details see [here](../../manual/15_Interactive_services/15.2._Using_Terminal_access.md#terminal-view).
+
+## Container limits for commit/launch tool operations
+
+Docker images can be extremely large.  
+Therefore in the current version, a mechanism to warn/reject users from using of too big images was implemented.
+
+There are new system preferences **`commit.container.size.limits`** and **`launch.tool.size.limits`** to manage that behavior:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ContainerSize_1.png)
+
+Both preferences have the same format and define "**soft**" and "**hard**" limits for a container size in bytes:
+
+- **`commit.container.size.limits`** defines limits of the docker container that are taken into account during the tool commit operation:  
+    - if container size exceeds "soft" limit - user will get warning, but can proceed the commit at their own risk
+    - if the container size exceeds "hard" limit - tool commit operation will be prohibited
+- **`launch.tool.size.limits`** defines limits of the docker container that are taken into account during the tool launch operation:  
+    - if container size exceeds "soft" limit - user will get warning, but can launch the tool at their own risk
+    - if the container size exceeds "hard" limit - tool launch will be prohibited
+
+For more details see sections in [Tool commit](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#container-size-limits) and [Tool launch](../../manual/10_Manage_Tools/10.5._Launch_a_Tool.md#container-size-limits).
 
 ## AWS: seamless authentication
 
