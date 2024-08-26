@@ -39,7 +39,7 @@ import org.springframework.stereotype.Service;
     @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#grantVO.id, #grantVO.aclClass)")
     public AclSecuredEntry setPermissions(PermissionGrantVO grantVO) {
         final AclSecuredEntry result = permissionManager.setPermissions(grantVO);
-        notifyACLChange(grantVO.getId(), grantVO.getAclClass());
+        notifyACLChange(result);
         return result;
     }
 
@@ -51,21 +51,21 @@ import org.springframework.stereotype.Service;
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry deletePermissions(Long id, AclClass aclClass, String user, boolean isPrincipal) {
         final AclSecuredEntry result = permissionManager.deletePermissions(id, aclClass, user, isPrincipal);
-        notifyACLChange(id, aclClass);
+        notifyACLChange(result);
         return result;
     }
 
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry deleteAllPermissions(Long id, AclClass aclClass) {
         final AclSecuredEntry result = permissionManager.deleteAllPermissions(id, aclClass);
-        notifyACLChange(id, aclClass);
+        notifyACLChange(result);
         return result;
     }
 
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry changeOwner(Long id, AclClass aclClass, String userName) {
         final AclSecuredEntry result = permissionManager.changeOwner(id, aclClass, userName);
-        notifyACLChange(id, aclClass);
+        notifyACLChange(result);
         return result;
     }
 
@@ -74,9 +74,9 @@ import org.springframework.stereotype.Service;
         return permissionManager.loadEntityPermission(aclClass, id);
     }
 
-    private void notifyACLChange(final long id, final AclClass aclClass) {
-        if (aclUpdateEventProducer != null) {
-            aclUpdateEventProducer.put(id, aclClass);
+    private void notifyACLChange(final AclSecuredEntry entry) {
+        if (aclUpdateEventProducer != null && entry != null && entry.getEntity() != null) {
+            aclUpdateEventProducer.put(entry.getEntity());
         }
     }
 }
