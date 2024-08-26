@@ -41,6 +41,7 @@ import org.springframework.security.concurrent.DelegatingSecurityContextExecutor
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
@@ -70,6 +71,7 @@ public class AppConfiguration implements SchedulingConfigurer {
             StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "misfireThreshold";
     private static final String QUARTZ_JOB_STORE_DRIVER_DELEGATE_CLASS =
             StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "driverDelegateClass";
+    private static final String APPLICATION_NAME_PREFIX = "Cloud-Pipeline-API-";
 
     @Value("${scheduled.pool.size:5}")
     private int scheduledPoolSize;
@@ -97,6 +99,11 @@ public class AppConfiguration implements SchedulingConfigurer {
 
     @Value("${scheduled.quartz.db.driverDelegateClass:org.quartz.impl.jdbcjobstore.PostgreSQLDelegate}")
     private String quartzDriverDelegateClass;
+
+    @Bean
+    public String applicationId() {
+        return APPLICATION_NAME_PREFIX + UUID.randomUUID();
+    }
 
     @Bean
     public MessageHelper messageHelper() {

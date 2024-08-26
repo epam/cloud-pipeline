@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.vo.EntityPermissionVO;
 import com.epam.pipeline.controller.vo.PermissionGrantVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.security.acl.AclSecuredEntry;
+import com.epam.pipeline.eventsourcing.acl.ACLUpdateEventProducer;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,11 +30,17 @@ import org.springframework.stereotype.Service;
 
 @Service public class AclPermissionApiService {
 
-    @Autowired private GrantPermissionManager permissionManager;
+    @Autowired
+    private GrantPermissionManager permissionManager;
+
+    @Autowired(required = false)
+    private ACLUpdateEventProducer aclUpdateEventProducer;
 
     @PreAuthorize("hasRole('ADMIN') or @grantPermissionManager.ownerPermission(#grantVO.id, #grantVO.aclClass)")
     public AclSecuredEntry setPermissions(PermissionGrantVO grantVO) {
-        return permissionManager.setPermissions(grantVO);
+        final AclSecuredEntry result = permissionManager.setPermissions(grantVO);
+        notifyACLChange(grantVO.getId(), grantVO.getAclClass());
+        return result;
     }
 
     @PreAuthorize("hasRole('ADMIN') or @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
@@ -43,21 +50,33 @@ import org.springframework.stereotype.Service;
 
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry deletePermissions(Long id, AclClass aclClass, String user, boolean isPrincipal) {
-        return permissionManager.deletePermissions(id, aclClass, user, isPrincipal);
+        final AclSecuredEntry result = permissionManager.deletePermissions(id, aclClass, user, isPrincipal);
+        notifyACLChange(id, aclClass);
+        return result;
     }
 
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry deleteAllPermissions(Long id, AclClass aclClass) {
-        return permissionManager.deleteAllPermissions(id, aclClass);
+        final AclSecuredEntry result = permissionManager.deleteAllPermissions(id, aclClass);
+        notifyACLChange(id, aclClass);
+        return result;
     }
 
     @PreAuthorize(ACL_ENTITY_OWNER)
     public AclSecuredEntry changeOwner(Long id, AclClass aclClass, String userName) {
-        return permissionManager.changeOwner(id, aclClass, userName);
+        final AclSecuredEntry result = permissionManager.changeOwner(id, aclClass, userName);
+        notifyACLChange(id, aclClass);
+        return result;
     }
 
     @PreAuthorize("hasRole('ADMIN') or @metadataPermissionManager.metadataPermission(#id, #aclClass, 'READ')")
     public EntityPermissionVO loadEntityPermission(final Long id, final AclClass aclClass) {
         return permissionManager.loadEntityPermission(aclClass, id);
+    }
+
+    private void notifyACLChange(final long id, final AclClass aclClass) {
+        if (aclUpdateEventProducer != null) {
+            aclUpdateEventProducer.put(id, aclClass);
+        }
     }
 }
