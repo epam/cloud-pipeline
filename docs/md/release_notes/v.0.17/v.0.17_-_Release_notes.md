@@ -36,7 +36,7 @@
 - [NAT gateway](#nat-gateway)
 - [Custom Run capabilities](#custom-run-capabilities)
 - [Storage lifecycle management](#storage-lifecycle-management)
-- [Image history](#image-history)
+- [Image history and generating of Dockerfile](#image-history-and-generating-of-dockerfile)
 - [Environments synchronization via `pipectl`](#environments-synchronization-via-pipectl)
 - [Data access audit](#data-access-audit)
 - [System Jobs](#system-jobs)
@@ -1401,7 +1401,7 @@ _Data restoring_ can be applied to previously archived files. Separate files or 
 
 For more details see [here](../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle.md#restoring).
 
-## Image history
+## Image history and generating of Dockerfile
 
 **Cloud Pipeline** performs scanning of the Docker images on a regular basis. This is used to grab the information on:
 
@@ -1416,6 +1416,11 @@ It can be viewed via the specific tab in the tool version menu - **Image history
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_1.png)
 
 This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.
+
+Besides that you can easily compose a Dockerfile based on the tool image history - using the corresponding button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_2.png)  
+Generated Dockerfile will be downloaded automatically to the local workstation:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ImageHistory_3.png)
 
 For more details see [here](../../manual/10_Manage_Tools/10.7._Tool_version_menu.md#image-history).
 
