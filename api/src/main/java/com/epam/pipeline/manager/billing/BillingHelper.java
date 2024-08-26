@@ -33,6 +33,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -48,10 +49,11 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.NumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
+import org.elasticsearch.search.aggregations.metrics.scripted.ParsedScriptedMetric;
+import org.elasticsearch.search.aggregations.metrics.scripted.ScriptedMetricAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.aggregations.metrics.tophits.TopHitsAggregationBuilder;
-import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCountAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregatorBuilders;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.avg.AvgBucketPipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucketPipelineAggregationBuilder;
@@ -79,6 +81,8 @@ import java.util.stream.Stream;
 @Service
 public class BillingHelper {
 
+    private static final String FIELD_NAME_PARAM = "fieldName";
+
     private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
     private final String billingRunIndicesMonthlyPattern;
@@ -87,7 +91,7 @@ public class BillingHelper {
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
     private final SumBucketPipelineAggregationBuilder storageUsageTotalAggregation;
-    private final ValueCountAggregationBuilder uniqueRunsAggregation;
+    private final ScriptedMetricAggregationBuilder uniqueRunsAggregation;
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
 
@@ -110,8 +114,33 @@ public class BillingHelper {
                 .field(BillingUtils.COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
                 .field(BillingUtils.RUN_USAGE_FIELD);
-        this.uniqueRunsAggregation = AggregationBuilders.count(BillingUtils.RUN_COUNT_AGG)
-                .field(BillingUtils.RUN_ID_FIELD);
+        this.uniqueRunsAggregation = AggregationBuilders.scriptedMetric(BillingUtils.RUN_COUNT_AGG)
+                .params(Collections.singletonMap(FIELD_NAME_PARAM, BillingUtils.RUN_ID_FIELD))
+                .initScript(new Script("state.list = []"))
+                .mapScript(
+                    new Script(
+                "if(params['_source'][params.fieldName] != null)" +
+                        "  state.list.add(params['_source'][params.fieldName]);"
+                    )
+                )
+                .combineScript(new Script("return state.list;"))
+                .reduceScript(
+                    new Script(
+                "Set uniqueValueSet = new HashSet();" +
+                        "int count = 0;" +
+                        "for(shardList in states) {" +
+                        "  if(shardList != null) {" +
+                        "    for(key in shardList) {" +
+                        "      if(!uniqueValueSet.contains(key)) {" +
+                        "        count += 1;" +
+                        "        uniqueValueSet.add(key); " +
+                        "      }" +
+                        "    }" +
+                        "  }" +
+                        "}" +
+                        "return count;"
+                    )
+                );
         this.storageUsageGroupingAggregation = AggregationBuilders.terms(BillingUtils.STORAGE_GROUPING_AGG)
                 .field(BillingUtils.STORAGE_ID_FIELD)
                 .size(Integer.MAX_VALUE)
@@ -211,7 +240,7 @@ public class BillingHelper {
                 .minDocCount(NumberUtils.LONG_ONE);
     }
 
-    public ValueCountAggregationBuilder aggregateUniqueRunsCount() {
+    public ScriptedMetricAggregationBuilder aggregateUniqueRunsCount() {
         return uniqueRunsAggregation;
     }
 
@@ -373,10 +402,10 @@ public class BillingHelper {
     }
 
     public Long getRunCount(final Aggregations aggregations) {
-        return getSingleValue(aggregations, BillingUtils.RUN_COUNT_AGG)
-                .map(NumericMetricsAggregation.SingleValue::value)
-                .map(Double::longValue)
-                .orElse(NumberUtils.LONG_ZERO);
+        return (long) Optional.ofNullable(aggregations.get(BillingUtils.RUN_COUNT_AGG))
+                .filter(ParsedScriptedMetric.class::isInstance)
+                .map(agg -> (Integer) ((ParsedScriptedMetric) agg).aggregation())
+                .orElse(NumberUtils.INTEGER_ZERO);
     }
 
     public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
