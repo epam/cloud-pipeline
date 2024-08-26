@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,34 +18,26 @@ SGE_MASTER_SETUP_TASK="SGEMasterSetup"
 SGE_MASTER_SETUP_TASK_WORKERS="SGEMasterSetupWorkers"
 CURRENT_PID=$$
 
-add_worker() {
-    QUEUE=$1
-	SLOTS=$2
-
+create_execution_host() {
     # add to the execution host list
     TMPFILE=/tmp/sge.hostname-$HOSTNAME
     echo -e "hostname $HOSTNAME\nload_scaling NONE\ncomplex_values NONE\nuser_lists NONE\nxuser_lists NONE\nprojects NONE\nxprojects NONE\nusage_scaling NONE\nreport_variables NONE" > $TMPFILE
     qconf -Ae $TMPFILE
     rm -f $TMPFILE
-
-    # add to the all hosts list
-    qconf -aattr hostgroup hostlist $HOSTNAME @allhosts
-
-    # enable the host for the queue, in case it was disabled and not removed
-    qmod -e $QUEUE@$HOSTNAME
-
-    qconf -as "$HOSTNAME"
-    qconf -ah "$HOSTNAME"
-
-	if [ "$SLOTS" ]; then
-        qconf -aattr queue slots "[$HOSTNAME=$SLOTS]" $QUEUE
-	fi
 }
 
-create_hostlist() {
-        echo -e "group_name @allhosts\nhostlist NONE" > ./grid
-        qconf -Ahgrp ./grid
-        rm -f ./grid
+delete_existing_queues() {
+    _CURRENT_QUEUES=$(qconf -sql)
+    for _Q in $_CURRENT_QUEUES; do
+      qconf -dq "$_Q"
+    done
+}
+
+delete_existing_hostlists() {
+    _CURRENT_HOSTLISTS=$(qconf -shgrpl)
+    for _H in $_CURRENT_HOSTLISTS; do
+      qconf -dhgrp "$_H"
+    done
 }
 
 configure_global() {
@@ -66,6 +58,15 @@ configure_global() {
     sed -i "/execd_params/c\execd_params S_DESCRIPTORS=${_MAX_PROCS_LIMIT},H_DESCRIPTORS=${_MAX_PROCS_LIMIT},S_MAXPROC=${_MAX_NOPEN_LIMIT},H_MAXPROC=${_MAX_NOPEN_LIMIT}" ./global
     sed -i "/shell_start_mode/c\shell_start_mode $_SHELL_START_MODE" ./global
     sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
+    sed -i '/gid_range/c\gid_range 20000-30000' ./global
+
+    if check_cp_cap CP_CAP_SGE_GPU_RSMAP_DEVICES; then
+        mkdir -p "$COMMON_DIR/sge/logs"
+        chown sgeadmin:sgeadmin "$COMMON_DIR/sge/logs"
+        chmod 777 "$COMMON_DIR/sge/logs"
+        sed -i "/prolog/c\prolog sgeadmin@$COMMON_REPO_DIR/shell/sge_prolog" ./global
+        sed -i "/epilog/c\epilog sgeadmin@$COMMON_REPO_DIR/shell/sge_epilog" ./global
+    fi
 
     qconf -Mconf ./global
     rm -f ./global
@@ -113,71 +114,6 @@ EOL
     rm -f ./grid
 }
 
-add_queue() {
-        QUEUE=$1
-
-        # Delete any existing-default queues, before adding a new one
-        _CURRENT_QUEUES=$(qconf -sql)
-        for _Q in $_CURRENT_QUEUES; do 
-            qconf -dq "$_Q"
-        done
-
-        cat > ./grid <<EOL
-        qname                 $QUEUE
-        hostlist              @allhosts
-        seq_no                0
-        load_thresholds       NONE
-        suspend_thresholds    NONE
-        nsuspend              1
-        suspend_interval      00:00:01
-        priority              0
-        min_cpu_interval      00:00:01
-        processors            UNDEFINED
-        qtype                 BATCH INTERACTIVE
-        ckpt_list             NONE
-        pe_list               make
-        rerun                 FALSE
-        slots                 2
-        tmpdir                /tmp
-        shell                 /bin/bash
-        prolog                NONE
-        epilog                NONE
-        shell_start_mode      unix_behavior
-        starter_method        NONE
-        suspend_method        NONE
-        resume_method         NONE
-        terminate_method      NONE
-        notify                00:00:01
-        owner_list            NONE
-        user_lists            NONE
-        xuser_lists           NONE
-        subordinate_list      NONE
-        complex_values        NONE
-        projects              NONE
-        xprojects             NONE
-        calendar              NONE
-        initial_state         default
-        s_rt                  INFINITY
-        h_rt                  INFINITY
-        s_cpu                 INFINITY
-        h_cpu                 INFINITY
-        s_fsize               INFINITY
-        h_fsize               INFINITY
-        s_data                INFINITY
-        h_data                INFINITY
-        s_stack               INFINITY
-        h_stack               INFINITY
-        s_core                INFINITY
-        h_core                INFINITY
-        s_rss                 INFINITY
-        h_rss                 INFINITY
-        s_vmem                INFINITY
-        h_vmem                INFINITY
-EOL
-        qconf -Aq ./grid
-        rm -f ./grid
-}
-
 delete_pe() {
     local pe_all="$1"
 
@@ -193,7 +129,7 @@ delete_pe() {
 
 create_pe_from_file() {
     local pe_spec_file="$1"
-    local pe_queue_name="${2:-$CP_CAP_SGE_QUEUE_NAME}"
+
     if [ -z "$pe_spec_file" ]; then
         echo "PE spec file is not provided"
         return 1
@@ -210,10 +146,9 @@ create_pe_from_file() {
     fi
 
     qconf -Ap "$pe_spec_file"
-    qconf -mattr queue pe_list "$pe_name" "$pe_queue_name"
 }
 
-configure_pe() {
+create_pe() {
     local pe_name="${1:-local}"
     local pe_alloc_rule="${2:-\$pe_slots}"
     local pe_job_is_first_task="${3:-TRUE}"
@@ -222,7 +157,7 @@ configure_pe() {
     if [ -z "$pe_slots" ]; then
         pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
     fi
-    
+
     cat > pe.conf <<EOL
         pe_name            $pe_name
         slots              $pe_slots
@@ -238,7 +173,6 @@ configure_pe() {
         qsort_args         NONE
 EOL
     qconf -Ap pe.conf
-    qconf -mattr queue pe_list "$pe_name" "$CP_CAP_SGE_QUEUE_NAME"
     rm -f pe.conf
 }
 
@@ -326,8 +260,11 @@ pipe_log_info "Installing SGE master" "$SGE_MASTER_SETUP_TASK"
 export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
+export CP_CAP_SGE_HOSTLIST_NAME="${CP_CAP_SGE_HOSTLIST_NAME:-@allhosts}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+export CP_CAP_SGE_PE_SLOTS="${CP_CAP_SGE_PE_SLOTS:-999999}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+export CP_CAP_SGE_PE_MPI_SLOTS="${CP_CAP_SGE_PE_MPI_SLOTS:-999999}"
 export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
@@ -342,9 +279,10 @@ mkdir -p "$CP_CAP_SCRIPTS_DIR"
 echo "export SGE_ROOT=$SGE_ROOT" > $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CELL=$SGE_CELL" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
-echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_SLOTS=$CP_CAP_SGE_PE_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_MPI_SLOTS=$CP_CAP_SGE_PE_MPI_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_WORKER_FREE_CORES=$CP_CAP_SGE_WORKER_FREE_CORES" >> $CP_CAP_SGE_MASTER_ENV_FILE
 cat $CP_CAP_SGE_MASTER_ENV_FILE >> /etc/cp_env.sh
 
@@ -383,7 +321,7 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
         # Install Grid Engine
         # Configure the master hostname for Grid Engine
         CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
-        
+
         # First install SGE, and fail if error occurs
         DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
             gridengine-client="$CP_CAP_SGE_VERSION" \
@@ -402,8 +340,8 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
 
     ## Configure default locale, see https://github.com/rocker-org/rocker/issues/19
     echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen \
-	&& locale-gen en_US.UTF-8 \
-	&& /usr/sbin/update-locale LANG=en_US.UTF-8
+  && locale-gen en_US.UTF-8 \
+  && /usr/sbin/update-locale LANG=en_US.UTF-8
 
     export LC_ALL=en_US.UTF-8
     export LANG=en_US.UTF-8
@@ -463,73 +401,64 @@ qconf -ah "$HOSTNAME"
 
 pipe_log_info "Configure hostlist, global, scheduler, queue" "$SGE_MASTER_SETUP_TASK"
 
-create_hostlist
-check_last_exit_code $? "Hostlist was configured" "Fail to configure hostlist"
-
 configure_global
 check_last_exit_code $? "Global settings were configured" "Failed to configure global settings"
 
 configure_scheduler
 check_last_exit_code $? "Scheduler was configured" "Fail to configure scheduler"
 
-add_queue "$CP_CAP_SGE_QUEUE_NAME"
-check_last_exit_code $? "Queue was configured" "Fail to configure queue"
-
-#add local worker
-
-# If CP_CAP_SGE_MASTER_CORES is set to "0" - we'll not use master as a worker
-if [ "$CP_CAP_SGE_MASTER_CORES" == "0" ]; then
-    pipe_log_info "CP_CAP_SGE_MASTER_CORES is set to 0. Master host was NOT added as a worker" "$SGE_MASTER_SETUP_TASK"
-else
-    # If CP_CAP_SGE_MASTER_CORES is set - then we'll it's value:
-    # - if larger that nproc - use nproc
-    # - if less - use CP_CAP_SGE_MASTER_CORES, e.g. if we'd like to keep some cores free
-    # If CP_CAP_SGE_MASTER_CORES not set - use nproc
-    _MASTER_WORKER_CORES=$(nproc)
-    CP_CAP_SGE_MASTER_CORES="${CP_CAP_SGE_MASTER_CORES:-999999999}"
-    _MASTER_WORKER_CORES=$((_MASTER_WORKER_CORES < CP_CAP_SGE_MASTER_CORES ? _MASTER_WORKER_CORES : CP_CAP_SGE_MASTER_CORES))
-
-    # If a certain number of cores, shall be reserved (outside the SGE): CP_CAP_SGE_WORKER_FREE_CORES can be used
-    # Total number of the worker slots is calculated as (_MASTER_WORKER_CORES - CP_CAP_SGE_WORKER_FREE_CORES). If the result <= 0: _MASTER_WORKER_CORES is used 
-    _MASTER_WORKER_CORES_BKP=$_MASTER_WORKER_CORES
-    CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
-    _MASTER_WORKER_CORES=$(($_MASTER_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
-    (( $_MASTER_WORKER_CORES <= 0 )) && _MASTER_WORKER_CORES=$_MASTER_WORKER_CORES_BKP
-
-    add_worker "$CP_CAP_SGE_QUEUE_NAME" "$_MASTER_WORKER_CORES"
-    check_last_exit_code $? "Master host was added as a worker with $_MASTER_WORKER_CORES slots" "Fail to add master host as a SGE worker"
-
-    if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-        /etc/init.d/gridengine-exec restart
-    elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
-        $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
-    fi
-fi
-
 pipe_log_info "Add $OWNER_NAME as SGE manager and operator" "$SGE_MASTER_SETUP_TASK"
 qconf -am $OWNER_NAME
 qconf -ao $OWNER_NAME
 
-# Configure Parallel Environments and attach to the queue ($CP_CAP_SGE_QUEUE_NAME)
+# Delete any existing-default queues and hostlists, before adding new ones
+delete_existing_queues
+delete_existing_hostlists
+
 # - First delete all default PEs
 delete_pe all
+
 # - Add a "threaded/smp" PE, which schedules all threads to a single machine
-configure_pe "$CP_CAP_SGE_PE_NAME" \
-             "\$pe_slots" \
-             "TRUE"
+create_pe "$CP_CAP_SGE_PE_NAME" \
+          "\$pe_slots" \
+          "TRUE" \
+          "$CP_CAP_SGE_PE_SLOTS"
 # - Add an "mpi" PE, which allows to spread processes across nodes
-configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
-             "\$fill_up" \
-             "FALSE"
+create_pe "$CP_CAP_SGE_PE_MPI_NAME" \
+          "\$fill_up" \
+          "FALSE" \
+          "$CP_CAP_SGE_PE_MPI_SLOTS"
 # - Add any other user-provided PEs
 if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
     pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
-    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
+    for _pe_spec_file in "$CP_CAP_SGE_EXTRA_PE_PATH"/*.spec; do
         pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
         create_pe_from_file "$_pe_spec_file"
     done
 else
     pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
+fi
+
+create_execution_host
+
+"$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/generate_sge_profiles.py"
+
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
+    (
+        # shellcheck source=/dev/null
+        [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
+        sge_setup_queue
+    )
+done
+
+if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
+    /etc/init.d/gridengine-exec restart
+elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
+    $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
+fi
+
+if [ "$CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" ]; then
+    echo "-q $CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" >> "$SGE_ROOT/$SGE_CELL/common/sge_request"
 fi
 
 # Setup any additional SGE consumable resources if available
@@ -557,3 +486,11 @@ else
     done
     pipe_log_success "All execution hosts are connected" "$SGE_MASTER_SETUP_TASK_WORKERS"
 fi
+
+for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*_queue.sh; do
+    (
+        # shellcheck source=/dev/null
+        [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
+        nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/autoscale_grid_engine.py" >"$LOG_DIR/.nohup.autoscaler.sge.$CP_CAP_SGE_QUEUE_NAME.log" 2>&1 &
+    )
+done
