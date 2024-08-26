@@ -62,7 +62,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         aclCache.evictFromCache(
             new ObjectIdentityImpl(
                 event.getData().get(ACL_CLASS_FIELD),
-                event.getData().get(ID_FIELD)
+                Long.valueOf(event.getData().get(ID_FIELD))
             )
         );
     }
