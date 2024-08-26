@@ -57,6 +57,8 @@ spec:
               readOnly: true
             - mountPath: /etc/nginx/external-apps
               name: edge-external-apps
+            - mountPath: /etc/nginx/external-locs
+              name: edge-external-locs
       volumes:
         - name: edge-logs
           hostPath:
@@ -79,5 +81,8 @@ spec:
         - name: edge-external-apps
           hostPath:
             path: /opt/edge/external-apps
+        - name: edge-external-locs
+          hostPath:
+            path: /opt/edge/external-locs
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
