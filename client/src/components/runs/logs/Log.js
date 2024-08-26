@@ -2235,17 +2235,26 @@ class Logs extends localization.LocalizedReactComponent {
     const renderNetworkLimitAlert = () => {
       const {preferences} = this.props;
       const tags = run?.tags || {};
-      const networkLimitTag = tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()];
+      const networkLimitTag = Number(tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()]);
       const suffix = preferences?.systemRunTagDateSuffix || '';
       const networkLimitTagTimestamp = suffix
         ? tags[`${KNOWN_TAG_NAMES.network_limit.toUpperCase()}${suffix}`]
         : undefined;
       if (
-        !networkLimitTag ||
+        networkLimitTag === undefined ||
+        isNaN(networkLimitTag) ||
         !RunTags.shouldDisplayTags(run, this.props.preferences, true)
       ) {
         return null;
       }
+      const convertBytesToMb = (bytes) => {
+        const minimalValue = 0.01;
+        const Mb = bytes / Math.pow(1024, 2);
+        if (Mb > 0 && Mb < minimalValue) {
+          return `< ${minimalValue}`;
+        }
+        return Mb.toFixed(2);
+      };
       return (
         <Row
           type="flex"
@@ -2256,7 +2265,7 @@ class Logs extends localization.LocalizedReactComponent {
           <Icon type="exclamation-circle-o" />
           Network is limited to
           <b>
-            {`${Math.round(networkLimitTag / 1024)} Kb/s`}
+            {`${Math.round(convertBytesToMb(networkLimitTag))} Mb/s`}
           </b>
           {networkLimitTagTimestamp ? (
             <span>
