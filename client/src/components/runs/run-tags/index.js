@@ -24,25 +24,48 @@ import moment from 'moment-timezone';
 import RunTagDatePopover from './run-tag-date-popover';
 
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+
+const KNOWN_TAG_NAMES = {
+  idle: 'idle',
+  pressure: 'pressure',
+  sge_in_use: 'sge_in_use',
+  slurm_in_use: 'slurm_in_use',
+  recovered: 'recovered',
+  node_unavailable: 'node_unavailable',
+  proc_out_of_memory: 'proc_out_of_memory',
+  network_limit: 'network_limit',
+  network_pressure: 'network_pressure'
+};
+
+const KNOWN_TAG_RENDER = {
+  [KNOWN_TAG_NAMES.network_limit]: (name, value) => name
+};
+
 const PREDEFINED_TAGS = [{
-  tag: 'idle',
+  tag: KNOWN_TAG_NAMES.idle,
   color: 'warning'
 }, {
-  tag: 'pressure',
+  tag: KNOWN_TAG_NAMES.pressure,
   color: 'critical'
 }, {
-  tag: 'sge_in_use',
+  tag: KNOWN_TAG_NAMES.sge_in_use,
   color: 'primary'
 }, {
-  tag: 'slurm_in_use',
+  tag: KNOWN_TAG_NAMES.slurm_in_use,
   color: 'primary'
 }, {
-  tag: 'recovered',
+  tag: KNOWN_TAG_NAMES.recovered,
   color: 'critical, hovered'
 }, {
-  tag: 'node_unavailable'
+  tag: KNOWN_TAG_NAMES.node_unavailable
 }, {
-  tag: 'proc_out_of_memory',
+  tag: KNOWN_TAG_NAMES.proc_out_of_memory,
+  color: 'critical'
+}, {
+  tag: KNOWN_TAG_NAMES.network_limit,
+  color: 'critical, accent'
+}, {
+  tag: KNOWN_TAG_NAMES.network_pressure,
   color: 'critical'
 }];
 
@@ -126,8 +149,12 @@ function Tag (
   }
 ) {
   let display = value;
+  const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
   if (`${value}` === 'true') {
     display = tagName;
+  }
+  if (tagRenderFn && typeof tagRenderFn === 'function') {
+    display = tagRenderFn(tagName, value);
   }
   const tagOptions = predefinedTags
     .find(({tag}) => tag.toLowerCase() === tagName.toLowerCase()) || {};
@@ -204,7 +231,8 @@ function RunTagsComponent (
     tagClassName,
     run,
     theme,
-    preferences
+    preferences,
+    excludeTags = []
   }
 ) {
   if (!run) {
@@ -219,12 +247,25 @@ function RunTagsComponent (
     PREDEFINED_TAGS,
     preferences.uiRunsTags || []
   );
+  const timestampTagHasCounterpart = (tagName) => {
+    const suffix = preferences.systemRunTagDateSuffix || '';
+    const [nameWithoutSuffix] = tagName.split(suffix);
+    return suffix &&
+      tagName.endsWith(suffix) &&
+      Object.prototype.hasOwnProperty.call(tags, nameWithoutSuffix);
+  };
   for (let tagName in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tagName) &&
       !skipTag(tagName, tags, preferences) &&
       (!onlyKnown || isKnownTag(tagName, preferences))
     ) {
+      if (
+        timestampTagHasCounterpart(tagName) ||
+        excludeTags.includes(tagName.toLowerCase())
+      ) {
+        continue;
+      }
       const info = getDateInfo(tags, tagName, preferences);
       result.push({
         isKnown: isKnownTag(tagName, preferences),
@@ -319,4 +360,5 @@ RunTags.shouldDisplayTags = function (run, preferences, onlyKnown = false) {
   return false;
 };
 
+export {KNOWN_TAG_NAMES};
 export default RunTags;

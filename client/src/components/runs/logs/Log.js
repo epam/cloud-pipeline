@@ -77,7 +77,7 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
-import RunTags from '../run-tags';
+import RunTags, {KNOWN_TAG_NAMES} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
@@ -615,6 +615,7 @@ class Logs extends localization.LocalizedReactComponent {
             <RunTags
               run={run}
               onlyKnown
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
@@ -822,6 +823,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               location={location}
               overflow={false}
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           )
         });
@@ -2230,7 +2232,43 @@ class Logs extends localization.LocalizedReactComponent {
         />
       );
     }
-
+    const renderNetworkLimitAlert = () => {
+      const {preferences} = this.props;
+      const tags = run?.tags || {};
+      const networkLimitTag = tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()];
+      const suffix = preferences?.systemRunTagDateSuffix || '';
+      const networkLimitTagTimestamp = suffix
+        ? tags[`${KNOWN_TAG_NAMES.network_limit.toUpperCase()}${suffix}`]
+        : undefined;
+      if (
+        !networkLimitTag ||
+        !RunTags.shouldDisplayTags(run, this.props.preferences, true)
+      ) {
+        return null;
+      }
+      return (
+        <Row
+          type="flex"
+          align="middle"
+          className="cp-error"
+          style={{gap: '5px', fontSize: 'larger'}}
+        >
+          <Icon type="exclamation-circle-o" />
+          Network is limited to
+          <b>
+            {`${Math.round(networkLimitTag / 1024)} Kb/s`}
+          </b>
+          {networkLimitTagTimestamp ? (
+            <span>
+              on
+              <b style={{marginLeft: 5}}>
+                {`${displayDate(networkLimitTagTimestamp)}`}
+              </b>
+            </span>
+          ) : null}
+        </Row>
+      );
+    };
     return (
       <Card
         className={
@@ -2253,6 +2291,7 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
+            {renderNetworkLimitAlert()}
             {
               stateReasonMessage && (
                 <Alert
