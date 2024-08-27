@@ -50,7 +50,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
 
     @Override
     public SelenideElement context() {
-        return $$(byXpath("//*[contains(@role, 'dialog')//*[contains(@class, 'ant-confirm')]]")).findBy(visible);
+        return $$(byXpath("//*[contains(@role, 'dialog')]//*[contains(@class, 'ant-confirm')]")).findBy(visible);
     }
 
     @Override
