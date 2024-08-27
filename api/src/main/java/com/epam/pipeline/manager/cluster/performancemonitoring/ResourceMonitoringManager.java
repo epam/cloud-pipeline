@@ -446,25 +446,24 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
 
         private void processHighNetworkConsumingRun(PipelineRun run, int actionTimeout,
                                                     NetworkConsumingRunAction action,
-                                                    List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                                    List<Pair<PipelineRun, Double>> runsToNotify,
                                                     List<PipelineRun> runsToUpdateNotificationTime,
                                                     Double bandwidth, List<PipelineRun> runsToUpdateTags) {
-            if (shouldPerformActionOnNetworkConsumingRun(run, actionTimeout)) {
-                performActionOnNetworkConsumingRun(run, action, bandwidth, pipelinesToNotify,
-                        runsToUpdateNotificationTime);
-                return;
-            }
             if (Objects.isNull(run.getLastNetworkConsumptionNotificationTime())) {
                 run.addTag(NETWORK_CONSUMING_LEVEL_HIGH, TRUE_VALUE_STRING);
                 Optional.ofNullable(getTimestampTag(NETWORK_CONSUMING_LEVEL_HIGH))
                         .ifPresent(tag -> run.addTag(tag, DateUtils.nowUTCStr()));
                 runsToUpdateTags.add(run);
-                run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
-                runsToUpdateNotificationTime.add(run);
+
+                log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY,
+                        run.getPodId(), bandwidth));
+
+                performHighNetworkConsumingNotify(run, bandwidth, runsToNotify, runsToUpdateNotificationTime);
+            } else if (shouldPerformActionOnNetworkConsumingRun(run, actionTimeout)) {
+                performActionOnNetworkConsumingRun(run, action, bandwidth, runsToNotify,
+                        runsToUpdateNotificationTime);
             }
-            pipelinesToNotify.add(new ImmutablePair<>(run, bandwidth));
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY,
-                    run.getPodId(), bandwidth));
+
         }
 
         private void processHighNetworkConsumingRuns(Map<String, PipelineRun> running,
@@ -514,24 +513,27 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private void performActionOnNetworkConsumingRun(final PipelineRun run,
                                                         final NetworkConsumingRunAction action,
                                                         final double bandwidth,
-                                                        final List<Pair<PipelineRun, Double>> pipelinesToNotify,
-                                                        final List<PipelineRun> runsToUpdate) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_IDLE_ACTION, run.getPodId(),
-                    bandwidth, action));
+                                                        final List<Pair<PipelineRun, Double>> runsToNotify,
+                                                        final List<PipelineRun> runsToUpdateNotificationTime) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_RUN_HIGH_NETWORK_CONSUMPTION_ACTION,
+                    run.getPodId(), bandwidth, action.name()));
             switch (action) {
                 case LIMIT_BANDWIDTH:
 //                    TODO
                     break;
+                case NOTIFY:
                 default:
-                    performHighNetworkConsumingNotify(run, bandwidth, pipelinesToNotify);
+                    performHighNetworkConsumingNotify(run, bandwidth, runsToNotify, runsToUpdateNotificationTime);
+                    break;
             }
-            runsToUpdate.add(run);
         }
 
-        private void performHighNetworkConsumingNotify(PipelineRun run, double networkBandwidthLevel,
-                                                       List<Pair<PipelineRun, Double>> pipelinesToNotify) {
+        private void performHighNetworkConsumingNotify(final PipelineRun run, final double networkBandwidthLevel,
+                                                       final List<Pair<PipelineRun, Double>> pipelinesToNotify,
+                                                       final List<PipelineRun> runsToUpdateNotificationTime) {
             run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
             pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
+            runsToUpdateNotificationTime.add(run);
         }
 
         private void performStop(PipelineRun run, double cpuUsageRate) {

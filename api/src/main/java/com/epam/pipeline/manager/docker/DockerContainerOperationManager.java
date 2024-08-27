@@ -508,8 +508,11 @@ public class DockerContainerOperationManager {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
                   ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
+                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
                   ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix)
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
+                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
+                  PipelineRunManager.NETWORK_LIMIT + suffix)
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }
