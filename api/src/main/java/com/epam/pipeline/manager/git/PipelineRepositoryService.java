@@ -267,6 +267,9 @@ public class PipelineRepositoryService {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD) {
+            throw new UnsupportedOperationException("Folder creation is not supported for Bitbucket Cloud repository");
+        }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
@@ -297,6 +300,9 @@ public class PipelineRepositoryService {
                                        final String newFolderName,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD) {
+            throw new UnsupportedOperationException("Folder renaming is not supported for Bitbucket Cloud repository");
+        }
         final String message = StringUtils.isNotBlank(commitMessage)
                 ? commitMessage
                 : String.format("Renaming folder %s to %s", folder, newFolderName);
