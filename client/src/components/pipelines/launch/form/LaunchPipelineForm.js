@@ -3187,6 +3187,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ) {
             nameDisabled = true;
           }
+          const prettyNameEditable = this.state.selectedParameter === key &&
+            !nameDisabled &&
+            this.props.editConfigurationMode &&
+            !(this.props.readOnly && !this.props.canExecute);
           let readOnlyCorrectedValue = readOnly;
           let requiredCorrectedValue = required;
           if (this.state.isRawEditEnabled) {
@@ -3214,6 +3218,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             }
           };
           const renderNamePlaceholder = () => {
+            const [nameError] = this.props.form
+              .getFieldError(`${sectionName}.params.${key}.name`) || [];
             const content = (
               <div
                 className={classNames('ant-form-item-title', {
@@ -3228,6 +3234,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               >
                 <span className="cp-ellipsis-text" style={{flex: '0 1 auto'}}>
                   {prettyName || name || '<parameter name>'}
+                  {nameError ? (
+                    <span
+                      className="cp-ellipsis-text cp-error"
+                      style={{marginLeft: 5}}
+                    >
+                      {`- ${nameError}`}
+                    </span>
+                  ) : null}
                 </span>
                 <Icon
                   type="edit"
@@ -3597,8 +3611,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     </div>
                     <div
                       className={classNames({
-                        [styles.hiddenItem]: this.state.selectedParameter !== key
-                      })}
+                        [styles.hiddenItem]: !prettyNameEditable}
+                      )}
                       style={{
                         display: 'inline-flex',
                         flex: 1,
@@ -3621,7 +3635,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             {initialValue: prettyName}
                           )(
                             <Input
-                              disabled={this.props.readOnly && !this.props.canExecute}
+                              disabled={!prettyNameEditable}
                               placeholder="Pretty name"
                               onPressEnter={unselectParameter}
                               style={{margin: 0, flex: 1}}
