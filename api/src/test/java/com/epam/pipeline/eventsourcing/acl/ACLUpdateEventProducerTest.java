@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.eventsourcing.acl;
 
-import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.pipeline.Folder;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,7 +28,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ACLUpdateEventProducerTest {
@@ -51,16 +51,16 @@ public class ACLUpdateEventProducerTest {
 
     @Test
     public void putShouldAddAllNecessaryInformation() {
-        aclUpdateEventProducer.put(ID, AclClass.FOLDER);
+        aclUpdateEventProducer.put(new Folder(ID));
         Mockito.verify(innerProviderSpy).put(eventCapture.capture());
         final Map<String, String> putValue = eventCapture.getValue();
-        assertEquals(putValue.get(ACLUpdateEventProducer.ACL_CLASS_FIELD), AclClass.FOLDER.name());
+        assertEquals(putValue.get(ACLUpdateEventProducer.ACL_CLASS_FIELD), Folder.class.getCanonicalName());
         assertEquals(putValue.get(ACLUpdateEventProducer.ENTITY_ID_FIELD), String.valueOf(ID));
     }
 
     @Test
     public void putReturnMinusOneIfInnerProducerIsNull() {
         aclUpdateEventProducer.init(null);
-        assertEquals(-1, aclUpdateEventProducer.put(ID, AclClass.FOLDER));
+        assertEquals(-1, aclUpdateEventProducer.put(new Folder(ID)));
     }
 }
