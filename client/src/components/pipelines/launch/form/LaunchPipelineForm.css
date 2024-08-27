@@ -51,6 +51,10 @@
   flex: 1;
 }
 
+.pipeline-name-form-item-row {
+  margin: 0;
+}
+
 .form-item-action {
   text-align: center;
   padding-left: 10px;
@@ -94,8 +98,17 @@
 }
 
 .parameter-name-container.collapsed:not(.disabled):hover {
-  outline: 1px solid #ccc;
-  background-color: #f7f7f7;
+  cursor: text;
+}
+
+.parameter-name-container .parameter-name-edit-icon {
+  margin-left: 5px;
+  font-size: larger;
+  display: none;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover .parameter-name-edit-icon {
+  display: inline-block;
 }
 
 .parameter-name {

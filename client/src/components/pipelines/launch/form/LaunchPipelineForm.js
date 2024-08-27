@@ -3216,31 +3216,40 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const renderNamePlaceholder = () => {
             const content = (
               <div
-                className={classNames({
+                className={classNames('ant-form-item-title', {
                   'cp-text-not-important': !prettyName && !name
                 })}
-                style={{lineHeight: '28px'}}
+                style={{
+                  flex: '0 1 auto',
+                  display: 'flex',
+                  overflow: 'auto',
+                  alignItems: 'center'
+                }}
               >
-                {prettyName || name || '<parameter name>'}
+                <span className="cp-ellipsis-text" style={{flex: '0 1 auto'}}>
+                  {prettyName || name || '<parameter name>'}
+                </span>
+                <Icon
+                  type="edit"
+                  className={styles.parameterNameEditIcon}
+                  style={{flexShrink: 0}}
+                />
               </div>
             );
-            return (
-              <div>
-                {prettyName ? (
-                  <Popover
-                    content={(
-                      <span>
-                        {name}
-                      </span>
-                    )}
-                  >
-                    {content}
-                  </Popover>
-                ) : (
-                  content
-                )}
-              </div>
-            );
+            if (prettyName) {
+              return (
+                <Popover
+                  content={(
+                    <span>
+                      {name}
+                    </span>
+                  )}
+                >
+                  {content}
+                </Popover>
+              );
+            }
+            return content;
           };
           const renderRemoveButton = () => (
             <div className={
@@ -3492,7 +3501,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   width: '50%'
                 }}>
                   <div
-                    className={classNames({
+                    className={classNames('launch-form-pipeline-name-form-item', {
                       [styles.hiddenItem]: systemParameterValueIsBlocked,
                       [styles.parameterNameContainer]: !systemParameterValueIsBlocked,
                       [styles.collapsed]: this.state.selectedParameter !== key,
@@ -3517,7 +3526,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         }
                       });
                     }}
-                    style={{marginRight: 30, borderRadius: '3px'}}
+                    style={{marginRight: 30}}
                   >
                     {this.state.selectedParameter !== key
                       ? renderNamePlaceholder()
@@ -3526,13 +3535,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       className={classNames({
                         [styles.hiddenItem]: this.state.selectedParameter !== key
                       })}
-                      style={{display: 'flex', flex: 1, flexWrap: 'nowrap', alignItems: 'flex-start', gap: '5px'}}
+                      style={{
+                        display: 'flex',
+                        flex: 1,
+                        flexWrap: 'nowrap',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
+                        gap: '5px'
+                      }}
                     >
-                      <span style={{lineHeight: '34px'}}>
+                      <span className="ant-form-item-title">
                         Name:
                       </span>
                       <FormItem
-                        className={styles.formItemRow}
+                        className={classNames(styles.pipelineNameFormItemRow)}
                         required={required && parameterIsVisible}
                         style={{flex: 1}}
                       >
@@ -3564,6 +3580,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             placeholder="Name"
                             onPressEnter={unselectParameter}
                             style={{margin: 0, flex: 1}}
+                            size="small"
                             className={
                               classNames(
                                 'cp-parameter-name',
@@ -3582,13 +3599,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       className={classNames({
                         [styles.hiddenItem]: this.state.selectedParameter !== key
                       })}
-                      style={{display: 'flex', flex: 1, flexWrap: 'nowrap', alignItems: 'flex-start', gap: '5px'}}
+                      style={{
+                        display: 'inline-flex',
+                        flex: 1,
+                        flexWrap: 'nowrap',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
+                        gap: '5px'
+                      }}
                     >
-                      <span style={{lineHeight: '34px', textWrap: 'nowrap'}}>
+                      <span className="ant-form-item-title" style={{textWrap: 'nowrap'}}>
                         Pretty Name:
                       </span>
                       <FormItem
-                        className={styles.formItemRow}
+                        className={classNames(styles.pipelineNameFormItemRow)}
                         style={{flex: 1}}
                       >
                         {
@@ -3600,7 +3624,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                               disabled={this.props.readOnly && !this.props.canExecute}
                               placeholder="Pretty name"
                               onPressEnter={unselectParameter}
-                              style={{margin: 0, flex: 1}}
+                              style={{margin: 0, flex: 1, fontSize: 'small'}}
+                              size="small"
                               className={
                                 classNames(
                                   'cp-parameter-name',
