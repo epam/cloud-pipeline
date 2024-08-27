@@ -77,7 +77,7 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
-import RunTags, {KNOWN_TAG_NAMES} from '../run-tags';
+import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
@@ -2235,26 +2235,17 @@ class Logs extends localization.LocalizedReactComponent {
     const renderNetworkLimitAlert = () => {
       const {preferences} = this.props;
       const tags = run?.tags || {};
-      const networkLimitTag = Number(tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()]);
+      let networkLimitTag = tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()];
       const suffix = preferences?.systemRunTagDateSuffix || '';
       const networkLimitTagTimestamp = suffix
         ? tags[`${KNOWN_TAG_NAMES.network_limit.toUpperCase()}${suffix}`]
         : undefined;
       if (
         networkLimitTag === undefined ||
-        isNaN(networkLimitTag) ||
         !RunTags.shouldDisplayTags(run, this.props.preferences, true)
       ) {
         return null;
       }
-      const convertBytesToMb = (bytes) => {
-        const minimalValue = 0.01;
-        const Mb = bytes / Math.pow(1024, 2);
-        if (Mb > 0 && Mb < minimalValue) {
-          return `< ${minimalValue}`;
-        }
-        return Mb.toFixed(2);
-      };
       return (
         <Row
           type="flex"
@@ -2265,14 +2256,11 @@ class Logs extends localization.LocalizedReactComponent {
           <Icon type="exclamation-circle-o" />
           Network is limited to
           <b>
-            {`${Math.round(convertBytesToMb(networkLimitTag))} Mb/s`}
+            {networkLimitValueRender(networkLimitTag)}
           </b>
           {networkLimitTagTimestamp ? (
             <span>
-              on
-              <b style={{marginLeft: 5}}>
-                {`${displayDate(networkLimitTagTimestamp)}`}
-              </b>
+              {`(on ${displayDate(networkLimitTagTimestamp)})`}
             </span>
           ) : null}
         </Row>

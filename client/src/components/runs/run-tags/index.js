@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import {Link} from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
-import RunTagDatePopover from './run-tag-date-popover';
+import RunTagPopover from './run-tag-popover';
 
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
 
@@ -38,7 +38,31 @@ const KNOWN_TAG_NAMES = {
 };
 
 const KNOWN_TAG_RENDER = {
-  [KNOWN_TAG_NAMES.network_limit]: (name, value) => name
+  [KNOWN_TAG_NAMES.network_limit]: (name) => name
+};
+
+export function networkLimitValueRender (value) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  let str = value;
+  if (typeof str === 'string') {
+    str = str.trim();
+  }
+  const bytes = Number(str);
+  if (Number.isNaN(bytes)) {
+    return `${str}`;
+  }
+  const minimalValue = 0.01;
+  const mb = bytes / Math.pow(1024, 2);
+  if (mb > 0 && mb < minimalValue) {
+    return `< ${minimalValue} Mb/s`;
+  }
+  return `${mb.toFixed(2)} Mb/s`;
+}
+
+const KNOWN_TAG_VALUE_RENDER = {
+  [KNOWN_TAG_NAMES.network_limit]: (name, value) => networkLimitValueRender(value)
 };
 
 const PREDEFINED_TAGS = [{
@@ -119,6 +143,14 @@ const getDateInfo = (tags, tag, preferences) => {
   return undefined;
 };
 
+const getValue = (tags, tag) => {
+  const valueRenderer = KNOWN_TAG_VALUE_RENDER[tag];
+  if (valueRenderer && typeof valueRenderer === 'function') {
+    return valueRenderer(tag, (tags || {})[tag]);
+  }
+  return undefined;
+};
+
 const skipTag = (tag, tags, preferences) => {
   return `${tags[tag]}` === 'false' ||
     /^alias$/i.test(tag) ||
@@ -149,10 +181,10 @@ function Tag (
   }
 ) {
   let display = value;
-  const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
   if (`${value}` === 'true') {
     display = tagName;
   }
+  const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
   if (tagRenderFn && typeof tagRenderFn === 'function') {
     display = tagRenderFn(tagName, value);
   }
@@ -248,11 +280,11 @@ function RunTagsComponent (
     preferences.uiRunsTags || []
   );
   const timestampTagHasCounterpart = (tagName) => {
-    const suffix = preferences.systemRunTagDateSuffix || '';
-    const [nameWithoutSuffix] = tagName.split(suffix);
+    const suffix = preferences.systemRunTagDateSuffix;
     return suffix &&
-      tagName.endsWith(suffix) &&
-      Object.prototype.hasOwnProperty.call(tags, nameWithoutSuffix);
+      suffix.length > 0 &&
+      tagName.toLowerCase().endsWith(suffix.toLowerCase()) &&
+      Object.prototype.hasOwnProperty.call(tags, tagName.slice(0, tagName.length - suffix.length));
   };
   for (let tagName in tags) {
     if (
@@ -267,11 +299,13 @@ function RunTagsComponent (
         continue;
       }
       const info = getDateInfo(tags, tagName, preferences);
+      const value = getValue(tags, tagName);
       result.push({
         isKnown: isKnownTag(tagName, preferences),
         element: (
-          <RunTagDatePopover
+          <RunTagPopover
             date={info}
+            value={value}
             key={tagName}
             tag={tagName}
           >
@@ -283,7 +317,7 @@ function RunTagsComponent (
               theme={theme}
               predefinedTags={predefinedTags}
             />
-          </RunTagDatePopover>
+          </RunTagPopover>
         )
       });
     }
