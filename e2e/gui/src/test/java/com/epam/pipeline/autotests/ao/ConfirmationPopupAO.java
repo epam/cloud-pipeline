@@ -39,8 +39,8 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
     private final SelenideElement title = element.find(className("ant-confirm-title"));
     private boolean messageIsChecked = false;
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(OK, $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]//button[. =  'OK' or . = 'Yes' or . = 'Launch']"))),
-            entry(CANCEL, $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]//button[. =  'Cancel' or . = 'No']"))),
+            entry(OK, context().$x(".//button[. =  'OK' or . = 'Yes' or . = 'Launch']")),
+            entry(CANCEL, context().$x(".//button[. =  'Cancel' or . = 'No']")),
             entry(DELETE, $(byId("remove-button-delete")))
     );
 
@@ -50,7 +50,7 @@ public class ConfirmationPopupAO<PARENT_AO> extends PopupAO<ConfirmationPopupAO<
 
     @Override
     public SelenideElement context() {
-        return $(byXpath("//*[contains(@role, 'dialog') and .//*[contains(@class, 'ant-confirm')]]"));
+        return $$(byXpath("//*[contains(@role, 'dialog')//*[contains(@class, 'ant-confirm')]]")).findBy(visible);
     }
 
     @Override
