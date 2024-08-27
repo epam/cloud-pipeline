@@ -612,7 +612,8 @@ function set_preferences_from_point_in_time_configuration {
     local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
     if [ "$point_in_time_configuration_preference_file" ]; then
         print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
-        local payload=$(jq '[.[] | select(has("value")) | select(.name != ("git.token","cluster.networks.config"))]' $point_in_time_configuration_preference_file)
+        local PREF_NAMES_TO_FILTER_OUT="git.token|cluster.networks.config"
+        local payload=$(jq --arg PREF_NAMES_TO_FILTER_OUT "$PREF_NAMES_TO_FILTER_OUT" '[.[] | select(has("value")) | select( .name | test($PREF_NAMES_TO_FILTER_OUT) | not) ]' $point_in_time_configuration_preference_file)
         call_api "/preferences" "$CP_API_JWT_ADMIN" "$payload"
     fi
 }
@@ -621,12 +622,13 @@ function import_users_from_point_in_time_configuration {
   local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users) 
   if [ "$point_in_time_configuration_users_file" ]; then
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
-      call_api "users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file"
+      call_api "/users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file" "users"
   fi      
 }
 
 function parse_options {
     local services_count=0
+    export CP_SERVICES_ENABLED=
     POSITIONAL=()
     EXPLICIT_ENV_OPTIONS=()
     export CP_DOCKERS_TO_INIT=
@@ -728,7 +730,8 @@ function parse_options {
             print_info "install-config from point-in-time configuration: ${point_in_time_configuration_install_config} will be used."
             print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
             install_config_temp_dir=$(mktemp -d)
-            cp $point_in_time_configuration_install_config $install_config_temp_dir
+            local VARIABLES_TO_FILTER_OUT="CP_API_JWT_ADMIN|GITLAB_IMP_TOKEN|GITLAB_ROOT_TOKEN"
+            cp $point_in_time_configuration_install_config $install_config_temp_dir && sed -i -E "/$VARIABLES_TO_FILTER_OUT/d" "$install_config_temp_dir/install-config"
             CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
         else
             print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
