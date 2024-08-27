@@ -542,7 +542,6 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             run.setLastNetworkConsumptionNotificationTime(DateUtils.nowUTC());
             pipelinesToNotify.add(new ImmutablePair<>(run, networkBandwidthLevel));
             runsToUpdateNotificationTime.add(run);
-
         }
 
         private void performStop(final PipelineRun run,
