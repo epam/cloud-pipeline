@@ -223,6 +223,7 @@ public final class MessageConstants {
     public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
     public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
     public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY = "info.run.high.network.consumption.notify";
+    public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_ACTION = "info.run.high.network.consumption.action";
     public static final String DEBUG_NETWORK_RUN_METRICS_RECEIVED = "debug.network.run.metrics.received";
     public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING = "debug.run.not.network.consuming";
     public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED = "debug.run.network.consuming.disabled";
