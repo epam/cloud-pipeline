@@ -3624,7 +3624,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                               disabled={this.props.readOnly && !this.props.canExecute}
                               placeholder="Pretty name"
                               onPressEnter={unselectParameter}
-                              style={{margin: 0, flex: 1, fontSize: 'small'}}
+                              style={{margin: 0, flex: 1}}
                               size="small"
                               className={
                                 classNames(
