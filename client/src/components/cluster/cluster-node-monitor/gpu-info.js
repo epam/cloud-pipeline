@@ -104,6 +104,9 @@ class GPUInfoTab extends React.Component {
     if (prevProps.nodeName !== nodeName) {
       this.initRanges();
     }
+    if (prevProps.chartsData !== this.props.chartsData) {
+      this.initRanges();
+    }
   }
 
   @computed
