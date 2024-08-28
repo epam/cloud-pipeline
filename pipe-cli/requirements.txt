@@ -33,3 +33,5 @@ treelib==1.5.5
 cryptography==2.9.2
 bcrypt==3.1.7
 psutil==5.7.3
+wsgidav==4.3.0; python_version > '3.0'
+cheroot==8.6.0; python_version > '3.0'

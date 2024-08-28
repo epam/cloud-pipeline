@@ -21,6 +21,7 @@ from numbers import Number
 
 import datetime
 import easywebdav
+import easywebdav.client
 import pytz
 import time
 
@@ -39,6 +40,8 @@ if py_version == '2':
     from urllib import quote, unquote
 else:
     from urllib.parse import urlparse, quote, unquote
+    easywebdav.basestring = str
+    easywebdav.client.basestring = str
 
 
 class PermissionService(object):
@@ -75,8 +78,8 @@ class PermissionService(object):
                 else:
                     logging.error(response_data.get('payload'))
                     return
-            except Exception as e:
-                logging.error(str(e.message))
+            except Exception:
+                logging.error('Failed to set permissions for %s' % path, exc_info=True)
         logging.error('Failed to set permissions for %s in %d attempts' % (path, self._attempts))
 
 
@@ -182,13 +185,19 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
     # 'Wed, 28 Aug 2019 12:18:02 GMT'
     M_DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %Z"
 
-    def __init__(self, webdav_url, bearer):
+    def __init__(self, webdav_url, webdav_cookies=None, webdav_headers=None, webdav_compatibility_mode='apache'):
+        webdav_cookies = webdav_cookies or {}
+        webdav_headers = webdav_headers or {}
         url = urlparse(webdav_url)
         super(WebDavClient, self).__init__(protocol=url.scheme, host=url.hostname, port=url.port,
                                            path=url.path.lstrip('/'), verify_ssl=False)
-        self.session.cookies.set_cookie(cookies.create_cookie(name='bearer', value=bearer))
+        for cookie_key, cookie_value in webdav_cookies.items():
+            self.session.cookies.set_cookie(cookies.create_cookie(name=cookie_key, value=cookie_value))
+        for header_key, header_value in webdav_headers.items():
+            self.session.headers[header_key] = header_value
         self.host_url = url.scheme + '://' + url.netloc
         self.root_path = url.path if url.path.startswith(self.cwd) else self.cwd + url.path
+        self.webdav_compatibility_mode = webdav_compatibility_mode
 
     def is_available(self):
         try:
@@ -251,8 +260,10 @@ class WebDavClient(easywebdav.Client, FileSystemClient):
         end = offset + len(data) - 1
         if end < offset:
             end = offset
-        headers = {'Content-Range': 'bytes %d-%d/*' % (offset, end)}
-        self._send('PUT', remote_path, (200, 201, 204), data=str(data), headers=headers)
+        headers = {}
+        if self.webdav_compatibility_mode == 'apache':
+            headers.update({'Content-Range': 'bytes %d-%d/*' % (offset, end)})
+        self._send('PUT', remote_path, (200, 201, 204), data=bytes(data), headers=headers)
 
     def ls(self, remote_path='.', depth=1):
         headers = {'Depth': str(depth)}

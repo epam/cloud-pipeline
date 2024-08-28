@@ -13,6 +13,22 @@
 # limitations under the License.
 
 import os
+import platform
+
+py_version, _, _ = platform.python_version_tuple()
+
+if py_version == '2':
+    def bytes_to_str(value):
+        return str(value)
+
+    def str_to_bytes(value):
+        return bytearray(value)
+else:
+    def bytes_to_str(value):
+        return str(value, 'utf-8')
+
+    def str_to_bytes(value):
+        return bytearray(value, 'utf-8')
 
 DEFAULT_DELIMITER = '/'
 KB = 1024
