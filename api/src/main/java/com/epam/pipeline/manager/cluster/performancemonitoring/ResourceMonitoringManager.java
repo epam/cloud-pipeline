@@ -120,7 +120,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final double ONE_THOUSANDTH = 0.001;
         private static final long ONE = 1L;
         private static final String WORK_FINISHED_TAG = "WORK_FINISHED";
-        public static final String CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM = "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
+        public static final String CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM =
+                "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
 
         private final PipelineRunManager pipelineRunManager;
         private final RunStatusManager runStatusManager;
