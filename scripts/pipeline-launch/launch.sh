@@ -1067,7 +1067,7 @@ function call_api() {
 function tag_run() {
     local _KEY="$1"
     local _VALUE="$2"
-    call_api "POST" "run/$RUN_ID/tag" '{
+    call_api "POST" "run/$RUN_ID/tag?overwrite=false" '{
         "tags": {
             "'"$_KEY"'": "'"$_VALUE"'"
         }
