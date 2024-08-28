@@ -322,7 +322,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunningPipelineRuns() {
         return addServiceUrls(getJdbcTemplate()
-                .query(loadRunningPipelineRunsQuery, PipelineRunParameters.getExtendedRowMapper()));
+                .query(loadRunningPipelineRunsQuery, PipelineRunParameters.getExtendedRowMapper(true)));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)

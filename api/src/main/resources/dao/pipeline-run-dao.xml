@@ -716,6 +716,7 @@
                       r.compute_price_per_hour,
                       r.disk_price_per_hour,
                       r.state_reason,
+                      r.env_vars,
                       r.non_pause,
                       r.node_real_disk,
                       r.node_cloud_provider,

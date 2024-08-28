@@ -221,8 +221,11 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         }
 
         private void processStuckRuns(final List<PipelineRun> runs) {
+            log.info("Start emergency runs termination cycle.");
             final PipelineRunEmergencyTermAction termAction =
                     preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_ACTION);
+            final Integer defaultRunEmergencyTermDelay = preferenceManager.getPreference(
+                    SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN);
 
             if (termAction.equals(PipelineRunEmergencyTermAction.DISABLED)) {
                 log.info("Emergency run termination disabled. Will not check running runs!");
@@ -232,16 +235,17 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             CollectionUtils.emptyIfNull(runs).stream()
                 .filter(run -> MapUtils.emptyIfNull(run.getTags()).containsKey(WORK_FINISHED_TAG))
                 .forEach(run -> {
-
                     final int emergencyTerminationDelay = Optional.ofNullable(
                         MapUtils.emptyIfNull(run.getEnvVars()).get(CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM)
                     ).map(v -> {
                         try {
                             return Integer.parseInt(v);
                         } catch (NumberFormatException e) {
+                            log.warn("Can't parse CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN: {} for run: {}." +
+                                     " Will use default one!", v, run.getId());
                             return null;
                         }
-                    }).orElse(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN));
+                    }).orElse(defaultRunEmergencyTermDelay);
 
                     try {
                         final LocalDateTime workFinishedTime =
@@ -250,6 +254,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                             log.warn("Run: {} marked as finished on: {} and should be stopped forcefully, action: {}",
                                     run.getId(), workFinishedTime, termAction);
                             performEmergencyTermAction(run, termAction);
+                        } else {
+                            log.debug("Run: {} marked as finished on: {}, waiting period: {} min. Skipping.",
+                                    run.getId(), workFinishedTime, emergencyTerminationDelay);
                         }
                     } catch (DateTimeParseException e) {
                         log.error("Problem to parse date while processing possibly stuck run: {}", run.getId());
