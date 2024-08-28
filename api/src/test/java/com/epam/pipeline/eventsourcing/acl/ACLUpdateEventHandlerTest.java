@@ -37,6 +37,7 @@ import static org.junit.Assert.*;
 public class ACLUpdateEventHandlerTest {
 
     private static final String TEST_VALUE = "test";
+    private static final String ID_TEST_VALUE = "1";
     private static final String OTHER_TEST_VALUE = "test2";
 
     private ACLUpdateEventHandler eventHandler;
@@ -115,7 +116,7 @@ public class ACLUpdateEventHandlerTest {
                 .data(
                         new HashMap<String, String>() {{
                             put(ACLUpdateEventHandler.ACL_CLASS_FIELD, TEST_VALUE);
-                            put(ACLUpdateEventHandler.ID_FIELD, OTHER_TEST_VALUE);
+                            put(ACLUpdateEventHandler.ID_FIELD, ID_TEST_VALUE);
                         }}
                 )
                 .build();
@@ -123,7 +124,7 @@ public class ACLUpdateEventHandlerTest {
         Mockito.verify(aclCache).evictFromCache(eventCapture.capture());
         final ObjectIdentityImpl acl = eventCapture.getValue();
         assertEquals(acl.getType(), TEST_VALUE);
-        assertEquals(acl.getIdentifier(), OTHER_TEST_VALUE);
+        assertEquals(acl.getIdentifier(), Long.valueOf(ID_TEST_VALUE));
     }
 
 }
