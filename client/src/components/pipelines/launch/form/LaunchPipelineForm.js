@@ -1962,6 +1962,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           parameters.keys.push(
             `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`
           );
+          let prettyName;
           let value;
           let resolvedValue;
           let type = 'string';
@@ -1986,6 +1987,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 }
               }
             }
+            prettyName = prevValue && !parameter.pretty_name ? prevValue : parameter.pretty_name;
             value = prevValue && !parameter.value ? prevValue : parameter.value;
             resolvedValue = parameter.resolvedValue;
             type = parameter.type || 'string';
@@ -2022,7 +2024,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             description,
             value,
             resolvedValue,
-            hasResolvedValue: resolvedValue !== undefined && resolvedValue !== value,
+            hasResolvedValue: resolvedValue !== undefined &&
+              resolvedValue !== value,
+            pretty_name: prettyName,
             required: required,
             readOnly: readOnly,
             system: system,
