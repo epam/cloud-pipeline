@@ -601,10 +601,7 @@ function enable_services_from_point_in_time_configuration {
         print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
         while read -r key; do
             enable_service "$key"
-            echo "$key=${!key}"
         done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
-    else  
-       enable_all_services
     fi
 }
 
@@ -730,8 +727,9 @@ function parse_options {
             print_info "install-config from point-in-time configuration: ${point_in_time_configuration_install_config} will be used."
             print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
             install_config_temp_dir=$(mktemp -d)
-            local VARIABLES_TO_FILTER_OUT="CP_API_JWT_ADMIN|GITLAB_IMP_TOKEN|GITLAB_ROOT_TOKEN"
-            cp $point_in_time_configuration_install_config $install_config_temp_dir && sed -i -E "/$VARIABLES_TO_FILTER_OUT/d" "$install_config_temp_dir/install-config"
+            local CONFIG_VARIABLES_TO_FILTER_OUT="CP_API_JWT_ADMIN|GITLAB_IMP_TOKEN|GITLAB_ROOT_TOKEN"
+            cp $point_in_time_configuration_install_config $install_config_temp_dir
+            sed -i -E "/$CONFIG_VARIABLES_TO_FILTER_OUT/d" "$install_config_temp_dir/install-config"
             CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
         else
             print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
