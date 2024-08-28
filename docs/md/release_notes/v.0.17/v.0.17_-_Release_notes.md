@@ -5,7 +5,11 @@
 - [Cloud Data application](#cloud-data-application)
 - [Sending of email notifications enhancements](#sending-of-email-notifications-enhancements)
 - [Allowed price types for a cluster master node](#allowed-price-types-for-a-cluster-master-node)
-- ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
+- [Cluster utilization enhancements](#cluster-utilization-enhancements)
+    - ["Max" data series in the resources Monitoring](#max-data-series-at-the-resource-monitoring-dashboard)
+    - [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
+    - [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
+    - [GPU statistics](#gpu-statistics)
 - [User management enhancements](#user-management-enhancements)
     - [Allowed instance count](#allowed-instance-count)
     - [Export custom user's attributes](#export-custom-users-attributes)
@@ -20,8 +24,6 @@
 - [Updates of "Limit mounts" for object storages](#updates-of-limit-mounts-for-object-storages)
 - [Hot node pools](#hot-node-pools)
 - [FS quotas](#fs-quotas)
-- [Export cluster utilization in Excel format](#export-cluster-utilization-in-excel-format)
-- [Export cluster utilization via `pipe`](#export-cluster-utilization-via-pipe)
 - [Pause/resume runs via `pipe`](#pauseresume-runs-via-pipe)
 - [Home storage for each user](#home-storage-for-each-user)
 - [SSH tunnel to the running compute instance](#ssh-tunnel-to-the-running-compute-instance)
@@ -428,7 +430,9 @@ Specified value for that preference defines which price type(s) will be shown in
 
 **_Note_**: **`cluster.allowed.price.types.master`** preference doesn't apply on the price types for single-node jobs
 
-## "Max" data series at the "Resource Monitoring" dashboard
+## Cluster utilization enhancements
+
+### "Max" data series at the "Resource Monitoring" dashboard
 
 Previously, **Cloud Pipeline** displayed the resources utilization as an average value. This could hide some spikes (which resulted in job failure), when reviewing at a high zoom-level (e.g. several days).
 
@@ -439,6 +443,71 @@ For example:
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResourceMonitoring_1.png)
 
 For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md).
+
+### Export cluster utilization in Excel format
+
+Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
+
+From now, the ability to export these reports in **`XLSX`** format is implemented.  
+Users can choose the format of the report before the download:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
+
+**Excel**-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.  
+Example of the **Excel**-report sheets:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_02.png)  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_03.png)
+
+For more details how to configure **Cluster Node Monitor** reports see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#export-utilization-data).
+
+### Export cluster utilization via `pipe`
+
+Also in the current version, the ability to export **Cluster Node Monitor** reports by `pipe` CLI is introduced.
+
+The command to download the node usage metrics:
+
+``` bash
+pipe cluster monitor [OPTIONS]
+```
+
+The one of the below options should be specified:
+
+- **`-i`** / **`--instance-id`** **{ID}** - allows to specify the cloud instance ID. This option cannot be used in conjunction with the **`--run-id`** option
+- **`-r`** / **`--run-id`** **{RUN\_ID}** - allows to specify the pipeline run ID. This option cannot be used in conjunction with the **`--instance-id`** option
+
+Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
+
+For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
+
+### GPU statistics
+
+From the current version, **Cloud Pipeline** provides monitoring of GPU cards utilization metrics for the GPU instances.  
+GPU statistics monitoring can be found in the usage monitoring of the node:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_01.png)
+
+GPU statistics dashboard includes 3 parts:
+
+- **Global GPU metrics**:
+    - **GPU utilization** - `mean`/`max`/`min` of all average GPU utilization values for the selected node's run time range
+    - **GPU Memory utilization** - `mean`/`max`/`min` of all average GPU cards memory utilization values for the selected node's run time range  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_02.png)
+- **Global chart** - line chart for the following metrics:
+    - **Time GPU Active** - percentage of GPU cards which have GPU utilization more than 0
+    - **GPU Utilization** - `mean`/`max`/`min` GPU utilization (in percents) among all node's GPU cards
+    - **GPU Memory** - `mean`/`max`/`min` GPU memory utilization (in percents) among all node's GPU cards  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_03.png)
+    - When hovering over any point of the chart, a tooltip is shown with details:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_04.png)
+- **Detailed heatmap** - shows **Time GPU Active**, **GPU Utilization** and **GPU Memory** metrics as heatmap at each time point:
+    - heatmap is divided to blocks vertically where each block presents a single metric
+    - in each heatmap block, one GPU card is shown per row
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_GPUmonitoring_05.png)
+
+There are abilities to configure:
+
+- the time range for which metrics shall be calculated and displayed
+- type of metrics aggregation among GPU cards (`mean`/`max`/`min`)
+
+For more details see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#gpu-statistics).
 
 ## User management enhancements
 
@@ -890,40 +959,6 @@ Please note, these restrictions will be applied to "general" users only.
 Admins will not be affected by the restrictions. Even if the storage is in `read-only` state - they can perform _READ_ and _WRITE_ operations.
 
 For more details about FS quotas, their settings and options see [here](../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system.md#fs-quotas).
-
-## Export cluster utilization in Excel format
-
-Previously, users could export **Cluster Node Monitor** reports only in **`CSV`** format.
-
-From now, the ability to export these reports in **`XLSX`** format is implemented.  
-Users can choose the format of the report before the download:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_01.png)
-
-**Excel**-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.  
-Example of the **Excel**-report sheets:  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_02.png)  
-    ![CP_v.0.17_ReleaseNotes](attachments/RN017_ExportMonitorXls_03.png)
-
-For more details how to configure **Cluster Node Monitor** reports see [here](../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes.md#export-utilization-data).
-
-## Export cluster utilization via `pipe`
-
-Also in the current version, the ability to export **Cluster Node Monitor** reports by `pipe` CLI is introduced.
-
-The command to download the node usage metrics:
-
-``` bash
-pipe cluster monitor [OPTIONS]
-```
-
-The one of the below options should be specified:
-
-- **`-i`** / **`--instance-id`** **{ID}** - allows to specify the cloud instance ID. This option cannot be used in conjunction with the **`--run-id`** option
-- **`-r`** / **`--run-id`** **{RUN\_ID}** - allows to specify the pipeline run ID. This option cannot be used in conjunction with the **`--instance-id`** option
-
-Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.
-
-For details and examples see [here](../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI.md#export-cluster-utilization).
 
 ## Pause/resume runs via `pipe`
 
