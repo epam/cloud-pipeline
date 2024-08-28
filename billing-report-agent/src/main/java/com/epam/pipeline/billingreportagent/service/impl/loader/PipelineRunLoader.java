@@ -48,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
@@ -86,9 +87,12 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .map(RunInstance::getCloudRegionId)
                 .distinct()
                 .collect(
-                        HashMap::new,
-                        (map, id) -> map.put(id, apiClient.loadAllInstanceTypesForRegion(id)),
-                        HashMap::putAll);
+                    Collectors.toMap(
+                            Function.identity(),
+                            r -> ListUtils.emptyIfNull(apiClient.loadAllInstanceTypesForRegion(r))
+                    )
+                );
+
         return runs
                 .stream()
                 .map(run -> {
