@@ -121,6 +121,15 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
+  position: relative;
+}
+
+.parameter-icon {
+  position: absolute;
+  left: -27px;
+  font-size: larger;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .system-parameter-name {

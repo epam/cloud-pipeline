@@ -1145,7 +1145,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               visible: parameter.visible,
               validation: parameter.validation,
               no_override: parameter.noOverride,
-              pretty_name: parameter.pretty_name
+              pretty_name: parameter.pretty_name,
+              icon: parameter.icon
             };
           }
         }
@@ -1175,6 +1176,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 : (parameter.value || ''),
               required: `${parameter.required || false}`.toLowerCase() === 'true',
               description: parameter.description,
+              icon: parameter.icon,
               enum: parameter.initialEnumeration,
               visible: parameter.visible,
               validation: parameter.validation
@@ -1395,6 +1397,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               : (parameter.value || ''),
             required: `${parameter.required || false}`.toLowerCase() === 'true',
             description: parameter.description,
+            icon: parameter.icon,
             enum: parameter.initialEnumeration,
             visible: parameter.visible,
             validation: parameter.validation
@@ -1963,6 +1966,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`
           );
           let prettyName;
+          let icon;
           let value;
           let resolvedValue;
           let type = 'string';
@@ -1988,6 +1992,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
             }
             prettyName = prevValue && !parameter.pretty_name ? prevValue : parameter.pretty_name;
+            icon = prevValue && !parameter.icon ? prevValue : parameter.icon;
             value = prevValue && !parameter.value ? prevValue : parameter.value;
             resolvedValue = parameter.resolvedValue;
             type = parameter.type || 'string';
@@ -2027,6 +2032,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             hasResolvedValue: resolvedValue !== undefined &&
               resolvedValue !== value,
             pretty_name: prettyName,
+            icon,
             required: required,
             readOnly: readOnly,
             system: system,
@@ -2093,7 +2099,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderSelectionParameter = (
     sectionName,
-    {key, value, required, readOnly, enumeration, description, validator},
+    {key, value, required, readOnly, enumeration, validator},
     system = false,
     parameters
   ) => {
@@ -3160,6 +3166,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let description = parameter ? parameter.description : undefined;
           let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
           const prettyName = parameter ? parameter.pretty_name : undefined;
+          const icon = parameter ? parameter.icon : undefined;
           let visible = parameter ? parameter.visible : undefined;
           let validation = parameter ? parameter.validation : undefined;
           const validator = validation
@@ -3191,10 +3198,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ) {
             nameDisabled = true;
           }
-          const prettyNameEditable = this.state.selectedParameter === key &&
-            !nameDisabled &&
-            this.props.editConfigurationMode &&
-            !(this.props.readOnly && !this.props.canExecute);
           let readOnlyCorrectedValue = readOnly;
           let requiredCorrectedValue = required;
           if (this.state.isRawEditEnabled) {
@@ -3204,16 +3207,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             requiredCorrectedValue = false;
             visible = true;
           }
+          const prettyNameEditable = !nameDisabled &&
+            this.props.editConfigurationMode &&
+            !(this.props.readOnly && !this.props.canExecute);
+          const prettyNameExpanded = this.state.selectedParameter === key;
           const selectParameter = (e, key) => {
-            if (nameDisabled) {
+            if (nameDisabled && !prettyNameEditable) {
               return;
             }
             this.setState({selectedParameter: key});
           };
           const unselectParameter = () => {
-            if (nameDisabled) {
-              return;
-            }
             this.setState({selectedParameter: undefined});
           };
           const onKeyDown = (e) => {
@@ -3301,6 +3305,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
             </div>
           );
+          const renderParameterIcon = () => (
+            <Icon
+              className={styles.parameterIcon}
+              type={icon}
+            />
+          );
           let formItem;
           switch (type.toLowerCase()) {
             case 'path':
@@ -3314,7 +3324,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   value,
                   required: requiredCorrectedValue,
                   readOnly: readOnlyCorrectedValue,
-                  description,
                   validator
                 },
                 type,
@@ -3330,7 +3339,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   value,
                   required: requiredCorrectedValue,
                   readOnly: readOnlyCorrectedValue,
-                  description,
                   validator
                 },
                 type,
@@ -3346,7 +3354,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   value,
                   required: requiredCorrectedValue,
                   readOnly: readOnlyCorrectedValue,
-                  description,
                   validator
                 }
               );
@@ -3361,7 +3368,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     required: requiredCorrectedValue,
                     readOnly: readOnlyCorrectedValue,
                     enumeration,
-                    description,
                     validator
                   },
                   isSystemParametersSection,
@@ -3375,7 +3381,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     value,
                     required: requiredCorrectedValue,
                     readOnly: readOnlyCorrectedValue,
-                    description,
                     validator
                   },
                   isSystemParametersSection,
@@ -3497,6 +3502,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <FormItem className={styles.hiddenItem}>
                 {
                   this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.icon`,
+                    {initialValue: icon}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.section`,
                     {initialValue: section}
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
@@ -3523,7 +3536,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       [styles.hiddenItem]: systemParameterValueIsBlocked,
                       [styles.parameterNameContainer]: !systemParameterValueIsBlocked,
                       [styles.collapsed]: this.state.selectedParameter !== key,
-                      [styles.disabled]: nameDisabled
+                      [styles.disabled]: nameDisabled && !prettyNameEditable
                     })}
                     tabIndex="0"
                     onFocus={(e) => {
@@ -3594,7 +3607,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                           }
                         )(
                           <Input
-                            disabled={nameDisabled}
+                            disabled={nameDisabled || !prettyNameExpanded}
                             placeholder="Name"
                             onPressEnter={unselectParameter}
                             style={{margin: 0, flex: 1}}
@@ -3615,7 +3628,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     </div>
                     <div
                       className={classNames({
-                        [styles.hiddenItem]: !prettyNameEditable}
+                        [styles.hiddenItem]: !prettyNameExpanded}
                       )}
                       style={{
                         display: 'inline-flex',
@@ -3639,7 +3652,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             {initialValue: prettyName}
                           )(
                             <Input
-                              disabled={!prettyNameEditable}
+                              disabled={!prettyNameEditable || !prettyNameExpanded}
                               placeholder="Pretty name"
                               onPressEnter={unselectParameter}
                               style={{margin: 0, flex: 1}}
@@ -3650,7 +3663,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                                   {
                                     [styles.parameterName]: !isSystemParametersSection,
                                     [styles.systemParameterName]: isSystemParametersSection,
-                                    disabled: nameDisabled,
+                                    disabled: !prettyNameEditable,
                                     'cp-system-parameter-name-input': isSystemParametersSection
                                   }
                                 )
@@ -3665,6 +3678,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   })}>
                     {formItem}
                     {renderRemoveButton()}
+                    {icon && renderParameterIcon()}
                   </div>
                   {parameterHint ? (
                     <div
