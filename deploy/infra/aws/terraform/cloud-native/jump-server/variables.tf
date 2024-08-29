@@ -54,9 +54,9 @@ variable "ami_id" {
   description = "AMI to be used for jump ec2 instance. If empty - eks-optimized will be used."
 }
 
-variable "ami_name_filter" {
-  description = "AMI name to be used as filter in data source to find an AMI id."
-  default     = "amazon-eks-node-1.29-v20240227"
+variable "eks_version" {
+  default     = "1.29"
+  description = "Version of the Elastic Kubernetes server. It will be used to filter the latest AMI for the jump server unless another AMI ID is specified."
 }
 
 variable "iam_role_permissions_boundary_arn" {

@@ -63,9 +63,16 @@ locals {
     sudo mv terraform /usr/local/bin/
     sudo rm terraform_1.5.0_linux_amd64.zip
 
-    curl -LO https://dl.k8s.io/release/v1.29.2/bin/linux/amd64/kubectl
-    sudo install -o root -g root -m 0755 kubectl /usr/bin/kubectl
+    cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+    [kubernetes]
+    name=Kubernetes
+    baseurl=https://pkgs.k8s.io/core:/stable:/v${var.eks_version}/rpm/
+    enabled=1
+    gpgcheck=1
+    gpgkey=https://pkgs.k8s.io/core:/stable:/v${var.eks_version}/rpm/repodata/repomd.xml.key
+    EOF
 
+    sudo yum install -y kubectl
     sudo yum install -y docker
     sudo systemctl enable docker
     sudo systemctl start docker
