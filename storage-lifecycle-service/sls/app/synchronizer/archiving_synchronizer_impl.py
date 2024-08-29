@@ -306,7 +306,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             storage_sheet = wb[storage.name]
         else:
             storage_sheet = wb.create_sheet(storage.name)
-            storage_sheet.append(['Estimated for ', self.config.get_estimate_for_date().strftime('%Y-%m-%d')])
+            storage_sheet.append(['Estimation for date ', self.config.get_estimate_for_date().strftime('%Y-%m-%d')])
             storage_sheet.append(['Storage ID',
                                 'Storage Name',
                                 'Source Tier',
@@ -615,3 +615,4 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         if not date_of_action:
             return False
         return date_utils.is_date_before_now(date_utils.parse_date(date_of_action))
+
