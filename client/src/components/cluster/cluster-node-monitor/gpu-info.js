@@ -221,6 +221,7 @@ class GPUInfoTab extends React.Component {
   };
 
   renderOverallMetrics = () => {
+    const {measure} = this.state;
     const renderMetricsCard = ({title, value, key}) => (
       <div key={key} className={styles.metricsCard}>
         {value}
@@ -239,7 +240,7 @@ class GPUInfoTab extends React.Component {
                 style={{color: '#09ab5a'}}
                 className={classNames(styles.value, 'cp-primary')}
               >
-                {Math.round(gpuUsage?.gpuUtilization?.average) || 0}%
+                {Math.round((gpuUsage?.gpuUtilization || {})[measure]) || 0}%
               </span>)
           },
           {
@@ -250,7 +251,7 @@ class GPUInfoTab extends React.Component {
                 style={{color: '#f04134'}}
                 className={classNames(styles.value, 'cp-warning')}
               >
-                {Math.round(gpuUsage?.gpuMemoryUtilization?.average) || 0}%
+                {Math.round((gpuUsage?.gpuMemoryUtilization || {})[measure]) || 0}%
               </span>)
           }].map(renderMetricsCard)}
       </div>
