@@ -601,10 +601,7 @@ function enable_services_from_point_in_time_configuration {
         print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
         while read -r key; do
             enable_service "$key"
-            echo "$key=${!key}"
         done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
-    else  
-       enable_all_services
     fi
 }
 
@@ -612,30 +609,23 @@ function set_preferences_from_point_in_time_configuration {
     local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
     if [ "$point_in_time_configuration_preference_file" ]; then
         print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
-        local preferences_file_with_values=$(cat "$point_in_time_configuration_preference_file" | jq -c '[.[] | select(has("value"))]')
-        local payload=$(echo "$preferences_file_with_values" | jq -r '.[] | "\(.name) \(.value) \(.visible)"')
-        while IFS= read -r pref_name pref_value pref_visible; do
-            api_set_preference $pref_name $pref_value $pref_visible
-        done <<< "$payload"
+        local PREF_NAMES_TO_FILTER_OUT="git.token|cluster.networks.config"
+        local payload=$(jq --arg PREF_NAMES_TO_FILTER_OUT "$PREF_NAMES_TO_FILTER_OUT" '[.[] | select(has("value")) | select( .name | test($PREF_NAMES_TO_FILTER_OUT) | not) ]' $point_in_time_configuration_preference_file)
+        call_api "/preferences" "$CP_API_JWT_ADMIN" "$payload"
     fi
 }
 
 function import_users_from_point_in_time_configuration {
-  local api_url="https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/users/import"
-  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users)
-  
+  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users) 
   if [ "$point_in_time_configuration_users_file" ]; then
       print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
-      curl -X POST -H "Authorization: Bearer ${$CP_API_JWT_ADMIN}" \
-           -H "Content-Type: multipart/form-data" \
-           -H "Accept: application/json" \
-           -F "file=@$point_in_time_configuration_users_file;type=text/csv" \
-           "${api_url}?createUser=true&createGroup=true"
+      call_api "/users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file" "users"
   fi      
 }
 
 function parse_options {
     local services_count=0
+    export CP_SERVICES_ENABLED=
     POSITIONAL=()
     EXPLICIT_ENV_OPTIONS=()
     export CP_DOCKERS_TO_INIT=
@@ -737,7 +727,9 @@ function parse_options {
             print_info "install-config from point-in-time configuration: ${point_in_time_configuration_install_config} will be used."
             print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
             install_config_temp_dir=$(mktemp -d)
+            local CONFIG_VARIABLES_TO_FILTER_OUT="CP_API_JWT_ADMIN|GITLAB_IMP_TOKEN|GITLAB_ROOT_TOKEN"
             cp $point_in_time_configuration_install_config $install_config_temp_dir
+            sed -i -E "/$CONFIG_VARIABLES_TO_FILTER_OUT/d" "$install_config_temp_dir/install-config"
             CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
         else
             print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
