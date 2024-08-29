@@ -3207,12 +3207,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             requiredCorrectedValue = false;
             visible = true;
           }
-          const prettyNameEditable = !nameDisabled &&
-            this.props.editConfigurationMode &&
-            !(this.props.readOnly && !this.props.canExecute);
           const prettyNameExpanded = this.state.selectedParameter === key;
           const selectParameter = (e, key) => {
-            if (nameDisabled && !prettyNameEditable) {
+            if (nameDisabled) {
               return;
             }
             this.setState({selectedParameter: key});
@@ -3536,7 +3533,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       [styles.hiddenItem]: systemParameterValueIsBlocked,
                       [styles.parameterNameContainer]: !systemParameterValueIsBlocked,
                       [styles.collapsed]: this.state.selectedParameter !== key,
-                      [styles.disabled]: nameDisabled && !prettyNameEditable
+                      [styles.disabled]: nameDisabled
                     })}
                     tabIndex="0"
                     onFocus={(e) => {
@@ -3652,7 +3649,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             {initialValue: prettyName}
                           )(
                             <Input
-                              disabled={!prettyNameEditable || !prettyNameExpanded}
+                              disabled={nameDisabled || !prettyNameExpanded}
                               placeholder="Pretty name"
                               onPressEnter={unselectParameter}
                               style={{margin: 0, flex: 1}}
@@ -3663,7 +3660,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                                   {
                                     [styles.parameterName]: !isSystemParametersSection,
                                     [styles.systemParameterName]: isSystemParametersSection,
-                                    disabled: !prettyNameEditable,
+                                    disabled: nameDisabled,
                                     'cp-system-parameter-name-input': isSystemParametersSection
                                   }
                                 )
