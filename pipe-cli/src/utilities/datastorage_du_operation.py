@@ -14,6 +14,8 @@
 
 import click
 from prettytable import prettytable
+
+from src.utilities.storage.api_listing import ApiStorageListingManager
 from src.utilities.storage.common import StorageOperations
 
 from src.api.entity import Entity
@@ -53,7 +55,11 @@ class DataUsageCommand(object):
 
         return True
 
-    def eagerly_allowed(self):
+    def eagerly_allowed(self, storage):
+        if not storage:
+            return False
+        if storage.type.lower() == 'nfs':
+            return self.depth
         return (self.depth and not self.perform_on_cloud and self.storage_name
                 and self.output_mode in DuOutput.brief_mode())
 
@@ -84,17 +90,11 @@ class DataUsageCommand(object):
 
 
 class DataUsageHelper(object):
-
-    def fetch_data_eagerly(self, du_command):
-        storage = self.fetch_storage(du_command)
+    def fetch_data_eagerly(self, du_command, storage):
         for relative_path in self.__get_storage_summary_with_depth(storage, du_command.relative_path, du_command.depth):
             yield self.__get_storage_usage(storage.path, relative_path)
 
-    def fetch_data(self, du_command):
-        storage = None
-        if du_command.storage_name:
-            storage = self.fetch_storage(du_command)
-
+    def fetch_data(self, du_command, storage):
         result = []
         storage_to_fetch = [storage] if storage else list(DataStorage.list())
         for _storage in storage_to_fetch:
@@ -106,16 +106,6 @@ class DataUsageHelper(object):
                 if path_summary[0] and path_summary[1]:
                     result.append(path_summary)
         return result
-
-    @staticmethod
-    def fetch_storage(du_command):
-        storage = DataStorage.get(du_command.storage_name)
-        if storage is None:
-            raise RuntimeError('Storage "{}" was not found'.format(du_command.storage_name))
-        if storage.type.lower() == 'nfs':
-            if du_command.depth:
-                raise RuntimeError('--depth option is not supported for NFS storages')
-        return storage
 
     def get_storage_summary(self, storage, relative_path, depth):
         if depth:
@@ -167,8 +157,11 @@ class DataUsageHelper(object):
 
     @classmethod
     def __get_storage_summary_with_depth(cls, root_bucket, relative_path, depth):
-        wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
-        manager = wrapper.get_list_manager(show_versions=False)
+        if root_bucket.type.lower() == 'nfs':
+            manager = ApiStorageListingManager(root_bucket)
+        else:
+            wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(root_bucket, relative_path)
+            manager = wrapper.get_list_manager(show_versions=False)
         return manager.get_listing_with_depth(depth, relative_path)
 
     @classmethod
