@@ -30,11 +30,12 @@ data "aws_vpc" "this" {
 }
 
 data "aws_ami" "eks_ami" {
-  owners = ["amazon"]
+  owners      = ["amazon"]
+  most_recent = true
 
   filter {
     name   = "name"
-    values = [var.ami_name_filter]
+    values = ["amazon-eks-node-${var.eks_version}-*"]
   }
 
   filter {
