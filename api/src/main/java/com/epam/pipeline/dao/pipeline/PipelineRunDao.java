@@ -614,8 +614,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private void buildOwnersClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
                                    final List<String> owners) {
-        whereBuilder.append(" lower(r.owner) in (:")
-                .append(PipelineRunParameters.OWNER.name())
+        whereBuilder
+                .append('(')
+                .append(" lower(r.owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
+                .append(" OR lower(r.original_owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
                 .append(')');
         params.addValue(PipelineRunParameters.OWNER.name(),
                 owners.stream().map(String::toLowerCase).collect(Collectors.toList()));
@@ -931,8 +933,11 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
         } else {
             whereBuilder
+                    .append(" (")
                     .append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
-                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name());
+                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(')');
+
         }
     }
 

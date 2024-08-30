@@ -158,7 +158,6 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
-    public static final String ORIGINAL_OWNER_PARAM = "ORIGINAL_OWNER";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -976,8 +975,10 @@ public class PipelineRunManager {
     }
 
     private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
+        final String originalOwnerParam = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
         return Optional.ofNullable(
-                configuration.getParameters().get(ORIGINAL_OWNER_PARAM)
+                configuration.getParameters().get(originalOwnerParam)
                 ).map(PipeConfValueVO::getValue)
                 .orElseGet(() -> {
                     if (parentRun != null && parentRun.getOriginalOwner() != null) {

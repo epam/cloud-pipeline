@@ -39,16 +39,19 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +112,7 @@ public class PipelineRunManagerLaunchTest {
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final String DEFAULT_COMMAND = "sleep";
     private static final String TEST_USER = "user";
+    private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
@@ -414,6 +418,29 @@ public class PipelineRunManagerLaunchTest {
         verify(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
     }
 
+    @Test
+    public void shouldSetOriginalOwnerCorrectly() {
+        doReturn(TEST_USER).when(securityManager).getAuthorizedUser();
+        doReturn(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER.getDefaultValue())
+                .when(preferenceManager).getPreference(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+
+        final PipelineConfiguration configuration = getPipelineConfiguration(
+                IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId()
+        );
+
+        PipelineRun pipelineRun = launchTool(configuration, INSTANCE_TYPE);
+        Assert.assertEquals(pipelineRun.getOriginalOwner(), TEST_USER);
+
+        configuration.setParameters(
+            Collections.singletonMap(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER.getDefaultValue(),
+                new PipeConfValueVO(TEST_USER_2)
+            )
+        );
+        pipelineRun = launchTool(configuration, INSTANCE_TYPE);
+        Assert.assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+    }
+
     private void mock(final InstancePrice price) {
         doReturn(price).when(instanceOfferManager)
                 .getInstanceEstimatedPrice(anyString(), anyInt(), anyBoolean(), anyLong());
@@ -462,8 +489,8 @@ public class PipelineRunManagerLaunchTest {
         return map;
     }
 
-    private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null, null);
+    private PipelineRun launchTool(final PipelineConfiguration configuration, final String instanceType) {
+        return launchPipeline(configuration, null, instanceType, null, null);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType) {
