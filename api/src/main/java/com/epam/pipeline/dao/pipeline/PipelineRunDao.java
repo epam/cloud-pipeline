@@ -922,13 +922,17 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
                                        final StringBuilder whereBuilder) {
         params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
         if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
-            whereBuilder.append(" (r.pipeline_id in (:")
-                    .append(PipelineRunParameters.PIPELINE_ALLOWED.name())
-                    .append(") OR lower(r.owner) = :")
-                    .append(PipelineRunParameters.OWNERSHIP.name()).append(')');
+            whereBuilder
+                    .append(" (")
+                    .append("r.pipeline_id in (:").append(PipelineRunParameters.PIPELINE_ALLOWED.name()).append(")")
+                    .append(" OR lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(')');
             params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
         } else {
-            whereBuilder.append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name());
+            whereBuilder
+                    .append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name());
         }
     }
 
