@@ -158,6 +158,7 @@ public class PipelineRunManager {
 
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
+    public static final String ORIGINAL_OWNER_PARAM = "ORIGINAL_OWNER";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -955,6 +956,8 @@ public class PipelineRunManager {
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
         run.setOwner(authManager.getAuthorizedUser());
+        run.setOriginalOwner(calculateOriginalOwner(configuration, parentRun));
+
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
@@ -970,6 +973,18 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
+        return Optional.ofNullable(
+                configuration.getParameters().get(ORIGINAL_OWNER_PARAM)
+                ).map(PipeConfValueVO::getValue)
+                .orElseGet(() -> {
+                    if (parentRun != null && parentRun.getOriginalOwner() != null) {
+                        return parentRun.getOriginalOwner();
+                    }
+                    return authManager.getAuthorizedUser();
+                });
     }
 
     private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {

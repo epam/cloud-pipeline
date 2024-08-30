@@ -170,6 +170,9 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         if (run.getPipelineId() == null) {
             run.setPipelineName(null);
         }
+        if (run.getOriginalOwner() == null) {
+            run.setOriginalOwner(run.getOwner());
+        }
         getNamedParameterJdbcTemplate().update(createPipelineRunQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
 
@@ -1048,6 +1051,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         ACTUAL_CMD,
         TIMEOUT,
         OWNER,
+        ORIGINAL_OWNER,
         ROLE,
         PIPELINE_ALLOWED,
         OWNERSHIP,
@@ -1115,6 +1119,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
             params.addValue(OWNER.name(), run.getOwner());
+            params.addValue(ORIGINAL_OWNER.name(), run.getOriginalOwner());
             params.addValue(POD_IP.name(), run.getPodIP());
             params.addValue(SSH_PASSWORD.name(), run.getSshPassword());
             params.addValue(CONFIG_NAME.name(), run.getConfigName());
@@ -1217,6 +1222,7 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
             run.setPodId(rs.getString(POD_ID.name()));
             run.setPodIP(rs.getString(POD_IP.name()));
             run.setOwner(rs.getString(OWNER.name()));
+            run.setOriginalOwner(rs.getString(ORIGINAL_OWNER.name()));
             run.setConfigName(rs.getString(CONFIG_NAME.name()));
             run.setNodeCount(rs.getInt(NODE_COUNT.name()));
             run.setExecutionPreferences(JsonMapper.parseData(rs.getString(EXEC_PREFERENCES.name()),
