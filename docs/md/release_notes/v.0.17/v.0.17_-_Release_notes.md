@@ -373,6 +373,35 @@ It could be configured via the corresponding field at the **`IDLE_RUN`** notific
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_06.png)  
 If the _Resend delay_ is specified and the _Action_ for the **_idle_** runs is set as `NOTIFY`, then the **`IDLE_RUN`** notification will being resent every appropriate time interval.
 
+### Notifications for runs with high-consumed network
+
+In **`v0.17`**, new email notification type was added - **`HIGH_CONSUMED_NETWORK_BANDWIDTH`**.  
+This notification is being sent when the pod's network consumption is higher than pre-defined threshold for a long time:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_08.png)
+
+This new notification type has the following configurable parameters:
+
+- **Network bandwidth limit** - the network bandwidth threshold (in bytes/sec)
+- **Network bandwidth measurement period** - the duration in minutes after which the system will check pod's network consuming in case when **Network bandwidth limit** > 0.  
+    If pod's network consuming turns out to be higher than **Network bandwidth limit**:  
+    - email notification **`HIGH_CONSUMED_NETWORK_BANDWIDTH`** will be sent to the user
+    - the run itself will be marked by the ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_09.png) label
+- **Action delay** - the duration in minutes after which an action specified in **Action** field will be performed cyclically, if pod's network consuming is higher than **Network bandwidth limit**
+- **Action** - sets action to perform with the pod, that has the network consuming higher than **Network bandwidth limit**. Currently, possible action only **_NOTIFY_** - it sends the email notification **`HIGH_CONSUMED_NETWORK_BANDWIDTH`**.
+
+For more details on configuring described settings, see section [here](../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md#network-pressure-runs).
+
+Besides, admins are able to restrict network bandwidth for such runs with high network consumption - via special API method `POST /run/{runId}/network/limit?enable=<boolean>&boundary=<int>`.  
+For runs with the restricted network bandwidth:
+
+- at the **Run logs** page, the warning message is shown with the bandwidth threshold limit
+- in run logs, the task `LimitNetworkBandwidth` appears. This task contains logs of the bandwidth limit applying  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_10.png)
+- at the **Active runs** section and **Runs** page, an additional label is displayed for a run:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NotificationsEnhancements_11.png)
+
+For more details on network bandwidth restriction, see section [here](../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications.md#limit-pods-network-bandwidth).
+
 ### Allow to exclude certain node type from the specific notifications
 
 For quite small/cheap nodes, the users may not want to receive the following email notifications for the run:
