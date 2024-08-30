@@ -28,6 +28,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
+import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -94,5 +95,10 @@ public class MappersConfiguration {
     @Bean
     public NodePoolMapper nodePoolMapper() {
         return Mappers.getMapper(NodePoolMapper.class);
+    }
+
+    @Bean
+    public OnlineUsersMapper onlineUsersMapper() {
+        return Mappers.getMapper(OnlineUsersMapper.class);
     }
 }

@@ -23,6 +23,8 @@ import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
+import com.epam.pipeline.manager.user.OnlineUsersService;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -137,6 +139,11 @@ public class TestApplication {
         return messageSource;
     }
 
+    @MockBean
+    public OnlineUsersService onlineUsersService;
+
+    @MockBean
+    public PipelineUserRepository pipelineUserRepository;
 
     @Bean
     public ThreadPoolTaskScheduler taskScheduler() {
