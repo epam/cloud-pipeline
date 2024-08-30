@@ -124,7 +124,6 @@ dependencies {
     compile("org.springframework:spring-jdbc")
     compile group: "org.postgresql", name: "postgresql", version: "42.1.4"
     compile group: "com.mchange", name: "c3p0", version: "0.9.5.2"
-    compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
 
     // Logging
     compile group: "org.slf4j", name: "slf4j-api", version: "1.7.24"
