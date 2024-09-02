@@ -412,6 +412,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   prevParameters = {};
   sectionRefs = {};
+  parametersNavigationWrapperRef;
+  parametersNavigationRef;
+  parametersNavigationIsSticky = false;
+  checkRAF;
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -3728,16 +3732,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           return (
             <div key="parameters" style={{display: 'flex', flexWrap: 'nowrap'}}>
               {sectionNavigationEnabled ? (
-                <div className={styles.parametersNavigation}>
-                  {sections.map(section => (
-                    <a
-                      className={styles.sectionLink}
-                      key={section}
-                      onClick={event => scrollToSection(event, section)}
-                    >
-                      {`${section[0].toUpperCase()}${section.substring(1)}`}
-                    </a>
-                  ))}
+                <div
+                  ref={node => { this.parametersNavigationWrapperRef = node; }}
+                  style={{flexShrink: 0}}
+                >
+                  <div
+                    className={styles.parametersNavigation}
+                    ref={node => { this.parametersNavigationRef = node; }}
+                  >
+                    {sections.map(section => (
+                      <a
+                        className={styles.sectionLink}
+                        key={section}
+                        onClick={event => scrollToSection(event, section)}
+                      >
+                        {`${section[0].toUpperCase()}${section.substring(1)}`}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               ) : null}
               <div style={{flexGrow: 1}}>
@@ -5054,6 +5066,31 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.resetState(keepPipeline);
   };
 
+  initializeParametersNavigationCheck = () => {
+    const padding = 20; // Should be equals to .parametersNavigation.sticky top
+    const check = () => {
+      if (this.parametersNavigationRef && this.parametersNavigationWrapperRef) {
+        const {top} = this.parametersNavigationWrapperRef
+          .getBoundingClientRect();
+        if (top <= padding && !this.parametersNavigationIsSticky) {
+          const {width} = this.parametersNavigationRef
+            .getBoundingClientRect();
+          this.parametersNavigationRef.classList.add('sticky');
+          this.parametersNavigationWrapperRef.style.width = `${width}px`;
+          // this.parametersNavigationRef.style.width = `${width}px`;
+          this.parametersNavigationIsSticky = true;
+        } else if (top > padding && this.parametersNavigationIsSticky) {
+          this.parametersNavigationRef.classList.remove('sticky');
+          this.parametersNavigationWrapperRef.style.width = '';
+          // this.parametersNavigationRef.style.width = '';
+          this.parametersNavigationIsSticky = false;
+        }
+      }
+      this.checkRAF = requestAnimationFrame(check);
+    };
+    this.checkRAF = requestAnimationFrame(check);
+  }
+
   toggleResolvedParameters = () => {
     const {parameters, form} = this.props;
     this.setState(prevState => ({
@@ -6120,6 +6157,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     this.props.onInitialized && this.props.onInitialized(this);
+    this.initializeParametersNavigationCheck();
   }
 
   componentDidUpdate (prevProps, prevState) {

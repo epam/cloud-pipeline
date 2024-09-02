@@ -309,6 +309,11 @@ ul.list {
   padding-top: 20px;
 }
 
+.parameters-navigation:global(.sticky) {
+  position: fixed;
+  top: 20px;
+}
+
 .section-link {
   font-size: larger;
 }
