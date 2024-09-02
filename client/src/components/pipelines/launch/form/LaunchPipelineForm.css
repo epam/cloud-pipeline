@@ -314,6 +314,14 @@ ul.list {
   top: 20px;
 }
 
+.parameter-section-header * {
+  transition: all 1s linear;
+}
+
+.parameter-section-header.highlighted * {
+  transition: all 0s linear;
+}
+
 .section-link {
   font-size: larger;
 }

@@ -358,7 +358,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     useResolvedParameters: false,
     runNameAlias: undefined,
     isRawEditEnabled: false,
-    selectedParameter: undefined
+    selectedParameter: undefined,
+    highlightedParameterSection: undefined
   };
 
   formItemLayout = {
@@ -3726,6 +3727,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             const sectionRef = this.sectionRefs[section];
             if (sectionRef) {
               sectionRef.scrollIntoView({behavior: 'smooth'});
+              this.setState({highlightedParameterSection: section}, () => {
+                setTimeout(() => {
+                  this.setState({highlightedParameterSection: undefined});
+                }, 1000);
+              });
             }
           };
           const sectionNavigationEnabled = sections.length >= 3;
@@ -3755,6 +3761,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               <div style={{flexGrow: 1}}>
                 {sections.length > 1
                   ? sections.map(section => {
+                    const highlighted = this.state.highlightedParameterSection === section;
                     return (
                       <div
                         key={section}
@@ -3768,7 +3775,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                             Object.assign(
                               {marginTop: 20, marginBottom: 20},
                               sectionVisible(section) ? {} : {display: 'none'}
-                            )
+                            ),
+                            highlighted
                           )}
                         {
                           renderParametersGroup(
@@ -5311,17 +5319,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderSeparator = (text, marginInCols, key, style) => {
+  renderSeparator = (text, marginInCols, key, style, highlighted = false) => {
     return (
       <Row key={key} type="flex" style={style || {margin: 0}}>
         <Col span={marginInCols} />
         <Col span={24 - 2 * marginInCols}>
           <table style={{width: '100%'}}>
             <tbody>
-              <tr>
+              <tr className={classNames(styles.parameterSectionHeader, {
+                [styles.highlighted]: highlighted
+              })}>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
@@ -5330,10 +5343,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     {'\u00A0'}
                   </div>
                 </td>
-                <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
+                <td style={{width: 1, whiteSpace: 'nowrap'}}>
+                  <b className={classNames({
+                    'cp-primary': highlighted
+                  })}>
+                    {text}
+                  </b>
+                </td>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
