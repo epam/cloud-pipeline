@@ -5077,12 +5077,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             .getBoundingClientRect();
           this.parametersNavigationRef.classList.add('sticky');
           this.parametersNavigationWrapperRef.style.width = `${width}px`;
-          // this.parametersNavigationRef.style.width = `${width}px`;
           this.parametersNavigationIsSticky = true;
         } else if (top > padding && this.parametersNavigationIsSticky) {
           this.parametersNavigationRef.classList.remove('sticky');
           this.parametersNavigationWrapperRef.style.width = '';
-          // this.parametersNavigationRef.style.width = '';
           this.parametersNavigationIsSticky = false;
         }
       }
