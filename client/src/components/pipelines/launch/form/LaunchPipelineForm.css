@@ -302,3 +302,13 @@
 ul.list {
   list-style: disc inside;
 }
+
+.parameters-navigation {
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.section-link {
+  font-size: larger;
+}

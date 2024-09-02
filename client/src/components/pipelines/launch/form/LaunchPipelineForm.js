@@ -411,6 +411,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   prevParameters = {};
+  sectionRefs = {};
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -3714,44 +3715,77 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
           const sections = sortedKeys
             .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
-          return sections.length > 1
-            ? sections.map(section => {
-              return (
-                <div key={section}>
-                  {
-                    this.renderSeparator(
-                      section.toUpperCase(),
-                      0,
-                      'section',
-                      Object.assign(
-                        {marginTop: 20, marginBottom: 20},
-                        sectionVisible(section) ? {} : {display: 'none'}
-                      )
-                    )}
-                  {
-                    renderParametersGroup(
-                      Object.keys(paramsPerSection[section]),
-                      paramsPerSection[section])
-                  }
+          const initializeSectionRef = (node, section) => {
+            this.sectionRefs[section] = node;
+          };
+          const scrollToSection = (event, section) => {
+            const sectionRef = this.sectionRefs[section];
+            if (sectionRef) {
+              sectionRef.scrollIntoView({behavior: 'smooth'});
+            }
+          };
+          const sectionNavigationEnabled = sections.length >= 3;
+          return (
+            <div key="parameters" style={{display: 'flex', flexWrap: 'nowrap'}}>
+              {sectionNavigationEnabled ? (
+                <div className={styles.parametersNavigation}>
+                  {sections.map(section => (
+                    <a
+                      className={styles.sectionLink}
+                      key={section}
+                      onClick={event => scrollToSection(event, section)}
+                    >
+                      {`${section[0].toUpperCase()}${section.substring(1)}`}
+                    </a>
+                  ))}
                 </div>
-              );
-            })
-            : renderParametersGroup(keys, params);
+              ) : null}
+              <div style={{flexGrow: 1}}>
+                {sections.length > 1
+                  ? sections.map(section => {
+                    return (
+                      <div
+                        key={section}
+                        ref={(node) => initializeSectionRef(node, section)}
+                      >
+                        {
+                          this.renderSeparator(
+                            section.toUpperCase(),
+                            0,
+                            'section',
+                            Object.assign(
+                              {marginTop: 20, marginBottom: 20},
+                              sectionVisible(section) ? {} : {display: 'none'}
+                            )
+                          )}
+                        {
+                          renderParametersGroup(
+                            Object.keys(paramsPerSection[section]),
+                            paramsPerSection[section])
+                        }
+                      </div>
+                    );
+                  })
+                  : renderParametersGroup(keys, params)
+                }
+              </div>
+            </div>
+          );
         }
       }
     };
 
     const currentParameters = this.isFireCloudSelected
-      ? []
+      ? null
       : renderCurrentParameters(isSystemParametersSection);
 
     return [
       renderUseResolvedParameters(),
       this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
-      isSystemParametersSection && currentParameters.length > 0 &&
+      isSystemParametersSection && currentParameters &&
       this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
       !this.isFireCloudSelected ? keysFormItem : undefined,
-      ...currentParameters,
+      currentParameters,
       !this.isFireCloudSelected ? addParameterButtonFn() : undefined
     ];
   };
