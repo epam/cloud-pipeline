@@ -87,7 +87,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 @Slf4j
@@ -156,10 +155,11 @@ public class UserManager implements SecuredEntityManager {
                                final List<String> groups,
                                final Map<String, String> attributes,
                                final Long defaultStorageId) {
-        return Stream.of(create(name, roles, groups, attributes))
+        return Optional.of(create(name, roles, groups, attributes))
                 .map(user -> configureUserDefaultStorage(user, defaultStorageId))
                 .map(this::configureUserDefaultMetadata)
-                .map(this::configureUserPrivateDockerRegistryGroup).findFirst().get();
+                .map(this::configureUserPrivateDockerRegistryGroup)
+                .get();
     }
 
     private PipelineUser configureUserPrivateDockerRegistryGroup(final PipelineUser user) {
