@@ -221,3 +221,32 @@ Environment variables for controlling execution flow:
                                                 # during tools synchronization
             
 ```
+## scrap
+This command allows to scrap existing deployment of the Cloud-Pipeline and store its configuration and settings to the output directory.
+It will scrap: Cloud-Pipeline system-properties, users, settings from kubernetes config-map, list of the docker tools, list of installed services and version of the Cloud-Pipeline. 
+
+```bash
+~/.pipe/pipectl scrap \
+# Pipectl scrap options
+                -sc|--stored-configuration "<list_to_scrap>" \        # Scrap only selected preferences: system_preferences, tools, users.
+                -cpa|--cp-api-address "<https://companymane.com>" \   # URL for Cloud-Pipeline REST API,
+                -nk|--node-ssh-key "<path_to_key>" \                  # SSH key for connecting to the Cloud-Pipeline node. 
+                -nu|--node-user "<username>" \                        # (Optional) Username for SSH connections to the Cloud-Pipeline node.
+                -na|--node-address "<ip-address>"\                    # (Optional) Address (IP or DNS) for SSH to the Cloud-Pipeline node. 
+                -cpt|--cp-api-token "<token>" \                       # JWT token to use for authentication in Cloud-Pipeline.
+                -kn|--kube-namespace "<default>" \                    # (Optional) Namespace name where configmap and services are located.
+                -kc|--kube-configmap "<configmap_name>" \             # (Optional) Name of the kubernetes configmap to save data from.
+                -o|--output-dir "<path_to_directory>" \               # Path to the directory where configuration will be saved.
+                -f|--force \                                          # Write to the directory even if it is not empty.
+                -h|--help \                                           # Print help.
+```
+
+## deploy point-in-time configuration -pc
+This flag deploys Cloud-Pipeline with scrapped previously configuration. By default, it will scan directory for configuration files and restore and configuration that was previously scrapped. 
+
+```bash
+~/.pipe/pipectl install \ 
+                -pc  "<path_to_directory>"      # Path to the directory with point-in-time configuration.
+                -pcm "<list_of_modules>"        # (Optional) List of the settings that will be imported to the new deployment.
+                                                # If not set, all settings from the point-in-time configuration directory will be imported.
+```                                               

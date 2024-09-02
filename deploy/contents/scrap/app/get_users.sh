@@ -23,7 +23,7 @@ get_users() {
     local OUTPUT_FILE="$3"
 
     # Perform curl request, parse HTTP response status code of good then to API POST request
-    get_responce=$(curl -X POST -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" -H "Accept: application/octet-stream" -d '{ 
+    get_responce=$(curl -X POST -k -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" -H "Accept: application/octet-stream" -d '{ 
     "includeAttributes": false,
     "includeDataStorage": false,
     "includeEmail": false,
