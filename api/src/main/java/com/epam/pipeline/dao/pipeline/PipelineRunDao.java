@@ -75,6 +75,7 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@SuppressWarnings("PMD.ConsecutiveLiteralAppends")
 public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
@@ -615,10 +616,10 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
     private void buildOwnersClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
                                    final List<String> owners) {
         whereBuilder
-                .append('(' +
-                        " lower(r.owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')' +
-                        " OR lower(r.original_owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')' +
-                        ')');
+                .append('(')
+                .append(" lower(r.owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
+                .append(" OR lower(r.original_owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
+                .append(')');
         params.addValue(PipelineRunParameters.OWNER.name(),
                 owners.stream().map(String::toLowerCase).collect(Collectors.toList()));
     }
@@ -925,16 +926,16 @@ public class PipelineRunDao extends DryRunJdbcDaoSupport {
         params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
         if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
             whereBuilder
-                    .append(" (" +
-                            "r.pipeline_id in (:").append(PipelineRunParameters.PIPELINE_ALLOWED.name()).append(')' +
-                            " OR lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" (")
+                    .append("r.pipeline_id in (:").append(PipelineRunParameters.PIPELINE_ALLOWED.name()).append(')')
+                    .append(" OR lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(')');
             params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
         } else {
             whereBuilder
-                    .append(" (" +
-                            " lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" (")
+                    .append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
                     .append(')');
 

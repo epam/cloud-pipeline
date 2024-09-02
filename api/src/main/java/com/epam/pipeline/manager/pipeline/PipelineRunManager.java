@@ -981,7 +981,7 @@ public class PipelineRunManager {
                 configuration.getParameters().get(originalOwnerParam)
                 ).map(PipeConfValueVO::getValue)
                 .orElseGet(() -> {
-                    if (parentRun != null && parentRun.getOriginalOwner() != null) {
+                    if (parentRun != null && StringUtils.isNotBlank(parentRun.getOriginalOwner())) {
                         return parentRun.getOriginalOwner();
                     }
                     return authManager.getAuthorizedUser();
