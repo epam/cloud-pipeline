@@ -1260,7 +1260,7 @@ if check_cp_cap "CP_CAP_DCV"; then
 fi
 
 # Get general run information from the API
-export CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
+CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
 export CP_API_POD_IP=$(echo "$CP_RUN_INFO_JSON" | jq -r '.podIP')
 
 echo "------"
