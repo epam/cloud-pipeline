@@ -1060,7 +1060,7 @@ function call_api() {
             --header 'Authorization: Bearer '"$API_TOKEN" \
             --header 'Content-Type: application/json' \
             "$API$_API_METHOD" \
-            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+            2>>"$LOG_DIR/launch.sh.call_api.log"
     fi
 }
 
@@ -1521,6 +1521,10 @@ fi
 if check_cp_cap "CP_CAP_DCV"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
+
+# Get general run information from the API
+export CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
+export CP_API_POD_IP=$(echo "$CP_RUN_INFO_JSON" | jq -r '.podIP')
 
 echo "------"
 echo
