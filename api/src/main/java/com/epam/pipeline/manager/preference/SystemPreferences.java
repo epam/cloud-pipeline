@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
@@ -753,6 +754,13 @@ public class SystemPreferences {
             "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
             new TypeReference<TwoBoundaryLimit>() {}, LAUNCH_GROUP,
             isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}), true);
+
+    public static final IntPreference LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN = new IntPreference(
+            "launch.run.emergency.termination.delay.min", 30, LAUNCH_GROUP, isGreaterThan(0));
+
+    public static final EnumPreference<PipelineRunEmergencyTermAction> LAUNCH_RUN_EMERGENCY_TERM_ACTION =
+            new EnumPreference<>("launch.run.emergency.termination.action",
+                    PipelineRunEmergencyTermAction.DISABLED, LAUNCH_GROUP);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers

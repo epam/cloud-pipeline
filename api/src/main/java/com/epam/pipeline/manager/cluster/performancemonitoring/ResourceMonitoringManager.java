@@ -17,7 +17,7 @@
 package com.epam.pipeline.manager.cluster.performancemonitoring;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,9 +35,12 @@ import java.util.stream.Stream;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.StopServerlessRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.RunStatusManager;
 import com.epam.pipeline.manager.pipeline.StopServerlessRunManager;
@@ -47,6 +50,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -115,6 +119,9 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private static final double PERCENT = 100.0;
         private static final double ONE_THOUSANDTH = 0.001;
         private static final long ONE = 1L;
+        private static final String WORK_FINISHED_TAG = "WORK_FINISHED";
+        public static final String CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM =
+                "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
 
         private final PipelineRunManager pipelineRunManager;
         private final RunStatusManager runStatusManager;
@@ -125,6 +132,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
         private final PreferenceManager preferenceManager;
         private final StopServerlessRunManager stopServerlessRunManager;
         private final InstanceOfferManager instanceOfferManager;
+        private final NodesManager nodesManager;
+
 
         @Autowired
         ResourceMonitoringManagerCore(final PipelineRunManager pipelineRunManager,
@@ -135,7 +144,8 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                                       final PreferenceManager preferenceManager,
                                       final StopServerlessRunManager stopServerlessRunManager,
                                       final InstanceOfferManager instanceOfferManager,
-                                      final RunStatusManager runStatusManager) {
+                                      final RunStatusManager runStatusManager,
+                                      final NodesManager nodesManager) {
             this.pipelineRunManager = pipelineRunManager;
             this.pipelineRunDockerOperationManager = pipelineRunDockerOperationManager;
             this.messageHelper = messageHelper;
@@ -145,6 +155,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             this.stopServerlessRunManager = stopServerlessRunManager;
             this.instanceOfferManager = instanceOfferManager;
             this.runStatusManager = runStatusManager;
+            this.nodesManager = nodesManager;
         }
 
         @Scheduled(cron = "0 0 0 ? * *")
@@ -160,6 +171,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             processIdleRuns(runs);
             processHighNetworkConsumingRuns(runs);
             processOverloadedRuns(runs);
+            processStuckRuns(runs);
             processPausingResumingRuns();
             processServerlessRuns();
             processLongPausedRuns();
@@ -206,6 +218,70 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final List<PipelineRun> runsToUpdateTags = getRunsToUpdatePressuredTags(running, runsToNotify);
             notificationManager.notifyHighResourceConsumingRuns(runsToNotify, NotificationType.HIGH_CONSUMED_RESOURCES);
             pipelineRunManager.updateRunsTags(runsToUpdateTags);
+        }
+
+        private void processStuckRuns(final List<PipelineRun> runs) {
+            log.info("Start emergency runs termination cycle.");
+            final PipelineRunEmergencyTermAction termAction =
+                    preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_ACTION);
+            final Integer defaultRunEmergencyTermDelay = preferenceManager.getPreference(
+                    SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN);
+
+            if (termAction.equals(PipelineRunEmergencyTermAction.DISABLED)) {
+                log.info("Emergency run termination disabled. Will not check running runs!");
+                return;
+            }
+
+            CollectionUtils.emptyIfNull(runs).stream()
+                .filter(run -> MapUtils.emptyIfNull(run.getTags()).containsKey(WORK_FINISHED_TAG))
+                .forEach(run -> {
+                    final int emergencyTerminationDelay = Optional.ofNullable(
+                        MapUtils.emptyIfNull(run.getEnvVars()).get(CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN_PARAM)
+                    ).map(v -> {
+                        try {
+                            return Integer.parseInt(v);
+                        } catch (NumberFormatException e) {
+                            log.warn("Can't parse CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN: {} for run: {}." +
+                                     " Will use default one!", v, run.getId());
+                            return null;
+                        }
+                    }).orElse(defaultRunEmergencyTermDelay);
+
+                    try {
+                        final LocalDateTime workFinishedTime =
+                                DateUtils.strToUTCDate(run.getTags().get(WORK_FINISHED_TAG));
+                        if (workFinishedTime.isBefore(DateUtils.nowUTC().minusMinutes(emergencyTerminationDelay))) {
+                            log.warn("Run: {} marked as finished on: {} and should be stopped forcefully, action: {}",
+                                    run.getId(), workFinishedTime, termAction);
+                            performEmergencyTermAction(run, termAction);
+                        } else {
+                            log.debug("Run: {} marked as finished on: {}, waiting period: {} min. Skipping.",
+                                    run.getId(), workFinishedTime, emergencyTerminationDelay);
+                        }
+                    } catch (DateTimeParseException e) {
+                        log.error("Problem to parse date while processing possibly stuck run: {}", run.getId());
+                    }
+                });
+        }
+
+        private void performEmergencyTermAction(final PipelineRun run,
+                                                final PipelineRunEmergencyTermAction termAction) {
+            switch (termAction) {
+                case STOP:
+                    pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
+                    break;
+                case TERMINATE_NODE:
+                    final String nodeName = Optional.ofNullable(run.getInstance())
+                            .map(RunInstance::getNodeName).orElse(null);
+                    if (nodeName != null) {
+                        nodesManager.terminateNode(nodeName);
+                    } else {
+                        log.error("Can't get node name for run: {}", run.getId());
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
 
         private Map<String, PipelineRun> groupedByNode(final List<PipelineRun> runs) {
@@ -290,7 +366,7 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
             final Map<String, PipelineRun> notProlongedRuns = running.entrySet().stream()
                     .filter(e -> Optional.ofNullable(e.getValue().getProlongedAtTime())
                             .map(timestamp -> DateUtils.nowUTC()
-                                    .isAfter(timestamp.plus(idleTimeout, ChronoUnit.MINUTES)))
+                                    .isAfter(timestamp.plusMinutes(idleTimeout)))
                             .orElse(Boolean.FALSE))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
