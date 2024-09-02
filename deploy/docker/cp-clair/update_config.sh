@@ -1,4 +1,5 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,7 +17,26 @@ config_path=${1:-/config/config.yaml}
 
 export CP_CLAIR_DATABASE_POOL_SIZE=${CP_CLAIR_DATABASE_POOL_SIZE:-5}
 
-ln -s /usr/local/share/ca-certificates/cp-docker-registry/docker-public-cert.pem  /usr/local/share/ca-certificates/docker-public-cert.pem
+# Setup certificates
+ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
+mkdir -p /usr/local/share/ca-certificates/cp-docker-registry
+
+if [ -f "$ca_cert_path" ]; then
+  cp "$ca_cert_path" /usr/local/share/ca-certificates/cp-ca-public-cert.pem
+  cp "$ca_cert_path" /usr/local/share/ca-certificates/cp-docker-registry/cp-ca-public-cert.pem
+else
+  echo "[WARN] CA certificate not found at $ca_cert_path"
+fi
+
+docker_cert_path="$CP_DOCKER_CERT_DIR/docker-public-cert.pem"
+if [ -f "$ca_cert_path" ]; then
+  cp "$docker_cert_path" /usr/local/share/ca-certificates/cp-docker-public-cert.pem
+  cp "$docker_cert_path" /usr/local/share/ca-certificates/cp-docker-registry/cp-docker-public-cert.pem
+else
+  echo "[WARN] Docker registry certificate not found at $docker_cert_path"
+fi
+#
+
 update-ca-certificates
 
 mkdir -p $(dirname $config_path)
