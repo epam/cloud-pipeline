@@ -42,7 +42,7 @@ function call_cp_api() {
     local OUTPUT_FILE="$4"
 
     # Perform curl request, parse HTTP response status code of good then to API GET request
-    get_responce=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
+    get_responce=$(curl -s -k -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/${API_ENDPOINT}" | jq '.payload')
 
     if [ -n "$get_responce" ]; then
        echo "$get_responce" > $OUTPUT_FILE
