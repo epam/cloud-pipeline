@@ -44,7 +44,6 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -429,7 +428,7 @@ public class PipelineRunManagerLaunchTest {
         );
 
         PipelineRun pipelineRun = launchTool(configuration, INSTANCE_TYPE);
-        Assert.assertEquals(pipelineRun.getOriginalOwner(), TEST_USER);
+        assertEquals(pipelineRun.getOriginalOwner(), TEST_USER);
 
         configuration.setParameters(
             Collections.singletonMap(
@@ -438,7 +437,7 @@ public class PipelineRunManagerLaunchTest {
             )
         );
         pipelineRun = launchTool(configuration, INSTANCE_TYPE);
-        Assert.assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
+        assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
     }
 
     private void mock(final InstancePrice price) {
