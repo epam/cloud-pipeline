@@ -257,7 +257,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         Permission permission = permissionFactory.buildFromMask(grantVO.getMask());
         String sidName = grantVO.getUserName().toUpperCase();
         Sid sid = aclService.createOrGetSid(sidName, grantVO.getPrincipal());
@@ -307,7 +307,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         Sid sid = aclService.getSid(user.toUpperCase(), isPrincipal);
         int sidEntryIndex = findSidEntry(acl, sid);
         if (sidEntryIndex != -1) {
@@ -328,7 +328,7 @@ public class GrantPermissionManager {
         Assert.isTrue(!entity.isLocked(),
                 messageHelper.getMessage(MessageConstants.ERROR_ENTITY_IS_LOCKED,
                         entity.getAclClass(), entity.getId()));
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         LOGGER.info("Deleting all permissions. Entity: class={} id={}", aclClass, id);
         acl = deleteAllAces(acl);
         aclService.putInCache(acl);
@@ -345,7 +345,7 @@ public class GrantPermissionManager {
         clearWriteExecutePermissions(entity);
         Permission noWriteExecutePermission = permissionFactory
                 .buildFromMask(AclPermission.NO_WRITE.getMask() | AclPermission.NO_EXECUTE.getMask());
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         GrantedAuthoritySid userRoleSid = new GrantedAuthoritySid(DefaultRoles.ROLE_USER.getName());
         List<AccessControlEntry> aces = acl.getEntries();
         Permission mergedPermission = noWriteExecutePermission;
@@ -370,7 +370,7 @@ public class GrantPermissionManager {
      */
     @Transactional(propagation = Propagation.REQUIRED)
     public void unlockEntity(AbstractSecuredEntity entity) {
-        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity);
+        MutableAcl acl = aclService.getOrCreateObjectIdentity(entity, true);
         GrantedAuthoritySid userRoleSid = new GrantedAuthoritySid(DefaultRoles.ROLE_USER.getName());
         int entryIndex = findSidEntry(acl, userRoleSid);
         if (entryIndex == -1) {
