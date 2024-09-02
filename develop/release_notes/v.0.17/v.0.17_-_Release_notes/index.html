@@ -95,6 +95,8 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#resend-setting-for-idle-runs">"Resend" setting for IDLE runs</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#notifications-for-runs-with-high-consumed-network">Notifications for runs with high-consumed network</a>
+    </li>
     <li class="toctree-l3"><a class="reference internal" href="#allow-to-exclude-certain-node-type-from-the-specific-notifications">Allow to exclude certain node type from the specific notifications</a>
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#push-notifications">Push notifications</a>
@@ -103,7 +105,17 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#allowed-price-types-for-a-cluster-master-node">Allowed price types for a cluster master node</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</a>
+    <li class="toctree-l2"><a class="reference internal" href="#cluster-utilization-enhancements">Cluster utilization enhancements</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#export-cluster-utilization-via-pipe">Export cluster utilization via pipe</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#gpu-statistics">GPU statistics</a>
+    </li>
+        </ul>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#user-management-enhancements">User management enhancements</a>
         <ul>
@@ -148,10 +160,6 @@
     <li class="toctree-l2"><a class="reference internal" href="#hot-node-pools">Hot node pools</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#fs-quotas">FS quotas</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a>
-    </li>
-    <li class="toctree-l2"><a class="reference internal" href="#export-cluster-utilization-via-pipe">Export cluster utilization via pipe</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#pauseresume-runs-via-pipe">Pause/resume runs via pipe</a>
     </li>
@@ -203,7 +211,7 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#storage-lifecycle-management">Storage lifecycle management</a>
     </li>
-    <li class="toctree-l2"><a class="reference internal" href="#image-history">Image history</a>
+    <li class="toctree-l2"><a class="reference internal" href="#image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#environments-synchronization-via-pipectl">Environments synchronization via pipectl</a>
     </li>
@@ -211,11 +219,15 @@
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#system-jobs">System Jobs</a>
     </li>
+    <li class="toctree-l2"><a class="reference internal" href="#completed-runs-archiving">Completed runs archiving</a>
+    </li>
     <li class="toctree-l2"><a class="reference internal" href="#cluster-run-usage">Cluster run usage</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#cluster-run-estimation-price">Cluster run estimation price</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#terminal-view">Terminal view</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#container-limits-for-commitlaunch-tool-operations">Container limits for commit/launch tool operations</a>
     </li>
     <li class="toctree-l2"><a class="reference internal" href="#aws-seamless-authentication">AWS: seamless authentication</a>
     </li>
@@ -402,6 +414,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -576,7 +590,13 @@
 <li><a href="#cloud-data-application">Cloud Data application</a></li>
 <li><a href="#sending-of-email-notifications-enhancements">Sending of email notifications enhancements</a></li>
 <li><a href="#allowed-price-types-for-a-cluster-master-node">Allowed price types for a cluster master node</a></li>
+<li><a href="#cluster-utilization-enhancements">Cluster utilization enhancements</a><ul>
 <li><a href="#max-data-series-at-the-resource-monitoring-dashboard">"Max" data series in the resources Monitoring</a></li>
+<li><a href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a></li>
+<li><a href="#export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></a></li>
+<li><a href="#gpu-statistics">GPU statistics</a></li>
+</ul>
+</li>
 <li><a href="#user-management-enhancements">User management enhancements</a><ul>
 <li><a href="#allowed-instance-count">Allowed instance count</a></li>
 <li><a href="#export-custom-users-attributes">Export custom user's attributes</a></li>
@@ -593,8 +613,6 @@
 <li><a href="#updates-of-limit-mounts-for-object-storages">Updates of "Limit mounts" for object storages</a></li>
 <li><a href="#hot-node-pools">Hot node pools</a></li>
 <li><a href="#fs-quotas">FS quotas</a></li>
-<li><a href="#export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</a></li>
-<li><a href="#export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></a></li>
 <li><a href="#pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></a></li>
 <li><a href="#home-storage-for-each-user">Home storage for each user</a></li>
 <li><a href="#ssh-tunnel-to-the-running-compute-instance">SSH tunnel to the running compute instance</a></li>
@@ -609,13 +627,15 @@
 <li><a href="#nat-gateway">NAT gateway</a></li>
 <li><a href="#custom-run-capabilities">Custom Run capabilities</a></li>
 <li><a href="#storage-lifecycle-management">Storage lifecycle management</a></li>
-<li><a href="#image-history">Image history</a></li>
+<li><a href="#image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</a></li>
 <li><a href="#environments-synchronization-via-pipectl">Environments synchronization via <code>pipectl</code></a></li>
 <li><a href="#data-access-audit">Data access audit</a></li>
 <li><a href="#system-jobs">System Jobs</a></li>
+<li><a href="#completed-runs-archiving">Completed runs archiving</a></li>
 <li><a href="#cluster-run-usage">Cluster run usage</a></li>
 <li><a href="#cluster-run-estimation-price">Cluster run estimation price</a></li>
 <li><a href="#terminal-view">Terminal view</a></li>
+<li><a href="#container-limits-for-commitlaunch-tool-operations">Container limits</a></li>
 <li><a href="#aws-seamless-authentication">AWS: seamless authentication</a></li>
 <li><a href="#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands">AWS: transfer objects between AWS regions</a></li>
 <li><a href="#aws-switching-of-cloud-regions-for-launched-jobs-in-case-of-insufficient-capacity">AWS: switching of regions for launched jobs in case of insufficient capacity</a></li>
@@ -893,6 +913,33 @@ In the current version, the ability to resend this notifications was implemented
 It could be configured via the corresponding field at the <strong><code>IDLE_RUN</code></strong> notification type form:<br />
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_06.png" /><br />
 If the <em>Resend delay</em> is specified and the <em>Action</em> for the <strong><em>idle</em></strong> runs is set as <code>NOTIFY</code>, then the <strong><code>IDLE_RUN</code></strong> notification will being resent every appropriate time interval.</p>
+<h3 id="notifications-for-runs-with-high-consumed-network">Notifications for runs with high-consumed network</h3>
+<p>In <strong><code>v0.17</code></strong>, new email notification type was added - <strong><code>HIGH_CONSUMED_NETWORK_BANDWIDTH</code></strong>.<br />
+This notification is being sent when the pod's network consumption is higher than pre-defined threshold for a long time:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_08.png" /></p>
+<p>This new notification type has the following configurable parameters:</p>
+<ul>
+<li><strong>Network bandwidth limit</strong> - the network bandwidth threshold (in bytes/sec)</li>
+<li><strong>Network bandwidth measurement period</strong> - the duration in minutes after which the system will check pod's network consuming in case when <strong>Network bandwidth limit</strong> &gt; 0.<br />
+    If pod's network consuming turns out to be higher than <strong>Network bandwidth limit</strong>:  <ul>
+<li>email notification <strong><code>HIGH_CONSUMED_NETWORK_BANDWIDTH</code></strong> will be sent to the user</li>
+<li>the run itself will be marked by the <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_09.png" /> label</li>
+</ul>
+</li>
+<li><strong>Action delay</strong> - the duration in minutes after which an action specified in <strong>Action</strong> field will be performed cyclically, if pod's network consuming is higher than <strong>Network bandwidth limit</strong></li>
+<li><strong>Action</strong> - sets action to perform with the pod, that has the network consuming higher than <strong>Network bandwidth limit</strong>. Currently, possible action only <strong><em>NOTIFY</em></strong> - it sends the email notification <strong><code>HIGH_CONSUMED_NETWORK_BANDWIDTH</code></strong>.</li>
+</ul>
+<p>For more details on configuring described settings, see section <a href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/#network-pressure-runs">here</a>.</p>
+<p>Besides, admins are able to restrict network bandwidth for such runs with high network consumption - via special API method <code>POST /run/{runId}/network/limit?enable=&lt;boolean&gt;&amp;boundary=&lt;int&gt;</code>.<br />
+For runs with the restricted network bandwidth:</p>
+<ul>
+<li>at the <strong>Run logs</strong> page, the warning message is shown with the bandwidth threshold limit</li>
+<li>in run logs, the task <code>LimitNetworkBandwidth</code> appears. This task contains logs of the bandwidth limit applying<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_10.png" /></li>
+<li>at the <strong>Active runs</strong> section and <strong>Runs</strong> page, an additional label is displayed for a run:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_NotificationsEnhancements_11.png" /></li>
+</ul>
+<p>For more details on network bandwidth restriction, see section <a href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/#limit-pods-network-bandwidth">here</a>.</p>
 <h3 id="allow-to-exclude-certain-node-type-from-the-specific-notifications">Allow to exclude certain node type from the specific notifications</h3>
 <p>For quite small/cheap nodes, the users may not want to receive the following email notifications for the run:</p>
 <ul>
@@ -934,13 +981,70 @@ To make things easy for the end-users, an optional restriction on the specific p
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ForcedMasterType_2.png" /></li>
 </ul>
 <p><strong><em>Note</em></strong>: <strong><code>cluster.allowed.price.types.master</code></strong> preference doesn't apply on the price types for single-node jobs</p>
-<h2 id="max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</h2>
+<h2 id="cluster-utilization-enhancements">Cluster utilization enhancements</h2>
+<h3 id="max-data-series-at-the-resource-monitoring-dashboard">"Max" data series at the "Resource Monitoring" dashboard</h3>
 <p>Previously, <strong>Cloud Pipeline</strong> displayed the resources utilization as an average value. This could hide some spikes (which resulted in job failure), when reviewing at a high zoom-level (e.g. several days).</p>
 <p>In the current version, to the "CPU Usage" and the "Memory Usage" charts additional data-series ("lines") were added, which are calculated as a <code>max</code> function in each moment.<br />
 Existing lines are kept as well, but were renamed to <code>average</code>.</p>
 <p>For example:<br />
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ResourceMonitoring_1.png" /></p>
 <p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/">here</a>.</p>
+<h3 id="export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</h3>
+<p>Previously, users could export <strong>Cluster Node Monitor</strong> reports only in <strong><code>CSV</code></strong> format.</p>
+<p>From now, the ability to export these reports in <strong><code>XLSX</code></strong> format is implemented.<br />
+Users can choose the format of the report before the download:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_01.png" /></p>
+<p><strong>Excel</strong>-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.<br />
+Example of the <strong>Excel</strong>-report sheets:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_02.png" /><br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_03.png" /></p>
+<p>For more details how to configure <strong>Cluster Node Monitor</strong> reports see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#export-utilization-data">here</a>.</p>
+<h3 id="export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></h3>
+<p>Also in the current version, the ability to export <strong>Cluster Node Monitor</strong> reports by <code>pipe</code> CLI is introduced.</p>
+<p>The command to download the node usage metrics:</p>
+<pre><code class="language-bash">pipe cluster monitor [OPTIONS]
+</code></pre>
+<p>The one of the below options should be specified:</p>
+<ul>
+<li><strong><code>-i</code></strong> / <strong><code>--instance-id</code></strong> <strong>{ID}</strong> - allows to specify the cloud instance ID. This option cannot be used in conjunction with the <strong><code>--run-id</code></strong> option</li>
+<li><strong><code>-r</code></strong> / <strong><code>--run-id</code></strong> <strong>{RUN_ID}</strong> - allows to specify the pipeline run ID. This option cannot be used in conjunction with the <strong><code>--instance-id</code></strong> option</li>
+</ul>
+<p>Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.</p>
+<p>For details and examples see <a href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/#export-cluster-utilization">here</a>.</p>
+<h3 id="gpu-statistics">GPU statistics</h3>
+<p>From the current version, <strong>Cloud Pipeline</strong> provides monitoring of GPU cards utilization metrics for the GPU instances.<br />
+GPU statistics monitoring can be found in the usage monitoring of the node:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_GPUmonitoring_01.png" /></p>
+<p>GPU statistics dashboard includes 3 parts:</p>
+<ul>
+<li><strong>Global GPU metrics</strong>:<ul>
+<li><strong>GPU utilization</strong> - <code>mean</code>/<code>max</code>/<code>min</code> of all average GPU utilization values for the selected node's run time range</li>
+<li><strong>GPU Memory utilization</strong> - <code>mean</code>/<code>max</code>/<code>min</code> of all average GPU cards memory utilization values for the selected node's run time range<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_GPUmonitoring_02.png" /></li>
+</ul>
+</li>
+<li><strong>Global chart</strong> - line chart for the following metrics:<ul>
+<li><strong>Time GPU Active</strong> - percentage of GPU cards which have GPU utilization more than 0</li>
+<li><strong>GPU Utilization</strong> - <code>mean</code>/<code>max</code>/<code>min</code> GPU utilization (in percents) among all node's GPU cards</li>
+<li><strong>GPU Memory</strong> - <code>mean</code>/<code>max</code>/<code>min</code> GPU memory utilization (in percents) among all node's GPU cards<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_GPUmonitoring_03.png" /></li>
+<li>When hovering over any point of the chart, a tooltip is shown with details:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_GPUmonitoring_04.png" /></li>
+</ul>
+</li>
+<li><strong>Detailed heatmap</strong> - shows <strong>Time GPU Active</strong>, <strong>GPU Utilization</strong> and <strong>GPU Memory</strong> metrics as heatmap at each time point:<ul>
+<li>heatmap is divided to blocks vertically where each block presents a single metric</li>
+<li>in each heatmap block, one GPU card is shown per row
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_GPUmonitoring_05.png" /></li>
+</ul>
+</li>
+</ul>
+<p>There are abilities to configure:</p>
+<ul>
+<li>the time range for which metrics shall be calculated and displayed</li>
+<li>type of metrics aggregation among GPU cards (<code>mean</code>/<code>max</code>/<code>min</code>)</li>
+</ul>
+<p>For more details see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#gpu-statistics">here</a>.</p>
 <h2 id="user-management-enhancements">User management enhancements</h2>
 <h3 id="allowed-instance-count">Allowed instance count</h3>
 <p>Sometimes users' scripts may spawn hundreds of machines without a real need.<br />
@@ -1323,28 +1427,6 @@ On exceeding such quota(s), different actions can be applied - e.g., just user n
 <p>Please note, these restrictions will be applied to "general" users only.<br />
 Admins will not be affected by the restrictions. Even if the storage is in <code>read-only</code> state - they can perform <em>READ</em> and <em>WRITE</em> operations.</p>
 <p>For more details about FS quotas, their settings and options see <a href="../../../manual/08_Manage_Data_Storage/8.7._Create_shared_file_system/#fs-quotas">here</a>.</p>
-<h2 id="export-cluster-utilization-in-excel-format">Export cluster utilization in Excel format</h2>
-<p>Previously, users could export <strong>Cluster Node Monitor</strong> reports only in <strong><code>CSV</code></strong> format.</p>
-<p>From now, the ability to export these reports in <strong><code>XLSX</code></strong> format is implemented.<br />
-Users can choose the format of the report before the download:<br />
-<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_01.png" /></p>
-<p><strong>Excel</strong>-reports contain not only raw monitoring data but the graphical info (diagrams) too as users can see on the GUI.<br />
-Example of the <strong>Excel</strong>-report sheets:<br />
-<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_02.png" /><br />
-<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ExportMonitorXls_03.png" /></p>
-<p>For more details how to configure <strong>Cluster Node Monitor</strong> reports see <a href="../../../manual/09_Manage_Cluster_nodes/9._Manage_Cluster_nodes/#export-utilization-data">here</a>.</p>
-<h2 id="export-cluster-utilization-via-pipe">Export cluster utilization via <code>pipe</code></h2>
-<p>Also in the current version, the ability to export <strong>Cluster Node Monitor</strong> reports by <code>pipe</code> CLI is introduced.</p>
-<p>The command to download the node usage metrics:</p>
-<pre><code class="language-bash">pipe cluster monitor [OPTIONS]
-</code></pre>
-<p>The one of the below options should be specified:</p>
-<ul>
-<li><strong><code>-i</code></strong> / <strong><code>--instance-id</code></strong> <strong>{ID}</strong> - allows to specify the cloud instance ID. This option cannot be used in conjunction with the <strong><code>--run-id</code></strong> option</li>
-<li><strong><code>-r</code></strong> / <strong><code>--run-id</code></strong> <strong>{RUN_ID}</strong> - allows to specify the pipeline run ID. This option cannot be used in conjunction with the <strong><code>--instance-id</code></strong> option</li>
-</ul>
-<p>Using non-required options, user can specify desired format of the exported file, statistics intervals, report period, etc.</p>
-<p>For details and examples see <a href="../../../manual/14_CLI/14.6._View_cluster_nodes_via_CLI/#export-cluster-utilization">here</a>.</p>
 <h2 id="pauseresume-runs-via-pipe">Pause/resume runs via <code>pipe</code></h2>
 <p>Previously, users could automate the pause and resume operation for the pipeline execution only via the API calls.<br />
 In the current version, <code>pipe pause</code> and <code>pipe resume</code> operations are exposed to the CLI.</p>
@@ -1727,7 +1809,7 @@ For the new one, an additional tab was included to the storage settings - <stron
 <li>once the restore period is over, files will be automatically transferred to the archive where they were before</li>
 </ul>
 <p>For more details see <a href="../../../manual/08_Manage_Data_Storage/8.10._Storage_lifecycle/#restoring">here</a>.</p>
-<h2 id="image-history">Image history</h2>
+<h2 id="image-history-and-generating-of-dockerfile">Image history and generating of Dockerfile</h2>
 <p><strong>Cloud Pipeline</strong> performs scanning of the Docker images on a regular basis. This is used to grab the information on:</p>
 <ul>
 <li>Available software packages</li>
@@ -1739,6 +1821,10 @@ But this list of the software packages may not show the full list of the applica
 It can be viewed via the specific tab in the tool version menu - <strong>Image history</strong>:<br />
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImageHistory_1.png" /></p>
 <p>This allows to get information on the exact commands and settings, which were used to create an image and even reproduce it from scratch.</p>
+<p>Besides that you can easily compose a Dockerfile based on the tool image history - using the corresponding button:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImageHistory_2.png" /><br />
+Generated Dockerfile will be downloaded automatically to the local workstation:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ImageHistory_3.png" /></p>
 <p>For more details see <a href="../../../manual/10_Manage_Tools/10.7._Tool_version_menu/#image-history">here</a>.</p>
 <h2 id="environments-synchronization-via-pipectl">Environments synchronization via <code>pipectl</code></h2>
 <p>In some cases, admins need to synchronize two different environments of the Cloud Pipeline.<br />
@@ -1801,6 +1887,25 @@ System jobs solution uses the existing Cloud-Pipeline infrastructure, to reduce 
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_SystemJobs_8.png" /></li>
 </ol>
 <p>For more details see <a href="../../../manual/12_Manage_Settings/12.15._System_jobs/">here</a>.</p>
+<h2 id="completed-runs-archiving">Completed runs archiving</h2>
+<p>Currently, <strong>Cloud Pipeline</strong> does not allow users to remove runs.<br />
+But for large deployments, a huge runs count can affect queries performance.<br />
+To avoid such cases, in <strong><code>v0.17</code></strong>, a mechanism of the runs archiving was implemented.<br />
+This mechanism allows to place records of the completed runs and their statuses into special DB tables for archived runs.  </p>
+<p>Details:</p>
+<ul>
+<li>archived runs are not available via the platform GUI</li>
+<li>archiving can be configured for specific users and/or user groups</li>
+<li>period in days after which runs will be archived is being configured individually for each user/group</li>
+</ul>
+<p>Behavior of the archiving monitor is defined by the following main preferences:</p>
+<ul>
+<li><strong><code>monitoring.archive.runs.enable</code></strong> - enables archiving mechanism for completed runs</li>
+<li><strong><code>monitoring.archive.runs.delay</code></strong> - manipulates the frequency of archiving operations. Operations of runs archiving are asynchronous and performed after each period of time specified via this preference</li>
+<li><strong><code>system.archive.run.metadata.key</code></strong> - defines the name of the metadata key that shall be specified for users/groups which runs shall be archived. Default value - <code>run_archive_days</code></li>
+</ul>
+<p>Archiving monitor checks every <strong><code>monitoring.archive.runs.delay</code></strong> period of time whether there are any users/user groups with <code>run_archive_days</code> metadata key. If so, info about all completed runs of such users/users from such groups (if these runs were completed more than count of days specified as value of <code>run_archive_days</code>) is being placed to special DB tables for archived runs and is being removed from DB tables for general runs.</p>
+<p>For more details and usage example see <a href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">here</a>.</p>
 <h2 id="cluster-run-usage">Cluster run usage</h2>
 <p>Previously, user can view the state of the cluster run (master and its nested runs) via the <strong>Run logs</strong> page of the cluster master node. But this information was actual only at the specific time moment.<br />
 It would be convenient to view how the cluster usage has been changing over the whole cluster run duration.<br />
@@ -1854,6 +1959,25 @@ But the clusters did not provide such information (summary). Users could see a p
 <img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_TerminalView_4.png" /></li>
 </ul>
 <p>For details see <a href="../../../manual/15_Interactive_services/15.2._Using_Terminal_access/#terminal-view">here</a>.</p>
+<h2 id="container-limits-for-commitlaunch-tool-operations">Container limits for commit/launch tool operations</h2>
+<p>Docker images can be extremely large.<br />
+Therefore in the current version, a mechanism to warn/reject users from using of too big images was implemented.</p>
+<p>There are new system preferences <strong><code>commit.container.size.limits</code></strong> and <strong><code>launch.tool.size.limits</code></strong> to manage that behavior:<br />
+<img alt="CP_v.0.17_ReleaseNotes" src="../attachments/RN017_ContainerSize_1.png" /></p>
+<p>Both preferences have the same format and define "<strong>soft</strong>" and "<strong>hard</strong>" limits for a container size in bytes:</p>
+<ul>
+<li><strong><code>commit.container.size.limits</code></strong> defines limits of the docker container that are taken into account during the tool commit operation:  <ul>
+<li>if container size exceeds "soft" limit - user will get warning, but can proceed the commit at their own risk</li>
+<li>if the container size exceeds "hard" limit - tool commit operation will be prohibited</li>
+</ul>
+</li>
+<li><strong><code>launch.tool.size.limits</code></strong> defines limits of the docker container that are taken into account during the tool launch operation:  <ul>
+<li>if container size exceeds "soft" limit - user will get warning, but can launch the tool at their own risk</li>
+<li>if the container size exceeds "hard" limit - tool launch will be prohibited</li>
+</ul>
+</li>
+</ul>
+<p>For more details see sections in <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#container-size-limits">Tool commit</a> and <a href="../../../manual/10_Manage_Tools/10.5._Launch_a_Tool/#container-size-limits">Tool launch</a>.</p>
 <h2 id="aws-seamless-authentication">AWS: seamless authentication</h2>
 <p>In some cases, users are faced with the following scenarios:</p>
 <ol>
@@ -2005,7 +2129,6 @@ Also, the <strong>Launch Command</strong> generation function used single-quotes
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

@@ -220,6 +220,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -393,7 +395,14 @@
 <li><a href="#edit-a-tool-description">Edit a Tool description</a></li>
 <li><a href="#edit-a-tool-version">Edit a Tool version</a><ul>
 <li><a href="#rundelete-a-tool-version">Run/Delete a Tool version</a></li>
-<li><a href="#commit-a-tool">Commit a Tool</a></li>
+<li><a href="#commit-a-tool">Commit a Tool</a><ul>
+<li><a href="#committing-features">Committing features</a><ul>
+<li><a href="#prepost-commit-hooks">Pre/post-commit hooks</a></li>
+<li><a href="#container-size-limits">Container size limits</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 </li>
 <li><a href="#edit-a-tool-settings">Edit a Tool settings</a></li>
@@ -451,6 +460,7 @@ When it is complete COMMITING status on the right side of the screen will change
 <img alt="CP_EditTool" src="../attachments/EditTool_07.png" /></li>
 </ol>
 <h4 id="committing-features">Committing features</h4>
+<h5 id="prepost-commit-hooks">Pre/post-commit hooks</h5>
 <p>In certain use-cases, extra steps shall be executed before/after running the commit command in the container. For example, to avoid warning messages about terminating the previous session (which was committed) of the tool application in a non-graceful manner. Some applications may require extra cleanup to be performed before the termination.</p>
 <p>To workaround such issues in the <strong>Cloud Pipeline</strong> an approach of "<strong>pre/post-commit hooks</strong>" is implemented. That allows to perform some graceful cleanup/restore before/after performing the commit itself.</p>
 <blockquote>
@@ -494,6 +504,30 @@ When it is complete COMMITING status on the right side of the screen will change
 </ul>
 </li>
 </ol>
+<h5 id="container-size-limits">Container size limits</h5>
+<p>Docker images can be extremely large. Therefore, <strong>Cloud Pipeline</strong> supports a mechanism to warn/reject users from creation of such big images.</p>
+<p>To configure that mechanism, there is the special <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#commit">system preference</a> - <strong><code>commit.container.size.limits</code></strong>.<br />
+This preference has a format:</p>
+<pre><code>{
+    &quot;soft&quot;: &lt;soft_limit_size&gt;,
+    &quot;hard&quot;: &lt;hard_limit_size&gt;
+}
+</code></pre>
+<p>This preference defines "<strong>soft</strong>" and "<strong>hard</strong>" limits for a container size in bytes:</p>
+<ul>
+<li>if user tries to perform a commit operation and the container size exceeds "soft" limit - user will get warning notification, but can proceed the commit at their own risk</li>
+<li>if the container size exceeds "hard" limit - commit operation in this case will be unavailable</li>
+<li>if the size of any limit is set as <code>0</code> - this means there is no limitation of that type</li>
+</ul>
+<p>Example of the preference configuration:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_25.png" /><br />
+In this example, "<strong>soft</strong>" limit is set as 1 GB and there is no "<strong>hard</strong>" limit.</p>
+<p>In case, when "<strong>soft</strong>" limit is set more than <code>0</code> and user tries to commit some tool which container exceeds this limit, the following warning will appear:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_26.png" /><br />
+At the same time, commit operation is available.</p>
+<p>In case, when "<strong>hard</strong>" limit is set more than <code>0</code> and user tries to commit some tool which container exceeds this limit, the following error will appear:<br />
+<img alt="CP_EditTool" src="../attachments/EditTool_27.png" /><br />
+Commit operation is unavailable.</p>
 <h2 id="edit-a-tool-settings">Edit a Tool settings</h2>
 <p>Settings in this tab are applied to all Tool versions (i.e. these settings will be a default for all Tool version).</p>
 <ol>
@@ -583,7 +617,6 @@ This is how everything will look in the <strong>Run log</strong> window:<br />
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

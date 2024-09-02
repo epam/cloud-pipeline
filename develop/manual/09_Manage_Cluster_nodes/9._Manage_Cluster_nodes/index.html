@@ -220,6 +220,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -397,9 +399,17 @@
 <li><a href="#general-info">GENERAL INFO</a></li>
 <li><a href="#jobs">JOBS</a></li>
 <li><a href="#monitor">MONITOR</a><ul>
+<li><a href="#general-statistics">General statistics</a><ul>
 <li><a href="#filters">Filters</a></li>
 <li><a href="#zooming-and-scrolling-features">Zoom and scroll</a></li>
 <li><a href="#export-utilization-data">Export data</a></li>
+</ul>
+</li>
+<li><a href="#gpu-statistics">GPU statistics</a><ul>
+<li><a href="#gpu-filters">GPU Filters</a></li>
+<li><a href="#zoom-and-scroll-gpu-statistics">Zoom and scroll GPU statistics</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -463,7 +473,14 @@
 </ul>
 <p><img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_3.png" /></p>
 <h3 id="monitor">MONITOR</h3>
-<p>"MONITOR" tab displays a dashboard with following diagrams:</p>
+<p>"MONITOR" tab displays dashboards with different charts of node characteristics.<br />
+This tab includes subtabs:</p>
+<ul>
+<li><a href="#general-statistics"><strong>General statistics</strong></a> - contains charts of general statistics that are available for any node</li>
+<li><a href="#gpu-statistics"><strong>GPU statistics</strong></a> - contains charts of statistics that are available for GPU nodes only</li>
+</ul>
+<h4 id="general-statistics">General statistics</h4>
+<p>This subtab includes following diagrams:</p>
 <table>
 <thead>
 <tr>
@@ -474,15 +491,15 @@
 <tbody>
 <tr>
 <td><strong>CPU usage</strong></td>
-<td>A diagram represents <strong>CPU usage (cores) - time</strong> graph. The usage is displayed in fractions according to left vertical axis. There are two lines (data-series) - the first displays <code>max</code> value of the CPU usage in each moment and the second shows the <code>average</code> value of the usage during the time</td>
+<td>A diagram represents <strong>CPU usage (cores) - time</strong> graph. The usage is displayed in fractions according to left vertical axis.<br>There are two lines (data-series) - the first displays <code>max</code> value of the CPU usage in each moment and the second shows the <code>average</code> value of the usage during the time.</td>
 </tr>
 <tr>
 <td><strong>Memory usage</strong></td>
-<td>A diagram represents <strong>memory usage - time</strong> graph. One type of graph represents usage in MB according to left vertical axis (includes two lines - first shows the <code>max</code> value in each moment and another shows the <code>average</code> values during the time). Another type of graph represents usage in % of available amounts of memory according to right vertical axis (analogically, includes two lines - <code>max</code> and <code>average</code>).</td>
+<td>A diagram represents <strong>memory usage - time</strong> graph.<br>One type of graph represents usage in MB according to left vertical axis. It includes two lines - first shows the <code>max</code> value in each moment and another shows the <code>average</code> values during the time.<br>Another type of graph represents usage in % of available amounts of memory according to right vertical axis (analogically, includes two lines - <code>max</code> and <code>average</code>).</td>
 </tr>
 <tr>
 <td><strong>Network connection speed</strong></td>
-<td>A diagram represents <strong>connection speed (bytes) - time</strong> graph. <strong>Blue</strong> graph (<strong>TX</strong>) represents "transmit" speed. <strong>Red</strong> graph (<strong>RX</strong>) represents "receive" speed. Drop-down at the top of the section allows changing connection protocol.</td>
+<td>A diagram represents <strong>connection speed (bytes) - time</strong> graph. <strong>Blue</strong> graph (<strong>TX</strong>) represents "transmit" speed. <strong>Red</strong> graph (<strong>RX</strong>) represents "receive" speed.<br>Drop-down at the top of the section allows changing connection protocol.</td>
 </tr>
 <tr>
 <td><strong>File system load</strong></td>
@@ -509,7 +526,7 @@ To view the monitor of resources utilization for the completed run:</p>
 <p>Please note, the resources utilization data for the completed run is available during <strong><code>system.resource.monitoring.stats.retention.period</code></strong> days.<br />
 If you'll try to view monitor of the completed run after the specified period is over - the monitor will be empty.</p>
 </blockquote>
-<h4 id="filters">Filters</h4>
+<h5 id="filters">Filters</h5>
 <p>User can manage plots date configurations. For this purpose the system has number of filters:<br />
 <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_5.png" /></p>
 <p><strong>Common range for all charts (1)</strong><br />
@@ -549,7 +566,7 @@ To change the <em>Start</em>\/<em>End</em> date the user should:</p>
 <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_9.png" /><br />
 If click this button in the <em>Start</em> date field - the node creation date will be substituted into that filter.<br />
 If click this button in the <em>End</em> date field - the date in that field will be erased and the system will interpret it as the current datetime.</p>
-<h4 id="zooming-and-scrolling-features">Zooming and scrolling features</h4>
+<h5 id="zooming-and-scrolling-features">Zooming and scrolling features</h5>
 <p>In addition, user can <em>scroll</em> plots.<br />
 To do so:</p>
 <ul>
@@ -566,7 +583,7 @@ To zoom a chart:</p>
 <img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_10.png" /><br />
     Click the desired button and the chart will be zoomed.</li>
 </ul>
-<h4 id="export-utilization-data">Export utilization data</h4>
+<h5 id="export-utilization-data">Export utilization data</h5>
 <p>Users have the ability to export the utilization information into a <strong><code>csv</code></strong> or <strong><code>xls</code></strong> file.<br />
 This can be useful, if the user wants to keep locally the information for a longer period of time than defined by the preference <strong><code>system.resource.monitoring.stats.retention.period</code></strong>.</p>
 <p><strong><code>csv</code></strong> reports contain only raw monitoring data.<br />
@@ -605,6 +622,82 @@ This can be useful, if the user wants to keep locally the information for a long
 <blockquote>
 <p>You also can export node usage report via <strong>CLI</strong>. See <a href="../../14_CLI/14.6._View_cluster_nodes_via_CLI/#export-cluster-utilization">here</a>.</p>
 </blockquote>
+<h4 id="gpu-statistics">GPU statistics</h4>
+<p>This subtab displays different characteristics of GPU cards utilization of the node for the selected time range (by default - from the node initialization till the current moment):<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_23.png" /></p>
+<p>Dashboard includes 3 parts:</p>
+<ul>
+<li><strong>Global GPU metrics</strong> - header in the top of the subtab with metrics:<ul>
+<li><strong>GPU utilization</strong> - <code>mean</code>/<code>max</code>/<code>min</code> of all average GPU cards utilization for the selected node's run time range</li>
+<li><strong>GPU Memory utilization</strong> - <code>mean</code>/<code>max</code>/<code>min</code> of all average GPU cards memory utilization for the selected node's run time range<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_24.png" /></li>
+</ul>
+</li>
+<li><strong>Global chart</strong> - line chart for the following metrics:<ul>
+<li><strong>Time GPU Active</strong> (<em>blue line</em>) - in each timepoint of the selected range, shows percentage of GPU cards which have GPU utilization more than 0</li>
+<li><strong>GPU Utilization</strong> (<em>green line</em>) - in each timepoint of the selected range, shows <code>mean</code>/<code>max</code>/<code>min</code> GPU utilization (in percents) among all node's GPU cards</li>
+<li><strong>GPU Memory</strong> (<em>red line</em>) - in each timepoint of the selected range, shows <code>mean</code>/<code>max</code>/<code>min</code> GPU memory utilization (in percents) among all node's GPU cards<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_25.png" /></li>
+<li>When hovering over any point of this chart, a tooltip is shown with details:<ul>
+<li>period of time that this point describes</li>
+<li>detailed GPU Utilization: each GPU card is shown as a separate rectangle with a value of that card's utilization. The higher the utilization value, the more saturated color of the rectangle is. Near the block, one aggregated value of GPU Utilization is shown - <code>mean</code>/<code>max</code>/<code>min</code> according to displaying settings.</li>
+<li>detailed GPU Memory Utilization: each GPU card is shown as a separate rectangle with a value of that card's memory utilization (in percents and Gb). The higher the utilization value, the more saturated color of the rectangle is. Near the block, one aggregated value of GPU Memory Utilization is shown - <code>mean</code>/<code>max</code>/<code>min</code> according to displaying settings.</li>
+<li>no matter at which line a point is selected - the tooltip for one time point will be the same for all line charts<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_26.png" /></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Detailed heatmap</strong> - shows <strong>Time GPU Active</strong>, <strong>GPU Utilization</strong> and <strong>GPU Memory</strong> metrics as heatmap at each time point:<ul>
+<li>heatmap is divided to blocks vertically where each block presents a single metric</li>
+<li>in each heatmap block, one GPU card is shown by one row. Therefore, the whole number of heatmap rows equals <code>3 * &lt;GPU_cards&gt;</code>, where <code>&lt;GPU_cards&gt;</code> - nuber of GPU cards of the node</li>
+<li>each heatmap cell (at the intersection of a row - GPU card ID, and a column - time point) is shown as a separate rectangle colorized according to the metric value in that timepoint - with a saturation gradient - the higher the metric value, the more saturated color of the rectangle is. If the metric value is 0%, rectangle is not shown
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_27.png" /></li>
+<li>when hovering over any point of this heatmap, a tooltip similar to the one for line charts is shown. The one difference - rectangle of the selected GPU card has the bold color border:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_28.png" /></li>
+</ul>
+</li>
+</ul>
+<p>The historical GPU resources utilization is also available for completed runs (during the specified time storage period).<br />
+It can be useful for debugging/optimization purposes and looks similar to the GPU resources utilization dashboard of the active run, e.g.:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_32.png" /></p>
+<blockquote>
+<p>Please note, the resources utilization data for the completed run is available during <strong><code>system.resource.monitoring.stats.retention.period</code></strong> days.<br />
+If you'll try to view monitor of the completed run after the specified period is over - the monitor will be empty.</p>
+</blockquote>
+<h5 id="gpu-filters">GPU Filters</h5>
+<p>The displayed data at the GPU statistics dashboard can be configured. For this purpose there is a number of filters:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_29.png" /></p>
+<p><strong>Measure (1)</strong><br />
+Dropdown-list that allows to select how metrics will be calculated at the line chart and heatmap:</p>
+<ul>
+<li><code>Average</code> (default) - value in each point is calculated as <em>mean</em> among all node's GPU cards values of that metric</li>
+<li><code>Min</code> - value in each point is calculated as <em>minimum</em> among all node's GPU cards values of that metric</li>
+<li><code>Max</code> - value in each point is calculated as <em>maximum</em> among all node's GPU cards values of that metric</li>
+</ul>
+<p>For example, line chart when <strong>Measure</strong> is <code>Max</code>:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_30.png" /></p>
+<p><strong><em>Note</em></strong>: this filter affects the displaying of <strong>GPU Utilization</strong>, <strong>GPU Memory</strong> metrics at <strong>Global GPU metrics</strong> header, <strong>Global chart</strong> and <strong>Detailed heatmap</strong>.</p>
+<p><strong>Set range (2)</strong><br />
+Filter allows to select the time range for which metrics shall be calculated and shown on charts:</p>
+<ul>
+<li>Last week</li>
+<li>Last day</li>
+<li>Last hour</li>
+</ul>
+<p><strong>Date filter (3)</strong><br />
+Filter allows to specify the <em>Start</em> and the <em>End</em> dates for charts.<br />
+By default, the <em>Start</em> date (the left field of the filter) is the node creating datetime, the <em>End</em> date (the right field of the filter) is the current datetime.<br />
+Charts are being automatically redrawn in case when a new range is set (if applicable).</p>
+<h5 id="zoom-and-scroll-gpu-statistics">Zoom and scroll GPU statistics</h5>
+<p>To <em>scroll</em> over charts time range: focus on the chart/heatmap, hold the left mouse button and move the mouse in the desired direction (left or right). All charts will be redrawn simultaneously.</p>
+<p>To <em>zoom</em> over charts time range:</p>
+<ul>
+<li>focus on the chart/heatmap, then holding the Shift key, scroll via mouse. Time range will be automatically zoomed - and charts will be redrawn according to the new selected time range</li>
+<li><em>OR</em> focus on the chart, then holding the Shift key, select the area on the chart via mouse. The area will be highlighted:<br />
+<img alt="CP_ManageClusterNodes" src="../attachments/ManageClusterNodes_31.png" /><br />
+    Then release the Shift key and the highlighted area will be automatically zoomed according to the new selected time range.</li>
+</ul>
               
             </div>
           </div><footer>
@@ -643,7 +736,6 @@ This can be useful, if the user wants to keep locally the information for a long
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

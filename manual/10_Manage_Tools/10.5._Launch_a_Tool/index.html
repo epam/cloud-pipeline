@@ -204,6 +204,12 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#instance-management">Instance management</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#restrictions">Restrictions</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#container-size-limits">Container size limits</a>
+    </li>
+        </ul>
+    </li>
     </ul>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../10.6._Tool_security_check/">10.6. Tool security check</a>
@@ -227,6 +233,8 @@
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users/">11.3. Sharing with other users</a>
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
                 </li>
     </ul>
                   </li>
@@ -403,6 +411,10 @@
 <li><a href="#launch-a-tool-with-friendly-url">Launch a Tool with "friendly" URL</a></li>
 <li><a href="#launch-a-tool-with-hosted-applications">Launch a tool with "hosted" applications</a></li>
 <li><a href="#instance-management">Instance management</a></li>
+<li><a href="#restrictions">Restrictions</a><ul>
+<li><a href="#container-size-limits">Container size limits</a></li>
+</ul>
+</li>
 </ul>
 <blockquote>
 <p>To launch a Tool you need to have <strong>EXECUTE</strong> permissions for it. For more information see <a href="../../13_Permissions/13._Permissions/">13. Permissions</a>.</p>
@@ -611,6 +623,31 @@ In CP platform next hierarchy is set for applying of inputted allowed instance t
 <li><em>(global)</em> <strong><code>cluster.allowed.instance.types.docker</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
 <li><em>(global)</em> <strong><code>cluster.allowed.instance.types</code></strong> (specified on "Cluster" tab in "Preferences" section of system-level settings) (see <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#cluster">v.0.14 - 12.10. Manage system-level settings</a>)</li>
 </ul>
+<h2 id="restrictions">Restrictions</h2>
+<h3 id="container-size-limits">Container size limits</h3>
+<p>Docker images can be extremely large. Therefore, <strong>Cloud Pipeline</strong> supports a mechanism to warn/reject users from launching of such big images.</p>
+<p>To configure that mechanism, there is the special <a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#launch">system preference</a> - <strong><code>launch.tool.size.limits</code></strong>.<br />
+This preference has a format:</p>
+<pre><code>{
+    &quot;soft&quot;: &lt;soft_limit_size&gt;,
+    &quot;hard&quot;: &lt;hard_limit_size&gt;
+}
+</code></pre>
+<p>This preference defines "<strong>soft</strong>" and "<strong>hard</strong>" limits for a Docker container size in bytes:</p>
+<ul>
+<li>if user tries to launch a tool and the size of its container exceeds "soft" limit - user will get warning notification, but can proceed the tool launch at their own risk</li>
+<li>if the size of a tool container exceeds "hard" limit - tool launch in this case will be unavailable</li>
+<li>if the size of any limit is set as <code>0</code> - this means there is no limitation of that type</li>
+</ul>
+<p>Example of the preference configuration:<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_46.png" /><br />
+In this example, there is no "<strong>soft</strong>" limit and "<strong>hard</strong>" limit is set as 1 GB.</p>
+<p>In case, when "<strong>soft</strong>" limit is set more than <code>0</code> and user tries to launch some tool which container exceeds this limit, the following warning will appear:<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_47.png" /><br />
+At the same time, the launch operation is still available.</p>
+<p>In case, when "<strong>hard</strong>" limit is set more than <code>0</code> and user tries to launch some tool which container exceeds this limit, the following error will appear:<br />
+<img alt="CP_LaunchTool" src="../attachments/LaunchTool_48.png" /><br />
+Tool launch is unavailable.</p>
               
             </div>
           </div><footer>
@@ -649,7 +686,6 @@ In CP platform next hierarchy is set for applying of inputted allowed instance t
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

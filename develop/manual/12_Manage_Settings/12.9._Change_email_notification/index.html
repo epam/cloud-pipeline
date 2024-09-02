@@ -204,6 +204,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
@@ -236,9 +238,9 @@
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#notifications-for-long-paused-runs">Notifications for long paused runs</a>
     </li>
-    <li class="toctree-l4"><a class="reference internal" href="#example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</a>
-    </li>
     <li class="toctree-l4"><a class="reference internal" href="#high-consumed-runs">HIGH-CONSUMED runs</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#high-consumed-network-bandwidth-runs">HIGH-CONSUMED NETWORK BANDWIDTH runs</a>
     </li>
         </ul>
     </li>
@@ -406,9 +408,12 @@
 <li><a href="#change-the-email-notification">Change the email notification</a></li>
 <li><a href="#configure-automatic-email-notifications-on-users-runs">Configure automatic email notifications on users' runs</a><ul>
 <li><a href="#idle-runs">IDLE runs</a></li>
-<li><a href="#notifications-for-long-paused-runs">Notifications for long paused runs</a></li>
+<li><a href="#notifications-for-long-paused-runs">Notifications for long paused runs</a><ul>
 <li><a href="#example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</a></li>
+</ul>
+</li>
 <li><a href="#high-consumed-runs">HIGH-CONSUMED runs</a></li>
+<li><a href="#high-consumed-network-bandwidth-runs">HIGH-CONSUMED NETWORK BANDWIDTH runs</a></li>
 </ul>
 </li>
 <li><a href="#push-notifications">Push notifications</a><ul>
@@ -434,7 +439,7 @@
 <img alt="CP_EmailNotification" src="../attachments/ChangeEmailNotification_5.png" /></li>
 </ol>
 <h2 id="configure-automatic-email-notifications-on-users-runs">Configure automatic email notifications on users' runs</h2>
-<p>Here, the mechanism of automatic email notifications for <strong><em>IDLE</em></strong> and <strong><em>HIGH-CONSUMED</em></strong> runs will be described.</p>
+<p>Here, the mechanism of automatic email notifications for <strong><em>IDLE</em></strong>, <strong><em>HIGH-CONSUMED</em></strong> and <strong><em>HIGH-CONSUMED NETWORK BANDWIDTH</em></strong> runs is described.</p>
 <h3 id="idle-runs">IDLE runs</h3>
 <p>The system behavior for the <strong><em>IDLE</em></strong> runs is defined by the set of the following parameters:</p>
 <table>
@@ -449,12 +454,12 @@
 <tr>
 <td><strong>Max duration of idle</strong> (min)</td>
 <td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
-<td>Specifies the duration in minutes after that the system should check node's activity. If after this duration node's CPU utilization will be below <strong>CPU idle threshold</strong> - email notification <strong><code>IDLE_RUN</code></strong> will be sent to the user and the run itself will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label</td>
+<td>Specifies the duration in minutes after that the system should check node's activity.<br>If after this duration node's CPU utilization will be below <strong>CPU idle threshold</strong> - email notification <strong><code>IDLE_RUN</code></strong> will be sent to the user,<br>and the run itself will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label</td>
 </tr>
 <tr>
 <td><strong>Action delay</strong> (min)</td>
 <td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
-<td>Specifies the duration in minutes. If node's CPU utilization is still below <strong>CPU idle threshold</strong> for this duration after the <strong>Max duration of idle</strong> is over - an action, specified in <strong>Action</strong> field will be performed</td>
+<td>Specifies the duration in minutes.<br>If node's CPU utilization is still below <strong>CPU idle threshold</strong> for this duration after the <strong>Max duration of idle</strong> is over -<br>an action, specified in <strong>Action</strong> field will be performed</td>
 </tr>
 <tr>
 <td><strong>CPU idle threshold</strong> (%)</td>
@@ -464,17 +469,17 @@
 <tr>
 <td><strong>Action</strong></td>
 <td><strong><code>system.idle.action</code></strong></td>
-<td>Sets which action to perform with the node, that has the CPU utilization below than <strong>CPU idle threshold</strong>:<br /><ul><li><em>NOTIFY</em> - only send email notification <strong><code>IDLE_RUN</code></strong>. This action will be repeated every <strong>Resend delay</strong> if the node's CPU utilization will be still below than <strong>CPU idle threshold</strong></li><li><em>PAUSE</em> - pause an instance if possible (only if the instance is <code>On-Demand</code>, <code>Spot</code> instances are skipped) and send single email notification <strong><code>IDLE_RUN_PAUSED</code></strong></li><li><em>PAUSE_OR_STOP</em> - pause an instance if it is <code>On-Demand</code> or stop an instance if it is <code>Spot</code> and send the corresponding single email notification <strong><code>IDLE_RUN_PAUSED</code></strong> / <strong><code>IDLE_RUN_STOPPED</code></strong></li><li><em>STOP</em> - Stop an instance, disregarding price-type, and send single email notification <strong><code>IDLE_RUN_STOPPED</code></strong></li></ul></td>
+<td>Sets which action to perform with the node, that has the CPU utilization below than <strong>CPU idle threshold</strong>:<br><ul><li><em>NOTIFY</em> - only send email notification <strong><code>IDLE_RUN</code></strong>.<br>This action will be repeated every <strong>Resend delay</strong> if the node's CPU utilization will be still below than <strong>CPU idle threshold</strong></li><li><em>PAUSE</em> - pause an instance if possible (only if the instance is <code>On-Demand</code>, <code>Spot</code> instances are skipped) and send single email notification <strong><code>IDLE_RUN_PAUSED</code></strong></li><li><em>PAUSE_OR_STOP</em> - pause an instance if it is <code>On-Demand</code> or stop an instance if it is <code>Spot</code>,<br>and send the corresponding email notification <strong><code>IDLE_RUN_PAUSED</code></strong> / <strong><code>IDLE_RUN_STOPPED</code></strong></li><li><em>STOP</em> - Stop an instance, disregarding price-type, and send single email notification <strong><code>IDLE_RUN_STOPPED</code></strong></li></ul></td>
 </tr>
 <tr>
-<td><strong>Resend delay</strong> (sec)<br />Only for <strong><code>IDLE_RUN</code></strong> notification</td>
+<td><strong>Resend delay</strong> (sec)<br>Only for <strong><code>IDLE_RUN</code></strong> notification</td>
 <td></td>
-<td>Specifies the duration in seconds. Defines a delay after which the <strong><code>IDLE_RUN</code></strong> notification will be sent repeatedly in case when node's CPU utilization is still below <strong>CPU idle threshold</strong>. <strong><code>IDLE_RUN</code></strong> notifications will be repeated until <strong>Action delay</strong> is over. Then <strong>Action</strong> will be performed.<br /><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br /><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>IDLE_RUN</code></strong> notifications will not be resending.</td>
+<td>Specifies the duration in seconds.<br>Defines a delay after which the <strong><code>IDLE_RUN</code></strong> notification will be sent repeatedly in case when node's CPU utilization is still below <strong>CPU idle threshold</strong>.<br><strong><code>IDLE_RUN</code></strong> notifications will be repeated until <strong>Action delay</strong> is over. Then <strong>Action</strong> will be performed.<br><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br><br><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>IDLE_RUN</code></strong> notifications will not be resending.</td>
 </tr>
 <tr>
 <td></td>
 <td><strong><code>system.resource.monitoring.period</code></strong></td>
-<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics. After each such period, it's defined to display <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label for the specific instance or not</td>
+<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics.<br>After each such period, it's defined to display <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_01.png" /> label for the specific instance or not</td>
 </tr>
 </tbody>
 </table>
@@ -496,26 +501,27 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Action</strong><br /><em>Common setting for both notification types</em></td>
+<td><strong>Action</strong><br><em>Common setting for both notification types</em></td>
 <td><strong><code>system.long.paused.action</code></strong></td>
-<td>Sets which action to perform with the node, that has been paused for a long time:<br /><ul><li><em>NOTIFY</em> - only send email notification <strong><code>LONG_PAUSED</code></strong>. Then this action will be repeated every <strong>Resend delay</strong> if the run will be still paused</li><li><em>STOP</em> - terminate the paused run and send single email notification <strong><code>LONG_PAUSED_STOPPED</code></strong></li></ul></td>
+<td>Sets which action to perform with the node, that has been paused for a long time:<br><ul><li><em>NOTIFY</em> - only send email notification <strong><code>LONG_PAUSED</code></strong>. Then this action will be repeated every <strong>Resend delay</strong> if the run will be still paused</li><li><em>STOP</em> - terminate the paused run and send single email notification <strong><code>LONG_PAUSED_STOPPED</code></strong></li></ul></td>
 </tr>
 <tr>
-<td><strong>Threshold</strong> (sec)<br /><em>Separately sets for each notification type</em></td>
+<td><strong>Threshold</strong> (sec)<br><em>Separately sets for each notification type</em></td>
 <td></td>
-<td>Specifies the duration in seconds. Defines the delay after which an action, specified in <strong>Action</strong> field, will be performed and the corresponding notification will be sent if the run is still paused.</td>
+<td>Specifies the duration in seconds.<br>Defines the delay after which an action, specified in <strong>Action</strong> field, will be performed and the corresponding notification will be sent if the run is still paused.</td>
 </tr>
 <tr>
-<td><strong>Resend delay</strong> (sec)<br />Only for <strong><code>LONG_PAUSED</code></strong> notification type</td>
+<td><strong>Resend delay</strong> (sec)<br>Only for <strong><code>LONG_PAUSED</code></strong> notification type</td>
 <td></td>
-<td>Specifies the duration in seconds. Defines a delay after which the <strong><code>LONG_PAUSED</code></strong> notification will be sent repeatedly in case when the run is still paused after a <strong>Threshold</strong> duration.<br /><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br /><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>LONG_PAUSED</code></strong> notifications will not be resending.</td>
+<td>Specifies the duration in seconds.<br>Defines a delay after which the <strong><code>LONG_PAUSED</code></strong> notification will be sent repeatedly in case when the run is still paused after a <strong>Threshold</strong> duration.<br><strong><em>Note</em></strong>: if <strong>Action</strong> is set as <em>NOTIFY</em> - sending notifications will be continued every <strong>Resend delay</strong>.<br><br><strong>Default value</strong>: <code>-1</code>. In that case, <strong><code>LONG_PAUSED</code></strong> notifications will not be resending.</td>
 </tr>
 </tbody>
 </table>
-<p>Saving of the changes in described parameter value (for <strong>Action</strong>) at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding value in <strong>PREFERENCES</strong>, and vice versa.</p>
+<p>Saving of the changes in described parameter value (for <strong>Action</strong>) at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding value in <strong>PREFERENCES</strong>, and vice versa.<br />
+For usage of such preferences see in the section <a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/#idle-runs">here</a>.</p>
 <p>For example, <strong><code>LONG_PAUSED</code></strong> notification settings:<br />
 <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_03.png" /></p>
-<h3 id="example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</h3>
+<h4 id="example-of-the-scenario-for-automatic-notifications-for-idle-runs">Example of the scenario for automatic notifications for "idle" runs</h4>
 <p>In general, the system behavior is the following:</p>
 <ol>
 <li>User launches a run</li>
@@ -544,7 +550,7 @@
 <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_04.png" /><br />
 This action cancels only the auto pause, but the <strong><code>RUN_IDLE</code></strong> email notifications will be being sent (if the corresponding conditions will be met).</p>
 <h3 id="high-consumed-runs">HIGH-CONSUMED runs</h3>
-<p>All settings that configure actions/notifications for "high-consumed" runs are moved to the <strong>EMAIL NOTIFICATIONS</strong> section. These settings duplicate some System Preferences and also can be configured from the <strong>PREFERENCES</strong> section, but it is more comfortable to configure them from the <strong>NOTIFICATIONS</strong>.</p>
+<p>All settings that configure actions/notifications for "high-consumed" runs are placed in the <strong>EMAIL NOTIFICATIONS</strong> section. These settings duplicate some System Preferences and also can be configured from the <strong>PREFERENCES</strong> section, but it is more comfortable to configure them from the <strong>NOTIFICATIONS</strong>.</p>
 <p><strong><code>HIGH_CONSUMED_RESOURCES</code></strong> notification settings:<br />
 <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_05.png" /></p>
 <p>The system behavior for the "high-consumed" runs is defined by the set of the following System-level parameters (Preferences):</p>
@@ -560,22 +566,68 @@ This action cancels only the auto pause, but the <strong><code>RUN_IDLE</code></
 <tr>
 <td><strong>Threshold of disk consumption</strong> (%)</td>
 <td><strong><code>system.disk.consume.threshold</code></strong></td>
-<td>Specifies the node's disk threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent and the corresponding run will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
+<td>Specifies the node's disk threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent,<br>and the corresponding run will be marked by <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
 </tr>
 <tr>
 <td><strong>Threshold of memory consumption</strong> (%)</td>
 <td><strong><code>system.memory.consume.threshold</code></strong></td>
-<td>Specifies the node's memory threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent and the corresponding run will be marked by the <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
+<td>Specifies the node's memory threshold (in %) above which the email notification <strong><code>HIGH_CONSUMED_RESOURCES</code></strong> will be sent,<br>and the corresponding run will be marked by the <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_06.png" /> label</td>
 </tr>
 <tr>
 <td><strong><code>system.monitoring.time.range</code></strong></td>
 <td></td>
-<td>Specifies the threshold timeout (if a real average resource consumption is higher then any of the thresholds above for that timeout - a notification shall be sent). Also defines the period after which the notification will be sent again, if the problem is still in place</td>
+<td>Specifies the threshold timeout (if a real average resource consumption is higher then any of the thresholds above for that timeout,<br>a notification shall be sent). Also defines the period after which the notification will be sent again, if the problem is still in place</td>
 </tr>
 </tbody>
 </table>
 <p>So, when memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
-<p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in <strong>PREFERENCES</strong>, and vice versa.</p>
+<p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in <strong>PREFERENCES</strong>, and vice versa.<br />
+For usage of such preferences see in the section <a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/#pressure-runs">here</a>.</p>
+<h3 id="high-consumed-network-bandwidth-runs">HIGH-CONSUMED NETWORK BANDWIDTH runs</h3>
+<p>All settings that configure actions/notifications for "high-consumed network bandwidth" runs are placed in the <strong>EMAIL NOTIFICATIONS</strong> section.<br />
+These settings duplicate some System Preferences and also can be configured from the <strong>PREFERENCES</strong> section, but it is more comfortable to configure them from the <strong>NOTIFICATIONS</strong>.</p>
+<p><strong><code>HIGH_CONSUMED_NETWORK_BANDWIDTH</code></strong> notification settings:<br />
+<img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_08.png" /></p>
+<p>The system behavior for the <strong><em>HIGH-CONSUMED NETWORK BANDWIDTH</em></strong> runs is defined by the set of the following parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Preference-duplicate</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Network bandwidth limit</strong> (bytes/sec)</td>
+<td><strong><code>system.pod.bandwidth.limit</code></strong></td>
+<td>Defines the network bandwidth threshold (in bytes/sec). Default value is <code>0</code> - this means there is no threshold.</td>
+</tr>
+<tr>
+<td><strong>Network bandwidth<br>measurement period</strong> (min)</td>
+<td><strong><code>system.max.pod.bandwidth.minutes</code></strong></td>
+<td>Specifies the duration in minutes after which the system will check pod's network consuming in case when <strong>Network bandwidth limit</strong> &gt; <code>0</code>.<br>If after this duration pod's network consuming is still higher than <strong>Network bandwidth limit</strong>:<ul><li>email notification <em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em> will be sent to the user</li><li>the run itself will be marked by the <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_07.png" /> label.</li></ul></td>
+</tr>
+<tr>
+<td><strong>Action delay</strong> (min)</td>
+<td><strong><code>system.pod.bandwidth.action.backoff.period</code></strong></td>
+<td>Specifies the duration in minutes.<br>If pod's network consuming is higher than <strong>Network bandwidth limit</strong> for this duration of time after the <strong>Network bandwidth measurement period</strong>,<br>then an action specified in <strong>Action</strong> field will be performed.</td>
+</tr>
+<tr>
+<td><strong>Action</strong></td>
+<td><strong><code>system.pod.bandwidth.action</code></strong></td>
+<td>Sets which action to perform with the pod, that has the network consuming higher than <strong>Network bandwidth limit</strong>.<br>Currently, possible actions:<ul><li><b><i>NOTIFY</i></b> - sends the email notification <i><em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em></i>.<br>This action will be repeated every <strong>Action delay</strong> if the network consuming will be still higher than <strong>Network bandwidth limit</strong></li><li><b><i>LIMIT_BANDWIDTH</i></b> (not applicable yet) - restricts pod's bandwidth</li></ul></td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>system.pod.bandwidth.monitor.delay</code></strong></td>
+<td>Specifies period (in milliseconds) between the scannings of running pods to collect the monitoring metrics.<br>After each such period, it's defined to display <img alt="CP_EmailNotification" src="../attachments/AutomaticNotifications_07.png" /> label for the specific instance or not</td>
+</tr>
+</tbody>
+</table>
+<p>So, when network consumption will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place).</p>
+<p>Saving of the changes in described parameters values at the <strong>EMAIL NOTIFICATIONS</strong> form automatically changes the corresponding values in the <strong>PREFERENCES</strong>, and vice versa.<br />
+For usage of such preferences see in the section <a href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/#network-pressure-runs">here</a>.</p>
 <hr />
 <h2 id="push-notifications">Push notifications</h2>
 <p>All email notifications, that are sending by Cloud Pipeline platform, are also duplicated as push notifications. This allows to view notifications right in the platform GUI.<br />
@@ -682,7 +734,6 @@ The default value is not set (blank). This means that notifications are not bein
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

@@ -354,6 +354,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -573,7 +575,7 @@
 <ul>
 <li><a href="#notable-bug-fixes">Notable Bug fixes</a><ul>
 <li><a href="#incorrect-behavior-of-the-global-search-filter">Incorrect behavior of the global search filter</a></li>
-<li><a href="#commiting-status-hangs">"COMMITING..." status hangs</a></li>
+<li><a href="#committing-status-hangs">"COMMITING..." status hangs</a></li>
 <li><a href="#instances-of-metadata-entity-arent-correctly-sorted">Instances of Metadata entity aren't correctly sorted</a></li>
 <li><a href="#tool-group-cannot-be-deleted-until-all-child-tools-are-removed">Tool group cannot be deleted until all child tools are removed</a></li>
 <li><a href="#missing-region-while-estimating-a-run-price">Missing region while estimating a run price</a></li>
@@ -771,7 +773,7 @@ RStudio will work correctly, but it may confuse the users.</p>
 </li>
 <li>If a corresponding pre/post script is not found in the docker image - it will not be executed.</li>
 </ul>
-<p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#committing-features">here</a>.</p>
+<p>For more details see <a href="../../../manual/10_Manage_Tools/10.4._Edit_a_Tool/#prepost-commit-hooks">here</a>.</p>
 <h2 id="restricting-manual-installation-of-the-nvidia-tools">Restricting manual installation of the nvidia tools</h2>
 <p>It was uncovered that some of the GPU-enabled runs are not able to initialize due to an issue describe at <a href="https://github.com/NVIDIA/nvidia-docker/issues/825">NVIDIA/nvidia-docker#825</a>.</p>
 <p>To limit a possibility of producing such docker images (which will not be able to start using GPU instance types) - a set of restrictions/notifications was implemented:</p>
@@ -1356,7 +1358,6 @@ Some of the other page layouts also were broken.</p>
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

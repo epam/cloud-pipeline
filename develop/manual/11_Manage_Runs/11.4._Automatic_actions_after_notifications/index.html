@@ -208,7 +208,15 @@
     </li>
     <li class="toctree-l3"><a class="reference internal" href="#pressure-runs">"Pressure" runs</a>
     </li>
+    <li class="toctree-l3"><a class="reference internal" href="#network-pressure-runs">"Network pressure" runs</a>
+        <ul>
+    <li class="toctree-l4"><a class="reference internal" href="#limit-pods-network-bandwidth">Limit pod's network bandwidth</a>
+    </li>
+        </ul>
+    </li>
     </ul>
+                </li>
+                <li class="toctree-l2"><a class="reference internal" href="../11.5._Archive_runs/">11.5. Archive completed runs</a>
                 </li>
     </ul>
                   </li>
@@ -379,11 +387,20 @@
             <div class="section" itemprop="articleBody">
               
                 <h1 id="automatic-actions-with-runs">Automatic actions with runs</h1>
-<p>In this section, let's consider the configurable behavior of automatic actions/notifications for the launched runs that are being in "idle" or "under pressure" state for a long time.</p>
+<p>In this section, let's consider the configurable behavior of automatic actions/notifications for the launched runs that are being in "idle", "under pressure" or "network pressure" state for a long time.</p>
+<ul>
+<li><a href="#idle-runs">"Idle" runs</a></li>
+<li><a href="#pressure-runs">"Pressure" runs</a></li>
+<li><a href="#network-pressure-runs">"Network pressure" runs</a><ul>
+<li><a href="#limit-pods-network-bandwidth">Limit pod's network bandwidth</a></li>
+</ul>
+</li>
+</ul>
 <p>The following view of high-level metrics information for the Active Runs is implemented:</p>
 <ul>
 <li><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> - this auxiliary label is shown when node's CPU consumption is lower than a certain level, defined by the admin. This label should attract the users attention cause such run may produce extra costs.  </li>
 <li><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_02.png" /> - this auxiliary label is shown when node's Memory/Disk consumption is higher than a certain level, defined by the admin. This label should attract the users attention cause such run may accidentally fail.</li>
+<li><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_11.png" /> - this auxiliary label is shown when node's network consuming is higher than a certain level, defined by the admin. This label should attract the users attention cause such run may lead to network failures.</li>
 </ul>
 <p>These labels are displayed:</p>
 <ul>
@@ -394,8 +411,8 @@
 <li>at the main dashboard (the <strong>ACTIVE RUNS</strong> panel)<br />
 <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_05.png" /></li>
 </ul>
-<p>If a user clicks that label from the <strong>Runs</strong> or the <strong>Run logs</strong> page the <em>Cluster node Monitor</em> will be opened to view the current node consumption.</p>
-<p>Admins can configure the emergence of these labels and system actions for each run state ("Idle"/"Pressure") by the system-level parameters.</p>
+<p>By click that label, the <em>Cluster node Monitor</em> will be opened to view the current node consumption.</p>
+<p>Admins can configure the emergence of these labels and system actions by the system-level parameters or <strong>Cloud Pipeline</strong> API.</p>
 <h2 id="idle-runs">"Idle" runs</h2>
 <p>The system behavior for the "idle" runs is defined by the set of the following System-level parameters (<a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">Preferences</a>):</p>
 <table>
@@ -408,11 +425,11 @@
 <tbody>
 <tr>
 <td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
-<td>Specifies the duration in minutes after that the system should check node's activity. If after this duration node's CPU utilization will be below <strong><code>system.idle.cpu.threshold</code></strong> - email notification <em>IDLE_RUN</em> will be sent to the user and the run itself will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label</td>
+<td>Specifies the duration in minutes after that the system should check node's activity.<br>If after this duration node's CPU utilization will be below <strong><code>system.idle.cpu.threshold</code></strong> - email notification <em>IDLE_RUN</em> will be sent to the user and the run itself will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
-<td>Specifies the duration in minutes. If node's CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration after the <strong><code>system.max.idle.timeout.minutes</code></strong> is over - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
+<td>Specifies the duration in minutes.<br>If node's CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration after the <strong><code>system.max.idle.timeout.minutes</code></strong> is over - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.cpu.threshold</code></strong></td>
@@ -420,11 +437,11 @@
 </tr>
 <tr>
 <td><strong><code>system.idle.action</code></strong></td>
-<td>Sets which action to perform with the node, that has the CPU utilization below than <strong><code>system.idle.cpu.threshold</code></strong>: <ul><li><b><i>NOTIFY</i></b> - only send email notification <i>IDLE_RUN</i>. This action will be repeated every <b><code>system.idle.action.timeout.minutes</b></code> if the node's CPU utilization will be still below than <b><code>system.idle.cpu.threshold</code></b></li><li><b><i>PAUSE</i></b> - pause an instance if possible (only if the instance is <i>On-Demand</i>, <i>Spot</i> instances are skipped) and send single email notification <i>IDLE_RUN_PAUSED</i></li><li><b><i>PAUSE_OR_STOP</i></b> - pause an instance if it is <i>On-Demand</i> or stop an instance if it is <i>Spot</i> and send the corresponding single email notification <i>IDLE_RUN_PAUSED</i>/<i>IDLE_RUN_STOPPED</i></li><li><b><i>STOP</i></b> - Stop an instance, disregarding price-type, and send single email notification <i>IDLE_RUN_STOPPED</i></li></ul></td>
+<td>Sets which action to perform with the node, that has the CPU utilization below than <strong><code>system.idle.cpu.threshold</code></strong>: <ul><li><b><i>NOTIFY</i></b> - only send email notification <i>IDLE_RUN</i>. Action is being repeated every <b><code>system.idle.action.timeout.minutes</b></code> if the node's CPU utilization will be still below than <b><code>system.idle.cpu.threshold</code></b></li><li><b><i>PAUSE</i></b> - pause an instance if possible (only if the instance is <i>On-Demand</i>, <i>Spot</i> instances are skipped) and send single email notification <i>IDLE_RUN_PAUSED</i></li><li><b><i>PAUSE_OR_STOP</i></b> - pause an instance if it is <i>On-Demand</i> or stop an instance if it is <i>Spot</i> and send the corresponding single email notification <i>IDLE_RUN_PAUSED</i>/<i>IDLE_RUN_STOPPED</i></li><li><b><i>STOP</i></b> - Stop an instance, disregarding price-type, and send single email notification <i>IDLE_RUN_STOPPED</i></li></ul></td>
 </tr>
 <tr>
 <td><strong><code>system.resource.monitoring.period</code></strong></td>
-<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics. After each such period, it's defined to display <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label for the specific instance or not</td>
+<td>Specifies period (in milliseconds) between the scannings of running instances to collect the monitoring metrics.<br>After each such period, it's defined to display <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label for the specific instance or not</td>
 </tr>
 </tbody>
 </table>
@@ -442,7 +459,7 @@
 </li>
 <li>In case when <strong><code>system.idle.action</code></strong> is set as <strong><em>NOTIFY</em></strong>, email notifications <em>IDLE_RUN</em> continue to be sent every <strong><code>system.idle.action.timeout.minutes</code></strong>, if the node's CPU utilization remains below the <strong><code>system.idle.cpu.threshold</code></strong></li>
 <li>The state of the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_01.png" /> label (to display or not) is checked every <strong><code>system.resource.monitoring.period</code></strong></li>
-<li>The settings of the email notifications (message, the list of informed users, etc.) the admin can configure via the corresponding tab <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> of the system-level settings:<br />
+<li>The settings of the email notifications (message, the list of informed users, etc.) the admin can configure via the corresponding tab <a href="../../12_Manage_Settings/12.9._Change_email_notification/#idle-runs">Email notifications</a> of the system-level settings:<br />
 <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_07.png" /></li>
 </ol>
 <p><strong><em>Note</em></strong>: users can manually disable the automatic pausing of on-demand instances if they aren't used. For that the "<strong>Auto pause</strong>" checkbox at the <strong>Launch</strong> page shall be unchecked before the run:<br />
@@ -471,14 +488,114 @@
 <p>Example of these settings:<br />
 <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_09.png" /></p>
 <p>So, when memory or disk consuming will be higher than a threshold value for a specified period of time (in average) - a notification will be sent (and resent after a delay, if the problem is still in place. The default repeat delay is 30 minutes, it could be configured before the stand deployment).</p>
-<p>Preferences of the notification could be configured at the <em>HIGH_CONSUMED_RESOURCES</em> section of the <a href="../../12_Manage_Settings/12._Manage_Settings/#email-notifications">Email notifications</a> of the system-level settings:<br />
+<p>Preferences of the notification could be configured at the <em>HIGH_CONSUMED_RESOURCES</em> section of the <a href="../../12_Manage_Settings/12.9._Change_email_notification/#high-consumed-runs">Email notifications</a> of the system-level settings:<br />
 <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_10.png" /></p>
+<h2 id="network-pressure-runs">"Network pressure" runs</h2>
+<p>The system behavior for the "network pressure" runs is defined by the set of the following System-level parameters (<a href="../../12_Manage_Settings/12.10._Manage_system-level_settings/#system">Preferences</a>):</p>
+<table>
+<thead>
+<tr>
+<th>Preference name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>system.pod.bandwidth.limit</code></strong></td>
+<td>Defines the network bandwidth limit (in bytes/sec). Default value is <code>0</code> - this means there is no limit.</td>
+</tr>
+<tr>
+<td><strong><code>system.max.pod.bandwidth.minutes</code></strong></td>
+<td>Specifies the duration in minutes after which the system will check pod's network consuming in case when <strong><code>system.pod.bandwidth.limit</code></strong> &gt; <code>0</code>.<br>If after this duration pod's network consuming is still higher than <strong><code>system.pod.bandwidth.limit</code></strong> - email notification <em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em> will be sent to the user<br>and the run itself will be marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_11.png" /> label.</td>
+</tr>
+<tr>
+<td><strong><code>system.pod.bandwidth.action.backoff.period</code></strong></td>
+<td>Specifies the duration in minutes.<br>If pod's network consuming is higher than <strong><code>system.pod.bandwidth.limit</code></strong> for this duration of time after the <strong><code>system.max.pod.bandwidth.minutes</code></strong> is over - an action,<br>specified in <strong><code>system.pod.bandwidth.action</code></strong> will be performed.</td>
+</tr>
+<tr>
+<td><strong><code>system.pod.bandwidth.action</code></strong></td>
+<td>Sets which action to perform with the pod, that has the network consuming higher than <strong><code>system.pod.bandwidth.limit</code></strong>.<br>Currently, possible actions:<ul><li><b><i>NOTIFY</i></b> - sends the email notification <i><em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em></i>.<br>This action will be repeated every <b><code>system.pod.bandwidth.action.backoff.period</b></code> if the network consuming will be still higher than <b><code>system.pod.bandwidth.limit</code></b></li><li><b><i>LIMIT_BANDWIDTH</i></b> (not applicable yet) - limits pod's bandwidth</li></ul></td>
+</tr>
+<tr>
+<td><strong><code>system.pod.bandwidth.monitor.delay</code></strong></td>
+<td>Specifies period (in milliseconds) between the scannings of running pods to collect the monitoring metrics.<br>After each such period, it's defined to display <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_11.png" /> label for the specific instance or not</td>
+</tr>
+<tr>
+<td><strong><code>limit.network.bandwidth.command.timeout</code></strong></td>
+<td>Specifies the duration in seconds.<br>Till this duration platform will try to perform the limit network bandwidth command in case when admin sets the network limit boundary manually via API - see details <a href="#limit-pod-bandwidth">below</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>Example of these settings:</p>
+<p><img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_12.png" /></p>
+<p>In general, the behavior will be the following:</p>
+<ol>
+<li>User launches a run</li>
+<li>If <strong><code>system.pod.bandwidth.limit</code></strong> &gt; <code>0</code>, then after <strong><code>system.max.pod.bandwidth.minutes</code></strong> period, the system starts to check pod's network consuming.</li>
+<li>If the pod's network consuming is higher than <strong><code>system.pod.bandwidth.limit</code></strong>:<ul>
+<li>email notification <em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em> is being sent</li>
+<li>the run itself is being marked by the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_11.png" /> label</li>
+</ul>
+</li>
+<li>After <strong><code>system.pod.bandwidth.action.backoff.period</code></strong>, if the pod's network consuming is still higher than <strong><code>system.pod.bandwidth.limit</code></strong> and <strong><code>system.pod.bandwidth.action</code></strong> is set as <strong><em>NOTIFY</em></strong>, email notification <em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em> is being sent again.</li>
+<li>Email notifications <em>HIGH_CONSUMED_NETWORK_BANDWIDTH</em> continue to be sent every <strong><code>system.pod.bandwidth.action.backoff.period</code></strong>, if the pod's network consuming remains higher than <strong><code>system.pod.bandwidth.limit</code></strong>.</li>
+<li>The state of the <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_11.png" /> label (to display or not) is checked every <strong><code>system.pod.bandwidth.monitor.delay</code></strong>.</li>
+<li>The settings of the email notifications (message, the list of informed users, etc.) can be configured by admins via the corresponding tab <a href="../../12_Manage_Settings/12.9._Change_email_notification/#high-consumed-network-bandwidth-runs">Email notifications</a> of the system-level settings:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_13.png" /></li>
+</ol>
+<h3 id="limit-pods-network-bandwidth">Limit pod's network bandwidth</h3>
+<p>Admins can restrict specific pod's bandwidth to avoid high network consuming - through <strong>Cloud Pipeline</strong> API.<br />
+Currently, setting of the restriction through GUI is not supported.</p>
+<p>API method to set a bandwidth limit: <code>POST /run/{runId}/network/limit?enable=&lt;boolean&gt;&amp;boundary=&lt;int&gt;</code>.<br />
+Where:</p>
+<ul>
+<li><code>{runId}</code> - run ID</li>
+<li><code>enable=&lt;boolean&gt;</code> - option that enables/disables a bandwidth limit for a specific pod</li>
+<li><code>boundary=&lt;int&gt;</code> - option that sets a size of bandwidth boundary limit in bytes/sec</li>
+</ul>
+<p>This method sets a special tag for a run based on specified boundary limit: <code>NETWORK_LIMIT: &lt;boundary&gt;</code>. Setting of such tag initializes bandwidth limitation process.<br />
+Only admins are able to call this method.</p>
+<p>General journey of pod's bandwidth limitation looks like:</p>
+<ol>
+<li>Admin sets the bandwidth boundary limit for a run via API method <code>POST /run/{runId}/network/limit</code>, specifying:<ul>
+<li>run ID</li>
+<li><code>enable</code> option as <code>true</code></li>
+<li>bandwidth boundary limit as integer value<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_14.png" /></li>
+</ul>
+</li>
+<li>In case of successful method call, after approximately the <strong><code>system.pod.bandwidth.monitor.delay</code></strong> period of time:<ul>
+<li>at the run logs page, the warning message appears with the bandwidth limit and datetime when this limit will be applied to the the pod</li>
+<li>in run logs, the task <code>LimitNetworkBandwidth</code> appears. This task contains logs of the bandwidth limit applying<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_15.png" /><br />
+<strong><em>Note</em></strong>: in case when server can't perform bandwidth boundary limitation commands from the first time, it will retry to perform commands until <strong><code>limit.network.bandwidth.command.timeout</code></strong> period is over.</li>
+</ul>
+</li>
+<li>From the time moment, displayed in the warning message of bandwidth limit at the run logs page, pod bandwidth will be limited. It can be observed via the instance monitoring:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_16.png" /><br />
+    In the example above, the same large file was downloaded twice:  <ul>
+<li>First time (see area 1) - without any bandwidth limitations.</li>
+<li>Second time (see area 2) - with the bandwidth limitation that was set at the first step (<code>1000000</code> bytes/sec).</li>
+</ul>
+</li>
+<li>Also, at the main Dashboard (<strong>Active Runs</strong> section) and at the <strong>Runs</strong> page, additional label will appear for a run - <code>NETWORK_LIMIT</code>, e.g.:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_19.png" /></li>
+<li>To remove a bandwidth boundary limit for a pod, call API method <code>POST /run/{runId}/network/limit</code> with <code>enable</code> option as <code>false</code>:<br />
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_17.png" /></li>
+<li>After the removing a bandwidth boundary limit:<ul>
+<li>label <img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_20.png" /> will disappear from the main Dashboard (Active Runs section) and from the Runs page    </li>
+<li>at the run logs page, the warning message about the bandwidth limit will disappear</li>
+<li>in the run logs (task <code>LimitNetworkBandwidth</code>), corresponding log will appear
+<img alt="CP_AutomaticActions" src="../attachments/AutomaticActions_18.png" /></li>
+</ul>
+</li>
+</ol>
               
             </div>
           </div><footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
         <a href="../11.3._Sharing_with_other_users_or_groups_of_users/" class="btn btn-neutral float-left" title="11.3. Sharing with other users"><span class="icon icon-circle-arrow-left"></span> Previous</a>
-        <a href="../../12_Manage_Settings/12._Manage_Settings/" class="btn btn-neutral float-right" title="12.0. Overview">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../11.5._Archive_runs/" class="btn btn-neutral float-right" title="11.5. Archive completed runs">Next <span class="icon icon-circle-arrow-right"></span></a>
     </div>
 
   <hr/>
@@ -504,14 +621,13 @@
       <span><a href="../11.3._Sharing_with_other_users_or_groups_of_users/" style="color: #fcfcfc">&laquo; Previous</a></span>
     
     
-      <span><a href="../../12_Manage_Settings/12._Manage_Settings/" style="color: #fcfcfc">Next &raquo;</a></span>
+      <span><a href="../11.5._Archive_runs/" style="color: #fcfcfc">Next &raquo;</a></span>
     
   </span>
 </div>
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

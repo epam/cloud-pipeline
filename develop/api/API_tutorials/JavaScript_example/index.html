@@ -204,6 +204,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../../manual/11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1"><a class="reference internal" href="#">12. Manage settings</a>
@@ -321,6 +323,14 @@
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="./">JavaScript example</a>
     <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#setup-the-configuration">Setup the configuration</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#start-the-application">Start the application</a>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#application-description">Application description</a>
+    </li>
     </ul>
                   </li>
               </ul>
@@ -375,35 +385,36 @@
               
                 <h1 id="javascript-implementation">JavaScript implementation</h1>
 <p>The JavaScript example implementation of the <a href="../API_tutorials/">Usage scenario</a> offers a Web form, that allows to specify the job input parameters and submit it into the Cloud Pipeline via the API.</p>
-<h1 id="prerequisites">Prerequisites</h1>
+<h2 id="prerequisites">Prerequisites</h2>
 <ul>
 <li>NodeJS 10.15.3+</li>
 <li>npm 6.4.1+</li>
 </ul>
-<h1 id="setup-the-configuration">Setup the configuration</h1>
-<p>Locate the JavaScript sample application at <a href="../attachments/js_example/">js_example</a> or clone the the Cloud Pipeline repository</p>
+<h2 id="setup-the-configuration">Setup the configuration</h2>
+<p>Locate the JavaScript sample application at <a href="https://github.com/epam/cloud-pipeline/tree/develop/docs/md/api/API_tutorials/attachments/js_example">js_example</a> or clone it from the Cloud Pipeline repository:</p>
 <pre><code class="language-bash">git clone https://github.com/epam/cloud-pipeline
 cd cloud-pipeline/docs/md/api/API_tutorials/attachments/js_example/
 </code></pre>
 <p>Open the configuration file <a href="../attachments/js_example/src/api/config.js">config.js</a> and replace the following values:</p>
 <ul>
 <li><code>&lt;host&gt;</code> - set to the host of the Cloud Pipeline API</li>
-<li><code>&lt;storage_id&gt;</code> - set to the ID of the bucket, that is going to be used as a "working directory"
-FASTQ files and processing results will placed into this bucket</li>
+<li><code>&lt;storage_id&gt;</code> - set to the ID of the bucket, that is going to be used as a "working directory". FASTQ files and processing results will placed into this bucket</li>
 </ul>
-<h1 id="start-the-application">Start the application</h1>
+<h2 id="start-the-application">Start the application</h2>
 <pre><code class="language-bash"># Install dependencies and start the app
 # UI will be served on 0.0.0.0:3010
 npm install
 npm run start
 </code></pre>
-<h1 id="application-description">Application description</h1>
+<h2 id="application-description">Application description</h2>
 <p>Once app is built and loaded in the web-browser one can perform the following operations:</p>
 <ul>
-<li>Setup the cellranger parameters</li>
+<li>Setup the cellranger parameters<ul>
 <li>Set the location of the FASTQ files</li>
 <li>Choose the transcriptome</li>
 <li>Specify the "workdir", where the job will keep the results</li>
+</ul>
+</li>
 </ul>
 <p><img alt="API_tutorials_01" src="../attachments/png/API_tutorials_01.png" /></p>
 <ul>
@@ -453,7 +464,6 @@ npm run start
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {

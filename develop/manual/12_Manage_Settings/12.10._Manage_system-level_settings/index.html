@@ -204,6 +204,8 @@
                 </li>
                 <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.4._Automatic_actions_after_notifications/">11.4. Automatic labels and actions for the runs</a>
                 </li>
+                <li class="toctree-l2"><a class="reference internal" href="../../11_Manage_Runs/11.5._Archive_runs/">11.5. Archive completed runs</a>
+                </li>
     </ul>
                   </li>
                   <li class="toctree-l1 current"><a class="reference internal current" href="#">12. Manage settings</a>
@@ -263,6 +265,8 @@
     <li class="toctree-l4"><a class="reference internal" href="#lustre-fs">Lustre FS</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#miscellaneous">Miscellaneous</a>
+    </li>
+    <li class="toctree-l4"><a class="reference internal" href="#monitoring">Monitoring</a>
     </li>
     <li class="toctree-l4"><a class="reference internal" href="#search">Search</a>
     </li>
@@ -444,6 +448,7 @@
 <li><a href="#launch">Launch</a></li>
 <li><a href="#lustre-fs">Lustre FS</a></li>
 <li><a href="#miscellaneous">Miscellaneous</a></li>
+<li><a href="#monitoring">Monitoring</a></li>
 <li><a href="#search">Search</a></li>
 <li><a href="#system">System</a></li>
 <li><a href="#user-interface">User Interface</a></li>
@@ -740,6 +745,10 @@
 <tr>
 <td><strong><code>commit.post.command.path</code></strong></td>
 <td>Specifies a path to a script within a docker image, that will be executed in a committed image, after docker commit occurs</td>
+</tr>
+<tr>
+<td><strong><code>commit.container.size.limits</code></strong></td>
+<td>Defines "soft" and "hard" limits for a container size in bytes.<br>If during the commit operation container size exceeds "soft" limit, user will get warning notification.<br>If container size exceeds "hard" limit, commit operation for such tool will be unavailable</td>
 </tr>
 <tr>
 <td><strong><code>pause.timeout</code></strong></td>
@@ -1222,7 +1231,7 @@
 </tr>
 <tr>
 <td><strong><code>launch.insufficient.capacity.message</code></strong></td>
-<td>Defines the text displayed in the run logs in case when an instance requested by the user is missing due to <code>InsufficientInstanceCapacity</code> error (means insufficient capacity in the selected Cloud Region)</td>
+<td>Defines the text displayed in the run logs in case when an instance requested by the user is missing due to <code>InsufficientInstanceCapacity</code> error<br>(means insufficient capacity in the selected Cloud Region)</td>
 </tr>
 <tr>
 <td><strong><code>launch.run.visibility</code></strong></td>
@@ -1267,6 +1276,10 @@
 <tr>
 <td><strong><code>launch.system.parameters</code></strong></td>
 <td>System parameters, that are used when launching pipelines</td>
+</tr>
+<tr>
+<td><strong><code>launch.tool.size.limits</code></strong></td>
+<td>Defines "soft" and "hard" limits for a container size in bytes.<br>If tool container size exceeds "soft" limit, user will get warning notification when trying to launch such a tool.<br>If container size exceeds "hard" limit, launch of such a tool will be prohibited</td>
 </tr>
 </tbody>
 </table>
@@ -1322,6 +1335,25 @@
 <tr>
 <td><strong><code>system.events.confirmation.metadata.key</code></strong></td>
 <td>Sets the <strong>KEY</strong> for the user's attribute displaying information about "blocking" notifications confirmation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="monitoring">Monitoring</h3>
+<table>
+<thead>
+<tr>
+<th>Setting name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>monitoring.archive.runs.enable</code></strong></td>
+<td>Enables <a href="../../11_Manage_Runs/11.5._Archive_runs/">archiving mechanism</a> for completed runs</td>
+</tr>
+<tr>
+<td><strong><code>monitoring.archive.runs.delay</code></strong></td>
+<td>Manipulates the frequency of archiving operations (in milliseconds).<br>Operations of runs archiving are asynchronous and performed after each period of time specified via this preference</td>
 </tr>
 </tbody>
 </table>
@@ -1400,16 +1432,28 @@
 </thead>
 <tbody>
 <tr>
+<td><strong><code>system.archive.run.metadata.key</code></strong></td>
+<td>Defines the name of the metadata key that shall be specified for users/groups which runs shall be <a href="../../11_Manage_Runs/11.5._Archive_runs/">archived</a></td>
+</tr>
+<tr>
+<td><strong><code>system.archive.run.owners.chunk.size</code></strong></td>
+<td>Defines the chunk size by which the data of completed runs to archive shall be divided. Data is divided by users count (runs owners count)</td>
+</tr>
+<tr>
+<td><strong><code>system.archive.run.runs.chunk.size</code></strong></td>
+<td>Defines the chunk size by which the data of completed runs to archive shall be divided. Data is divided by master runs count</td>
+</tr>
+<tr>
 <td><strong><code>system.ssh.default.root.user.enabled</code></strong></td>
 <td>Enables launch of the SSH terminal from the run under <code>root</code>-user access</td>
 </tr>
 <tr>
 <td><strong><code>system.max.idle.timeout.minutes</code></strong></td>
-<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user and the corresponding run will be marked by the "IDLE" label</td>
+<td>Specifies a duration in minutes.<br>If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - notification will be sent to the user and the corresponding run will be marked by the "IDLE" label</td>
 </tr>
 <tr>
 <td><strong><code>system.idle.action.timeout.minutes</code></strong></td>
-<td>Specifies a duration in minutes. If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
+<td>Specifies a duration in minutes.<br>If CPU utilization is below <strong><code>system.idle.cpu.threshold</code></strong> for this duration - an action, specified in <strong><code>system.idle.action</code></strong> will be performed</td>
 </tr>
 <tr>
 <td><strong><code>system.resource.monitoring.period</code></strong></td>
@@ -1593,7 +1637,6 @@
     <script>var base_url = '../../..';</script>
     <script src="../../../js/theme_extra.js" defer></script>
     <script src="../../../js/theme.js" defer></script>
-      <script src="../../../css/extra.js" defer></script>
       <script src="../../../search/main.js" defer></script>
     <script defer>
         window.onload = function () {
