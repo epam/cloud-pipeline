@@ -3720,6 +3720,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
           const sections = sortedKeys
             .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
+          const navSections = sections.filter(section => {
+            const params = paramsPerSection[section] || {};
+            return Object.values(params).some(value => `${value.visible}` !== 'false');
+          });
           const initializeSectionRef = (node, section) => {
             this.sectionRefs[section] = node;
           };
@@ -3730,11 +3734,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               this.setState({highlightedParameterSection: section}, () => {
                 setTimeout(() => {
                   this.setState({highlightedParameterSection: undefined});
-                }, 1000);
+                }, 1500);
               });
             }
           };
-          const sectionNavigationEnabled = sections.length >= 3;
+          const sectionNavigationEnabled = navSections.length >= 3;
           return (
             <div key="parameters" style={{display: 'flex', flexWrap: 'nowrap'}}>
               {sectionNavigationEnabled ? (
@@ -3746,7 +3750,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     className={styles.parametersNavigation}
                     ref={node => { this.parametersNavigationRef = node; }}
                   >
-                    {sections.map(section => (
+                    {navSections.map(section => (
                       <a
                         className={styles.sectionLink}
                         key={section}
