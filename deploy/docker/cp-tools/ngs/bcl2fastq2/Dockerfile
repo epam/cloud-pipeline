@@ -14,6 +14,11 @@
 
 FROM centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 RUN	yum install -y unzip && \
 	curl -o bcl2fastq2-v2-20-0-linux-x86-64.zip "https://support.illumina.com/content/dam/illumina-support/documents/downloads/software/bcl2fastq/bcl2fastq2-v2-20-0-linux-x86-64.zip" && \
 	unzip bcl2fastq2-v2-20-0-linux-x86-64.zip && \

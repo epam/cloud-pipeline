@@ -14,6 +14,11 @@
 
 FROM library/centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ENV COMMON_REPO_DIR=/usr/sbin/CommonRepo
 ENV PATH=$PATH:$COMMON_REPO_DIR/shell
 ARG CP_API_DIST_URL
