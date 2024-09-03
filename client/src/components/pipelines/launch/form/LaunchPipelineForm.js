@@ -358,7 +358,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     useResolvedParameters: false,
     runNameAlias: undefined,
     isRawEditEnabled: false,
-    selectedParameter: undefined
+    selectedParameter: undefined,
+    highlightedParameterSection: undefined
   };
 
   formItemLayout = {
@@ -411,6 +412,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   prevParameters = {};
+  sectionRefs = {};
+  parametersNavigationWrapperRef;
+  parametersNavigationRef;
+  parametersNavigationIsSticky = false;
+  checkRAF;
 
   @observable modified = false;
   @observable inputPaths = [];
@@ -3725,44 +3731,96 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
           const sections = sortedKeys
             .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
-          return sections.length > 1
-            ? sections.map(section => {
-              return (
-                <div key={section}>
-                  {
-                    this.renderSeparator(
-                      section.toUpperCase(),
-                      0,
-                      'section',
-                      Object.assign(
-                        {marginTop: 20, marginBottom: 20},
-                        sectionVisible(section) ? {} : {display: 'none'}
-                      )
-                    )}
-                  {
-                    renderParametersGroup(
-                      Object.keys(paramsPerSection[section]),
-                      paramsPerSection[section])
-                  }
+          const navSections = sections.filter(section => {
+            const params = paramsPerSection[section] || {};
+            return Object.values(params).some(value => `${value.visible}` !== 'false');
+          });
+          const initializeSectionRef = (node, section) => {
+            this.sectionRefs[section] = node;
+          };
+          const scrollToSection = (event, section) => {
+            const sectionRef = this.sectionRefs[section];
+            if (sectionRef) {
+              sectionRef.scrollIntoView({behavior: 'smooth'});
+              this.setState({highlightedParameterSection: section}, () => {
+                setTimeout(() => {
+                  this.setState({highlightedParameterSection: undefined});
+                }, 1500);
+              });
+            }
+          };
+          const sectionNavigationEnabled = navSections.length >= 3;
+          return (
+            <div key="parameters" style={{display: 'flex', flexWrap: 'nowrap'}}>
+              {sectionNavigationEnabled ? (
+                <div
+                  ref={node => { this.parametersNavigationWrapperRef = node; }}
+                  style={{flexShrink: 0}}
+                >
+                  <div
+                    className={styles.parametersNavigation}
+                    ref={node => { this.parametersNavigationRef = node; }}
+                  >
+                    {navSections.map(section => (
+                      <a
+                        className={styles.sectionLink}
+                        key={section}
+                        onClick={event => scrollToSection(event, section)}
+                      >
+                        {`${section[0].toUpperCase()}${section.substring(1)}`}
+                      </a>
+                    ))}
+                  </div>
                 </div>
-              );
-            })
-            : renderParametersGroup(keys, params);
+              ) : null}
+              <div style={{flexGrow: 1}}>
+                {sections.length > 1
+                  ? sections.map(section => {
+                    const highlighted = this.state.highlightedParameterSection === section;
+                    return (
+                      <div
+                        key={section}
+                        ref={(node) => initializeSectionRef(node, section)}
+                      >
+                        {
+                          this.renderSeparator(
+                            section.toUpperCase(),
+                            0,
+                            'section',
+                            Object.assign(
+                              {marginTop: 20, marginBottom: 20},
+                              sectionVisible(section) ? {} : {display: 'none'}
+                            ),
+                            highlighted
+                          )}
+                        {
+                          renderParametersGroup(
+                            Object.keys(paramsPerSection[section]),
+                            paramsPerSection[section])
+                        }
+                      </div>
+                    );
+                  })
+                  : renderParametersGroup(keys, params)
+                }
+              </div>
+            </div>
+          );
         }
       }
     };
 
     const currentParameters = this.isFireCloudSelected
-      ? []
+      ? null
       : renderCurrentParameters(isSystemParametersSection);
 
     return [
       renderUseResolvedParameters(),
       this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
-      isSystemParametersSection && currentParameters.length > 0 &&
+      isSystemParametersSection && currentParameters &&
       this.renderSeparator('System parameters', 0, 'header', {marginTop: 20, marginBottom: 10}),
       !this.isFireCloudSelected ? keysFormItem : undefined,
-      ...currentParameters,
+      currentParameters,
       !this.isFireCloudSelected ? addParameterButtonFn() : undefined
     ];
   };
@@ -5031,6 +5089,29 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.resetState(keepPipeline);
   };
 
+  initializeParametersNavigationCheck = () => {
+    const padding = 20; // Should be equals to .parametersNavigation.sticky top
+    const check = () => {
+      if (this.parametersNavigationRef && this.parametersNavigationWrapperRef) {
+        const {top} = this.parametersNavigationWrapperRef
+          .getBoundingClientRect();
+        if (top <= padding && !this.parametersNavigationIsSticky) {
+          const {width} = this.parametersNavigationRef
+            .getBoundingClientRect();
+          this.parametersNavigationRef.classList.add('sticky');
+          this.parametersNavigationWrapperRef.style.width = `${width}px`;
+          this.parametersNavigationIsSticky = true;
+        } else if (top > padding && this.parametersNavigationIsSticky) {
+          this.parametersNavigationRef.classList.remove('sticky');
+          this.parametersNavigationWrapperRef.style.width = '';
+          this.parametersNavigationIsSticky = false;
+        }
+      }
+      this.checkRAF = requestAnimationFrame(check);
+    };
+    this.checkRAF = requestAnimationFrame(check);
+  }
+
   toggleResolvedParameters = () => {
     const {parameters, form} = this.props;
     this.setState(prevState => ({
@@ -5253,17 +5334,22 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderSeparator = (text, marginInCols, key, style) => {
+  renderSeparator = (text, marginInCols, key, style, highlighted = false) => {
     return (
       <Row key={key} type="flex" style={style || {margin: 0}}>
         <Col span={marginInCols} />
         <Col span={24 - 2 * marginInCols}>
           <table style={{width: '100%'}}>
             <tbody>
-              <tr>
+              <tr className={classNames(styles.parameterSectionHeader, {
+                [styles.highlighted]: highlighted
+              })}>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
@@ -5272,10 +5358,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     {'\u00A0'}
                   </div>
                 </td>
-                <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
+                <td style={{width: 1, whiteSpace: 'nowrap'}}>
+                  <b className={classNames({
+                    'cp-primary': highlighted
+                  })}>
+                    {text}
+                  </b>
+                </td>
                 <td style={{width: '50%'}}>
                   <div
-                    className="cp-divider horizontal"
+                    className={classNames('cp-divider horizontal', {
+                      'cp-primary': highlighted,
+                      'border': highlighted
+                    })}
                     style={{
                       width: 'unset',
                       margin: '0 5px'
@@ -6097,6 +6192,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     this.props.onInitialized && this.props.onInitialized(this);
+    this.initializeParametersNavigationCheck();
   }
 
   componentDidUpdate (prevProps, prevState) {
@@ -6226,6 +6322,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         fireCloudDefaultOutputs: []
       });
     }
+  }
+
+  componentWillUnmount () {
+    cancelAnimationFrame(this.checkRAF);
   }
 }
 
