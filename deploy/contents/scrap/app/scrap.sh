@@ -204,7 +204,7 @@ get_version "$API_URL" "$API_TOKEN" "$_version_file"
 write_scrap_result "version" "$(basename $_version_file)" "$?" "$OUTPUT_DIR"
 
 echo_info "- Retrieving list on installed services from server"
-_services_file="$OUTPUT_DIR/services.json"
+_services_file="$OUTPUT_DIR/services"
 get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "${_services_file}"
 write_scrap_result "services" "$(basename ${_services_file})" "$?" "$OUTPUT_DIR"
 

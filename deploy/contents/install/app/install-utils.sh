@@ -601,7 +601,7 @@ function enable_services_from_point_in_time_configuration {
         print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
         while read -r key; do
             enable_service "$key"
-        done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
+        done < <(cat "$point_in_time_configuration_service_file")
     fi
 }
 

@@ -23,9 +23,24 @@ get_services() {
     local output_file="${4}"
 
     #SSH connection to the server
-    ssh_responce=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get nodes -o json | jq ['.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))'])
-    if [ -n "$ssh_responce" ]; then
-       echo "$ssh_responce" > $output_file
+    local node_labels=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get nodes -o json | jq -r '.items[] | .metadata.labels | to_entries[] | select(.key | startswith("cloud-pipeline/")) | .key | sub("cloud-pipeline/";"") | select(startswith("cp-"))')
+    local pod_names=$(ssh -i $CP_NODE_SSH_KEY -oStrictHostKeyChecking=no $CP_NODE_USER@$CP_NODE_IP sudo kubectl get po -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+    declare -A matched_services
+    
+    #Read labels from the variable and check each pod name for a matching label substring to find matching pods.Save matched labels to array.
+    while IFS= read -r label; do
+      while IFS= read -r pod_name; do
+        if [[ "$pod_name" == *"$label"* ]]; then
+            matched_services["$label"]=1
+        fi
+      done <<< "$pod_names"
+    done <<< "$node_labels"
+
+    #If array not empty, save all keys to output  
+    if [ "${#matched_services[@]}" -gt 0 ]; then
+       for service in $(printf "%s\n" "${!matched_services[@]}" | sort); do
+           echo "$service" >> "$output_file"
+       done
        echo_ok "list of services from server $CP_NODE_IP saved in file $output_file"
     else
        echo_err "Error occurred while connecting to the server."
