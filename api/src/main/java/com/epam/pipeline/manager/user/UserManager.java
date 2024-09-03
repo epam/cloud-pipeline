@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -58,6 +59,7 @@ import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,14 +73,7 @@ import org.springframework.util.Assert;
 import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -124,6 +119,9 @@ public class UserManager implements SecuredEntityManager {
     private DataStorageManager dataStorageManager;
 
     @Autowired
+    private ToolGroupManager toolGroupManager;
+
+    @Autowired
     private GrantPermissionHandler permissionHandler;
 
     @Autowired
@@ -134,22 +132,49 @@ public class UserManager implements SecuredEntityManager {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser create(String name, List<Long> roles,
-                               List<String> groups, Map<String, String> attributes,
-                               Long defaultStorageId) {
-        final PipelineUser newUser = create(name, roles, groups, attributes);
+    public PipelineUser create(final String name, final List<Long> roles,
+                               final List<String> groups,
+                               final Map<String, String> attributes,
+                               final Long defaultStorageId) {
+        return Optional.of(create(name, roles, groups, attributes))
+                .map(user -> configureUserDefaultStorage(user, defaultStorageId))
+                .map(this::configureUserPrivateDockerRegistryGroup)
+                .get();
+    }
+
+    private PipelineUser configureUserPrivateDockerRegistryGroup(final PipelineUser user) {
+        final boolean createDockerRegistryUserGroup = BooleanUtils.isTrue(
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE));
+        final Long defaultDockerRegistry = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_DEFAULT_DOCKER_REGISTRY);
+        if (createDockerRegistryUserGroup && defaultDockerRegistry != null) {
+            if (!toolGroupManager.doesUserToolGroupExist(defaultDockerRegistry, user.getUserName())) {
+                toolGroupManager.createPrivate(defaultDockerRegistry, user.getUserName());
+            } else {
+                log.warn(messageHelper.getMessage(
+                        MessageConstants.WARN_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+            }
+        } else {
+            log.info(messageHelper.getMessage(
+                    MessageConstants.INFO_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+        }
+        return user;
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private PipelineUser configureUserDefaultStorage(final PipelineUser user, final Long defaultStorageId) {
         if (defaultStorageId != null) {
             storageValidator.validate(defaultStorageId);
-            assignDefaultStorageToUser(newUser, defaultStorageId);
+            assignDefaultStorageToUser(user, defaultStorageId);
         } else {
             try {
-                return initUserDefaultStorage(newUser);
+                return initUserDefaultStorage(user);
             } catch (RuntimeException e) {
                 log.warn(messageHelper.getMessage(MessageConstants.ERROR_DEFAULT_STORAGE_CREATION,
-                        name, e.getMessage()));
+                        user.getUserName(), e.getMessage()));
             }
         }
-        return newUser;
+        return user;
     }
 
     /**
