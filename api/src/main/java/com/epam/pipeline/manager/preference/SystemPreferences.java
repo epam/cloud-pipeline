@@ -1216,6 +1216,11 @@ public class SystemPreferences {
     public static final IntPreference LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT = new IntPreference(
             "limit.network.bandwidth.command.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
 
+    public static final BooleanPreference SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE = new BooleanPreference(
+            "system.docker.registry.create.user.group", false, SYSTEM_GROUP, pass);
+    public static final LongPreference SYSTEM_DEFAULT_DOCKER_REGISTRY = new LongPreference(
+            "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
+
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
         "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,

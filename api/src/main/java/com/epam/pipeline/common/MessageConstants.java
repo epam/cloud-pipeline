@@ -453,6 +453,8 @@ public final class MessageConstants {
     public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
     public static final String ERROR_SELF_IMPERSONATION_NOT_ALLOWED = "impersonation.self.not.allowed";
     public static final String ERROR_IMPERSONATION_EMPTY_USER = "impersonation.validation.empty.user";
+    public static final String INFO_DEFAULT_USER_DOCKER_GROUP_CREATE = "info.user.docker.group.create";
+    public static final String WARN_DEFAULT_USER_DOCKER_GROUP_CREATE = "warn.user.docker.group.create";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";
