@@ -6312,6 +6312,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       });
     }
   }
+
+  componentWillUnmount () {
+    cancelAnimationFrame(this.checkRAF);
+  }
 }
 
 export default class extends React.Component {
