@@ -682,7 +682,6 @@ class Renderer {
           container.clientWidth !== width
         ) {
           width = container.clientWidth;
-          height = container.clientHeight;
           this._requestReCheck = false;
           this.width = Math.max(width || 0, 1);
           canvas.width = dpr * width;
@@ -690,6 +689,7 @@ class Renderer {
           canvas.style.width = `${width}px`;
           canvas.style.height = `${(this.dataHeight || 0) + this.xLabelsPadding}px`;
           container.style.minHeight = canvas.style.height;
+          height = container.clientHeight;
           textCanvas.width = dpr * width;
           textCanvas.height = dpr * (this.dataHeight + this.xLabelsPadding);
           textCanvas.style.width = `${width}px`;
