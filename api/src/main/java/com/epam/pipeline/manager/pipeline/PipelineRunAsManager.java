@@ -61,8 +61,6 @@ import java.util.concurrent.Executor;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PipelineRunAsManager {
 
-    public static final String FALLBACK_ORIGINAL_OWNER_PARAMETER = "ORIGINAL_OWNER";
-
     private final PipelineRunManager pipelineRunManager;
     private final UserRunnersManager userRunnersManager;
     private final UserManager userManager;
