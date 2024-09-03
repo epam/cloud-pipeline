@@ -47,6 +47,7 @@
                         r.actual_cmd,
                         r.timeout,
                         r.owner,
+                        r.original_owner,
                         r.pod_ip,
                         r.commit_status,
                         r.last_change_commit_time,

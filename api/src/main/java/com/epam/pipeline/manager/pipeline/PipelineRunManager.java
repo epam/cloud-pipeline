@@ -955,6 +955,8 @@ public class PipelineRunManager {
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
         run.setOwner(authManager.getAuthorizedUser());
+        run.setOriginalOwner(calculateOriginalOwner(configuration, parentRun));
+
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
@@ -970,6 +972,20 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
+        final String originalOwnerParam = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        return Optional.ofNullable(
+                configuration.getParameters().get(originalOwnerParam)
+                ).map(PipeConfValueVO::getValue)
+                .orElseGet(() -> {
+                    if (parentRun != null && StringUtils.isNotBlank(parentRun.getOriginalOwner())) {
+                        return parentRun.getOriginalOwner();
+                    }
+                    return authManager.getAuthorizedUser();
+                });
     }
 
     private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {

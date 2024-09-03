@@ -55,6 +55,10 @@ public class PipelineRun extends AbstractSecuredEntity {
     private static final Pattern PARAMS_REGEXP = Pattern.compile("([a-zA-Z0-9_]*=[a-zA-Z0-9_]*)");
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
 
+    // Describes the user who actually launch this run, in common case will be the same as owner field,
+    // but in case of runAs functionality will hold a name of the user who initially initiate a launch process
+    private String originalOwner;
+
     private Long pipelineId;
     private Date startDate;
     private Date instanceStartDate;

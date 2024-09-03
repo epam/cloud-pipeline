@@ -61,8 +61,6 @@ import java.util.concurrent.Executor;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PipelineRunAsManager {
 
-    private static final String FALLBACK_ORIGINAL_OWNER_PARAMETER = "ORIGINAL_OWNER";
-
     private final PipelineRunManager pipelineRunManager;
     private final UserRunnersManager userRunnersManager;
     private final UserManager userManager;
@@ -118,14 +116,10 @@ public class PipelineRunAsManager {
     private Map<String, PipeConfValueVO> withOriginalOwnerParam(final Map<String, PipeConfValueVO> params,
                                                                 final String owner) {
         final Map<String, PipeConfValueVO> updatedParams = new HashMap<>(MapUtils.emptyIfNull(params));
-        updatedParams.put(getOriginalOwnerParamName(), new PipeConfValueVO(owner));
+        final String originalOwnerParam = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        updatedParams.put(originalOwnerParam, new PipeConfValueVO(owner));
         return updatedParams;
-    }
-
-    private String getOriginalOwnerParamName() {
-        return Optional.of(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER)
-                .map(preferenceManager::getPreference)
-                .orElse(FALLBACK_ORIGINAL_OWNER_PARAMETER);
     }
 
     private PipelineRun supplyRunAsync(final String runAsUser, final Callable<PipelineRun> runCallable) {
