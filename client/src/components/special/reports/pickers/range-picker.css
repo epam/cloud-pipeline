@@ -14,52 +14,23 @@
  * limitations under the License.
  */
 
-.table > div > div {
-  filter: none !important;
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  width: max-content;
 }
 
-.table table {
-  table-layout: fixed;
+.dates-container {
+  display: flex;
+  margin-bottom: 15px;
 }
 
-.user-name-column {
-  white-space: nowrap;
+.btn-container {
+  display: flex;
+  justify-content: space-between;
 }
 
-.roles-column,
-.groups-column {
-
-}
-
-.more-info-label {
-  margin: 2px;
-  padding: 0 2px;
-  font-style: italic;
-  text-decoration: underline;
-  white-space: nowrap;
-}
-
-.user-role,
-.user-group {
-  margin: 2px;
-  padding: 0 2px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-  background-color: #fefefe;
-  font-size: x-small;
-  font-weight: bold;
-}
-
-.role-actions button {
-  margin-left: 5px;
-}
-
-.ad {
-  color: #999;
-}
-
-.usage-report {
-  width: 100%;
-  height: calc(100vh - 200px);
-  overflow: auto;
+.filter-btn {
+  padding: 0 25px;
 }

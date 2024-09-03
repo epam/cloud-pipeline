@@ -49,6 +49,7 @@ import ImportUsersButton from './components/import-users';
 import ImportResult from './components/import-result';
 import styles from './UserManagementForm.css';
 import roleModel from '../../utils/roleModel';
+import UsageReport from './user-management/usage-report';
 
 const PAGE_SIZE = 20;
 
@@ -1006,6 +1007,11 @@ export default class UserManagementForm extends React.Component {
             role={this.state.editableRole}
             readOnly={!this.isAdmin}
           />
+        </Tabs.TabPane>
+        <Tabs.TabPane tab="Usage report" key="usage">
+          <div className={styles.usageReport}>
+            <UsageReport />
+          </div>
         </Tabs.TabPane>
       </Tabs>
     );
