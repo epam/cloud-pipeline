@@ -609,7 +609,7 @@ function set_preferences_from_point_in_time_configuration {
     local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
     if [ "$point_in_time_configuration_preference_file" ]; then
         print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
-        local PREF_NAMES_TO_FILTER_OUT="git.token|cluster.networks.config"
+        local PREF_NAMES_TO_FILTER_OUT="git.token|cluster.networks.config|git.repository.hook.url"
         local payload=$(jq --arg PREF_NAMES_TO_FILTER_OUT "$PREF_NAMES_TO_FILTER_OUT" '[.[] | select(has("value")) | select( .name | test($PREF_NAMES_TO_FILTER_OUT) | not) ]' $point_in_time_configuration_preference_file)
         call_api "/preferences" "$CP_API_JWT_ADMIN" "$payload"
     fi
