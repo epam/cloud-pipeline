@@ -38,9 +38,9 @@ get_services() {
 
     #If array not empty, save all keys to output  
     if [ "${#matched_services[@]}" -gt 0 ]; then
-       for service in $(printf "%s\n" "${!matched_services[@]}" | sort); do
-           echo "$service" >> "$output_file"
-       done
+       for service in "${!matched_services[@]}"; do 
+         printf '%s' "$service" | jq -R -s .; 
+       done | jq -s . > "$output_file"
        echo_ok "list of services from server $CP_NODE_IP saved in file $output_file"
     else
        echo_err "Error occurred while connecting to the server."
