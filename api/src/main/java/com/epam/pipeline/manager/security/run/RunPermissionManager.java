@@ -87,7 +87,7 @@ public class RunPermissionManager {
      */
     public boolean runPermission(final PipelineRun run, final String permissionName) {
         //add assert run not null
-        if (permissionsHelper.isOwnerOrAdmin(run.getOwner()) || isRunSshAllowed(run)) {
+        if (permissionsHelper.isOwnerOrAdmin(run.getOwners()) || isRunSshAllowed(run)) {
             return true;
         }
         return Optional.ofNullable(runManager.loadRunParent(run))
@@ -102,7 +102,7 @@ public class RunPermissionManager {
     public boolean runStatusPermission(Long runId, TaskStatus taskStatus, String permissionName) {
         final PipelineRun pipelineRun = runCRUDService.loadRunById(runId);
         if (taskStatus.isFinal()) {
-            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner()) || isRunSshAllowed(pipelineRun);
+            return permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwners()) || isRunSshAllowed(pipelineRun);
         }
         return runPermission(pipelineRun, permissionName);
     }
@@ -112,7 +112,7 @@ public class RunPermissionManager {
     }
 
     public boolean isRunSshAllowed(PipelineRun pipelineRun) {
-        if (permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwner())) {
+        if (permissionsHelper.isOwnerOrAdmin(pipelineRun.getOwners())) {
             return true;
         }
         final List<RunSid> sshSharedSids = ListUtils.emptyIfNull(pipelineRun.getRunSids())
