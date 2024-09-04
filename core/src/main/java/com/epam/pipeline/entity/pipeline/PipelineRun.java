@@ -40,9 +40,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Getter
 @Setter
@@ -168,6 +170,11 @@ public class PipelineRun extends AbstractSecuredEntity {
     public boolean isWorkerRun() {
         // worker node
         return this.getParentRunId() != null;
+    }
+
+    @JsonIgnore
+    public List<String> getOwners() {
+        return Stream.of(getOwner(), getOriginalOwner()).filter(Objects::nonNull).collect(Collectors.toList());
     }
 
     private boolean hasBooleanParameter(String parameterName) {
