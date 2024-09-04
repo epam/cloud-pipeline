@@ -22,7 +22,6 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
@@ -33,7 +32,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,18 +71,12 @@ public class CheckPermissionHelper {
         return permissionEvaluator.hasPermission(getAuthentication(pipelineUserName), entity, permissionName);
     }
 
-    public boolean isOwnerOrAdmin(final String owner) {
-        return isOwnerOrAdmin(Collections.singletonList(owner));
-    }
-
-    // In case of PipelineRun we can have two "owners": owner, and originalOwner,
-    // for this case this method will be useful
-    public boolean isOwnerOrAdmin(final List<String> owners) {
+    public boolean isOwnerOrAdmin(String owner) {
         final String user = authManager.getAuthorizedUser();
         if (user == null || user.equals(AuthManager.UNAUTHORIZED_USER)) {
             return false;
         }
-        return ListUtils.emptyIfNull(owners).stream().anyMatch(user::equals) || isAdmin();
+        return user.equalsIgnoreCase(owner) || isAdmin();
     }
 
     private boolean isOwnerOrAdmin(final String owner, final String userName) {
