@@ -106,7 +106,12 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
+    public MutableAcl getOrCreateObjectIdentity(final AbstractSecuredEntity securedEntity,
+                                                final boolean reload) {
+        if (reload) {
+            evictFromCache(securedEntity);
+        }
+
         ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
         if (retrieveObjectIdentityPrimaryKey(identity) != null) {
             Acl acl = readAclById(identity);
@@ -122,6 +127,11 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
             }
             return acl;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
+        return getOrCreateObjectIdentity(securedEntity, false);
     }
 
     public Map<ObjectIdentity, Acl> getObjectIdentities(Set<AbstractSecuredEntity> securedEntities) {
@@ -203,13 +213,17 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void changeOwner(final AbstractSecuredEntity entity, final String owner) {
-        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
+        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity, true);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
     }
 
     public void putInCache(final MutableAcl acl) {
         aclCache.putInCache(acl);
+    }
+
+    private void evictFromCache(final AbstractSecuredEntity entity) {
+        aclCache.evictFromCache(new ObjectIdentityImpl(entity.getClass(), entity.getId()));
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {

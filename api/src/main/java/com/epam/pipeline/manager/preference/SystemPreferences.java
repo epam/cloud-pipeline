@@ -113,7 +113,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
  * validation functionality.
  */
 @Component
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "checkstyle:MagicNumber"})
 public class SystemPreferences {
     private static final String COMMIT_GROUP = "Commit";
     private static final String GIT_GROUP = "Git";
@@ -1006,7 +1006,7 @@ public class SystemPreferences {
                     EventTopic.builder()
                             .stream("acl-events")
                             .enabled(true)
-                            .timeout(5)
+                            .timeout(500)
                             .build()),
                     new TypeReference<Map<String, EventTopic>>() {}, SYSTEM_GROUP,
                     isNullOrValidJson(new TypeReference<Map<String, EventTopic>>() {}), false);

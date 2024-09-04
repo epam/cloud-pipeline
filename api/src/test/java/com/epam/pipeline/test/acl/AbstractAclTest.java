@@ -144,6 +144,7 @@ public abstract class AbstractAclTest {
         doReturn(acl).when(aclService).readAclById(eq(objectIdentity), anyList());
         doReturn(acl).when(aclService).getAcl(eq(entity));
         doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity));
+        doReturn(acl).when(aclService).getOrCreateObjectIdentity(eq(entity), eq(true));
         doReturn(acl).when(aclService).createAcl(eq(entity));
         doReturn(acl).when(aclService).updateAcl(acl);
         doReturn(Collections.singletonMap(objectIdentity, acl)).when(aclService).getObjectIdentities(anySet());
