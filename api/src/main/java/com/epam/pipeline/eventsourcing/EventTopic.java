@@ -24,5 +24,6 @@ import lombok.Value;
 public class EventTopic {
     String stream;
     boolean enabled;
+    // in millis
     int timeout;
 }
