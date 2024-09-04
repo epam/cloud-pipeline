@@ -25,18 +25,20 @@ import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.manager.report.ReportUtils.buildTimeIntervals;
+import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMedian;
+import static com.epam.pipeline.manager.report.ReportUtils.dateInInterval;
 
 @Service
 @RequiredArgsConstructor
@@ -72,17 +74,6 @@ public class UsersUsageReportService {
         return filter;
     }
 
-    private List<LocalDateTime> buildTimeIntervals(final LocalDateTime from, final LocalDateTime to,
-                                                   final ChronoUnit intervalStep) {
-        LocalDateTime intervalTime = from;
-        final List<LocalDateTime> timeIntervals = new ArrayList<>();
-        while (intervalTime.isBefore(to)) {
-            timeIntervals.add(intervalTime);
-            intervalTime = intervalTime.plus(1, intervalStep);
-        }
-        return timeIntervals;
-    }
-
     private LocalDateTime buildEndOfInterval(final LocalDateTime to) {
         final LocalDateTime now = DateUtils.nowUTC();
         if (Objects.isNull(to)) {
@@ -95,7 +86,7 @@ public class UsersUsageReportService {
                                                    final Set<Long> filterUsers) {
         final LocalDateTime to = from.plusHours(1);
         final List<Long> usersInInterval = users.stream()
-                .filter(user -> user.getLogDate().isBefore(to) && !user.getLogDate().isBefore(from))
+                .filter(user -> dateInInterval(user.getLogDate(), from, to))
                 .flatMap(user -> user.getUserIds().stream())
                 .distinct()
                 .filter(userId -> CollectionUtils.isEmpty(filterUsers) || filterUsers.contains(userId))
@@ -129,7 +120,7 @@ public class UsersUsageReportService {
                 .collect(Collectors.toList());
         return UsersUsageInfo.builder()
                 .totalUsers(totalUsersInInterval)
-                .activeUsersCount(calculateMedianUsersCount(usersUsageByHour))
+                .activeUsersCount(calculateSampleMedian(UsersUsageInfo::getActiveUsersCount, usersUsageByHour))
                 .totalUsersCount(totalUsersInInterval.size())
                 .periodStart(from)
                 .periodEnd(to)
@@ -142,13 +133,6 @@ public class UsersUsageReportService {
         return intervals.stream()
                 .map(interval -> calculateDailyUsersUsageInfo(users, interval, filterUsers))
                 .collect(Collectors.toList());
-    }
-
-    private Integer calculateMedianUsersCount(final List<UsersUsageInfo> usersUsageByHour) {
-        final double[] sample = usersUsageByHour.stream()
-                .mapToDouble(UsersUsageInfo::getActiveUsersCount)
-                .toArray();
-        return (int) Math.round(new Median().evaluate(sample));
     }
 
     private Set<Long> prepareUsers(final UsersUsageReportFilterVO filter) {

@@ -59,13 +59,4 @@ public interface ReportUtils {
                 .toArray();
         return sample.length == 0 ? 0 : (int) Math.round(new Median().evaluate(sample));
     }
-
-    static <T> Integer calculateSampleMax(final Function<T, Integer> getValueFunction,
-                                          final List<T> records) {
-        return records.stream()
-                .map(getValueFunction)
-                .filter(Objects::nonNull)
-                .max(Integer::compareTo)
-                .orElse(null);
-    }
 }
