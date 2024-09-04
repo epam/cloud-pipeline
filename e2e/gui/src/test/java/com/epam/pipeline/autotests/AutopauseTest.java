@@ -145,10 +145,10 @@ public class AutopauseTest extends AbstractSeveralPipelineRunningTest implements
                         .settings()
                         .switchToPreferences()
                         .switchToSystem()
-                        .setMaxIdleTimeout(maxIdleTimeout)
                         .setIdleActionTimeout(idleActionTimeout)
                         .setIdleCpuThreshold(idleCpuThreshold)
                         .setIdleAction(idleAction)
+                        .setMaxIdleTimeout(maxIdleTimeout)
                         .saveIfNeeded()
         );
     }
