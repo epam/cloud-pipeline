@@ -548,18 +548,17 @@ class TimelineChartRenderer {
     let y = clientY;
     let width = this.width;
     let height = this.height;
-    if (this.canvasBox) {
-      const {
-        x: canvasX,
-        y: canvasY,
-        width: canvasWidth,
-        height: canvasHeight
-      } = this.canvasBox;
-      x = clientX - canvasX;
-      y = clientY - canvasY;
-      width = canvasWidth;
-      height = canvasHeight;
-    }
+    this.canvasBox = this.canvas.getBoundingClientRect();
+    const {
+      x: canvasX,
+      y: canvasY,
+      width: canvasWidth,
+      height: canvasHeight
+    } = this.canvasBox;
+    x = clientX - canvasX;
+    y = clientY - canvasY;
+    width = canvasWidth;
+    height = canvasHeight;
     const valueX = this.xAxis.getValueForPixel(x);
     const valueY = this.yAxis.getValueForPixel(y);
     const hitX = this.xAxis.valueFitsRange(valueX);

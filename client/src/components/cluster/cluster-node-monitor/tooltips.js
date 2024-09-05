@@ -21,9 +21,9 @@ import {percentToHexAlpha} from '../../special/heat-map-chart/utils';
 
 const MAX_CELLS_IN_ROW = 3;
 
-const getColorWithAlpha = (hexColor, value, maximum = 100) => {
+const getColorWithAlpha = (hexColor, value, minimum = 0, maximum = 100) => {
   const percent = (value / maximum) * 100;
-  return `${hexColor}${percentToHexAlpha(percent)}`;
+  return `${hexColor}${percentToHexAlpha(percent, minimum)}`;
 };
 
 const convertKilobytesToGb = (kb = 0) => {
@@ -35,9 +35,9 @@ const convertKilobytesToGb = (kb = 0) => {
   return Gb.toFixed(1);
 };
 
-function renderCircle (className, style) {
+function renderCircle (style) {
   return (
-    <svg style={style} className={className} height="10" width="10">
+    <svg style={style} height="10" width="10">
       <circle cx="5" cy="5" r="4"
         strokeWidth={1}
         fill="currentColor"
@@ -51,7 +51,8 @@ function renderStatisticsGrid ({
   measure,
   hoveredItem = {},
   themeConfiguration = {},
-  hideDatasets = []
+  hideDatasets = [],
+  minOpacity = 0
 }) {
   const {gpuId, key} = hoveredItem;
   const {gpuUsage = {}, gpuDetails = {}} = record || {};
@@ -70,7 +71,10 @@ function renderStatisticsGrid ({
       <div style={{display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: 5}}>
         <div style={{display: 'flex', justifyContent: 'space-between'}}>
           <span>
-            {renderCircle('cp-success', {marginRight: 5})}
+            {renderCircle({
+              marginRight: 5,
+              color: COLORS[dataKey]
+            })}
             {title}
           </span>
           <span>{Math.round((gpuUsage[dataKey] || {})[measure] || 0)}%</span>
@@ -99,7 +103,8 @@ function renderStatisticsGrid ({
                     marginBottom: 1,
                     background: getColorWithAlpha(
                       COLORS[dataKey],
-                      data[measure]
+                      data[measure],
+                      minOpacity
                     ),
                     border: `${highlighted ? '2px' : '1px'} solid ${borderColor}`
                   }}
@@ -179,7 +184,8 @@ export const renderHeatmapTooltip = ({
   measure,
   metrics,
   themeConfiguration,
-  hideDatasets
+  hideDatasets,
+  minOpacity = 0
 }) => {
   const record = (metrics.charts || [])[hoveredItem.recordIdx];
   if (!record) {
@@ -202,7 +208,8 @@ export const renderHeatmapTooltip = ({
         measure,
         hoveredItem,
         themeConfiguration,
-        hideDatasets
+        hideDatasets,
+        minOpacity
       })}
     </div>
   );
