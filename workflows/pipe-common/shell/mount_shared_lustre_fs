@@ -20,6 +20,8 @@ REQUEST_FOLDER_FOR_ID="$2"
 REQUEST_TYPE="$3"
 FS_SETUP_TASK="$4"
 
+LUSTRE_FS_IOPS_POSSIBLE_VALUES="1500,3000,6000,12000,24000,36000,48000,60000,72000,84000,96000,108000,120000,132000,144000,156000,168000,180000,192000"
+
 _REQUEST_PARAMS=""
 _DELIMITER="?"
 
@@ -37,6 +39,17 @@ if [ "$REQUEST_TYPE" == "POST" ] ; then
     if  [ ! -z "$CP_CAP_SHARE_FS_THROUGHPUT" ] ; then
         _REQUEST_PARAMS="${_REQUEST_PARAMS}${_DELIMITER}throughput=${CP_CAP_SHARE_FS_THROUGHPUT}"
         _DELIMITER="&"
+    fi
+
+    if  [ ! -z "$CP_CAP_SHARE_FS_IOPS" ] ; then
+        if [ "$CP_CAP_SHARE_FS_DEPLOYMENT_TYPE" != "PERSISTENT_2" ]; then
+            pipe_log_warn "Customizing IOPS for LustreFS allowed only for PERSISTENT_2 deployment type! IOPS setting will not be applied!" "$FS_SETUP_TASK"
+        elif [[ ",${LUSTRE_FS_IOPS_POSSIBLE_VALUES}," == *",${CP_CAP_SHARE_FS_IOPS},"* ]]; then
+            _REQUEST_PARAMS="${_REQUEST_PARAMS}${_DELIMITER}iops=${CP_CAP_SHARE_FS_IOPS}"
+            _DELIMITER="&"
+        else
+            pipe_log_warn "Custom IOPS value: ${CP_CAP_SHARE_FS_IOPS} for LustreFS is not correct! Correct values are: ${LUSTRE_FS_IOPS_POSSIBLE_VALUES} . IOPS setting will not be applied!" "$FS_SETUP_TASK"
+        fi
     fi
 
     if  [ ! -z "$_REQUEST_PARAMS" ] ; then
