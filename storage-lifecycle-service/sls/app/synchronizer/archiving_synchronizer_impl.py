@@ -48,6 +48,15 @@ ROLE_ADMIN_ID = 1
 class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     def _sync_storage(self, storage):
+        if self.config.dry_run:
+            import openpyxl
+            if os.path.isfile(self.config.dry_run_report_path):
+                self.dry_run_report_wb = openpyxl.load_workbook(self.config.dry_run_report_path)
+            else:
+                self.dry_run_report_wb = openpyxl.Workbook()
+                if 'Sheet' in self.dry_run_report_wb.sheetnames:
+                    del self.dry_run_report_wb['Sheet']
+
         if storage.shared:
             self.logger.log("Storage {} marked as shared, skipping".format(storage.path))
 
@@ -142,6 +151,9 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 self.logger.log(
                     "Storage: {}. Rule: {}. Problems to apply the rule. "
                     "Cause: {}\n{}".format(storage.id, rule.rule_id, str(e), traceback.format_exc()))
+
+        if self.config.dry_run:
+            self.dry_run_report_wb.save(self.config.dry_run_report_path)
 
     def _process_files(self, storage, folder, file_listing, rule_subject_files, rule):
         transition_method = rule.transition_method
@@ -295,17 +307,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     def _apply_action_items_dry_run(self, storage, rule, action_items):
         # Just a report
-        import openpyxl
-        if os.path.isfile(self.config.dry_run_report_path):
-            wb = openpyxl.load_workbook(self.config.dry_run_report_path)
+        if storage.name in self.dry_run_report_wb.sheetnames:
+            storage_sheet = self.dry_run_report_wb[storage.name]
         else:
-            wb = openpyxl.Workbook()
-            if 'Sheet' in wb.sheetnames:
-                del wb['Sheet']
-        if storage.name in wb.sheetnames:
-            storage_sheet = wb[storage.name]
-        else:
-            storage_sheet = wb.create_sheet(storage.name)
+            storage_sheet = self.dry_run_report_wb.create_sheet(storage.name)
             storage_sheet.append(['Estimation for date ', self.config.get_estimate_for_date().strftime('%Y-%m-%d')])
             storage_sheet.append(['Storage ID',
                                 'Storage Name',
@@ -326,8 +331,6 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                             str(object_item.creation_date),
                             str(object_item.size)])
                 storage_sheet.append(row)
-            
-        wb.save(self.config.dry_run_report_path)
 
     def _apply_action_items_real(self, storage, rule, action_items):
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Performing action items."
