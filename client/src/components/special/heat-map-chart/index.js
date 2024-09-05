@@ -25,7 +25,7 @@ import styles from './heat-map-chart.css';
 const DEFAULT_BACKGROUND_COLOR = '#ffffff';
 const DEFAULT_TEXT_COLOR = 'rgba(0, 0, 0, 0.65)';
 const DEFAULT_LINE_COLOR = DEFAULT_TEXT_COLOR;
-const HOVER_TIMEOUT = 500;
+const HOVER_TIMEOUT = 250;
 
 @inject('themes')
 @observer
