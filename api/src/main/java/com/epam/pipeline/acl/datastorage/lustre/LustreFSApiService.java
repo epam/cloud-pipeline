@@ -30,8 +30,9 @@ public class LustreFSApiService {
 
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
-                                        final String type, final Integer throughput) {
-        return lustreFSManager.getOrCreateLustreFS(runId, size, type, throughput);
+                                        final String type, final Integer throughput,
+                                        final Integer iops) {
+        return lustreFSManager.getOrCreateLustreFS(runId, size, type, throughput, iops);
     }
 
     @PreAuthorize(AclExpressions.RUN_ID_EXECUTE)

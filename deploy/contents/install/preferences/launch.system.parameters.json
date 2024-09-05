@@ -324,6 +324,12 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_CAP_SHARE_FS_IOPS",
+        "type": "int",
+        "description": "Allows to specify shared file system IOPS (supported for persistent Lustre FS only). Possible values are: [1500, 3000, 6000, 12000, 24000, 36000, 48000, 60000, 72000, 84000, 96000, 108000, 120000, 132000, 144000, 156000, 168000, 180000, 192000]",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_CAP_HW_ADDR",
         "type": "string",
         "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
