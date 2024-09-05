@@ -94,6 +94,10 @@ enable="$5"
 upload_rate="$6"
 download_rate="$7"
 
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+
 COMMAND="/bin/wondershaper"
 
 if [ -f "$COMMAND" ]; then
