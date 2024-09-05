@@ -491,8 +491,7 @@ class GPUInfoTab extends React.Component {
             styles,
             measure,
             themeConfiguration: this.themeConfiguration,
-            hideDatasets,
-            minOpacity: MIN_HEATMAP_OPACITY
+            hideDatasets
           })}}
           hoverContainerClassName="cp-panel"
         />
