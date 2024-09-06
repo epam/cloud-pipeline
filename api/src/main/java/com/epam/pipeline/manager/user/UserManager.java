@@ -27,6 +27,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -143,20 +144,22 @@ public class UserManager implements SecuredEntityManager {
     }
 
     private PipelineUser configureUserPrivateDockerRegistryGroup(final PipelineUser user) {
+        final String userName = user.getUserName();
         final boolean createDockerRegistryUserGroup = BooleanUtils.isTrue(
                 preferenceManager.getPreference(SystemPreferences.SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE));
         final Long defaultDockerRegistry = preferenceManager.getPreference(
                 SystemPreferences.SYSTEM_DEFAULT_DOCKER_REGISTRY);
         if (createDockerRegistryUserGroup && defaultDockerRegistry != null) {
-            if (!toolGroupManager.doesUserToolGroupExist(defaultDockerRegistry, user.getUserName())) {
-                toolGroupManager.createPrivate(defaultDockerRegistry, user.getUserName());
+            if (!toolGroupManager.doesUserToolGroupExist(defaultDockerRegistry, userName)) {
+                final ToolGroup toolGroup = toolGroupManager.createPrivate(defaultDockerRegistry, userName);
+                permissionManager.changeOwner(toolGroup.getId(), AclClass.TOOL_GROUP, userName);
             } else {
                 log.warn(messageHelper.getMessage(
-                        MessageConstants.WARN_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+                        MessageConstants.WARN_DEFAULT_USER_DOCKER_GROUP_CREATE, userName));
             }
         } else {
             log.info(messageHelper.getMessage(
-                    MessageConstants.INFO_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+                    MessageConstants.INFO_DEFAULT_USER_DOCKER_GROUP_CREATE, userName));
         }
         return user;
     }
