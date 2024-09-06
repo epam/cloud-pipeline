@@ -246,7 +246,10 @@ This flag deploys Cloud-Pipeline with scrapped previously configuration. By defa
 
 ```bash
 ~/.pipe/pipectl install \ 
-                -pc  "<path_to_directory>"      # Path to the directory with point-in-time configuration.
-                -pcm "<list_of_modules>"        # (Optional) List of the settings that will be imported to the new deployment.
-                                                # If not set, all settings from the point-in-time configuration directory will be imported.
+                -pc  "<path_to_directory>"                                  # Path to the directory with point-in-time configuration.
+                -pcm "<list_of_modules>"                                    # (Optional) List of the settings that will be imported to the new deployment. Possible values: services,system_preference,users,configmap,tools
+                                                                            # If not set, all settings from the point-in-time configuration directory will be imported.
+                -env CP_POINT_IN_TIME_CONFIGURATION_PREFERENCES_FILTEROUT   # (Optional) Defines which preference values should be filtered out from point-in-time configuration, before apply it during install
+                -env CP_POINT_IN_TIME_CONFIGURATION_CONFIGMAP_FILTEROUT     # (Optional) Defines which configMap values should be filtered out from point-in-time configuration, before apply it during install
+                      
 ```                                               
