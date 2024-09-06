@@ -21,6 +21,7 @@ import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 import DataStorageLink from '../../../../special/data-storage-link';
+import roleModel from '../../../../../utils/roleModel';
 
 export default function (
   {multiZoneManager, vsActions, preferences},
@@ -95,7 +96,7 @@ export default function (
             });
           }
         }
-        if (run.initialized && run.podIP) {
+        if (run.initialized && (roleModel.executeAllowed(run) || run.sshPassword) && run.podIP) {
           actions.push({
             title: 'SSH',
             icon: 'code-o',
@@ -134,7 +135,17 @@ export default function (
             action: callbacks ? callbacks.pause : undefined
           });
         }
-        if ((run.commitStatus || '').toLowerCase() !== 'committing') {
+        if (
+          (
+            roleModel.executeAllowed(run) ||
+            run.sshPassword
+          ) &&
+          (
+            roleModel.isOwner(run) ||
+            run.sshPassword
+          ) &&
+          (run.commitStatus || '').toLowerCase() !== 'committing'
+        ) {
           actions.push({
             title: 'STOP',
             icon: 'close-circle-o',
