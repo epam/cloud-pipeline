@@ -47,17 +47,17 @@ function print_help() {
     echo_info " * List of registered users"
     echo_info ""
     echo_info "OPTIONS:"
-    echo_info "  -o|--output-dir              Directory to write output into"
-    echo_info "  -cpa|--cp-api-address        URL to the Cloud-Pipeline REST API. F.i.: https://<deployment-address>/pipeline/restapi/. Environment variable API_URL also can be defined instead of this option."
-    echo_info "  -cpt|--cp-api-token          JWT token to use for authentication in Cloud-Pipeline. Environment variable API_TOKEN also can be defined instead of this option."
-    echo_info "  -nk|--node-ssh-key           SSH key to user during connection to the Cloud-Pipeline node to scrap kubernetes configuration (services, configmap)"
-    echo_info "  -nu|--node-user              (Optional) Username to user during ssh connection to the Cloud-Pipeline node. Default: pipeline"
-    echo_info "  -na|--node-address           (Optional) Node address (IP or DNS name) to user during ssh connection to the Cloud-Pipeline node. Default: DNS name for -cpa parameter."
-    echo_info "  -kn|--kube-namespace         (Optional) Name of the kubernetes namespace where configmap and Cloud-Pipeline services are located. Default: default"
-    echo_info "  -kc|--kube-configmap         (Optional) Name of the kubernetes configmap to save data from. Default: cp-config-global"
-    echo_info "  -sc|--stored-configuration   (Optional) Configuration to store. Possible values (combination of): 'system_preferences' 'tools' 'users', split by comma. By default script collects all possible data. Default: system_preferences,tools,users"
-    echo_info "  -f|--force                   (Optional) Write output even if output directory isn't empty. Default: disabled"
-    echo_info "  -h|--help                    Print this message"
+    echo_info "  -o   |--output-dir             Directory to write output into"
+    echo_info "  -cpa |--cp-api-address         URL to the Cloud-Pipeline REST API. F.i.: https://<deployment-address>/pipeline/restapi/. Environment variable API_URL also can be defined instead of this option."
+    echo_info "  -cpt |--cp-api-token           JWT token to use for authentication in Cloud-Pipeline. Environment variable API_TOKEN also can be defined instead of this option."
+    echo_info "  -nk  |--node-ssh-key           SSH key to user during connection to the Cloud-Pipeline node to scrap kubernetes configuration (services, configmap)"
+    echo_info "  -nu  |--node-user              (Optional) Username to user during ssh connection to the Cloud-Pipeline node. Default: pipeline"
+    echo_info "  -na  |--node-address           (Optional) Node address (IP or DNS name) to user during ssh connection to the Cloud-Pipeline node. Default: DNS name for -cpa parameter."
+    echo_info "  -kn  |--kube-namespace         (Optional) Name of the kubernetes namespace where configmap and Cloud-Pipeline services are located. Default: default"
+    echo_info "  -kc  |--kube-configmap         (Optional) Name of the kubernetes configmap to save data from. Default: cp-config-global"
+    echo_info "  -sc  |--stored-configuration   (Optional) Configuration to store. Possible values (combination of): 'system_preferences' 'tools' 'users', splitted by comma. By default script collects all possible data. Default: Possible values: system_preferences,users,tools"
+    echo_info "  -f   |--force                  (Optional) Write output even if output directory isn't empty. Default: disabled"
+    echo_info "  -h   |--help                   Print this message"
 }
 
 CONFIGURATIONS_TO_STORE="system_preferences,tools,users"
@@ -217,7 +217,7 @@ if [[ "$CONFIGURATIONS_TO_STORE" =~ "system_preferences" ]]; then
    echo_info "- Retrieving preferences from server"
    _system_pref_file="$OUTPUT_DIR/system-preferences.json"
    get_pref "$API_URL" "$API_TOKEN" "${_system_pref_file}"
-   write_scrap_result "system_preference" "$(basename ${_system_pref_file})" "$?" "$OUTPUT_DIR"
+   write_scrap_result "system_preferences" "$(basename ${_system_pref_file})" "$?" "$OUTPUT_DIR"
 fi     
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "users" ]]; then

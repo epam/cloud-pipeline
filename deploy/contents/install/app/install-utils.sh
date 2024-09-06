@@ -606,7 +606,7 @@ function enable_services_from_point_in_time_configuration {
 }
 
 function set_preferences_from_point_in_time_configuration {
-    local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preference)
+    local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preferences)
     if [ "$point_in_time_configuration_preference_file" ]; then
         print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
         local PREF_NAMES_TO_FILTER_OUT="${CP_POINT_IN_TIME_CONFIGURATION_PREFERENCES_FILTEROUT:-git.token|cluster.networks.config|git.repository.hook.url}"

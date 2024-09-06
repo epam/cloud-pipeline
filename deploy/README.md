@@ -228,17 +228,17 @@ It will scrap: Cloud-Pipeline system-properties, users, settings from kubernetes
 ```bash
 ~/.pipe/pipectl scrap \
 # Pipectl scrap options
-                -sc|--stored-configuration "<list_to_scrap>" \        # Scrap only selected preferences: system_preferences, tools, users.
-                -cpa|--cp-api-address "<https://companymane.com>" \   # URL for Cloud-Pipeline REST API,
-                -nk|--node-ssh-key "<path_to_key>" \                  # SSH key for connecting to the Cloud-Pipeline node. 
-                -nu|--node-user "<username>" \                        # (Optional) Username for SSH connections to the Cloud-Pipeline node.
-                -na|--node-address "<ip-address>"\                    # (Optional) Address (IP or DNS) for SSH to the Cloud-Pipeline node. 
-                -cpt|--cp-api-token "<token>" \                       # JWT token to use for authentication in Cloud-Pipeline.
-                -kn|--kube-namespace "<default>" \                    # (Optional) Namespace name where configmap and services are located.
-                -kc|--kube-configmap "<configmap_name>" \             # (Optional) Name of the kubernetes configmap to save data from.
-                -o|--output-dir "<path_to_directory>" \               # Path to the directory where configuration will be saved.
-                -f|--force \                                          # Write to the directory even if it is not empty.
-                -h|--help \                                           # Print help.
+                -o   |--output-dir "<path_to_directory>" \                     # Path to the directory where configuration will be saved.
+                -cpa |--cp-api-address "<https://cloud-pipeline-url.com>" \    # URL for Cloud-Pipeline REST API,
+                -cpt |--cp-api-token "<token>" \                               # JWT token to use for authentication in Cloud-Pipeline.
+                -nk  |--node-ssh-key "<path_to_key>" \                         # SSH key for connecting to the Cloud-Pipeline node. 
+                -nu  |--node-user "<username>" \                               # (Optional) Username for SSH connections to the Cloud-Pipeline node.
+                -na  |--node-address "<ip-address>"\                           # (Optional) Address (IP or DNS) for SSH to the Cloud-Pipeline node. 
+                -sc  |--stored-configuration "<list_to_scrap>" \               # (Optional) Scrap only selected parts of the configuration. Possible values: system_preferences,users,tools
+                -kn  |--kube-namespace "<default>" \                           # (Optional) Namespace name where configmap and services are located.
+                -kc  |--kube-configmap "<configmap_name>" \                    # (Optional) Name of the kubernetes configmap to save data from.
+                -f   |--force \                                                # Write to the directory even if it is not empty.
+                -h   |--help                                                   # Prints help massage.
 ```
 
 ## deploy point-in-time configuration -pc
