@@ -20,7 +20,7 @@ get_tools() {
     export output_dir="${3}"
     local resulted_exit_code=0
 
-    registries_tree=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/dockerRegistry/loadTree")
+    registries_tree=$(curl -k -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/dockerRegistry/loadTree")
     if [ $? -eq 0 ]; then
         for registry in $(echo "$registries_tree" | jq -r '.payload | .registries[].path'); do
             local registry_data=$(echo "$registries_tree" | jq -r ".payload | .registries[] | select(.path==\"$registry\")")
@@ -86,7 +86,7 @@ function process_tool() {
       return 1
   fi
 
-  local tool_versions=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/${tool_id}/tags" | jq -r '.payload[]')
+  local tool_versions=$(curl -k -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/${tool_id}/tags" | jq -r '.payload[]')
   if [ $? -ne 0 ]; then
       echo_err "    TOOL: ${tool} | Cannot get versions for the tool"
       return 1
@@ -123,14 +123,14 @@ function collect_tool_resources() {
   local image=$(echo ${tool_data} | jq -r '.image')
   local registry=$(echo ${tool_data} | jq -r '.registry')
   local has_icon=$(echo ${tool_data} | jq -r '.hasIcon')
-  local description=$(curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/load?image=${registry}/${image}" | jq -r '.payload.description')
+  local description=$(curl -k -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/load?image=${registry}/${image}" | jq -r '.payload.description')
 
   if [ "${has_icon}" == true ]; then
       echo "${description}" > "${resources_output_dir}/README.md"
   fi
 
   if [ "${has_icon}" == true ]; then
-      curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/${tool_id}/icon" --output "${resources_output_dir}/icon.png"
+      curl -k -s -H "Authorization: Bearer ${API_TOKEN}" -H "Accept: application/json" "${API_URL}/tool/${tool_id}/icon" --output "${resources_output_dir}/icon.png"
   fi
 
   echo "${tool_data}" | jq -r ' { "instance_type": .instanceType, "disk_size": .diskSize, "short_description": .shortDescription, "default_command": .defaultCommand, "endpoints": .endpoints } | del(..|nulls)' > "${resources_output_dir}/spec.json"
