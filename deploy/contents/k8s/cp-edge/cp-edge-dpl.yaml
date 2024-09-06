@@ -69,6 +69,9 @@ spec:
             - mountPath: /opt/share-srv/pki
               name: share-pki
               readOnly: true
+            - mountPath: /etc/nginx/ext/external-locs
+              name: edge-external-locs
+              readOnly: true
       dnsConfig:
         options:
           - name: ndots
@@ -101,5 +104,8 @@ spec:
         - name: share-pki
           hostPath:
             path: /opt/share-srv/pki
+        - name:  edge-external-locs
+          hostPath:
+            path: /opt/edge/external-locs
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

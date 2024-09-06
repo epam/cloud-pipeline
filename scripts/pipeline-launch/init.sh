@@ -17,7 +17,7 @@ CP_LAUNCH_SH_URL='$CP_LAUNCH_SH_URL'
 # Inherit environment variables from the PID 1 process, which are dumped earlier into /etc/cp_startup.env
 # So that the SystemD option get a correct environment
 # If no SystemD is requested - variables will inherited on their own
-if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
+if [ "$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
     if [ -f "/etc/cp_startup.env" ]; then
         source /etc/cp_startup.env
     else
@@ -72,6 +72,8 @@ if [ "\$CP_CAP_SYSTEMD_CONTAINER" == "true" ]; then
         echo "[ERROR] Cannot stop current run, forcebly shutting down"
         shutdown -r now
     fi
+else
+    exit \$_launch_sh_result
 fi
 EOF
 chmod +x $_CP_STARTUP_BASH_FILE

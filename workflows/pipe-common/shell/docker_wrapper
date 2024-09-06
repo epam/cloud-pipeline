@@ -66,6 +66,18 @@ if [[ "$DOCKER_COMMAND" ]]; then
   DOCKER_COMMANDS=("$DOCKER_COMMAND")
   if [[ "$DOCKER_COMMAND" == "run" ]]; then
     DOCKER_COMMANDS+=("--env-file" "$ENVIRONMENT_FILE")
+
+    CP_CAP_DIND_CA_CERT_PATH="${CP_CAP_DIND_CA_CERT_PATH:-/etc/cp-certs.pem}"
+    if [ -f "$CP_CAP_DIND_CA_CERT_PATH" ]; then
+      DOCKER_COMMANDS+=("-e" "CURL_CA_BUNDLE=$CP_CAP_DIND_CA_CERT_PATH")
+      DOCKER_COMMANDS+=("-e" "REQUESTS_CA_BUNDLE=$CP_CAP_DIND_CA_CERT_PATH")
+      DOCKER_COMMANDS+=("-v" "$CP_CAP_DIND_CA_CERT_PATH:$CP_CAP_DIND_CA_CERT_PATH:ro")
+      DOCKER_COMMANDS+=("-v" "$CP_CAP_DIND_CA_CERT_PATH:/etc/pki/tls/cert.pem:ro")
+      DOCKER_COMMANDS+=("-v" "$CP_CAP_DIND_CA_CERT_PATH:/etc/pki/ca-trust/source/anchors/cp-ca.pem:ro")
+      DOCKER_COMMANDS+=("-v" "$CP_CAP_DIND_CA_CERT_PATH:/usr/lib/ssl/cert.pem:ro")
+      DOCKER_COMMANDS+=("-v" "$CP_CAP_DIND_CA_CERT_PATH:/usr/local/share/ca-certificates/cp-ca.crt:ro")
+
+    fi
   fi
 fi
 

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {computed, observable} from 'mobx';
+import {computed} from 'mobx';
 import {
   Select,
   message,
@@ -33,17 +33,29 @@ import {
   formatDockerImages,
   formatDockerImage,
   formatUserName,
-  extractDatasets
+  extractDatasets,
+  extractMaxEntriesCount
 } from './utils';
 
 const LABELS_THRESHOLD = 25;
 
+function getTopEntriesFilters (maxEntriesCount = 0, thresholds = [10, 25, 50]) {
+  const filteredThresholds = thresholds.filter((tr) => maxEntriesCount > tr);
+  return [...filteredThresholds, undefined];
+}
+
 @inject('reportThemes', 'usersInfo')
 @observer
 class RunsInfo extends React.PureComponent {
-  @observable _filteredStatistics;
-  @observable _filtersConfiguration;
-  @observable _pending = false;
+  state = {
+    statistics: {},
+    pending: false,
+    filtersConfiguration: {},
+    filtersConfigurationPending: false,
+    maxEntries: 0,
+    topEntries: undefined,
+    topEntriesFilters: getTopEntriesFilters(0)
+  };
 
   componentDidMount () {
     (this.fetchFiltersConfiguration)();
@@ -56,19 +68,8 @@ class RunsInfo extends React.PureComponent {
     }
   }
 
-  @computed
-  get filtersConfiguration () {
-    return this._filtersConfiguration || {};
-  }
-
-  @computed
-  get filteredStatistics () {
-    return this._filteredStatistics || {};
-  }
-
-  @computed
   get pending () {
-    return this._pending;
+    return this.state.pending;
   }
 
   @computed
@@ -102,27 +103,37 @@ class RunsInfo extends React.PureComponent {
 
   fetchFiltersConfiguration = async () => {
     const request = new RunsChartsInfo();
-    this._pending = true;
+    this.setState({
+      filtersConfigurationPending: true
+    });
     await request.send({});
     if (request.error) {
-      return message.error(request.error, 5);
+      this.setState({
+        filtersConfigurationPending: false
+      });
+      message.error(request.error, 5);
+      return;
     }
-    this._filtersConfiguration = Object
-      .entries(request.value || {})
-      .reduce((acc, [key, value = {}]) => {
-        acc[key] = [...new Set([
-          ...Object.keys(value.PAUSED || {}),
-          ...Object.keys(value.RUNNING || {})
-        ])];
-        return acc;
-      }, {});
-    this._pending = false;
+    this.setState({
+      filtersConfigurationPending: false,
+      filtersConfiguration: Object
+        .entries(request.value || {})
+        .reduce((acc, [key, value = {}]) => {
+          acc[key] = [...new Set([
+            ...Object.keys(value.PAUSED || {}),
+            ...Object.keys(value.RUNNING || {})
+          ])];
+          return acc;
+        }, {})
+    });
   };
 
   fetchStatistics = async () => {
     const {
       filters = {}
     } = this.props;
+    this._token = {};
+    const token = this._token;
     const {
       owners,
       instanceTypes,
@@ -131,7 +142,6 @@ class RunsInfo extends React.PureComponent {
       statuses
     } = filters;
     const request = new RunsChartsInfo();
-    this._pending = true;
     await request.send({
       owners,
       instanceTypes,
@@ -139,11 +149,37 @@ class RunsInfo extends React.PureComponent {
       dockerImages,
       statuses
     });
-    if (request.error) {
-      return message.error(request.error, 5);
-    }
-    this._filteredStatistics = request.value;
-    this._pending = false;
+    const commit = (fn) => {
+      if (token === this._token) {
+        fn();
+      }
+    };
+    const updateTopEntriesFilters = (statistics) => {
+      const max = extractMaxEntriesCount(statistics);
+      const filters = getTopEntriesFilters(max);
+      return {
+        maxEntries: max,
+        topEntries: filters[0],
+        topEntriesFilters: filters
+      };
+    };
+    commit(() => {
+      if (request.error) {
+        this.setState({
+          pending: false
+        });
+        message.error(request.error, 5);
+        return;
+      }
+      const _filteredStatistics = request.value;
+      this.setState({
+        statistics: _filteredStatistics || {},
+        ...updateTopEntriesFilters(_filteredStatistics),
+        pending: false
+      }, () => {
+        console.log(this.state.maxEntries);
+      });
+    });
   };
 
   clearFilters = () => {
@@ -159,11 +195,25 @@ class RunsInfo extends React.PureComponent {
       onFiltersChange
     } = this.props;
     const {
+      filtersConfiguration,
+      filtersConfigurationPending,
+      pending: dataPending,
+      topEntries,
+      topEntriesFilters
+    } = this.state;
+    const pending = dataPending || filtersConfigurationPending;
+    const {
       owners = [],
       dockerImages = [],
       instanceTypes = [],
       tags = []
-    } = this.filtersConfiguration;
+    } = filtersConfiguration;
+    const getTopValue = (top) => top ? `${top}` : 'all';
+    const getTopLabel = (top) => top ? `Display top ${top}` : 'Display all';
+    const parseTopValue = (topValue) => topValue === 'all' ? undefined : Number(topValue);
+    const onChangeTop = (value) => this.setState({
+      topEntries: parseTopValue(value)
+    });
     const onChangeFilter = (filterKey) => (values) => {
       if (typeof onFiltersChange === 'function') {
         onFiltersChange({
@@ -261,12 +311,28 @@ class RunsInfo extends React.PureComponent {
             Clear filters
           </a>
         ) : null}
-        <Button
-          onClick={this.fetchStatistics}
-          style={{marginLeft: 'auto'}}
-        >
-          Refresh
-        </Button>
+        <div style={{marginLeft: 'auto'}}>
+          {topEntriesFilters.length > 1 && (
+            <Select
+              style={{minWidth: 200, marginLeft: 'auto'}}
+              value={getTopValue(topEntries)}
+              onChange={onChangeTop}
+              disabled={pending}
+            >
+              {topEntriesFilters.map((top) => (
+                <Select.Option key={getTopValue(top)} value={getTopValue(top)}>
+                  {getTopLabel(top)}
+                </Select.Option>
+              ))}
+            </Select>
+          )}
+          <Button
+            onClick={this.fetchStatistics}
+            style={{marginLeft: 5}}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
     );
   };
@@ -296,11 +362,15 @@ class RunsInfo extends React.PureComponent {
   render () {
     const {reportThemes, className, style} = this.props;
     const {
+      statistics,
+      topEntries
+    } = this.state;
+    const {
       owners,
       dockerImages,
       instanceTypes,
       tags
-    } = extractDatasets(this.filteredStatistics);
+    } = extractDatasets(statistics, topEntries);
     const determineWidth = (labels = []) => labels.length > LABELS_THRESHOLD
       ? '100%'
       : '50%';

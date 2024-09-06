@@ -27,7 +27,7 @@ spec:
           - configMapRef:
               name: cp-config-global
           volumeMounts:
-            - mountPath: /usr/local/share/ca-certificates/cp-docker-registry
+            - mountPath: /opt/docker-registry/pki
               name: docker-pki
               readOnly: true
             - mountPath: /opt/common/pki
@@ -43,7 +43,7 @@ spec:
       volumes:
         - name: docker-pki
           hostPath:
-            path: /opt/docker-registry/pki/
+            path: /opt/docker-registry/pki
         - name: common-pki
           hostPath:
             path: /opt/common/pki

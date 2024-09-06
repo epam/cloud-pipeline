@@ -51,6 +51,10 @@ public final class DateUtils {
         return DATE_TIME_FORMATTER.format(nowUTC());
     }
 
+    public static LocalDateTime strToUTCDate(final String date) {
+        return LocalDateTime.parse(date, DATE_TIME_FORMATTER);
+    }
+
     public static LocalDateTime convertDateToLocalDateTime(final Date date) {
         return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
     }

@@ -61,12 +61,16 @@ class CommitRunForm extends localization.LocalizedReactComponent {
   }
 
   @computed
+  get commitCheckPassed () {
+    return CommitCheckProvider.getCheckResult(this.props);
+  }
+
+  @computed
   get allowCommitToOtherPersonalGroups () {
     return this.props.preferences.loaded
       ? this.props.preferences.allowCommitToOtherPersonalGroups
       : false;
   }
-
 
   validate = async () => {
     return new Promise((resolve) => {
@@ -276,7 +280,6 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     const {pending: layersCheckPending} = LayersCheckProvider.getCheckInfo(this.props);
     const {pending: commitCheckPending} = CommitCheckProvider.getCheckInfo(this.props);
     const pending = this.props.pending || layersCheckPending || commitCheckPending;
-
     return (
       <Spin spinning={pending}>
         {this.canCommitIntoRegistry ? (

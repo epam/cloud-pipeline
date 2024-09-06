@@ -532,6 +532,18 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get launchToolSizeLimits () {
+    const value = this.getPreferenceValue('launch.tool.size.limits');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "launch.tool.size.limits" preference:', e.message);
+      }
+    }
+    return {};
+  }
+
   get toolPredefinedKubeLabels () {
     const value = this.getPreferenceValue('ui.tool.kube.labels');
     if (value) {

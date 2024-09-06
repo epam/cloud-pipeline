@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.keypair.SshKeyPairManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
+import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.quota.QuotaService;
@@ -62,6 +63,7 @@ import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +135,9 @@ public class UserManager implements SecuredEntityManager {
     private DataStorageManager dataStorageManager;
 
     @Autowired
+    private ToolGroupManager toolGroupManager;
+
+    @Autowired
     private GrantPermissionHandler permissionHandler;
 
     @Autowired
@@ -146,12 +151,34 @@ public class UserManager implements SecuredEntityManager {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineUser create(String name, List<Long> roles,
-                               List<String> groups, Map<String, String> attributes,
-                               Long defaultStorageId) {
-        PipelineUser user = create(name, roles, groups, attributes);
-        user = configureUserDefaultStorage(user, defaultStorageId);
-        return configureUserDefaultMetadata(user);
+    public PipelineUser create(final String name, final List<Long> roles,
+                               final List<String> groups,
+                               final Map<String, String> attributes,
+                               final Long defaultStorageId) {
+        return Optional.of(create(name, roles, groups, attributes))
+                .map(user -> configureUserDefaultStorage(user, defaultStorageId))
+                .map(this::configureUserDefaultMetadata)
+                .map(this::configureUserPrivateDockerRegistryGroup)
+                .get();
+    }
+
+    private PipelineUser configureUserPrivateDockerRegistryGroup(final PipelineUser user) {
+        final boolean createDockerRegistryUserGroup = BooleanUtils.isTrue(
+                preferenceManager.getPreference(SystemPreferences.SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE));
+        final Long defaultDockerRegistry = preferenceManager.getPreference(
+                SystemPreferences.SYSTEM_DEFAULT_DOCKER_REGISTRY);
+        if (createDockerRegistryUserGroup && defaultDockerRegistry != null) {
+            if (!toolGroupManager.doesUserToolGroupExist(defaultDockerRegistry, user.getUserName())) {
+                toolGroupManager.createPrivate(defaultDockerRegistry, user.getUserName());
+            } else {
+                log.warn(messageHelper.getMessage(
+                        MessageConstants.WARN_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+            }
+        } else {
+            log.info(messageHelper.getMessage(
+                    MessageConstants.INFO_DEFAULT_USER_DOCKER_GROUP_CREATE, user.getUserName()));
+        }
+        return user;
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")

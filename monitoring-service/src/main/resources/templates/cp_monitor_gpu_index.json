@@ -1,0 +1,167 @@
+{
+  "mappings": {
+    "gpu": {
+      "properties": {
+        "GpuMetricsTimestamp": {
+          "type": "date"
+        },
+        "Metrics": {
+          "properties": {
+            "gpu/utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "double"
+                }
+              }
+            },
+            "gpu/utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "double"
+                }
+              }
+            },
+            "gpu/used_memory": {
+              "properties": {
+                "value": {
+                  "type": "double"
+                }
+              }
+            }
+          }
+        },
+        "MetricsTags": {
+          "properties": {
+            "index": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "nodename": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "device_name": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    },
+    "gpu_aggs": {
+      "properties": {
+        "GpuAggsMetricsTimestamp": {
+          "type": "date"
+        },
+        "Metrics": {
+          "properties": {
+            "gpu_aggs/avg_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/avg_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/avg_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/active_gpus": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/min_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/min_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/min_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/max_utilization_gpu": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/max_utilization_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            },
+            "gpu_aggs/max_used_memory": {
+              "properties": {
+                "value": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        },
+        "MetricsTags": {
+          "properties": {
+            "nodename": {
+              "type": "text",
+              "fields": {
+                "raw": {
+                  "type": "keyword"
+                }
+              }
+            },
+            "type": {
+              "type": "keyword"
+            },
+            "device_name": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  },
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    }
+  }
+}

@@ -85,8 +85,12 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .map(PipelineRun::getInstance)
                 .map(RunInstance::getCloudRegionId)
                 .distinct()
-                .collect(Collectors
-                        .toMap(Function.identity(), apiClient::loadAllInstanceTypesForRegion));
+                .collect(
+                    Collectors.toMap(
+                            Function.identity(),
+                            r -> ListUtils.emptyIfNull(apiClient.loadAllInstanceTypesForRegion(r))
+                    )
+                );
 
         return runs
                 .stream()

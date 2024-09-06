@@ -65,7 +65,7 @@ ENV PATH="$PATH:$ANACONDA_HOME/bin"
 
 RUN mkdir -p "$ANACONDA_HOME" && \
     setfacl -d -m g::rwx "$ANACONDA_HOME" && \
-    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
     bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
     rm -f /tmp/Anaconda_Install.sh && \
     conda init bash

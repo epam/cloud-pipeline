@@ -175,7 +175,7 @@ class ConfirmPauseContainer extends React.Component {
     } = this.state;
     return (
       <LayersCheckProvider active={visible} runId={runId}>
-        <CommitCheckProvider active={visible} runId={runId}>
+        <CommitCheckProvider skipContainerCheck active={visible} runId={runId}>
           <ConfirmPause
             onCancel={this.onCancel}
             onConfirm={this.onConfirm}

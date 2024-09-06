@@ -332,7 +332,9 @@ class SubmitButton extends React.Component {
     htmlType: PropTypes.string,
     size: PropTypes.string,
     style: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    disabled: PropTypes.bool,
+    loading: PropTypes.bool
   };
 
   state = {
@@ -394,7 +396,8 @@ class SubmitButton extends React.Component {
           htmlType={htmlType}
           onClick={onClick}
           style={style}
-          disabled={pending || errors.length > 0}
+          disabled={this.props.disabled || pending || errors.length > 0}
+          loading={this.props.loading}
         >
           {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
           {children}
@@ -402,7 +405,7 @@ class SubmitButton extends React.Component {
         <Dropdown
           overlay={dropdownRenderer()}
           placement="bottomRight"
-          disabled={pending || errors.length > 0}
+          disabled={this.props.disabled || pending || errors.length > 0}
         >
           <Button
             id={dropdownId || null}
@@ -411,6 +414,7 @@ class SubmitButton extends React.Component {
               e.stopPropagation();
             }}
             type="primary"
+            loading={this.props.loading}
           >
             <Icon
               type="down"
@@ -427,9 +431,10 @@ class SubmitButton extends React.Component {
         type={type}
         htmlType={htmlType}
         style={style}
-        disabled={pending || errors.length > 0}
+        disabled={this.props.disabled || pending || errors.length > 0}
         onClick={onClick}
         size={size}
+        loading={this.props.loading}
       >
         {errors.length > 0 ? <Icon type="exclamation-circle" /> : null}
         {children}

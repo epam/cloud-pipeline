@@ -143,7 +143,7 @@ public class PipelineRepositoryService {
         final Revision commit = providerService.getLastCommit(pipeline, ref);
         final List<Revision> revisions = new ArrayList<>(tags.size());
         if (isDraftCommit(tags, commit)) {
-            commit.setName(GitUtils.DRAFT_PREFIX + commit.getName());
+            commit.setName(getCommitName(commit, repositoryType));
             commit.setDraft(true);
             revisions.add(commit);
         }
@@ -267,6 +267,9 @@ public class PipelineRepositoryService {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD) {
+            throw new UnsupportedOperationException("Folder creation is not supported for Bitbucket Cloud repository");
+        }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
@@ -297,6 +300,9 @@ public class PipelineRepositoryService {
                                        final String newFolderName,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD) {
+            throw new UnsupportedOperationException("Folder renaming is not supported for Bitbucket Cloud repository");
+        }
         final String message = StringUtils.isNotBlank(commitMessage)
                 ? commitMessage
                 : String.format("Renaming folder %s to %s", folder, newFolderName);
@@ -529,5 +535,12 @@ public class PipelineRepositoryService {
 
     private String buildBranchRefOrNull(final String branch) {
         return StringUtils.isNotBlank(branch) ? String.format(GitUtils.BRANCH_REF_PATTERN, branch) : null;
+    }
+
+    private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
+        return GitUtils.DRAFT_PREFIX +
+                (RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
+                        commit.getCommitId().substring(0, 6) :
+                        commit.getName());
     }
 }

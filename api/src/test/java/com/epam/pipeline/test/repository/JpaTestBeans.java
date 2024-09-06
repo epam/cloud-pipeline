@@ -17,6 +17,7 @@
 package com.epam.pipeline.test.repository;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dao.JdbcTemplateDryRunWrapper;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Configuration;
@@ -28,4 +29,7 @@ public class JpaTestBeans {
 
     @MockBean
     protected CloudRegionDao cloudRegionDao;
+
+    @MockBean
+    protected JdbcTemplateDryRunWrapper jdbcTemplateDryRunWrapper;
 }

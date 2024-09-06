@@ -47,7 +47,8 @@ from pipeline.hpc.instance.select import CpuCapacityInstanceSelector, NaiveCpuCa
     BackwardCompatibleInstanceSelector
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.param import GridEngineParameters, ValidationError
-from pipeline.hpc.pipe import CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
+from pipeline.hpc.pipe import CloudPipelineWorkerRecorder, \
+    CloudPipelineInstanceProvider, CloudPipelineReservationInstanceProvider, \
     CloudPipelineWorkerValidator, CloudPipelineWorkerValidatorHandler, \
     CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
@@ -293,6 +294,8 @@ def get_daemon():
     custom_requirements = params.autoscaling_advanced.custom_requirements.get()
     custom_requirements_purge = params.autoscaling_advanced.custom_requirements_purge.get()
 
+    node_mem_reservations = params.autoscaling_advanced.node_mem_reservations.get()
+
     queue_static = params.queue.queue_static.get()
     queue_default = params.queue.queue_default.get()
     queue_hostlist_name = params.queue.hostlist_name.get()
@@ -331,6 +334,18 @@ def get_daemon():
                                                        unavail_count_failure=scale_up_unavail_count_failure)
     cloud_instance_provider = CloudPipelineInstanceProvider(api=api, region_id=instance_region_id,
                                                             price_type=instance_price_type)
+    if node_mem_reservations:
+        cloud_instance_provider = CloudPipelineReservationInstanceProvider(
+            inner=cloud_instance_provider,
+            kube_mem_ratio=float(resolve_preference(api, 'cluster.node.kube.mem.ratio', default=0.025)),
+            kube_mem_min_mib=int(resolve_preference(api, 'cluster.node.kube.mem.min.mib', default=256)),
+            kube_mem_max_mib=int(resolve_preference(api, 'cluster.node.kube.mem.max.mib', default=1024)),
+            system_mem_ratio=float(resolve_preference(api, 'cluster.node.system.mem.ratio', default=0.025)),
+            system_mem_min_mib=int(resolve_preference(api, 'cluster.node.system.mem.min.mib', default=256)),
+            system_mem_max_mib=int(resolve_preference(api, 'cluster.node.system.mem.max.mib', default=1024)),
+            extra_mem_ratio=float(resolve_preference(api, 'cluster.node.extra.mem.ratio', default=0.05)),
+            extra_mem_min_mib=int(resolve_preference(api, 'cluster.node.extra.mem.min.mib', default=512)),
+            extra_mem_max_mib=int(resolve_preference(api, 'cluster.node.extra.mem.max.mib', default=sys.maxsize)))
     default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
                                                         instance_type=instance_type)
     static_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,

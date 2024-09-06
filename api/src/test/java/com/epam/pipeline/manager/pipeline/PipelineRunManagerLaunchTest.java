@@ -39,6 +39,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -49,6 +50,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +111,7 @@ public class PipelineRunManagerLaunchTest {
     private static final String ON_DEMAND = PriceType.ON_DEMAND.getLiteral();
     private static final String DEFAULT_COMMAND = "sleep";
     private static final String TEST_USER = "user";
+    private static final String TEST_USER_2 = "user2";
     private static final String IMAGE = "testImage";
     private static final LocalDateTime TEST_PERIOD = LocalDateTime.of(2019, 4, 2, 0, 0);
     private static final LocalDateTime TEST_PERIOD_18 = TEST_PERIOD.plusHours(18);
@@ -399,17 +402,42 @@ public class PipelineRunManagerLaunchTest {
     @Test
     public void shouldLoadRunsActivityStats() {
         doReturn(asList(getPipelineRun(ID, TEST_USER), getPipelineRun(ID_2, TEST_USER)))
-                .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18));
-        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class));
+                .when(pipelineRunDao).loadPipelineRunsActiveInPeriod(eq(TEST_PERIOD), eq(TEST_PERIOD_18), eq(false));
+        doReturn(getStatusMap()).when(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
 
-        Map<Long, PipelineRun> runMap = pipelineRunManager.loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18).stream()
+        Map<Long, PipelineRun> runMap = pipelineRunManager
+                .loadRunsActivityStats(TEST_PERIOD, TEST_PERIOD_18, false).stream()
                 .collect(toMap(BaseEntity::getId, identity()));
 
         assertEquals(asList(TEST_STATUS_1, TEST_STATUS_2), runMap.get(ID).getRunStatuses());
         assertEquals(singletonList(TEST_STATUS_3), runMap.get(ID_2).getRunStatuses());
 
-        verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(any(LocalDateTime.class), any(LocalDateTime.class));
-        verify(runStatusManager).loadRunStatus(anyListOf(Long.class));
+        verify(pipelineRunDao).loadPipelineRunsActiveInPeriod(
+                any(LocalDateTime.class), any(LocalDateTime.class), anyBoolean());
+        verify(runStatusManager).loadRunStatus(anyListOf(Long.class), anyBoolean());
+    }
+
+    @Test
+    public void shouldSetOriginalOwnerCorrectly() {
+        doReturn(TEST_USER).when(securityManager).getAuthorizedUser();
+        doReturn(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER.getDefaultValue())
+                .when(preferenceManager).getPreference(SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+
+        final PipelineConfiguration configuration = getPipelineConfiguration(
+                IMAGE, INSTANCE_DISK, true, defaultAwsRegion.getId()
+        );
+
+        PipelineRun pipelineRun = launchTool(configuration, INSTANCE_TYPE);
+        assertEquals(pipelineRun.getOriginalOwner(), TEST_USER);
+
+        configuration.setParameters(
+            Collections.singletonMap(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER.getDefaultValue(),
+                new PipeConfValueVO(TEST_USER_2)
+            )
+        );
+        pipelineRun = launchTool(configuration, INSTANCE_TYPE);
+        assertEquals(pipelineRun.getOriginalOwner(), TEST_USER_2);
     }
 
     private void mock(final InstancePrice price) {
@@ -460,8 +488,8 @@ public class PipelineRunManagerLaunchTest {
         return map;
     }
 
-    private void launchTool(final PipelineConfiguration configuration, final String instanceType) {
-        launchPipeline(configuration, null, instanceType, null, null);
+    private PipelineRun launchTool(final PipelineConfiguration configuration, final String instanceType) {
+        return launchPipeline(configuration, null, instanceType, null, null);
     }
 
     private PipelineRun launchPipeline(final PipelineConfiguration configuration, final String instanceType) {

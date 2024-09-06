@@ -93,8 +93,15 @@ class DataStorage(API):
         params = urlencode({'id': name})
         response_data = api.call('datastorage/find?' + params, None)
         if 'payload' in response_data:
-            return DataStorageModel.load(response_data['payload'])
+            return DataStorageModel.load_with_region(response_data['payload'], cls.get_region_info())
         return None
+
+    @classmethod
+    def fetch_storage(cls, name):
+        storage = cls.get(name)
+        if storage is None:
+            raise RuntimeError('Storage "{}" was not found'.format(name))
+        return storage
 
     @classmethod
     def get_by_path(cls, path):
@@ -367,6 +374,24 @@ class DataStorage(API):
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load usage statistic for storage '{}'.".format(name))
+
+    @classmethod
+    def list_items_page(cls, storage_id, page_size, path=None, marker=None):
+        api = cls.instance()
+        endpoint = 'datastorage/{}/list/page?pageSize={}'.format(storage_id, page_size)
+        if path:
+            endpoint = '&path='.join([endpoint, path])
+        if marker:
+            endpoint = '&marker='.join([endpoint, marker])
+        response_data = api.call(endpoint, None)
+        if 'payload' in response_data:
+            return response_data['payload']
+        if response_data['status'] == 'OK':
+            return []
+        if 'message' in response_data:
+            raise RuntimeError(response_data['message'])
+        else:
+            raise RuntimeError("Failed to load items for storage '{}'.".format(storage_id))
 
     @classmethod
     def get_region_info(cls):

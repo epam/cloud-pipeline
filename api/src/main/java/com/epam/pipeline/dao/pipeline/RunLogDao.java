@@ -23,22 +23,25 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.epam.pipeline.controller.vo.run.OffsetPagingFilter;
+import com.epam.pipeline.dao.DaoUtils;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.exception.pipeline.RunLogException;
 import com.epam.pipeline.utils.CommonUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public class RunLogDao extends NamedParameterJdbcDaoSupport {
+@RequiredArgsConstructor
+public class RunLogDao extends DryRunJdbcDaoSupport {
 
     @Setter(onMethod_={@Required}) private String createPipelineLogQuery;
     @Setter(onMethod_={@Required}) private String loadLogsByRunIdQueryDesc;
@@ -48,6 +51,7 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     @Setter(onMethod_={@Required}) private String loadTasksByRunIdQuery;
     @Setter(onMethod_={@Required}) private String loadTaskForInstanceQuery;
     @Setter(onMethod_={@Required}) private String loadTaskStatusQuery;
+    @Setter(onMethod_={@Required}) private String deleteRunLogByRunIdsQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createRunLog(RunLog runLog) {
@@ -114,6 +118,13 @@ public class RunLogDao extends NamedParameterJdbcDaoSupport {
     public List<PipelineTask> loadTaskByInstance(Long runId, String instance) {
         return getJdbcTemplate().query(loadTaskForInstanceQuery,
                 PipelineLogParameters.getTaskRowMapper(false), runId, instance);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteTaskByRunIdsIn(final List<Long> runIds, final boolean dryRun) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRunLogByRunIdsQuery, params);
     }
 
     enum PipelineLogParameters {
