@@ -25,6 +25,7 @@ import styles from './heat-map-chart.css';
 const DEFAULT_BACKGROUND_COLOR = '#ffffff';
 const DEFAULT_TEXT_COLOR = 'rgba(0, 0, 0, 0.65)';
 const DEFAULT_LINE_COLOR = DEFAULT_TEXT_COLOR;
+const HOVER_TIMEOUT = 250;
 
 @inject('themes')
 @observer
@@ -42,6 +43,7 @@ class HeatMapChart extends React.Component {
   renderer = new Renderer(this.props.options);
   hoverPosition = undefined;
   hoverContainer;
+  hoverTimeout;
 
   componentDidMount () {
     const {themes} = this.props;
@@ -76,6 +78,7 @@ class HeatMapChart extends React.Component {
 
   componentWillUnmount () {
     this.destroy();
+    clearTimeout(this.hoverTimeout);
   }
 
   destroy = () => {
@@ -249,6 +252,7 @@ class HeatMapChart extends React.Component {
     if (!this.hoverContainer) {
       return;
     }
+    clearTimeout(this.hoverTimeout);
     if (!hoverInfo) {
       this.hoverContainer.style.display = 'none';
       this.hoverPosition = undefined;
@@ -257,15 +261,18 @@ class HeatMapChart extends React.Component {
       });
       return;
     }
-    this.hoverContainer.style.display = 'block';
-    const {
-      position = {},
-      info
-    } = hoverInfo;
-    this.hoverPosition = position;
-    this.setState({
-      hover: info
-    });
+    const hover = () => {
+      this.hoverContainer.style.display = 'block';
+      const {
+        position = {},
+        info
+      } = hoverInfo;
+      this.hoverPosition = position;
+      this.setState({
+        hover: info
+      });
+    };
+    this.hoverTimeout = setTimeout(() => hover(), HOVER_TIMEOUT);
   };
 
   renderHoveredInfo = () => {
@@ -322,7 +329,8 @@ class HeatMapChart extends React.Component {
 
 HeatMapChart.propTypes = {
   options: PropTypes.shape({
-    shiftWheel: PropTypes.bool
+    shiftWheel: PropTypes.bool,
+    minOpacity: PropTypes.number
   }),
   datasets: PropTypes.arrayOf(PropTypes.shape({
     color: PropTypes.string,

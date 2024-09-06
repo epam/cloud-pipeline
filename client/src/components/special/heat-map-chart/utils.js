@@ -22,8 +22,11 @@ export function correctPixels (pixels) {
   return pixels * dpr;
 }
 
-export function percentToHexAlpha (p) {
-  return `0${Math.ceil((255 / 100) * p).toString(16)}`.slice(-2).toUpperCase();
+export function percentToHexAlpha (value = 0, minAlpha = 0) {
+  const percent = value > 0
+    ? (((100 - minAlpha) / 100) * value) + minAlpha
+    : value;
+  return `0${Math.ceil((255 / 100) * Math.round(percent)).toString(16)}`.slice(-2).toUpperCase();
 }
 
 export function isNumber (number) {

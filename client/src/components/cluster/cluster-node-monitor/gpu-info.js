@@ -68,6 +68,7 @@ const DATASET_COLORS = {
 };
 
 const FETCH_DELAY = 500;
+const MIN_HEATMAP_OPACITY = 15;
 
 function Divider () {
   return (
@@ -497,7 +498,10 @@ class GPUInfoTab extends React.Component {
         {heatmapDataset.length ? (
           <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
             <HeatMapChart
-              options={{shiftWheel: true}}
+              options={{
+                shiftWheel: true,
+                minOpacity: MIN_HEATMAP_OPACITY
+              }}
               datasets={heatmapDataset}
               onRangeChanged={this.onRangeChanged}
               from={chartsFrom}
@@ -508,7 +512,8 @@ class GPUInfoTab extends React.Component {
                 measure,
                 metrics,
                 themeConfiguration: this.themeConfiguration,
-                hideDatasets
+                hideDatasets,
+                minOpacity: MIN_HEATMAP_OPACITY
               })}}
             />
           </div>
