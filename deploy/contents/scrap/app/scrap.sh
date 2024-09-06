@@ -90,6 +90,9 @@ while [[ $# -gt 0 ]]
         ;;
         -cpa|--cp-api-address)
         export API_URL="$2"
+        if [[ "$API_URL" != *"/restapi/" ]] && [[ "$API_URL" != *"/restapi" ]]; then
+          export API_URL="${API_URL}/restapi/"
+        fi
         shift # past argument
         shift # past value
         ;;
@@ -201,37 +204,43 @@ fi
 echo_info "- Retrieving application version from server"
 _version_file="$OUTPUT_DIR/version.json"
 get_version "$API_URL" "$API_TOKEN" "$_version_file"
-write_scrap_result "version" "$(basename $_version_file)" "$?" "$OUTPUT_DIR"
+result_code="$?"
+write_scrap_result "version" "$(basename $_version_file)" "$result_code" "$OUTPUT_DIR"
 
 echo_info "- Retrieving list on installed services from server"
 _services_file="$OUTPUT_DIR/services.json"
 get_services "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "${_services_file}"
-write_scrap_result "services" "$(basename ${_services_file})" "$?" "$OUTPUT_DIR"
+result_code="$?"
+write_scrap_result "services" "$(basename ${_services_file})" "$result_code" "$OUTPUT_DIR"
 
 echo_info "- Retrieving Cloud-Pipeline main configmap from server"
 _configmap_file="$OUTPUT_DIR/install-config"
 get_configmap "$CP_NODE_SSH_KEY" "$CP_NODE_USER" "$CP_NODE_IP" "$CP_KUBE_NAMESPACE" "$CP_KUBE_CONFIGMAP" "${_configmap_file}"
-write_scrap_result "configmap" "$(basename ${_configmap_file})" "$?" "$OUTPUT_DIR"
+result_code="$?"
+write_scrap_result "configmap" "$(basename ${_configmap_file})" "$result_code" "$OUTPUT_DIR"
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "system_preferences" ]]; then
    echo_info "- Retrieving preferences from server"
    _system_pref_file="$OUTPUT_DIR/system-preferences.json"
    get_pref "$API_URL" "$API_TOKEN" "${_system_pref_file}"
-   write_scrap_result "system_preferences" "$(basename ${_system_pref_file})" "$?" "$OUTPUT_DIR"
-fi     
+   result_code="$?"
+   write_scrap_result "system_preferences" "$(basename ${_system_pref_file})" "$result_code" "$OUTPUT_DIR"
+fi
 
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "users" ]]; then
    echo_info "- Retrieving registered users from server"
    _users_file="$OUTPUT_DIR/users.csv"
    get_users "$API_URL" "$API_TOKEN" "${_users_file}"
-   write_scrap_result "users" "$(basename ${_users_file})" "$?" "$OUTPUT_DIR"
-fi   
+   result_code="$?"
+   write_scrap_result "users" "$(basename ${_users_file})" "$result_code" "$OUTPUT_DIR"
+fi
    
 if [[ "$CONFIGURATIONS_TO_STORE" =~ "tools" ]]; then
    echo_info "- Retrieving installed docker tools from server"
    _tools_dir="$OUTPUT_DIR/dockers-manifest"
    get_tools "$API_URL" "$API_TOKEN" "${_tools_dir}"
-   write_scrap_result "tools" "$(basename ${_tools_dir})/manifest.txt" "$?" "$OUTPUT_DIR"
+   result_code="$?"
+   write_scrap_result "tools" "$(basename ${_tools_dir})/manifest.txt" "$result_code" "$OUTPUT_DIR"
 fi
 
 echo_ok "Cloud-Pipeline point-in-time configuration saved in directory $(realpath $OUTPUT_DIR)"
