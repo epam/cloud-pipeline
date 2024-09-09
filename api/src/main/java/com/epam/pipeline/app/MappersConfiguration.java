@@ -25,6 +25,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
+import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
@@ -155,6 +156,11 @@ public class MappersConfiguration {
     @Bean
     public BitbucketCloudMapper bitbucketCloudRepositoryMapper() {
         return Mappers.getMapper(BitbucketCloudMapper.class);
+    }
+
+    @Bean
+    public GitHubMapper gitHubRepositoryMapper() {
+        return Mappers.getMapper(GitHubMapper.class);
     }
 
     @Bean

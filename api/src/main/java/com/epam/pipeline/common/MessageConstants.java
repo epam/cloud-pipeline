@@ -400,6 +400,8 @@ public final class MessageConstants {
     public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
             "error.parse.bitbucket.cloud.repository.path";
     public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
+    public static final String ERROR_PARSE_GITHUB_REPOSITORY_PATH = "error.parse.github.repository.path";
+    public static final String ERROR_GITHUB_TOKEN_NOT_FOUND = "error.github.token.not.found";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages
