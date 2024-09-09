@@ -5,9 +5,7 @@ concurrency: Cloud-Pipeline-CLI-Mac-Arm64
 on:
   push:
     branches:
-      - develop
-      - 'release/**'
-      - 'stage/**'
+      - fn_appveyor_cli_py3
 
   workflow_dispatch:
 
