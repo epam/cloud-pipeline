@@ -24,9 +24,4 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-      - uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
       - run: bash deploy/github_actions/gha_build_pipe_macos.sh
