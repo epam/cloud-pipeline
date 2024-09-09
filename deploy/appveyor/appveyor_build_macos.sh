@@ -34,4 +34,3 @@ if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
         aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
     fi
 fi
-

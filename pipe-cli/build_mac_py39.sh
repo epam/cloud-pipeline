@@ -104,7 +104,7 @@ function build_pipe {
                                     -y \
                                     --clean \
                                     --distpath $distpath \
-                                    --target-architecture universal2 \
+                                    --target-architecture arm64 \
                                     --add-data /tmp/mount/dist/pipe-fuse:mount \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
                                     ${PIPE_CLI_SOURCES_DIR}/pipe.py $onefile
