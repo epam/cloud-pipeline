@@ -16,6 +16,8 @@
 
 set -e
 
+arch -arm64 pyenv install 3.11.1
+
 source ~/venv3.10.13/bin/activate
 
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
