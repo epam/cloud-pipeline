@@ -16,6 +16,8 @@
 
 set -e
 
+ls -la $HOME/venv*
+
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
           pipe-cli:buildMacPy39 \
