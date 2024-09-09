@@ -31,3 +31,4 @@ if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     aws s3 cp --no-progress pipe-cli/dist/dist-file/pipe-osx s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx
     aws s3 cp --no-progress pipe-cli/dist/dist-folder/pipe-osx.tar.gz s3://cloud-pipeline-oss-builds/temp/$CLOUD_PIPELINE_BUILD_NUMBER/pipe-osx.tar.gz
 fi
+
