@@ -1,12 +1,5 @@
 version: 0.17.{build}
 
-branches:
-  only:
-    - develop
-    - /release\/.*/
-    - /stage\/.*/
-    - fn.*
-
 skip_tags: true
 max_jobs: 1
 stack: node 14, jdk 8
