@@ -4,7 +4,7 @@ metadata:
   name: cp-api-srv
   namespace: default
 spec:
-  replicas: 2
+  replicas: ${CP_API_SRV_REPLICAS}
   template:
     metadata:
       namespace: default
