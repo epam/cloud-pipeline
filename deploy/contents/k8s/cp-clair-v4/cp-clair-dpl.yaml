@@ -1,7 +1,7 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: cp-clair
+  name: cp-clair-v4
   namespace: default
 spec:
   replicas: 1
@@ -9,23 +9,23 @@ spec:
     metadata:
       namespace: default
       labels:
-        cloud-pipeline/cp-clair: "true"
+        cloud-pipeline/cp-clair-v4: "true"
         cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
-        cloud-pipeline/cp-clair: "true"
+        cloud-pipeline/cp-clair-v4: "true"
       tolerations:
-        - key: node-role.kubernetes.io/master
-          effect: NoSchedule
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       containers:
-        - name: cp-clair
-          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:clair-$CP_VERSION
+        - name: cp-clair-v4
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:clair-v4-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
             - containerPort: 8080
           envFrom:
-            - configMapRef:
-                name: cp-config-global
+          - configMapRef:
+              name: cp-config-global
           volumeMounts:
             - mountPath: /opt/docker-registry/pki
               name: docker-pki
@@ -35,7 +35,7 @@ spec:
               readOnly: true
           readinessProbe:
             httpGet:
-              path: /health
+              path: /healthz
               port: 8081
               scheme: HTTP
             initialDelaySeconds: 5
