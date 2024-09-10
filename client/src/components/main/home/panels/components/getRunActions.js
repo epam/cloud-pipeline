@@ -139,6 +139,7 @@ export default function (
         if (
           roleModel.executeAllowed(run) &&
           roleModel.isOwner(run) &&
+          run.platform !== 'windows' &&
           canPauseRun(run, preferences)
         ) {
           actions.push({
@@ -171,7 +172,8 @@ export default function (
           !(run.parentRunId && run.parentRunId > 0) &&
           run.instance &&
           run.instance.spot !== undefined &&
-          !run.instance.spot
+          !run.instance.spot &&
+          run.platform !== 'windows'
         ) {
           actions.push({
             title: 'RESUME',
