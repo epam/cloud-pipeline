@@ -51,7 +51,7 @@ if [ "$operation" = "sync" ]; then
 elif [ "$operation" = "scrap" ]; then
   cmd_home=$tmp_location/scrap/app
   cmd_script="scrap.sh" 
-  shift # prevent to pass first argument "scrap" to the script since it serves no purpose
+  shift # Avoid passing the first argument "scrap" to the script since it serves no purpose
 else 
   cmd_home=$tmp_location/install/app
   cmd_script="install.sh"
