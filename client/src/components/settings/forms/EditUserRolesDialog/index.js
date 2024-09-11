@@ -858,7 +858,7 @@ export default class EditUserRolesDialog extends React.Component {
               registrationDate && (
                 <tr>
                   <td className={styles.info}>Registration date:</td>
-                  <td>{displayDate(registrationDate, 'd MMMM YYYY')}</td>
+                  <td>{displayDate(registrationDate, 'D MMMM YYYY')}</td>
                 </tr>
               )
             }
