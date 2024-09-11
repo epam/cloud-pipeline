@@ -530,4 +530,11 @@ public class PipelineRepositoryService {
     private String buildBranchRefOrNull(final String branch) {
         return StringUtils.isNotBlank(branch) ? String.format(GitUtils.BRANCH_REF_PATTERN, branch) : null;
     }
+
+    private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
+        final String commitId = RepositoryType.GITHUB.equals(repositoryType)
+                ? commit.getCommitId().substring(0, 7)
+                : commit.getName();
+        return GitUtils.DRAFT_PREFIX + commitId;
+    }
 }
