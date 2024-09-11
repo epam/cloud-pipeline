@@ -323,5 +323,6 @@ public enum Primitive {
     CONDITION,
     SHOW_TIMINGS,
     SELECTION_ACTIONS,
-    EDITOR
+    EDITOR,
+    PARAMETER_FIELD
 }

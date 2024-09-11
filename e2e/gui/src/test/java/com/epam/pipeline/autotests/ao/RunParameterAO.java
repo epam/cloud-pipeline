@@ -36,6 +36,8 @@ public class RunParameterAO
         this.pipelineRunFormAO = pipelineRunFormAO;
 
         this.elements = initialiseElements(
+                entry(PARAMETER_FIELD, $(byClassName(String.format("param_%s", parameterIndex)))
+                        .$(byClassName("cp-text-not-important"))),
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
                 entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
                         .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
@@ -48,6 +50,7 @@ public class RunParameterAO
     }
 
     public RunParameterAO setName(String name) {
+        get(PARAMETER_FIELD).click();
         return (RunParameterAO) setValue(get(PARAMETER_NAME), name);
     }
 
