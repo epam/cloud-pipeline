@@ -3262,7 +3262,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             const [nameError] = this.props.form
               .getFieldError(`${sectionName}.params.${key}.name`) || [];
             const parameterName = prettyName || name
-              ? highlightText(prettyName || name)
+              ? highlightText(prettyName || name, this.state.searchParameters)
               : '<parameter name>';
             const content = (
               <div
@@ -3833,24 +3833,27 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               ) : null}
               <div style={{flexGrow: 1}}>
                 {searchEnabled ? (
-                  <div style={{
-                    display: 'flex',
-                    flexWrap: 'nowrap',
-                    gap: '5px',
-                    alignItems: 'center',
-                    width: '50%',
-                    margin: '0 auto'
-                  }}>
-                    <span>Search:</span>
-                    <Input
-                      onChange={onParameterSearchChange}
-                    />
-                    <span style={{whiteSpace: 'nowrap'}}>
-                      Visible: {visibleParameters}
-                    </span>
-                    <span style={{whiteSpace: 'nowrap'}}>
-                      Hidden: {hiddenParameters}
-                    </span>
+                  <div className={styles.searchParametersContainer}>
+                    <div
+                      className={styles.search}
+                      style={{paddingBottom: this.state.searchParameters ? 0 : 18}}
+                    >
+                      <span>Search:</span>
+                      <div style={{flex: 1, marginRight: 30}}>
+                        <Input onChange={onParameterSearchChange} />
+                        {this.state.searchParameters ? (
+                          <div style={{
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            flexWrap: 'nowrap',
+                            gap: '5px'
+                          }}>
+                            <span>{visibleParameters} shown</span>
+                            <span>{hiddenParameters} hidden</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
                   </div>
                 ) : null}
                 {sections.length > 1
