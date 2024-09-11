@@ -24,6 +24,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
+import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
@@ -143,6 +144,11 @@ public class MappersConfiguration {
     @Bean
     public BitbucketMapper bitbucketRepositoryMapper() {
         return Mappers.getMapper(BitbucketMapper.class);
+    }
+
+    @Bean
+    public GitHubMapper gitHubRepositoryMapper() {
+        return Mappers.getMapper(GitHubMapper.class);
     }
 
     @Bean
