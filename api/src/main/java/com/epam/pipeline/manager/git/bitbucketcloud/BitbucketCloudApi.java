@@ -37,7 +37,7 @@ import retrofit2.http.Query;
 import retrofit2.http.Streaming;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public interface BitbucketCloudServerApi {
+public interface BitbucketCloudApi {
 
     String PATH = "path";
     String WORKSPACE = "workspace";

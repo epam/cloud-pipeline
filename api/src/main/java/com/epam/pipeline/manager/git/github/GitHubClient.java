@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.github.GitHubContent;
 import com.epam.pipeline.entity.git.github.GitHubRef;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
+import com.epam.pipeline.entity.git.github.GitHubSource;
 import com.epam.pipeline.entity.git.github.GitHubTag;
 import com.epam.pipeline.entity.git.github.GitHubTagRequest;
 import com.epam.pipeline.entity.git.github.GitHubTree;
@@ -41,7 +42,7 @@ public class GitHubClient {
     private static final Integer LIMIT = 100;
     private static final String DUMMY_CONTENT = "# Put your content here";
 
-    private final GitHubServerApi serverApi;
+    private final GitHubApi serverApi;
     private final String projectName;
     private final String repositoryName;
 
@@ -87,16 +88,16 @@ public class GitHubClient {
         }
     }
 
-    public void createFile(final String path, final String content, final String message, final String branch) {
+    public GitHubSource createFile(final String path, final String content, final String message, final String branch) {
         final GitHubContent request = GitHubContent.builder()
                 .message(message)
                 .branch(branch)
                 .content(getContent(content))
                 .build();
-        createFile(path, request);
+        return createFile(path, request);
     }
 
-    public void updateFile(final String path, final String content, final String message,
+    public GitHubSource updateFile(final String path, final String content, final String message,
                            final String branch) {
         final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, null));
         final GitHubContent request = GitHubContent.builder()
@@ -105,26 +106,26 @@ public class GitHubClient {
                 .branch(branch)
                 .content(getContent(content))
                 .build();
-        createFile(path, request);
+        return createFile(path, request);
     }
 
-    public void deleteFile(final String path, final String message, final String branch) {
+    public GitHubSource deleteFile(final String path, final String message, final String branch) {
         final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, null));
         final GitHubContent request = GitHubContent.builder()
                 .sha(file.getSha())
                 .message(message)
                 .branch(branch)
                 .build();
-        RestApiUtils.execute(serverApi.deleteFile(projectName, repositoryName, path, request));
+        return RestApiUtils.execute(serverApi.deleteFile(projectName, repositoryName, path, request));
     }
 
-    public void createFile(final String path, final byte[] content, final String message, final String branch) {
+    public GitHubSource createFile(final String path, final byte[] content, final String message, final String branch) {
         final GitHubContent request = GitHubContent.builder()
                 .message(message)
                 .branch(branch)
                 .content(Base64.getMimeEncoder().encodeToString(content))
                 .build();
-        createFile(path, request);
+        return createFile(path, request);
     }
 
     public Response<List<GitHubRelease>> getTags(final Integer page) {
@@ -168,16 +169,16 @@ public class GitHubClient {
         return RestApiUtils.getResponse(serverApi.getBranches(projectName, repositoryName, page, LIMIT));
     }
 
-    private GitHubServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
-        return new ApiBuilder<>(GitHubServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
+    private GitHubApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
+        return new ApiBuilder<>(GitHubApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
     }
 
-    private void createFile(final String path, final GitHubContent request) {
-        RestApiUtils.execute(serverApi.createFile(projectName, repositoryName, path, request));
+    private GitHubSource createFile(final String path, final GitHubContent request) {
+        return RestApiUtils.execute(serverApi.createFile(projectName, repositoryName, path, request));
     }
 
     private static String getContent(final String content) {
-        final String c = TextUtils.isBlank(content) ? DUMMY_CONTENT : content;
-        return Base64.getEncoder().encodeToString(c.getBytes());
+        final String notEmptyContent = TextUtils.isBlank(content) ? DUMMY_CONTENT : content;
+        return Base64.getEncoder().encodeToString(notEmptyContent.getBytes());
     }
 }

@@ -26,5 +26,5 @@ import java.util.List;
 public class GitHubCommitNode {
     private String sha;
     private GitHubCommit commit;
-    private List<GitHubCommitNode> parents;
+    private List<GitHubCommit> parents;
 }

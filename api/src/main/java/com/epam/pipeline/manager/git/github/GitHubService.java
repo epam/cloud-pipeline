@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.git.github;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
@@ -31,6 +32,7 @@ import com.epam.pipeline.entity.git.github.GitHubContent;
 import com.epam.pipeline.entity.git.github.GitHubRef;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
+import com.epam.pipeline.entity.git.github.GitHubSource;
 import com.epam.pipeline.entity.git.github.GitHubTag;
 import com.epam.pipeline.entity.git.github.GitHubTagRequest;
 import com.epam.pipeline.entity.git.github.GitHubTree;
@@ -220,7 +222,7 @@ public class GitHubService implements GitClientService {
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final String username = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_USER_NAME);
+        final String username = preferenceManager.getPreference(SystemPreferences.GITHUB_USER_NAME);
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
@@ -271,12 +273,10 @@ public class GitHubService implements GitClientService {
     public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
                                      final String message, final boolean fileExists) {
         final GitHubClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
-        if (fileExists) {
-            client.updateFile(path, content, message, pipeline.getBranch());
-        } else {
-            client.createFile(path, content, message, pipeline.getBranch());
-        }
-        return new GitCommitEntry();
+        final GitHubSource gitHubSource = fileExists ?
+                client.updateFile(path, content, message, pipeline.getBranch()) :
+                client.createFile(path, content, message, pipeline.getBranch());
+        return mapper.gitHubSourceToCommitEntry(gitHubSource);
     }
 
     @Override
@@ -287,9 +287,9 @@ public class GitHubService implements GitClientService {
 
     @Override
     public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
-        getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+        final GitHubSource gitHubSource = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
                 .deleteFile(filePath, commitMessage, pipeline.getBranch());
-        return new GitCommitEntry();
+        return mapper.gitHubSourceToCommitEntry(gitHubSource);
     }
 
     @Override
@@ -314,24 +314,27 @@ public class GitHubService implements GitClientService {
                                       final String message) {
         if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
                 .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
-            throw new UnsupportedOperationException(NOT_SUPPORTED_PATTERN);
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming"));
         }
         final GitHubClient client = getClient(pipeline);
-
-        ListUtils.emptyIfNull(sourceItemVOList.getItems())
-                .forEach(sourceItemVO -> client.updateFile(sourceItemVO.getPath(), sourceItemVO.getContents(),
-                message, pipeline.getBranch()));
-        return new GitCommitEntry();
+        GitHubSource gitHubSource = null;
+        for (PipelineSourceItemVO sourceItemVO : ListUtils.emptyIfNull(sourceItemVOList.getItems())) {
+            gitHubSource = client.updateFile(sourceItemVO.getPath(), sourceItemVO.getContents(),
+                    message, pipeline.getBranch());
+        }
+        return mapper.gitHubSourceToCommitEntry(gitHubSource);
     }
 
     @Override
-    public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
+    public GitCommitEntry uploadFiles(final Pipeline pipeline,
+                                      final List<UploadFileMetadata> files,
                                       final String message) {
         Assert.isTrue(files.size() == 1, String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload"));
         final UploadFileMetadata file = files.get(0);
         final GitHubClient client = getClient(pipeline);
-        client.createFile(file.getFileName(), file.getBytes(), message, pipeline.getBranch());
-        return new GitCommitEntry();
+        final GitHubSource gitHubSource = client.createFile(file.getFileName(), file.getBytes(),
+                message, pipeline.getBranch());
+        return mapper.gitHubSourceToCommitEntry(gitHubSource);
     }
 
     @Override
@@ -364,13 +367,13 @@ public class GitHubService implements GitClientService {
         final String repositoryName = repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME));
         final String protocol = repositoryUrl.getProtocol();
         final String host = repositoryUrl.getHost();
-        final String bitbucketHost = protocol + "api." + host;
+        final String gitHubHost = protocol + "api." + host;
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
                 .getMessage(MessageConstants.ERROR_GITHUB_TOKEN_NOT_FOUND));
         final String credentials = AuthorizationUtils.BEARER_AUTH + token;
 
-        return new GitHubClient(bitbucketHost, credentials, null, projectName, repositoryName);
+        return new GitHubClient(gitHubHost, credentials, null, projectName, repositoryName);
     }
 
     private GitClientException buildUrlParseError(final String urlPart) {

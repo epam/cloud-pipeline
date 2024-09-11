@@ -39,7 +39,7 @@ import retrofit2.http.Query;
 import java.util.List;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public interface GitHubServerApi {
+public interface GitHubApi {
 
     String PATH = "path";
     String WORKSPACE = "workspace";

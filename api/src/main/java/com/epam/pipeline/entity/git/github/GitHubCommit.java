@@ -19,9 +19,13 @@ package com.epam.pipeline.entity.git.github;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Builder
 public class GitHubCommit {
+    private String sha;
     private String message;
     private GitHubAuthor author;
+    private List<GitHubCommit> parents;
 }

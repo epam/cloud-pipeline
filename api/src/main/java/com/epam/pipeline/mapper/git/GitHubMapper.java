@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.git.github.GitHubCommit;
 import com.epam.pipeline.entity.git.github.GitHubCommitNode;
 import com.epam.pipeline.entity.git.github.GitHubRelease;
 import com.epam.pipeline.entity.git.github.GitHubRepository;
+import com.epam.pipeline.entity.git.github.GitHubSource;
 import com.epam.pipeline.entity.git.github.GitHubTag;
 import com.epam.pipeline.entity.pipeline.Revision;
 import lombok.SneakyThrows;
@@ -79,7 +80,7 @@ public interface GitHubMapper {
     @Mapping(target = "id", source = "sha")
     @Mapping(target = "title", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "parentIds", expression = "java(fillCommitParents(commit))")
+    @Mapping(target = "parentIds", expression = "java(fillCommitParents(commit.getCommit()))")
     @Mapping(target = "committedDate", expression = "java(fillCommitDate(commit.getCommit()))")
     @Mapping(target = "committerName", ignore = true)
     @Mapping(target = "committerEmail", ignore = true)
@@ -89,6 +90,20 @@ public interface GitHubMapper {
     @Mapping(target = "authorName", source = "commit.author.name")
     @Mapping(target = "authorEmail", source = "commit.author.email")
     GitCommitEntry commitToCommitEntry(GitHubCommitNode commit);
+
+    @Mapping(target = "id", source = "commit.sha")
+    @Mapping(target = "title", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "parentIds", expression = "java(fillCommitParents(gitHubSource.getCommit()))")
+    @Mapping(target = "committedDate", expression = "java(fillCommitDate(gitHubSource.getCommit()))")
+    @Mapping(target = "committerName", ignore = true)
+    @Mapping(target = "committerEmail", ignore = true)
+    @Mapping(target = "shortId", ignore = true)
+    @Mapping(target = "message", source = "commit.message")
+    @Mapping(target = "authoredDate", ignore = true)
+    @Mapping(target = "authorName", source = "commit.author.name")
+    @Mapping(target = "authorEmail", source = "commit.author.email")
+    GitCommitEntry gitHubSourceToCommitEntry(GitHubSource gitHubSource);
 
     @Mapping(target = "message", ignore = true)
     GitTagEntry tagToTagEntry(GitHubRelease tag);
@@ -122,12 +137,12 @@ public interface GitHubMapper {
                 : null;
     }
 
-    default List<String> fillCommitParents(final GitHubCommitNode commit) {
+    default List<String> fillCommitParents(final GitHubCommit commit) {
         if (Objects.isNull(commit)) {
             return null;
         }
         return ListUtils.emptyIfNull(commit.getParents()).stream()
-                .map(GitHubCommitNode::getSha)
+                .map(GitHubCommit::getSha)
                 .collect(Collectors.toList());
     }
 }
