@@ -538,9 +538,10 @@ public class PipelineRepositoryService {
     }
 
     private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
-        return GitUtils.DRAFT_PREFIX +
-                (RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
-                        commit.getCommitId().substring(0, 6) :
+        final String commitId = RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
+                commit.getCommitId().substring(0, 6) :
+                (RepositoryType.GITHUB.equals(repositoryType) ? commit.getCommitId().substring(0, 7) :
                         commit.getName());
+        return GitUtils.DRAFT_PREFIX + commitId;
     }
 }

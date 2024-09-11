@@ -361,6 +361,9 @@ public class SystemPreferences {
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
 
+    public static final StringPreference GITHUB_USER_NAME =
+            new StringPreference("github.user.name", null, GIT_GROUP, pass);
+
     public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
             new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
