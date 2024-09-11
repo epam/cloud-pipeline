@@ -3261,6 +3261,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const renderNamePlaceholder = () => {
             const [nameError] = this.props.form
               .getFieldError(`${sectionName}.params.${key}.name`) || [];
+            const parameterName = prettyName || name
+              ? highlightText(prettyName || name)
+              : '<parameter name>';
             const content = (
               <div
                 className={classNames('ant-form-item-title', {
@@ -3274,10 +3277,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 }}
               >
                 <span className="cp-ellipsis-text" style={{flex: '0 1 auto'}}>
-                  {highlightText(
-                    prettyName || name || '<parameter name>',
-                    this.state.searchParameters
-                  )}
+                  {parameterName}
                   {nameError ? (
                     <span
                       className="cp-ellipsis-text cp-error"
