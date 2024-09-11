@@ -59,11 +59,7 @@ import retrofit2.Response;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -347,7 +343,7 @@ public class GitHubService implements GitClientService {
         final String parentDirectory = Optional.ofNullable(folder.getParent()).orElse(Strings.EMPTY);
         final List<GitHubContent> contents = client.getContents(parentDirectory, version);
         return contents.stream()
-                .filter(c -> c.getPath().equals(rawPath))
+                .filter(c -> Objects.equals(c.getPath(), rawPath))
                 .findFirst()
                 .map(GitHubContent::getSha)
                 .orElseThrow(() -> new RuntimeException(String.format("Source not found %s", parentDirectory)));
