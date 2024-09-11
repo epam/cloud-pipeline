@@ -3840,7 +3840,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     >
                       <span>Search:</span>
                       <div style={{flex: 1, marginRight: 30}}>
-                        <Input onChange={onParameterSearchChange} />
+                        <Input
+                          onChange={onParameterSearchChange}
+                          value={this.state.searchParameters}
+                        />
                         {this.state.searchParameters ? (
                           <div style={{
                             whiteSpace: 'nowrap',
