@@ -3174,7 +3174,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             };
           }
         }
-        const renderParametersGroup = (keys, params, section2) => keys.map(key => {
+        const renderParametersGroup = (keys, params) => keys.map(key => {
           const parameter = (params ? params[key] : undefined) ||
             this.addedParameters[key];
           const isAddedParameter = !!this.addedParameters[key];
@@ -3879,8 +3879,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                         {
                           renderParametersGroup(
                             Object.keys(paramsPerSection[section]),
-                            paramsPerSection[section],
-                            section
+                            paramsPerSection[section]
                           )
                         }
                       </div>
