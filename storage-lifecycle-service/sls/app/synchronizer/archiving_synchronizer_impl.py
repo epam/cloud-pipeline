@@ -78,9 +78,9 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
                 path_prefix = path_utils.determinate_prefix_from_glob(rule.path_glob)
 
-                # Define which storage classes we should list in cloud
-                # f.i. if in rule we have only one transition STANDARD -> DEEP_ARCHIVE, we don't need to list other
-                # storage classes except STANDARD
+                # Define which storage classes we should list in the cloud
+                # f.i. if in the rule we have only one transition STANDARD -> GLACIER, we don't need to list other
+                # storage classes except STANDARD and GLACIER_IR
                 storage_class_transition_map = self.cloud_bridge.get_storage_class_transition_map(storage, rule)
                 source_storage_classes = list(chain.from_iterable(storage_class_transition_map.values()))
 
@@ -89,16 +89,23 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
                 files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix, classes_to_list=source_storage_classes)
 
-                running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
-                    rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
-                subject_folders = set(self._identify_subject_folders(files, rule.path_glob))
-                subject_folders.update(e.path for e in running_executions)
+                if rule.transition_method == METHOD_ONE_BY_ONE:
+                    subject_folders = {rule.path_glob}
+                else:
+                    running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
+                        rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
+                    subject_folders = set(self._identify_subject_folders(files, rule.path_glob))
+                    subject_folders.update(e.path for e in running_executions)
                 self.logger.log(
                     "Storage: {}. Rule: {}. Subject folders are: {}".format(storage.id, rule.rule_id, subject_folders))
 
                 for folder in subject_folders:
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: '{}'. [Applying rule]".format(storage.id, rule.rule_id, folder))
+
+                    self.logger.log(
+                        "Storage: {}. Rule: {}. Path: '{}'. Transition method is {}".format(
+                            storage.id, rule.rule_id, folder, rule.transition_method))
 
                     # to match object keys with glob we need to combine it with folder path
                     # and get 'effective' glob like '{folder-path}/{glob}'
@@ -113,11 +120,18 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                             storage.id, rule.rule_id, folder, effective_glob)
                     )
 
-                    rule_subject_files = [
-                        file for file in files
-                        if file.path.startswith(folder)
-                        and re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
-                    ] if effective_glob else files
+                    if not path_utils.glob_is_matching_all(effective_glob):
+                        rule_subject_files = [
+                            file for file in files
+                            if re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
+                        ]
+                    else:
+                        self.logger.log(
+                            "Storage: {}. Rule: {}. Path: '{}'. Effective glob '{}' is matching literally all files. "
+                            "Skipping file filtering.".format(storage.id, rule.rule_id, folder, effective_glob)
+                        )
+                        rule_subject_files = files
+
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: '{}'. Found {} subject files, "
                         "than might be eligible to transition.".format(
