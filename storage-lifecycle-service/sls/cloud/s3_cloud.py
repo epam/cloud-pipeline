@@ -64,6 +64,8 @@ class S3StorageOperations(StorageOperations):
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     DELETION = "DELETION"
 
+    ALL_POSSIBLE_SOURCE_CLASSES = [STANDARD, GLACIER_IR, GLACIER, DEEP_ARCHIVE]
+
     EXPEDITED_RESTORE_MODE = "EXPEDITED"
     STANDARD_RESTORE_MODE = "STANDARD"
     BULK_RESTORE_MODE = "BULK"
@@ -117,24 +119,24 @@ class S3StorageOperations(StorageOperations):
         else:
             self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
+                               list_versions=False, convert_paths=True):
         return self._list_objects_by_prefix(
             self._build_s3_client(region, storage_container, "s3"),
-            storage_container.bucket, storage_container.bucket_prefix, list_versions, convert_paths)
+            storage_container.bucket, storage_container.bucket_prefix, classes_to_list, list_versions, convert_paths)
 
-    def _list_objects_by_prefix(self, s3_client, bucket, prefix, list_versions=False, convert_paths=True):
+    def _list_objects_by_prefix(self, s3_client, bucket, prefix,
+                                classes_to_list=None, list_versions=False, convert_paths=True):
+        if classes_to_list and all(sc in classes_to_list for sc in S3StorageOperations.ALL_POSSIBLE_SOURCE_CLASSES):
+            classes_to_list = None
+
         result = []
         paginator = s3_client.get_paginator('list_objects' if not list_versions else 'list_object_versions')
         page_iterator = paginator.paginate(Bucket=bucket, Prefix=self._path_to_s3_format(prefix))
-        for page in page_iterator:
-            if not list_versions:
-                if 'Contents' in page:
-                    for obj in page['Contents']:
-                        result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
-            else:
-                if 'Versions' in page:
-                    for version in page['Versions']:
-                        result.append(self._map_s3_obj_to_cloud_obj(version, convert_paths))
+        filtered_iterator = page_iterator.search(S3StorageOperations._configure_listing_filter(list_versions, classes_to_list))
+        for obj in filtered_iterator:
+            if obj:
+                result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
         return result
 
     def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
@@ -442,3 +444,14 @@ class S3StorageOperations(StorageOperations):
             elif restore_mode == self.STANDARD_RESTORE_MODE:
                 check_shift_period = datetime.timedelta(hours=12)
         return updated + check_shift_period < now
+
+    @staticmethod
+    def _configure_listing_filter(list_versions, classes_to_list):
+        field_to_check = "Versions" if list_versions else "Contents"
+        filter_condition = ""
+        if classes_to_list:
+            filter_condition = "? contains([{}], {})".format(
+                ",".join(["'{}'".format(sc) for sc in classes_to_list]),
+                "StorageClass"
+            )
+        return field_to_check + "[" + filter_condition + "][]"
