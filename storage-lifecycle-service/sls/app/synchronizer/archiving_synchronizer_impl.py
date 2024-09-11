@@ -17,6 +17,7 @@
 import datetime
 import os
 import re
+from itertools import chain
 
 from sls.app.storage_permissions_manager import StoragePermissionsManager
 from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
@@ -68,7 +69,6 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             )
             return
 
-        file_listing_cache = {}
         self.cloud_bridge.prepare_bucket_if_needed(storage)
         for rule in rules:
             self.logger.log("Storage: {}. Rule: {}. [Starting]".format(storage.id, rule.rule_id))
@@ -77,14 +77,17 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     continue
 
                 path_prefix = path_utils.determinate_prefix_from_glob(rule.path_glob)
-                existing_listing_prefix = next(
-                    filter(lambda k: path_prefix.startswith(k), file_listing_cache.keys()), None
-                )
-                if existing_listing_prefix:
-                    files = [f for f in file_listing_cache[existing_listing_prefix] if f.path.startswith(path_prefix)]
-                else:
-                    files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix)
-                    file_listing_cache[path_prefix] = files
+
+                # Define which storage classes we should list in cloud
+                # f.i. if in rule we have only one transition STANDARD -> DEEP_ARCHIVE, we don't need to list other
+                # storage classes except STANDARD
+                storage_class_transition_map = self.cloud_bridge.get_storage_class_transition_map(storage, rule)
+                source_storage_classes = list(chain.from_iterable(storage_class_transition_map.values()))
+
+                self.logger.log("Storage: {}. Rule: {}. Storage classes to list: {}".format(
+                    storage.id, rule.rule_id, source_storage_classes))
+
+                files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix, classes_to_list=source_storage_classes)
 
                 running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
                     rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
@@ -180,6 +183,8 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
         storage_class_transition_map = self.cloud_bridge.get_storage_class_transition_map(storage, rule)
 
+        # Build map of collections of files by DESTINATION classes,
+        # which now actually reside in SOURCE storage class
         files_by_dest_storage_class = {}
         for dest_storage_class, source_storage_classes in storage_class_transition_map.items():
             for file in subject_files_listing:
@@ -336,9 +341,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             if execution.storage_class in subject_files_by_dest_storage_class \
             else []
 
-        # So if we found a file in source location,
-        # and creation date is before execution start date
-        # (if transition was confgured with date - file should be created before that date) - then action is failed
+        # Action is failed if:
+        # - We found a file in source location,
+        # - And creation date is before execution start date
+        #   (if transition was configured with date - file should be created before that date)
         storage_class_file_filter = cloud_utils.get_storage_class_specific_file_filter(transition.storage_class)
         file_in_wrong_location = next(
             filter(lambda file: file.creation_date < execution.updated and
