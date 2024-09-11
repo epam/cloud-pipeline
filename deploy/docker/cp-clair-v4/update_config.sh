@@ -45,20 +45,20 @@ http_listen_addr: 0.0.0.0:8080
 introspection_addr: 0.0.0.0:8081
 log_level: debug
 indexer:
-  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=clair password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
+  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=$CP_CLAIR_DATABASE_DATABASE password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
   scanlock_retry: 10
   layer_scan_concurrency: 5
   migrations: true
 matcher:
   indexer_addr: localhost:8080
-  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=clair password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
+  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=$CP_CLAIR_DATABASE_DATABASE password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
   max_conn_pool: $CP_CLAIR_DATABASE_POOL_SIZE
   migrations: true
   period: 24h
 notifier:
   indexer_addr: localhost:8080
   matcher_addr: localhost:8080
-  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=clair password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
+  connstring: host=$CP_CLAIR_DATABASE_HOST port=$CP_CLAIR_DATABASE_PORT user=$CP_CLAIR_DATABASE_USERNAME dbname=$CP_CLAIR_DATABASE_DATABASE password=$CP_CLAIR_DATABASE_PASSWORD sslmode=disable
   migrations: true
   poll_interval: 2h
   delivery_interval: 2h
