@@ -120,17 +120,10 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                             storage.id, rule.rule_id, folder, effective_glob)
                     )
 
-                    if not path_utils.glob_is_matching_all(effective_glob):
-                        rule_subject_files = [
-                            file for file in files
-                            if re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
-                        ]
-                    else:
-                        self.logger.log(
-                            "Storage: {}. Rule: {}. Path: '{}'. Effective glob '{}' is matching literally all files. "
-                            "Skipping file filtering.".format(storage.id, rule.rule_id, folder, effective_glob)
-                        )
-                        rule_subject_files = files
+                    rule_subject_files = [
+                        file for file in files
+                        if re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
+                    ]
 
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: '{}'. Found {} subject files, "

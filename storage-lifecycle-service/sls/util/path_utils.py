@@ -64,8 +64,3 @@ def join_paths(prefix, suffix, delimiter="/"):
     formatted_suffix = suffix[len(delimiter)::] if suffix.startswith(delimiter) else suffix
     return delimiter.join([formatted_prefix, formatted_suffix])
 
-
-def glob_is_matching_all(glob):
-    if not glob:
-        return True
-    return bool(re.match("^[/*]+$", glob)) and glob.endswith("*")
