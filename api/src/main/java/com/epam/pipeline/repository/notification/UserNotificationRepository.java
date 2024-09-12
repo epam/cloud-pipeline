@@ -30,6 +30,9 @@ public interface UserNotificationRepository extends PagingAndSortingRepository<U
                                                                              Pageable pageable);
     Page<UserNotificationEntity> findByUserIdOrderByCreatedDateDesc(Long userId, Pageable pageable);
     void deleteByCreatedDateLessThan(LocalDateTime date);
+
+    @Modifying
+    @Query("delete from UserNotificationEntity where userId = ?1")
     void deleteByUserId(Long userId);
 
     @Modifying
