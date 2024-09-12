@@ -63,6 +63,7 @@ import java.util.Set;
 @AclSync
 public class PipelineManager implements SecuredEntityManager {
 
+    public static final String FROM_URLS_ONLY_PATTERN = "%s repository creation supported from urls only";
     @Value("${templates.default.template}")
     private String defaultTemplate;
 
@@ -111,10 +112,10 @@ public class PipelineManager implements SecuredEntityManager {
             pipelineVO.setRepositoryType(RepositoryType.GITLAB);
         }
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
-            Assert.isTrue(RepositoryType.BITBUCKET != pipelineVO.getRepositoryType(),
-                    "Bitbucket repository creation supported from urls only");
-            Assert.isTrue(RepositoryType.BITBUCKET_CLOUD != pipelineVO.getRepositoryType(),
-                    "Bitbucket Cloud repository creation supported from urls only");
+            Assert.isTrue(RepositoryType.BITBUCKET != pipelineVO.getRepositoryType() &&
+                            RepositoryType.BITBUCKET_CLOUD != pipelineVO.getRepositoryType() &&
+                            RepositoryType.GITHUB != pipelineVO.getRepositoryType(),
+                    String.format(FROM_URLS_ONLY_PATTERN, pipelineVO.getRepositoryType()));
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
             final GitProject project = createGitRepository(pipelineVO);
