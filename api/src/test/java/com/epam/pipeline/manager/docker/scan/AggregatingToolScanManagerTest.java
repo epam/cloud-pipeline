@@ -494,6 +494,10 @@ public class AggregatingToolScanManagerTest {
 
         toolScanManager.init();
 
+        Preference clairVersion = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION.toPreference();
+        clairVersion.setValue("v2");
+        when(preferenceDao.loadPreferenceByName(clairVersion.getName())).thenReturn(clairVersion);
+
         ClairV2Client service = (ClairV2Client) Whitebox.getInternalState(toolScanManager, "clairService");
         Assert.assertNull(service);
 

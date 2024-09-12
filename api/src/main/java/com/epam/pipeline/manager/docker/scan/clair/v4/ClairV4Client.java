@@ -188,7 +188,7 @@ public class ClairV4Client implements ClairClient {
         vulnerability.setName(clairVulnerability.getName());
         vulnerability.setDescription(clairVulnerability.getDescription());
         vulnerability.setFixedBy(clairVulnerability.getFixedBy());
-        vulnerability.setLink(clairVulnerability.getLinks()); // TODO: array now (space-separated)
+        vulnerability.setLink(getFirstLink(clairVulnerability.getLinks()));
         vulnerability.setSeverity(parseSeverity(clairVulnerability.getSeverity()));
         final String vulnerabilityId = clairVulnerability.getId();
         packages.computeIfPresent(vulnerabilityId, (key, value) -> {
@@ -241,5 +241,12 @@ public class ClairV4Client implements ClairClient {
         return packageByVulnerability.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry ->
                         packages.getOrDefault(entry.getValue(), null)));
+    }
+
+    private String getFirstLink(final String links) {
+        if (StringUtils.isBlank(links)) {
+            return StringUtils.EMPTY;
+        }
+        return Arrays.stream(links.split(" ")).collect(Collectors.toList()).get(0);
     }
 }

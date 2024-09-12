@@ -422,7 +422,7 @@ public class SystemPreferences {
     public static final IntPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_READ_TIMEOUT = new IntPreference(
         "security.tools.scan.clair.read.timeout", 600, DOCKER_SECURITY_GROUP, isGreaterThan(0));
     public static final StringPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION = new StringPreference(
-            "security.tools.scan.clair.version", "v2", DOCKER_SECURITY_GROUP, pass);
+            "security.tools.scan.clair.version", "v4", DOCKER_SECURITY_GROUP, pass);
     /**
      * Scan schedule cron expression
      */
