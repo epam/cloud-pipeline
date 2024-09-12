@@ -270,6 +270,9 @@ public class PipelineRepositoryService {
         if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD) {
             throw new UnsupportedOperationException("Folder creation is not supported for Bitbucket Cloud repository");
         }
+        if (pipeline.getRepositoryType() == RepositoryType.GITHUB) {
+            throw new UnsupportedOperationException("Folder creation is not supported for GitHub repository");
+        }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
