@@ -42,7 +42,7 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
                 entry(REMOVE_PARAMETER, $(byClassName(String.format("param_%d", parameterIndex)))
                         .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byClassName(String.format("param_%d", 1)))
+                entry(PARAMETER_VALUE, $(byClassName(String.format("param_%d", parameterIndex)))
                         .$(byClassName("launch-pipeline-form__parameter-value")).$("input"))
         );
     }
