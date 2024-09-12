@@ -112,9 +112,7 @@ public class PipelineManager implements SecuredEntityManager {
             pipelineVO.setRepositoryType(RepositoryType.GITLAB);
         }
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
-            Assert.isTrue(RepositoryType.BITBUCKET != pipelineVO.getRepositoryType() &&
-                            RepositoryType.BITBUCKET_CLOUD != pipelineVO.getRepositoryType() &&
-                            RepositoryType.GITHUB != pipelineVO.getRepositoryType(),
+            Assert.isTrue(RepositoryType.GITLAB.equals(pipelineVO.getRepositoryType()) ,
                     String.format(FROM_URLS_ONLY_PATTERN, pipelineVO.getRepositoryType()));
             Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
