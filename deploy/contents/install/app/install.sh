@@ -1040,6 +1040,20 @@ fi
 if is_service_requested cp-clair; then
     print_ok "[Starting Clair deployment]"
 
+    if [ ! -n "${CP_CLAIR_VERSION}" ]; then CP_CLAIR_VERSION="v4"; fi
+    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ];
+    then
+        CP_CLAIR_DOCKER_NAME="clair-v4"
+        CP_CLAIR_HEALTH_ENDPOINT="/healthz"
+    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ];
+    then
+    	  CP_CLAIR_DOCKER_NAME="clair"
+    	  CP_CLAIR_HEALTH_ENDPOINT="/health"
+    else
+    	  print_err "Unexpected Clair version: ${CP_CLAIR_VERSION}."
+    	  exit 1
+    fi
+
     print_info "-> Deleting existing instance of Clair"
     delete_deployment_and_service   "cp-clair" \
                                     "/opt/clair"
@@ -1052,6 +1066,17 @@ if is_service_requested cp-clair; then
                             "$CP_CLAIR_DATABASE_DATABASE"
 
         print_info "-> Deploying Clair"
+
+        export CP_CLAIR_DOCKER_NAME
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_DOCKER_NAME" \
+                            "$CP_CLAIR_DOCKER_NAME"
+        export CP_CLAIR_HEALTH_ENDPOINT
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_HEALTH_ENDPOINT" \
+                            "$CP_CLAIR_HEALTH_ENDPOINT"
+        init_kube_config_map
+
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-svc.yaml
 

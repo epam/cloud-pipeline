@@ -1047,6 +1047,7 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+    api_set_preference "security.tools.scan.clair.version" "${CP_CLAIR_VERSION}" "true"
 }
 
 function api_register_drive_mapping {
