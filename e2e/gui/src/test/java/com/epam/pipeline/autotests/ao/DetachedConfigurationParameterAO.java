@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
+import static com.codeborne.selenide.Selectors.byClassName;
 import com.codeborne.selenide.SelenideElement;
 
 import java.util.Map;
@@ -36,17 +37,18 @@ public class DetachedConfigurationParameterAO implements AccessObject<DetachedCo
         this.configuration = configuration;
 
         this.elements = initialiseElements(
+                entry(PARAMETER_FIELD, $(byClassName(String.format("param_%d", parameterIndex)))
+                        .$(byClassName("cp-text-not-important"))),
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(REMOVE_PARAMETER, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
+                entry(REMOVE_PARAMETER, $(byClassName(String.format("param_%d", parameterIndex)))
                         .find(byId("remove-parameter-button"))),
-                entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byAttribute("role", "combobox")).find("input"))
+                entry(PARAMETER_VALUE, $(byClassName(String.format("param_%d", 1)))
+                        .$(byClassName("launch-pipeline-form__parameter-value")).$("input"))
         );
     }
 
     public DetachedConfigurationParameterAO setName(String name) {
+        get(PARAMETER_FIELD).click();
         setValue(PARAMETER_NAME, name).resetMouse();
         return this;
     }

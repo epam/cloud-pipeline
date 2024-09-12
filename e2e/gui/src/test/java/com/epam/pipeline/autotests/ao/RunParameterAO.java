@@ -36,7 +36,7 @@ public class RunParameterAO
         this.pipelineRunFormAO = pipelineRunFormAO;
 
         this.elements = initialiseElements(
-                entry(PARAMETER_FIELD, $(byClassName(String.format("param_%s", parameterIndex)))
+                entry(PARAMETER_FIELD, $(byClassName(String.format("param_%d", parameterIndex)))
                         .$(byClassName("cp-text-not-important"))),
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
                 entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
