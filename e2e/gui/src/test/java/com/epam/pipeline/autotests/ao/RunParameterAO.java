@@ -40,8 +40,8 @@ public class RunParameterAO
                         .$(byClassName("cp-text-not-important"))),
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
                 entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
-                        .closest(".launch-pipeline-form__form-item-row").closest(".launch-pipeline-form__form-item-row")
-                        .find(byClassName("launch-pipeline-form__path-type"))),
+                        .$(byClassName("launch-pipeline-form__parameter-value"))
+                        .$(byClassName("launch-pipeline-form__path-type"))),
                 entry(REMOVE_PARAMETER, $(byClassName(String.format("param_%d", parameterIndex)))
                         .find(byId("remove-parameter-button"))),
                 entry(PARAMETER_VALUE, $(byId(String.format("parameters.params.param_%d.value", parameterIndex))))
