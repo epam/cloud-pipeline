@@ -24,6 +24,7 @@ PSG_USER=pipeline
 PSG_PASS=pipeline
 PSG_SHARED_BUFFERS=128MB
 PSG_MAX_CONNECTIONS=100
+PSG_VERSION=16.4
 CP_API_SRV_CERT_DIR=/opt/api/pki
 CP_API_SRV_FED_META_DIR=/opt/api/sso
 CP_API_SRV_INTERNAL_HOST=cp-api-srv.default.svc.cluster.local
