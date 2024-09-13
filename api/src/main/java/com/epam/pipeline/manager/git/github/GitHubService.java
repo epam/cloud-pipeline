@@ -68,6 +68,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
+
 @Service
 @RequiredArgsConstructor
 public class GitHubService implements GitClientService {
@@ -75,7 +77,6 @@ public class GitHubService implements GitClientService {
     private static final String PROJECT_NAME = "project name";
     private static final String GITHUB_FOLDER_MARKER = "tree";
     private static final String GITHUB_FILE_MARKER = "blob";
-    private static final String NOT_SUPPORTED_PATTERN = "%s is not supported for GitHub repository";
     private static final String LINK = "link";
     private static final String REL_NEXT = "rel=\"next\"";
     private static final String COMMIT = "commit";
@@ -95,7 +96,7 @@ public class GitHubService implements GitClientService {
                                        final String path,
                                        final String token,
                                        final String visibility) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Create repository"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Create repository", getType()));
     }
 
     @Override
@@ -283,7 +284,7 @@ public class GitHubService implements GitClientService {
     @Override
     public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
                                      final String filePreviousPath, final String filePath) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
     }
 
     @Override
@@ -296,18 +297,18 @@ public class GitHubService implements GitClientService {
     @Override
     public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
                                        final String message) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation", getType()));
     }
 
     @Override
     public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
                                        final String folder, final String newFolderName) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming", getType()));
     }
 
     @Override
     public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder deletion"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder deletion", getType()));
     }
 
     @Override
@@ -315,7 +316,7 @@ public class GitHubService implements GitClientService {
                                       final String message) {
         if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
                 .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
-            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming"));
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
         }
         final GitHubClient client = getClient(pipeline);
         GitHubSource gitHubSource = null;
@@ -330,7 +331,8 @@ public class GitHubService implements GitClientService {
     public GitCommitEntry uploadFiles(final Pipeline pipeline,
                                       final List<UploadFileMetadata> files,
                                       final String message) {
-        Assert.isTrue(files.size() == 1, String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload"));
+        Assert.isTrue(files.size() == 1,
+                String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload", getType()));
         final UploadFileMetadata file = files.get(0);
         final GitHubClient client = getClient(pipeline);
         final GitHubSource gitHubSource = client.createFile(file.getFileName(), file.getBytes(),
