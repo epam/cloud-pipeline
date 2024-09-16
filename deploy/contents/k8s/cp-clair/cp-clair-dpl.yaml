@@ -15,17 +15,17 @@ spec:
       nodeSelector:
         cloud-pipeline/cp-clair: "true"
       tolerations:
-      - key: node-role.kubernetes.io/master
-        effect: NoSchedule
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
       containers:
         - name: cp-clair
-          image: $CP_COMMON_DISTR_DOCKER_PREFIX:clair-$CP_VERSION
+          image: $CP_COMMON_DISTR_DOCKER_PREFIX:${CP_CLAIR_DOCKER_NAME}-$CP_VERSION
           imagePullPolicy: "Always"
           ports:
             - containerPort: 8080
           envFrom:
-          - configMapRef:
-              name: cp-config-global
+            - configMapRef:
+                name: cp-config-global
           volumeMounts:
             - mountPath: /opt/docker-registry/pki
               name: docker-pki
@@ -35,7 +35,7 @@ spec:
               readOnly: true
           readinessProbe:
             httpGet:
-              path: /health
+              path: ${CP_CLAIR_HEALTH_ENDPOINT}
               port: 8081
               scheme: HTTP
             initialDelaySeconds: 5
