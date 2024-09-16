@@ -264,11 +264,6 @@ CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
-# Allow to schedule Kibana service to the master
-CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
-kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
-
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
@@ -1118,9 +1113,7 @@ if is_service_requested cp-search; then
     delete_deployment_and_service   "cp-search-elk" \
                                     "/opt/search-elk"
 
-     print_info "-> Deleting existing instance of Search KIBANA service"
-    delete_deployment_and_service   "cp-search-kibana" \
-                                    "/opt/search-kibana"
+
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -1130,16 +1123,8 @@ if is_service_requested cp-search; then
         print_info "-> Waiting for Search ELK service to initialize"
         wait_for_deployment "cp-search-elk"
 
-        print_info "-> Deploying Search KIBANA service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
-
-        print_info "-> Waiting for Search KIBANA service to initialize"
-        wait_for_deployment "cp-search-kibana"
-
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_KIBANA_INTERNAL_HOST:$CP_SEARCH_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
