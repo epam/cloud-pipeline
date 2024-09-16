@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.docker.scan.clair;
+package com.epam.pipeline.manager.docker.scan.clair.v2;
 
+import com.epam.pipeline.manager.docker.scan.clair.ClairScanRequest;
+import com.epam.pipeline.manager.docker.scan.clair.ClairScanResult;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
@@ -25,7 +27,8 @@ import retrofit2.http.Path;
 /**
  * A Retrofit2-based client to interact with Clair's API
  */
-public interface ClairService {
+public interface ClairV2Api {
+
     @POST("v1/layers")
     Call<ClairScanRequest> scanLayer(@Body ClairScanRequest request);
 

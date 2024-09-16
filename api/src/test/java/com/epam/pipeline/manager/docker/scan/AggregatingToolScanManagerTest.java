@@ -36,7 +36,8 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanRequest;
 import com.epam.pipeline.manager.docker.scan.clair.ClairScanResult;
-import com.epam.pipeline.manager.docker.scan.clair.ClairService;
+import com.epam.pipeline.manager.docker.scan.clair.v2.ClairV2Api;
+import com.epam.pipeline.manager.docker.scan.clair.v2.ClairV2Client;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentLayerScanResult;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanRequest;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanResult;
@@ -95,6 +96,7 @@ public class AggregatingToolScanManagerTest {
     private static final String TEST_LABEL_VALUE = "label-value";
     private static final Set<String> TEST_LABEL_MARK = Collections.singleton("LABEL-name");
     private static final int ERROR_CODE = 500;
+    private static final String CLAIR_DEFAULT_VERSION = "v2";
 
     @InjectMocks
     private AggregatingToolScanManager aggregatingToolScanManager = new AggregatingToolScanManager();
@@ -113,7 +115,7 @@ public class AggregatingToolScanManagerTest {
     private DockerClient mockDockerClient;
 
     @Mock
-    private ClairService clairService;
+    private ClairV2Api clairV2Api;
 
     @Mock
     private DockerComponentScanService compScanService;
@@ -240,10 +242,11 @@ public class AggregatingToolScanManagerTest {
         when(mockDockerClient.getImageLabels(any(), any(), any()))
                 .thenReturn(Collections.singletonMap(TEST_LABEL_NAME, TEST_LABEL_VALUE));
 
-        when(clairService.scanLayer(any(ClairScanRequest.class)))
+        when(clairV2Api.scanLayer(any(ClairScanRequest.class)))
             .then((Answer<MockCall<ClairScanRequest>>) invocation ->
                 new MockCall<>((ClairScanRequest) invocation.getArguments()[0]));
-        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(testScanResult));
+        when(clairV2Api.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(testScanResult));
+        Whitebox.setInternalState(aggregatingToolScanManager, "clairService", new ClairV2Client(clairV2Api));
 
         when(compScanService.scanLayer(any(DockerComponentScanRequest.class)))
                 .then((Answer<MockCall<DockerComponentScanRequest>>) invocation ->
@@ -271,6 +274,9 @@ public class AggregatingToolScanManagerTest {
 
         when(toolManager.getTagFromImageName(Mockito.anyString())).thenReturn(LATEST_VERSION);
         when(toolVersionManager.findToolVersion(Mockito.anyLong(), Mockito.anyString())).thenReturn(Optional.empty());
+
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION))
+                .thenReturn(CLAIR_DEFAULT_VERSION);
     }
 
     @Test
@@ -280,7 +286,7 @@ public class AggregatingToolScanManagerTest {
         // mock that Component Scan Service will return 2 identical dependencies
         when(compScanService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(
                 new DockerComponentScanResult("test", Arrays.asList(layerScanResult, layerScanResult))));
-        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(new ClairScanResult()));
+        when(clairV2Api.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(new ClairScanResult()));
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
             .thenReturn(new ToolVersionAttributes());
 
@@ -372,7 +378,7 @@ public class AggregatingToolScanManagerTest {
 
     @Test
     public void testThatScanIsPerformedEvenIfClairFails() throws ToolScanExternalServiceException {
-        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
+        when(clairV2Api.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
                 .thenReturn(new ToolVersionAttributes());
 
@@ -385,8 +391,8 @@ public class AggregatingToolScanManagerTest {
 
     @Test
     public void testThatScanIsPerformedEvenIfClairFailsToScan() throws ToolScanExternalServiceException {
-        when(clairService.scanLayer(Mockito.any())).thenReturn(new MockCall<>(true));
-        when(clairService.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
+        when(clairV2Api.scanLayer(Mockito.any())).thenReturn(new MockCall<>(true));
+        when(clairV2Api.getScanResult(Mockito.anyString())).thenReturn(new MockCall<>(true));
         when(toolManager.loadToolVersionAttributes(Mockito.anyLong(), Mockito.anyString()))
                 .thenReturn(new ToolVersionAttributes());
 
@@ -488,7 +494,11 @@ public class AggregatingToolScanManagerTest {
 
         toolScanManager.init();
 
-        ClairService service = (ClairService) Whitebox.getInternalState(toolScanManager, "clairService");
+        Preference clairVersion = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION.toPreference();
+        clairVersion.setValue("v2");
+        when(preferenceDao.loadPreferenceByName(clairVersion.getName())).thenReturn(clairVersion);
+
+        ClairV2Client service = (ClairV2Client) Whitebox.getInternalState(toolScanManager, "clairService");
         Assert.assertNull(service);
 
         Preference toolScanEnabled = SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED.toPreference();
@@ -500,7 +510,7 @@ public class AggregatingToolScanManagerTest {
         when(preferenceDao.loadPreferenceByName(clairRootUrl.getName())).thenReturn(clairRootUrl);
 
         preferenceManager.update(Arrays.asList(toolScanEnabled, clairRootUrl));
-        service = (ClairService) Whitebox.getInternalState(toolScanManager, "clairService");
+        service = (ClairV2Client) Whitebox.getInternalState(toolScanManager, "clairService");
         Assert.assertNotNull(service);
     }
 
