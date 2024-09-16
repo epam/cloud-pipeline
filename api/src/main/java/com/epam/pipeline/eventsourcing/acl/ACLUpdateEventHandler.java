@@ -24,7 +24,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.AclCache;
+import org.springframework.security.acls.model.AclService;
+import org.springframework.security.acls.model.ObjectIdentity;
+import org.springframework.util.Assert;
 
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -37,6 +42,7 @@ public class ACLUpdateEventHandler implements EventHandler {
     private final String id;
     private final String applicationId;
     private final AclCache aclCache;
+    private final AclService aclService;
 
     @Override
     public String getId() {
@@ -59,7 +65,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         if (!validateEvent(event)) {
             return;
         }
-        aclCache.evictFromCache(
+        clearCacheIncludingChildren(
             new ObjectIdentityImpl(
                 event.getData().get(ACL_CLASS_FIELD),
                 Long.valueOf(event.getData().get(ID_FIELD))
@@ -97,6 +103,21 @@ public class ACLUpdateEventHandler implements EventHandler {
         }
 
         return true;
+    }
+
+    private void clearCacheIncludingChildren(ObjectIdentity objectIdentity) {
+        Assert.notNull(objectIdentity, "ObjectIdentity required");
+        List<ObjectIdentity> children = aclService.findChildren(objectIdentity);
+        if (children != null) {
+            Iterator var3 = children.iterator();
+
+            while(var3.hasNext()) {
+                ObjectIdentity child = (ObjectIdentity)var3.next();
+                this.clearCacheIncludingChildren(child);
+            }
+        }
+
+        this.aclCache.evictFromCache(objectIdentity);
     }
 
 }

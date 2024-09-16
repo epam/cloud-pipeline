@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.acls.model.AclCache;
+import org.springframework.security.acls.model.AclService;
 
 @Configuration
 public class ACLEventConfiguration {
@@ -47,10 +48,11 @@ public class ACLEventConfiguration {
     }
 
     @Bean
-    public ACLUpdateEventHandler aclEventSourcingHandler(final EventEngine eventEngine, final AclCache aclCache) {
+    public ACLUpdateEventHandler aclEventSourcingHandler(final EventEngine eventEngine, final AclCache aclCache,
+                                                         final AclService aclService) {
         final ACLUpdateEventHandler aclUpdateEventHandler = new ACLUpdateEventHandler(
                 String.format("%s:%s", applicationId, ACLUpdateEventHandler.class.getSimpleName()),
-                applicationId, aclCache
+                applicationId, aclCache, aclService
         );
         reconfigureACLEventHandler(eventEngine, aclUpdateEventHandler);
 

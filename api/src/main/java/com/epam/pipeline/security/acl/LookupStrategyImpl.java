@@ -347,7 +347,7 @@ public class LookupStrategyImpl implements LookupStrategy {
     Map<ObjectIdentity, Acl> lookupObjectIdentities() {
         final Map<Serializable, Acl> acls = new HashMap<>();
 
-        jdbcTemplate.query(selectClause + orderByClause, new LookupStrategyImpl.ProcessResultSet(acls, null));
+        jdbcTemplate.query(selectClause + orderByClause, new LookupStrategyImpl.NoCacheProcessResultSet(acls, null));
 
         Map<ObjectIdentity, Acl> resultMap = new HashMap<>();
         for (Acl inputAcl : acls.values()) {
@@ -554,9 +554,40 @@ public class LookupStrategyImpl implements LookupStrategy {
     // ~ Inner Classes
     // ==================================================================================================
 
+    private class NoCacheProcessResultSet extends ProcessResultSet {
+
+        NoCacheProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
+            super(acls, sids);
+        }
+
+        /**
+         * In difference with ProcessResultSet this class doesn't use acl cache, to fully reload from database
+         */
+        public Set<Long> extractData(ResultSet rs) throws SQLException {
+            Set<Long> parentIdsToLookup = new HashSet<Long>(); // Set of parent_id Longs
+
+            while (rs.next()) {
+                // Convert current row into an Acl (albeit with a StubAclParent)
+                convertCurrentResultIntoObject(acls, rs);
+
+                // Figure out if this row means we need to lookup another parent
+                long parentId = rs.getLong("parent_object");
+                if (parentId != 0) {
+                    // See if it's already in the "acls"
+                    if (acls.containsKey(new Long(parentId))) {
+                        continue; // skip this while iteration
+                    }
+                    parentIdsToLookup.add(new Long(parentId));
+                }
+            }
+            // Return the parents left to lookup to the caller
+            return parentIdsToLookup;
+        }
+    }
+
     private class ProcessResultSet implements ResultSetExtractor<Set<Long>> {
-        private final Map<Serializable, Acl> acls;
-        private final List<Sid> sids;
+        protected final Map<Serializable, Acl> acls;
+        protected final List<Sid> sids;
 
         ProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
             Assert.notNull(acls, "ACLs cannot be null");
@@ -617,7 +648,7 @@ public class LookupStrategyImpl implements LookupStrategy {
          *
          * @throws SQLException if something goes wrong converting values
          */
-        private void convertCurrentResultIntoObject(Map<Serializable, Acl> acls,
+        protected void convertCurrentResultIntoObject(Map<Serializable, Acl> acls,
                 ResultSet rs) throws SQLException {
             Long id = new Long(rs.getLong("acl_id"));
 
