@@ -164,11 +164,17 @@ docker build    $DOCKERS_SOURCES_PATH/cp-docker-comp \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_DOCKER_COMP_DIST_NAME"
 
-# Clair
+# Clair v2
 CP_CLAIR_DIST_NAME=${CP_CLAIR_DIST_NAME:-"$CP_DIST_REPO_NAME:clair-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-clair \
                 -t "$CP_CLAIR_DIST_NAME"
 docker push "$CP_CLAIR_DIST_NAME"
+
+# Clair v4
+CP_CLAIR_V4_DIST_NAME=${CP_CLAIR_V4_DIST_NAME:-"$CP_DIST_REPO_NAME:clair-v4-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-clair-v4 \
+                -t "$CP_CLAIR_V4_DIST_NAME"
+docker push "$CP_CLAIR_V4_DIST_NAME"
 
 # GitLab
 # 9.4.0 version
