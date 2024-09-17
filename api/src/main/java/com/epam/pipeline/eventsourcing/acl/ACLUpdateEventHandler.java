@@ -24,7 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
 import org.springframework.security.acls.model.AclCache;
+import org.springframework.security.acls.model.AclService;
+import org.springframework.security.acls.model.ObjectIdentity;
+import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Objects;
 
 @Slf4j
@@ -37,6 +41,7 @@ public class ACLUpdateEventHandler implements EventHandler {
     private final String id;
     private final String applicationId;
     private final AclCache aclCache;
+    private final AclService aclService;
 
     @Override
     public String getId() {
@@ -59,7 +64,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         if (!validateEvent(event)) {
             return;
         }
-        aclCache.evictFromCache(
+        clearCacheIncludingChildren(
             new ObjectIdentityImpl(
                 event.getData().get(ACL_CLASS_FIELD),
                 Long.valueOf(event.getData().get(ID_FIELD))
@@ -67,7 +72,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         );
     }
 
-    boolean validateEvent(Event event) {
+    boolean validateEvent(final Event event) {
         if (Objects.equals(applicationId, event.getApplicationId())) {
             log.info(String.format(
                     "Skipping event %s with the same applicationId: %s", event, event.getApplicationId())
@@ -97,6 +102,17 @@ public class ACLUpdateEventHandler implements EventHandler {
         }
 
         return true;
+    }
+
+    private void clearCacheIncludingChildren(final ObjectIdentity objectIdentity) {
+        Assert.notNull(objectIdentity, "ObjectIdentity required");
+        final List<ObjectIdentity> children = aclService.findChildren(objectIdentity);
+        if (children != null) {
+            for (ObjectIdentity child : children) {
+                this.clearCacheIncludingChildren(child);
+            }
+        }
+        this.aclCache.evictFromCache(objectIdentity);
     }
 
 }

@@ -24,10 +24,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
+import org.springframework.security.acls.model.AclService;
 
 import java.util.HashMap;
 
@@ -45,12 +47,19 @@ public class ACLUpdateEventHandlerTest {
     @Spy
     DisabledAclCache aclCache;
 
+    @Mock
+    AclService aclService;
+
     @Captor
-    ArgumentCaptor<ObjectIdentityImpl> eventCapture;
+    ArgumentCaptor<ObjectIdentityImpl> cacheEventCapture;
+
+    @Captor
+    ArgumentCaptor<ObjectIdentityImpl> childSearchEventCapture;
+
 
     @Before
     public void setup() {
-        eventHandler = new ACLUpdateEventHandler(TEST_VALUE, TEST_VALUE, aclCache);
+        eventHandler = new ACLUpdateEventHandler(TEST_VALUE, TEST_VALUE, aclCache, aclService);
     }
 
     @Test
@@ -121,8 +130,14 @@ public class ACLUpdateEventHandlerTest {
                 )
                 .build();
         eventHandler.handle(1L, event);
-        Mockito.verify(aclCache).evictFromCache(eventCapture.capture());
-        final ObjectIdentityImpl acl = eventCapture.getValue();
+        Mockito.verify(aclCache).evictFromCache(cacheEventCapture.capture());
+        Mockito.verify(aclService).findChildren(childSearchEventCapture.capture());
+
+        ObjectIdentityImpl acl = cacheEventCapture.getValue();
+        assertEquals(acl.getType(), TEST_VALUE);
+        assertEquals(acl.getIdentifier(), Long.valueOf(ID_TEST_VALUE));
+
+        acl = childSearchEventCapture.getValue();
         assertEquals(acl.getType(), TEST_VALUE);
         assertEquals(acl.getIdentifier(), Long.valueOf(ID_TEST_VALUE));
     }
