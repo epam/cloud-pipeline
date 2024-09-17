@@ -539,10 +539,12 @@
                                 created_date,
                                 key as field_name,
                                 regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
-                                CASE
-                                WHEN value->>'value' LIKE '[%' THEN jsonb_array_elements_text((value->>'value')::jsonb)
-                                ELSE value->>'value'
-                                END AS field_value,
+                                jsonb_array_elements_text(
+                                    CASE
+                                        WHEN value->>'value' LIKE '[%' THEN (value->>'value')::jsonb
+                                        ELSE jsonb_build_array(value->'value')
+                                    END
+                                ) AS field_value,
 								c.external_class_name AS external_class_name
                               FROM
                                 metadata_entity m
@@ -576,10 +578,12 @@
                                 created_date,
                                 key as field_name,
                                 regexp_replace(regexp_replace(value->>'type', '(:ID)|(Array\[)', ''), ']', '') as field_type,
-                                CASE
-                                WHEN value->>'value' LIKE '[%' THEN jsonb_array_elements_text((value->>'value')::jsonb)
-                                ELSE value->>'value'
-                                END AS field_value,
+                                jsonb_array_elements_text(
+                                    CASE
+                                        WHEN value->>'value' LIKE '[%' THEN (value->>'value')::jsonb
+                                        ELSE jsonb_build_array(value->'value')
+                                    END
+                                ) AS field_value,
 							    c.external_class_name AS external_class_name
                               FROM
                                 metadata_entity m
