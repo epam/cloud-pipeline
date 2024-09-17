@@ -49,6 +49,7 @@ function numberArraysAreEqual (numberArrayA, numberArrayB) {
 
 export function runAsPermissionsEqual (permissionA, permissionB, principalProperty = 'principal') {
   const {
+    accessType: accessTypeA,
     name: nameA,
     [principalProperty]: principalA,
     pipelinesAllowed: pipelinesAllowedA = true,
@@ -57,6 +58,7 @@ export function runAsPermissionsEqual (permissionA, permissionB, principalProper
     tools: toolsA = []
   } = permissionA;
   const {
+    accessType: accessTypeB,
     name: nameB,
     [principalProperty]: principalB,
     pipelinesAllowed: pipelinesAllowedB = true,
@@ -66,6 +68,7 @@ export function runAsPermissionsEqual (permissionA, permissionB, principalProper
   } = permissionB;
   return nameA === nameB &&
     principalA === principalB &&
+    accessTypeA === accessTypeB &&
     pipelinesAllowedA === pipelinesAllowedB &&
     toolsAllowedA === toolsAllowedB &&
     numberArraysAreEqual(pipelinesA, pipelinesB) &&

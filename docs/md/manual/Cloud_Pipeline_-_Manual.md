@@ -56,6 +56,7 @@
     - [11.2. Auto-commit Docker image](11_Manage_Runs/11.2._Auto-commit_Docker_image.md)
     - [11.3. Sharing with other users or groups of users](11_Manage_Runs/11.3._Sharing_with_other_users_or_groups_of_users.md)
     - [11.4. Automatic labels and actions for the runs](11_Manage_Runs/11.4._Automatic_actions_after_notifications.md)
+    - [11.5. Archive completed runs](11_Manage_Runs/11.5._Archive_runs.md)
 - [12. Manage Settings](12_Manage_Settings/12._Manage_Settings.md)
     - [12.1. Add a new system event](12_Manage_Settings/12.1._Add_a_new_system_event.md)
     - [12.2. Edit a system event](12_Manage_Settings/12.2._Edit_a_system_event.md)

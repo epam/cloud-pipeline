@@ -294,6 +294,8 @@ def cli():
       CP_TRACE=[True|False]                  Enables verbose errors.
       CP_CLI_STORAGE_BATCH_SIZE              The number of objects per request for pipe storage operations (Default: 1000)
       CP_CLI_STORAGE_ASYNC_BATCH_ENABLE      Enables asynchronous batch transfer
+      CP_CLI_STORAGE_LIST_API_PAGE_SIZE      The number of storage items allowed to be loaded from the API
+                                             in one request (Default: 1000)
     """
     pass
 

@@ -583,6 +583,40 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
+    public void searchPipelineRunsWhenOriginalOwner() {
+        Pipeline testPipeline2 = getPipeline();
+
+        LocalDate now = LocalDate.now();
+        LocalDate date3 = LocalDate.of(now.getYear(), now.getMonth(), 3);
+
+        PipelineRun run = new PipelineRun();
+        run.setPipelineId(testPipeline2.getId());
+        run.setVersion(TEST_REVISION_2);
+        run.setStartDate(Date.from(date3.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        run.setEndDate(run.getStartDate());
+        run.setStatus(TaskStatus.RUNNING);
+        run.setCommitStatus(CommitStatus.NOT_COMMITTED);
+        run.setLastChangeCommitTime(new Date());
+        run.setPodId(TEST_POD_ID);
+        run.setParams(TEST_PARAMS);
+        run.setOwner(TEST_USER);
+        run.setOriginalOwner(USER);
+        run.setConfigurationId(CONFIGURATION_ID_3);
+        run.setEntitiesIds(Stream.of(ENTITY_ID_1, ENTITY_ID_3).collect(Collectors.toList()));
+        run.setPlatform(TEST_PLATFORM);
+        setRunInstance(run);
+        pipelineRunDao.createPipelineRun(run);
+
+        PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setOwnershipFilter(USER);
+        List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filterVO);
+        assertFalse(runs.isEmpty());
+        assertEquals(1, runs.size());
+    }
+
+    @Test
     public void testPaging() {
         createTestPipelineRun();
 

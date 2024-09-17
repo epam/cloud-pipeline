@@ -36,8 +36,7 @@ const RepositoryTypes = {
 
 const availableRepositoryTypes = [
   RepositoryTypes.GitLab,
-  // temporary disable GitHub
-  // RepositoryTypes.GitHub,
+  RepositoryTypes.GitHub,
   RepositoryTypes.BitBucket,
   RepositoryTypes.ButBucketCloud
 ];

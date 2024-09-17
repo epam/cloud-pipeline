@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.docker.scan.clair;
+package com.epam.pipeline.entity.git.github;
 
-import retrofit2.Call;
-import retrofit2.http.Body;
-import retrofit2.http.GET;
-import retrofit2.http.POST;
-import retrofit2.http.Path;
+import lombok.Builder;
+import lombok.Data;
 
-/**
- * A Retrofit2-based client to interact with Clair's API
- */
-public interface ClairService {
-    @POST("v1/layers")
-    Call<ClairScanRequest> scanLayer(@Body ClairScanRequest request);
-
-    @GET("v1/layers/{layer}?features&vulnerabilities")
-    Call<ClairScanResult> getScanResult(@Path("layer") String layer);
+@Data
+@Builder
+public class GitHubSource {
+    private GitHubContent content;
+    private GitHubCommit commit;
 }

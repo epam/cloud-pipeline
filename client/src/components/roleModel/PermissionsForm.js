@@ -45,8 +45,10 @@ import {
   applyPermissionChanges,
   filterRemovePermissionBySid,
   findPermissionByPermission,
-  findPermissionBySidFn, getPermissionChanges,
-  getPermissionsHash, permissionSidsEqual
+  findPermissionBySidFn,
+  getPermissionChanges,
+  getPermissionsHash,
+  permissionSidsEqual
 } from './utilities/permissions';
 
 function plural (count, noun) {
@@ -138,7 +140,8 @@ export default class PermissionsForm extends React.Component {
       description: PropTypes.node
     })),
     subObjectsPermissionsErrorTitle: PropTypes.node,
-    showOwner: PropTypes.bool
+    showOwner: PropTypes.bool,
+    refreshPermissionsAfterUpdate: PropTypes.bool
   };
 
   static defaultProps = {
@@ -318,9 +321,19 @@ export default class PermissionsForm extends React.Component {
       permissions = []
     } = this.state;
     const sid = {name, principal};
-    const newPermissions = permissions
-      .filter(filterRemovePermissionBySid(sid))
-      .concat({sid, mask});
+    const newPermissions = permissions.slice();
+    const idx = newPermissions.findIndex((p) => permissionSidsEqual(p.sid, sid));
+    if (idx >= 0) {
+      newPermissions.splice(idx, 1, {
+        sid,
+        mask,
+      });
+    } else {
+      newPermissions.push({
+        sid,
+        mask,
+      });
+    }
     const selectedPermission = newPermissions
       .find(findPermissionBySidFn(sid));
     this.setState({
@@ -820,7 +833,8 @@ export default class PermissionsForm extends React.Component {
     } = this.state;
     const {
       objectType,
-      objectIdentifier
+      objectIdentifier,
+      refreshPermissionsAfterUpdate = false
     } = this.props;
     const changes = getPermissionChanges({
       owner,
@@ -834,7 +848,17 @@ export default class PermissionsForm extends React.Component {
         const success = await applyPermissionChanges(changes, objectIdentifier, objectType);
         this.setState({pending: false}, () => {
           if (success) {
-            this.objectChanged();
+            if (refreshPermissionsAfterUpdate) {
+              this.objectChanged();
+            } else {
+              this.setState({
+                permissions: (permissions || []).map((o) => ({...o})),
+                originalPermissions: (permissions || []).map((o) => ({...o})),
+                originalOwner: owner,
+                owner: owner,
+                error: undefined
+              }, () => this.selectFirstPermission());
+            }
           }
         });
       })();
@@ -887,7 +911,7 @@ export default class PermissionsForm extends React.Component {
                 disabled={pending}
                 onClick={this.onSelectUser}
               >
-              OK
+                OK
               </Button>
             </Row>
           )}

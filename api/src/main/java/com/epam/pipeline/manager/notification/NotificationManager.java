@@ -368,7 +368,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final Map<String, NotificationFilter> runParametersFilters = parseRunExcludeParams();
 
         final List<Pair<PipelineRun, Double>> filtered = pipelineNetworkBandwidthPairs.stream()
-                .filter(pair -> shouldNotifyHighNetworkConsumingRun(pair.getLeft().getId(), type, settings))
                 .filter(pair -> noneMatchExcludedInstanceType(pair.getLeft(), instanceTypesToExclude))
                 .filter(pair -> !matchExcludeRunParameters(pair.getLeft(), runParametersFilters))
                 .collect(Collectors.toList());
@@ -377,13 +376,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                         pair.getRight(), bandwidthLimit, type))
                 .collect(Collectors.toList());
         saveNotifications(messages);
-
-        if (NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH.equals(type)) {
-            final List<Long> runIds = filtered.stream()
-                    .map(pair -> pair.getLeft().getId()).collect(Collectors.toList());
-            monitoringNotificationDao.updateNotificationTimestamp(runIds,
-                    NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH);
-        }
     }
 
     private NotificationMessage buildMessageForHighNetworkConsumingRun(final NotificationSettings settings,
@@ -894,15 +886,6 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     private boolean shouldNotifyIdleRun(final Long runId, final NotificationType notificationType,
                                         final NotificationSettings notificationSettings) {
         if (!NotificationType.IDLE_RUN.equals(notificationType)) {
-            return true;
-        }
-        return shouldNotify(runId, notificationSettings);
-    }
-
-    private boolean shouldNotifyHighNetworkConsumingRun(final Long runId,
-                                                        final NotificationType notificationType,
-                                                        final NotificationSettings notificationSettings) {
-        if (!NotificationType.HIGH_CONSUMED_NETWORK_BANDWIDTH.equals(notificationType)) {
             return true;
         }
         return shouldNotify(runId, notificationSettings);

@@ -68,6 +68,6 @@ public class BandwidthMonitoringServiceCore {
 
     private String getNetworkLimitDateTag() {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
-        return String.format("%s_%s", NETWORK_LIMIT, suffix);
+        return String.format("%s%s", NETWORK_LIMIT, suffix);
     }
 }

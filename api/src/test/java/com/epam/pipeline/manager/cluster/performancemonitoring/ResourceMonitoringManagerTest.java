@@ -29,8 +29,10 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
@@ -146,6 +148,9 @@ public class ResourceMonitoringManagerTest {
     private PipelineRunDockerOperationManager pipelineRunDockerOperationManager;
     @Mock
     private RunStatusManager runStatusManager;
+    @Mock
+    private NodesManager nodesManager;
+
 
     @Captor
     ArgumentCaptor<List<PipelineRun>> runsToUpdateCaptor;
@@ -167,6 +172,7 @@ public class ResourceMonitoringManagerTest {
     private Map<String, Double> mockStats;
 
     @Before
+    @SuppressWarnings("checkstyle:MethodLength")
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         ResourceMonitoringManager.ResourceMonitoringManagerCore core =
@@ -178,7 +184,8 @@ public class ResourceMonitoringManagerTest {
                                                                         preferenceManager,
                                                                         stopServerlessRunManager,
                                                                         instanceOfferManager,
-                                                                        runStatusManager);
+                                                                        runStatusManager,
+                                                                        nodesManager);
         resourceMonitoringManager = new ResourceMonitoringManager(core);
         Whitebox.setInternalState(resourceMonitoringManager, "authManager", authManager);
         Whitebox.setInternalState(resourceMonitoringManager, "preferenceManager", preferenceManager);
@@ -215,6 +222,8 @@ public class ResourceMonitoringManagerTest {
                 .thenReturn(TEST_POD_BANDWIDTH_ACTION_BACKOFF_PERIOD);
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_POD_BANDWIDTH_ACTION))
                 .thenReturn(NetworkConsumingRunAction.NOTIFY.name());
+        when(preferenceManager.getPreference(SystemPreferences.LAUNCH_RUN_EMERGENCY_TERM_ACTION))
+                .thenReturn(PipelineRunEmergencyTermAction.DISABLED);
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         UserContext userContext = new UserContext(1L, "admin");

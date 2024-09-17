@@ -68,6 +68,7 @@ const DATASET_COLORS = {
 };
 
 const FETCH_DELAY = 500;
+const MIN_HEATMAP_OPACITY = 15;
 
 function Divider () {
   return (
@@ -102,6 +103,9 @@ class GPUInfoTab extends React.Component {
   componentDidUpdate (prevProps, prevState) {
     const {nodeName} = this.props;
     if (prevProps.nodeName !== nodeName) {
+      this.initRanges();
+    }
+    if (prevProps.chartsData !== this.props.chartsData) {
       this.initRanges();
     }
   }
@@ -218,6 +222,7 @@ class GPUInfoTab extends React.Component {
   };
 
   renderOverallMetrics = () => {
+    const {measure} = this.state;
     const renderMetricsCard = ({title, value, key}) => (
       <div key={key} className={styles.metricsCard}>
         {value}
@@ -236,7 +241,7 @@ class GPUInfoTab extends React.Component {
                 style={{color: '#09ab5a'}}
                 className={classNames(styles.value, 'cp-primary')}
               >
-                {Math.round(gpuUsage?.gpuUtilization?.average) || 0}%
+                {Math.round((gpuUsage?.gpuUtilization || {})[measure]) || 0}%
               </span>)
           },
           {
@@ -247,7 +252,7 @@ class GPUInfoTab extends React.Component {
                 style={{color: '#f04134'}}
                 className={classNames(styles.value, 'cp-warning')}
               >
-                {Math.round(gpuUsage?.gpuMemoryUtilization?.average) || 0}%
+                {Math.round((gpuUsage?.gpuMemoryUtilization || {})[measure]) || 0}%
               </span>)
           }].map(renderMetricsCard)}
       </div>
@@ -493,7 +498,10 @@ class GPUInfoTab extends React.Component {
         {heatmapDataset.length ? (
           <div style={{display: 'flex', flexDirection: 'column', gap: '5px'}}>
             <HeatMapChart
-              options={{shiftWheel: true}}
+              options={{
+                shiftWheel: true,
+                minOpacity: MIN_HEATMAP_OPACITY
+              }}
               datasets={heatmapDataset}
               onRangeChanged={this.onRangeChanged}
               from={chartsFrom}
@@ -504,7 +512,8 @@ class GPUInfoTab extends React.Component {
                 measure,
                 metrics,
                 themeConfiguration: this.themeConfiguration,
-                hideDatasets
+                hideDatasets,
+                minOpacity: MIN_HEATMAP_OPACITY
               })}}
             />
           </div>

@@ -18,6 +18,7 @@ package com.epam.pipeline.security.acl;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,8 +107,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
+    public MutableAcl getOrCreateObjectIdentity(final AbstractSecuredEntity securedEntity,
+                                                final boolean reload) {
+
+        final ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
+        if (reload) {
+            clearCacheIncludingChildren(identity);
+        }
+
         if (retrieveObjectIdentityPrimaryKey(identity) != null) {
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
@@ -122,6 +129,11 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
             }
             return acl;
         }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
+        return getOrCreateObjectIdentity(securedEntity, false);
     }
 
     public Map<ObjectIdentity, Acl> getObjectIdentities(Set<AbstractSecuredEntity> securedEntities) {
@@ -203,13 +215,29 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void changeOwner(final AbstractSecuredEntity entity, final String owner) {
-        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity);
+        final MutableAcl aclFolder = getOrCreateObjectIdentity(entity, true);
         aclFolder.setOwner(createOrGetSid(owner, true));
         updateAcl(aclFolder);
     }
 
     public void putInCache(final MutableAcl acl) {
         aclCache.putInCache(acl);
+    }
+
+    // Copy of JdbcMutableAclService.clearCacheIncludingChildren
+    private void clearCacheIncludingChildren(final ObjectIdentity objectIdentity) {
+        Assert.notNull(objectIdentity, "ObjectIdentity required");
+        List<ObjectIdentity> children = this.findChildren(objectIdentity);
+        if (children != null) {
+            Iterator var3 = children.iterator();
+
+            while(var3.hasNext()) {
+                ObjectIdentity child = (ObjectIdentity)var3.next();
+                this.clearCacheIncludingChildren(child);
+            }
+        }
+
+        this.aclCache.evictFromCache(objectIdentity);
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {

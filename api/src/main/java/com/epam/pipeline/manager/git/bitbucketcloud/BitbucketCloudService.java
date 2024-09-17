@@ -58,6 +58,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
+
 @Service
 @RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
@@ -66,7 +68,7 @@ public class BitbucketCloudService implements GitClientService {
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
     private static final int MAX_DEPTH = 20;
-    public static final String PAGE_PARAMETER = "page=";
+    private static final String PAGE_PARAMETER = "page=";
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -247,8 +249,6 @@ public class BitbucketCloudService implements GitClientService {
         final List<GitRepositoryEntry> files = values.stream()
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FILE_MARKER))
                 .map(BitbucketCloudSource::getPath)
-                .map(p -> getRelativePath(path, p))
-                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
                 .map(value -> buildGitRepositoryEntry(value, GitUtils.FILE_MARKER))
                 .collect(Collectors.toList());
 
@@ -256,8 +256,6 @@ public class BitbucketCloudService implements GitClientService {
                 .filter(v -> v.getType().equals(BITBUCKET_CLOUD_FOLDER_MARKER))
                 .map(BitbucketCloudSource::getPath)
                 .filter(StringUtils::isNotBlank)
-                .map(p -> getRelativePath(path, p))
-                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
                 .distinct()
                 .collect(Collectors.toList());
         final List<GitRepositoryEntry> results = folders.stream()
@@ -278,29 +276,29 @@ public class BitbucketCloudService implements GitClientService {
     @Override
     public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
                                      final String filePreviousPath, final String filePath) {
-        throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
     }
 
     @Override
     public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
-        throw new UnsupportedOperationException("File deletion is not supported for Bitbucket repository");
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File deletion", getType()));
     }
 
     @Override
     public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
                                        final String message) {
-        throw new UnsupportedOperationException("Folder creation is not supported for Bitbucket repository");
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation", getType()));
     }
 
     @Override
     public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
                                        final String folder, final String newFolderName) {
-        throw new UnsupportedOperationException("Folder renaming is not supported for Bitbucket repository");
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming", getType()));
     }
 
     @Override
     public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
-        throw new UnsupportedOperationException("Folder deletion is not supported for Bitbucket repository");
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder deletion", getType()));
     }
 
     @Override
@@ -308,7 +306,7 @@ public class BitbucketCloudService implements GitClientService {
                                       final String message) {
         if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
                 .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
-            throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
         }
         final BitbucketCloudClient client = getClient(pipeline);
 
@@ -321,7 +319,8 @@ public class BitbucketCloudService implements GitClientService {
     @Override
     public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
                                       final String message) {
-        Assert.isTrue(files.size() == 1, "Multiple files upload is not supported for Bitbucket repository");
+        Assert.isTrue(files.size() == 1,
+                String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload", getType()));
         final UploadFileMetadata file = files.get(0);
         final BitbucketCloudClient client = getClient(pipeline);
         client.upsertFile(file.getFileName(), file.getFileType(), file.getBytes(),
@@ -387,9 +386,5 @@ public class BitbucketCloudService implements GitClientService {
 
     private boolean fileExists(final BitbucketCloudClient client, final String path, final Pipeline pipeline) {
         return client.searchFile(pipeline.getBranch(), path).getValues().size() > 0;
-    }
-
-    private static String getRelativePath(final String folder, final String path) {
-        return path.startsWith(folder + ProviderUtils.DELIMITER) ? path.substring(folder.length() + 1) : path;
     }
 }

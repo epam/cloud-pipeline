@@ -39,7 +39,7 @@ public class UserAspect {
      * @param joinPoint
      * @param userId
      */
-    @Before(value = "execution(* com.epam.pipeline.manager.user.UserManager.deleteUser(..)) && args(userId)")
+    @Before(value = "execution(* com.epam.pipeline.manager.user.UserManager.delete(..)) && args(userId)")
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteAllUserNotification(final JoinPoint joinPoint, final Long userId) {
         monitoringNotificationDao.deleteNotificationsForUser(userId);

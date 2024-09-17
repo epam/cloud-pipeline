@@ -48,6 +48,11 @@
 
 .form-item-row {
   margin: 2px 0 !important;
+  flex: 1;
+}
+
+.pipeline-name-form-item-row {
+  margin: 0;
 }
 
 .form-item-action {
@@ -65,7 +70,7 @@
 }
 
 .hidden-item {
-  display: none;
+  display: none !important;
 }
 
 .code-editor {
@@ -81,15 +86,50 @@
   cursor: pointer;
 }
 
+.parameter-name-container {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  cursor: text;
+}
+
+.parameter-name-container.disabled {
+  cursor: default;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover {
+  cursor: text;
+}
+
+.parameter-name-container .parameter-name-edit-icon {
+  margin-left: 5px;
+  font-size: larger;
+  display: none;
+}
+
+.parameter-name-container.collapsed:not(.disabled):hover .parameter-name-edit-icon {
+  display: inline-block;
+}
+
 .parameter-name {
-  margin-left: -10px;
-  text-align: right;
   border: 1px dashed #777;
   font-size: 0.9rem;
 }
 
 .parameter-value {
   font-size: 0.9rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  position: relative;
+}
+
+.parameter-icon {
+  position: absolute;
+  left: -27px;
+  font-size: larger;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 .system-parameter-name {
@@ -103,7 +143,6 @@
 }
 
 .remove-parameter {
-  padding-left: 10px;
   vertical-align: middle;
   height: 36px;
 }
@@ -271,4 +310,27 @@
 
 ul.list {
   list-style: disc inside;
+}
+
+.parameters-navigation {
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+}
+
+.parameters-navigation:global(.sticky) {
+  position: fixed;
+  top: 20px;
+}
+
+.parameter-section-header * {
+  transition: all 1s linear;
+}
+
+.parameter-section-header.highlighted * {
+  transition: all 0s linear;
+}
+
+.section-link {
+  font-size: larger;
 }

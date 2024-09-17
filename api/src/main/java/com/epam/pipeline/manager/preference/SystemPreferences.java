@@ -45,6 +45,7 @@ import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
 import com.epam.pipeline.entity.pipeline.run.parameter.RuntimeParameter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.run.PipelineRunEmergencyTermAction;
 import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.sharing.SharedStoragePermissions;
@@ -53,6 +54,8 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.TwoBoundaryLimit;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
+import com.epam.pipeline.eventsourcing.EventTopic;
+import com.epam.pipeline.eventsourcing.EventType;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cloud.CloudInstancePriceService;
@@ -115,7 +118,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
  * validation functionality.
  */
 @Component
-@SuppressWarnings("PMD.TooManyStaticImports")
+@SuppressWarnings({"PMD.TooManyStaticImports", "checkstyle:MagicNumber"})
 public class SystemPreferences {
     private static final String COMMIT_GROUP = "Commit";
     private static final String GIT_GROUP = "Git";
@@ -358,6 +361,9 @@ public class SystemPreferences {
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
 
+    public static final StringPreference GITHUB_USER_NAME =
+            new StringPreference("github.user.name", null, GIT_GROUP, pass);
+
     public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
             new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
@@ -418,6 +424,8 @@ public class SystemPreferences {
         "security.tools.scan.clair.connect.timeout", 60, DOCKER_SECURITY_GROUP, isGreaterThan(30));
     public static final IntPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_READ_TIMEOUT = new IntPreference(
         "security.tools.scan.clair.read.timeout", 600, DOCKER_SECURITY_GROUP, isGreaterThan(0));
+    public static final StringPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION = new StringPreference(
+            "security.tools.scan.clair.version", "v4", DOCKER_SECURITY_GROUP, pass);
     /**
      * Scan schedule cron expression
      */
@@ -751,6 +759,13 @@ public class SystemPreferences {
             "launch.tool.size.limits", TwoBoundaryLimit.builder().soft(0L).hard(0L).build(),
             new TypeReference<TwoBoundaryLimit>() {}, LAUNCH_GROUP,
             isNullOrValidJson(new TypeReference<TwoBoundaryLimit>() {}), true);
+
+    public static final IntPreference LAUNCH_RUN_EMERGENCY_TERM_DELAY_MIN = new IntPreference(
+            "launch.run.emergency.termination.delay.min", 30, LAUNCH_GROUP, isGreaterThan(0));
+
+    public static final EnumPreference<PipelineRunEmergencyTermAction> LAUNCH_RUN_EMERGENCY_TERM_ACTION =
+            new EnumPreference<>("launch.run.emergency.termination.action",
+                    PipelineRunEmergencyTermAction.DISABLED, LAUNCH_GROUP);
 
     /**
      * Specifies a comma-separated list of environment variables that should be inherited by DIND containers
@@ -1094,6 +1109,17 @@ public class SystemPreferences {
             "system.notifications.exclude.instance.types", null, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_CLUSTER_PRICE_MONITOR_DELAY = new IntPreference(
             "system.cluster.price.monitor.delay", 30000, SYSTEM_GROUP, pass);
+
+    public static final ObjectPreference<Map<String, EventTopic>> SYSTEM_EVENT_SOURCING_CONFIG =
+            new ObjectPreference<>("system.event.sourcing.config", Collections.<String, EventTopic>singletonMap(
+                    EventType.ACL.name(),
+                    EventTopic.builder()
+                            .stream("acl-events")
+                            .enabled(true)
+                            .timeout(500)
+                            .build()),
+                    new TypeReference<Map<String, EventTopic>>() {}, SYSTEM_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, EventTopic>>() {}), false);
     /**
      * Controls which events will be ommitted from the OOM Logger output (
      * e.g. flannel, iptables and other system services)
@@ -1194,6 +1220,11 @@ public class SystemPreferences {
 
     public static final IntPreference LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT = new IntPreference(
             "limit.network.bandwidth.command.timeout", 600, SYSTEM_GROUP, isGreaterThan(0));
+
+    public static final BooleanPreference SYSTEM_CREATE_DOCKER_REGISTRY_USER_GROUP_ON_CREATE = new BooleanPreference(
+            "system.docker.registry.create.user.group", false, SYSTEM_GROUP, pass);
+    public static final LongPreference SYSTEM_DEFAULT_DOCKER_REGISTRY = new LongPreference(
+            "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

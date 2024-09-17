@@ -369,18 +369,17 @@ class Renderer {
     let y = clientY;
     let width = this.width;
     let height = this.height;
-    if (this.canvasBox) {
-      const {
-        x: canvasX,
-        y: canvasY,
-        width: canvasWidth,
-        height: canvasHeight
-      } = this.canvasBox;
-      x = clientX - canvasX;
-      y = clientY - canvasY;
-      width = canvasWidth;
-      height = canvasHeight;
-    }
+    this.canvasBox = this.canvas.getBoundingClientRect();
+    const {
+      x: canvasX,
+      y: canvasY,
+      width: canvasWidth,
+      height: canvasHeight
+    } = this.canvasBox;
+    x = clientX - canvasX;
+    y = clientY - canvasY;
+    width = canvasWidth;
+    height = canvasHeight;
     const valueX = this.xAxis.getValueForPixel(x);
     const hitX = this.xAxis.valueFitsRange(valueX);
     return {
@@ -512,13 +511,14 @@ class Renderer {
     if (!this.datasets?.length) {
       return;
     }
+    const {minOpacity = 0} = this.options;
     ctx.save();
     this.datasets.forEach((dataset) => {
       dataset.data.forEach((data) => {
         const from = this.xAxis.getPixelForValue(data.xStart);
         const to = this.xAxis.getPixelForValue(data.xEnd);
         const valuePercentage = data.value / dataset.max * 100;
-        ctx.fillStyle = `${dataset.color}${percentToHexAlpha(valuePercentage)}`;
+        ctx.fillStyle = `${dataset.color}${percentToHexAlpha(valuePercentage, minOpacity)}`;
         const offset = Math.min(0, from - this.yLabelsPadding - 8);
         ctx.fillRect(
           correctPixels(Math.max(this.yLabelsPadding + 8, from)),
@@ -681,6 +681,7 @@ class Renderer {
           container.clientHeight !== height ||
           container.clientWidth !== width
         ) {
+          width = container.clientWidth;
           this._requestReCheck = false;
           this.width = Math.max(width || 0, 1);
           canvas.width = dpr * width;
@@ -688,7 +689,6 @@ class Renderer {
           canvas.style.width = `${width}px`;
           canvas.style.height = `${(this.dataHeight || 0) + this.xLabelsPadding}px`;
           container.style.minHeight = canvas.style.height;
-          width = container.clientWidth;
           height = container.clientHeight;
           textCanvas.width = dpr * width;
           textCanvas.height = dpr * (this.dataHeight + this.xLabelsPadding);

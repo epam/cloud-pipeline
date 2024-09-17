@@ -253,19 +253,10 @@ if [ $? -ne 0 ]; then
 fi
 
 
-cd /bin && \
-wget https://github.com/magnific0/wondershaper/archive/refs/heads/master.zip -O wondershaper.zip && \
-unzip wondershaper.zip && \
-mv wondershaper-master wondershaper && \
-rm -rf wondershaper.zip && \
-cd wondershaper && \
-sudo make install
-if check_installed "wondershaper"; then
-  echo "[INFO] Wondershaper was installed successfully."
-else
-  echo "[WARN] Wondershaper installation failed."
+if [ ! -x /bin/wondershaper ]; then
+  wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/wondershaper/wondershaper" -O /bin/wondershaper
+  chmod +x /bin/wondershaper
 fi
-
 
 mkdir -p /etc/docker
 

@@ -264,11 +264,6 @@ CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
-# Allow to schedule Kibana service to the master
-CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
-kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
-
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
@@ -683,7 +678,18 @@ if is_service_requested cp-docker-registry; then
         fi
 
         print_info "-> Push base tools images into the docker registry"
-        CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
+
+        # if CP_DOCKER_MANIFEST_PATH provided explicitly - use it, otherwise check for the manifest
+        # from point-in-time configuration or use default value
+        if [ -z "${CP_DOCKER_MANIFEST_PATH}" ]; then
+          docker_manifest_from_point_in_time_configuration=$(is_module_available_in_point_in_time_configuration tools)
+          if [ "${docker_manifest_from_point_in_time_configuration}" ]; then
+             CP_DOCKER_MANIFEST_PATH=$(dirname "$docker_manifest_from_point_in_time_configuration")
+          else
+             CP_DOCKER_MANIFEST_PATH="$INSTALL_SCRIPT_PATH/../../dockers-manifest"
+          fi   
+        fi
+
         if [ $CP_DOCKER_INSTALLED -eq 0 ] && [ -d "$CP_DOCKER_MANIFEST_PATH" ]; then
             docker_push_manifest "$(realpath $CP_DOCKER_MANIFEST_PATH)" "$CP_DOCKER_REGISTRY_ID"
             if [ $? -ne 0 ]; then
@@ -1040,6 +1046,20 @@ fi
 if is_service_requested cp-clair; then
     print_ok "[Starting Clair deployment]"
 
+    if [ ! -n "${CP_CLAIR_VERSION}" ]; then CP_CLAIR_VERSION="v4"; fi
+    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ];
+    then
+        CP_CLAIR_DOCKER_NAME="clair-v4"
+        CP_CLAIR_HEALTH_ENDPOINT="/healthz"
+    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ];
+    then
+    	  CP_CLAIR_DOCKER_NAME="clair"
+    	  CP_CLAIR_HEALTH_ENDPOINT="/health"
+    else
+    	  print_err "Unexpected Clair version: ${CP_CLAIR_VERSION}."
+    	  exit 1
+    fi
+
     print_info "-> Deleting existing instance of Clair"
     delete_deployment_and_service   "cp-clair" \
                                     "/opt/clair"
@@ -1052,6 +1072,17 @@ if is_service_requested cp-clair; then
                             "$CP_CLAIR_DATABASE_DATABASE"
 
         print_info "-> Deploying Clair"
+
+        export CP_CLAIR_DOCKER_NAME
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_DOCKER_NAME" \
+                            "$CP_CLAIR_DOCKER_NAME"
+        export CP_CLAIR_HEALTH_ENDPOINT
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_HEALTH_ENDPOINT" \
+                            "$CP_CLAIR_HEALTH_ENDPOINT"
+        init_kube_config_map
+
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-svc.yaml
 
@@ -1107,9 +1138,7 @@ if is_service_requested cp-search; then
     delete_deployment_and_service   "cp-search-elk" \
                                     "/opt/search-elk"
 
-     print_info "-> Deleting existing instance of Search KIBANA service"
-    delete_deployment_and_service   "cp-search-kibana" \
-                                    "/opt/search-kibana"
+
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -1119,16 +1148,8 @@ if is_service_requested cp-search; then
         print_info "-> Waiting for Search ELK service to initialize"
         wait_for_deployment "cp-search-elk"
 
-        print_info "-> Deploying Search KIBANA service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
-
-        print_info "-> Waiting for Search KIBANA service to initialize"
-        wait_for_deployment "cp-search-kibana"
-
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_KIBANA_INTERNAL_HOST:$CP_SEARCH_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
@@ -1368,6 +1389,9 @@ if is_service_requested cp-storage-lifecycle-service; then
     fi
     echo
 fi
+
+set_preferences_from_point_in_time_configuration
+import_users_from_point_in_time_configuration
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY

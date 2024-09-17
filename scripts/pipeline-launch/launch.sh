@@ -999,32 +999,9 @@ function configureHyperThreading() {
     fi
 }
 
-function self_terminate_on_cleanup_timeout() {
-      local _min_terminate_timeout_min=1
-      if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
-            return 0
-      fi
-      if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
-            pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
-            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
-      fi
-
-      local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
-      if [ -z "$_node_name" ]; then
-            pipe_log_fail "Cannot get node name for a current run" "CleanupEnvironment"
-            return 1
-      fi
-
-      pipe_log_info "Will wait for ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min to let the run stop normally. Otherwise it will be terminated." "CleanupEnvironment"
-
-      sleep $(( $CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN * 60 ))
-
-      local _run_status_after_timeout=$(echo $(pipe view-runs $RUN_ID | grep Status) | cut -d' ' -f2)
-      if [ "$_run_status_after_timeout" == "RUNNING" ]; then
-            pipe_log_success "Run #${RUN_ID} is still running after ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min. Terminating a node." "CleanupEnvironment"
-            pipe terminate-node -y "$_node_name"
-            return 0
-      fi
+function mark_run_as_completed() {
+    pipe_log_info "Marking run as finished." "CleanupEnvironment"
+    tag_run "$CP_CAP_RUN_WORK_FINISHED_TAG" "$(date +"%F %T.%3N" -u)"
 }
 
 function exit_stage() {
@@ -1083,14 +1060,14 @@ function call_api() {
             --header 'Authorization: Bearer '"$API_TOKEN" \
             --header 'Content-Type: application/json' \
             "$API$_API_METHOD" \
-            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+            2>>"$LOG_DIR/launch.sh.call_api.log"
     fi
 }
 
 function tag_run() {
     local _KEY="$1"
     local _VALUE="$2"
-    call_api "POST" "run/$RUN_ID/tag" '{
+    call_api "POST" "run/$RUN_ID/tag?overwrite=false" '{
         "tags": {
             "'"$_KEY"'": "'"$_VALUE"'"
         }
@@ -1177,6 +1154,8 @@ export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
 if check_cp_cap CP_SENSITIVE_RUN; then
     export CP_CAP_OFFLINE="true"
 fi
+
+export CP_CAP_RUN_WORK_FINISHED_TAG="${CP_CAP_RUN_WORK_FINISHED_TAG:-WORK_FINISHED}"
 
 ######################################################
 # Configure Hyperthreading
@@ -1542,6 +1521,10 @@ fi
 if check_cp_cap "CP_CAP_DCV"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
+
+# Get general run information from the API
+CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
+export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.podIP')
 
 echo "------"
 echo
@@ -2719,10 +2702,12 @@ else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
 fi
 
-# It may happen that the shared filesystem may cause a job to "hang" indefinitely
-# even if the script has exited. To address this, we wait a preconfigured amount of minutes
-# and *terminate* an underlying node. So that it won't be reassigned in that bad state
-self_terminate_on_cleanup_timeout &
+if [ "$CP_CAP_RECOVERY_MODE_TERM" != "sleep" ]; then
+    # It may happen that the shared filesystem may cause a job to "hang" indefinitely
+    # even if the script has exited. To address this, tag the run as completed and then API
+    # will watch for it in ResourceMonitoringManager.processStuckRuns and terminate it if it was configured
+    mark_run_as_completed
+fi
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \

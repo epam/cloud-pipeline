@@ -550,18 +550,18 @@ class DataStorageOperations(object):
         if not du_command.validate():
             # Bad input
             sys.exit(22)
-        if du_command.eagerly_allowed():
-            storage = DataUsageHelper.fetch_storage(du_command)
-            if storage.type.lower() == 's3':
+        storage = DataStorage.fetch_storage(du_command.storage_name) if du_command.storage_name else None
+        if du_command.eagerly_allowed(storage):
+            if storage.type.lower() == 's3' or storage.type.lower() == 'nfs':
                 table = None
                 header = None
-                for _item in DataUsageHelper().fetch_data_eagerly(du_command):
+                for _item in DataUsageHelper().fetch_data_eagerly(du_command, storage):
                     header, table = DuOutput.print_item(du_command, _item, header, table)
                 click.echo()
                 sys.exit(0)
             click.echo("Using --cloud, because --depth is used", err=True)
             du_command.perform_on_cloud = True
-        du_leafs = DataUsageHelper().fetch_data(du_command)
+        du_leafs = DataUsageHelper().fetch_data(du_command, storage)
         click.echo(DuOutput.format_table(du_command, du_leafs))
         click.echo()
 

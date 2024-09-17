@@ -81,6 +81,7 @@ public class PipelineRepositoryService {
     private static final String DEFAULT_README = "docs/README.md";
     private static final String DEFAULT_BRANCH = "master";
     private static final String GITKEEP_CONTENT = "keep";
+    public static final String NOT_SUPPORTED_PATTERN = "%s is not supported for %s repository";
 
     private final PipelineRepositoryProviderService providerService;
     private final MessageHelper messageHelper;
@@ -267,6 +268,11 @@ public class PipelineRepositoryService {
                                        final String folder,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD ||
+                pipeline.getRepositoryType() == RepositoryType.GITHUB) {
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation",
+                    pipeline.getRepositoryType()));
+        }
         Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                 messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
         Assert.isTrue(!folderExists(pipeline, folder),
@@ -297,6 +303,11 @@ public class PipelineRepositoryService {
                                        final String newFolderName,
                                        final String lastCommitId,
                                        final String commitMessage) throws GitClientException {
+        if (pipeline.getRepositoryType() == RepositoryType.BITBUCKET_CLOUD ||
+                pipeline.getRepositoryType() == RepositoryType.GITHUB) {
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming",
+                    pipeline.getRepositoryType()));
+        }
         final String message = StringUtils.isNotBlank(commitMessage)
                 ? commitMessage
                 : String.format("Renaming folder %s to %s", folder, newFolderName);
@@ -532,9 +543,10 @@ public class PipelineRepositoryService {
     }
 
     private static String getCommitName(final Revision commit, final RepositoryType repositoryType) {
-        return GitUtils.DRAFT_PREFIX +
-                (RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
-                        commit.getCommitId().substring(0, 6) :
+        final String commitId = RepositoryType.BITBUCKET_CLOUD.equals(repositoryType) ?
+                commit.getCommitId().substring(0, 6) :
+                (RepositoryType.GITHUB.equals(repositoryType) ? commit.getCommitId().substring(0, 7) :
                         commit.getName());
+        return GitUtils.DRAFT_PREFIX + commitId;
     }
 }

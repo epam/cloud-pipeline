@@ -57,7 +57,7 @@ function getDurationPresentation (duration) {
   return getDurationPresentation(duration, SECOND, 'second');
 }
 
-class RunTagDatePopover extends React.PureComponent {
+class RunTagPopover extends React.PureComponent {
   state = {
     visible: false,
     duration: 0
@@ -74,9 +74,10 @@ class RunTagDatePopover extends React.PureComponent {
   render () {
     const {
       children,
-      date
+      date,
+      value
     } = this.props;
-    if (!date) {
+    if (!date && (value === undefined || value === null)) {
       return children;
     }
     const {
@@ -89,7 +90,20 @@ class RunTagDatePopover extends React.PureComponent {
         onVisibleChange={this.onVisibilityChanged}
         content={(
           <div>
-            {getDurationPresentation(duration)}
+            {
+              value !== undefined && value !== null && (
+                <div>
+                  {value}
+                </div>
+              )
+            }
+            {
+              date && (
+                <div>
+                  {getDurationPresentation(duration)}
+                </div>
+              )
+            }
           </div>
         )}
       >
@@ -99,10 +113,11 @@ class RunTagDatePopover extends React.PureComponent {
   }
 }
 
-RunTagDatePopover.propTypes = {
+RunTagPopover.propTypes = {
   children: PropTypes.node,
   date: PropTypes.object,
+  value: PropTypes.node,
   tag: PropTypes.string
 };
 
-export default RunTagDatePopover;
+export default RunTagPopover;

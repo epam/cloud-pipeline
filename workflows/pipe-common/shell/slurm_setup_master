@@ -166,7 +166,7 @@ EOL
         pipe_log_info "CP_CAP_SGE_MASTER_CORES is set to 0. Master host was disabled in $CP_CAP_SGE_QUEUE_NAME queue" "$SLURM_MASTER_SETUP_TASK"
     else
         _NODE="$(hostname)"
-        _NODE_ADDR="$(getent hosts $_NODE | awk '{ print $1 }')"
+        _NODE_ADDR="$(util_get_pod_ip $_NODE)"
         _MASTER_NODE_CPU_COUNT=$((_NODE_CPU_COUNT < CP_CAP_SGE_MASTER_CORES ? _NODE_CPU_COUNT : CP_CAP_SGE_MASTER_CORES))
         echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$_NODE_ADDR CPUs=$_MASTER_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     fi
@@ -176,7 +176,7 @@ EOL
         if [ "$_NODE" == "$(hostname)" ]; then
             continue
         fi
-        _NODE_ADDR="$(getent hosts $_NODE | awk '{ print $1 }')"
+        _NODE_ADDR="$(util_get_pod_ip $_NODE)"
         echo "NodeName=$_NODE NodeHostname=$_NODE NodeAddr=$_NODE_ADDR CPUs=$_NODE_CPU_COUNT RealMemory=$_NODE_RAM_COUNT Gres=gpu:$_NODE_GPUS_COUNT State=UNKNOWN" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf
     done
     echo "" >> ${SLURM_COMMON_CONFIG_DIR}/slurm.conf

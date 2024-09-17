@@ -41,7 +41,7 @@ public class BitbucketCloudClient {
     private static final String BRANCH = "branch";
     private static final Integer LIMIT = 100;
 
-    private final BitbucketCloudServerApi bitbucketServerApi;
+    private final BitbucketCloudApi bitbucketServerApi;
     private final String apiVersion;
     private final String projectName;
     private final String repositoryName;
@@ -139,9 +139,9 @@ public class BitbucketCloudClient {
         return RestApiUtils.execute(bitbucketServerApi.search(apiVersion, projectName, repositoryName, branch, path));
     }
 
-    private BitbucketCloudServerApi buildClient(final String baseUrl, final String credentials,
-                                                final String dataFormat) {
-        return new ApiBuilder<>(BitbucketCloudServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
+    private BitbucketCloudApi buildClient(final String baseUrl, final String credentials,
+                                          final String dataFormat) {
+        return new ApiBuilder<>(BitbucketCloudApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
     }
 
     private void upsertFile(final MultipartBody.Part contentBody, final String message, final String branch) {

@@ -94,20 +94,20 @@ enable="$5"
 upload_rate="$6"
 download_rate="$7"
 
-COMMAND="/bin/wondershaper/wondershaper"
+if [ ! "$GLOBAL_DISTRIBUTION_URL" ]; then
+  GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
+fi
+
+COMMAND="/bin/wondershaper"
 
 if [ -f "$COMMAND" ]; then
   pipe_log_info "[INFO] ${COMMAND} exists. Proceeding."
 else
   pipe_log_info "[WARN] No ${COMMAND} found. Trying to install."
 
-  cd /bin && \
-  wget https://github.com/magnific0/wondershaper/archive/refs/heads/master.zip -O wondershaper.zip && \
-  unzip wondershaper.zip && \
-  mv wondershaper-master wondershaper && \
-  rm -rf wondershaper.zip && \
-  cd wondershaper && \
-  sudo make install
+  wget --timeout=10 --waitretry=1 --tries=10 \
+      "${GLOBAL_DISTRIBUTION_URL}tools/wondershaper/wondershaper" -O /bin/wondershaper
+  chmod +x /bin/wondershaper
 
   if [ -f "$COMMAND" ]; then
     pipe_log_info "[INFO] ${COMMAND} installed successfully. Proceeding."

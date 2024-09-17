@@ -223,6 +223,7 @@ public final class MessageConstants {
     public static final String DEBUG_RUN_HAS_NOT_NODE_NAME = "debug.run.has.not.node.name";
     public static final String DEBUG_MEMORY_METRICS = "debug.memory.metrics.received";
     public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_NOTIFY = "info.run.high.network.consumption.notify";
+    public static final String INFO_RUN_HIGH_NETWORK_CONSUMPTION_ACTION = "info.run.high.network.consumption.action";
     public static final String DEBUG_NETWORK_RUN_METRICS_RECEIVED = "debug.network.run.metrics.received";
     public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING = "debug.run.not.network.consuming";
     public static final String DEBUG_RUN_NOT_NETWORK_CONSUMING_DISABLED = "debug.run.network.consuming.disabled";
@@ -399,6 +400,8 @@ public final class MessageConstants {
     public static final String ERROR_PARSE_BITBUCKET_CLOUD_REPOSITORY_PATH =
             "error.parse.bitbucket.cloud.repository.path";
     public static final String ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND = "error.bitbucket.cloud.token.not.found";
+    public static final String ERROR_PARSE_GITHUB_REPOSITORY_PATH = "error.parse.github.repository.path";
+    public static final String ERROR_GITHUB_TOKEN_NOT_FOUND = "error.github.token.not.found";
     public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages
@@ -452,6 +455,8 @@ public final class MessageConstants {
     public static final String DEFAULT_STORAGE_CREATION_CORRESPONDING_EXISTS = "user.storage.home.auto.exists";
     public static final String ERROR_SELF_IMPERSONATION_NOT_ALLOWED = "impersonation.self.not.allowed";
     public static final String ERROR_IMPERSONATION_EMPTY_USER = "impersonation.validation.empty.user";
+    public static final String INFO_DEFAULT_USER_DOCKER_GROUP_CREATE = "info.user.docker.group.create";
+    public static final String WARN_DEFAULT_USER_DOCKER_GROUP_CREATE = "warn.user.docker.group.create";
 
     // Security
     public static final String ERROR_PERMISSION_PARAM_REQUIRED = "permission.param.is.required";

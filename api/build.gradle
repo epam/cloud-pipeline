@@ -160,6 +160,9 @@ dependencies {
     // Core library
     compile project(":core")
 
+    // Event sourcing client module to work with Redis Streams
+    compile project(":cloud-pipeline-common:event-sourcing-java-client")
+
     //Kubernetes
     compile "io.fabric8:kubernetes-client:2.2.7"
     compile "io.fabric8:kubernetes-model:2.1.2"
@@ -204,7 +207,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-iam
     compile group: "com.amazonaws", name: "aws-java-sdk-iam", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-fsx
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.321'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.770'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
 
 
