@@ -556,14 +556,14 @@ public class LookupStrategyImpl implements LookupStrategy {
 
     private class NoCacheProcessResultSet extends ProcessResultSet {
 
-        NoCacheProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
+        NoCacheProcessResultSet(final Map<Serializable, Acl> acls, final List<Sid> sids) {
             super(acls, sids);
         }
 
         /**
          * In difference with ProcessResultSet this class doesn't use acl cache, to fully reload from database
          */
-        public Set<Long> extractData(ResultSet rs) throws SQLException {
+        public Set<Long> extractData(final ResultSet rs) throws SQLException {
             Set<Long> parentIdsToLookup = new HashSet<Long>(); // Set of parent_id Longs
 
             while (rs.next()) {
@@ -589,7 +589,7 @@ public class LookupStrategyImpl implements LookupStrategy {
         protected final Map<Serializable, Acl> acls;
         protected final List<Sid> sids;
 
-        ProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
+        ProcessResultSet(final Map<Serializable, Acl> acls, final List<Sid> sids) {
             Assert.notNull(acls, "ACLs cannot be null");
             this.acls = acls;
             // can be null
@@ -606,7 +606,7 @@ public class LookupStrategyImpl implements LookupStrategy {
          * <tt>null</tt>)
          * @throws SQLException
          */
-        public Set<Long> extractData(ResultSet rs) throws SQLException {
+        public Set<Long> extractData(final ResultSet rs) throws SQLException {
             Set<Long> parentIdsToLookup = new HashSet<Long>(); // Set of parent_id Longs
 
             while (rs.next()) {
@@ -648,8 +648,8 @@ public class LookupStrategyImpl implements LookupStrategy {
          *
          * @throws SQLException if something goes wrong converting values
          */
-        protected void convertCurrentResultIntoObject(Map<Serializable, Acl> acls,
-                ResultSet rs) throws SQLException {
+        protected void convertCurrentResultIntoObject(
+                final Map<Serializable, Acl> acls, final ResultSet rs) throws SQLException {
             Long id = new Long(rs.getLong("acl_id"));
 
             // If we already have an ACL for this ID, just create the ACE

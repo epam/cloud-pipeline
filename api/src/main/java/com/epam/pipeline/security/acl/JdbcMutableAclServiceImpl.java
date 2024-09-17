@@ -225,7 +225,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     // Copy of JdbcMutableAclService.clearCacheIncludingChildren
-    private void clearCacheIncludingChildren(ObjectIdentity objectIdentity) {
+    private void clearCacheIncludingChildren(final ObjectIdentity objectIdentity) {
         Assert.notNull(objectIdentity, "ObjectIdentity required");
         List<ObjectIdentity> children = this.findChildren(objectIdentity);
         if (children != null) {

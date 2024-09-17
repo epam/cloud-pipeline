@@ -28,7 +28,6 @@ import org.springframework.security.acls.model.AclService;
 import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.util.Assert;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -73,7 +72,7 @@ public class ACLUpdateEventHandler implements EventHandler {
         );
     }
 
-    boolean validateEvent(Event event) {
+    boolean validateEvent(final Event event) {
         if (Objects.equals(applicationId, event.getApplicationId())) {
             log.info(String.format(
                     "Skipping event %s with the same applicationId: %s", event, event.getApplicationId())
@@ -105,18 +104,14 @@ public class ACLUpdateEventHandler implements EventHandler {
         return true;
     }
 
-    private void clearCacheIncludingChildren(ObjectIdentity objectIdentity) {
+    private void clearCacheIncludingChildren(final ObjectIdentity objectIdentity) {
         Assert.notNull(objectIdentity, "ObjectIdentity required");
-        List<ObjectIdentity> children = aclService.findChildren(objectIdentity);
+        final List<ObjectIdentity> children = aclService.findChildren(objectIdentity);
         if (children != null) {
-            Iterator var3 = children.iterator();
-
-            while(var3.hasNext()) {
-                ObjectIdentity child = (ObjectIdentity)var3.next();
+            for (ObjectIdentity child : children) {
                 this.clearCacheIncludingChildren(child);
             }
         }
-
         this.aclCache.evictFromCache(objectIdentity);
     }
 
