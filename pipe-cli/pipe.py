@@ -296,6 +296,8 @@ def cli():
       CP_CLI_STORAGE_ASYNC_BATCH_ENABLE      Enables asynchronous batch transfer
       CP_CLI_STORAGE_LIST_API_PAGE_SIZE      The number of storage items allowed to be loaded from the API
                                              in one request (Default: 1000)
+      CP_CLI_API_CALL_RETRY_ATTEMPTS         The number of retries to call API (Default: 3)
+      CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
     """
     pass
 
