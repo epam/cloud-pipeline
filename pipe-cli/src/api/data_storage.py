@@ -250,13 +250,7 @@ class DataStorage(API):
     @classmethod
     def _get_temporary_credentials(cls, data):
         api = cls.instance()
-        response_data = api.call('datastorage/tempCredentials/', data=json.dumps(data))
-        if 'payload' in response_data:
-            return TemporaryCredentialsModel.load(response_data['payload'])
-        elif 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to load credentials from server.')
+        return TemporaryCredentialsModel.load(api.retryable_call('POST', 'datastorage/tempCredentials/', data=data))
 
     @staticmethod
     def create_operation_info(source_bucket, destination_bucket, command, versioning=False):
