@@ -49,7 +49,7 @@ public interface GitHubApi {
     String PAGE = "page";
     String SHA = "sha";
     String PAGE_LENGTH = "per_page";
-
+    String REF = "ref";
 
     @GET("repos/{workspace}/{repository}")
     Call<GitHubRepository> getRepository(@Path(WORKSPACE) String workspace,
@@ -59,6 +59,7 @@ public interface GitHubApi {
     Call<GitHubRepository> createRepository(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
                                             @Body GitHubRepository bitbucketRepository);
+
     @PATCH("repos/{workspace}/{repository}")
     Call<GitHubRepository> updateRepository(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
@@ -95,6 +96,7 @@ public interface GitHubApi {
     Call<GitHubRef> createRef(@Path(WORKSPACE) String workspace,
                               @Path(REPOSITORY) String repository,
                               @Body GitHubRef ref);
+
     @POST("repos/{workspace}/{repository}/releases")
     Call<GitHubRelease> createRelease(@Path(WORKSPACE) String workspace,
                                       @Path(REPOSITORY) String repository,
@@ -116,22 +118,24 @@ public interface GitHubApi {
     Call<GitHubRelease> getTag(@Path(WORKSPACE) String workspace,
                                @Path(REPOSITORY) String repository,
                                @Path(TAG_NAME) String tagName);
+
     @GET("repos/{workspace}/{repository}/contents/{path}")
     Call<List<GitHubContent>> getContents(@Path(WORKSPACE) String workspace,
                                           @Path(REPOSITORY) String repository,
                                           @Path(value = PATH) String path,
-                                          @Query("ref") String commit);
+                                          @Query(REF) String commit);
+
     @GET("repos/{workspace}/{repository}/git/trees/{sha}")
     Call<GitHubTree> getTree(@Path(WORKSPACE) String workspace,
                              @Path(REPOSITORY) String repository,
-                             @Path(value = "sha") String sha,
+                             @Path(value = SHA) String sha,
                              @Query("recursive") Boolean recursive);
 
     @GET("repos/{workspace}/{repository}/contents/{path}")
     Call<GitHubContent> getFile(@Path(WORKSPACE) String workspace,
                                 @Path(REPOSITORY) String repository,
                                 @Path(value = PATH) String path,
-                                @Query("ref") String ref);
+                                @Query(REF) String ref);
 
     @GET("repos/{workspace}/{repository}/branches")
     Call<List<GitHubRef>> getBranches(@Path(WORKSPACE) String workspace,

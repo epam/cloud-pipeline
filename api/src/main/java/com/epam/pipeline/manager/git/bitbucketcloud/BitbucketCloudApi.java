@@ -53,7 +53,6 @@ public interface BitbucketCloudApi {
     String BRANCH = "branch";
     String REVISION = "revision";
 
-
     @GET("{api_version}/repositories/{workspace}/{repository}")
     Call<BitbucketCloudRepository> getRepository(@Path(API_VERSION) String apiVersion,
                                                  @Path(WORKSPACE) String workspace,
