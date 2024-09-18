@@ -16,12 +16,16 @@
 
 set -e
 
+source ~/venv2.7*/bin/activate
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
-          pipe-cli:buildMacPy39 \
+          pipe-cli:buildMac \
           --no-daemon \
           -x :pipe-cli:test
 
+deactivate
+
+source ~/venv3.8*/bin/activate
 pip install awscli
 
 cd pipe-cli
@@ -33,3 +37,4 @@ if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     fi
 fi
 
+deactivate
