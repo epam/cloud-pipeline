@@ -78,8 +78,8 @@ public class GitHubClient {
         return RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, commit));
     }
 
-    public boolean fileExists(final String path) {
-        final Call<GitHubContent> call = serverApi.getFile(projectName, repositoryName, path, null);
+    public boolean fileExists(final String ref, final String path) {
+        final Call<GitHubContent> call = serverApi.getFile(projectName, repositoryName, path, ref);
         try {
             final Response<GitHubContent> response = call.execute();
             return response.isSuccessful();
@@ -97,9 +97,8 @@ public class GitHubClient {
         return createFile(path, request);
     }
 
-    public GitHubSource updateFile(final String path, final String content, final String message,
-                           final String branch) {
-        final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, null));
+    public GitHubSource updateFile(final String path, final String content, final String message, final String branch) {
+        final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, branch));
         final GitHubContent request = GitHubContent.builder()
                 .sha(file.getSha())
                 .message(message)
@@ -110,7 +109,7 @@ public class GitHubClient {
     }
 
     public GitHubSource deleteFile(final String path, final String message, final String branch) {
-        final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, null));
+        final GitHubContent file = RestApiUtils.execute(serverApi.getFile(projectName, repositoryName, path, branch));
         final GitHubContent request = GitHubContent.builder()
                 .sha(file.getSha())
                 .message(message)
@@ -123,7 +122,7 @@ public class GitHubClient {
         final GitHubContent request = GitHubContent.builder()
                 .message(message)
                 .branch(branch)
-                .content(Base64.getMimeEncoder().encodeToString(content))
+                .content(Base64.getEncoder().encodeToString(content))
                 .build();
         return createFile(path, request);
     }
@@ -144,8 +143,8 @@ public class GitHubClient {
         RestApiUtils.execute(serverApi.createRelease(projectName, repositoryName, ref));
     }
 
-    public Response<List<GitHubCommitNode>> getLastCommit() {
-        return RestApiUtils.getResponse(serverApi.getCommits(projectName, repositoryName, null, null));
+    public Response<List<GitHubCommitNode>> getLastCommit(final String sha) {
+        return RestApiUtils.getResponse(serverApi.getCommits(projectName, repositoryName, sha, null, null));
     }
 
     public GitHubCommitNode getCommit(final String commitId) {
