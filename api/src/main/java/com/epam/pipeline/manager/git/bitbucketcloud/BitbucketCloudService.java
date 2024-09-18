@@ -188,7 +188,7 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline, final String ref) {
-        final BitbucketCloudPagedResponse<BitbucketCloudCommit> commits = getClient(pipeline).getLastCommit();
+        final BitbucketCloudPagedResponse<BitbucketCloudCommit> commits = getClient(pipeline).getLastCommit(ref);
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()

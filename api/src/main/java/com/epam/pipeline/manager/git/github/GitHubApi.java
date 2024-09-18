@@ -47,6 +47,7 @@ public interface GitHubApi {
     String COMMIT_ID = "commitId";
     String TAG_NAME = "tagName";
     String PAGE = "page";
+    String SHA = "sha";
     String PAGE_LENGTH = "per_page";
 
 
@@ -102,13 +103,14 @@ public interface GitHubApi {
     @GET("repos/{workspace}/{repository}/commits")
     Call<List<GitHubCommitNode>> getCommits(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
+                                            @Query(SHA) String sha,
                                             @Query(PAGE) Integer page,
                                             @Query(PAGE_LENGTH) Integer pageLength);
 
     @GET("repos/{workspace}/{repository}/commits/{commitId}")
     Call<GitHubCommitNode> getCommit(@Path(WORKSPACE) String workspace,
-                                    @Path(REPOSITORY) String repository,
-                                    @Path(COMMIT_ID) String commitId);
+                                     @Path(REPOSITORY) String repository,
+                                     @Path(COMMIT_ID) String commitId);
 
     @GET("repos/{workspace}/{repository}/releases/tags/{tagName}")
     Call<GitHubRelease> getTag(@Path(WORKSPACE) String workspace,
@@ -129,7 +131,7 @@ public interface GitHubApi {
     Call<GitHubContent> getFile(@Path(WORKSPACE) String workspace,
                                 @Path(REPOSITORY) String repository,
                                 @Path(value = PATH) String path,
-                                @Query("ref") String commit);
+                                @Query("ref") String ref);
 
     @GET("repos/{workspace}/{repository}/branches")
     Call<List<GitHubRef>> getBranches(@Path(WORKSPACE) String workspace,

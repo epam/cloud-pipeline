@@ -112,8 +112,9 @@ public class BitbucketCloudClient {
         return RestApiUtils.execute(bitbucketServerApi.createTag(apiVersion, projectName, repositoryName, tag));
     }
 
-    public BitbucketCloudPagedResponse<BitbucketCloudCommit> getLastCommit() {
-        return RestApiUtils.execute(bitbucketServerApi.getCommits(apiVersion, projectName, repositoryName, null, null));
+    public BitbucketCloudPagedResponse<BitbucketCloudCommit> getLastCommit(final String revision) {
+        return RestApiUtils.execute(bitbucketServerApi.getCommits(apiVersion, projectName, repositoryName,
+                revision, null, null));
     }
 
     public BitbucketCloudCommit getCommit(final String commitId) {
