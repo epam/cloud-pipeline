@@ -37,7 +37,7 @@ import retrofit2.http.Query;
 import retrofit2.http.Streaming;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public interface BitbucketCloudServerApi {
+public interface BitbucketCloudApi {
 
     String PATH = "path";
     String WORKSPACE = "workspace";
@@ -51,7 +51,7 @@ public interface BitbucketCloudServerApi {
     String PAGE = "page";
     String PAGE_LENGTH = "pagelen";
     String BRANCH = "branch";
-
+    String REVISION = "revision";
 
     @GET("{api_version}/repositories/{workspace}/{repository}")
     Call<BitbucketCloudRepository> getRepository(@Path(API_VERSION) String apiVersion,
@@ -109,10 +109,11 @@ public interface BitbucketCloudServerApi {
                                       @Path(REPOSITORY) String repository,
                                       @Body BitbucketCloudRef tag);
 
-    @GET("{api_version}/repositories/{workspace}/{repository}/commits")
+    @GET("{api_version}/repositories/{workspace}/{repository}/commits/{revision}")
     Call<BitbucketCloudPagedResponse<BitbucketCloudCommit>> getCommits(@Path(API_VERSION) String apiVersion,
                                                                        @Path(WORKSPACE) String workspace,
                                                                        @Path(REPOSITORY) String repository,
+                                                                       @Path(REVISION) String revision,
                                                                        @Query(PAGE) Integer page,
                                                                        @Query(PAGE_LENGTH) Integer pageLength);
 

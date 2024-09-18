@@ -361,6 +361,9 @@ public class SystemPreferences {
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
 
+    public static final StringPreference GITHUB_USER_NAME =
+            new StringPreference("github.user.name", null, GIT_GROUP, pass);
+
     public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
             new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
@@ -421,6 +424,8 @@ public class SystemPreferences {
         "security.tools.scan.clair.connect.timeout", 60, DOCKER_SECURITY_GROUP, isGreaterThan(30));
     public static final IntPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_READ_TIMEOUT = new IntPreference(
         "security.tools.scan.clair.read.timeout", 600, DOCKER_SECURITY_GROUP, isGreaterThan(0));
+    public static final StringPreference DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION = new StringPreference(
+            "security.tools.scan.clair.version", "v4", DOCKER_SECURITY_GROUP, pass);
     /**
      * Scan schedule cron expression
      */

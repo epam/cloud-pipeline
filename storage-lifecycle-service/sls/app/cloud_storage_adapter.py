@@ -120,12 +120,13 @@ class PlatformToCloudOperationsAdapter:
         storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix, storage)
         self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(region, storage_container)
 
-    def list_objects_by_prefix(self, storage, prefix):
+    def list_objects_by_prefix(self, storage, prefix, classes_to_list):
         region = self.fetch_region(storage.region_id)
         storage_is_versioned = storage.policy.versioning if storage.policy else False
         storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
         storage_container = CloudPipelineStorageContainer(storage_cloud_identifier, storage_path_prefix + prefix, storage)
         files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(region, storage_container,
+                                                                                   classes_to_list=classes_to_list,
                                                                                    list_versions=storage_is_versioned)
         for file in files:
             if storage_path_prefix and file.path.startswith(storage_path_prefix):

@@ -58,6 +58,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
+
 @Service
 @RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
@@ -67,7 +69,6 @@ public class BitbucketCloudService implements GitClientService {
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
     private static final int MAX_DEPTH = 20;
     private static final String PAGE_PARAMETER = "page=";
-    private static final String NOT_SUPPORTED_PATTERN = "%s is not supported for Bitbucket Cloud repository";
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -187,7 +188,7 @@ public class BitbucketCloudService implements GitClientService {
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline, final String ref) {
-        final BitbucketCloudPagedResponse<BitbucketCloudCommit> commits = getClient(pipeline).getLastCommit();
+        final BitbucketCloudPagedResponse<BitbucketCloudCommit> commits = getClient(pipeline).getLastCommit(ref);
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()
@@ -275,29 +276,29 @@ public class BitbucketCloudService implements GitClientService {
     @Override
     public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
                                      final String filePreviousPath, final String filePath) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
     }
 
     @Override
     public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File deletion"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File deletion", getType()));
     }
 
     @Override
     public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
                                        final String message) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder creation", getType()));
     }
 
     @Override
     public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
                                        final String folder, final String newFolderName) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder renaming", getType()));
     }
 
     @Override
     public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
-        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder deletion"));
+        throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "Folder deletion", getType()));
     }
 
     @Override
@@ -305,7 +306,7 @@ public class BitbucketCloudService implements GitClientService {
                                       final String message) {
         if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
                 .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
-            throw new UnsupportedOperationException(NOT_SUPPORTED_PATTERN);
+            throw new UnsupportedOperationException(String.format(NOT_SUPPORTED_PATTERN, "File renaming", getType()));
         }
         final BitbucketCloudClient client = getClient(pipeline);
 
@@ -318,7 +319,8 @@ public class BitbucketCloudService implements GitClientService {
     @Override
     public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
                                       final String message) {
-        Assert.isTrue(files.size() == 1, String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload"));
+        Assert.isTrue(files.size() == 1,
+                String.format(NOT_SUPPORTED_PATTERN, "Multiple files upload", getType()));
         final UploadFileMetadata file = files.get(0);
         final BitbucketCloudClient client = getClient(pipeline);
         client.upsertFile(file.getFileName(), file.getFileType(), file.getBytes(),
