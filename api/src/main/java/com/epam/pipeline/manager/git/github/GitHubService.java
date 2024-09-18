@@ -212,7 +212,7 @@ public class GitHubService implements GitClientService {
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline, final String ref) {
-        final Response<List<GitHubCommitNode>> commits = getClient(pipeline).getLastCommit();
+        final Response<List<GitHubCommitNode>> commits = getClient(pipeline).getLastCommit(ref);
         return Optional.ofNullable(commits.body()).orElse(Collections.emptyList()).stream()
                 .findFirst()
                 .map(mapper::commitToRevision)
@@ -342,7 +342,7 @@ public class GitHubService implements GitClientService {
 
     @Override
     public boolean fileExists(final Pipeline pipeline, final String filePath) {
-        return fileExists(getClient(pipeline), filePath);
+        return fileExists(getClient(pipeline), pipeline.getBranch(), filePath);
     }
 
     private static String getContentSha(final String rawPath, final String version, final GitHubClient client) {
@@ -412,7 +412,7 @@ public class GitHubService implements GitClientService {
         }
     }
 
-    private boolean fileExists(final GitHubClient client, final String path) {
-        return client.fileExists(path);
+    private boolean fileExists(final GitHubClient client, final String ref, final String path) {
+        return client.fileExists(ref, path);
     }
 }

@@ -47,8 +47,9 @@ public interface GitHubApi {
     String COMMIT_ID = "commitId";
     String TAG_NAME = "tagName";
     String PAGE = "page";
+    String SHA = "sha";
     String PAGE_LENGTH = "per_page";
-
+    String REF = "ref";
 
     @GET("repos/{workspace}/{repository}")
     Call<GitHubRepository> getRepository(@Path(WORKSPACE) String workspace,
@@ -58,6 +59,7 @@ public interface GitHubApi {
     Call<GitHubRepository> createRepository(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
                                             @Body GitHubRepository bitbucketRepository);
+
     @PATCH("repos/{workspace}/{repository}")
     Call<GitHubRepository> updateRepository(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
@@ -94,6 +96,7 @@ public interface GitHubApi {
     Call<GitHubRef> createRef(@Path(WORKSPACE) String workspace,
                               @Path(REPOSITORY) String repository,
                               @Body GitHubRef ref);
+
     @POST("repos/{workspace}/{repository}/releases")
     Call<GitHubRelease> createRelease(@Path(WORKSPACE) String workspace,
                                       @Path(REPOSITORY) String repository,
@@ -102,34 +105,37 @@ public interface GitHubApi {
     @GET("repos/{workspace}/{repository}/commits")
     Call<List<GitHubCommitNode>> getCommits(@Path(WORKSPACE) String workspace,
                                             @Path(REPOSITORY) String repository,
+                                            @Query(SHA) String sha,
                                             @Query(PAGE) Integer page,
                                             @Query(PAGE_LENGTH) Integer pageLength);
 
     @GET("repos/{workspace}/{repository}/commits/{commitId}")
     Call<GitHubCommitNode> getCommit(@Path(WORKSPACE) String workspace,
-                                    @Path(REPOSITORY) String repository,
-                                    @Path(COMMIT_ID) String commitId);
+                                     @Path(REPOSITORY) String repository,
+                                     @Path(COMMIT_ID) String commitId);
 
     @GET("repos/{workspace}/{repository}/releases/tags/{tagName}")
     Call<GitHubRelease> getTag(@Path(WORKSPACE) String workspace,
                                @Path(REPOSITORY) String repository,
                                @Path(TAG_NAME) String tagName);
+
     @GET("repos/{workspace}/{repository}/contents/{path}")
     Call<List<GitHubContent>> getContents(@Path(WORKSPACE) String workspace,
                                           @Path(REPOSITORY) String repository,
                                           @Path(value = PATH) String path,
-                                          @Query("ref") String commit);
+                                          @Query(REF) String commit);
+
     @GET("repos/{workspace}/{repository}/git/trees/{sha}")
     Call<GitHubTree> getTree(@Path(WORKSPACE) String workspace,
                              @Path(REPOSITORY) String repository,
-                             @Path(value = "sha") String sha,
+                             @Path(value = SHA) String sha,
                              @Query("recursive") Boolean recursive);
 
     @GET("repos/{workspace}/{repository}/contents/{path}")
     Call<GitHubContent> getFile(@Path(WORKSPACE) String workspace,
                                 @Path(REPOSITORY) String repository,
                                 @Path(value = PATH) String path,
-                                @Query("ref") String commit);
+                                @Query(REF) String ref);
 
     @GET("repos/{workspace}/{repository}/branches")
     Call<List<GitHubRef>> getBranches(@Path(WORKSPACE) String workspace,
