@@ -208,6 +208,9 @@ class StorageItemManager(object):
         if io_threads is not None:
             transfer_config.max_concurrency = max(io_threads, 1)
             transfer_config.use_threads = transfer_config.max_concurrency > 1
+        max_attempts = os.getenv('CP_AWS_MAX_ATTEMPTS')
+        if max_attempts:
+            transfer_config.num_download_attempts = int(max_attempts)
         return transfer_config
 
 
@@ -422,13 +425,15 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         extra_args = {
             'ACL': 'bucket-owner-full-control'
         }
+        transfer_config = self.get_transfer_config(io_threads)
         self.events.put_all([DataAccessEvent(path, DataAccessType.READ, storage=source_wrapper.bucket),
                              DataAccessEvent(destination_key, DataAccessType.WRITE, storage=destination_wrapper.bucket)])
         if StorageItemManager.show_progress(quiet, size, lock):
             self.bucket.copy(copy_source, destination_key, Callback=ProgressPercentage(relative_path, size),
-                             ExtraArgs=extra_args, SourceClient=source_client)
+                             ExtraArgs=extra_args, SourceClient=source_client, Config=transfer_config)
         else:
-            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client)
+            self.bucket.copy(copy_source, destination_key, ExtraArgs=extra_args, SourceClient=source_client,
+                             Config=transfer_config)
         if clean:
             self.events.put(DataAccessEvent(path, DataAccessType.DELETE, storage=source_wrapper.bucket))
             source_wrapper.delete_item(path)
