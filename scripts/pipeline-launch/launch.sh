@@ -2642,6 +2642,7 @@ echo "Command text:"
 echo "${SCRIPT}"
 
 CP_EXEC_SCRIPT_PATH="${CP_EXEC_SCRIPT_PATH:-/cp-main.sh}"
+CP_USER_SCRIPT_PATH="${CP_USER_SCRIPT_PATH:-/cp-user.sh}"
 
 if [ "$CP_EXEC_AS_OWNER" == "true" ]; then
     _RUN_AS_OWNER_COMMAND_PREFIX="su - "$OWNER" -c '"
@@ -2651,13 +2652,17 @@ if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
     _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
 fi
 
+echo "${SCRIPT}" > "$CP_USER_SCRIPT_PATH"
 echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
         "$_TIMEOUT_COMMAND_PREFIX" \
-        "bash -c \"${SCRIPT}\"" \
+        "bash \"$CP_USER_SCRIPT_PATH\"" \
         "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
 
-echo "Warapped command text:"
+echo "Exec script text:"
 cat "$CP_EXEC_SCRIPT_PATH"
+
+echo "User script text:"
+cat "$CP_USER_SCRIPT_PATH"
 
 bash "$CP_EXEC_SCRIPT_PATH"
 
