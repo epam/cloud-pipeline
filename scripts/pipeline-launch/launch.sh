@@ -2653,7 +2653,7 @@ fi
 
 echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
         "$_TIMEOUT_COMMAND_PREFIX" \
-        "bash -c \"${SCRIPT}\"" \
+        "${SCRIPT}" \
         "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
 
 echo "Warapped command text:"
