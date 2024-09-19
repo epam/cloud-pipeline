@@ -2638,6 +2638,10 @@ custom_cap_setup
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 
+CP_EXEC_COMMAND_PATH="/cp-command.sh"
+echo "${SCRIPT}" > "$CP_EXEC_COMMAND_PATH"
+
+echo "Command is located in: $CP_EXEC_COMMAND_PATH"
 echo "Command text:"
 echo "${SCRIPT}"
 
@@ -2651,9 +2655,9 @@ if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
     _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
 fi
 
-echo "$_TIMEOUT_COMMAND_PREFIX" \
-        "$_RUN_AS_OWNER_COMMAND_PREFIX" \
-        "${SCRIPT}" \
+echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
+        "$_TIMEOUT_COMMAND_PREFIX" \
+        "bash ${CP_EXEC_COMMAND_PATH}" \
         "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
 
 echo "Warapped command text:"
