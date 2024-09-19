@@ -147,6 +147,7 @@ import {getSelectOptions} from '../../../special/instance-type-info';
 import {
   correctLimitMountsParameterValue
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
+import highlightText from '../../../special/highlightText';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -359,7 +360,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     runNameAlias: undefined,
     isRawEditEnabled: false,
     selectedParameter: undefined,
-    highlightedParameterSection: undefined
+    highlightedParameterSection: undefined,
+    searchParameters: ''
   };
 
   formItemLayout = {
@@ -2937,6 +2939,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   renderParameters = (isSystemParametersSection) => {
     const sectionName = isSystemParametersSection ? SYSTEM_PARAMETERS : PARAMETERS;
+    const parameterMatchesSearch = (parameter) => {
+      if (!this.state.searchParameters) {
+        return true;
+      }
+      const search = (this.state.searchParameters || '').toLowerCase();
+      const name = (parameter.name || '').toLowerCase();
+      const prettyName = (parameter.pretty_name || '').toLowerCase();
+      return name.includes(search) || prettyName.includes(search);
+    };
     if (
       (!this.props.runDefaultParameters.loaded && this.props.runDefaultParameters.pending) ||
       (!this.props.preferences.loaded && this.props.preferences.pending)
@@ -2951,7 +2962,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters = this.getSectionValue(sectionName) ||
         this.buildDefaultParameters(isSystemParametersSection);
     }
-
+    for (let key in parameters.params) {
+      if (parameters.params.hasOwnProperty(key)) {
+        parameters.params[key] = {
+          ...parameters.params[key],
+          matchesSearch: parameterMatchesSearch(parameters.params[key])
+        };
+      }
+    }
     const keysFormItem = this.props.isDetachedConfiguration &&
     this.props.selectedPipelineParametersIsLoading
       ? null
@@ -3147,6 +3165,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return [];
       } else {
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
+        let addedParameters = {};
+        for (let key in this.addedParameters) {
+          if (this.addedParameters.hasOwnProperty(key)) {
+            addedParameters[key] = {
+              ...this.addedParameters[key],
+              matchesSearch: parameterMatchesSearch(this.addedParameters[key])
+            };
+          }
+        }
         const renderParametersGroup = (keys, params) => keys.map(key => {
           const parameter = (params ? params[key] : undefined) ||
             this.addedParameters[key];
@@ -3213,6 +3240,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             requiredCorrectedValue = false;
             visible = true;
           }
+          if (!parameter.matchesSearch) {
+            parameterIsVisible = false;
+          }
           const prettyNameExpanded = this.state.selectedParameter === key;
           const selectParameter = (e, key) => {
             if (nameDisabled) {
@@ -3231,6 +3261,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const renderNamePlaceholder = () => {
             const [nameError] = this.props.form
               .getFieldError(`${sectionName}.params.${key}.name`) || [];
+            const parameterName = prettyName || name
+              ? highlightText(prettyName || name, this.state.searchParameters)
+              : '<parameter name>';
             const content = (
               <div
                 className={classNames('ant-form-item-title', {
@@ -3244,7 +3277,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 }}
               >
                 <span className="cp-ellipsis-text" style={{flex: '0 1 auto'}}>
-                  {prettyName || name || '<parameter name>'}
+                  {parameterName}
                   {nameError ? (
                     <span
                       className="cp-ellipsis-text cp-error"
@@ -3733,8 +3766,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
           const navSections = sections.filter(section => {
             const params = paramsPerSection[section] || {};
-            return Object.values(params).some(value => `${value.visible}` !== 'false');
+            return Object
+              .values(params)
+              .some(param => `${param.visible}` !== 'false');
           });
+          const searchEnabled = keys.length > 10;
           const initializeSectionRef = (node, section) => {
             this.sectionRefs[section] = node;
           };
@@ -3749,6 +3785,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               });
             }
           };
+          const onParameterSearchChange = event => this.setState({
+            searchParameters: event.target.value
+          });
+          const getFilteredParametersInfo = () => {
+            const all = [
+              ...Object.values(params),
+              ...Object.values(this.addedParameters)
+            ];
+            const filtered = all
+              .filter(parameter => this.state.isRawEditEnabled
+                ? parameter.matchesSearch
+                : `${parameter.visible}` !== 'false' && parameter.matchesSearch
+              );
+            return {
+              visibleParameters: filtered.length,
+              hiddenParameters: all.length - filtered.length
+            };
+          };
+          const {
+            visibleParameters,
+            hiddenParameters
+          } = getFilteredParametersInfo();
           const sectionNavigationEnabled = navSections.length >= 3;
           return (
             <div key="parameters" style={{display: 'flex', flexWrap: 'nowrap'}}>
@@ -3774,16 +3832,46 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 </div>
               ) : null}
               <div style={{flexGrow: 1}}>
+                {searchEnabled ? (
+                  <div className={styles.searchParametersContainer}>
+                    <div
+                      className={styles.search}
+                      style={{paddingBottom: this.state.searchParameters ? 0 : 18}}
+                    >
+                      <span>Search:</span>
+                      <div style={{flex: 1, marginRight: 30}}>
+                        <Input
+                          onChange={onParameterSearchChange}
+                          value={this.state.searchParameters}
+                        />
+                        {this.state.searchParameters ? (
+                          <div style={{
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            flexWrap: 'nowrap',
+                            gap: '5px'
+                          }}>
+                            <span>{visibleParameters} shown</span>
+                            <span>{hiddenParameters} hidden</span>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
                 {sections.length > 1
                   ? sections.map(section => {
                     const highlighted = this.state.highlightedParameterSection === section;
+                    const sectionHasVisibleParams = Object
+                      .values(paramsPerSection[section])
+                      .some(param => `${param.visible}` !== 'false' && param.matchesSearch);
                     return (
                       <div
                         key={section}
                         ref={(node) => initializeSectionRef(node, section)}
                       >
-                        {
-                          this.renderSeparator(
+                        {sectionHasVisibleParams
+                          ? this.renderSeparator(
                             section.toUpperCase(),
                             0,
                             'section',
@@ -3792,11 +3880,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                               sectionVisible(section) ? {} : {display: 'none'}
                             ),
                             highlighted
-                          )}
+                          ) : null
+                        }
                         {
                           renderParametersGroup(
                             Object.keys(paramsPerSection[section]),
-                            paramsPerSection[section])
+                            paramsPerSection[section]
+                          )
                         }
                       </div>
                     );

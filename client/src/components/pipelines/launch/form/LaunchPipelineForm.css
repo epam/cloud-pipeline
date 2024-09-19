@@ -334,3 +334,21 @@ ul.list {
 .section-link {
   font-size: larger;
 }
+
+.search-parameters-container {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 5px;
+  align-items: center;
+  width: 50%;
+  margin: 0 auto;
+}
+
+.search-parameters-container .search {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 5px;
+  width: 100%;
+}
