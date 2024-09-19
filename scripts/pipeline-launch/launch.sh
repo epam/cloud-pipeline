@@ -2651,8 +2651,8 @@ if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
     _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
 fi
 
-echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
-        "$_TIMEOUT_COMMAND_PREFIX" \
+echo "$_TIMEOUT_COMMAND_PREFIX" \
+        "$_RUN_AS_OWNER_COMMAND_PREFIX" \
         "${SCRIPT}" \
         "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
 
