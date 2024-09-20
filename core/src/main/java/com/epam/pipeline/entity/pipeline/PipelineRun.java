@@ -246,11 +246,13 @@ public class PipelineRun extends AbstractSecuredEntity {
 
     /**
      * Add tag to the given run
-     * @param key key to be inserted
+     *
+     * @param key   key to be inserted
      * @param value value to be checked
+     * @return true if put operation was successful or false otherwise
      */
-    public void addTag(final String key, final String value) {
-        tags.putIfAbsent(key, value);
+    public boolean addTag(final String key, final String value) {
+        return tags.putIfAbsent(key, value) == null;
     }
 
     /**

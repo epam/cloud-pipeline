@@ -66,6 +66,7 @@ import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -85,6 +86,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class PodMonitor extends AbstractSchedulingManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(PodMonitor.class);
+    private static final String TRUE_VALUE_STRING = "true";
 
     private final PodMonitorCore core;
 
@@ -284,8 +286,23 @@ public class PodMonitor extends AbstractSchedulingManager {
 
                         run.setLastNotificationTime(DateUtils.now());
                         pipelineRunManager.updatePipelineRunLastNotification(run);
+                        tagRunWithLongOperation(run, type);
                     }
                 }
+            }
+        }
+
+        private void tagRunWithLongOperation(final PipelineRun run, final NotificationType notificationTypeTag) {
+            final String tag = notificationTypeTag.name();
+            final String timestampTag = String.format(
+                    "%s%s", tag, preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX)
+            );
+            if (run.addTag(tag, TRUE_VALUE_STRING)) {
+                run.addTag(timestampTag, DateUtils.nowUTCStr());
+                LOGGER.debug(String.format("Successfully set tag %d for run: %s.", run.getId(), tag));
+                pipelineRunManager.updateRunsTags(Collections.singletonList(run));
+            } else {
+                LOGGER.debug(String.format("Run: %d already has %s tag.", run.getId(), tag));
             }
         }
 
