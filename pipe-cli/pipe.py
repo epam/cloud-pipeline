@@ -298,6 +298,8 @@ def cli():
                                              in one request (Default: 1000)
       CP_CLI_API_CALL_RETRY_ATTEMPTS         The number of retries to call API (Default: 3)
       CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
+      CP_AWS_MAX_ATTEMPTS                    The number of maximum retries to call AWS API. If not specifies the
+                                             default boto3 provided values will be used.
     """
     pass
 

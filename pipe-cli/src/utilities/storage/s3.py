@@ -127,7 +127,7 @@ class StorageItemManager(object):
         self.events = events
         self.region_name = region_name
         self.endpoint = endpoint
-        _boto_config = S3BucketOperations.get_proxy_config(cross_region=cross_region)
+        _boto_config = S3BucketOperations.get_boto_config(cross_region=cross_region)
         self.s3 = session.resource('s3', config=_boto_config,
                                    region_name=self.region_name,
                                    endpoint_url=endpoint,
@@ -150,7 +150,7 @@ class StorageItemManager(object):
         return '&'.join(['%s=%s' % (key, value) for key, value in tags.items()])
 
     def _get_client(self):
-        _boto_config = S3BucketOperations.get_proxy_config()
+        _boto_config = S3BucketOperations.get_boto_config()
         client = self.session.client('s3', config=_boto_config,
                                      region_name=self.region_name,
                                      endpoint_url=self.endpoint,
@@ -437,7 +437,7 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
                               tags=StorageOperations.parse_tags(tags))
 
     def build_source_client(self, source_region, source_endpoint):
-        _boto_config = S3BucketOperations.get_proxy_config(cross_region=self.cross_region)
+        _boto_config = S3BucketOperations.get_boto_config(cross_region=self.cross_region)
         source_s3 = self.session.resource('s3',
                                           config=_boto_config,
                                           region_name=source_region,
@@ -1069,19 +1069,22 @@ class S3BucketOperations(object):
     __config__ = None
 
     @classmethod
-    def get_proxy_config(cls, cross_region=False):
+    def get_boto_config(cls, cross_region=False):
+        max_attempts = os.getenv('CP_AWS_MAX_ATTEMPTS')
+        retries = {'max_attempts': int(max_attempts)} if max_attempts else None
         if cls.__config__ is None:
             cls.__config__ = Config.instance()
         if cls.__config__.proxy is None:
             if cross_region:
                 os.environ['no_proxy'] = ''
-            return None
+            return AwsConfig(retries=retries)
         else:
-            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL))
+            return AwsConfig(proxies=cls.__config__.resolve_proxy(target_url=cls.S3_ENDPOINT_URL),
+                             retries=retries)
 
     @classmethod
     def _get_client(cls, session, region_name=None, endpoint=None):
-        _boto_config = S3BucketOperations.get_proxy_config()
+        _boto_config = S3BucketOperations.get_boto_config()
         client = session.client('s3', config=_boto_config, region_name=region_name,
                                 endpoint_url=endpoint, verify=False if endpoint else None)
         client._endpoint.http_session.adapters['https://'] = BotocoreHTTPSession(
