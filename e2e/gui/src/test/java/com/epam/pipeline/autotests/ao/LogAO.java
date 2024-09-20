@@ -20,6 +20,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.SSH_CLOUD_REGION;
 import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -97,12 +98,23 @@ public class LogAO implements AccessObject<LogAO> {
                 .text().replace("(best)", "");
     }
 
+    public ShellAO clickOnSelectedRegionLink() {
+        openRegionSelector();
+        String link = $$(className("ultizone-url__menu-link"))
+                .filter(text(SSH_CLOUD_REGION)).first().attr("href");
+        return ShellAO.open(link);
+    }
+
     public ShellAO clickOnSshLink() {
         return ShellAO.open(getSshLink());
     }
 
     public LogAO ssh(final Consumer<ShellAO> shell) {
-        shell.accept(clickOnSshLink());
+        if(SSH_CLOUD_REGION.equals("")) {
+            shell.accept(clickOnSshLink());
+        } else {
+            shell.accept(clickOnSelectedRegionLink());
+        }
         return this;
     }
 
