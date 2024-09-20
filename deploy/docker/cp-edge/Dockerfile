@@ -157,4 +157,4 @@ RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/fi
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm
 
 COPY filebeat-config/* /etc/filebeat/
-RUN chown -R root:root /etc/filebeat/
+RUN chmod go-w /etc/filebeat/*
