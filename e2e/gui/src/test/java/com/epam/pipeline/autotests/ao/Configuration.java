@@ -144,7 +144,7 @@ public class Configuration implements AccessObject<Configuration> {
     }
 
     public static By parameterName() {
-        return byClassName("launch-pipeline-form__parameter-name");
+        return byClassName("launch-pipeline-form__parameter-name-container");
     }
 
     public Configuration() {
@@ -257,7 +257,7 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration validateParameters(final String... parameters) {
         final ElementsCollection actualParameters = SelenideElements.of(parameterName());
         IntStream.range(0, parameters.length)
-                .forEach(i -> actualParameters.get(i).shouldHave(value(parameters[i])));
+                .forEach(i -> actualParameters.get(i).shouldHave(text(parameters[i])));
         return this;
     }
 
