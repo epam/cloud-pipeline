@@ -565,7 +565,7 @@ public class SamplesMetadataTest
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
 
-    @Test(priority = 4, dependsOnMethods = {"selectMetadataPopup"})
+    @Test(priority = 4, dependsOnMethods = {"addDetachedConfigurationToProjectFolder", "setParametersFromMetadataFiles"})
     @TestCase({"EPMCMBIBPC-1599"})
     public void runPerSampleValidation() {
         metadataSelection()
