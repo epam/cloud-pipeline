@@ -640,7 +640,12 @@ class S3Mounter(StorageMounter):
                     merged_options = merged_options + ',' + self.remove_prefix(mount_options.strip(), '-o').strip()
             if logging_level:
                 params['logging_level'] = logging_level
-            return ('pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
+            
+            custom_mount_env_enabled = os.getenv('CP_CAP_CUSTOM_MOUNT_ENV_ENABLED', 'false')
+            custom_mount_env = ''
+            if custom_mount_env_enabled == 'true':
+                custom_mount_env = os.getenv('CP_CAP_CUSTOM_MOUNT_ENV', '')
+            return (custom_mount_env + ' pipe storage mount {mount} -b {path} -t --mode 775 -w {mount_timeout} '
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + merged_options + ' '
