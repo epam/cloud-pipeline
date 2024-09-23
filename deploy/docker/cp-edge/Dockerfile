@@ -35,27 +35,29 @@ ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh
 ENV JWT_PUB_KEY /etc/nginx/jwt-public-key.pem
 
 # Install common
-RUN yum install -y wget \
-                   bzip2 \
-                   gcc \
-                   zlib-devel \
-                   bzip2-devel \
-                   xz-devel \
-                   make \
-                   ncurses-devel \
+RUN yum install -y python2 \
+                   python3 \
                    unzip \
                    git \
                    curl \
-                   procps \
-                   patch \
+                   wget \
+                   epel-release \
+                   zlib-devel \
+                   cronie \
                    sshpass \
+                   perl \
+                   nc \
                    gcc \
+                   make \
+                   bzip2 \
+                   bzip2-devel \
                    xz \
-                   python3 \
-                   epel-release && \
-    yum groupinstall 'Development Tools' -y && \
+                   xz-devel \
+                   ncurses-devel \
+                   procps \
+                   patch && \
+    yum group install -y "Development Tools" && \
     yum clean all && \
-    yum install -y python2 && \
     ln -sf /usr/bin/python2 /usr/bin/python && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
     pip install rsa==4.0 \
