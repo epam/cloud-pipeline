@@ -1225,6 +1225,8 @@ public class SystemPreferences {
             "system.docker.registry.create.user.group", false, SYSTEM_GROUP, pass);
     public static final LongPreference SYSTEM_DEFAULT_DOCKER_REGISTRY = new LongPreference(
             "system.default.docker.registry.id", null, SYSTEM_GROUP, isNullOrGreaterThan(0));
+    public static final IntPreference SYSTEM_RUN_FILTER_MAX_PAGE_SIZE = new IntPreference(
+            "system.run.filter.max.page.size", 1000, SYSTEM_GROUP, isGreaterThan(0));
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

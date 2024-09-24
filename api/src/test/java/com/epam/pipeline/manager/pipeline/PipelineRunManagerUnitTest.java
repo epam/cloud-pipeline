@@ -113,6 +113,8 @@ public class PipelineRunManagerUnitTest {
     private static final String PROCESSED_VALUE = "Processed";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    public static final int MAX_PAGE_NUM = 100;
+    public static final String DOCKER_IMAGE = "Docker Image";
 
     @Mock
     private NodesManager nodesManager;
@@ -489,6 +491,39 @@ public class PipelineRunManagerUnitTest {
         assertRunChartElements(resultChart.getDockerImages());
         assertRunChartElements(resultChart.getInstanceTypes());
         assertRunChartElements(resultChart.getTags());
+    }
+
+    @Test
+    public void testShouldExportPipelineRuns() {
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(10);
+
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setNodeType("node_type");
+
+        final PipelineRun parentRun = pipelineRun(ID, DOCKER_IMAGE);
+
+        final PipelineRun pipelineRun1 = pipelineRun(ID_2, DOCKER_IMAGE);
+        pipelineRun1.setPipelineName("Pipeline name");
+        pipelineRun1.setVersion("draft");
+        pipelineRun1.setInstance(runInstance);
+
+        final PipelineRun pipelineRun2 = pipelineRun(ID_3, DOCKER_IMAGE);
+        final Map<String, String> tags = new HashMap<>();
+        tags.put("key", "value");
+        tags.put("key1", "value1");
+        pipelineRun2.setTags(tags);
+
+        final PipelineRun pipelineRun3 = pipelineRun(ID_4, DOCKER_IMAGE);
+        pipelineRun3.setParentRunId(ID);
+
+        final List<PipelineRun> loadedRuns = Arrays.asList(pipelineRun1, pipelineRun2, pipelineRun3);
+        doReturn(MAX_PAGE_NUM).when(preferenceManager).getPreference(any());
+        when(pipelineRunDao.eagerSearchPipelineParentRuns(any(), any())).thenReturn(loadedRuns);
+        final String[] result = new String(pipelineRunManager.exportPipelineRuns(filter, ",", "|"))
+                .split("\n");
+        assertEquals(4, result.length);
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {
