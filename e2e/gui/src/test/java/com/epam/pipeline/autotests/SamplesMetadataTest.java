@@ -649,7 +649,10 @@ public class SamplesMetadataTest
                                                 byText(sampleNameAutocomplete))
                                 )
                                 .click(byText(sampleNameAutocomplete), in(comboboxDropdown()))
-                                .click(save())
+                                .sleep(2, SECONDS)
+                                .ensure(SAVE, enabled)
+                                .click(SAVE)
+                                .ensureDisable(SAVE)
                 );
     }
 
