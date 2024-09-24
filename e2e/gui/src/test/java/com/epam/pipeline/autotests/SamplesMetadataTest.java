@@ -667,7 +667,6 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .ensure(byText(project), visible)
-                .cd(project)
                 .ensure(byText(metadataFolder), visible)
                 .ensure(MetadataSelection.header, text(project))
                 .ensure(MetadataSelection.folders, text(metadataFolder))
