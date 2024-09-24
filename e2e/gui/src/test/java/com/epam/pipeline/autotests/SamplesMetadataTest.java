@@ -561,11 +561,11 @@ public class SamplesMetadataTest
                 .cd(metadataFolder)
                 .ensure(byText("SampleSet [2]"), visible)
                 .ensure(byText(sampleFolder), visible)
-                .cd(sampleFolder)
+                .cd(sampleFolder.replace(" [14]", ""))
                 .also(ensureSamplesCountIs(subfolder1Files.length / 2 + subfolder2Files.length / 2));
     }
 
-    @Test(priority = 4, dependsOnMethods = {"addDetachedConfigurationToProjectFolder", "setParametersFromMetadataFiles"})
+    @Test(priority = 4, dependsOnMethods = {"selectMetadataPopup"})
     @TestCase({"EPMCMBIBPC-1599"})
     public void runPerSampleValidation() {
         metadataSelection()
