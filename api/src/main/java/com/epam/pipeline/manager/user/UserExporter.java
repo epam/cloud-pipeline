@@ -39,6 +39,8 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.utils.PipelineStringUtils.formatNullable;
+
 public class UserExporter {
 
     private static final String LIST_DELIMITER = "|";
@@ -168,12 +170,6 @@ public class UserExporter {
             result.add(formatNullable(user.getDefaultStoragePath()));
         }
         return result.toArray(new String[0]);
-    }
-
-    private String formatNullable(final Object object) {
-        return Optional.ofNullable(object)
-                .map(String::valueOf)
-                .orElse(StringUtils.EMPTY);
     }
 
     private String formatDate(final LocalDateTime date) {

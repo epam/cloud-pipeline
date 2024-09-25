@@ -236,6 +236,12 @@ public class RunApiService {
     }
 
     @AclFilter
+    public byte[] exportPipelineRuns(final PagingRunFilterVO filter, final String delimiter,
+                                     final String fieldDelimiter) {
+        return runManager.exportPipelineRuns(filter, delimiter, fieldDelimiter);
+    }
+
+    @AclFilter
     @AclMaskPage
     public PagedResult<List<PipelineRun>> searchPipelineRunsByExpression(PagingRunFilterExpressionVO filter)
             throws WrongFilterException {
