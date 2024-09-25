@@ -17,7 +17,10 @@ FROM centos:7
 RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-*.repo && \
+    echo 'sslverify=0' >> /etc/yum.conf
+
 
 # 1. TinyProxy (HTTP proxy)
 RUN yum install wget \
