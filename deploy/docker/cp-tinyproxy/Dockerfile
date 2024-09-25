@@ -14,6 +14,14 @@
 
 FROM centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-*.repo && \
+    echo 'sslverify=0' >> /etc/yum.conf
+
+
 # 1. TinyProxy (HTTP proxy)
 RUN yum install wget \
                 gcc \
@@ -41,7 +49,7 @@ RUN yum install -y nginx nginx-mod-stream
 
 # 3. SMTP proxy setup
 RUN yum install -y nginx-mod-mail gettext && \
-    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
+    wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh --no-check-certificate && \
     bash /tmp/miniconda.sh -b -p /opt/miniconda && \
     source /opt/miniconda/etc/profile.d/conda.sh && \
     conda create -y -n auth-srv python=3.7 && \
