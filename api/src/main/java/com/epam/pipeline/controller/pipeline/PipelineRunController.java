@@ -364,6 +364,23 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.searchPipelineRuns(filterVO, loadStorageLinks));
     }
 
+    @PostMapping(value = "/run/filter/export")
+    @ApiOperation(
+            value = "Exports pipeline runs.",
+            notes = "Exports pipeline runs, filtered by specified criteria.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public void exportRuns(
+            @RequestBody PagingRunFilterVO filterVO,
+            @RequestParam(value = "delimiter", defaultValue = ",") String delimiter,
+            @RequestParam(value = "fieldDelimiter", defaultValue = "|") String fieldDelimiter,
+            HttpServletResponse response) throws IOException {
+        writeFileToResponse(response, runApiService.exportPipelineRuns(filterVO, delimiter, fieldDelimiter),
+                "runs.csv");
+    }
+
     @PostMapping(value = "/run/search")
     @ApiOperation(
             value = "Search pipeline runs.",
