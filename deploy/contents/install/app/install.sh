@@ -801,6 +801,20 @@ fi
 if is_service_requested cp-gitlab-db; then
     print_ok "[Starting GitLab postgres DB deployment]"
 
+    if [ "$CP_GITLAB_VERSION" == "9" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "9.6" ]; then
+            print_warn "CP_GITLAB_VERSION is 9 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 9.6! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "15" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "12.4" ]; then
+            print_warn "CP_GITLAB_VERSION is 15 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 12.4! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "17" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "14.11" ]; then
+            print_warn "CP_GITLAB_VERSION is 17 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 14.11! Installation will continue, but may fail."
+        fi
+    fi
+
     print_info "-> Deleting existing instance of GitLab postgres DB"
     delete_deployment_and_service   "cp-gitlab-db" \
                                     "/opt/gitlab-postgresql"

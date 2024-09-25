@@ -60,7 +60,13 @@ CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
 CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 
 # cp-git config
+
+# possible values 9, 15, 17
+CP_GITLAB_VERSION=9
+
+# possible values 12.4 for CP_GITLAB_VERSION=15, and 14.11 for CP_GITLAB_VERSION=17
 GITLAB_DATABASE_VERSION=9.6
+
 GITLAB_DATABASE_SHARED_BUFFERS=128MB
 GITLAB_DATABASE_MAX_CONNECTIONS=100
 GITLAB_DATABASE_ADAPTER=postgresql
@@ -77,7 +83,6 @@ CP_GITLAB_INTERNAL_HOST=cp-git.default.svc.cluster.local
 CP_GITLAB_INTERNAL_PORT=30080
 CP_GITLAB_EXTERNAL_PORT=30080
 CP_GITLAB_CERT_DIR=/opt/gitlab/pki
-CP_GITLAB_VERSION=9
 
 # cp-idp config
 IDP_HOST=cp-idp.default.svc.cluster.local

@@ -184,13 +184,21 @@ docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.9.4
 docker push "$CP_GITLAB_DIST_NAME"
 
-# 15.4.3 version
+# 15.5.4 version
 CP_GITLAB_15_DIST_NAME=${CP_GITLAB_15_DIST_NAME:-"$CP_DIST_REPO_NAME:git-15-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-git \
                 -t "$CP_GITLAB_15_DIST_NAME" \
                 -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.15.5 \
                 --build-arg BASE_IMAGE="gitlab/gitlab-ce:15.5.4-ce.0"
 docker push "$CP_GITLAB_15_DIST_NAME"
+
+# 17.4.0 version
+CP_GITLAB_17_DIST_NAME=${CP_GITLAB_17_DIST_NAME:-"$CP_DIST_REPO_NAME:git-17-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-git \
+                -t "$CP_GITLAB_17_DIST_NAME" \
+                -f $DOCKERS_SOURCES_PATH/cp-git/Dockerfile.17.4 \
+                --build-arg BASE_IMAGE="gitlab/gitlab-ce:17.4.0-ce.0"
+docker push "$CP_GITLAB_17_DIST_NAME"
 
 # Notifier
 CP_NOTIFIER_DIST_NAME=${CP_NOTIFIER_DIST_NAME:-"$CP_DIST_REPO_NAME:notifier-${DOCKERS_VERSION}"}
