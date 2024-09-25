@@ -113,6 +113,7 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -799,6 +800,9 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        final Integer maxPageSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
+        Assert.isTrue(filter.getPageSize() <= maxPageSize,
+                messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
         PipelineRunFilterVO.ProjectFilter projectFilter = resolveProjectFiltering(filter);
         if (projectFilter!= null && projectFilter.isEmpty()) {
             return new PagedResult<>(Collections.emptyList(), 0);
@@ -828,6 +832,14 @@ public class PipelineRunManager {
             }
         }
         return result;
+    }
+
+    public byte[] exportPipelineRuns(final PagingRunFilterVO filter,
+                                     final String delimiter,
+                                     final String fieldDelimiter) {
+        final PagedResult<List<PipelineRun>> runs = searchPipelineRuns(filter, false);
+        return new PipelineRunExporter().export(runs.getElements(), delimiter, fieldDelimiter)
+                .getBytes(Charset.defaultCharset());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)

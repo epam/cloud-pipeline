@@ -193,6 +193,7 @@ public final class MessageConstants {
             "error.image.not.found.for.versioned.storage";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_FOUND = "error.archive.run.metadata.not.found";
     public static final String ERROR_ARCHIVE_RUN_METADATA_NOT_NUMERIC = "error.archive.run.metadata.not.numeric";
+    public static final String ERROR_MAX_PAGE_SIZE_EXCEEDED = "error.max.page.size.exceeded";
 
     //Run schedule
     public static final String CRON_EXPRESSION_IS_NOT_PROVIDED = "cron.expression.is.not.provided";
