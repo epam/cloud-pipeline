@@ -115,7 +115,6 @@ public class PipelineRunManagerUnitTest {
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     public static final String DOCKER_IMAGE = "Docker Image";
     private static final int MAX_PAGE_SIZE = 100;
-    private static final int PAGE_SIZE = 101;
 
     @Mock
     private NodesManager nodesManager;
@@ -531,7 +530,7 @@ public class PipelineRunManagerUnitTest {
     public void testThrowExceptionOnSearchWithMaxPageSizeExceeded() {
         final PagingRunFilterVO filter = new PagingRunFilterVO();
         filter.setPage(1);
-        filter.setPageSize(PAGE_SIZE);
+        filter.setPageSize(MAX_PAGE_SIZE + 1);
         doReturn(MAX_PAGE_SIZE).when(preferenceManager).getPreference(any());
         assertThrows(() -> pipelineRunManager.searchPipelineRuns(filter, false));
     }
