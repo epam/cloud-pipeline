@@ -231,8 +231,21 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         return new PipelineRunFormAO.SystemParameterPopupAO<>(this);
     }
 
-    public RunParameterAO clickCustomParameter() {
-        return new PipelineRunFormAO().clickAddStringParameter();
+    public ToolSettings clickCustomParameter() {
+        return clickAddParameter("String parameter");
+    }
+
+    private ToolSettings clickAddParameter(String parameterType) {
+        $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
+        $(byText(parameterType)).shouldBe(visible).click();
+        return this;
+    }
+
+    public ToolSettings setName(String name, int parameterIndex) {
+        SelenideElement nameField = $(byId(String.format("parameters.params.param_%d.name", parameterIndex)));
+        nameField.click();
+        setValue(nameField, name);
+        return this;
     }
 
     @Override

@@ -39,7 +39,7 @@ public class RunParameterAO
                 entry(PARAMETER_FIELD, $(byClassName(String.format("param_%d", parameterIndex)))
                         .$(byClassName("cp-text-not-important"))),
                 entry(PARAMETER_NAME, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))),
-                entry(PARAMETER_PATH, $(byId(String.format("parameters.params.param_%d.name", parameterIndex)))
+                entry(PARAMETER_PATH, $(byClassName(String.format("param_%d", parameterIndex)))
                         .$(byClassName("launch-pipeline-form__parameter-value"))
                         .$(byClassName("launch-pipeline-form__path-type"))),
                 entry(REMOVE_PARAMETER, $(byClassName(String.format("param_%d", parameterIndex)))

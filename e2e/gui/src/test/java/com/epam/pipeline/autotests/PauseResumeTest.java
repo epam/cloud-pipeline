@@ -179,7 +179,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                             log
                                     .waitForPauseButton()
                                     .clickOnPauseButton()
-                                    .validateException("This operation may fail due to 'Out of disk' error")
+                                    .validateException("Free disk space is not enough")
                                     .click(button(CANCEL.name()))
                                     .shouldHaveStatus(LogAO.Status.WORKING)
                     );

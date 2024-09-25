@@ -178,7 +178,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .validateNotFoundParameters()
                                 .cancel()
                                 .clickCustomParameter()
-                                .setName(CP_FSBROWSER_ENABLED)
+                                .setName(CP_FSBROWSER_ENABLED, 1)
                                 .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                 );
         tools()
@@ -242,7 +242,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                                 .selectSystemParameters(CP_FSBROWSER_ENABLED)
                                 .cancel()
                                 .clickCustomParameter()
-                                .setName(CP_FSBROWSER_ENABLED)
+                                .setName(CP_FSBROWSER_ENABLED, 1)
                                 .messageShouldAppear(PARAMETER_IS_RESERVED)
                 );
         tools()
@@ -272,6 +272,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .cancel();
                     profile.clickAddStringParameter()
                             .setName(CP_FSBROWSER_ENABLED)
+                            .setValue("")
                             .messageShouldAppear(NAME_IS_RESERVED)
                             .click(REMOVE_PARAMETER);
                 });
