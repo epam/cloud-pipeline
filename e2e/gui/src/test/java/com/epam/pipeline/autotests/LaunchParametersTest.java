@@ -212,6 +212,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                             .cancel();
                     profile.clickAddStringParameter()
                             .setName(CP_FSBROWSER_ENABLED)
+                            .setValue("")
                             .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                             .click(REMOVE_PARAMETER);
                 });
