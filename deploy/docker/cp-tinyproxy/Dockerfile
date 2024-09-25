@@ -21,7 +21,7 @@ RUN yum install wget \
 
 RUN mkdir -p /opt/tinyproxy && \
     cd /opt/tinyproxy && \
-    wget https://github.com/tinyproxy/tinyproxy/releases/download/1.10.0/tinyproxy-1.10.0.tar.gz -O tinyproxy.tgz && \
+    wget https://github.com/tinyproxy/tinyproxy/releases/download/1.11.2/tinyproxy-1.11.2.tar.gz -O tinyproxy.tgz && \
     tar -zxf tinyproxy.tgz && \
     rm -f tinyproxy.tgz && \
     cd tinyproxy* && \
