@@ -22,7 +22,6 @@ import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.utils.CommonUtils;
 import com.opencsv.CSVWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -39,6 +38,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import static com.epam.pipeline.utils.PipelineStringUtils.formatNullable;
 
 public class UserExporter {
 
@@ -165,8 +166,8 @@ public class UserExporter {
             result.add(String.valueOf(user.isBlocked()));
         }
         if (exportSettings.isIncludeDataStorage()) {
-            result.add(CommonUtils.formatNullable(user.getDefaultStorageId()));
-            result.add(CommonUtils.formatNullable(user.getDefaultStoragePath()));
+            result.add(formatNullable(user.getDefaultStorageId()));
+            result.add(formatNullable(user.getDefaultStoragePath()));
         }
         return result.toArray(new String[0]);
     }

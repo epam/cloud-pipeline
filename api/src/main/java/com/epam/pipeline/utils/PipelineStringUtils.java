@@ -48,4 +48,10 @@ public final class PipelineStringUtils {
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());
     }
+
+    public static String formatNullable(final Object object) {
+        return Optional.ofNullable(object)
+                .map(String::valueOf)
+                .orElse(org.apache.commons.lang.StringUtils.EMPTY);
+    }
 }

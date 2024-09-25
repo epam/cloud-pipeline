@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -125,11 +124,5 @@ public final class CommonUtils {
         final List<T> result = new ArrayList<>(items);
         Collections.reverse(result);
         return result;
-    }
-
-    public static String formatNullable(final Object object) {
-        return Optional.ofNullable(object)
-                .map(String::valueOf)
-                .orElse(StringUtils.EMPTY);
     }
 }

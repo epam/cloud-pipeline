@@ -242,7 +242,6 @@ public class RunApiService {
     }
 
     @AclFilter
-    @AclMaskPage
     public byte[] exportPipelineRuns(final PagingRunFilterVO filter, final String delimiter,
                                      final String fieldDelimiter) {
         return runManager.exportPipelineRuns(filter, delimiter, fieldDelimiter);

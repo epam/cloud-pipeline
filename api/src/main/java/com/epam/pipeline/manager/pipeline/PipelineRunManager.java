@@ -800,6 +800,9 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        final Integer maxPageSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
+        Assert.isTrue(filter.getPageSize() <= maxPageSize,
+                messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
         PipelineRunFilterVO.ProjectFilter projectFilter = resolveProjectFiltering(filter);
         if (projectFilter!= null && projectFilter.isEmpty()) {
             return new PagedResult<>(Collections.emptyList(), 0);
@@ -835,9 +838,6 @@ public class PipelineRunManager {
                                      final String delimiter,
                                      final String fieldDelimiter) {
         final PagedResult<List<PipelineRun>> runs = searchPipelineRuns(filter, false);
-        final Integer maxPageSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
-        Assert.isTrue(filter.getPage() <= maxPageSize,
-                messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
         return new PipelineRunExporter().export(runs.getElements(), delimiter, fieldDelimiter)
                 .getBytes(Charset.defaultCharset());
     }

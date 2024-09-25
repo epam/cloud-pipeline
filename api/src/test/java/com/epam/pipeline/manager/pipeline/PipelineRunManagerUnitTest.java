@@ -113,8 +113,9 @@ public class PipelineRunManagerUnitTest {
     private static final String PROCESSED_VALUE = "Processed";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
-    public static final int MAX_PAGE_NUM = 100;
     public static final String DOCKER_IMAGE = "Docker Image";
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final int PAGE_SIZE = 101;
 
     @Mock
     private NodesManager nodesManager;
@@ -519,11 +520,20 @@ public class PipelineRunManagerUnitTest {
         pipelineRun3.setParentRunId(ID);
 
         final List<PipelineRun> loadedRuns = Arrays.asList(pipelineRun1, pipelineRun2, pipelineRun3);
-        doReturn(MAX_PAGE_NUM).when(preferenceManager).getPreference(any());
+        doReturn(MAX_PAGE_SIZE).when(preferenceManager).getPreference(any());
         when(pipelineRunDao.eagerSearchPipelineParentRuns(any(), any())).thenReturn(loadedRuns);
         final String[] result = new String(pipelineRunManager.exportPipelineRuns(filter, ",", "|"))
                 .split("\n");
         assertEquals(4, result.length);
+    }
+
+    @Test
+    public void testThrowExceptionOnSearchWithMaxPageSizeExceeded() {
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(PAGE_SIZE);
+        doReturn(MAX_PAGE_SIZE).when(preferenceManager).getPreference(any());
+        assertThrows(() -> pipelineRunManager.searchPipelineRuns(filter, false));
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {

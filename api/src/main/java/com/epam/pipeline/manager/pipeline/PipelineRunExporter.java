@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.utils.CommonUtils;
 import com.opencsv.CSVWriter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -32,6 +31,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+
+import static com.epam.pipeline.utils.PipelineStringUtils.formatNullable;
 
 public class PipelineRunExporter {
     private static final List<String> HEADER = Arrays.asList("Run ID", "Run Name", "Parent Run ID", "Instance Type",
@@ -52,7 +53,7 @@ public class PipelineRunExporter {
         final List<String> result = new ArrayList<>();
         result.add(String.valueOf(run.getId()));
         result.add(run.getName());
-        result.add(CommonUtils.formatNullable(run.getParentRunId()));
+        result.add(formatNullable(run.getParentRunId()));
         result.add(run.getInstance() != null ? run.getInstance().getNodeType() : StringUtils.EMPTY);
 
         final List<String> tags = new ArrayList<>();
@@ -61,12 +62,12 @@ public class PipelineRunExporter {
 
         result.add(TextUtils.isBlank(run.getPipelineName()) || TextUtils.isBlank(run.getVersion()) ?
                 StringUtils.EMPTY : String.format("%s %s", run.getPipelineName(), run.getVersion()));
-        result.add(CommonUtils.formatNullable(run.getDockerImage()));
+        result.add(formatNullable(run.getDockerImage()));
         result.add(DateUtils.formatDate(run.getStartDate()));
         result.add(Optional.ofNullable(run.getEndDate())
                 .map(d -> DateUtils.formatDate(run.getEndDate()))
                 .orElse(StringUtils.EMPTY));
-        result.add(CommonUtils.formatNullable(run.getOwner()));
+        result.add(formatNullable(run.getOwner()));
         return result.toArray(new String[0]);
     }
 }
