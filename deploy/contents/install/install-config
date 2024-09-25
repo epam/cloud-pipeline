@@ -194,10 +194,6 @@ CP_TP_ALLOWED_CIDR=10.244.0.0/16
 CP_TP_INTERNAL_HOST=cp-tinyproxy.default.svc.cluster.local
 CP_TP_INTERNAL_PORT=3128
 CP_TP_MAX_CLIENTS=100
-CP_TP_MIN_SPARE_SERVERS=2
-CP_TP_MAX_SPARE_SERVERS=5
-CP_TP_START_SERVERS=2
-CP_TP_MAX_REQ_PER_CHILD=0
 
 # cp-sensitive-proxy
 CP_SP_INTERNAL_HOST=cp-sensitive-proxy.default.svc.cluster.local
