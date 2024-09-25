@@ -18,6 +18,7 @@
 package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.opencsv.CSVWriter;
 import org.apache.commons.collections4.CollectionUtils;
@@ -37,6 +38,7 @@ import static com.epam.pipeline.utils.PipelineStringUtils.formatNullable;
 public class PipelineRunExporter {
     private static final List<String> HEADER = Arrays.asList("Run ID", "Run Name", "Parent Run ID", "Instance Type",
             "Tags", "Pipeline", "Docker Image", "Started Date", "Completed Date", "Owner");
+    private static final String KEY_VALUE_PATTERN = "%s:%s";
 
     public String export(final Collection<PipelineRun> runs,
                          final String delimiter, final String fieldDelimiter) {
@@ -52,16 +54,16 @@ public class PipelineRunExporter {
     private String[] toLine(final PipelineRun run, final String fieldDelimiter) {
         final List<String> result = new ArrayList<>();
         result.add(String.valueOf(run.getId()));
-        result.add(run.getName());
+        result.add(getName(run));
         result.add(formatNullable(run.getParentRunId()));
-        result.add(run.getInstance() != null ? run.getInstance().getNodeType() : StringUtils.EMPTY);
+        result.add(Optional.ofNullable(run.getInstance()).map(RunInstance::getNodeType).orElse(StringUtils.EMPTY));
 
         final List<String> tags = new ArrayList<>();
-        MapUtils.emptyIfNull(run.getTags()).forEach((k, v) -> tags.add(String.format("%s:%s", k, v)));
+        MapUtils.emptyIfNull(run.getTags()).forEach((k, v) -> tags.add(String.format(KEY_VALUE_PATTERN, k, v)));
         result.add(String.join(fieldDelimiter, tags));
 
         result.add(TextUtils.isBlank(run.getPipelineName()) || TextUtils.isBlank(run.getVersion()) ?
-                StringUtils.EMPTY : String.format("%s %s", run.getPipelineName(), run.getVersion()));
+                StringUtils.EMPTY : String.format(KEY_VALUE_PATTERN, run.getPipelineName(), run.getVersion()));
         result.add(formatNullable(run.getDockerImage()));
         result.add(DateUtils.formatDate(run.getStartDate()));
         result.add(Optional.ofNullable(run.getEndDate())
@@ -69,5 +71,11 @@ public class PipelineRunExporter {
                 .orElse(StringUtils.EMPTY));
         result.add(formatNullable(run.getOwner()));
         return result.toArray(new String[0]);
+    }
+
+    private static String getName(final PipelineRun run) {
+        return TextUtils.isBlank(run.getName()) ?
+                TextUtils.isBlank(run.getPodId()) ? StringUtils.EMPTY : run.getPodId() :
+                run.getName();
     }
 }
