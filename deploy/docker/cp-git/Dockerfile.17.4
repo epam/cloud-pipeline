@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG BASE_IMAGE="gitlab/gitlab-ce:17.4.0-ce.0"
+ARG BASE_IMAGE="gitlab/gitlab-ce:17.4.1-ce.0"
 
 FROM $BASE_IMAGE
 
-ADD update_config.sh /update_config.sh
+ADD update_config_v17.sh /update_config.sh
 RUN chmod +x /update_config.sh
 
 RUN curl -k -L https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh | bash && \
