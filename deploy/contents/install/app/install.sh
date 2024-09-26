@@ -871,6 +871,20 @@ if is_service_requested cp-git; then
                                         $CP_GITLAB_INTERNAL_HOST
 
         print_info "-> Deploying GitLab"
+
+        if [ "$CP_GITLAB_VERSION" == "17" ]; then
+            export CP_GITLAB_SESSION_API_DISABLE="true"
+            if [ "$GITLAB_ROOT_PASSWORD" == "Passw0rd" ]; then
+                print_ok "CP_GITLAB_VERSION is 17 and GITLAB_ROOT_PASSWORD was not provided, will generate random password."
+                GITLAB_ROOT_PASSWORD=$(openssl rand -hex 8)
+                export GITLAB_ROOT_PASSWORD
+                update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                               "GITLAB_ROOT_PASSWORD" \
+                                               "$GITLAB_ROOT_PASSWORD"
+                init_kube_config_map
+            fi
+        fi
+
         set_kube_service_external_ip CP_GITLAB_SVC_EXTERNAL_IP_LIST \
                                      CP_GITLAB_NODE_IP \
                                      CP_GITLAB_KUBE_NODE_NAME \
@@ -906,9 +920,14 @@ if is_service_requested cp-git; then
             done
         else
             print_info "-> Setting GitLab root's private_token"
+            gitlab_token_expiration=""
+            if [ "$CP_GITLAB_VERSION" == "17" ]; then
+              gitlab_token_expiration=", expires_at: 365.days.from_now"
+            fi
+
             GITLAB_ROOT_TOKEN=$(openssl rand -hex 20)
-            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-":read_user,:read_repository,:api,:read_api,:write_repository,:sudo"}
-            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
+            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-"'read_user','read_repository','api','read_api','write_repository','sudo'"}
+            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'$gitlab_token_expiration); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
             gitlab_set_token_response=$(execute_deployment_command cp-git cp-git "gitlab-rails runner \"$gitlab_set_token_cmd\"")
             if [ $? -ne 0 ]; then
                 print_err "Error occurred during adding GitLab root's private_token"
@@ -929,12 +948,25 @@ if is_service_requested cp-git; then
             print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before getting impersonation token (while root token is retrieved - gitlab may still fail with 502)"
             print_info "-> Getting GitLab root's impersonation token"
             sleep $CP_GITLAB_INIT_TIMEOUT
-            GITLAB_IMP_TOKEN=$(curl -k \
-                                    --request POST \
-                                    --silent \
-                                    --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
-                                    --data "name=CloudPipeline" \
-                                    --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            if [ "$CP_GITLAB_VERSION" == "17" ]; then
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "expires_at=$(date +%Y-%m-%d -d'1 year ago')" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            else
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+            fi
+
             if [ "$GITLAB_IMP_TOKEN" ] && [ "$GITLAB_IMP_TOKEN" != "null" ]; then
                 print_ok "GitLab impersonation token retrieved: $GITLAB_IMP_TOKEN"
                 export GITLAB_IMP_TOKEN
