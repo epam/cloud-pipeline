@@ -220,14 +220,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO addOutputParameter(String name, String value) {
         resetMouse();
-        $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover().click();
-        $(byText("Output path parameter")).shouldBe(visible).click();
+        clickAddOutputParameter().setName("parameter");
 
         int paramIndex = $$(byClassName("launch-pipeline-form__parameter-name")).size();
-        final ParameterFieldAO parameter = ParameterFieldAO.parameterByOrder(paramIndex);
-        parameter
-                .setValue(parameter.nameInput, name)
-                .setValue(parameter.valueInput, value);
+        SelenideElement parameter = $(byId(String.format("parameters.params.param_%d.value", paramIndex - 1)));
+        parameter.click();
+        setValue(parameter, value);
         return this;
     }
 
@@ -353,7 +351,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             ".//input[contains(concat(' ', @class, ' '), ' %s ') and @value = '%s']",
             parameterNameClass, name
         )));
-        final String parameterNameId = nameElement.should(exist, required ? disabled : enabled).getAttribute("id");
+        final String parameterNameId = nameElement.should(exist).getAttribute("id");
         final String parameterValueId = parameterNameId.replace("name", "value");
         final SelenideElement valueElement = $(byId(parameterValueId)).should(exist, have(attribute("value", value)));
 
