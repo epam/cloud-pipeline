@@ -483,7 +483,7 @@ public class ToolsTest
                 .ensure(PRICE_TABLE, visible)
                 .expandTab(PARAMETERS_PANEL)
                 .clickAddStringParameter()
-                .ensureVisible(PARAMETER_NAME, PARAMETER_VALUE, REMOVE_PARAMETER);
+                .ensureAll(exist, PARAMETER_NAME, PARAMETER_VALUE, REMOVE_PARAMETER);
     }
 
     private By message(final String text) {

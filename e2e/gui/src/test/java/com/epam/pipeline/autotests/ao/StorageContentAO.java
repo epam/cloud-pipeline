@@ -328,6 +328,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return new FileAO(fileName, 0);
     }
 
+    public FileAO selectFileVersion(String fileName, String version) {
+        int index = $$(byText(fileName)).indexOf($(byText(version)));
+        return new FileAO(fileName, index);
+    }
+
     public MetadataSectionAO fileMetadata(String filename) {
         $(byClassName("ant-table-tbody")).shouldBe(visible);
         $$(byClassName("browser__name-cell")).findBy(text(filename)).click();

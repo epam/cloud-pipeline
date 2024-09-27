@@ -138,10 +138,10 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementIsPresent(file.getName())
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
+                .selectFileVersion(file.getName(),"(latest)")
                 .validateHasSize(0);
         storageContentAO
-                .selectNthFileWithName(1, file.getName())
+                .selectNthFileWithName(2, file.getName())
                 .ensureVisible(DOWNLOAD, RELOAD);
     }
 
