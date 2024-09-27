@@ -377,10 +377,11 @@ function run_pre_common_commands {
       echo "$SUCCESS_COMMANDS_NUM out of ${#command_list[@]} additional commands were successfully executed for $CP_OS:$CP_VER"
 }
 
-# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
-function configure_package_manager {
+# This function define the distribution name and version
+function define_distro_name_and_version {
       # Get the distro name and version
       CP_OS=
+      CP_OS_FAMILY=
       CP_VER=
       if [ -f /etc/os-release ]; then
             # freedesktop.org and systemd
@@ -406,9 +407,26 @@ function configure_package_manager {
             CP_VER=$(uname -r)
       fi
 
-      export CP_OS
-      export CP_VER
+      case $CP_OS in
+          ubuntu | debian)
+            CP_OS_FAMILY=debian
+            ;;
+          centos | rocky | fedora | ol | amzn | rhel)
+            CP_OS_FAMILY=rhel
+            ;;
+          *)
+            CP_OS_FAMILY=linux
+            ;;
+      esac
 
+      export CP_OS
+      export CP_OS_FAMILY
+      export CP_VER
+      export CP_VER_MAJOR="${CP_VER%%.*}"
+}
+
+# This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
+function configure_package_manager {
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
             echo "deb [check-valid-until=no] http://cdn-fastly.deb.debian.org/debian jessie main" > /etc/apt/sources.list.d/jessie.list
@@ -814,6 +832,9 @@ if ! jq --version > /dev/null 2>&1; then
     fi
     chmod +x /usr/bin/jq
 fi
+
+# Define the name and version of the distribution
+define_distro_name_and_version
 
 # Invoke any additional commands for the distribution
 run_pre_common_commands
