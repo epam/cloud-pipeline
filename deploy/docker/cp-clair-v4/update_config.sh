@@ -19,25 +19,23 @@ export CP_CLAIR_DATABASE_POOL_SIZE=${CP_CLAIR_DATABASE_POOL_SIZE:-5}
 
 # Setup certificates
 ca_cert_path="$CP_COMMON_CERT_DIR/ca-public-cert.pem"
-mkdir -p /usr/local/share/ca-certificates/cp-docker-registry
+mkdir -p /etc/pki/ca-trust/source/anchors
 
 if [ -f "$ca_cert_path" ]; then
-  cp "$ca_cert_path" /usr/local/share/ca-certificates/cp-ca-public-cert.pem
-  cp "$ca_cert_path" /usr/local/share/ca-certificates/cp-docker-registry/cp-ca-public-cert.pem
+  cp "$ca_cert_path" /etc/pki/ca-trust/source/anchors/cp-ca.pem
 else
   echo "[WARN] CA certificate not found at $ca_cert_path"
 fi
 
 docker_cert_path="$CP_DOCKER_CERT_DIR/docker-public-cert.pem"
 if [ -f "$ca_cert_path" ]; then
-  cp "$docker_cert_path" /usr/local/share/ca-certificates/cp-docker-public-cert.pem
-  cp "$docker_cert_path" /usr/local/share/ca-certificates/cp-docker-registry/cp-docker-public-cert.pem
+  cp "$docker_cert_path" /etc/pki/ca-trust/source/anchors/cp-docker-public-cert.pem
 else
   echo "[WARN] Docker registry certificate not found at $docker_cert_path"
 fi
-#
 
-update-ca-trust
+update-ca-trust extract
+#
 
 mkdir -p $(dirname $config_path)
 cat > $config_path <<-EOF
