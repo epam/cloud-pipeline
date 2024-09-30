@@ -531,6 +531,10 @@ function api_register_gitlab {
     api_preference_append_array "$(api_preference_get_templated "git.host"           "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_INTERNAL_PORT" "true")"
     if [ "$CP_GITLAB_VERSION" != "9" ]; then
         api_preference_append_array "$(api_preference_get_templated "git.gitlab.api.version" "v4" "false")"
+        # Disable it here because by default gitlab will have have restricted requests to the local network from hooks and services
+        # which will lead to fail to register pipeline
+        # to fix it: in GitLab: Admin -> Settings -> Network -> Outbound Requests -> Allow requests to the local network from hooks and services
+        api_preference_append_array "$(api_preference_get_templated "git.repository.indexing.enabled" "false" "false")"
     fi
     api_set_preference "$(api_preference_get_array)"
     api_preference_drop_array
