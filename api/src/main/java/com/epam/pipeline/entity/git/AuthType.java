@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.git;
 
 public enum AuthType {
-    TOKEN, APP_PASSWORD;
+    TOKEN, BASIC;
 }

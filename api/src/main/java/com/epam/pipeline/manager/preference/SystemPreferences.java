@@ -366,7 +366,7 @@ public class SystemPreferences {
             "github.user.name", null, GIT_GROUP, pass);
 
     public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
-            "bitbucket.cloud.auth.type", AuthType.APP_PASSWORD, GIT_GROUP, pass);
+            "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
             "bitbucket.cloud.api.version", "2.0", GIT_GROUP, pass);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(
