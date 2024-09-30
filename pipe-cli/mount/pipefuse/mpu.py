@@ -225,7 +225,7 @@ class ChunkedMultipartUpload(MultipartUploadDecorator):
         first_chunk = self._min_chunk
         last_chunk = self._max_chunk
         while last_chunk - first_chunk > 1:
-            mid_chunk = first_chunk + (last_chunk - first_chunk) / 2
+            mid_chunk = first_chunk + (last_chunk - first_chunk) // 2
             mid_chunk_offset = self._chunk_offset(mid_chunk)
             if offset > mid_chunk_offset:
                 first_chunk = mid_chunk
@@ -514,7 +514,7 @@ class CompositeMultipartUpload(MultipartUpload):
         mpu.upload_part(buf, offset, part_number, self._part_path(mpu_number, part_number), keep)
 
     def _mpu_number(self, part_number):
-        return (part_number - 1) / self._max_composite_parts + 1
+        return (part_number - 1) // self._max_composite_parts + 1
 
     def _get_mpu(self, mpu_number):
         mpu = self._mpus.get(mpu_number, None)
