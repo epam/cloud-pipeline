@@ -946,16 +946,24 @@ if is_service_requested cp-git; then
             init_kube_config_map
 
             print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before getting impersonation token (while root token is retrieved - gitlab may still fail with 502)"
-            print_info "-> Getting GitLab root's impersonation token"
             sleep $CP_GITLAB_INIT_TIMEOUT
 
+            # Enable web hooks to enable repository indexing for elastic search agent
+            if [ "$CP_GITLAB_VERSION" != "9" ]; then
+                print_info "-> Enabling allow_local_requests_from_web_hooks_and_services in GitLab settings..."
+                curl -k \
+                     --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                     "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?allow_local_requests_from_web_hooks_and_services=true" &> /dev/null
+            fi
+
+            print_info "-> Getting GitLab root's impersonation token"
             if [ "$CP_GITLAB_VERSION" == "17" ]; then
                 GITLAB_IMP_TOKEN=$(curl -k \
                                       --request POST \
                                       --silent \
                                       --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
                                       --data "name=CloudPipeline" \
-                                      --data "expires_at=$(date +%Y-%m-%d -d'1 year ago')" \
+                                      --data "expires_at=$(date +%Y-%m-%d -d'1 year')" \
                                       --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
 
             else
