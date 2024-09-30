@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM library/centos:7.7.1908
+ARG BASE_IMAGE=library/centos:7.7.1908
+FROM ${BASE_IMAGE}
 
 RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
