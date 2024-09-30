@@ -1152,6 +1152,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               validation: parameter.validation,
               no_override: parameter.noOverride,
               pretty_name: parameter.pretty_name,
+              section: parameter.section,
               icon: parameter.icon
             };
           }
@@ -1183,6 +1184,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               required: `${parameter.required || false}`.toLowerCase() === 'true',
               description: parameter.description,
               icon: parameter.icon,
+              section: parameter.section,
               enum: parameter.initialEnumeration,
               visible: parameter.visible,
               validation: parameter.validation
@@ -3224,7 +3226,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             this.setState({selectedParameter: undefined});
           };
           const onKeyDown = (e) => {
-            if (e.key.toLowerCase() === 'escape' || e.key.toLowerCase() === 'enter') {
+            if (e.key && (e.key.toLowerCase() === 'escape' || e.key.toLowerCase() === 'enter')) {
               unselectParameter();
             }
           };
@@ -3315,7 +3317,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             />
           );
           let formItem;
-          switch (type.toLowerCase()) {
+          switch ((type || '').toLowerCase()) {
             case 'path':
             case 'output':
             case 'input':
@@ -3734,7 +3736,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const navSections = sections.filter(section => {
             const params = paramsPerSection[section] || {};
             return Object.values(params).some(value => `${value.visible}` !== 'false');
-          });
+          }).filter(Boolean);
           const initializeSectionRef = (node, section) => {
             this.sectionRefs[section] = node;
           };
@@ -3784,7 +3786,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       >
                         {
                           this.renderSeparator(
-                            section.toUpperCase(),
+                            (section || '').toUpperCase(),
                             0,
                             'section',
                             Object.assign(
