@@ -17,20 +17,24 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Alert, Card, Col, Menu, Popover, Row} from 'antd';
+import {Alert, Card, Menu, message, Popover, Row} from 'antd';
+import FileSaver from 'file-saver';
 import classNames from 'classnames';
 import {Link} from 'react-router';
 import RunTable, {Columns} from './run-table';
+import PipelineRunExport from '../../models/pipelines/PipelineRunExport';
+import {getFiltersPayload} from '../../models/pipelines/pipeline-runs-filter';
+import checkBlob from '../../utils/check-blob';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
 import LoadingView from '../special/LoadingView';
 import {RunCountDefault} from '../../models/pipelines/RunCount';
 import continuousFetch from '../../utils/continuous-fetch';
-import styles from './AllRuns.css';
 import RunsFilterDescription from './run-table/runs-filter-description';
 import RunsInfo from './runs-info';
 import ActiveRunsFilterDescription from './runs-info/filter-description';
+import styles from './AllRuns.css';
 
 const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
@@ -80,7 +84,8 @@ class AllRuns extends React.Component {
   state = {
     counters: {},
     details: undefined,
-    chartsFilters: undefined
+    chartsFilters: undefined,
+    exportPending: false
   };
 
   countersManagementToken = 0;
@@ -223,6 +228,10 @@ class AllRuns extends React.Component {
     SessionStorageWrapper.navigateToRuns(this.props.router, status);
   };
 
+  onChangeRunTableFilters = filters => {
+    this.setState({runTableFilters: filters});
+  };
+
   renderOwnersSwitch = (total) => {
     const {
       all
@@ -307,6 +316,7 @@ class AllRuns extends React.Component {
         autoUpdate={current.autoUpdate}
         disableFilters={current.showPersonalRuns && !all ? [Columns.owner] : []}
         beforeTable={({total}) => this.renderOwnersSwitch(total)}
+        onChangeFilters={this.onChangeRunTableFilters}
       />
     );
   };
@@ -365,6 +375,39 @@ class AllRuns extends React.Component {
     });
   };
 
+  exportRuns = () => {
+    this.setState({exportPending: true}, async () => {
+      try {
+        const {runTableFilters = {}} = this.state;
+        const {pageSize, page, filters, userFilters, tags} = runTableFilters;
+        const request = new PipelineRunExport();
+        const payload = getFiltersPayload({
+          ...filters,
+          ...userFilters,
+          tags,
+          page: page + 1,
+          pageSize
+        });
+        await request.send(payload);
+        if (request.value instanceof Blob) {
+          const error = await checkBlob(request.value, 'Error downloading runs');
+          if (error) {
+            throw new Error(error);
+          }
+          FileSaver.saveAs(request.value, 'pipeline-runs.csv');
+        } else {
+          throw new Error(request.error || 'Error downloading runs');
+        }
+      } catch (error) {
+        message.error(error.message, 5);
+      } finally {
+        this.setState({
+          exportPending: false
+        });
+      }
+    });
+  };
+
   render () {
     const current = this.currentFilters;
     const {
@@ -396,80 +439,86 @@ class AllRuns extends React.Component {
         }
         bodyStyle={{padding: 15}}
       >
-        <Row type="flex" align="bottom">
-          <Col offset={2} span={20}>
-            <Row type="flex" justify="center">
-              <Menu
-                mode="horizontal"
-                selectedKeys={selectedKeys}
-                className={styles.tabsMenu}
-              >
-                {
-                  this.uiRunsFilters.map((filter) => (
-                    <Menu.Item key={filter.key}>
-                      <Popover
-                        content={(
-                          <RunsFilterDescription
-                            filters={filter.filters}
-                            style={{maxWidth: 200}}
-                          />
-                        )}
-                        trigger={['hover']}
-                      >
-                        <Link
-                          id={`${filter.key}-runs-button`}
-                          to={SessionStorageWrapper.getRunsLink(filter.key)}
-                        >
-                          {filter.title || `${filter.key} runs`}
-                          {
-                            filter.showCount && counters[filter.key] > 0
-                              ? ` (${counters[filter.key]})`
-                              : ''
-                          }
-                        </Link>
-                      </Popover>
-                    </Menu.Item>
-                  ))
-                }
-                {
-                  this.runsInfoChartsAvailable && (
-                    <Menu.Item key="info">
-                      <Link
-                        id={`runs-info-charts-button`}
-                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
-                      >
-                        Info
-                      </Link>
-                    </Menu.Item>
-                  )
-                }
-                {
-                  this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
-                    <Menu.Item key="details">
-                      <Link
-                        id={`runs-info-charts-details-button`}
-                        to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
-                      >
-                        Details
-                      </Link>
-                    </Menu.Item>
-                  )
-                }
-              </Menu>
-            </Row>
-          </Col>
-          <Col
-            span={2}
-            type="flex"
-            style={{textAlign: 'right', padding: 5, textTransform: 'uppercase'}}>
+        <div className={styles.headerRow}>
+          <Menu
+            mode="horizontal"
+            selectedKeys={selectedKeys}
+            className={styles.tabsMenu}
+          >
+            {
+              this.uiRunsFilters.map((filter) => (
+                <Menu.Item key={filter.key}>
+                  <Popover
+                    content={(
+                      <RunsFilterDescription
+                        filters={filter.filters}
+                        style={{maxWidth: 200}}
+                      />
+                    )}
+                    trigger={['hover']}
+                  >
+                    <Link
+                      id={`${filter.key}-runs-button`}
+                      to={SessionStorageWrapper.getRunsLink(filter.key)}
+                    >
+                      {filter.title || `${filter.key} runs`}
+                      {
+                        filter.showCount && counters[filter.key] > 0
+                          ? ` (${counters[filter.key]})`
+                          : ''
+                      }
+                    </Link>
+                  </Popover>
+                </Menu.Item>
+              ))
+            }
+            {
+              this.runsInfoChartsAvailable && (
+                <Menu.Item key="info">
+                  <Link
+                    id={`runs-info-charts-button`}
+                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                  >
+                    Info
+                  </Link>
+                </Menu.Item>
+              )
+            }
+            {
+              this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
+                <Menu.Item key="details">
+                  <Link
+                    id={`runs-info-charts-details-button`}
+                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                  >
+                    Details
+                  </Link>
+                </Menu.Item>
+              )
+            }
+          </Menu>
+          <div style={{
+            textTransform: 'uppercase',
+            height: 36,
+            lineHeight: '46px'
+          }}>
+            <Link
+              id="export-button"
+              style={{marginRight: 15}}
+              onClick={this.exportRuns}
+              disabled={this.state.exportPending}
+            >
+              Export
+            </Link>
             <Link
               id="advanced-runs-filter-button"
               to={'/runs/filter'}
+              style={{whiteSpace: 'nowrap'}}
             >
               Advanced filter
             </Link>
-          </Col>
-        </Row>
+          </div>
+        </div>
         {
           !isRunsInfoChartsPage && !isRunsInfoChartsDetailsPage && this.renderTable()
         }

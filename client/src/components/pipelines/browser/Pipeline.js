@@ -456,6 +456,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
       docsPath
     } = values || {};
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, 0);
+    console.log('1')
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
