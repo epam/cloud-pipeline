@@ -3679,9 +3679,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   <div className={classNames(styles.parameterValue, {
                     [styles.hiddenItem]: systemParameterValueIsBlocked
                   })}>
+                    {icon && renderParameterIcon()}
                     {formItem}
                     {renderRemoveButton()}
-                    {icon && renderParameterIcon()}
                   </div>
                   {parameterHint ? (
                     <div

@@ -128,8 +128,7 @@
   position: absolute;
   left: -27px;
   font-size: larger;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 10px;
 }
 
 .system-parameter-name {
@@ -152,6 +151,7 @@
   vertical-align: middle;
   font-size: larger;
   cursor: pointer;
+  align-self: flex-start;
 }
 
 .path-type {
