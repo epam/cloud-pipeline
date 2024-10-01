@@ -3261,7 +3261,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 />
               </div>
             );
-            if (prettyName) {
+            if (prettyName && name) {
               return (
                 <Popover
                   content={(
