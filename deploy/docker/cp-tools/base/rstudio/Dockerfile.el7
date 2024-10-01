@@ -23,14 +23,16 @@ RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     echo 'sslverify=0' >> /etc/yum.conf
 
 RUN yum install -y \
-            centos-release-scl \
-            epel-release
+            centos-release-scl
 
 RUN sed -i 's/^# baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
     sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
-    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/http:/https:/g' /etc/yum.repos.d/CentOS-SCLo*.repo
+
+RUN curl -sk "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/repos/centos/7/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo
 
 RUN yum install -y \
             cmake \
