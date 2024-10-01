@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.entity.git.AuthType;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
@@ -41,7 +42,6 @@ import com.epam.pipeline.manager.git.RestApiUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
-import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
@@ -59,16 +59,22 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.git.PipelineRepositoryService.NOT_SUPPORTED_PATTERN;
+import static com.epam.pipeline.utils.AuthorizationUtils.buildBasicAuth;
+import static com.epam.pipeline.utils.AuthorizationUtils.buildBearerTokenAuth;
 
 @Service
 @RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
+
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
+    private static final String USER_NAME = "user name";
+    private static final String X_TOKEN_AUTH = "x-token-auth";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
-    private static final int MAX_DEPTH = 20;
     private static final String PAGE_PARAMETER = "page=";
+    private static final int MAX_DEPTH = 20;
+
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -201,7 +207,9 @@ public class BitbucketCloudService implements GitClientService {
                                               final boolean issueToken, final Long duration) {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
-        final String username = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_USER_NAME);
+        final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
+        final String username = AuthType.TOKEN.equals(authType) ? X_TOKEN_AUTH :
+                repositoryUrl.getUsername().orElseThrow(() -> buildUrlParseError(USER_NAME));
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
                 .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
@@ -351,7 +359,11 @@ public class BitbucketCloudService implements GitClientService {
 
         Assert.isTrue(StringUtils.isNotBlank(token), messageHelper
                 .getMessage(MessageConstants.ERROR_BITBUCKET_CLOUD_TOKEN_NOT_FOUND));
-        final String credentials = AuthorizationUtils.BEARER_AUTH + token;
+        final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
+        final String credentials = AuthType.TOKEN.equals(authType) ?
+                buildBearerTokenAuth(token) :
+                buildBasicAuth(repositoryUrl.getUsername().orElseThrow(() -> buildUrlParseError(USER_NAME)), token);
+
         final String apiVersion = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_API_VERSION);
 
         return new BitbucketCloudClient(bitbucketHost, credentials, null,

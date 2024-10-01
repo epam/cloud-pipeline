@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
+import com.epam.pipeline.entity.git.AuthType;
 import com.epam.pipeline.entity.git.GitlabIssueLabelsFilter;
 import com.epam.pipeline.entity.git.GitlabIssueVisibility;
 import com.epam.pipeline.entity.git.GitlabVersion;
@@ -361,11 +362,11 @@ public class SystemPreferences {
     public static final StringPreference BITBUCKET_DEFAULT_DOC_DIRECTORY = new StringPreference(
             "bitbucket.default.doc.directory", null, GIT_GROUP, pass, true);
 
-    public static final StringPreference GITHUB_USER_NAME =
-            new StringPreference("github.user.name", null, GIT_GROUP, pass);
+    public static final StringPreference GITHUB_USER_NAME = new StringPreference(
+            "github.user.name", null, GIT_GROUP, pass);
 
-    public static final StringPreference BITBUCKET_CLOUD_USER_NAME =
-            new StringPreference("bitbucket.cloud.user.name", null, GIT_GROUP, pass);
+    public static final EnumPreference<AuthType> BITBUCKET_CLOUD_AUTH_TYPE = new EnumPreference<>(
+            "bitbucket.cloud.auth.type", AuthType.BASIC, GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_CLOUD_API_VERSION = new StringPreference(
             "bitbucket.cloud.api.version", "2.0", GIT_GROUP, pass);
     public static final StringPreference GITLAB_PROJECT_VISIBILITY = new StringPreference(

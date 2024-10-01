@@ -17,31 +17,50 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.entity.git.AuthType;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.bitbucketcloud.BitbucketCloudService;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Collections;
 import java.util.List;
 
 public class BitbucketCloudServiceTest extends AbstractSpringTest {
 
     private static final String BRANCH = "test";
-    private static final String TAG = "test_tag10";
+    private static final String TAG = "test_tag1";
     private static final String MESSAGE = "message";
-    private static final String COMMIT_ID = "d468da2";
+    private static final String COMMIT_ID = "c4cbce0";
     private static final String FILE_PATH = "/test2/test_file.txt";
     private static final String FOLDER_PATH = "test2";
     private static final String CONTENT = "content123";
+
+/*
+    Authentication type should be set up in System Preferences(bitbucket.cloud.auth.type).
+    If Authentication type is BASIC:
+    repositoryPath should contain user name (like https://user_name@bitbucket.org/workspace/repository.git)
+    token should contain app password
+    Clone url looks like https://user_name:password@bitbucket.org/workspace/repository.git
+
+    If Authentication type is TOKEN:
+    repositoryPath should look like https://bitbucket.org/workspace/repository.git
+    token should contain secure token
+    Clone url looks like https://x-token-auth:token@bitbucket.org/workspace/repository.git
+*/
     @Value("${bitbucket.cloud.repository.path}")
     private String repositoryPath;
     @Value("${bitbucket.cloud.token}")
@@ -49,6 +68,16 @@ public class BitbucketCloudServiceTest extends AbstractSpringTest {
 
     @Autowired
     private BitbucketCloudService service;
+
+    @Autowired
+    private PreferenceManager preferenceManager;
+
+    @Before
+    public void setup() {
+        final Preference preference = SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE.toPreference();
+        preference.setValue(AuthType.TOKEN.name());
+        preferenceManager.update(Collections.singletonList(preference));
+    }
 
     @Ignore
     @Test
