@@ -65,13 +65,16 @@ import static com.epam.pipeline.utils.AuthorizationUtils.buildBearerTokenAuth;
 @Service
 @RequiredArgsConstructor
 public class BitbucketCloudService implements GitClientService {
+
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String USER_NAME = "user name";
+    private static final String X_TOKEN_AUTH = "x-token-auth";
     private static final String BITBUCKET_CLOUD_FOLDER_MARKER = "commit_directory";
     private static final String BITBUCKET_CLOUD_FILE_MARKER = "commit_file";
-    private static final int MAX_DEPTH = 20;
     private static final String PAGE_PARAMETER = "page=";
+    private static final int MAX_DEPTH = 20;
+
     private final BitbucketCloudMapper mapper;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
@@ -205,7 +208,7 @@ public class BitbucketCloudService implements GitClientService {
         final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.from(pipeline.getRepository());
         final String token = pipeline.getRepositoryToken();
         final AuthType authType = preferenceManager.getPreference(SystemPreferences.BITBUCKET_CLOUD_AUTH_TYPE);
-        final String username = AuthType.TOKEN.equals(authType) ? "x-token-auth" :
+        final String username = AuthType.TOKEN.equals(authType) ? X_TOKEN_AUTH :
                 repositoryUrl.getUsername().orElseThrow(() -> buildUrlParseError(USER_NAME));
         final String host = repositoryUrl.getHost();
         return GitCredentials.builder()
