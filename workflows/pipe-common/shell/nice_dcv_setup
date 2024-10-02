@@ -49,7 +49,8 @@ function install_prerequisites {
     _pkg_result=$?
   else
     apt update -y && \
-    DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends ubuntu-desktop
+    DEBIAN_FRONTEND=noninteractive apt install -y --no-install-recommends \
+     xfce4 dbus-x11 xfce4-terminal firefox
     _pkg_result=$?
   fi
   if [ $_pkg_result -ne 0 ]; then
@@ -82,8 +83,7 @@ function install_dcv {
       cd ${_NICE_DCV_DISTRIBUTION} && \
       yum install -y nice-dcv-server-*.x86_64.rpm \
                       nice-dcv-web-viewer-*.x86_64.rpm \
-                      nice-xdcv-*.x86_64.rpm && \
-      systemctl start dbus
+                      nice-xdcv-*.x86_64.rpm
     _pkg_result=$?
   else
     if [[ "$CP_VER" == *"18.04"* ]]; then
@@ -107,8 +107,6 @@ function install_dcv {
                       ./nice-xdcv_2021.2.411-1_amd64.ubuntu2004.deb
       _pkg_result=$?  
     fi
-
-    service dbus start
   fi
 
   if [ $_pkg_result -ne 0 ]; then
@@ -148,8 +146,10 @@ chmod +x /opt/dcv/extras/xfce4launch
 function run_dcv {
   pipe_log_info "Starting DCV server and waiting for boot up" "$DCV_INSTALL_TASK"
   if [[ "$IS_RPM_BASED" = 0 ]]; then
+    systemctl start dbus
     systemctl start dcvserver
   else
+    service dbus start
     nohup dcvserver --service &> /var/log/dcv/server.log &
   fi
 
