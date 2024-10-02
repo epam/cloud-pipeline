@@ -39,6 +39,8 @@ class PodModel:
 class Kubernetes:
 
     def __init__(self):
+        # If REQUESTS_CA_BUNDLE is set - requests does not respect 'session.verify = False' anymore
+        # Thus connection to the kube master fails, as it is self signed
         if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
             os.environ['REQUESTS_CA_BUNDLE'] = ''
         self.__kube_api = HTTPClient(KubeConfig.from_service_account())
