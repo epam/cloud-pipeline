@@ -171,6 +171,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         PIPELINE_REPOSITORY_TOKEN,
         PIPELINE_REPOSITORY_TYPE,
         PIPELINE_VISIBILITY,
+        PIPELINE_CONFIG,
         PIPELINE_CODE,
         PIPELINE_DOCS,
         PIPELINE_LOCKED,
@@ -272,6 +273,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         pipeline.setVisibility(
                                 StringUtils.isNotBlank(rawVisibility) ?
                                         RunVisibilityPolicy.valueOf(rawVisibility) : null);
+                        pipeline.setConfigurationPath(rs.getString(PIPELINE_CONFIG.name()));
                         pipeline.setCodePath(rs.getString(PIPELINE_CODE.name()));
                         pipeline.setDocsPath(rs.getString(PIPELINE_DOCS.name()));
                         folder.getPipelines().add(pipeline);
