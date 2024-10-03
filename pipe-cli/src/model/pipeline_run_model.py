@@ -49,6 +49,8 @@ class PipelineRunModel(object):
         self.run_sids = []
         self.sensitive = None
         self.platform = None
+        self.tags = {}
+        self.tags_str = ''
 
     @property
     def is_initialized(self):
@@ -114,6 +116,24 @@ class PipelineRunModel(object):
 
         if 'sensitive' in result:
             instance.sensitive = result['sensitive']
+
+        if 'tags' in result:
+            instance.tags = result['tags']
+            instance_tags_list = []
+            for tag_name in instance.tags:
+                tag_value = instance.tags[tag_name]
+                if tag_name.lower() == tag_value.lower() or tag_value.lower() == 'true': 
+                    instance_tags_list.append(tag_name)
+                elif tag_name.endswith('_date'):
+                    continue
+                else:
+                    instance_tags_list.append('{}={}'.format(tag_name, tag_value))
+            if len(instance_tags_list) == 0:
+                instance.tags_str = 'N/A'
+            else:
+                instance.tags_str = ','.join(instance_tags_list)
+        else:
+            instance.tags_str = 'N/A'
 
         instance.platform = result.get('platform')
 
