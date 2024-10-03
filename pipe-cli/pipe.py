@@ -491,6 +491,7 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
 @click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
+@click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
 @common_options
 def view_runs(run_id,
               status,
@@ -503,12 +504,13 @@ def view_runs(run_id,
               node_details,
               parameters_details,
               tasks_details,
-              user_filter):
+              user_filter,
+              tags_details):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details)
     # If no argument is specified - list runs according to options
     else:
         view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
@@ -569,7 +571,7 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, us
         click.echo()
 
 
-def view_run(run_id, node_details, parameters_details, tasks_details):
+def view_run(run_id, node_details, parameters_details, tasks_details, tags_details):
     run_model = PipelineRun.get(run_id)
     if not run_model.pipeline and run_model.pipeline_id is not None:
         pipeline_model = Pipeline.get(run_model.pipeline_id)
@@ -612,6 +614,9 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         run_main_info_table.add_row(['Estimated price:', '{} $'.format(round(run_model_price.total_price, 2))])
     else:
         run_main_info_table.add_row(['Estimated price:', 'N/A'])
+
+    run_main_info_table.add_row(['Tags:', run_model.tags_str])
+
     click.echo(run_main_info_table)
     click.echo()
 
@@ -663,6 +668,16 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         else:
             click.echo('No tasks are available for the run')
         click.echo()
+    
+    if tags_details:
+        echo_title('Tags:')
+        if len(run_model.tags) > 0:
+            for tag_name in run_model.tags:
+                click.echo('{}={}'.format(tag_name, run_model.tags[tag_name]))
+        else:
+            click.echo('No tags are configured')
+        click.echo()
+
 
 
 @cli.command(name='view-cluster')
