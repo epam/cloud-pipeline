@@ -826,10 +826,13 @@ public class ToolManager implements SecuredEntityManager {
 
     public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
         final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
-        if (StringUtils.isEmpty(allowedOSes) || toolOSVersion == null) {
+        final String allowedWithWarningOSes = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING);
+        if ((StringUtils.isEmpty(allowedOSes) && StringUtils.isEmpty(allowedWithWarningOSes))
+                || toolOSVersion == null) {
             return true;
         }
-        return toolOSVersion.isMatched(allowedOSes);
+        return toolOSVersion.isMatched(allowedOSes) || toolOSVersion.isMatched(allowedWithWarningOSes);
     }
 
     /**
