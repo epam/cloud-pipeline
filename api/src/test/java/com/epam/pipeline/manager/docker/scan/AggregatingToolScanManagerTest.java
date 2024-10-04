@@ -63,6 +63,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.stubbing.Answer;
+import org.springframework.test.util.ReflectionTestUtils;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -256,7 +257,9 @@ public class AggregatingToolScanManagerTest {
         when(messageHelper.getMessage(Mockito.anyString(), Mockito.any())).thenReturn("testMessage");
         when(messageHelper.getMessage(any(), any())).thenReturn("testMessage");
 
+        ReflectionTestUtils.setField(toolManager, "preferenceManager", preferenceManager);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(testTool);
+        when(toolManager.isToolOSVersionAllowed(any())).thenCallRealMethod();
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(toolScanResult));
         when(toolManager.loadToolVersionScan(testTool.getId(), ACTUAL_SCANNED_VERSION)).thenReturn(Optional.of(actual));
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
@@ -428,7 +431,7 @@ public class AggregatingToolScanManagerTest {
     public void testDenyOnNotAllowedOS() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
                 .thenReturn("centos:6");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("ubuntu", "14"));
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
@@ -437,7 +440,7 @@ public class AggregatingToolScanManagerTest {
     public void testDenyOnNotAllowedOSVersion() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
                 .thenReturn("centos:6");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("centos", "7"));
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
@@ -446,9 +449,18 @@ public class AggregatingToolScanManagerTest {
     public void testAllowOnAllowedOSVersion() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
                 .thenReturn("centos");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 1, toolScanResult, new ToolOSVersion("centos", "7"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testAllowOnAllowedOSInToolOsWithWarning() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING))
+                .thenReturn("ubuntu:14");
+        TestUtils.generateScanResult(0, 0,
+                1, toolScanResult, new ToolOSVersion("ubuntu", "14"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
