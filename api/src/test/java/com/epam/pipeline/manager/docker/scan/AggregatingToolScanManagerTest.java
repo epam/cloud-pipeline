@@ -455,6 +455,10 @@ public class AggregatingToolScanManagerTest {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
                 ONE, toolScanResult, new ToolOSVersion(CENTOS_OS, "7"));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
+                ToolOSVersion.builder().distribution(CENTOS_OS).version("7").build());
+        Assert.assertTrue(executionPermit.isAllowed());
+        Assert.assertFalse(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -466,6 +470,10 @@ public class AggregatingToolScanManagerTest {
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
+                ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
+        Assert.assertTrue(executionPermit.isAllowed());
+        Assert.assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -475,6 +483,10 @@ public class AggregatingToolScanManagerTest {
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
+                ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
+        Assert.assertTrue(executionPermit.isAllowed());
+        Assert.assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test
@@ -484,6 +496,21 @@ public class AggregatingToolScanManagerTest {
         TestUtils.generateScanResult(0, 0,
                 ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testAllowAndWarnIfBothAllowedOSAndAllowedOSWithWarningMatched() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
+                .thenReturn(UBUNTU_OS);
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING))
+                .thenReturn(UBUNTU_OS);
+        TestUtils.generateScanResult(0, 0,
+                ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+        final ToolOSVersionExecutionPermit executionPermit = toolManager.isToolOSVersionAllowed(
+                ToolOSVersion.builder().distribution(UBUNTU_OS).version("14").build());
+        Assert.assertTrue(executionPermit.isAllowed());
+        Assert.assertTrue(executionPermit.isAllowedWarning());
     }
 
     @Test

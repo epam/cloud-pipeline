@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.pipeline.ToolScanStatus;
 import com.epam.pipeline.entity.pipeline.ToolWithIssuesCount;
 import com.epam.pipeline.entity.scan.ToolDependency;
 import com.epam.pipeline.entity.scan.ToolOSVersion;
+import com.epam.pipeline.entity.scan.ToolOSVersionExecutionPermit;
 import com.epam.pipeline.entity.scan.ToolScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.ToolVersionScanResultView;
@@ -824,14 +825,18 @@ public class ToolManager implements SecuredEntityManager {
                 loadToolVersionAttributes(tool, version);
     }
 
-    public boolean isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
+    public ToolOSVersionExecutionPermit isToolOSVersionAllowed(final ToolOSVersion toolOSVersion) {
         final String allowedOSes = preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS);
         final String allowedWithWarningOSes = preferenceManager.getPreference(
                 SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING);
+        boolean allowedWithWarning = toolOSVersion != null && toolOSVersion.isMatched(allowedWithWarningOSes);
         if (StringUtils.isEmpty(allowedOSes) || toolOSVersion == null) {
-            return true;
+            return new ToolOSVersionExecutionPermit(true, allowedWithWarning);
         }
-        return toolOSVersion.isMatched(allowedOSes) || toolOSVersion.isMatched(allowedWithWarningOSes);
+        return new ToolOSVersionExecutionPermit(
+                toolOSVersion.isMatched(allowedOSes) || allowedWithWarning,
+                allowedWithWarning
+        );
     }
 
     /**

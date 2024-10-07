@@ -92,4 +92,8 @@ public final class DateUtils {
     public static long hoursBetweenDates(final LocalDateTime one, final LocalDateTime another) {
         return Math.abs(Duration.between(one, another).toHours());
     }
+
+    public static String formatDate(final Date date) {
+        return DATE_TIME_FORMATTER.format(DateUtils.convertDateToLocalDateTime(date));
+    }
 }

@@ -872,6 +872,8 @@ public class SystemPreferences {
             null, UI_GROUP, isNullOrGreaterThan(0));
     public static final IntPreference UI_UPLOAD_CHUNK_SIZE = new IntPreference("ui.upload.chunk.size.mb",
             null, UI_GROUP, isNullOrGreaterThan(0));
+    public static final StringPreference UI_TOOLS_OS_WITH_WARNING = new StringPreference("ui.tools.os.with.warning",
+            "", UI_GROUP, pass, true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
