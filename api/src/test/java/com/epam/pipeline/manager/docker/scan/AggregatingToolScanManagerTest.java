@@ -63,6 +63,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.mockito.internal.util.reflection.Whitebox;
 import org.mockito.stubbing.Answer;
+import org.springframework.test.util.ReflectionTestUtils;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -80,6 +81,7 @@ import static org.mockito.Mockito.when;
 
 public class AggregatingToolScanManagerTest {
 
+    private static final int ONE = 1;
     private static final boolean DENY_NOT_SCANNED = true;
     private static final int MAX_CRITICAL_VULNERABILITIES = 2;
     private static final int MAX_HIGH_VULNERABILITIES = 3;
@@ -97,6 +99,8 @@ public class AggregatingToolScanManagerTest {
     private static final Set<String> TEST_LABEL_MARK = Collections.singleton("LABEL-name");
     private static final int ERROR_CODE = 500;
     private static final String CLAIR_DEFAULT_VERSION = "v2";
+    public static final String UBUNTU_OS = "ubuntu";
+    public static final String CENTOS_OS = "centos";
 
     @InjectMocks
     private AggregatingToolScanManager aggregatingToolScanManager = new AggregatingToolScanManager();
@@ -153,7 +157,7 @@ public class AggregatingToolScanManagerTest {
     private ClairScanResult.ClairFeature feature;
     private ToolDependency testDependency;
     private final ToolDependency nvidiaDependency = new ToolDependency(
-            1, "latest", "NvidiaVersion", null, ToolDependency.Ecosystem.NVIDIA, null);
+            ONE, "latest", "NvidiaVersion", null, ToolDependency.Ecosystem.NVIDIA, null);
 
     @Before
     public void setUp() throws Exception {
@@ -222,7 +226,7 @@ public class AggregatingToolScanManagerTest {
         DockerComponentScanResult dockerComponentScanResult = new DockerComponentScanResult();
         DockerComponentLayerScanResult layerScanResult = new DockerComponentLayerScanResult();
         testDependency = new ToolDependency(
-                1, "latest", "test", "1.0", ToolDependency.Ecosystem.R_PKG, "R Package");
+                ONE, "latest", "test", "1.0", ToolDependency.Ecosystem.R_PKG, "R Package");
         layerScanResult.setDependencies(Arrays.asList(testDependency, nvidiaDependency));
         dockerComponentScanResult.setLayers(Collections.singletonList(layerScanResult));
 
@@ -256,7 +260,9 @@ public class AggregatingToolScanManagerTest {
         when(messageHelper.getMessage(Mockito.anyString(), Mockito.any())).thenReturn("testMessage");
         when(messageHelper.getMessage(any(), any())).thenReturn("testMessage");
 
+        ReflectionTestUtils.setField(toolManager, "preferenceManager", preferenceManager);
         when(toolManager.loadByNameOrId(TEST_IMAGE)).thenReturn(testTool);
+        when(toolManager.isToolOSVersionAllowed(any())).thenCallRealMethod();
         when(toolManager.loadToolVersionScan(testTool.getId(), LATEST_VERSION)).thenReturn(Optional.of(toolScanResult));
         when(toolManager.loadToolVersionScan(testTool.getId(), ACTUAL_SCANNED_VERSION)).thenReturn(Optional.of(actual));
         when(toolScanInfoManager.loadToolVersionScanInfo(testTool.getId(), LATEST_VERSION))
@@ -294,7 +300,7 @@ public class AggregatingToolScanManagerTest {
 
         List<ToolDependency> dependencies = result.getDependencies();
         //check that dependencies are filtered and only one pass the filter
-        Assert.assertEquals(1, dependencies.size());
+        Assert.assertEquals(ONE, dependencies.size());
     }
 
     @Test
@@ -324,7 +330,7 @@ public class AggregatingToolScanManagerTest {
         Assert.assertEquals(testDependency.getVersion(), loadedDependency.getVersion());
         Assert.assertEquals(testDependency.getDescription(), loadedDependency.getDescription());
 
-        loadedDependency = dependencies.get(1);
+        loadedDependency = dependencies.get(ONE);
         Assert.assertEquals(nvidiaDependency.getName(), "NvidiaVersion");
         Assert.assertEquals(nvidiaDependency.getEcosystem(), loadedDependency.getEcosystem());
 
@@ -413,14 +419,14 @@ public class AggregatingToolScanManagerTest {
 
         // Check that even that status is FAILED we still get vulnerabilities from clair
         Assert.assertEquals(ToolScanStatus.FAILED, result.getStatus());
-        Assert.assertEquals(1, result.getVulnerabilities().size());
-        Assert.assertEquals(1, result.getVulnerabilities().stream().map(Vulnerability::getFeature).count());
+        Assert.assertEquals(ONE, result.getVulnerabilities().size());
+        Assert.assertEquals(ONE, result.getVulnerabilities().stream().map(Vulnerability::getFeature).count());
     }
 
     @Test
     public void testDenyOnCritical() {
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult);
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + ONE, MAX_HIGH_VULNERABILITIES,
+                ONE, toolScanResult);
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
@@ -428,8 +434,8 @@ public class AggregatingToolScanManagerTest {
     public void testDenyOnNotAllowedOS() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
                 .thenReturn("centos:6");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult, new ToolOSVersion("ubuntu", "14"));
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
+                ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
@@ -437,24 +443,53 @@ public class AggregatingToolScanManagerTest {
     public void testDenyOnNotAllowedOSVersion() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
                 .thenReturn("centos:6");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult, new ToolOSVersion("centos", "7"));
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
+                ONE, toolScanResult, new ToolOSVersion(CENTOS_OS, "7"));
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testAllowOnAllowedOSVersion() {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
-                .thenReturn("centos");
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES + 1, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult, new ToolOSVersion("centos", "7"));
-        Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+                .thenReturn(CENTOS_OS);
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
+                ONE, toolScanResult, new ToolOSVersion(CENTOS_OS, "7"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testAllowOnAllowedOSInToolOsWithWarning() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS))
+                .thenReturn(CENTOS_OS);
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING))
+                .thenReturn("ubuntu:14");
+        TestUtils.generateScanResult(0, 0,
+                ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testAllowIfAllowedOSsIsEmpty() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING))
+                .thenReturn("ubuntu:14");
+        TestUtils.generateScanResult(0, 0,
+                ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
+    }
+
+    @Test
+    public void testAllowIfAllowedOSsIsEmptyAndAllowedOSesWithWarningDoesntAllow() {
+        when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_OS_WITH_WARNING))
+                .thenReturn(CENTOS_OS);
+        TestUtils.generateScanResult(0, 0,
+                ONE, toolScanResult, new ToolOSVersion(UBUNTU_OS, "14"));
+        Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testDenyOnHigh() {
-        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES + 1,
-                1, toolScanResult);
+        TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES + ONE,
+                ONE, toolScanResult);
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
@@ -463,14 +498,14 @@ public class AggregatingToolScanManagerTest {
         when(preferenceManager.getPreference(SystemPreferences.DOCKER_SECURITY_TOOL_POLICY_MAX_MEDIUM_VULNERABILITIES))
                 .thenReturn(0);
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult);
+                ONE, toolScanResult);
         Assert.assertFalse(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
     @Test
     public void testAllow() {
         TestUtils.generateScanResult(MAX_CRITICAL_VULNERABILITIES, MAX_HIGH_VULNERABILITIES,
-                1, toolScanResult);
+                ONE, toolScanResult);
         Assert.assertTrue(aggregatingToolScanManager.checkTool(testTool, LATEST_VERSION).isAllowed());
     }
 
