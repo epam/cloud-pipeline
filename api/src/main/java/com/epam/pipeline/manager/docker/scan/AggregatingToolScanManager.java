@@ -254,7 +254,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
             LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
             if (toolVersionScanResult.getToolOSVersion() != null
-                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
+                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion()).isAllowed()) {
                 LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
                         tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
                 return ToolExecutionCheckStatus.fail("This type of OS is not supported.");

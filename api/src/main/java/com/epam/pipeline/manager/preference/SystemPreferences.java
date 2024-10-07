@@ -875,6 +875,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<Object>> UI_RUNS_TAGS = new ObjectPreference<>(
             "ui.runs.tags", Collections.emptyList(), new TypeReference<List<Object>>() {},
             UI_GROUP, isNullOrValidJson(new TypeReference<List<Object>>() {}), true);
+    public static final StringPreference UI_TOOLS_OS_WITH_WARNING = new StringPreference("ui.tools.os.with.warning",
+            "", UI_GROUP, pass, true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
