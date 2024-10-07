@@ -5,6 +5,7 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
+    - test_mac_pipecli_build
 
 skip_tags: true
 max_jobs: 1
