@@ -32,6 +32,7 @@ echo "-----------------------------------------------"
 echo "MacOS Hardware information"
 system_profiler SPHardwareDataType
 arch
+sw_vers
 hostname
 echo "End info"
 echo "-----------------------------------------------"
