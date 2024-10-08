@@ -27,6 +27,7 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import com.epam.pipeline.autotests.utils.listener.Cloud;
 import com.epam.pipeline.autotests.utils.listener.CloudProviderOnly;
 import org.testng.annotations.AfterClass;
@@ -83,9 +84,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final int DEFAULT_TERMINATE_RUN_TIMEOUT = 1;
     private static final int TEST_TERMINATE_RUN_TIMEOUT = DEFAULT_TERMINATE_RUN_TIMEOUT + 2;
     private static final String UNMOUNTING_STARTED = "Unmounting all storage mounts";
-    private static final String CLEANUP_WORNING = "Will wait for %smin to let the run stop normally. " +
-            "Otherwise it will be terminated";
-    private static final String CLEANUP_FINISH_MESSAGE = "Run #%s is still running after %smin. Terminating a node.";
+    private static final String CLEANUP_WORNING = "Marking run as finished.";
     private static final String CONSOLE = "Console";
     private static final String CLEANUP_ENVIRONMENT_TASK = "CleanupEnvironment";
     private static final String FILESYSTEM_AUTOSCALING = "FilesystemAutoscaling";
@@ -98,7 +97,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
-    private final String customTag = "test_tag";
+    private final String customTag = "test_tag" + Utils.randomSuffix();
     private static String testInstance = "r6i.%s";
     private int[] scaling = new int[4];
     private int[] sizeDisk = new int[4];
@@ -424,12 +423,10 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
                 .waitForLog(UNMOUNTING_STARTED)
                 .waitForTask(CLEANUP_ENVIRONMENT_TASK)
                 .clickTaskWithName(CLEANUP_ENVIRONMENT_TASK)
-                .ensure(log(), containsMessages(format(CLEANUP_WORNING, valueOf(TEST_TERMINATE_RUN_TIMEOUT))))
+                .ensure(log(), containsMessages(CLEANUP_WORNING))
                 .sleep(TEST_TERMINATE_RUN_TIMEOUT, MINUTES)
                 .refresh()
-                .shouldHaveStatus(STOPPED)
-                .ensure(log(), containsMessages(format(CLEANUP_FINISH_MESSAGE,
-                        getLastRunId(), valueOf(TEST_TERMINATE_RUN_TIMEOUT))));
+                .shouldHaveStatus(STOPPED);
     }
 
     @Test

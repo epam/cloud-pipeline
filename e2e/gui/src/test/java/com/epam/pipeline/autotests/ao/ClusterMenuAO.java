@@ -72,6 +72,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
                         .or(contains(nodeLabel("HEAPSTER")))
                         .or(contains(nodeLabel("DNS")))
                         .or(contains(nodeLabel("TMP")))
+                        .or(contains(nodeLabel("CP-API-SRV")))
                         .test(element);
             }
         };
