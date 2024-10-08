@@ -13,11 +13,12 @@ stack: node 14, jdk 8
 matrix:
   fast_finish: true
 
+build_cloud: ip-172-31-13-99.eu-central-1.compute.internal  
+
 environment:
   matrix:
     - job_name: CLI_MacOS
-      build_cloud: ip-172-31-13-99.eu-central-1.compute.internal
-      appveyor_build_worker_image: macos-sonoma
+      appveyor_build_worker_image: macos-catalina
     - job_name: Publish_Docs
       appveyor_build_worker_image: Ubuntu1604
     - job_name: Build_All
