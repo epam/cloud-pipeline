@@ -24,6 +24,13 @@ To get started with deployment, please make sure that you satisfy requirements b
 
 ### Prerequisites
 
+1. AWSServiceRoleForEC2Spot service role
+
+AWS Service role AWSServiceRoleForEC2Spot need to be created upfront. For more information, please, read:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/service-linked-roles-spot-instance-requests.html
+
+2. Terraform version
+
 | Name                                                                      | Version |
 |---------------------------------------------------------------------------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | = 1.5.0 |
@@ -42,20 +49,20 @@ To install terraform to other operating system please follow the links
 https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli <br>
 https://developer.hashicorp.com/terraform/install
 
-1. Manually create S3 Bucket to store remote state of the terraform deployment.
+3. Manually create S3 Bucket to store remote state of the terraform deployment.
    To create S3 bucket you can use AWS Console or aws cli commands:
+
    a. If region us-east-1
    ```
    aws s3api create-bucket --bucket <s3-bucket-for-terraform-state-name-example> 
    ```
 
-b. If another region
+   b. If another region
+   ```
+   aws s3api create-bucket --region <your deploy aws region>  --bucket <s3-bucket-for-terraform-state-name-example> --create-bucket-configuration LocationConstraint=<your deploy aws region>
+   ```
 
-  ```
-  aws s3api create-bucket --region <your deploy aws region>  --bucket <s3-bucket-for-terraform-state-name-example> --create-bucket-configuration LocationConstraint=<your deploy aws region>
-  ```
-
-1. Manually create DynamoDB table to store terraform lock records.
+4. Manually create DynamoDB table to store terraform lock records.
     - Table schema:
    ```
       LockID (String) - Partition key
@@ -72,11 +79,21 @@ To create DynamoDB table you can use AWS Console or aws cli command:
 > * Private subnets (where all infrastructure will be created: EKS cluster, RDS instance, FS, etc.)
 > * Mechanism to have inbound access to the VPC (IGW, transit gateway, VPN from corporate network etc.)
 
-3. AWS Elastic IP allocation. <br>
-   Create AWS Elastic IP allocation to provide this value further during Cloud-Pipeline installation.
-   This value will be used to deploy AWS ELB in your account to route the traffic from users to Cloud-Pipeline services
-   This EIP also should be used to request DNS records creation from you DNS provider. The following scheme of the
-   records is proposed:
+5. AWS Elastic IP allocation or CIDR reservation. <br>
+    - Create AWS Elastic IP allocation to provide this value further during Cloud-Pipeline installation.
+      This value will be used to deploy AWS ELB in your account to route the traffic from users to Cloud-Pipeline
+      services
+      This EIP also should be used to request DNS records creation from you DNS provider.
+
+    - In case of internal deployment (when there is no external traffic to the service) use subnet CIDR reservation,
+      to reserve one internal IP address (should be /32 CIDR block).
+      This value will be used to deploy AWS ELB in your account to route the traffic from users to Cloud-Pipeline
+      services
+      This IP also should be used to request DNS records creation from you DNS provider.
+
+   The following scheme of the records is proposed:
+
+6. DNS records
 
 | DNS record                                     | Record type | Value                                   |
 |------------------------------------------------|-------------|-----------------------------------------|
@@ -114,8 +131,8 @@ provider "aws" {
 
 module jump-server {
   source                            = "git::https://github.com/epam/cloud-pipeline//deploy/infra/aws/terraform/cloud-native/jump-server?ref=<branch-tag-or-commit>"
-  project_name                      = "xxxxxxxxxxxx"
-  env                               = "xxxxxxx"
+  deployment_name                   = "xxxxxxxxxxxx"
+  deployment_env                    = "xxxxxxx"
   vpc_id                            = "vpc-xxxxxxxxxxxx"
   subnet_id                         = "subnet-xxxxxxxxxxxx"
   iam_role_permissions_boundary_arn = "arn:aws:iam::xxxxxxxxxxxx:policy/eo_role_boundary"
@@ -320,23 +337,23 @@ To configure `cluster-infrastructure` deployment, there is a list of variables t
 | `deployment_env`                         | Environment name for the deployment. Will be used as resource name prefix of the created resources (security groups, IAM roles etc.)                                                                                                                                                  |
 | `vpc_id`                                 | Id of the VCP to be used for deployment of the infrastructure.                                                                                                                                                                                                                        |
 | `subnet_ids`                             | Ids of the VCP subnets to be used for Cloud Pipeline EKS cluster, FS mount points, etc.                                                                                                                                                                                               |
-| `external_access_security_group_ids`     | Ids of the SGs to be attached to the ELB to allow traffic from users to the platform. Created as prerequisites by administrator who is deploying the system, with regard to organisational network policies and best practices.                                                       |
 | `eks_system_node_group_subnet_ids`       | Ids of the VCP subnets to be used for EKS cluster Cloud Pipeline system node group.                                                                                                                                                                                                   |
 | `eks_additional_role_mapping`            | List of additional roles mapping for aws_auth map.                                                                                                                                                                                                                                    |
+| `cp_edge_elb_schema`                     | (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.                                                                                                                                |
+| `cp_edge_elb_subnet`                     | (Required) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId                                                                                                                                        |
+| `cp_edge_elb_ip`                         | (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB.                                                                                                                                                  |
+| `cp_api_srv_host`                        | (Required) API service domain name address.                                                                                                                                                                                                                                           |
+| `cp_docker_host`                         | (Required) Docker service domain name address.                                                                                                                                                                                                                                        |
+| `cp_edge_host`                           | (Required) EDGE service domain name address.                                                                                                                                                                                                                                          |
+| `cp_gitlab_host`                         | (Required) GITLAB service domain name address.                                                                                                                                                                                                                                        |                                                                                                                     
+| `cp_idp_host`                            | (Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended!                                                                                                                                    |                      
+| `external_access_security_group_ids`     | (Optional) Ids of the SGs to be attached to the ELB to allow traffic from users to the platform. Created as prerequisites by administrator who is deploying the system, with regard to organisational network policies and best practices.                                            |
 | `deploy_filesystem_type`                 | (Optional) Option to create EFS or FSx Lustre filesystem: must be set efs or fsx. If empty, no FS will be created. Default efs.                                                                                                                                                       |
 | `cloud_pipeline_db_configuration`        | (Optional) Username with password and database, which will be created. Username will be owner of the database. Additional settings with Postgresql provider and versions.tf file must be set. For example see [main.tf](#cluster-infrastructure-deployment) of the cluster deployment |
 | `iam_role_permissions_boundary_arn`      | (Optional) Account specific role boundaries which will be applied during jump-server instance profile creation                                                                                                                                                                        |
 | `deploy_rds`                             | (Optional) You can disable deployment of the RDS instance by setting deploy_rds = false. In this case no db configuration will be created regardless the value of create_cloud_pipeline_db_configuration                                                                              |
 | `create_cloud_pipeline_db_configuration` | (Optional) You can disable creation of the cloud-pipeline database configuration by setting to false                                                                                                                                                                                  |
 | `cp_deployment_id`                       | (Optional) Specify unique ID of the Cloud-Pipeline deployment. It will be used to name cloud entities (e.g. path within a docker registry object container).Must contain only letters, digits, underscore or dash                                                                     |   
-| `cp_edge_elb_schema`                     | (Required) Type of the AWS ELB to provide access to the users to the system. Possible values 'internal', 'internet-facing'. Default 'internet-facing'.                                                                                                                                |
-| `cp_edge_elb_subnet`                     | (Required) The ID of the public subnet for the Load Balancer to be created. Must be in the same Availability Zone (AZ) as the CPSystemSubnetId                                                                                                                                        |
-| `cp_edge_elb_ip`                         | (Required) Allocation ID of the Elastic IP from prerequisites in case of internet-facing ELB, or private IP in case of internal ELB.                                                                                                                                                  |
-| `cp_api_srv_host`                        | (Required) API service domain name address.                                                                                                                                                                                                                                           |
-| `cp_idp_host`                            | (Optional) Self hosted IDP service domain name address. WARNING: Using self hosted IDP service in production environment strongly not recommended!                                                                                                                                    |                      
-| `cp_docker_host`                         | (Required) Docker service domain name address.                                                                                                                                                                                                                                        |
-| `cp_edge_host`                           | (Required) EDGE service domain name address.                                                                                                                                                                                                                                          |
-| `cp_gitlab_host`                         | (Required) GITLAB service domain name address.                                                                                                                                                                                                                                        |                                                                                                                     
 
 1. Push created configuration in to your git repository.
 2. Install aws ssm
@@ -515,21 +532,25 @@ sudo mkdir -p /opt/root/ssh
 terraform show -json | jq -r ".values.root_module.child_modules[].resources[] |  select(.address==\"$(terraform state list | grep ssh_tls_key)\") |.values.private_key_pem" > /opt/root/ssh/ssh-key.pem
 ```
 
-4. Take script from the `cluster-infrastructure` deployment [output](#output-of-cluster-infrastructure-module) and
+4. Create cluster.networks.config.json from `cluster-infrastructure` deployment:
+
+```
+terraform output -raw cp_cloud_network_config > cluster.networks.config.json 
+```
+
+5. Take script from the `cluster-infrastructure` deployment [output](#output-of-cluster-infrastructure-module) and
    run it by using bash commands. For example:
 
 ```
-CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/<link-to-the-desired-pipectl-version> \
+CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/<link-to-the-desired-pipectl-version>
 
-wget -c $CP_PIPECTL_URL -O pipectl && chmod +x pipectl \
+wget -c $CP_PIPECTL_URL -O pipectl && chmod +x pipectl
 
-terraform output -raw cp_pipectl_script > "deploy_cloud_pipeline.sh" && \
+terraform output -raw cp_pipectl_script > "deploy_cloud_pipeline.sh" && chmod +x deploy_cloud_pipeline.sh 
 
-chmod +x deploy_cloud_pipeline.sh \
-
-./deploy_cloud_pipeline.sh &> pipectl.log
+nohup ./deploy_cloud_pipeline.sh &> pipectl.log &
 ```
 
-5. Wait until deployment finishes.
+5. Wait until deployment finishes (you can watch for the progress with pipectl.log file).
 6. Your Cloud-Pipeline environment should be available on the provided DNS name provided during
    deployment (`cp_api_srv_host`). 
