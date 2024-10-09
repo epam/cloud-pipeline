@@ -24,10 +24,10 @@ To get started with deployment, please make sure that you satisfy requirements b
 
 ### Prerequisites
 
-1. AWSServiceRoleForEC2Spot service role
+1. `AWSServiceRoleForEC2Spot` service role
 
 AWS Service role AWSServiceRoleForEC2Spot need to be created upfront. For more information, please, read:
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/service-linked-roles-spot-instance-requests.html
+`https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/service-linked-roles-spot-instance-requests.html`
 
 2. Terraform version
 
