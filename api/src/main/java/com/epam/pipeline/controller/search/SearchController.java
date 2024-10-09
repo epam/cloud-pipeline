@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
+import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
 import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import io.swagger.annotations.ApiOperation;
@@ -115,8 +116,8 @@ public class SearchController extends AbstractRestController {
             notes = "Persists export faceted search result in a predefined format by specified cloud path.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<String> saveTemplateExport(@RequestBody final FacetedSearchRequest searchRequest,
-                                             @RequestParam final String templateId) {
+    public Result<SearchTemplateExportInfo> saveTemplateExport(@RequestBody final FacetedSearchRequest searchRequest,
+                                                               @RequestParam final String templateId) {
         return Result.success(searchExportManager.saveTemplateExport(searchRequest, templateId));
     }
 }

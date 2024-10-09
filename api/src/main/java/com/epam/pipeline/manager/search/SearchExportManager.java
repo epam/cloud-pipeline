@@ -21,8 +21,10 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
+import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -79,7 +81,8 @@ public class SearchExportManager {
         return resultExportManager.templateExport(facetedSearchResult, templateConfig);
     }
 
-    public String saveTemplateExport(final FacetedSearchRequest facetedSearchRequest, final String templateId) {
+    public SearchTemplateExportInfo saveTemplateExport(final FacetedSearchRequest facetedSearchRequest,
+                                                       final String templateId) {
         final SearchTemplateExportConfig templateConfig = getAndValidateTemplateConfig(templateId);
         final String cloudExportPath = getCloudExportPath(templateConfig.getSaveTo(), templateId);
         final String storagePath = trimSchema(cloudExportPath);
@@ -88,9 +91,14 @@ public class SearchExportManager {
 
         final FacetedSearchResult facetedSearchResult = searchManager.getFacetedSearchResult(facetedSearchRequest);
         final byte[] content = resultExportManager.templateExport(facetedSearchResult, templateConfig);
-        storageManager.createDataStorageFile(storage.getId(), storageFilePath, content);
+        final DataStorageFile storageFile = storageManager.createDataStorageFile(storage.getId(), storageFilePath,
+                content);
         log.debug("Search export saved storage by path '{}'", cloudExportPath);
-        return cloudExportPath;
+        return SearchTemplateExportInfo.builder()
+                .fullPath(cloudExportPath)
+                .storageId(storage.getId())
+                .storagePath(storageFile.getPath())
+                .build();
     }
 
     private String getCloudExportPath(final String pathToSave, final String templateId) {
