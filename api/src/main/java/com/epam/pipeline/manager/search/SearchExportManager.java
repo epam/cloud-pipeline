@@ -21,7 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
 import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
@@ -91,13 +90,12 @@ public class SearchExportManager {
 
         final FacetedSearchResult facetedSearchResult = searchManager.getFacetedSearchResult(facetedSearchRequest);
         final byte[] content = resultExportManager.templateExport(facetedSearchResult, templateConfig);
-        final DataStorageFile storageFile = storageManager.createDataStorageFile(storage.getId(), storageFilePath,
-                content);
+        storageManager.createDataStorageFile(storage.getId(), storageFilePath, content);
         log.debug("Search export saved storage by path '{}'", cloudExportPath);
         return SearchTemplateExportInfo.builder()
                 .fullPath(cloudExportPath)
                 .storageId(storage.getId())
-                .storagePath(storageFile.getPath())
+                .storagePath(storageFilePath)
                 .build();
     }
 
