@@ -97,8 +97,8 @@ public class SearchExportManager {
         Assert.state(StringUtils.isNotBlank(pathToSave), messageHelper.getMessage(
                 MessageConstants.ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_EMPTY));
         final List<String> supportedSchemas = Arrays.asList(S3_SCHEMA, CP_SCHEMA, AZ_SCHEMA, GS_SCHEMA, NFS_SCHEMA);
-        Assert.state(supportedSchemas.stream().anyMatch(schema
-                -> pathToSave.toLowerCase(Locale.ROOT).startsWith(schema)),
+        Assert.state(supportedSchemas.stream().anyMatch(schema ->
+                        pathToSave.toLowerCase(Locale.ROOT).startsWith(schema)),
                 messageHelper.getMessage(MessageConstants.ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_WRONG_SCHEMA));
 
         String resolvedPath = pathToSave;
