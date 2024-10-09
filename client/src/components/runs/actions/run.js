@@ -72,7 +72,7 @@ import {
   storageMatchesIdentifiers
 } from '../../../utils/limit-mounts/get-limit-mounts-storages';
 import RunModal from '../../main/RunModal';
-import checkToolVersionSizeErrors from '../utilities/check-tool-version-size-errors';
+import checkToolVersionErrors from '../utilities/check-tool-version-errors';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
 export const submitsRun = (...opts) => {
@@ -427,7 +427,7 @@ function runFn (
         component = element;
       };
       const hide = message.loading('Checking tool size...', 0);
-      const sizeErrors = await checkToolVersionSizeErrors(
+      const versionErrors = await checkToolVersionErrors(
         payload.dockerImage,
         stores.preferences,
         stores.dockerRegistries
@@ -436,7 +436,7 @@ function runFn (
       RunModal.open({
         title: null,
         width: '50%',
-        okDisabled: sizeErrors.hard,
+        okDisabled: versionErrors.size.hard,
         content: (
           <RunSpotConfirmationWithPrice
             runInfo={{
@@ -449,7 +449,7 @@ function runFn (
             ref={ref}
             platform={platform}
             warning={warning}
-            versionSizeErrors={sizeErrors}
+            versionErrors={versionErrors}
             instanceType={payload.instanceType}
             hddSize={payload.hddSize}
             isSpot={payload.isSpot}
@@ -586,10 +586,14 @@ export class RunConfirmation extends React.Component {
 
   static propTypes = {
     warning: PropTypes.string,
-    versionSizeErrors: PropTypes.shape({
-      soft: PropTypes.bool,
-      hard: PropTypes.bool
+    versionErrors: PropTypes.shape({
+      size: PropTypes.shape({
+        soft: PropTypes.bool,
+        hard: PropTypes.bool
+      }),
+      allowedWarning: PropTypes.string
     }),
+    allowedWarning: PropTypes.string,
     platform: PropTypes.string,
     isSpot: PropTypes.bool,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
@@ -874,10 +878,19 @@ export class RunConfirmation extends React.Component {
   };
 
   render () {
-    const {versionSizeErrors} = this.props;
-    const {soft, hard} = versionSizeErrors || {};
+    const {size, allowedWarning} = this.props.versionErrors || {};
+    const {soft, hard} = size || {};
     return (
       <div>
+        {allowedWarning ? (
+          <Alert
+            style={{marginBottom: 4}}
+            key="allowed-warning"
+            type="warning"
+            showIcon
+            message={allowedWarning}
+          />
+        ) : null}
         {!hard && soft ? (
           <Alert
             style={{marginBottom: 4}}
@@ -1258,9 +1271,12 @@ export class RunConfirmation extends React.Component {
 @observer
 class RunSpotConfirmationWithPrice extends React.Component {
   static propTypes = {
-    versionSizeErrors: PropTypes.shape({
-      soft: PropTypes.bool,
-      hard: PropTypes.bool
+    versionErrors: PropTypes.shape({
+      size: PropTypes.shape({
+        soft: PropTypes.bool,
+        hard: PropTypes.bool
+      }),
+      allowedWarning: PropTypes.string
     }),
     warning: PropTypes.string,
     platform: PropTypes.string,
@@ -1433,7 +1449,7 @@ class RunSpotConfirmationWithPrice extends React.Component {
         <Row>
           <RunConfirmation
             warning={this.props.warning}
-            versionSizeErrors={this.props.versionSizeErrors}
+            versionErrors={this.props.versionErrors}
             platform={this.props.platform}
             onChangePriceType={this.onChangeSpotType}
             isSpot={this.props.isSpot}
