@@ -17,12 +17,13 @@ environment:
   matrix:
     - job_name: CLI_MacOS
       appveyor_build_worker_image: macos-catalina
+      appveyor_build_worker_cloud: ip-172-31-13-99.eu-central-1.compute.internal
     - job_name: Publish_Docs
       appveyor_build_worker_image: Ubuntu1604
     - job_name: Build_All
       job_depends_on: CLI_MacOS
       appveyor_build_worker_image: Ubuntu1604
-  appveyor_buid_worker_cloud: ip-172-31-13-99.eu-central-1.compute.internal    
+      
 
 for:
 
