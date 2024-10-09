@@ -37,6 +37,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -53,6 +55,11 @@ public class SearchExportManager {
     private static final String EXPORT_DATE_REGEX = String.format("\\{%s:([^}]+)\\}", EXPORT_DATE);
     private static final String S3_SCHEMA = "s3://";
     private static final String CP_SCHEMA = "cp://";
+    private static final String AZ_SCHEMA = "az://";
+    private static final String GS_SCHEMA= "gs://";
+    private static final String NFS_SCHEMA = "nfs://";
+    private static final int NFS_SCHEMA_LENGTH = 6;
+    private static final int CLOUD_SCHEMA_LENGTH = 5;
 
     private final SearchManager searchManager;
     private final DataStorageManager storageManager;
@@ -75,7 +82,7 @@ public class SearchExportManager {
     public String saveTemplateExport(final FacetedSearchRequest facetedSearchRequest, final String templateId) {
         final SearchTemplateExportConfig templateConfig = getAndValidateTemplateConfig(templateId);
         final String cloudExportPath = getCloudExportPath(templateConfig.getSaveTo(), templateId);
-        final String storagePath = cloudExportPath.substring(S3_SCHEMA.length());
+        final String storagePath = trimSchema(cloudExportPath);
         final AbstractDataStorage storage = storageManager.loadByPathOrId(storagePath);
         final String storageFilePath = storagePath.substring(storage.getPath().length() + 1);
 
@@ -89,9 +96,10 @@ public class SearchExportManager {
     private String getCloudExportPath(final String pathToSave, final String templateId) {
         Assert.state(StringUtils.isNotBlank(pathToSave), messageHelper.getMessage(
                 MessageConstants.ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_EMPTY));
-        Assert.state(pathToSave.toLowerCase(Locale.ROOT).startsWith(S3_SCHEMA)
-                || pathToSave.toLowerCase(Locale.ROOT).startsWith(CP_SCHEMA), messageHelper.getMessage(
-                MessageConstants.ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_WRONG_SCHEMA));
+        final List<String> supportedSchemas = Arrays.asList(S3_SCHEMA, CP_SCHEMA, AZ_SCHEMA, GS_SCHEMA, NFS_SCHEMA);
+        Assert.state(supportedSchemas.stream().anyMatch(schema
+                -> pathToSave.toLowerCase(Locale.ROOT).startsWith(schema)),
+                messageHelper.getMessage(MessageConstants.ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_WRONG_SCHEMA));
 
         String resolvedPath = pathToSave;
         if (pathToSave.contains(TEMPLATE_ID_PLACEHOLDER)) {
@@ -111,6 +119,12 @@ public class SearchExportManager {
             }
         }
         return resolvedPath;
+    }
+
+    private String trimSchema(final String storagePath) {
+        return storagePath.toLowerCase(Locale.ROOT).startsWith(NFS_SCHEMA)
+                ? storagePath.substring(NFS_SCHEMA_LENGTH)
+                : storagePath.substring(CLOUD_SCHEMA_LENGTH);
     }
 
     private SearchTemplateExportConfig getAndValidateTemplateConfig(final String templateId) {
