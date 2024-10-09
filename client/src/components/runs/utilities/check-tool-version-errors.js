@@ -67,10 +67,6 @@ function getToolSizeErrors (versionSettings, preferences) {
       hard: hard ? size > hard : false
     };
   }
-  return {
-    soft: undefined,
-    hard: undefined
-  };
 }
 
 function getToolAllowedWarning (currentVersion, preferences) {
