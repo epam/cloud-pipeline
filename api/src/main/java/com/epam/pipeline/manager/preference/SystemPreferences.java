@@ -74,6 +74,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference.LongPrefere
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.ObjectPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.StringPreference;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference.EnumPreference;
+import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -111,6 +112,7 @@ import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOr
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidEnum;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidInstanceTags;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidMapOfLaunchCommands;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isValidSearchExportTemplateConfig;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.pass;
 
 /**
@@ -1318,6 +1320,10 @@ public class SystemPreferences {
             "search.elastic.hide.deleted", true, SEARCH_GROUP, pass);
     public static final IntPreference SEARCH_EXPORT_PAGE_SIZE = new IntPreference(
             "search.export.page.size", 5000, SEARCH_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<Map<String, SearchTemplateExportConfig>> SEARCH_EXPORT_TEMPLATE_MAPPING =
+            new ObjectPreference<>("search.export.template.mapping", Collections.emptyMap(),
+                    new TypeReference<Map<String, SearchTemplateExportConfig>>() {}, SEARCH_GROUP,
+                    isValidSearchExportTemplateConfig);
 
     public static final ObjectPreference<List<StorageFileSearchMask>> FILE_SEARCH_MASK_RULES = new ObjectPreference<>(
         "search.storage.elements.settings",

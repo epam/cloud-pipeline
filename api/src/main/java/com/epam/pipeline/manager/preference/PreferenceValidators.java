@@ -30,15 +30,19 @@ import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
+import com.epam.pipeline.entity.search.SearchTemplateExportSheetMapping;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -47,9 +51,11 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiPredicate;
 
@@ -319,6 +325,30 @@ public final class PreferenceValidators {
         }
         return true;
     };
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
+            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
+                    .and((pref, dependencies) -> {
+                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
+                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
+                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
+                        return true;
+                    });
+
+    private static void validateSearchExportTemplate(final String templateId,
+                                                     final SearchTemplateExportConfig configuration) {
+        final String messagePattern = "Failed to persist template '%s': %s.";
+        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
+                String.format(messagePattern, templateId, "'template_path' field is required."));
+        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
+                String.format(messagePattern, templateId, "No mappings provided."));
+        Assert.state(configuration.getMapping().values().stream()
+                        .flatMap(Collection::stream)
+                        .map(SearchTemplateExportSheetMapping::getStartRow)
+                        .filter(Objects::nonNull)
+                        .noneMatch(value -> value < 1),
+                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
+    }
 
     private PreferenceValidators() {
         // No-op

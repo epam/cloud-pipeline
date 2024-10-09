@@ -838,6 +838,13 @@ public final class MessageConstants {
             "error.search.scrolling.parameter.doc.id.missing";
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
             "error.search.scrolling.parameter.doc.sort.fields.missing";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_NOT_FOUND = "error.search.template.export.not.found";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_FILE_NOT_FOUND =
+            "error.search.template.export.file.not.found";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_EMPTY =
+            "error.search.template.export.path.to.save.empty";
+    public static final String ERROR_SEARCH_TEMPLATE_EXPORT_PATH_TO_SAVE_WRONG_SCHEMA =
+            "error.search.template.export.path.to.save.wrong.schema";
 
     // Quota
     public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
