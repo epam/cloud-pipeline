@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2021-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,8 @@ public class ClusterCostsMonitoringServiceCore {
         log.debug("Started cluster costs monitoring");
         final Map<Long, PipelineRun> masters = ListUtils.emptyIfNull(pipelineRunManager
                 .loadRunningPipelineRuns()).stream()
-                .filter(PipelineRun::isMasterRun)
+                .filter(pipelineRun -> pipelineRun.isMasterRun()
+                        || Optional.ofNullable(pipelineRun.getChildRunsCount()).orElse(0) != 0)
                 .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
         log.debug("Found '{}' running master runs", masters.size());
 
