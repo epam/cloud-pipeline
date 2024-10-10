@@ -16,7 +16,10 @@
 
 package com.epam.pipeline.manager.cluster.costs;
 
+import com.epam.pipeline.controller.PagedResult;
+import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.utils.RunDurationUtils;
@@ -28,12 +31,11 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,18 +43,34 @@ import java.util.stream.Collectors;
 public class ClusterCostsMonitoringServiceCore {
     private static final int DIVIDE_SCALE = 5;
     private static final int MINUTES_IN_HOUR = 60;
-
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 20;
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final PipelineRunManager pipelineRunManager;
 
     @SchedulerLock(name = "ClusterCostsMonitoringService_monitor", lockAtMostForString = "PT10M")
     public void monitor() {
         log.debug("Started cluster costs monitoring");
-        final Map<Long, PipelineRun> masters = ListUtils.emptyIfNull(pipelineRunManager
-                .loadRunningPipelineRuns()).stream()
-                .filter(pipelineRun -> pipelineRun.isMasterRun()
-                        || Optional.ofNullable(pipelineRun.getChildRunsCount()).orElse(0) != 0)
-                .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPageSize(DEFAULT_PAGE_SIZE);
+        filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
+        filter.setEagerGrouping(false);
+        filter.setUserModified(false);
+        int page = DEFAULT_PAGE;
+        final Map<Long, PipelineRun> masters = new HashMap<>();
+        Integer totalCount = null;
+        boolean isMorePagesAvailable = true;
+        while (isMorePagesAvailable) {
+            filter.setPage(page);
+            PagedResult<List<PipelineRun>> listPagedResult = pipelineRunManager.searchPipelineRuns(filter, false);
+            List<PipelineRun> runs = ListUtils.emptyIfNull(listPagedResult.getElements());
+            runs.forEach(run -> masters.put(run.getId(), run));
+            if (totalCount == null) {
+                totalCount = listPagedResult.getTotalCount();
+            }
+            isMorePagesAvailable = (page * DEFAULT_PAGE_SIZE) < totalCount;
+            page++;
+        }
         log.debug("Found '{}' running master runs", masters.size());
 
         final Map<Long, List<PipelineRun>> workersByParent = pipelineRunCRUDService

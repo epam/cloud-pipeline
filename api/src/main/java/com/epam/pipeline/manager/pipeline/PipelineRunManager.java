@@ -804,7 +804,7 @@ public class PipelineRunManager {
         Assert.isTrue(filter.getPageSize() <= maxPageSize,
                 messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
         PipelineRunFilterVO.ProjectFilter projectFilter = resolveProjectFiltering(filter);
-        if (projectFilter!= null && projectFilter.isEmpty()) {
+        if (projectFilter != null && projectFilter.isEmpty()) {
             return new PagedResult<>(Collections.emptyList(), 0);
         }
         PagedResult<List<PipelineRun>> result;
