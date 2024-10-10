@@ -294,6 +294,12 @@ variable "cp_edge_elb_schema" {
   type        = string
   default     = "internet-facing"
   description = "User-facing ELB schema. Possible values 'internal' or 'internet-facing'."
+
+  validation {
+    condition     = contains(["internet-facing", "internal"], var.cp_edge_elb_schema)
+    error_message = "The value of the cp_edge_elb_schema variable can be only internal or internet-facing. Please check that variable is set correctly."
+  }
+
 }
 
 variable "cp_edge_elb_subnet" {

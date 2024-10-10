@@ -371,8 +371,12 @@ EOF
 
     # Cloud common
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE" ]; then
-        print_err "Default cluster nodes image ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
-        return 1
+        if is_deployment_type_requested classic; then
+            print_err "Default cluster nodes image ID is not defined, but it is required for the configuration. Please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
+            return 1
+        else
+            print_warn "Default cluster nodes image ID is not defined, will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE=\" option"
+        fi
     fi
     if [ -z "$CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU" ]; then
         print_warn "Default GPU cluster nodes image ID is not defined, $CP_PREF_CLUSTER_INSTANCE_IMAGE will be used by default. If it shall be different - please specify it using \"-env CP_PREF_CLUSTER_INSTANCE_IMAGE_GPU=\" option"
