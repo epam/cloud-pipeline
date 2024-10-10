@@ -770,7 +770,7 @@ module &quot;cluster-infra&quot; {
   required_providers {
     postgresql = {
       source  = &quot;cyrilgdn/postgresql&quot;
-      version = &quot;1.21.0&quot;
+      version = &quot;1.22.0&quot;
     }
   }
 }
@@ -788,6 +788,9 @@ output &quot;cp_pipectl_script&quot; {
   value = module.cluster-infra.cp_deploy_script
 }
 
+output &quot;cp_cloud_network_config&quot; {
+  value = module.cluster-infra.cp_cloud_network_config
+}
 
 </code></pre>
 <p>To configure <code>cluster-infrastructure</code> deployment, there is a list of variables that need to be specified:</p>
@@ -1077,6 +1080,7 @@ terraform show -json | jq -r &quot;.values.root_module.child_modules[].resources
 <li>Create cluster.networks.config.json from <code>cluster-infrastructure</code> deployment:</li>
 </ol>
 <pre><code>terraform output -raw cp_cloud_network_config &gt; cluster.networks.config.json 
+export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
 </code></pre>
 <ol>
 <li>Take script from the <code>cluster-infrastructure</code> deployment <a href="#output-of-cluster-infrastructure-module">output</a> and
@@ -1086,7 +1090,7 @@ terraform show -json | jq -r &quot;.values.root_module.child_modules[].resources
 
 wget -c $CP_PIPECTL_URL -O pipectl &amp;&amp; chmod +x pipectl
 
-terraform output -raw cp_pipectl_script &gt; &quot;deploy_cloud_pipeline.sh&quot; &amp;&amp; chmod +x deploy_cloud_pipeline.sh 
+terraform output -raw cp_pipectl_script | envsubst &gt; &quot;deploy_cloud_pipeline.sh&quot; &amp;&amp; chmod +x deploy_cloud_pipeline.sh 
 
 nohup ./deploy_cloud_pipeline.sh &amp;&gt; pipectl.log &amp;
 </code></pre>
