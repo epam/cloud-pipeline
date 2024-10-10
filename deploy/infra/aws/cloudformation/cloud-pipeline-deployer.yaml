@@ -641,7 +641,8 @@ Resources:
             
               sudo mkdir -p $PIPECTL_DEPLOY_DIR
               terraform output -raw cp_cloud_network_config > "$PIPECTL_DEPLOY_DIR/cluster.networks.config.json" && \
-              terraform output -raw cp_pipectl_script > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
+              export CP_CLUSTER_NETWORKS_CONFIG_JSON="$PIPECTL_DEPLOY_DIR/cluster.networks.config.json" && \
+              terraform output -raw cp_pipectl_script | envsubst > "$PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh" && \
               chmod +x $PIPECTL_DEPLOY_DIR/deploy_cloud_pipeline.sh
             
               CP_S3Link=${CPAssetsS3Url}

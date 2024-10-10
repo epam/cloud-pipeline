@@ -215,7 +215,7 @@ locals {
     "-env CP_BILLING_DISABLE_GS=\"true\"",
     "-env CP_BILLING_DISABLE_AZURE_BLOB=\"true\"",
     "-env CP_BILLING_CENTER_KEY=\"billing-group\"",
-    "-env CP_CLOUD_NETWORK_CONFIG_FILE=\"/root/cloud-pipeline/pipectl-deploy/cluster.networks.config.json\""
+    "-env CP_CLOUD_NETWORK_CONFIG_FILE=$${CP_CLUSTER_NETWORKS_CONFIG_JSON}"
     ],
     local.deploy_idp,
     local.aws_omics_specific_envs,

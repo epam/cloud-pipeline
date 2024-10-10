@@ -305,7 +305,7 @@ terraform {
   required_providers {
     postgresql = {
       source  = "cyrilgdn/postgresql"
-      version = "1.21.0"
+      version = "1.22.0"
     }
   }
 }
@@ -326,6 +326,9 @@ output "cp_pipectl_script" {
   value = module.cluster-infra.cp_deploy_script
 }
 
+output "cp_cloud_network_config" {
+  value = module.cluster-infra.cp_cloud_network_config
+}
 
 ```
 
@@ -536,6 +539,7 @@ terraform show -json | jq -r ".values.root_module.child_modules[].resources[] | 
 
 ```
 terraform output -raw cp_cloud_network_config > cluster.networks.config.json 
+export CP_CLUSTER_NETWORKS_CONFIG_JSON=$(realpath cluster.networks.config.json)
 ```
 
 5. Take script from the `cluster-infrastructure` deployment [output](#output-of-cluster-infrastructure-module) and
@@ -546,7 +550,7 @@ CP_PIPECTL_URL=https://cloud-pipeline-oss-builds.s3.amazonaws.com/builds/<link-t
 
 wget -c $CP_PIPECTL_URL -O pipectl && chmod +x pipectl
 
-terraform output -raw cp_pipectl_script > "deploy_cloud_pipeline.sh" && chmod +x deploy_cloud_pipeline.sh 
+terraform output -raw cp_pipectl_script | envsubst > "deploy_cloud_pipeline.sh" && chmod +x deploy_cloud_pipeline.sh 
 
 nohup ./deploy_cloud_pipeline.sh &> pipectl.log &
 ```
