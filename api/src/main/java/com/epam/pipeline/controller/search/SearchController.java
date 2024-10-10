@@ -23,6 +23,8 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchResult;
+import com.epam.pipeline.entity.search.SearchTemplateExportInfo;
+import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -46,6 +49,7 @@ import java.time.LocalDateTime;
 public class SearchController extends AbstractRestController {
 
     private final SearchManager searchManager;
+    private final SearchExportManager searchExportManager;
 
     @RequestMapping(value = "/search", method = RequestMethod.POST)
     @ResponseBody
@@ -85,6 +89,35 @@ public class SearchController extends AbstractRestController {
         final String reportFileName = StringUtils.isNotBlank(searchExportRequest.getCsvFileName())
                 ? searchExportRequest.getCsvFileName()
                 : String.format("facet_report_%s.csv", LocalDateTime.now());
-        writeFileToResponse(response, searchManager.export(searchExportRequest), reportFileName);
+        writeFileToResponse(response, searchExportManager.export(searchExportRequest), reportFileName);
+    }
+
+    @PostMapping("/search/facet/export/templates")
+    @ResponseBody
+    @ApiOperation(
+            value = "Export faceted search result in a predefined format.",
+            notes = "Export faceted search result in a predefined format.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void templateExport(@RequestBody final FacetedSearchRequest searchRequest,
+                               @RequestParam final String templateId,
+                               @RequestParam(required = false) final String fileName,
+                               final HttpServletResponse response) throws IOException {
+        final String reportFileName = StringUtils.isNotBlank(fileName)
+                ? fileName
+                : String.format("%s-%s.xls", templateId, LocalDateTime.now());
+        writeFileToResponse(response, searchExportManager.templateExport(searchRequest, templateId), reportFileName);
+    }
+
+    @PostMapping("/search/facet/export/templates/save")
+    @ResponseBody
+    @ApiOperation(
+            value = "Persists export faceted search result in a predefined format by specified cloud path.",
+            notes = "Persists export faceted search result in a predefined format by specified cloud path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<SearchTemplateExportInfo> saveTemplateExport(@RequestBody final FacetedSearchRequest searchRequest,
+                                                               @RequestParam final String templateId) {
+        return Result.success(searchExportManager.saveTemplateExport(searchRequest, templateId));
     }
 }

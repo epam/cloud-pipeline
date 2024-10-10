@@ -25,6 +25,8 @@ import com.epam.pipeline.test.creator.search.SearchCreatorUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -39,10 +41,14 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SearchManagerTest extends AbstractSpringTest {
+public class SearchExportManagerTest extends AbstractSpringTest {
 
     private static final String EXPORT_FILE_NAME = "test_search_export.csv";
     private static final int PAGE_SIZE = 5000;
+
+    @Autowired
+    @InjectMocks
+    private SearchExportManager searchExportManager;
 
     @SpyBean
     private SearchManager searchManager;
@@ -52,7 +58,7 @@ public class SearchManagerTest extends AbstractSpringTest {
 
     @Before
     public void setUpPreferenceManager() {
-        ReflectionTestUtils.setField(searchManager, "preferenceManager", preferenceManager);
+        ReflectionTestUtils.setField(searchExportManager, "preferenceManager", preferenceManager);
         when(preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE)).thenReturn(PAGE_SIZE);
     }
 
@@ -63,7 +69,7 @@ public class SearchManagerTest extends AbstractSpringTest {
         doReturn(facetedSearchResult).when(searchManager).facetedSearch(facetedSearchRequest);
         final FacetedSearchExportRequest facetedSearchExportRequest = SearchCreatorUtils
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
-        final String[] exportedCsv = new String(searchManager.export(facetedSearchExportRequest))
+        final String[] exportedCsv = new String(searchExportManager.export(facetedSearchExportRequest))
                 .split("\n");
         Assert.assertNotNull(exportedCsv);
         Assert.assertEquals(3, exportedCsv.length);
@@ -77,10 +83,9 @@ public class SearchManagerTest extends AbstractSpringTest {
         final FacetedSearchExportRequest facetedSearchExportRequest = SearchCreatorUtils
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
         final FacetedSearchRequest facetedSearchRequest = facetedSearchExportRequest.getFacetedSearchRequest();
-        doReturn(facetedSearchResult).when(searchManager)
-                .facetedSearch(facetedSearchRequest);
+        doReturn(facetedSearchResult).when(searchManager).facetedSearch(facetedSearchRequest);
         facetedSearchRequest.setPageSize(null);
-        final String[] exportedCsv = new String(searchManager.export(facetedSearchExportRequest))
+        final String[] exportedCsv = new String(searchExportManager.export(facetedSearchExportRequest))
                 .split("\n");
         verify(searchManager).facetedSearch(facetedSearchRequest);
         verify(preferenceManager, atLeast(1)).getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE);
@@ -96,6 +101,6 @@ public class SearchManagerTest extends AbstractSpringTest {
         final FacetedSearchExportRequest facetedSearchExportRequest = SearchCreatorUtils
                 .getFacetedSearchExportRequest(EXPORT_FILE_NAME, SPECIES);
         facetedSearchExportRequest.getFacetedSearchRequest().setPageSize(null);
-        searchManager.export(facetedSearchExportRequest);
+        searchExportManager.export(facetedSearchExportRequest);
     }
 }
