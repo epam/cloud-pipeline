@@ -66,7 +66,7 @@ public class ClusterCostsMonitoringServiceCoreTest {
     public void shouldUpdateClusterPrices() {
         final PipelineRun master1 = masterRun(MASTER_ID_1, 2, 3);
         final PipelineRun master2 = masterRun(MASTER_ID_2, 1, 1);
-        when(pipelineRunManager.searchPipelineRuns(any(), anyBoolean()))
+        when(pipelineRunManager.searchPipelineRuns(any(), anyBoolean(), anyBoolean()))
                 .thenReturn(new PagedResult<>(Arrays.asList(master1, master2), 2));
 
         final PipelineRun worker11 = workerRun(WORKER_ID_11, MASTER_ID_1, PRICE_1); // no start times

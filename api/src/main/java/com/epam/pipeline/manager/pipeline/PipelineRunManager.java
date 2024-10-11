@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -796,13 +796,23 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter, boolean loadStorageLinks) {
+        return searchPipelineRuns(filter, loadStorageLinks, true);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter,
+                                                             boolean loadStorageLinks,
+                                                             boolean checkMaxPageSize) {
         Assert.isTrue(filter.getPage() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
-        final Integer maxPageSize = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
-        Assert.isTrue(filter.getPageSize() <= maxPageSize,
-                messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
+        if (checkMaxPageSize) {
+            final Integer maxPageSize = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
+            Assert.isTrue(filter.getPageSize() <= maxPageSize,
+                    messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
+        }
         PipelineRunFilterVO.ProjectFilter projectFilter = resolveProjectFiltering(filter);
         if (projectFilter != null && projectFilter.isEmpty()) {
             return new PagedResult<>(Collections.emptyList(), 0);

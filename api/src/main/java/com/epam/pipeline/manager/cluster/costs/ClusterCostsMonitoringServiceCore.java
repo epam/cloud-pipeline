@@ -32,10 +32,12 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +46,6 @@ public class ClusterCostsMonitoringServiceCore {
     private static final int DIVIDE_SCALE = 5;
     private static final int MINUTES_IN_HOUR = 60;
     private static final int DEFAULT_PAGE = 1;
-    private static final int DEFAULT_PAGE_SIZE = 20;
     private final PipelineRunCRUDService pipelineRunCRUDService;
     private final PipelineRunManager pipelineRunManager;
 
@@ -52,27 +53,24 @@ public class ClusterCostsMonitoringServiceCore {
     public void monitor() {
         log.debug("Started cluster costs monitoring");
         final PagingRunFilterVO filter = new PagingRunFilterVO();
-        filter.setPageSize(DEFAULT_PAGE_SIZE);
+        filter.setPage(DEFAULT_PAGE);
+        filter.setPageSize(Integer.MAX_VALUE);
         filter.setStatuses(Collections.singletonList(TaskStatus.RUNNING));
         filter.setEagerGrouping(false);
         filter.setUserModified(false);
-        int page = DEFAULT_PAGE;
-        final Map<Long, PipelineRun> masters = new HashMap<>();
-        Integer totalCount = null;
-        boolean isMorePagesAvailable = true;
-        while (isMorePagesAvailable) {
-            filter.setPage(page);
-            PagedResult<List<PipelineRun>> listPagedResult = pipelineRunManager.searchPipelineRuns(filter, false);
-            List<PipelineRun> runs = ListUtils.emptyIfNull(listPagedResult.getElements());
-            runs.forEach(run -> masters.put(run.getId(), run));
-            if (totalCount == null) {
-                totalCount = listPagedResult.getTotalCount();
-            }
-            isMorePagesAvailable = (page * DEFAULT_PAGE_SIZE) < totalCount;
-            page++;
+        final Map<Long, PipelineRun> masters = ListUtils.emptyIfNull(
+                Optional.ofNullable(pipelineRunManager.searchPipelineRuns(filter, false, false))
+                        .orElse(new PagedResult<>()).getElements())
+                .stream()
+                .filter(pipelineRun -> pipelineRun.isMasterRun()
+                        || Optional.ofNullable(pipelineRun.getChildRunsCount()).orElse(0) != 0)
+                .collect(Collectors.toMap(PipelineRun::getId, Function.identity()));
+        if (masters.isEmpty()) {
+            log.debug("Not found running master runs. Finished cluster costs monitoring");
+            return;
         }
-        log.debug("Found '{}' running master runs", masters.size());
 
+        log.debug("Found '{}' running master runs", masters.size());
         final Map<Long, List<PipelineRun>> workersByParent = pipelineRunCRUDService
                 .loadRunsByParentRuns(masters.keySet());
 
