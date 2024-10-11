@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
@@ -223,6 +224,12 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageDao.loadAllDataStorages();
+    }
+
+    public List<AbstractDataStorage> getDataStorages(final MetadataTagsFilterVO filter) {
+        return Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags())
+                ? dataStorageDao.loadAllDataStorages()
+                : dataStorageDao.loadAllDataStorages(filter);
     }
 
     public List<AbstractDataStorage> getDataStoragesWithToolsToMount() {

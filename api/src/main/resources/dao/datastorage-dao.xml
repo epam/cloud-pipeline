@@ -154,6 +154,47 @@
                 ]]>
             </value>
         </property>
+        <property name="loadDataStoragesFilterQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        d.datastorage_id,
+                        d.datastorage_name,
+                        d.description,
+                        d.datastorage_type,
+                        d.path,
+                        d.datastorage_root_id,
+                        d.sts_duration,
+                        d.lts_duration,
+                        d.incomplete_upload_cleanup_days,
+                        d.folder_id,
+                        d.created_date,
+                        d.owner,
+                        d.enable_versioning,
+                        d.backup_duration,
+                        d.locked as datastorage_locked,
+                        d.mount_point,
+                        d.mount_options,
+                        d.shared,
+                        d.allowed_cidrs,
+                        d.region_id as region_id,
+                        d.file_share_mount_id,
+                        d.sensitive,
+                        d.mount_disabled,
+                        d.s3_kms_key_arn,
+                        d.s3_use_assumed_creds,
+                        s3_temp_creds_role,
+                        d.mount_status,
+                        d.source_datastorage_id,
+                        d.masking_rules
+                    FROM
+                        pipeline.datastorage d
+                    LEFT JOIN pipeline.metadata m ON d.datastorage_id = m.entity_id
+                    WHERE m.entity_class = 'DATA_STORAGE' AND @FILTER@
+                    ORDER BY d.datastorage_id
+                ]]>
+            </value>
+        </property>
         <property name="loadDataStoragesByIdsQuery">
             <value>
                 <![CDATA[
