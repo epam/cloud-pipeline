@@ -34,7 +34,14 @@ for:
 
     build_script:
     - |-
-      bash deploy/appveyor/appveyor_build_macos.sh
+      echo "-----------------------------------------------"
+      echo "MacOS Hardware information"
+      system_profiler SPHardwareDataType
+      arch
+      sw_vers
+      hostname
+      echo "End info"
+      echo "-----------------------------------------------"
   
   -
     matrix:

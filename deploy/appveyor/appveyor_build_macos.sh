@@ -28,15 +28,6 @@ deactivate
 source ~/venv3.8*/bin/activate
 pip install awscli
 
-echo "-----------------------------------------------"
-echo "MacOS Hardware information"
-system_profiler SPHardwareDataType
-arch
-sw_vers
-hostname
-echo "End info"
-echo "-----------------------------------------------"
-
 cd pipe-cli
 DIST_TGZ_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
