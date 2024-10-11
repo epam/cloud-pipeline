@@ -16,7 +16,8 @@ ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
 # fix for problems: public key is not available
-RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E88979FB9B30ACF2
+RUN key=E88979FB9B30ACF2;\
+    apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys "$key"
 
 # Install deps
 RUN apt update && \
