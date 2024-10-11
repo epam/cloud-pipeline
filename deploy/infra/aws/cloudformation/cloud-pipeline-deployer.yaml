@@ -141,8 +141,8 @@ Parameters:
     Default: t3.large
   JumpServerAmiId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Description: (Optional) EKS based Image id that will be used for Jump-Server, by default will be latest version for EKS 1.29. See README.md for more information.
-    Default: /aws/service/eks/optimized-ami/1.29/amazon-linux-2/recommended/image_id
+    Description: (Optional) EKS based Image id that will be used for Jump-Server, by default will be latest version for EKS 1.31. See README.md for more information.
+    Default: /aws/service/eks/optimized-ami/1.31/amazon-linux-2/recommended/image_id
   VpcId:
     Type: String
     Description: (Required) Id of the VPC where all resources will be created.
@@ -152,7 +152,7 @@ Parameters:
   EKSVersion:
     Type: String
     Description: (Optional) Version of the AWS EKS Cluster to install. See README.md for more information.
-    Default: "1.29"
+    Default: "1.31"
   EKSAdminIAMRoleArns:
     Type: String
     Description: > 

@@ -39,7 +39,6 @@ Before creating the CloudFormation stack, you need to prepare several requiremen
 AWS Service role AWSServiceRoleForEC2Spot need to be created upfront. For more information, please, read:
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/service-linked-roles-spot-instance-requests.html
 
-
 #### AWS VPC
 
 Virtual Private Cloud (VPC) with desired network configuration should be created in advance.

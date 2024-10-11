@@ -51,7 +51,7 @@ variable "additional_tags" {
 
 variable "eks_cluster_version" {
   type    = string
-  default = "1.29"
+  default = "1.31"
 }
 
 variable "eks_system_node_group_subnet_ids" {

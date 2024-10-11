@@ -55,7 +55,7 @@ variable "ami_id" {
 }
 
 variable "eks_version" {
-  default     = "1.29"
+  default     = "1.31"
   description = "Version of the Elastic Kubernetes server. It will be used to filter the latest AMI for the jump server unless another AMI ID is specified."
 }
 
