@@ -322,16 +322,16 @@ class ExportButton extends React.Component {
     }
     const storage = getStorageById(savedExport.storageId);
     const path = savedExport.storagePath.split('/');
-    path.pop();
+    const file = path.pop();
     const folder = path.join('/');
     return (
-      <div>
+      <div style={{paddingRight: 25}}>
         Data exported to
         <Link
           style={{marginLeft: 5}}
           to={`storage/${savedExport.storageId}?path=${folder}`}
         >
-          {`${storage?.name || savedExport.storageId}/${folder}`}
+          {`${storage?.name || savedExport.storageId}/${folder}/${file}`}
         </Link>.
       </div>
     );
@@ -391,6 +391,11 @@ class ExportButton extends React.Component {
           title={null}
           visible={!!this.state.savedExport}
           onCancel={this.closeExportResultModal}
+          width="fit-content"
+          style={{
+            minWidth: '30vw',
+            maxWidth: '80vw'
+          }}
           footer={
             <Button
               type="primary"
