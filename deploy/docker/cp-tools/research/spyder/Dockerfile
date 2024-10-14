@@ -15,9 +15,6 @@
 ARG BASE_IMAGE
 FROM $BASE_IMAGE
 
-# fix for problems: public key is not available
-RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E88979FB9B30ACF2
-
 # Install deps
 RUN apt update && \
     apt install -y  bzip2 \
