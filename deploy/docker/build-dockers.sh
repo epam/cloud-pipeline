@@ -393,13 +393,15 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter-lab "$CP_DIST_REPO_
 # Desktop NoMachine
 ## - Ubuntu
 ### -- Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:16.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:16.04"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:18.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+### TODO disabled because of error with ubuntu public key
+#build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:16.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:16.04"
+#build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:18.04" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+#build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}" "library/ubuntu-nomachine:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/vanilla" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 
 ### -- CUDA
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+### TODO disabled because of error with ubuntu public key
+#build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+#build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
 ## - Centos
 ### -- Vanilla
@@ -413,12 +415,14 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST
 # Desktop noVNC
 ## - Ubuntu
 ### -- Vanilla
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:18.04" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="library/ubuntu:18.04"
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:latest" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+### TODO disabled because of error with ubuntu public key
+#build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:18.04" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="library/ubuntu:18.04"
+#build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-${DOCKERS_VERSION}" "library/ubuntu-novnc:latest" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="library/ubuntu:18.04"
 
 ### -- CUDA
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
-build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:latest" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+### TODO disabled because of error with ubuntu public key
+#build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+#build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-novnc-cuda:latest" --file "ubuntu/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
 ## - Centos
 ### -- Vanilla
@@ -458,16 +462,19 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME
 
 RESEARCH_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/research
 
+### TODO disabled because of error with ubuntu public key
 # Spyder with noVNC
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-py37-${DOCKERS_VERSION}" "library/spyder-novnc:3.7" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-${DOCKERS_VERSION}" "library/spyder-novnc:latest" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+#build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-py37-${DOCKERS_VERSION}" "library/spyder-novnc:3.7" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
+#build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-novnc-${DOCKERS_VERSION}" "library/spyder-novnc:latest" --spec "noVNC" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-novnc-${DOCKERS_VERSION}"
 
+### TODO disabled because of error with ubuntu public key
 # Spyder with nomachine
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-py37-${DOCKERS_VERSION}" "library/spyder-nomachine:3.7" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-${DOCKERS_VERSION}" "library/spyder-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+#build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-py37-${DOCKERS_VERSION}" "library/spyder-nomachine:3.7" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+#build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/spyder "$CP_DIST_REPO_NAME:tools-research-spyder-nomachine-${DOCKERS_VERSION}" "library/spyder-nomachine:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
 
+### TODO disabled because of error with ubuntu public key
 # QuPath with nomachine
-build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/qupath "$CP_DIST_REPO_NAME:tools-research-qupath-${DOCKERS_VERSION}" "library/qupath:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
+#build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/qupath "$CP_DIST_REPO_NAME:tools-research-qupath-${DOCKERS_VERSION}" "library/qupath:latest" --spec "nomachine" --build-arg BASE_IMAGE="$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-${DOCKERS_VERSION}"
 
 
 ########################
