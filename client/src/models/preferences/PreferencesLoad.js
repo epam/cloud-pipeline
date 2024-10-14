@@ -375,6 +375,10 @@ class PreferencesLoad extends Remote {
     return [];
   }
 
+  get toolOSWarningText () {
+    return this.getPreferenceValue('ui.tools.os.with.warning');
+  }
+
   @computed
   get allowCommitToOtherPersonalGroups () {
     const value = this.getPreferenceValue('commit.allow.other.personal.group');
