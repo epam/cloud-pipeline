@@ -105,6 +105,19 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get searchExportTemplates () {
+    const value = this.getPreferenceValue('search.export.template.mapping');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "search.export.template.mapping:', e);
+      }
+    }
+    return undefined;
+  }
+
+  @computed
   get billingEnabled () {
     const value = this.getPreferenceValue('billing.reports.enabled');
     return value && `${value}`.toLowerCase() === 'true';
