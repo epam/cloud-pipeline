@@ -354,7 +354,7 @@ class ExportButton extends React.Component {
         if (!template.permissions || this.isAdmin) {
           return true;
         }
-        if (!template['template_path'] || !this.props.authenticatedUserInfo.loaded) {
+        if (!this.props.authenticatedUserInfo.loaded) {
           return false;
         }
         return checkTemplatePermissions(this.props.authenticatedUserInfo.value, template);
