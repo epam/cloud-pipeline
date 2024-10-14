@@ -485,6 +485,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         // NFS specific fields
         MOUNT_OPTIONS,
         FILE_SHARE_MOUNT_ID,
+        MOUNT_EXACT_PATH,
 
         // cloud specific fields
         REGION_ID,
@@ -532,6 +533,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(SHARED.name(), dataStorage.isShared());
             params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
             params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
+            params.addValue(MOUNT_EXACT_PATH.name(), dataStorage.isMountExactPath());
             params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
             params.addValue(MOUNT_DISABLED.name(), dataStorage.isMountDisabled());
 
@@ -636,6 +638,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                     allowedCidrs,
                     regionId,
                     fileShareMountId,
+                    rs.getBoolean(MOUNT_EXACT_PATH.name()),
                     rs.getString(S3_KMS_KEY_ARN.name()),
                     rs.getString(S3_TEMP_CREDS_ROLE.name()),
                     rs.getBoolean(S3_USE_ASSUMED_CREDS.name()),
