@@ -63,7 +63,7 @@ import {
   getLimitMountsParameterValue,
   getLimitMountsStorages
 } from '../../../../utils/limit-mounts/get-limit-mounts-storages';
-import checkToolVersionSizeErrors from '../../../runs/utilities/check-tool-version-size-errors';
+import checkToolVersionErrors from '../../../runs/utilities/check-tool-version-errors';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -577,7 +577,7 @@ export default class PersonalToolsPanel extends React.Component {
               this.props.preferences,
               tool.platform
             );
-            const versionSizeErrors = await checkToolVersionSizeErrors(
+            const versionErrors = await checkToolVersionErrors(
               this.state.runToolInfo.payload.dockerImage,
               this.props.preferences,
               this.props.dockerRegistries
@@ -587,7 +587,7 @@ export default class PersonalToolsPanel extends React.Component {
               runToolInfo: {
                 ...this.state.runToolInfo,
                 permissionErrors,
-                versionSizeErrors,
+                versionErrors,
                 payload: {
                   ...this.state.runToolInfo.payload,
                   params
@@ -875,7 +875,7 @@ export default class PersonalToolsPanel extends React.Component {
                       this.state.runToolInfo.permissionErrors.length > 0
                     ) ||
                     this.runCapabilitiesError ||
-                    this.state.runToolInfo?.versionSizeErrors?.hard ||
+                    this.state.runToolInfo?.versionErrors?.size?.hard ||
                     this.state.pending
                   }
                   onClick={this.runToolWithDefaultSettings}
@@ -894,7 +894,7 @@ export default class PersonalToolsPanel extends React.Component {
           {
             this.state.runToolInfo &&
               <RunConfirmation
-                versionSizeErrors={this.state.runToolInfo.versionSizeErrors}
+                versionErrors={this.state.runToolInfo.versionErrors}
                 cloudRegions={
                   this.props.awsRegions.loaded
                     ? (this.props.awsRegions.value || []).map(r => r)
