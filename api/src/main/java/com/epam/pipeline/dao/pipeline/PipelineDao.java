@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.MetadataTagsUtils;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -88,7 +88,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
                 PipelineParameters.getRowMapper());
     }
 
-    public List<Pipeline> loadAllPipelines(final MetadataTagsFilterVO filter) {
+    public List<Pipeline> loadAllPipelines(final EntityFilterVO filter) {
         return getNamedParameterJdbcTemplate().query(
                 MetadataTagsUtils.buildTagsFilterClause(loadPipelinesFiltersQuery, filter.getTags()),
                 PipelineParameters.getRowMapper());

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.metadata;
+package com.epam.pipeline.controller.vo;
 
 import lombok.Data;
 
@@ -22,6 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class MetadataTagsFilterVO {
+public class EntityFilterVO {
     private Map<String, List<String>> tags;
 }

@@ -26,7 +26,7 @@ import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
@@ -134,7 +134,7 @@ public class PipelineApiService {
 
     @PostFilter("hasRole('ADMIN') OR hasPermission(filterObject, 'READ')")
     @AclMaskList
-    public List<Pipeline> filterPipeline(final boolean loadVersions, final MetadataTagsFilterVO filter) {
+    public List<Pipeline> filterPipelines(final boolean loadVersions, final EntityFilterVO filter) {
         return pipelineManager.loadAllPipelines(loadVersions, filter);
     }
 

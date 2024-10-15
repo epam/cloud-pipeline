@@ -29,7 +29,7 @@ import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.RegisterPipelineVersionVO;
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.entity.cluster.InstancePrice;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
@@ -168,7 +168,7 @@ public class PipelineController extends AbstractRestController {
         return Result.success(pipelineApiService.loadAllPipelines(loadVersion));
     }
 
-    @PostMapping("/pipeline/loadAll")
+    @PostMapping("/pipeline/filter")
     @ResponseBody
     @ApiOperation(
             value = "Loads all registered pipelines with specified filters.",
@@ -177,10 +177,10 @@ public class PipelineController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<Pipeline>> loadPipelineWithFilter(
-            @RequestBody final MetadataTagsFilterVO filter,
+    public Result<List<Pipeline>> filterPipelines(
+            @RequestBody final EntityFilterVO filter,
             @RequestParam(defaultValue = "false") final Boolean loadVersion) {
-        return Result.success(pipelineApiService.filterPipeline(loadVersion, filter));
+        return Result.success(pipelineApiService.filterPipelines(loadVersion, filter));
     }
 
     @GetMapping(value = "/pipeline/permissions")

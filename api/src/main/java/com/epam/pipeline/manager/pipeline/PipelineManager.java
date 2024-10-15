@@ -22,7 +22,7 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -290,7 +290,7 @@ public class PipelineManager implements SecuredEntityManager {
         return result;
     }
 
-    public List<Pipeline> loadAllPipelines(final boolean loadVersions, final MetadataTagsFilterVO filter) {
+    public List<Pipeline> loadAllPipelines(final boolean loadVersions, final EntityFilterVO filter) {
         final List<Pipeline> result = Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags())
                 ? pipelineDao.loadAllPipelines()
                 : pipelineDao.loadAllPipelines(filter);

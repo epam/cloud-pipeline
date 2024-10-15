@@ -17,7 +17,7 @@
 package com.epam.pipeline.dao.datastorage;
 
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.dao.MetadataTagsUtils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -185,7 +185,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 DataStorageParameters.getRowMapper());
     }
 
-    public List<AbstractDataStorage> loadAllDataStorages(final MetadataTagsFilterVO filter) {
+    public List<AbstractDataStorage> loadAllDataStorages(final EntityFilterVO filter) {
         return getNamedParameterJdbcTemplate()
                 .query(MetadataTagsUtils.buildTagsFilterClause(loadDataStoragesFilterQuery, filter.getTags()),
                 DataStorageParameters.getRowMapper());

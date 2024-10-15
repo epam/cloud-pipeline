@@ -17,7 +17,7 @@
 package com.epam.pipeline.dao.pipeline;
 
 import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -180,7 +180,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
         final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
@@ -194,7 +194,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         final Pipeline pipeline2 = createPipelineWithMetadata(VALUE_1, VALUE_3);
         createPipelineWithMetadata(VALUE_2, VALUE_3);
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
         final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
@@ -210,7 +210,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         createPipelineWithMetadata(VALUE_3, VALUE_2);
         final Pipeline pipeline3 = createPipelineWithMetadata(VALUE_2, VALUE_1);
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
 
         final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
@@ -226,7 +226,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_2, Collections.singletonList(VALUE_1)));
 
         final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
@@ -240,7 +240,7 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_2)));
 
         final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);

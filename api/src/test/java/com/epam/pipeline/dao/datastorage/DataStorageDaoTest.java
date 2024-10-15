@@ -17,7 +17,7 @@
 package com.epam.pipeline.dao.datastorage;
 
 import com.epam.pipeline.controller.vo.EntityVO;
-import com.epam.pipeline.controller.vo.metadata.MetadataTagsFilterVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
@@ -395,7 +395,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         createStorageWithMetadata();
         dataStorageDao.createDataStorage(getS3Storage());
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
         final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
@@ -409,7 +409,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         final S3bucketDataStorage storage2 = createStorageWithMetadata(VALUE_1, VALUE_3);
         createStorageWithMetadata(VALUE_2, VALUE_3);
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
 
         final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
@@ -425,7 +425,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         createStorageWithMetadata(VALUE_3, VALUE_2);
         final S3bucketDataStorage storage3 = createStorageWithMetadata(VALUE_2, VALUE_1);
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
 
         final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
@@ -441,7 +441,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         createStorageWithMetadata();
         dataStorageDao.createDataStorage(getS3Storage());
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_2, Collections.singletonList(VALUE_1)));
 
         final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
@@ -455,7 +455,7 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         createStorageWithMetadata();
         dataStorageDao.createDataStorage(getS3Storage());
 
-        final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
+        final EntityFilterVO filter = new EntityFilterVO();
         filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_2)));
 
         final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
