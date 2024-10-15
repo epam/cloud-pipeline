@@ -70,6 +70,7 @@ public final class NFSHelper {
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
     private static final String NFS_HOST_DELIMITER = ":/";
+    private static final String LUSTRE_MOUNTS_DELIMITER = "_";
 
     private NFSHelper() {
 
@@ -98,6 +99,16 @@ public final class NFSHelper {
         } else {
             throw new IllegalArgumentException("Invalid path");
         }
+    }
+
+    public static String normalizeMountPath(final MountType mountType, final String mountPath) {
+        return normalizeMountPath(mountType, mountPath, false);
+    }
+
+    public static String normalizeMountPath(final MountType mountType, final String mountPath, final boolean flat) {
+        return MountType.LUSTRE == mountType
+                ? normalizeLustrePath(mountPath, flat)
+                : normalizePath(mountPath, flat);
     }
 
     static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
@@ -141,5 +152,21 @@ public final class NFSHelper {
         if (ArrayUtils.isEmpty(files)) {
             FileUtils.deleteDirectory(folder);
         }
+    }
+
+    private static String normalizePath(final String nfsPath, boolean flat) {
+        if (flat) {
+            return nfsPath.replace(":", PATH_SEPARATOR)
+                    .replace(PATH_SEPARATOR, "_");
+        }
+        return nfsPath.replace(":", PATH_SEPARATOR);
+    }
+
+    private static String normalizeLustrePath(final String nfsPath, boolean flat) {
+        if (flat) {
+            return  nfsPath.replaceAll(NFS_HOST_DELIMITER, PATH_SEPARATOR).replace(":", LUSTRE_MOUNTS_DELIMITER)
+                    .replace(PATH_SEPARATOR, "_");
+        }
+        return nfsPath.replaceAll(NFS_HOST_DELIMITER, PATH_SEPARATOR).replace(":", LUSTRE_MOUNTS_DELIMITER);
     }
 }
