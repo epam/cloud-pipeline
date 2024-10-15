@@ -68,6 +68,8 @@ public interface GitLabApi {
     String PRIVATE_TOKEN = "PRIVATE-TOKEN";
     String API_VERSION = "api_version";
     String ISSUE_ID = "issue_id";
+    String PER_PAGE = "per_page";
+    String PAGE = "page";
 
     /**
      * @param userName The name of the GitLab user
@@ -136,12 +138,16 @@ public interface GitLabApi {
      * @param path      (optional) - The path inside repository. Used to get contend of subdirectories
      * @param reference (optional) - The name of a repository branch or tag or if not given the default branch
      * @param recursive (optional) - Boolean value used to get a recursive tree (false by default)
+     * @param perPage   (optional) - Number of results to show per page. If not specified, defaults to 20.
+     * @param page      (optional) - Page number (default: 1). Deprecated in GitLab 14.3.
      */
     @GET("api/v4/projects/{project}/repository/tree")
     Call<List<GitRepositoryEntry>> getRepositoryTree(@Path(PROJECT) String idOrName,
                                                      @Query(PATH) String path,
                                                      @Query(REF) String reference,
-                                                     @Query(RECURSIVE) Boolean recursive);
+                                                     @Query(RECURSIVE) Boolean recursive,
+                                                     @Query(PER_PAGE) Integer perPage,
+                                                     @Query(PAGE) Integer page);
 
     /**
      * Allows you to receive information about file in repository like name, size, content.
@@ -380,8 +386,8 @@ public interface GitLabApi {
                                       @Path(PROJECT) String idOrName,
                                       @Query("labels") String labels,
                                       @Query("not[labels]") String notLabels,
-                                      @Query("page") Integer page,
-                                      @Query("per_page") Integer pageSize,
+                                      @Query(PAGE) Integer page,
+                                      @Query(PER_PAGE) Integer pageSize,
                                       @Query("search") String search);
 
     @GET("api/{api_version}/projects/{project}/issues/{issue_id}")
