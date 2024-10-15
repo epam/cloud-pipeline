@@ -54,11 +54,11 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     private static final String TEST_CODE_PATH = "/src";
     private static final String TEST_DOCS_PATH = "/docs";
     private static final String STRING = "string";
-    public static final String KEY_1 = "key1";
-    public static final String VALUE_1 = "value1";
-    public static final String VALUE_2 = "value2";
-    public static final String VALUE_3 = "value3";
-    public static final String KEY_2 = "key2";
+    private static final String KEY_1 = "key1";
+    private static final String VALUE_1 = "value1";
+    private static final String VALUE_2 = "value2";
+    private static final String VALUE_3 = "value3";
+    private static final String KEY_2 = "key2";
 
     @Autowired
     private PipelineDao pipelineDao;
@@ -176,8 +176,8 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldLoadPipelinesByTagsFilter() {
-        createPipelineWithMetadata(VALUE_1);
-        createPipelineWithMetadata(VALUE_1);
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
         final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
@@ -222,8 +222,8 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldNotLoadPipelinesByTagsFilterIfNotSuchKey() {
-        createPipelineWithMetadata(VALUE_1);
-        createPipelineWithMetadata(VALUE_1);
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
         final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
@@ -236,8 +236,8 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldNotLoadPipelinesByTagsFilterIfNotSuchValue() {
-        createPipelineWithMetadata(VALUE_1);
-        createPipelineWithMetadata(VALUE_1);
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
         pipelineDao.createPipeline(getPipeline(TEST_NAME));
 
         final MetadataTagsFilterVO filter = new MetadataTagsFilterVO();
@@ -296,15 +296,13 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         }
     }
 
-    private Pipeline createPipelineWithMetadata(final String value) {
+    private void createPipelineWithMetadata() {
         final Pipeline pipeline = getPipeline(TEST_NAME);
         pipelineDao.createPipeline(pipeline);
         final MetadataEntry metadata = new MetadataEntry();
         metadata.setEntity(new EntityVO(pipeline.getId(), AclClass.PIPELINE));
-        metadata.setData(Collections.singletonMap(KEY_1, new PipeConfValue(STRING, value)));
+        metadata.setData(Collections.singletonMap(KEY_1, new PipeConfValue(STRING, VALUE_1)));
         metadataDao.registerMetadataItem(metadata);
-
-        return pipeline;
     }
 
     private Pipeline createPipelineWithMetadata(final String value1, final String value2) {

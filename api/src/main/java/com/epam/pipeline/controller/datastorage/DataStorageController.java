@@ -99,7 +99,7 @@ public class DataStorageController extends AbstractRestController {
         return Result.success(dataStorageApiService.getDataStorages());
     }
 
-    @PostMapping("/datastorage/filter")
+    @PostMapping("/datastorage/loadAll")
     @ResponseBody
     @ApiOperation(
             value = "Loads all data storages with specified filters.",

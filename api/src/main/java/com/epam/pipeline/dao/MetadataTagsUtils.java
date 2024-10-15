@@ -34,6 +34,6 @@ public interface MetadataTagsUtils {
         return String.format("(m.data->'%s'->>'value' IN (%s))", key,
                 values.stream()
                         .map(value -> String.format("'%s'", value))
-                        .collect(Collectors.joining(", ")));
+                        .collect(Collectors.joining(",")));
     }
 }

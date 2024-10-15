@@ -168,7 +168,7 @@ public class PipelineController extends AbstractRestController {
         return Result.success(pipelineApiService.loadAllPipelines(loadVersion));
     }
 
-    @PostMapping("/pipeline/filter")
+    @PostMapping("/pipeline/loadAll")
     @ResponseBody
     @ApiOperation(
             value = "Loads all registered pipelines with specified filters.",
