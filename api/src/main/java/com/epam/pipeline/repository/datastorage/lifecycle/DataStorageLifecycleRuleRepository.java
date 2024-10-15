@@ -18,8 +18,12 @@ package com.epam.pipeline.repository.datastorage.lifecycle;
 
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface DataStorageLifecycleRuleRepository extends JpaRepository<StorageLifecycleRuleEntity, Long> {
     Iterable<StorageLifecycleRuleEntity> findByDatastorageId(Long datastorageId);
+
+    @Query("SELECT DISTINCT r.datastorageId FROM StorageLifecycleRuleEntity r")
+    Iterable<Long> loadDistinctDatastorageIds();
 
 }
