@@ -16,7 +16,10 @@
 
 set -e
 
-source ~/venv3.9*_build/bin/activate
+rm -rf venv3.9.20_build
+/opt/homebrew/bin/python3.9 -m venv venv3.9.20_build
+source venv3.9.20_build/bin/activate
+
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
           pipe-cli:buildMacArm \
