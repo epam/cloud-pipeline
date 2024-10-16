@@ -16,9 +16,15 @@
 
 package com.epam.pipeline.dao.datastorage;
 
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
-import com.epam.pipeline.entity.datastorage.*;
 import com.epam.pipeline.entity.datastorage.aws.AbstractAWSDataStorage;
+import com.epam.pipeline.dao.MetadataTagsUtils;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageFactory;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
@@ -85,6 +91,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadToolsToMountsForAllStoragesQuery;
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
+    private String loadDataStoragesByRootIdsQuery;
+    private String loadDataStoragesFilterQuery;
     private String loadDataStorageByTypeQuery;
 
     @Autowired
@@ -163,6 +171,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public List<AbstractDataStorage> loadAllDataStorages() {
         return getNamedParameterJdbcTemplate().query(loadAllDataStoragesQuery,
+                DataStorageParameters.getRowMapper());
+    }
+
+    public List<AbstractDataStorage> loadAllDataStorages(final EntityFilterVO filter) {
+        return getNamedParameterJdbcTemplate()
+                .query(MetadataTagsUtils.buildTagsFilterClause(loadDataStoragesFilterQuery, filter.getTags()),
                 DataStorageParameters.getRowMapper());
     }
 
@@ -421,6 +435,11 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public void setLoadDataStorageBySericeType(final String loadDataStorageBySericeTypeQuery) {
         this.loadDataStorageByTypeQuery = loadDataStorageBySericeTypeQuery;
+    }
+
+    @Required
+    public void setLoadDataStoragesFilterQuery(final String loadDataStoragesFilterQuery) {
+        this.loadDataStoragesFilterQuery = loadDataStoragesFilterQuery;
     }
 
     public void setLoadDataStorageByTypeQuery(final String loadDataStorageBySericeTypeQuery) {
