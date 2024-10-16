@@ -182,6 +182,7 @@
                         d.allowed_cidrs,
                         d.region_id as region_id,
                         d.file_share_mount_id,
+                        d.mount_exact_path,
                         d.sensitive,
                         d.mount_disabled,
                         d.s3_kms_key_arn,
