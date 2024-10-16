@@ -36,4 +36,5 @@ public class FacetedSearchRequest {
     private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
     private List<SearchRequestSort> sorts;
+    private List<SearchStorageFilesRequest> files;
 }

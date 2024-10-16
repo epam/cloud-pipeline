@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.controller.vo.search.SearchRequestSort;
 import com.epam.pipeline.controller.vo.search.SearchRequestSortOrder;
+import com.epam.pipeline.controller.vo.search.SearchStorageFilesRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -51,6 +52,7 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
+import org.elasticsearch.index.query.Operator;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
@@ -108,6 +110,7 @@ public class SearchRequestBuilder {
     private static final String ES_STORAGE_ID_FIELD = "storage_id";
     private static final String ES_STORAGE_NAME_FIELD = "storage_name";
     private static final String STORAGE_CLASS_FIELD = "storage_class";
+    private static final String ES_PATH_FIELD = "path";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -211,7 +214,9 @@ public class SearchRequestBuilder {
                                              final String typeFieldName,
                                              final Set<String> metadataSourceFields) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters()))
+                .query(CollectionUtils.isEmpty(searchRequest.getFiles())
+                        ? getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters())
+                        : getStorageFilesQuery(searchRequest.getFiles()))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
@@ -411,6 +416,20 @@ public class SearchRequestBuilder {
             queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
         }
         return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder getStorageFilesQuery(final List<SearchStorageFilesRequest> filesRequests) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        ListUtils.emptyIfNull(filesRequests)
+                .forEach(file -> boolQueryBuilder.should(QueryBuilders.boolQuery()
+                        .must(QueryBuilders.matchQuery(ES_PATH_FIELD, file.getPath()).operator(Operator.AND))
+                        .must(QueryBuilders.matchQuery(ES_STORAGE_ID_FIELD, file.getStorageId()).operator(Operator.AND))
+                ));
+        return boolQueryBuilder;
     }
 
     private QueryBuilder getFacetedQuery(final String query, final Map<String, List<String>> filters) {
