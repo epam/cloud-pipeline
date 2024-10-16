@@ -110,6 +110,35 @@
                 ]]>
             </value>
         </property>
+        <property name="loadPipelinesFiltersQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        p.pipeline_id,
+                        p.pipeline_name,
+                        p.repository,
+                        p.repository_ssh,
+                        p.description,
+                        p.folder_id,
+                        p.created_date,
+                        p.owner,
+                        p.repository_token,
+                        p.repository_type,
+                        p.pipeline_type,
+                        p.config,
+                        p.locked as pipeline_locked,
+                        p.branch,
+                        p.visibility,
+                        p.code_path,
+                        p.docs_path
+                    FROM
+                        pipeline.pipeline p
+                    LEFT JOIN pipeline.metadata m ON p.pipeline_id = m.entity_id
+                    WHERE m.entity_class = 'PIPELINE' AND @FILTER@
+                    ORDER BY pipeline_id
+                ]]>
+            </value>
+        </property>
         <property name="deletePipelineQuery">
             <value>
                 <![CDATA[
