@@ -426,8 +426,8 @@ public class SearchRequestBuilder {
         }
         ListUtils.emptyIfNull(filesRequests)
                 .forEach(file -> boolQueryBuilder.should(QueryBuilders.boolQuery()
-                        .must(QueryBuilders.matchQuery(ES_PATH_FIELD, file.getPath()).operator(Operator.AND))
-                        .must(QueryBuilders.matchQuery(ES_STORAGE_ID_FIELD, file.getStorageId()).operator(Operator.AND))
+                        .filter(QueryBuilders.termQuery(buildKeywordName(ES_PATH_FIELD), file.getPath()))
+                        .filter(QueryBuilders.termQuery(ES_STORAGE_ID_FIELD, file.getStorageId()))
                 ));
         return boolQueryBuilder;
     }
