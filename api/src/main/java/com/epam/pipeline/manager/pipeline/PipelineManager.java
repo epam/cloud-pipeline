@@ -22,6 +22,7 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
@@ -44,6 +45,7 @@ import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.utils.GitUtils;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +58,7 @@ import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -281,6 +284,16 @@ public class PipelineManager implements SecuredEntityManager {
 
     public List<Pipeline> loadAllPipelines(boolean loadVersions) {
         List<Pipeline> result = pipelineDao.loadAllPipelines();
+        if (loadVersions) {
+            result.forEach(this::setCurrentVersion);
+        }
+        return result;
+    }
+
+    public List<Pipeline> loadAllPipelines(final boolean loadVersions, final EntityFilterVO filter) {
+        final List<Pipeline> result = Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags())
+                ? pipelineDao.loadAllPipelines()
+                : pipelineDao.loadAllPipelines(filter);
         if (loadVersions) {
             result.forEach(this::setCurrentVersion);
         }

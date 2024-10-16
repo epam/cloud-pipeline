@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
@@ -88,6 +89,11 @@ public class DataStorageApiService {
     @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
+    }
+
+    @StorageAclRead
+    public List<AbstractDataStorage> getDataStorages(final EntityFilterVO filter) {
+        return dataStorageManager.getDataStorages(filter);
     }
 
     @StorageAclReadAndWrite
