@@ -78,7 +78,7 @@ function setup_swap_device {
     fi
 }
 
-@custom_script@
+@custom_script_pre@
 
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
@@ -340,6 +340,8 @@ kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-ver
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
+
+@custom_script_post@
 
 if [[ $FS_TYPE == "btrfs" ]]; then
   _API_URL="@API_URL@"
