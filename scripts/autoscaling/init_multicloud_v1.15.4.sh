@@ -174,7 +174,7 @@ wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.g
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
 
-@custom_script@
+@custom_script_pre@
 
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
@@ -480,6 +480,8 @@ kubeadm join --token @KUBE_TOKEN@ @KUBE_IP@ --discovery-token-unsafe-skip-ca-ver
 systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
+
+@custom_script_post@
 
 if [[ $FS_TYPE == "btrfs" ]]; then
   _MOUNT_POINT="/ebs"
