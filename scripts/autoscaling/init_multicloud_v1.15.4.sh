@@ -78,6 +78,8 @@ function setup_swap_device {
     fi
 }
 
+@custom_script@
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
