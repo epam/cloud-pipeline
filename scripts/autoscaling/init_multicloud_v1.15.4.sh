@@ -174,6 +174,8 @@ wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.g
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
 
+@custom_script@
+
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
 
