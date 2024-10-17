@@ -505,6 +505,11 @@ function configure_package_manager {
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  if [ "$CP_REPO_ACCESS_TIMEOUT_SEC" ]; then
+                        mkdir -p /etc/apt/apt.conf.d
+                        echo "Acquire::http::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                        echo "Acquire::https::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                  fi
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/apt/sources.list.d/cuda.list \
