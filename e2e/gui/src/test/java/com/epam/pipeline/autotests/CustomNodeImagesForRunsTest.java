@@ -28,7 +28,6 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.ClusterMenuAO.nodeLabel;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.SUCCESS;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.NODE_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;

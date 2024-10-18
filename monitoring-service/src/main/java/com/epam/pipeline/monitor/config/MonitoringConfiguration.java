@@ -17,8 +17,10 @@
 package com.epam.pipeline.monitor.config;
 
 import com.epam.pipeline.monitor.monitoring.SchedulingService;
+import com.epam.pipeline.monitor.monitoring.node.GpuUsageMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolMonitoringService;
 import com.epam.pipeline.monitor.monitoring.pool.NodePoolUsageCleanerService;
+import com.epam.pipeline.monitor.monitoring.run.ArchiveRunsMonitoringService;
 import com.epam.pipeline.monitor.monitoring.user.OnlineUsersCleanerService;
 import com.epam.pipeline.monitor.monitoring.user.OnlineUsersMonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
@@ -74,5 +76,27 @@ public class MonitoringConfiguration {
                                                 final PreferencesService preferencesService) {
         return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
                 preferencesService, "UsageUserCleaner");
+    }
+
+    @Bean
+    public SchedulingService gpuUsageMonitor(final TaskScheduler scheduler,
+                                             final GpuUsageMonitoringService monitoringService,
+                                             final CloudPipelineAPIClient client,
+                                             @Value("${preference.name.usage.node.gpu.delay}")
+                                                 final String monitorDelayPreferenceName,
+                                             final PreferencesService preferencesService) {
+        return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
+                preferencesService, "NodeGpuUsageMonitor");
+    }
+
+    @Bean
+    public SchedulingService archiveRunsMonitor(final TaskScheduler scheduler,
+                                                final ArchiveRunsMonitoringService monitoringService,
+                                                final CloudPipelineAPIClient client,
+                                                @Value("${preference.name.archive.runs.monitor.delay}")
+                                                    final String monitorDelayPreferenceName,
+                                                final PreferencesService preferencesService) {
+        return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
+                preferencesService, "ArchiveRunsMonitor");
     }
 }

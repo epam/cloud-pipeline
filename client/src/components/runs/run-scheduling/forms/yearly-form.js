@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Select} from 'antd';
-import {MONTHS} from './days.js';
+import {MONTHS, getMaximumDaysInMonth} from './days.js';
 import DaySelector from './day-selector';
 import styles from './styles.css';
 
@@ -32,7 +32,8 @@ export default class YearlyForm extends React.Component {
     const {schedule = {}, onChange} = this.props;
     onChange && onChange({
       ...schedule,
-      month
+      month,
+      dayNumber: Math.min(schedule.dayNumber, getMaximumDaysInMonth(month))
     });
   };
 
@@ -65,6 +66,7 @@ export default class YearlyForm extends React.Component {
           disabled={disabled}
           schedule={schedule}
           onChange={this.onChangeDaySelector}
+          maximumDays={getMaximumDaysInMonth(schedule.month)}
         />
       </div>
     );

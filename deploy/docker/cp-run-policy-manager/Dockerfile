@@ -14,6 +14,11 @@
 
 FROM centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 RUN yum install -y curl python3
 
 RUN  curl -s https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/3.6/get-pip.py | python3 - && \

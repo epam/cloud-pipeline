@@ -30,7 +30,8 @@ public class AsyncDataUploaderProviderManager implements DataUploaderProviderMan
 
     @Async("taskExecutor")
     @Override
-    public void transferData(final TransferTask transferTask) {
-        syncDataUploaderProviderManager.transferData(transferTask);
+    public void transferData(final TransferTask transferTask, boolean logEnabled,
+                             String pipeCmd, String pipeCmdSuffix) {
+        syncDataUploaderProviderManager.transferData(transferTask, logEnabled, pipeCmd, pipeCmdSuffix);
     }
 }

@@ -14,6 +14,14 @@
  * limitations under the License.
  */
 
+.header-row {
+  display: flex;
+  flex-wrap: nowrap;
+  flex-grow: 1;
+  gap: 10px;
+  justify-content: center;
+}
+
 .runs-card {
   width: 100%;
   height: 100%;
@@ -26,6 +34,7 @@
 
 .tabs-menu {
   text-transform: uppercase;
+  margin: 0 auto;
 }
 
 .tabs-menu > li > a:focus {

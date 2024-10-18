@@ -25,6 +25,7 @@ export const DefaultIconSet = {
   [Statuses.pausing]: 'pause-circle-o',
   [Statuses.pulling]: 'download',
   [Statuses.queued]: 'hourglass',
+  [Statuses.nodePending]: 'hourglass',
   [Statuses.resuming]: 'play-circle-o',
   [Statuses.running]: 'play-circle-o',
   [Statuses.scheduled]: 'loading',

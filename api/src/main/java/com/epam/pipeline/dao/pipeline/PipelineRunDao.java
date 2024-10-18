@@ -19,9 +19,13 @@ package com.epam.pipeline.dao.pipeline;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.DaoUtils;
+import com.epam.pipeline.dao.DryRunJdbcDaoSupport;
 import com.epam.pipeline.dao.run.RunServiceUrlDao;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
@@ -32,9 +36,11 @@ import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.CloudProvider;
+import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import joptsimple.internal.Strings;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -46,7 +52,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcDaoSupport;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,13 +75,18 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
+@SuppressWarnings("PMD.ConsecutiveLiteralAppends")
+public class PipelineRunDao extends DryRunJdbcDaoSupport {
 
     private Pattern wherePattern = Pattern.compile("@WHERE@");
+    private Pattern whereTagsPattern = Pattern.compile("@WHERE_TAGS@");
     private static final String AND = " AND ";
+    private static final String WHERE = " WHERE ";
     private static final String POSTGRE_TYPE_BIGINT = "BIGINT";
     private static final int STRING_BUFFER_SIZE = 70;
     private static final String LIST_PARAMETER = "list";
+    private static final String LIMIT = "LIMIT";
+    private static final String OFFSET = "OFFSET";
     private static final int CLAUSE_LENGTH = 200;
 
     @Autowired
@@ -118,6 +128,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String countRunGroupsQuery;
     private String createPipelineRunSidsQuery;
     private String deleteRunSidsByRunIdQuery;
+    private String deleteRunSidsByRunIdsQuery;
     private String loadRunSidsQuery;
     private String loadRunSidsQueryForList;
     private String updatePodStatusQuery;
@@ -130,6 +141,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadRunByPrettyUrlQuery;
     private String updateTagsQuery;
     private String loadAllRunsPossiblyActiveInPeriodQuery;
+    private String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
     private String loadAllRunsByStatusQuery;
     private String loadAllRunsByIdsQuery;
     private String loadRunByPodIPQuery;
@@ -137,6 +149,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String updateClusterPriceQuery;
     private String loadRunsByParentRunsIdsQuery;
     private String loadRunsByPoolIdQuery;
+    private String loadRunsChartsQuery;
+    private String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
+    private String deleteRunsByIdInQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -155,6 +170,9 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         }
         if (run.getPipelineId() == null) {
             run.setPipelineName(null);
+        }
+        if (run.getOriginalOwner() == null) {
+            run.setOriginalOwner(run.getOwner());
         }
         getNamedParameterJdbcTemplate().update(createPipelineRunQuery,
                 PipelineRunParameters.getParameters(run, getConnection()));
@@ -178,7 +196,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineRun> loadPipelineRunsActiveInPeriod(final LocalDateTime start, final LocalDateTime end) {
+    public List<PipelineRun> loadPipelineRunsActiveInPeriod(final LocalDateTime start, final LocalDateTime end,
+                                                            final boolean archive) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("PERIOD_START", start);
         params.addValue("PERIOD_END", end);
@@ -187,8 +206,11 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                                                             TaskStatus.PAUSED.getId(),
                                                             TaskStatus.RESUMING.getId());
         params.addValue("TARGET_LAST_STATUSES", targetLastStatuses);
-        return addServiceUrls(getNamedParameterJdbcTemplate().query(loadAllRunsPossiblyActiveInPeriodQuery,
-                params, PipelineRunParameters.getRowMapper()));
+        final String query = archive
+                ? loadAllRunsPossiblyActiveInPeriodWithArchiveQuery
+                : loadAllRunsPossiblyActiveInPeriodQuery;
+        return addServiceUrls(getNamedParameterJdbcTemplate()
+                .query(query, params, PipelineRunParameters.getRowMapper()));
     }
 
     public String loadSshPassword(Long id) {
@@ -304,7 +326,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunningPipelineRuns() {
         return addServiceUrls(getJdbcTemplate()
-                .query(loadRunningPipelineRunsQuery, PipelineRunParameters.getExtendedRowMapper()));
+                .query(loadRunningPipelineRunsQuery, PipelineRunParameters.getExtendedRowMapper(true)));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -444,6 +466,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         getJdbcTemplate().update(deleteRunSidsByRunIdQuery, runId);
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunSidsByRunIdIn(final List<Long> runIds, final boolean dryRun) {
+        final MapSqlParameterSource params = DaoUtils.longListParams(runIds);
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRunSidsByRunIdsQuery, params);
+    }
+
     @Transactional(propagation = Propagation.SUPPORTS)
     public List<PipelineRun> loadRunsByStatuses(final List<TaskStatus> statuses) {
         final MapSqlParameterSource params = new MapSqlParameterSource();
@@ -502,6 +530,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds) {
+        return loadRunsByParentRuns(parentIds, false);
+    }
+
+    public List<PipelineRun> loadRunsByParentRuns(final Collection<Long> parentIds, final boolean dryRun) {
         if (CollectionUtils.isEmpty(parentIds)) {
             return Collections.emptyList();
         }
@@ -509,7 +541,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         final MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue(LIST_PARAMETER, parentIds);
 
-        return getNamedParameterJdbcTemplate()
+        return getNamedParameterJdbcTemplate(dryRun)
                 .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
     }
 
@@ -527,10 +559,46 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunsByPoolIdQuery, params, PipelineRunParameters.getRowMapper()));
     }
 
+    public List<RunChartInfoEntity> loadRunsCharts(final RunChartFilterVO filter) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        final String whereClause = makeChartFilterCondition(filter, params);
+        final String tagsWhereClause = makeFilterTagsCondition(filter.getTags(), params);
+        final String query = wherePattern.matcher(loadRunsChartsQuery).replaceFirst(whereClause);
+        return getNamedParameterJdbcTemplate().query(whereTagsPattern.matcher(query).replaceFirst(tagsWhereClause),
+                params, RunChartParameters.getRunChartMapper());
+    }
+
+    public List<PipelineRun> loadRunsByOwnerAndEndDateBeforeAndStatusIn(final Map<String, Date> ownersAndDates,
+                                                                        final List<Long> statuses, final int limit,
+                                                                        final boolean dryRun, final int offset) {
+        if (MapUtils.isEmpty(ownersAndDates)) {
+            return Collections.emptyList();
+        }
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(LIST_PARAMETER, statuses);
+        params.addValue(LIMIT, limit);
+        params.addValue(OFFSET, offset);
+
+        final String query = wherePattern.matcher(loadRunsByOwnerAndEndDateBeforeAndStatusInQuery)
+                .replaceFirst(buildOwnersAndDatesClause(ownersAndDates));
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate(dryRun)
+                .query(query, params, PipelineRunParameters.getRowMapper()));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRunByIdIn(final List<Long> runIds, final boolean dryRun) {
+        if (CollectionUtils.isEmpty(runIds)) {
+            return;
+        }
+
+        getNamedParameterJdbcTemplate(dryRun).update(deleteRunsByIdInQuery,
+                new MapSqlParameterSource(LIST_PARAMETER, runIds));
+    }
+
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
         MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue("LIMIT", filter.getPageSize());
-        params.addValue("OFFSET", (filter.getPage() - 1) * filter.getPageSize());
+        params.addValue(LIMIT, filter.getPageSize());
+        params.addValue(OFFSET, (filter.getPage() - 1) * filter.getPageSize());
         addTaskStatusParams(params);
         return params;
     }
@@ -539,14 +607,21 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                                List<String> owners) {
         if (!CollectionUtils.isEmpty(owners)) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" lower(r.owner) in (:")
-                    .append(PipelineRunParameters.OWNER.name())
-                    .append(')');
-            params.addValue(PipelineRunParameters.OWNER.name(),
-                    owners.stream().map(String::toLowerCase).collect(Collectors.toList()));
+            buildOwnersClause(params, whereBuilder, owners);
             clausesCount++;
         }
         return clausesCount;
+    }
+
+    private void buildOwnersClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
+                                   final List<String> owners) {
+        whereBuilder
+                .append('(')
+                .append(" lower(r.owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
+                .append(" OR lower(r.original_owner) in (:").append(PipelineRunParameters.OWNER.name()).append(')')
+                .append(')');
+        params.addValue(PipelineRunParameters.OWNER.name(),
+                owners.stream().map(String::toLowerCase).collect(Collectors.toList()));
     }
 
     private int addRoleClause(MapSqlParameterSource params, StringBuilder whereBuilder, int clausesCount,
@@ -570,6 +645,95 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return clausesCount;
     }
 
+    private String makeFilterTagsCondition(final List<String> tags, final MapSqlParameterSource params) {
+        if (CollectionUtils.isEmpty(tags)) {
+            return Strings.EMPTY;
+        }
+        params.addValue(PipelineRunParameters.TAGS.name(), tags);
+        return "AND tags.key IN (:" + PipelineRunParameters.TAGS.name() + ")";
+    }
+
+    private String makeChartFilterCondition(final RunChartFilterVO filter, final MapSqlParameterSource params) {
+        final StringBuilder whereBuilder = new StringBuilder(CLAUSE_LENGTH);
+        whereBuilder.append(WHERE);
+        buildStatusesClause(params, whereBuilder, filter.getStatuses());
+
+        if (CollectionUtils.isNotEmpty(filter.getDockerImages())) {
+            whereBuilder.append(AND);
+            buildDockerImagesClause(params, whereBuilder, filter.getDockerImages());
+        }
+
+        if (CollectionUtils.isNotEmpty(filter.getOwners())) {
+            whereBuilder.append(AND);
+            buildOwnersClause(params, whereBuilder, filter.getOwners());
+        }
+
+        if (CollectionUtils.isNotEmpty(filter.getInstanceTypes())) {
+            whereBuilder.append(AND);
+            buildInstanceTypesClause(params, whereBuilder, filter.getInstanceTypes());
+        }
+
+        if (CollectionUtils.isNotEmpty(filter.getTags())) {
+            whereBuilder.append(AND);
+            buildTagKeysClause(params, whereBuilder, filter.getTags());
+        }
+
+        if (StringUtils.isNotBlank(filter.getOwnershipFilter())) {
+            whereBuilder.append(AND);
+            buildAclFiltersClause(filter, params, whereBuilder);
+        }
+
+        return whereBuilder.toString();
+    }
+
+    private void buildTagKeysClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
+                                    final List<String> tags) {
+        whereBuilder.append(" r.tags ??| array[ :")
+                .append(PipelineRunParameters.TAGS.name())
+                .append(" ]");
+        params.addValue(PipelineRunParameters.TAGS.name(), tags);
+    }
+
+    private void buildInstanceTypesClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
+                                          final List<String> instanceTypes) {
+        whereBuilder.append(" r.node_type in (:")
+                .append(PipelineRunParameters.NODE_TYPE.name())
+                .append(')');
+        params.addValue(PipelineRunParameters.NODE_TYPE.name(), instanceTypes);
+    }
+
+    private void buildDockerImagesClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
+                                         final List<String> dockerImages) {
+        whereBuilder.append(" r.docker_image like any (array[ :")
+                .append(PipelineRunParameters.DOCKER_IMAGE.name())
+                .append(" ])");
+        final List<String> values = new ArrayList<>();
+        dockerImages.forEach(di -> {
+            values.add(di);
+            values.add(di + ":%");
+        });
+        params.addValue(PipelineRunParameters.DOCKER_IMAGE.name(), values);
+    }
+
+    private void buildStatusesClause(final MapSqlParameterSource params, final StringBuilder whereBuilder,
+                                     final List<TaskStatus> statuses) {
+        whereBuilder.append(" r.status in (:")
+                .append(PipelineRunParameters.STATUS.name())
+                .append(')');
+        params.addValue(PipelineRunParameters.STATUS.name(), statuses.stream()
+                .map(TaskStatus::getId)
+                .collect(Collectors.toList()));
+    }
+
+    private void buildTagsClause(final Map<String, String> tags, final StringBuilder whereBuilder) {
+        final String keyValuePattern = "r.tags @> '{\"%s\": \"%s\"}'::jsonb";
+        final String tagsFilterConditions = tags.entrySet().stream()
+                .map(entry -> String.format(keyValuePattern, entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(AND));
+        whereBuilder.append(tagsFilterConditions);
+    }
+
+    @SuppressWarnings("checkstyle:methodlength")
     private String makeFilterCondition(PipelineRunFilterVO filter,
                                        PipelineRunFilterVO.ProjectFilter projectFilter,
                                        MapSqlParameterSource params,
@@ -581,7 +745,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         StringBuilder whereBuilder = new StringBuilder(CLAUSE_LENGTH);
         int clausesCount = firstCondition ? 0 : 1;
         if (firstCondition) {
-            whereBuilder.append(" WHERE ");
+            whereBuilder.append(WHERE);
         }
         if (CollectionUtils.isNotEmpty(filter.getVersions())) {
             appendAnd(whereBuilder, clausesCount);
@@ -615,25 +779,19 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         if (CollectionUtils.isNotEmpty(filter.getDockerImages())) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" r.docker_image like any (array[ :")
-                    .append(PipelineRunParameters.DOCKER_IMAGE.name())
-                    .append(" ])");
-            List<String> dockerImages = new ArrayList<>();
-            filter.getDockerImages().forEach(di -> {
-                dockerImages.add(di);
-                dockerImages.add(di + ":%");
-            });
-            params.addValue(PipelineRunParameters.DOCKER_IMAGE.name(), dockerImages);
+            buildDockerImagesClause(params, whereBuilder, filter.getDockerImages());
             clausesCount++;
         }
 
         if (CollectionUtils.isNotEmpty(filter.getStatuses())) {
             appendAnd(whereBuilder, clausesCount);
-            whereBuilder.append(" r.status in (:")
-                    .append(PipelineRunParameters.STATUS.name())
-                    .append(')');
-            params.addValue(PipelineRunParameters.STATUS.name(), filter.getStatuses()
-                    .stream().map(TaskStatus::getId).collect(Collectors.toList()));
+            buildStatusesClause(params, whereBuilder, filter.getStatuses());
+            clausesCount++;
+        }
+
+        if (CollectionUtils.isNotEmpty(filter.getInstanceTypes())) {
+            appendAnd(whereBuilder, clausesCount);
+            buildInstanceTypesClause(params, whereBuilder, filter.getInstanceTypes());
             clausesCount++;
         }
 
@@ -693,12 +851,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
 
         if (MapUtils.isNotEmpty(filter.getTags())) {
             appendAnd(whereBuilder, clausesCount);
-            final String keyValuePattern = "r.tags @> '{\"%s\": \"%s\"}'::jsonb";
             clausesCount++;
-            final String tagsFilterConditions = filter.getTags().entrySet().stream()
-                    .map(entry -> String.format(keyValuePattern, entry.getKey(), entry.getValue()))
-                    .collect(Collectors.joining(AND));
-            whereBuilder.append(tagsFilterConditions);
+            buildTagsClause(filter.getTags(), whereBuilder);
         }
 
         if (StringUtils.isNotBlank(filter.getPrettyUrl())) {
@@ -763,22 +917,42 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         //ownership filter indicates that acl filtering is applied
         if (StringUtils.isNotBlank(filter.getOwnershipFilter())) {
             appendAnd(whereBuilder, clausesCount);
-            params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
-            if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
-                whereBuilder.append(" (r.pipeline_id in (:")
-                        .append(PipelineRunParameters.PIPELINE_ALLOWED.name())
-                        .append(") OR lower(r.owner) = :")
-                        .append(PipelineRunParameters.OWNERSHIP.name()).append(')');
-                params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
-            } else {
-                whereBuilder.append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name());
-            }
+            buildAclFiltersClause(filter, params, whereBuilder);
         }
+    }
+
+    private void buildAclFiltersClause(final AclSecuredFilter filter, final MapSqlParameterSource params,
+                                       final StringBuilder whereBuilder) {
+        params.addValue(PipelineRunParameters.OWNERSHIP.name(), filter.getOwnershipFilter().toLowerCase());
+        if (CollectionUtils.isNotEmpty(filter.getAllowedPipelines())) {
+            whereBuilder
+                    .append(" (")
+                    .append("r.pipeline_id in (:").append(PipelineRunParameters.PIPELINE_ALLOWED.name()).append(')')
+                    .append(" OR lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(')');
+            params.addValue(PipelineRunParameters.PIPELINE_ALLOWED.name(), filter.getAllowedPipelines());
+        } else {
+            whereBuilder
+                    .append(" (")
+                    .append(" lower(r.owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(" OR lower(r.original_owner) = :").append(PipelineRunParameters.OWNERSHIP.name())
+                    .append(')');
+
+        }
+    }
+
+    private String buildOwnersAndDatesClause(final Map<String, Date> ownersAndDates) {
+        return ownersAndDates.entrySet().stream()
+                .map(entry -> String.format("(end_date < '%s' AND lower(owner) = '%s')",
+                        Timestamp.from(entry.getValue().toInstant()),
+                        entry.getKey().toLowerCase()))
+                .collect(Collectors.joining(" OR "));
     }
 
     private String makeRunSidsCondition(PipelineUser user, MapSqlParameterSource params) {
         StringBuilder whereBuilder = new StringBuilder(STRING_BUFFER_SIZE);
-        whereBuilder.append(" WHERE ");
+        whereBuilder.append(WHERE);
 
         if (StringUtils.isNotBlank(user.getUserName())) {
             whereBuilder.append("((is_principal = TRUE AND name = :")
@@ -833,10 +1007,26 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return runs;
     }
 
-    private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
+    public MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
                 .toArray(MapSqlParameterSource[]::new);
+    }
+
+    public enum RunChartParameters {
+        STATUS,
+        TYPE,
+        VALUE,
+        COUNT;
+
+        static RowMapper<RunChartInfoEntity> getRunChartMapper() {
+            return (rs, rowNum) -> RunChartInfoEntity.builder()
+                    .status(TaskStatus.getById(rs.getLong(STATUS.name())))
+                    .columnName(RunChartInfoEntity.ColumnName.valueOf(rs.getString(TYPE.name())))
+                    .value(rs.getString(VALUE.name()))
+                    .count(rs.getLong(COUNT.name()))
+                    .build();
+        }
     }
 
     public enum PipelineRunParameters {
@@ -871,6 +1061,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         ACTUAL_CMD,
         TIMEOUT,
         OWNER,
+        ORIGINAL_OWNER,
         ROLE,
         PIPELINE_ALLOWED,
         OWNERSHIP,
@@ -893,6 +1084,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         LAST_NOTIFICATION_TIME,
         PROLONGED_AT_TIME,
         LAST_IDLE_NOTIFICATION_TIME,
+        LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME,
         PROJECT_PIPELINES,
         PROJECT_CONFIGS,
         EXEC_PREFERENCES,
@@ -937,6 +1129,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CMD_TEMPLATE.name(), run.getCmdTemplate());
             params.addValue(ACTUAL_CMD.name(), run.getActualCmd());
             params.addValue(OWNER.name(), run.getOwner());
+            params.addValue(ORIGINAL_OWNER.name(), run.getOriginalOwner());
             params.addValue(POD_IP.name(), run.getPodIP());
             params.addValue(SSH_PASSWORD.name(), run.getSshPassword());
             params.addValue(CONFIG_NAME.name(), run.getConfigName());
@@ -949,6 +1142,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PROLONGED_AT_TIME.name(), run.getProlongedAtTime());
             params.addValue(LAST_NOTIFICATION_TIME.name(), run.getLastNotificationTime());
             params.addValue(LAST_IDLE_NOTIFICATION_TIME.name(), run.getLastIdleNotificationTime());
+            params.addValue(LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name(),
+                    run.getLastNetworkConsumptionNotificationTime());
             params.addValue(EXEC_PREFERENCES.name(),
                     JsonMapper.convertDataToJsonStringForQuery(run.getExecutionPreferences()));
             params.addValue(PRETTY_URL.name(), run.getPrettyUrl());
@@ -1037,6 +1232,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             run.setPodId(rs.getString(POD_ID.name()));
             run.setPodIP(rs.getString(POD_IP.name()));
             run.setOwner(rs.getString(OWNER.name()));
+            run.setOriginalOwner(rs.getString(ORIGINAL_OWNER.name()));
             run.setConfigName(rs.getString(CONFIG_NAME.name()));
             run.setNodeCount(rs.getInt(NODE_COUNT.name()));
             run.setExecutionPreferences(JsonMapper.parseData(rs.getString(EXEC_PREFERENCES.name()),
@@ -1093,9 +1289,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 run.setLastNotificationTime(new Date(lastNotificationTime.getTime()));
             }
 
-            Timestamp lastIdleNotifiactionTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
+            Timestamp lastIdleNotificationTime = rs.getTimestamp(LAST_IDLE_NOTIFICATION_TIME.name());
             if (!rs.wasNull()) {
-                run.setLastIdleNotificationTime(lastIdleNotifiactionTime.toLocalDateTime()); // convert to UTC
+                run.setLastIdleNotificationTime(lastIdleNotificationTime.toLocalDateTime()); // convert to UTC
+            }
+
+            Timestamp lastNetworkConsumptionNotificationTime = rs.getTimestamp(
+                    LAST_NETWORK_CONSUMPTION_NOTIFICATION_TIME.name());
+            if (!rs.wasNull()) {
+                // convert to UTC
+                run.setLastNetworkConsumptionNotificationTime(lastNetworkConsumptionNotificationTime.toLocalDateTime());
             }
 
             Timestamp idleNotificationStartingTime = rs.getTimestamp(PROLONGED_AT_TIME.name());
@@ -1421,6 +1624,12 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
+    public void setLoadAllRunsPossiblyActiveInPeriodWithArchiveQuery(
+            final String loadAllRunsPossiblyActiveInPeriodWithArchiveQuery) {
+        this.loadAllRunsPossiblyActiveInPeriodWithArchiveQuery = loadAllRunsPossiblyActiveInPeriodWithArchiveQuery;
+    }
+
+    @Required
     public void setLoadAllRunsByStatusQuery(final String loadAllRunsByStatusQuery) {
         this.loadAllRunsByStatusQuery = loadAllRunsByStatusQuery;
     }
@@ -1461,8 +1670,28 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Required
-
     public void setClearPipelineIdForRunsQuery(final String clearPipelineIdForRunsQuery) {
         this.clearPipelineIdForRunsQuery = clearPipelineIdForRunsQuery;
+    }
+
+    @Required
+    public void setLoadRunsChartsQuery(final String loadRunsChartsQuery) {
+        this.loadRunsChartsQuery = loadRunsChartsQuery;
+    }
+
+    @Required
+    public void setLoadRunsByOwnerAndEndDateBeforeAndStatusInQuery(
+            final String loadRunsByOwnerAndEndDateBeforeAndStatusInQuery) {
+        this.loadRunsByOwnerAndEndDateBeforeAndStatusInQuery = loadRunsByOwnerAndEndDateBeforeAndStatusInQuery;
+    }
+
+    @Required
+    public void setDeleteRunsByIdInQuery(final String deleteRunsByIdInQuery) {
+        this.deleteRunsByIdInQuery = deleteRunsByIdInQuery;
+    }
+
+    @Required
+    public void setDeleteRunSidsByRunIdsQuery(final String deleteRunSidsByRunIdsQuery) {
+        this.deleteRunSidsByRunIdsQuery = deleteRunSidsByRunIdsQuery;
     }
 }

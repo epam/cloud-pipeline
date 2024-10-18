@@ -39,10 +39,10 @@ CPU_WITH_CUDA_WARN_MSG = 'WARN: A tool with a CUDA toolkit using a CPU-only node
 class PipelineRunOperations(object):
 
     @classmethod
-    def stop(cls, run_id, yes):
+    def stop(cls, run_id, yes, status):
         if not yes:
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
-        pipeline_run_model = Pipeline.stop_pipeline(run_id)
+        pipeline_run_model = Pipeline.stop_pipeline(run_id, status=status)
         pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
         click.echo('RunID {} of "{}" stopped'.format(
             run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))

@@ -25,7 +25,8 @@ yum install -y \
             wget \
             git \
             gettext \
-            iproute-tc
+            iproute-tc \
+            openssl
 
 curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" -o /tmp/install_kustomize.sh && \
     chmod +x /tmp/install_kustomize.sh && \

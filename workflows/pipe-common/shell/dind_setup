@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,18 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
+if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
+    _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
+else
+    _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
+fi
+export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-$_CP_CAP_DIND_VERSION_DEFAULT}"
+export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
+export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
+export CP_CAP_DIND_DISTR_PREFIX="${CP_CAP_DIND_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/distr"}"
+
+pipe_log_info "Installing docker: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
+
 ######################################################
 # Check if this is a RPM Linux distribution
 ######################################################
@@ -36,15 +48,25 @@ IS_RPM_BASED=$?
 ######################################################
 _DIND_DEP_INSTALL_RESULT=0
 if [ $IS_RPM_BASED -eq 0 ]; then
-    yum install -y -q \
-                btrfs-progs \
+    if util_version_compare "$CP_CAP_DIND_VERSION" "20.10.24" "<"; then
+        _extra_packages="btrfs-progs"
+    fi
+    if [ "$CP_OS" == "rhel" ]; then
+       yum --nogpgcheck --repofrompath=centos,http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/ install -y -q \
                 e2fsprogs \
+                xfsprogs
+    else
+       yum install -y -q \
+                e2fsprogs \
+                xfsprogs
+    fi
+    yum install -y -q \
                 iptables \
                 iproute \
-                xfsprogs \
                 xz \
                 pigz \
-                kmod
+                kmod \
+                findutils $_extra_packages
     _DIND_DEP_INSTALL_RESULT=$?
 else
     apt install -y -qq \
@@ -71,12 +93,6 @@ pipe_log_info "DIND dependencies installed" "$DIND_SETUP_TASK"
 ######################################################
 
 [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
-export CP_CAP_DIND_VERSION="${CP_CAP_DIND_VERSION:-18.09.6}"
-export CP_CAP_DIND_CHANNEL="${CP_CAP_DIND_CHANNEL:-stable}"
-export CP_CAP_DIND_ARCH="${CP_CAP_DIND_ARCH:-x86_64}"
-export CP_CAP_DIND_DISTR_PREFIX="${CP_CAP_DIND_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/docker/distr"}"
-
-pipe_log_info "Installing docker: ${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}" "$DIND_SETUP_TASK"
 
 wget -q -O docker.tgz "${CP_CAP_DIND_DISTR_PREFIX}/linux/static/${CP_CAP_DIND_CHANNEL}/${CP_CAP_DIND_ARCH}/docker-${CP_CAP_DIND_VERSION}.tgz"
 
@@ -144,13 +160,14 @@ chmod +x /usr/local/bin/modprobe
 # Setup docker daemon options
 ######################################################
 DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+DIND_STORAGE_DRIVER="${DIND_STORAGE_DRIVER:-"btrfs"}"
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
-  "storage-driver": "btrfs"
+  "storage-driver": "$DIND_STORAGE_DRIVER"
 }
 EOT
 if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then

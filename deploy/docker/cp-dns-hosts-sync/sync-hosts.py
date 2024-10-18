@@ -10,7 +10,7 @@ from pykube.config import KubeConfig
 from pykube.http import HTTPClient
 from pykube.objects import Pod
 
-Host = collections.namedtuple('Host', 'action,name,ip')
+Host = collections.namedtuple('Host', 'action,name,ip,phase')
 
 
 class MultipleFilesHostsManager:
@@ -106,6 +106,40 @@ class SingleFileHostsManager:
         self._hosts_to_remove = {}
 
 
+class MemoryToFileHostsManager:
+
+    def __init__(self, hosts_file):
+        self._hosts_file = hosts_file
+        self._hosts = {}
+        self._ips = {}
+
+    def add(self, host):
+        previous_host_name = self._ips.get(host.ip)
+        if previous_host_name:
+            del self._hosts[previous_host_name]
+            del self._ips[host.ip]
+        self._hosts[host.name] = host.ip
+        self._ips[host.ip] = host.name
+
+    def remove(self, host):
+        previous_host_ip = self._hosts.get(host.name)
+        if previous_host_ip:
+            del self._hosts[host.name]
+            del self._ips[previous_host_ip]
+
+    def flush(self):
+        logging.info('Flushing hosts to %s...', self._hosts_file)
+        with open(self._hosts_file, 'w') as f:
+            for host_name in sorted(self._hosts.keys()):
+                host_ip = self._hosts[host_name]
+                f.write(host_ip + '\t' + host_name + '\n')
+
+    def clear(self):
+        self._hosts.clear()
+        self._ips.clear()
+        self.flush()
+
+
 class Watcher(threading.Thread):
 
     def __init__(self, queue, error_delay):
@@ -127,21 +161,23 @@ class Watcher(threading.Thread):
             try:
                 host = Host(action=event.type,
                             name=event.object.name,
-                            ip=event.object.obj.get('status', {}).get('podIP', None))
+                            ip=event.object.obj.get('status', {}).get('podIP', None),
+                            phase=event.object.obj.get('status', {}).get('phase', None))
+
+                logging.debug('Registering event %s...', host)
 
                 if not host.action:
-                    logging.debug('%s is ignored because event type is missing.', host)
+                    logging.debug('Ignoring event %s because event type is missing...', host)
                     continue
 
                 if not host.name:
-                    logging.debug('%s is ignored because pod name is missing.', host)
+                    logging.debug('Ignoring event %s because pod name is missing...', host)
                     continue
 
-                if not host.ip:
-                    logging.debug('%s is ignored because pod ip is missing.', host)
+                if not host.phase:
+                    logging.debug('Ignoring event %s because pod phase is missing...', host)
                     continue
 
-                logging.debug('Registering %s...', host)
                 self._queue.put(host)
             except:
                 logging.exception('Kubernetes event %s registration has failed.', event)
@@ -155,12 +191,63 @@ class Watcher(threading.Thread):
         return watcher
 
 
+class EventActionHostProcessor:
+
+    def __init__(self, hosts_manager):
+        self._hosts_manager = hosts_manager
+
+    def map(self, host):
+        if host.action in ['ADDED', 'MODIFIED']:
+            if not host.ip:
+                logging.debug('Skipping %s because pod ip is missing...', host)
+                return
+            logging.info('Adding %s...', host)
+            self._hosts_manager.add(host)
+        elif host.action == 'DELETED':
+            logging.info('Deleting %s...', host)
+            self._hosts_manager.remove(host)
+        else:
+            logging.warning('Skipping %s because event action is unsupported...', host)
+
+
+class PodPhaseHostProcessor:
+
+    def __init__(self, hosts_manager):
+        self._hosts_manager = hosts_manager
+
+    def process(self, host):
+        if host.action == 'ADDED':
+            if not host.ip:
+                logging.debug('Skipping %s because pod ip is missing...', host)
+                return
+            logging.info('Adding %s...', host)
+            self._hosts_manager.add(host)
+        elif host.action == 'DELETED':
+            logging.info('Deleting %s...', host)
+            self._hosts_manager.remove(host)
+        elif host.action == 'MODIFIED':
+            if host.phase in ['Pending', 'Running']:
+                if not host.ip:
+                    logging.debug('Skipping %s because pod ip is missing...', host)
+                    return
+                logging.info('Adding %s...', host)
+                self._hosts_manager.add(host)
+            elif host.phase in ['Succeeded', 'Failed']:
+                logging.info('Deleting %s...', host)
+                self._hosts_manager.remove(host)
+            else:
+                logging.warning('Skipping %s because pod phase is unsupported...', host)
+        else:
+            logging.warning('Skipping %s because event action is unsupported...', host)
+
+
 class Synchronizer(threading.Thread):
 
-    def __init__(self, queue, hosts_manager, delay, init_delay, error_delay):
+    def __init__(self, queue, hosts_manager, hosts_processor, delay, init_delay, error_delay):
         threading.Thread.__init__(self, daemon=True)
         self._queue = queue
         self._hosts_manager = hosts_manager
+        self._hosts_processor = hosts_processor
         self._delay = delay
         self._init_delay = init_delay
         self._error_delay = error_delay
@@ -199,20 +286,14 @@ class Synchronizer(threading.Thread):
         return hosts
 
     def _sync_hosts(self, hosts):
-        if len(hosts) > 1:
-            logging.info('Synchronizing %s hosts...', len(hosts))
+        if not hosts:
+            return
+        logging.info('Processing %s events...', len(hosts))
         for host in hosts:
             try:
-                if host.action in ['ADDED', 'MODIFIED']:
-                    logging.info('Adding %s...', host)
-                    self._hosts_manager.add(host)
-                elif host.action == 'DELETED':
-                    logging.info('Deleting %s...', host)
-                    self._hosts_manager.remove(host)
-                else:
-                    logging.info('Ignoring %s because of its action.', host)
+                self._hosts_processor.process(host)
             except:
-                logging.exception('%s synchronization has failed.', host)
+                logging.exception('Event %s processing has failed.', host)
         self._hosts_manager.flush()
 
     def _reload_dnsmasq(self):
@@ -249,6 +330,8 @@ if __name__ == '__main__':
     """
     sync_dir = os.getenv('CP_DNSMASQ_SYNC_HOSTS_DIR', '/etc/hosts.d/pods')
     sync_file = os.getenv('CP_DNSMASQ_SYNC_HOSTS_FILE', '/etc/hosts.d/pods/hosts')
+    sync_persist_method = os.getenv('CP_DNSMASQ_SYNC_HOSTS_PERSIST_METHOD', 'mem-file')
+    sync_mapping_method = os.getenv('CP_DNSMASQ_SYNC_HOSTS_MAPPING_METHOD', 'pod-phase')
     sync_delay = int(os.getenv('CP_DNSMASQ_SYNC_DELAY', '1'))
     sync_init_delay = int(os.getenv('CP_DNSMASQ_SYNC_INIT_DELAY', '1'))
     sync_error_delay = int(os.getenv('CP_DNSMASQ_SYNC_ERROR_DELAY', '10'))
@@ -259,10 +342,28 @@ if __name__ == '__main__':
 
     task_queue = queue.Queue()
     watcher = Watcher(task_queue, error_delay=sync_error_delay)
-    hosts_manager = SingleFileHostsManager(hosts_file=sync_file) if sync_file \
-        else MultipleFilesHostsManager(hosts_dir=sync_dir)
-    synchronizer = Synchronizer(task_queue,
+
+    logging.info('Using persist method: %s', sync_persist_method)
+    if sync_persist_method == 'dir':
+        hosts_manager = MultipleFilesHostsManager(hosts_dir=sync_dir)
+    elif sync_persist_method == 'file':
+        hosts_manager = SingleFileHostsManager(hosts_file=sync_file)
+    elif sync_persist_method == 'mem-file':
+        hosts_manager = MemoryToFileHostsManager(hosts_file=sync_file)
+    else:
+        raise RuntimeError('Synchronization persist method %s is not supported.', sync_persist_method)
+
+    logging.info('Using mapping method: %s', sync_mapping_method)
+    if sync_mapping_method == 'event-action':
+        hosts_processor = EventActionHostProcessor(hosts_manager=hosts_manager)
+    elif sync_mapping_method == 'pod-phase':
+        hosts_processor = PodPhaseHostProcessor(hosts_manager=hosts_manager)
+    else:
+        raise RuntimeError('Synchronization mapping method %s is not supported.', sync_mapping_method)
+
+    synchronizer = Synchronizer(queue=task_queue,
                                 hosts_manager=hosts_manager,
+                                hosts_processor=hosts_processor,
                                 delay=sync_delay,
                                 init_delay=sync_init_delay,
                                 error_delay=sync_error_delay)

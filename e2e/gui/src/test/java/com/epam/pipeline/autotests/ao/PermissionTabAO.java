@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static com.epam.pipeline.autotests.utils.Permission.permissionsTable;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 
 public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO> {
@@ -208,6 +209,7 @@ public class PermissionTabAO implements ClosableAO, AccessObject<PermissionTabAO
 
         @Override
         public UserAdditionPopupAO typeInField(String value) {
+            context().$(className("ant-select-selection__placeholder")).click();
             context().find(tagName("input")).shouldBe(visible).setValue(value);
             return this;
         }

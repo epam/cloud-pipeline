@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,14 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
+import com.epam.pipeline.mapper.cluster.KubernetesMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
+import com.epam.pipeline.mapper.git.BitbucketCloudMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
+import com.epam.pipeline.mapper.git.GitHubMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.notification.UserNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
@@ -37,10 +40,10 @@ import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import com.epam.pipeline.mapper.user.OnlineUsersMapper;
+import com.epam.pipeline.mapper.user.RunnerSidMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 
 @Configuration
 public class MappersConfiguration {
@@ -148,5 +151,25 @@ public class MappersConfiguration {
     @Bean
     public BitbucketMapper bitbucketRepositoryMapper() {
         return Mappers.getMapper(BitbucketMapper.class);
+    }
+
+    @Bean
+    public BitbucketCloudMapper bitbucketCloudRepositoryMapper() {
+        return Mappers.getMapper(BitbucketCloudMapper.class);
+    }
+
+    @Bean
+    public GitHubMapper gitHubRepositoryMapper() {
+        return Mappers.getMapper(GitHubMapper.class);
+    }
+
+    @Bean
+    public KubernetesMapper kubernetesMapper() {
+        return Mappers.getMapper(KubernetesMapper.class);
+    }
+
+    @Bean
+    public RunnerSidMapper runnerSidMapper() {
+        return Mappers.getMapper(RunnerSidMapper.class);
     }
 }

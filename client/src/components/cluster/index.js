@@ -27,8 +27,14 @@ const Tabs = [
   {
     key: 'default',
     path: '/cluster',
-    title: 'Cluster',
+    title: 'All nodes',
     available: () => true
+  },
+  {
+    key: 'core-nodes',
+    path: '/cluster/core-nodes',
+    title: 'Core nodes',
+    available: (user) => user ? user.admin : false
   },
   {
     key: 'hot',

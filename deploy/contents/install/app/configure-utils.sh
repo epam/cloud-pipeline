@@ -529,6 +529,9 @@ function api_register_gitlab {
     api_preference_append_array "$(api_preference_get_templated "git.token"          "$gitlab_root_token"                                        "false")"
     api_preference_append_array "$(api_preference_get_templated "git.user.id"        "1"                                                         "false")"
     api_preference_append_array "$(api_preference_get_templated "git.host"           "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_INTERNAL_PORT" "true")"
+    if [ "$CP_GITLAB_VERSION" != "9" ]; then
+        api_preference_append_array "$(api_preference_get_templated "git.gitlab.api.version" "v4" "false")"
+    fi
     api_set_preference "$(api_preference_get_array)"
     api_preference_drop_array
 }
@@ -759,7 +762,8 @@ read -r -d '' payload <<-EOF
         "batch_operation_job_report_bucket": "${CP_PREF_STORAGE_SYSTEM_STORAGE_NAME}",
         "batch_operation_job_report_bucket_prefix": "${CP_PREF_STORAGE_LIFECYCLE_SERVICE_REPORT_BUCKET_PREFIX:-storage-lifecycle-service/tagging-job-reports}",
         "batch_operation_job_poll_status_retry_count": 30,
-        "batch_operation_job_poll_status_sleep_sec": 5
+        "batch_operation_job_poll_status_sleep_sec": 5,
+        "storage_skip_archiving_tag": "disable_storage_lifecycle"
       }
     }
 }
@@ -1003,6 +1007,7 @@ function api_register_search {
     api_set_preference "search.elastic.type.field" "doc_type" "false"
     api_set_preference "search.elastic.host" "${CP_SEARCH_ELK_INTERNAL_HOST:-cp-search-elk.default.svc.cluster.local}" "true"
     api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT:-30091}" "false"
+    api_set_preference "search.elastic.port" "${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT:-30092}" "false"
     api_set_preference "search.elastic.search.fields" "[]" "false"
     api_set_preference "search.elastic.index.common.prefix" "cp-*" "false"
     api_set_preference "search.elastic.allowed.groups.field" "allowed_groups" "false"
@@ -1053,6 +1058,7 @@ function api_register_clair {
     api_set_preference "security.tools.grace.hours" "48" "true"
     api_set_preference "security.tools.scan.all.registries" "true" "true"
     api_set_preference "security.tools.scan.enabled" "true" "true"
+    api_set_preference "security.tools.scan.clair.version" "${CP_CLAIR_VERSION}" "true"
 }
 
 function api_register_drive_mapping {

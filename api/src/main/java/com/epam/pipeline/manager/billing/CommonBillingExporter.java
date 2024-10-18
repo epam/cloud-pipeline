@@ -28,7 +28,7 @@ public class CommonBillingExporter<B> implements BillingExporter {
     @Override
     public void export(final BillingExportRequest request, final Writer writer) {
         final BillingWriter<B> billingWriter = writerSupplier.apply(request, writer);
-        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildClient()) {
+        try (RestHighLevelClient elasticSearchClient = elasticHelper.buildBillingClient()) {
             billingWriter.writeHeader();
             loader.billings(elasticSearchClient, request).forEach(billingWriter::write);
         } catch (IOException e) {

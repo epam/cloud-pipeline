@@ -39,7 +39,9 @@ public class PodInstance {
     private String namespace;
     private String nodeName;
     private String phase;
-
+    private String parentType;
+    private String parentName;
+    private PodInstanceStatus status;
     private List<ContainerInstance> containers;
 
     public PodInstance() {
@@ -57,6 +59,7 @@ public class PodInstance {
         PodStatus podStatus = pod.getStatus();
         if (podStatus != null) {
             this.setPhase(podStatus.getPhase());
+            this.setStatus(new PodInstanceStatus(podStatus));
         }
         PodSpec podSpec = pod.getSpec();
         if (podSpec != null) {

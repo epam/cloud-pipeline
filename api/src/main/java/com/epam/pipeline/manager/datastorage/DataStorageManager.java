@@ -23,6 +23,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
@@ -41,6 +42,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageFolder;
 import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
+import com.epam.pipeline.entity.datastorage.DataStorageListingFilter;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -222,6 +224,12 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageDao.loadAllDataStorages();
+    }
+
+    public List<AbstractDataStorage> getDataStorages(final EntityFilterVO filter) {
+        return Objects.isNull(filter) || MapUtils.isEmpty(filter.getTags())
+                ? dataStorageDao.loadAllDataStorages()
+                : dataStorageDao.loadAllDataStorages(filter);
     }
 
     public List<AbstractDataStorage> getDataStoragesWithToolsToMount() {
@@ -563,6 +571,16 @@ public class DataStorageManager implements SecuredEntityManager {
                     restoredListing);
         }
         return storageProviderManager.getItems(dataStorage, path, showVersion, pageSize, marker);
+    }
+
+    public DataStorageListing filterDataStorageItems(final Long storageId, final String path,
+                                                     final boolean showVersion, final boolean showArchived,
+                                                     final DataStorageListingFilter filter) {
+        final int limit = preferenceManager.getPreference(SystemPreferences.STORAGE_LS_FILTER_ITEMS_LIMIT);
+        final DataStorageListing listing = getDataStorageItems(storageId, path, showVersion, limit, null,
+                showArchived);
+        listing.setResults(DataStorageListingFilterUtils.filterStorageItems(listing.getResults(), filter));
+        return listing;
     }
 
     @Transactional

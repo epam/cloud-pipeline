@@ -22,6 +22,7 @@ import com.epam.pipeline.security.acl.redis.JsonRedisSerializer;
 import com.epam.pipeline.entity.preference.Preference;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -48,9 +49,13 @@ public class CacheConfiguration {
     private static final String REDIS = "REDIS";
     private static final String MEMORY = "MEMORY";
     private static final String CACHE_TYPE = "cache.type";
+    private static final String ACL_CACHE_TYPE = "security.acl.cache.type";
 
     @Value("${cache.type:}")
     private String cacheType;
+
+    @Value("${security.acl.cache.type:}")
+    private String cacheTypeAcl;
 
     @Value("${redis.host:}")
     private String redisHost;
@@ -86,7 +91,7 @@ public class CacheConfiguration {
 
     @Bean
     public CacheManager aclCacheManager(final Optional<RedisCacheManager> redisCacheManagerAcl) {
-        switch (cacheType) {
+        switch (cacheTypeAcl) {
             case MEMORY:
                 return new ConcurrentMapCacheManager(ACL_CACHE);
             case REDIS:
@@ -104,14 +109,26 @@ public class CacheConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
     public RedisCacheManager redisCacheManagerAcl(final RedisTemplate<Object, AclImpl> templateACl) {
         return new RedisCacheManager(templateACl, Collections.singleton(ACL_CACHE));
     }
 
-    @Bean
+    @Bean("redisConnectionFactory")
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
-    public RedisConnectionFactory redisConnectionFactory() {
+    @ConditionalOnMissingBean(RedisConnectionFactory.class)
+    public RedisConnectionFactory redisConnectionFactoryPref() {
+        return redisConnectionFactory();
+    }
+
+    @Bean("redisConnectionFactory")
+    @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
+    @ConditionalOnMissingBean(RedisConnectionFactory.class)
+    public RedisConnectionFactory redisConnectionFactoryAcl() {
+        return redisConnectionFactory();
+    }
+
+    private JedisConnectionFactory redisConnectionFactory() {
         final JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
         jedisConnectionFactory.setHostName(redisHost);
         jedisConnectionFactory.setPort(redisPort);
@@ -132,7 +149,7 @@ public class CacheConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
+    @ConditionalOnProperty(value = ACL_CACHE_TYPE, havingValue = REDIS)
     public RedisTemplate<Object, AclImpl> templateACl(final RedisConnectionFactory redisConnectionFactory) {
         final RedisTemplate<Object, AclImpl> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);

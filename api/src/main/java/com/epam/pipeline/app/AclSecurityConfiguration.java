@@ -21,8 +21,10 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.acl.LookupStrategyImpl;
 import com.epam.pipeline.security.acl.PermissionGrantingStrategyImpl;
+import com.epam.pipeline.security.acl.AclRefreshService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -42,7 +44,6 @@ import org.springframework.security.acls.domain.PermissionFactory;
 import org.springframework.security.acls.domain.SidRetrievalStrategyImpl;
 import org.springframework.security.acls.domain.SpringCacheBasedAclCache;
 import org.springframework.security.acls.jdbc.JdbcMutableAclService;
-import org.springframework.security.acls.jdbc.LookupStrategy;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.PermissionGrantingStrategy;
 import org.springframework.security.acls.model.SidRetrievalStrategy;
@@ -54,6 +55,8 @@ import javax.sql.DataSource;
 @Configuration
 @ComponentScan(basePackages = {"com.epam.pipeline.acl"})
 public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration {
+
+    private static final String TRUE = "true";
 
     @Autowired
     private ApplicationContext context;
@@ -105,9 +108,15 @@ public class AclSecurityConfiguration extends GlobalMethodSecurityConfiguration 
     }
 
     @Bean
-    public LookupStrategy lookupStrategy() {
+    public LookupStrategyImpl lookupStrategy() {
         return new LookupStrategyImpl(dataSource, aclCache(), aclAuthorizationStrategy(),
                 auditLogger(), permissionFactory, permissionGrantingStrategy());
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "security.acl.cache.refresh", havingValue = TRUE)
+    public AclRefreshService aclRefreshService() {
+        return new AclRefreshService(lookupStrategy(), aclCache());
     }
 
     @Bean

@@ -1,0 +1,14 @@
+.filter-description {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-description-entry {
+  display: inline-flex;
+  align-items: center;
+}
+
+.filter-description-divider {
+  white-space: pre;
+}

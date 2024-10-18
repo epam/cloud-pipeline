@@ -24,6 +24,7 @@ import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.pipeline.RunRegionShiftHandler;
@@ -105,6 +106,8 @@ public class AutoscaleManagerTest {
     private PoolAutoscaler poolAutoscaler;
     @Mock
     private RunRegionShiftHandler runRegionShiftHandler;
+    @Mock
+    private MetadataManager metadataManager;
 
     private AutoscaleManager.AutoscaleManagerCore autoscaleManagerCore;
 
@@ -117,7 +120,7 @@ public class AutoscaleManagerTest {
                 autoscalerService, nodesManager, kubernetesManager,
                 preferenceManager, TEST_KUBE_NAMESPACE, cloudFacade,
                 nodePoolManager, reassignHandler, scaleDownHandler, Collections.emptyList(), poolAutoscaler,
-                runRegionShiftHandler);
+                runRegionShiftHandler, metadataManager);
         Whitebox.setInternalState(autoscaleManagerCore, "preferenceManager", preferenceManager);
 
         when(executorService.getExecutorService()).thenReturn(new CurrentThreadExecutorService());
@@ -176,6 +179,7 @@ public class AutoscaleManagerTest {
         when(pipelineRunManager.findRun(eq(TEST_RUN_ID))).thenReturn(Optional.of(testRun));
         when(autoscalerService.fillInstance(any(RunInstance.class)))
             .thenAnswer(invocation -> invocation.getArguments()[0]);
+        when(cloudFacade.instanceScalingSupported(any())).thenReturn(true);
 
         MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> mockPods =
             new KubernetesTestUtils.MockPods()
@@ -202,17 +206,17 @@ public class AutoscaleManagerTest {
         when(kubernetesManager.isPodUnscheduled(any())).thenReturn(true);
 
         when(cloudFacade.scaleUpNode(eq(TEST_RUN_ID),
-                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any()))
+                argThat(Matchers.hasProperty("spot", Matchers.is(true))), any(), any()))
             .thenThrow(new CmdExecutionException("", 5, ""));
 
         autoscaleManagerCore.runAutoscaling(); // this time spot scheduling should fail
         verify(cloudFacade).scaleUpNode(eq(TEST_RUN_ID),
                 argThat(Matchers.hasProperty("spot", Matchers.is(true))),
-                any());
+                any(), any());
 
         autoscaleManagerCore.runAutoscaling(); // this time it should be a on-demand request
         verify(cloudFacade, times(2))
             .scaleUpNode(eq(TEST_RUN_ID), argThat(
-                Matchers.hasProperty("spot", Matchers.is(false))), any());
+                Matchers.hasProperty("spot", Matchers.is(false))), any(), any());
     }
 }

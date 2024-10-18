@@ -28,13 +28,18 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.MasterNode;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.cluster.PodDescription;
+import com.epam.pipeline.entity.cluster.PodInstance;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import lombok.RequiredArgsConstructor;
@@ -42,9 +47,10 @@ import org.springframework.security.access.prepost.PostFilter;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
+import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_READ_FILTER;
-import static com.epam.pipeline.security.acl.AclExpressions.NODE_USAGE_READ;
 import static com.epam.pipeline.security.acl.AclExpressions.NODE_STOP;
 
 @Service
@@ -56,6 +62,7 @@ public class ClusterApiService {
     private final UsageMonitoringManager usageMonitoringManager;
     private final InstanceOfferManager instanceOfferManager;
     private final EdgeServiceManager edgeServiceManager;
+    private final PodsManager podsManager;
 
     @PostFilter(NODE_READ_FILTER)
     public List<NodeInstance> getNodes() {
@@ -90,14 +97,23 @@ public class ClusterApiService {
         return nodesManager.terminateNode(name);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<MonitoringStats> getStatsForNode(final String name,
                                                  final LocalDateTime from,
                                                  final LocalDateTime to) {
         return usageMonitoringManager.getStatsForNode(name, from, to);
     }
 
-    @PreAuthorize(NODE_USAGE_READ)
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public GpuMonitoringStats getGpuStatsForNode(final String name,
+                                                 final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts) {
+        return usageMonitoringManager.getGpuStatsForNode(name, from, to, granularity, squashCharts);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public InputStream getUsageStatisticsFile(final String name, final LocalDateTime from, final LocalDateTime to,
                                               final Duration interval, final MonitoringReportType type) {
         return usageMonitoringManager.getStatsForNodeAsInputStream(name, from, to, interval, type);
@@ -127,5 +143,20 @@ public class ClusterApiService {
 
     public String buildEdgeExternalUrl(final String region) {
         return edgeServiceManager.buildEdgeExternalUrl(region);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PodInstance> getCorePods() {
+        return podsManager.getCorePods();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public PodDescription getPodDescription(final String podId, final boolean detailed) {
+        return podsManager.describePod(podId, detailed);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public String getContainerLogs(final String podId, final String containerId, final Integer limit) {
+        return podsManager.getContainerLogs(podId, containerId, limit);
     }
 }

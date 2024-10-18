@@ -108,6 +108,7 @@ export function filtersAreEqual (filter1, filter2) {
     endDateTo: endDateToA,
     owners: ownersA,
     roles: rolesA,
+    regionIds: regionIdsA,
     projectIds: projectIdsA,
     onlyMasterJobs: onlyMasterJobsA = true,
     tags: tagsA = {}
@@ -122,6 +123,7 @@ export function filtersAreEqual (filter1, filter2) {
     endDateTo: endDateToB,
     owners: ownersB,
     roles: rolesB,
+    regionIds: regionIdsB,
     projectIds: projectIdsB,
     onlyMasterJobs: onlyMasterJobsB = true,
     tags: tagsB = {}
@@ -136,6 +138,7 @@ export function filtersAreEqual (filter1, filter2) {
     endDatesAreEqual(endDateToA, endDateToB) &&
     ownerArraysAreEqual(ownersA, ownersB) &&
     rolesArraysAreEqual(rolesA, rolesB) &&
+    simpleArraysAreEqual(regionIdsA, regionIdsB) &&
     onlyMasterJobsA === onlyMasterJobsB &&
     tagsAreEqual(tagsA, tagsB);
 }

@@ -112,6 +112,14 @@ function docker_push_manifest {
     local push_result=0
     while IFS=, read -r docker_name docker_pretty_name
     do
+    # Docker manifest dir can have different structure. For example, in point-in-time configuration has an additional layer of folders for the registry path.
+    # So, due to this difference, we need to check which path to the tool metadata files to use:
+        if [ -d "$manifest_dir/$docker_name" ]; then
+            local docker_tool_manifest_path="$manifest_dir/$docker_name"
+        else
+            local docker_tool_manifest_path="$manifest_dir/$docker_pretty_name"
+        fi
+
         if ! array_contains_or_empty "$docker_pretty_name" "${CP_DOCKERS_TO_INIT[@]}"; then
             print_warn "Skipping docker $docker_pretty_name as it is not present in the explicit list of dockers"
             continue
@@ -135,7 +143,7 @@ function docker_push_manifest {
         sleep $push_timeout
 
         docker_register_image   "$docker_pretty_name" \
-                                "$manifest_dir/$docker_pretty_name" \
+                                "$docker_tool_manifest_path" \
                                 "$registry_id" \
                                 "$registry_path"
         push_result=$(($push_result || $?))

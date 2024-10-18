@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# sync_to_storage add /my/folder1
+# sync_to_storage add /my/folder2/file
+# sync_to_storage start
+
+function echo_debug() {
+    if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
+        return
+    fi
+
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')][DEBUG] $1"
+}
+
+function add_to_spec() {
+    local _location_to_add="$(echo ${1%/})"
+    touch "$CP_SYNC_TO_STORAGE_SPEC"
+    # Spec already contains a requested location
+    if grep -q -x -F "$_location_to_add" "$CP_SYNC_TO_STORAGE_SPEC"; then
+        return
+    fi
+    echo "$_location_to_add" >> "$CP_SYNC_TO_STORAGE_SPEC"
+}
+
+function start_sync_daemon() {
+    while true; do
+        if [ ! -f "$CP_SYNC_TO_STORAGE_SPEC" ]; then
+            echo_debug "Spec file not found: $CP_SYNC_TO_STORAGE_SPEC"
+            sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+            continue
+        fi
+
+        while read _source_path; do
+            echo_debug "Processing entry $_source_path"
+            
+            _source_path_trim=${_source_path#/}
+            _source_path_trim=${_source_path_trim%/}
+            echo_debug "Trimmed entry $_source_path"
+
+            local _pipe_extra_args="${CP_SYNC_TO_STORAGE_PIPE_EXTRA_ARGS}"
+
+            if [ ! -d "$_source_path" ] && [ ! -f "$_source_path" ]; then
+                echo_debug "$_source_path not found"
+                continue
+            fi
+
+            if [ -d "$_source_path" ]; then
+                _pipe_extra_args="$_pipe_extra_args -r"
+            fi
+            if [ "$CP_SYNC_TO_STORAGE_DEBUG" != "true" ]; then
+                _pipe_extra_args="$_pipe_extra_args -q"
+            fi
+            echo_debug "pipe extra args: $_pipe_extra_args"
+
+            local _dest_path="${CP_SYNC_TO_STORAGE_DESTINATION}/${RUN_ID}/$_source_path_trim"
+            echo_debug "destination path: $_dest_path"
+
+            local _pipe_command="pipe storage cp -f \"$_source_path\" \"$_dest_path\" $_pipe_extra_args"
+            echo_debug "pipe command: $_pipe_command"
+            eval "$_pipe_command"
+
+            if [ $? -ne 0 ]; then
+                echo "[WARN] Sync $_source_path to $_dest_path failed"
+            fi
+        done <"$CP_SYNC_TO_STORAGE_SPEC"
+
+        sleep "$CP_SYNC_TO_STORAGE_TIMEOUT_SEC"
+    done
+}
+
+export CP_SYNC_TO_STORAGE_SPEC="${CP_SYNC_TO_STORAGE_SPEC:-/etc/sync_to_storage.list}"
+export CP_SYNC_TO_STORAGE_PID_FILE="${CP_SYNC_TO_STORAGE_PID_FILE:-/var/run/sync_to_storage.pid}"
+export CP_SYNC_TO_STORAGE_TIMEOUT_SEC="${CP_SYNC_TO_STORAGE_TIMEOUT_SEC:-3600}"
+export CP_SYNC_TO_STORAGE_LOGFILE="${CP_SYNC_TO_STORAGE_LOGFILE:-/var/log/sync_to_storage.log}"
+export CP_SYNC_TO_STORAGE_DEBUG="${CP_SYNC_TO_STORAGE_DEBUG:-false}"
+
+_cmd="$1"
+
+if [ "$_cmd" == "add" ]; then
+    if [ -z "$2" ]; then
+        echo "[ERROR] Source file for syncing is not specified, nothing will be added to the sync spec"
+        exit 1
+    fi
+    add_to_spec "$2"
+elif [ "$_cmd" == "start" ]; then
+    if [ -z "$CP_SYNC_TO_STORAGE_DESTINATION" ]; then
+        echo "[ERROR] Sync destination location is not defined, cannot start sync process"
+        exit 1
+    fi
+    CP_SYNC_TO_STORAGE_DESTINATION="${CP_SYNC_TO_STORAGE_DESTINATION%/}"
+
+    if [ -f "$CP_SYNC_TO_STORAGE_PID_FILE" ]; then
+        _prev_pid=$(cat $CP_SYNC_TO_STORAGE_PID_FILE)
+        echo "[WARN] Another sync process ($_prev_pid) is already running, restarting"
+        kill "$_prev_pid"
+        rm -f "$CP_SYNC_TO_STORAGE_PID_FILE"
+    fi
+    export -f start_sync_daemon
+    export -f echo_debug
+    nohup bash -c start_sync_daemon &> "$CP_SYNC_TO_STORAGE_LOGFILE" &
+    echo "$!" > "$CP_SYNC_TO_STORAGE_PID_FILE"
+    echo "Sync process has been started, review logs in $CP_SYNC_TO_STORAGE_LOGFILE"
+else
+    echo "[ERROR] Unknown command $_cmd"
+    exit 1
+fi

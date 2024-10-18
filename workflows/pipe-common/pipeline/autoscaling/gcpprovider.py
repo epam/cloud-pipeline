@@ -61,7 +61,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                                                       global_distribution_url, swap_size, pre_pull_images)
 
         instance_type, gpu_type, gpu_count = self.parse_instance_type(ins_type)
-        machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
+        if ins_type.startswith('a3'):
+            machine_type = 'projects/{}/zones/{}/machineTypes/{}'.format(self.project_id, self.cloud_region, instance_type)
+        else:
+            machine_type = 'zones/{}/machineTypes/{}'.format(self.cloud_region, instance_type)
         instance_name = "gcp-" + uuid.uuid4().hex[0:16]
 
         network_interfaces = self.__build_networks(instance_type)
@@ -117,6 +120,8 @@ class GCPInstanceProvider(AbstractInstanceProvider):
                     }
                 ]}
             body.update(gpu)
+
+        
 
         try:
             response = self.client.instances().insert(
@@ -361,7 +366,9 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'subnetwork': 'projects/{project}/regions/{region}/subnetworks/{subnet}'.format(
                 project=self.project_id, subnet=subnet_id, region=region_name)
         }
-        if instance_type.startswith('c3'):
+        utils.pipe_log('- Checking GVNIC for {}'.format(instance_type))
+        if instance_type.startswith('c3') or instance_type.startswith('a3'):
+            utils.pipe_log('- GVNIC is set')
             network['nicType'] = 'GVNIC'
         if not disable_external_access:
             network['accessConfigs'] = [

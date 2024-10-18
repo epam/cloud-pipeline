@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.epam.pipeline.controller.vo.EntityFilterVO;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.dao.MetadataTagsUtils;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
@@ -63,6 +65,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
     private String loadAllPipelinesWithParentsQuery;
     private String loadPipelinesCountQuery;
     private String loadPipelineWithParentsQuery;
+    private String loadPipelinesFiltersQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
     public Long createPipelineId() {
@@ -82,6 +85,12 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
 
     public List<Pipeline> loadAllPipelines() {
         return getNamedParameterJdbcTemplate().query(loadAllPipelinesQuery,
+                PipelineParameters.getRowMapper());
+    }
+
+    public List<Pipeline> loadAllPipelines(final EntityFilterVO filter) {
+        return getNamedParameterJdbcTemplate().query(
+                MetadataTagsUtils.buildTagsFilterClause(loadPipelinesFiltersQuery, filter.getTags()),
                 PipelineParameters.getRowMapper());
     }
 
@@ -314,5 +323,10 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadPipelineWithParentsQuery(String loadPipelineWithParentsQuery) {
         this.loadPipelineWithParentsQuery = loadPipelineWithParentsQuery;
+    }
+
+    @Required
+    public void setLoadPipelinesFiltersQuery(final String loadPipelinesFiltersQuery) {
+        this.loadPipelinesFiltersQuery = loadPipelinesFiltersQuery;
     }
 }

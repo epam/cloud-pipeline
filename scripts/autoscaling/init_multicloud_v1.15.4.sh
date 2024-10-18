@@ -1,5 +1,8 @@
 #!/bin/bash
 
+_API_URL="@API_URL@"
+_API_TOKEN="@API_TOKEN@"
+
 launch_token="/etc/user_data_launched"
 if [[ -f "$launch_token" ]]; then exit 0; fi
 
@@ -122,6 +125,44 @@ function setup_swap_device {
     fi
 }
 
+function enable_emergency_termination_service() {
+  _EMERGENCY_TERMINATOR_PRESENT=0
+  _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  if [ -f "$_CURRENT_DIR/emergency_node_terminator" ]; then
+    cp "$_CURRENT_DIR/emergency_node_terminator" "/usr/bin/emergency_node_terminator"
+    _EMERGENCY_TERMINATOR_PRESENT=1
+  else
+    _EMERGENCY_TERMINATOR__URL="$(dirname $_API_URL)/emergency_node_terminator.sh"
+    echo "Cannot find $_CURRENT_DIR/emergency_node_terminator, downloading from ${_EMERGENCY_TERMINATOR__URL}"
+    curl -skf "${_EMERGENCY_TERMINATOR__URL}" > /usr/bin/emergency_node_terminator
+    if [ $? -ne 0 ]; then
+      echo "Error while downloading emergency_node_terminator script"
+    else
+      _EMERGENCY_TERMINATOR_PRESENT=1
+    fi
+  fi
+
+  if [ $_EMERGENCY_TERMINATOR_PRESENT -eq 1 ]; then
+    chmod +x /usr/bin/emergency_node_terminator
+  cat >/etc/systemd/system/emergency_node_terminator.service <<EOL
+[Unit]
+Description=Cloud Pipeline Emergency Node Termination Daemon
+Documentation=https://cloud-pipeline.com/
+
+[Service]
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+ExecStart=/usr/bin/emergency_node_terminator "$_API_URL" "$_API_TOKEN" "$_KUBE_NODE_NAME"
+
+[Install]
+WantedBy=multi-user.target
+EOL
+    systemctl enable emergency_node_terminator
+    systemctl start emergency_node_terminator
+  fi
+}
+
 GLOBAL_DISTRIBUTION_URL="@GLOBAL_DISTRIBUTION_URL@"
 if [ ! "$GLOBAL_DISTRIBUTION_URL" ] || [[ "$GLOBAL_DISTRIBUTION_URL" == "@"*"@" ]]; then
   GLOBAL_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.us-east-1.amazonaws.com/"
@@ -132,6 +173,8 @@ _WO="--timeout=10 --waitretry=1 --tries=10"
 wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/nvme-cli/1.16/nvme.gz" -O /bin/nvme.gz && \
 gzip -d /bin/nvme.gz && \
 chmod +x /bin/nvme
+
+@custom_script_pre@
 
 swap_size="@swap_size@"
 setup_swap_device "${swap_size:-0}"
@@ -209,6 +252,12 @@ wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/quay.io-coreos-flannel-v0.11.0.tar" -O $_D
 wget $_WO "${_KUBE_SYSTEM_PODS_DISTR}/k8s.gcr.io-pause-3.1.tar" -O $_DOCKER_SYS_IMGS/k8s.gcr.io-pause-3.1.tar
 if [ $? -ne 0 ]; then
   _DOCKER_SYS_IMGS="/opt/docker-system-images"
+fi
+
+
+if [ ! -x /bin/wondershaper ]; then
+  wget $_WO "${GLOBAL_DISTRIBUTION_URL}tools/wondershaper/wondershaper" -O /bin/wondershaper
+  chmod +x /bin/wondershaper
 fi
 
 mkdir -p /etc/docker
@@ -432,9 +481,9 @@ systemctl start kubelet
 
 update_nameserver "$nameserver_post_val" "infinity"
 
+@custom_script_post@
+
 if [[ $FS_TYPE == "btrfs" ]]; then
-  _API_URL="@API_URL@"
-  _API_TOKEN="@API_TOKEN@"
   _MOUNT_POINT="/ebs"
   _FS_AUTOSCALE_PRESENT=0
   _CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -474,6 +523,8 @@ EOL
     systemctl start fsautoscale
   fi
 fi
+
+enable_emergency_termination_service
 
 if check_installed "nvidia-smi"; then
   cat >> /etc/rc.local << EOF

@@ -23,4 +23,5 @@ import java.util.List;
 @Data
 public class BitbucketLinks {
     private List<BitbucketCloneEntry> clone;
+    private BitbucketCloneEntry html;
 }

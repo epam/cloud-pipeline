@@ -566,8 +566,75 @@ function array_contains_or_empty () {
     return 1
 }
 
+function enable_service {
+    parse_env_option "$1"
+    services_count=$((services_count+1))
+    if [ -n "${CP_SERVICES_ENABLED}" ]; then
+        export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${1}"
+    else
+        export CP_SERVICES_ENABLED="${1}"
+    fi
+}
+
+function enable_all_services {
+    export CP_INSTALL_SERVICES_ALL=1
+    export CP_SERVICES_ENABLED="all"
+}
+
+function is_module_available_in_point_in_time_configuration {
+  local point_in_time_configuration_module="${1}"
+
+  if [ $CP_POINT_IN_TIME_CONFIGURATION_DIR ]; then
+     local pitc_metadata_file="$CP_POINT_IN_TIME_CONFIGURATION_DIR/_pitc.csv"
+
+     if [ -z $CP_POINT_IN_TIME_CONFIGURATION_MODULES ] || [[ $CP_POINT_IN_TIME_CONFIGURATION_MODULES == *"$point_in_time_configuration_module"* ]]; then
+        while IFS="," read -r data module_file exit_code; do
+        if [ "$point_in_time_configuration_module" == "$data" ] && [ -s "$CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file" ] && [ $exit_code -eq 0 ]; then
+           echo $CP_POINT_IN_TIME_CONFIGURATION_DIR/$module_file
+           return 0
+        fi
+        done < "$pitc_metadata_file"
+     fi
+  fi
+  return 1
+}
+
+function enable_services_from_point_in_time_configuration {
+    local point_in_time_configuration_service_file=$(is_module_available_in_point_in_time_configuration services)
+    if [ "$point_in_time_configuration_service_file" ]; then
+        print_info "Services from point-in-time configuration: $point_in_time_configuration_service_file will be installed."
+        while read -r key; do
+            enable_service "$key"
+        done < <(cat "$point_in_time_configuration_service_file" | jq -r '.[]')
+    fi
+}
+
+function set_preferences_from_point_in_time_configuration {
+    local point_in_time_configuration_preference_file=$(is_module_available_in_point_in_time_configuration system_preferences)
+    if [ "$point_in_time_configuration_preference_file" ]; then
+        print_info "Preferences from point-in-time configuration: ${point_in_time_configuration_preference_file} will be installed."
+        local PREF_NAMES_TO_FILTER_OUT="${CP_POINT_IN_TIME_CONFIGURATION_PREFERENCES_FILTEROUT:-git.token|cluster.networks.config|git.repository.hook.url}"
+        local payload
+        if [ "${PREF_NAMES_TO_FILTER_OUT}" ]; then
+          payload=$(jq --arg PREF_NAMES_TO_FILTER_OUT "$PREF_NAMES_TO_FILTER_OUT" '[.[] | select(has("value")) | select( .name | test($PREF_NAMES_TO_FILTER_OUT) | not) ]' $point_in_time_configuration_preference_file)
+        else
+          payload=$(jq '[.[] | select(has("value")) ]' $point_in_time_configuration_preference_file)
+        fi
+        call_api "/preferences" "$CP_API_JWT_ADMIN" "$payload"
+    fi
+}
+
+function import_users_from_point_in_time_configuration {
+  local point_in_time_configuration_users_file=$(is_module_available_in_point_in_time_configuration users)
+  if [ "$point_in_time_configuration_users_file" ]; then
+      print_info "Users from point-in-time configuration: ${point_in_time_configuration_users_file} will be imported."
+      call_api "/users/import?createUser=true&createGroup=true" "$CP_API_JWT_ADMIN" "$point_in_time_configuration_users_file" "users"
+  fi
+}
+
 function parse_options {
     local services_count=0
+    export CP_SERVICES_ENABLED=
     POSITIONAL=()
     EXPLICIT_ENV_OPTIONS=()
     export CP_DOCKERS_TO_INIT=
@@ -616,13 +683,7 @@ function parse_options {
         shift # past argument
         ;;
         -s|--service)
-        parse_env_option "$2"
-        services_count=$((services_count+1))
-        if [ -n "${CP_SERVICES_ENABLED}" ]; then 
-           export CP_SERVICES_ENABLED="${CP_SERVICES_ENABLED},${2}"
-        else 
-           export CP_SERVICES_ENABLED="${2}"
-        fi
+        enable_service "$2"
         shift # past argument
         shift # past value
         ;;
@@ -636,6 +697,16 @@ function parse_options {
         -dt|--deployment-type)
         # New variable for K8s deployment type for example: classic, aws-native(Amazon Elastic Kubernetes Service), etc.
         export CP_DEPLOYMENT_TYPE="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -pc|--point-in-time-configuration)
+        export CP_POINT_IN_TIME_CONFIGURATION_DIR="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -pcm|--point-in-time-configuration-modules)
+        export CP_POINT_IN_TIME_CONFIGURATION_MODULES="$2"
         shift # past argument
         shift # past value
         ;;
@@ -669,10 +740,23 @@ function parse_options {
         return 1
     fi
 
-    if [ -z $CP_INSTALL_CONFIG_FILE ]; then
-        print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
-        export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
-        mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
+    if [ -z "$CP_INSTALL_CONFIG_FILE" ]; then
+        local point_in_time_configuration_install_config=$(is_module_available_in_point_in_time_configuration configmap)
+        if [ "$point_in_time_configuration_install_config" ]; then
+            print_info "install-config from point-in-time configuration: ${point_in_time_configuration_install_config} will be used."
+            print_warn "To prevent data changes in $point_in_time_configuration_install_config it will be copied to Temp directory before processing"
+            install_config_temp_dir=$(mktemp -d)
+            local CONFIG_VARIABLES_TO_FILTER_OUT="${CP_POINT_IN_TIME_CONFIGURATION_CONFIGMAP_FILTEROUT:-CP_API_JWT_ADMIN|GITLAB_IMP_TOKEN|GITLAB_ROOT_TOKEN}"
+            cp "$point_in_time_configuration_install_config" "$install_config_temp_dir/$(basename $point_in_time_configuration_install_config)"
+            if [ "${CONFIG_VARIABLES_TO_FILTER_OUT}" ]; then
+                sed -i -E "/$CONFIG_VARIABLES_TO_FILTER_OUT/d" "$install_config_temp_dir/$(basename $point_in_time_configuration_install_config)"
+            fi
+            CP_INSTALL_CONFIG_FILE="$install_config_temp_dir/install-config"
+        else
+            print_warn "-c|--install-config : path to the installation config not set - default configuration will be used"
+            export CP_INSTALL_CONFIG_FILE="$INSTALL_SCRIPT_PATH/../install-config"
+            mkdir -p $(dirname $CP_INSTALL_CONFIG_FILE)
+        fi
     fi
     load_install_config "$CP_INSTALL_CONFIG_FILE"
     if [ $? -ne 0 ]; then
@@ -761,10 +845,18 @@ function parse_options {
                             "$CP_EDGE_EXTERNAL_PORT"
     fi
 
+    enable_services_from_point_in_time_configuration
+
     if [ $services_count == 0 ]; then
-        print_warn "No specific services (-s|--service) are specified, ALL will be installed"
-        export CP_INSTALL_SERVICES_ALL=1
-        export CP_SERVICES_ENABLED="all"
+        print_warn "No specific services are specified, ALL will be installed"
+        enable_all_services
+    fi
+
+    # WARN: Note that in some cases it can be suitable to define CP_OVERWRITE_SERVICES_ENABLED as -env option during a deploy
+    # (f.i. In case of redeploy of existing deployment CP_OVERWRITE_SERVICES_ENABLED variable can be used to identify already deployed services that need to be proxied by edge service)
+    # In this case this variable would be propagated to the current session and available here, because of function parse_env_option
+    if [ -n "$CP_OVERWRITE_SERVICES_ENABLED" ]; then
+        export CP_SERVICES_ENABLED=$CP_OVERWRITE_SERVICES_ENABLED
     fi
     #Propagate this variable in the ConfigMap to be used by Cloud-Pipeline services (e.g. edge) during runtime
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
@@ -802,7 +894,7 @@ function parse_options {
     update_config_value "$CP_INSTALL_CONFIG_FILE" \
                         "CP_DEPLOYMENT_TYPE" \
                         "$CP_DEPLOYMENT_TYPE"
-    
+
     return 0
 }
 
@@ -1069,12 +1161,12 @@ function get_kube_resource_spec_file_by_type {
         local spec_suffix="${CP_KUBE_SERVICES_TYPE:-"node-port"}"
         
         echo "${spec_dir}/${spec_file}-${spec_suffix}.${spec_ext}"
-    
-    elif [ "$resource_type" == "--ktz" ]; then 
+
+    elif [ "$resource_type" == "--ktz" ]; then
         local spec_dir="$(basename $original_spec_location)"
         template_file="/tmp/cp_kube_res_${spec_dir}_${RANDOM}.yaml"
         kustomize build "$original_spec_location" > "$template_file"
-        echo "$template_file"    
+        echo "$template_file"
     else
         local resolved_spec_location="$original_spec_location"
         # Here we should be dealing with dpl files

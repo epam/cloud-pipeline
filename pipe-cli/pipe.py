@@ -292,6 +292,14 @@ def cli():
       CP_LOGGING_LEVEL                       Explicit logging level: CRITICAL, ERROR, WARNING, INFO or DEBUG. Defaults to ERROR.
       CP_LOGGING_FORMAT                      Explicit logging format. Default is `%(asctime)s:%(levelname)s: %(message)s`
       CP_TRACE=[True|False]                  Enables verbose errors.
+      CP_CLI_STORAGE_BATCH_SIZE              The number of objects per request for pipe storage operations (Default: 1000)
+      CP_CLI_STORAGE_ASYNC_BATCH_ENABLE      Enables asynchronous batch transfer
+      CP_CLI_STORAGE_LIST_API_PAGE_SIZE      The number of storage items allowed to be loaded from the API
+                                             in one request (Default: 1000)
+      CP_CLI_API_CALL_RETRY_ATTEMPTS         The number of retries to call API (Default: 3)
+      CP_CLI_API_CALL_RETRY_TIMEOUT          The time interval in seconds between API call attempts (Default: 5)
+      CP_AWS_MAX_ATTEMPTS                    The number of maximum retries to call AWS API. If not specifies the
+                                             default boto3 provided values will be used.
     """
     pass
 
@@ -487,6 +495,8 @@ def view_pipe(pipeline, versions, parameters, storage_rules, permissions):
 @click.option('-nd', '--node-details', help='Display node details of a specific run', is_flag=True)
 @click.option('-pd', '--parameters-details', help='Display parameters of a specific run', is_flag=True)
 @click.option('-td', '--tasks-details', help='Display tasks of a specific run', is_flag=True)
+@click.option('-uf', '--user-filter', help='Display tasks of a specific users. Format: Comma separated list.')
+@click.option('--tags-details', help='Display detailed tags information of a specific run', is_flag=True, default=False)
 @common_options
 def view_runs(run_id,
               status,
@@ -498,20 +508,22 @@ def view_runs(run_id,
               top,
               node_details,
               parameters_details,
-              tasks_details):
+              tasks_details,
+              user_filter,
+              tags_details):
     """Displays details of a run or list of pipeline runs
     """
     # If a run id is specified - list details of a run
     if run_id:
-        view_run(run_id, node_details, parameters_details, tasks_details)
+        view_run(run_id, node_details, parameters_details, tasks_details, tags_details)
     # If no argument is specified - list runs according to options
     else:
-        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top)
+        view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter)
 
 
-def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
+def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top, user_filter):
     runs_table = prettytable.PrettyTable()
-    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started"]
+    runs_table.field_names = ["RunID", "Parent RunID", "Pipeline", "Version", "Status", "Started", "Owner"]
     runs_table.align = "r"
     if date_to and not status:
         click.echo("The run status shall be specified for viewing completed before specified date runs")
@@ -545,7 +557,8 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                   pipeline_id=pipeline_id,
                                   version=pipeline_version_name,
                                   parent_id=parent_id,
-                                  custom_filter=find)
+                                  custom_filter=find,
+                                  owners=user_filter.split(",") if user_filter else None)
     if run_filter.total_count == 0:
         click.echo('No data is available for the request')
     else:
@@ -557,12 +570,13 @@ def view_all_runs(status, date_from, date_to, pipeline, parent_id, find, top):
                                 run_model.pipeline,
                                 run_model.version,
                                 state_utilities.color_state(run_model.status),
-                                run_model.scheduled_date])
+                                run_model.scheduled_date,
+                                run_model.owner])
         click.echo(runs_table)
         click.echo()
 
 
-def view_run(run_id, node_details, parameters_details, tasks_details):
+def view_run(run_id, node_details, parameters_details, tasks_details, tags_details):
     run_model = PipelineRun.get(run_id)
     if not run_model.pipeline and run_model.pipeline_id is not None:
         pipeline_model = Pipeline.get(run_model.pipeline_id)
@@ -605,6 +619,9 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         run_main_info_table.add_row(['Estimated price:', '{} $'.format(round(run_model_price.total_price, 2))])
     else:
         run_main_info_table.add_row(['Estimated price:', 'N/A'])
+
+    run_main_info_table.add_row(['Tags:', run_model.tags_str])
+
     click.echo(run_main_info_table)
     click.echo()
 
@@ -656,6 +673,16 @@ def view_run(run_id, node_details, parameters_details, tasks_details):
         else:
             click.echo('No tasks are available for the run')
         click.echo()
+    
+    if tags_details:
+        echo_title('Tags:')
+        if len(run_model.tags) > 0:
+            for tag_name in run_model.tags:
+                click.echo('{}={}'.format(tag_name, run_model.tags[tag_name]))
+        else:
+            click.echo('No tags are configured')
+        click.echo()
+
 
 
 @cli.command(name='view-cluster')
@@ -926,11 +953,14 @@ def run(pipeline,
 @cli.command(name='stop')
 @click.argument('run-id', required=True, type=int)
 @click.option('-y', '--yes', is_flag=True, help='Do not ask confirmation')
+@click.option('--status', required=False, default='STOPPED',
+              type=click.Choice(['FAILURE', 'STOPPED', 'SUCCESS']),
+              help='Which status to use when stopping [FAILURE/STOPPED/SUCCESS]')
 @common_options
-def stop(run_id, yes):
+def stop(run_id, yes, status):
     """Stops a running pipeline
     """
-    PipelineRunOperations.stop(run_id, yes)
+    PipelineRunOperations.stop(run_id, yes, status)
 
 
 @cli.command(name='pause')
@@ -1132,6 +1162,9 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-q', '--quiet', is_flag=True, help='Quiet mode')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
@@ -1182,10 +1215,14 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
                    '[skip] skips empty files transferring.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, default='md5', type=click.Choice(['crc32', 'sha256', 'md5']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: md5, crc32, sha256. Default: md5.')
+@click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
-def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, verify_destination):
+def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, sync_newer,
+                      tags, file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_empty_files, on_failures, verify_destination, checksum_algorithm, checksum_skip):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1215,7 +1252,9 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                              symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-                             clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
+                             clean=True, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
+                             checksum_skip=checksum_skip)
 
 
 @storage.command('cp')
@@ -1278,12 +1317,19 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                    '[skip] skips all failures.')
 @click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
                                                           'size matching source')
+@click.option('--sync-newer', is_flag=True, help='Do not skip files existing in destination, if source file is newer '
+                                                 'than destination and sizes are equal. Can only be applied in '
+                                                 'combination with -s (--skip-existing) option')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
+@click.option('--checksum-algorithm', required=False, default='md5', type=click.Choice(['crc32', 'sha256', 'md5']),
+              help='Indicates algorithm used to create the checksum for the objects. '
+                   'Allowed values: md5, crc32, sha256. Default: md5.')
+@click.option('--checksum-skip', is_flag=True, required=False, help='Disables objects integrity checks.')
 @common_options
 def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
                       symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files,
-                      on_failures, skip_existing, verify_destination):
+                      on_failures, skip_existing, sync_newer, verify_destination, checksum_algorithm, checksum_skip):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
 
@@ -1325,7 +1371,9 @@ def storage_copy_item(source, destination, recursive, force, exclude, include, q
     DataStorageOperations.cp(source, destination, recursive, force,
                              exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_empty_files, on_failures,
-                             clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
+                             clean=False, skip_existing=skip_existing, sync_newer=sync_newer,
+                             verify_destination=verify_destination, checksum_algorithm=checksum_algorithm,
+                             checksum_skip=checksum_skip)
 
 
 @storage.command('du')

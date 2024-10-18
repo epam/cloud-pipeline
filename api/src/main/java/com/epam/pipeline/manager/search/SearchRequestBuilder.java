@@ -24,6 +24,7 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.controller.vo.search.ScrollingParameters;
 import com.epam.pipeline.controller.vo.search.SearchRequestSort;
 import com.epam.pipeline.controller.vo.search.SearchRequestSortOrder;
+import com.epam.pipeline.controller.vo.search.SearchStorageFilesRequest;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -108,6 +109,7 @@ public class SearchRequestBuilder {
     private static final String ES_STORAGE_ID_FIELD = "storage_id";
     private static final String ES_STORAGE_NAME_FIELD = "storage_name";
     private static final String STORAGE_CLASS_FIELD = "storage_class";
+    private static final String ES_PATH_FIELD = "path";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -211,7 +213,9 @@ public class SearchRequestBuilder {
                                              final String typeFieldName,
                                              final Set<String> metadataSourceFields) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters()))
+                .query(CollectionUtils.isEmpty(searchRequest.getFiles())
+                        ? getFacetedQuery(searchRequest.getQuery(), searchRequest.getFilters())
+                        : getStorageFilesQuery(searchRequest.getFiles()))
                 .fetchSource(buildSourceFields(typeFieldName, metadataSourceFields), Strings.EMPTY_ARRAY)
                 .size(searchRequest.getPageSize());
 
@@ -251,7 +255,7 @@ public class SearchRequestBuilder {
     private List<SearchRequestSort> resolveSorts(final List<SearchRequestSort> requestedSorts) {
         final List<SearchRequestSort> sorts = new ArrayList<>(ListUtils.emptyIfNull(requestedSorts));
         sorts.add(new SearchRequestSort(ES_DOC_SCORE_FIELD, SearchRequestSortOrder.DESC));
-        sorts.add(new SearchRequestSort(ES_DOC_ID_FIELD, SearchRequestSortOrder.DESC));
+        sorts.add(new SearchRequestSort(NAME_FIELD, SearchRequestSortOrder.DESC));
         return sorts;
     }
 
@@ -334,7 +338,7 @@ public class SearchRequestBuilder {
 
     private Map<String, Object> getDefaultSearchAfterParameters(final ScrollingParameters scrollingParameters) {
         final Map<String, Object> parameters = new HashMap<>();
-        parameters.put(ES_DOC_ID_FIELD, scrollingParameters.getDocId());
+        parameters.put(NAME_FIELD, scrollingParameters.getDocId());
         parameters.put(ES_DOC_SCORE_FIELD, scrollingParameters.getDocScore());
         return parameters;
     }
@@ -371,7 +375,8 @@ public class SearchRequestBuilder {
 
     private boolean isDefaultField(final String field) {
         return StringUtils.equalsIgnoreCase(field, ES_DOC_ID_FIELD)
-                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD);
+                || StringUtils.equalsIgnoreCase(field, ES_DOC_SCORE_FIELD)
+                || StringUtils.equalsIgnoreCase(field, NAME_FIELD);
     }
 
     private boolean isOwnerField(final String field) {
@@ -410,6 +415,20 @@ public class SearchRequestBuilder {
             queryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
         }
         return prepareAclFiltersOrAdmin(queryBuilder);
+    }
+
+    private QueryBuilder getStorageFilesQuery(final List<SearchStorageFilesRequest> filesRequests) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_HIDDEN, Boolean.TRUE));
+        if (preferenceManager.getPreference(SystemPreferences.SEARCH_HIDE_DELETED)) {
+            boolQueryBuilder.mustNot(QueryBuilders.termsQuery(SEARCH_DELETED, Boolean.TRUE));
+        }
+        ListUtils.emptyIfNull(filesRequests)
+                .forEach(file -> boolQueryBuilder.should(QueryBuilders.boolQuery()
+                        .filter(QueryBuilders.termQuery(buildKeywordName(ES_PATH_FIELD), file.getPath()))
+                        .filter(QueryBuilders.termQuery(ES_STORAGE_ID_FIELD, file.getStorageId()))
+                ));
+        return boolQueryBuilder;
     }
 
     private QueryBuilder getFacetedQuery(final String query, final Map<String, List<String>> filters) {

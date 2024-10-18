@@ -70,6 +70,7 @@ import com.epam.pipeline.manager.ldap.LdapApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.search.SearchExportManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.acl.security.AclPermissionApiService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -211,6 +212,9 @@ public class ControllerTestBeans {
 
     @MockBean
     protected SearchManager searchManager;
+
+    @MockBean
+    protected SearchExportManager searchExportManager;
 
     @MockBean
     protected RoleApiService roleApiService;

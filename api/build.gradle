@@ -40,6 +40,11 @@ task copyFsAutoscalerScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/"
 }
 
+task copyEmergencyNodeTerminationScript(type: Copy) {
+    from "$rootDir/scripts/autoscaling/emergency_node_terminator.sh"
+    into "$rootDir/api/src/main/resources/static/"
+}
+
 task copyLocalDtsStartupScripts(type: Copy) {
     from "$rootDir/scripts/dts/DeployDts.ps1", "$rootDir/scripts/dts/deploy_dts.sh"
     into "$rootDir/api/src/main/resources/static/"
@@ -141,7 +146,7 @@ dependencies {
 
     //DB
     compile("org.springframework:spring-jdbc")
-    compile group: "org.postgresql", name: "postgresql", version: "42.1.4"
+    compile group: "org.postgresql", name: "postgresql", version: "42.7.3"
     compile group: "com.mchange", name: "c3p0", version: "0.9.5.2"
     compile group: 'org.hibernate', name: 'hibernate-java8', version: '5.0.12.Final'
 
@@ -154,6 +159,9 @@ dependencies {
 
     // Core library
     compile project(":core")
+
+    // Event sourcing client module to work with Redis Streams
+    compile project(":cloud-pipeline-common:event-sourcing-java-client")
 
     //Kubernetes
     compile "io.fabric8:kubernetes-client:2.2.7"
@@ -199,7 +207,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-iam
     compile group: "com.amazonaws", name: "aws-java-sdk-iam", version: "1.11.211"
     // https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-fsx
-    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.321'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-fsx', version: '1.12.770'
     compile group: 'com.amazonaws', name: 'aws-java-sdk-route53', version: '1.11.880'
 
 
@@ -258,4 +266,5 @@ dependencies {
 
 // >>>>> processes profiles
 processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
-                                   copyLocalDtsStartupScripts, generateComponentsVersions])
+                                   copyLocalDtsStartupScripts, generateComponentsVersions,
+                                   copyEmergencyNodeTerminationScript])

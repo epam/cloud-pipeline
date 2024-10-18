@@ -50,7 +50,7 @@ public class HeapsterElasticRestHighLevelClient extends RestHighLevelClient {
         request.addParameter("allow_no_indices", "true");
         request.addParameter("expand_wildcards", "open,closed");
         request.addParameter("search_type", "query_then_fetch");
-        request.addParameter("ignore_unavailable", "false");
+        request.addParameter("ignore_unavailable", "true");
         request.addParameter("batched_reduce_size", "512");
         if (searchRequest.source() != null) {
             request.setEntity(createEntity(searchRequest.source(), XContentType.JSON));

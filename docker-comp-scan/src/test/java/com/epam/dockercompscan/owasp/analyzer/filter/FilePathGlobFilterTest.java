@@ -1,5 +1,6 @@
 package com.epam.dockercompscan.owasp.analyzer.filter;
 
+import com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -7,19 +8,12 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.Paths;
 
-import static com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer.CENTOS_RELEASE;
-import static com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer.OS_RELEASE;
-import static com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer.REDHAT_RELEASE;
-import static com.epam.dockercompscan.owasp.analyzer.OSVersionAnalyzer.SYSTEM_RELEASE;
-
 public class FilePathGlobFilterTest {
     private FilePathGlobFilter filePathGlobFilter;
 
     @Before
     public void setUp() {
-        filePathGlobFilter = new FilePathGlobFilter(
-                OS_RELEASE, REDHAT_RELEASE, SYSTEM_RELEASE, CENTOS_RELEASE
-        );
+        filePathGlobFilter = new OSVersionAnalyzer().buildFilter("/**/");
     }
 
     @Test

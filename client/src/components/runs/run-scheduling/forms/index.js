@@ -19,7 +19,14 @@ import DailyForm from './daily-form';
 import WeeklyForm from './weekly-form';
 import MonthlyForm from './monthly-form';
 import YearlyForm from './yearly-form';
-import {ORDINALS, DAYS, MONTHS, COMPUTED_DAYS} from './days';
+import {
+  ORDINALS,
+  DAYS,
+  MONTHS,
+  COMPUTED_DAYS,
+  getMaximumDaysInMonth,
+  getOrdinalSuffix
+} from './days';
 
 export {
   DaySelector,
@@ -31,5 +38,7 @@ export {
   ORDINALS,
   DAYS,
   MONTHS,
-  COMPUTED_DAYS
+  COMPUTED_DAYS,
+  getMaximumDaysInMonth,
+  getOrdinalSuffix
 };

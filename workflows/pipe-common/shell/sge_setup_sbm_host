@@ -21,7 +21,7 @@ add_submission_host() {
     _MASTER_NAME=$1
 
     if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
-        ssh -o "StrictHostKeyChecking=no" -t "$_MASTER_NAME" bash -c "'
+        ssh $CP_SSH_EXTRA_ARGS -o "StrictHostKeyChecking=no" -t "$_MASTER_NAME" bash -c "'
         qconf -as $HOSTNAME
         qconf -ah $HOSTNAME
         '"
@@ -30,7 +30,7 @@ add_submission_host() {
         check_last_exit_code $? "Host was added as a submission host to the SGE cluster" "Failed to add SGE submission host"
     elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
         cd "$SGE_ROOT"
-        ssh -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
+        ssh $CP_SSH_EXTRA_ARGS -o "StrictHostKeyChecking=no" "$_MASTER_NAME" bash --login -c "'qconf -ah $HOSTNAME'"
         copy_qmaster_configuration $_MASTER_NAME
         run_redhat_installation "submission host"
     fi

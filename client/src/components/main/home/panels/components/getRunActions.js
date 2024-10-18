@@ -15,12 +15,15 @@
  */
 
 import React from 'react';
-import {canPauseRun} from '../../../../runs/actions';
+import {canPauseRun, canStopRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
 import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 import DataStorageLink from '../../../../special/data-storage-link';
+import roleModel from '../../../../../utils/roleModel';
+
+const DTS_ENVIRONMENT = 'DTS';
 
 export default function (
   {multiZoneManager, vsActions, preferences},
@@ -95,13 +98,21 @@ export default function (
             });
           }
         }
-        if (run.initialized && run.podIP) {
-          actions.push({
-            title: 'SSH',
-            icon: 'code-o',
-            runSSH: true,
-            runId: run.id
-          });
+        const isDtsEnvironment = run.executionPreferences &&
+        run.executionPreferences.environment === DTS_ENVIRONMENT;
+        if (
+          run.initialized &&
+          (roleModel.executeAllowed(run) || run.sshPassword) &&
+          run.podIP
+        ) {
+          if (!isDtsEnvironment) {
+            actions.push({
+              title: 'SSH',
+              icon: 'code-o',
+              runSSH: true,
+              runId: run.id
+            });
+          }
           if (
             !run.sensitive &&
             vsActions &&
@@ -125,7 +136,12 @@ export default function (
             });
           }
         }
-        if (canPauseRun(run, preferences) && run.platform !== 'windows') {
+        if (
+          roleModel.executeAllowed(run) &&
+          roleModel.isOwner(run) &&
+          run.platform !== 'windows' &&
+          canPauseRun(run, preferences)
+        ) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
@@ -134,7 +150,11 @@ export default function (
             action: callbacks ? callbacks.pause : undefined
           });
         }
-        if ((run.commitStatus || '').toLowerCase() !== 'committing') {
+        if (
+          (roleModel.executeAllowed(run) || run.sshPassword) &&
+          (roleModel.isOwner(run) || run.sshPassword) &&
+          canStopRun(run)
+        ) {
           actions.push({
             title: 'STOP',
             icon: 'close-circle-o',
@@ -145,8 +165,15 @@ export default function (
         break;
       case 'PAUSED':
         if (
-          run.initialized && run.instance && run.instance.spot !== undefined &&
-          !run.instance.spot && run.platform !== 'windows'
+          roleModel.executeAllowed(run) &&
+          roleModel.isOwner(run) &&
+          run.initialized &&
+          !(run.nodeCount > 0) &&
+          !(run.parentRunId && run.parentRunId > 0) &&
+          run.instance &&
+          run.instance.spot !== undefined &&
+          !run.instance.spot &&
+          run.platform !== 'windows'
         ) {
           actions.push({
             title: 'RESUME',

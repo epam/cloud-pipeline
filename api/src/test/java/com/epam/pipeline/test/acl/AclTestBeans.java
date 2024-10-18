@@ -44,6 +44,7 @@ import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.PodsManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
@@ -99,6 +100,7 @@ import com.epam.pipeline.manager.notification.NotificationTemplateManager;
 import com.epam.pipeline.manager.notification.SystemNotificationManager;
 import com.epam.pipeline.manager.notification.UserNotificationManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
+import com.epam.pipeline.manager.pipeline.ArchiveRunService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.FolderCrudManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -593,6 +595,12 @@ public class AclTestBeans {
 
     @MockBean
     protected InstanceOfferScheduler instanceOfferScheduler;
+
+    @MockBean
+    protected PodsManager podsManager;
+
+    @MockBean
+    protected ArchiveRunService archiveRunService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

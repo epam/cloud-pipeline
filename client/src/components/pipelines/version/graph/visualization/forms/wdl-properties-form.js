@@ -45,6 +45,7 @@ import {
   addCall,
   addConditional,
   addScatter,
+  generateNewRuntimePropertyName,
   getEntityNameOptions
 } from './utilities/workflow-utilities';
 import WdlIssues from './form-items/wdl-issues';
@@ -411,6 +412,7 @@ class WdlPropertiesForm extends React.Component {
    * @property {string} [title]
    * @property {string} property
    * @property {string} [propertyAvailable=`${property}Available`]
+   * @property {string} [propertyEditable=`${property}Editable`]
    * @property {string} [placeholder]
    * @property {object} [data=this.state]
    * @property {function} [setter]
@@ -438,12 +440,14 @@ class WdlPropertiesForm extends React.Component {
       setter = defaultSetter,
       placeholder,
       propertyAvailable = `${property}Available`,
+      propertyEditable = `${property}Editable`,
       issues = []
     } = config;
     const onChange = (event) => setter(entity, event.target.value);
     const {
       [property]: value,
-      [propertyAvailable]: available
+      [propertyAvailable]: available,
+      [propertyEditable]: editable = true
     } = data || {};
     if (!available) {
       return;
@@ -470,7 +474,7 @@ class WdlPropertiesForm extends React.Component {
             )
           }
           <Input
-            disabled={disabled}
+            disabled={disabled || !editable}
             className={
               classNames(
                 styles.propertyValue,
@@ -531,7 +535,12 @@ class WdlPropertiesForm extends React.Component {
     return this.renderInputProperty({
       title: executableType,
       placeholder: this.getDefaultPlaceholder('executable'),
-      property: 'executableName'
+      property: 'executableName',
+      setter: (entity, value) => {
+        if (entity && entity.executable) {
+          entity.executable.name = value;
+        }
+      }
     });
   };
 
@@ -759,10 +768,26 @@ class WdlPropertiesForm extends React.Component {
       const onChangeRuntimeProperty = (property, value) => {
         task.setRuntime(property, value);
       };
+      const onRenameRuntimeProperty = (oldPropertyName, newPropertyName) => {
+        const entry = task.getRuntimeEntry(oldPropertyName);
+        if (entry) {
+          entry.name = newPropertyName;
+        } else {
+          task.setRuntime(newPropertyName, task.getRuntime(oldPropertyName));
+          task.removeRuntime(oldPropertyName);
+        }
+      };
       const onChangeRuntimeGenerator = (
         property,
         isEvent = true
       ) => (event) => onChangeRuntimeProperty(
+        property,
+        isEvent ? event.target.value : event
+      );
+      const onRenameRuntimeGenerator = (
+        property,
+        isEvent = true
+      ) => (event) => onRenameRuntimeProperty(
         property,
         isEvent ? event.target.value : event
       );
@@ -772,7 +797,41 @@ class WdlPropertiesForm extends React.Component {
       const addRuntime = (property) => {
         task.setRuntime(property);
       };
-      const renderInput = (r) => {
+      const renderNameInput = (r) => {
+        if (r.docker || r.node) {
+          return (
+            <div
+              className={
+                classNames(
+                  styles.propertyTitle,
+                  {
+                    'cp-error': !r.valid
+                  }
+                )
+              }
+            >
+              {r.property}
+            </div>
+          );
+        }
+        return (
+          <Input
+            disabled={disabled || !runtimeAttributesEditable}
+            value={r.property}
+            className={
+              classNames(
+                styles.propertyTitle,
+                styles.propertyValue,
+                {
+                  'cp-error': !r.valid
+                }
+              )
+            }
+            onChange={onRenameRuntimeGenerator(r.property)}
+          />
+        );
+      };
+      const renderValueInput = (r) => {
         if (r.docker) {
           return (
             <WdlRuntimeDocker
@@ -826,6 +885,18 @@ class WdlPropertiesForm extends React.Component {
       };
       const hasDocker = runtime.find((o) => o.docker);
       const hasNode = runtime.find((o) => o.node);
+      const addNewRuntime = () => addRuntime(generateNewRuntimePropertyName(runtime));
+      const sortRuntime = (a, b) => {
+        const {id: idA} = a;
+        const {id: idB} = b;
+        if (!idA) {
+          return 1;
+        }
+        if (!idB) {
+          return -1;
+        }
+        return idA.localeCompare(idB);
+      };
       return (
         <Collapse.Panel
           key="runtime"
@@ -837,24 +908,13 @@ class WdlPropertiesForm extends React.Component {
           )}
         >
           {
-            runtime.map((r) => (
-              <div key={r.property}>
+            runtime.slice().sort(sortRuntime).map((r) => (
+              <div key={r.id || r.property}>
                 <div
                   className={styles.propertiesRow}
                 >
-                  <div
-                    className={
-                      classNames(
-                        styles.propertyTitle,
-                        {
-                          'cp-error': !r.valid
-                        }
-                      )
-                    }
-                  >
-                    {r.property}
-                  </div>
-                  {renderInput(r)}
+                  {renderNameInput(r)}
+                  {renderValueInput(r)}
                   {
                     (r.removable === undefined || r.removable) &&
                     !disabled &&
@@ -893,6 +953,11 @@ class WdlPropertiesForm extends React.Component {
               </div>
             )
           }
+          <div className={styles.propertiesRow}>
+            <a onClick={addNewRuntime}>
+              <Icon type="plus" /> add runtime configuration
+            </a>
+          </div>
         </Collapse.Panel>
       );
     }

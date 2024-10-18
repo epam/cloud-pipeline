@@ -16,7 +16,7 @@
 
 set -e
 
-source ~/venv2.7.18/bin/activate
+source ~/venv2.7*/bin/activate
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
           pipe-cli:buildMac \
@@ -25,7 +25,7 @@ source ~/venv2.7.18/bin/activate
 
 deactivate
 
-source ~/venv3.8.12/bin/activate
+source ~/venv3.8*/bin/activate
 pip install awscli
 
 cd pipe-cli

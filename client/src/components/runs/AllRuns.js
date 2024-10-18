@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,24 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Card, Col, Menu, Popover, Row} from 'antd';
+import {Alert, Card, Menu, message, Popover, Row} from 'antd';
+import FileSaver from 'file-saver';
 import classNames from 'classnames';
 import {Link} from 'react-router';
 import RunTable, {Columns} from './run-table';
+import PipelineRunExport from '../../models/pipelines/PipelineRunExport';
+import {getFiltersPayload} from '../../models/pipelines/pipeline-runs-filter';
+import checkBlob from '../../utils/check-blob';
 import SessionStorageWrapper from '../special/SessionStorageWrapper';
 import roleModel from '../../utils/roleModel';
 import parseQueryParameters from '../../utils/queryParameters';
 import LoadingView from '../special/LoadingView';
 import {RunCountDefault} from '../../models/pipelines/RunCount';
 import continuousFetch from '../../utils/continuous-fetch';
-import styles from './AllRuns.css';
 import RunsFilterDescription from './run-table/runs-filter-description';
+import RunsInfo from './runs-info';
+import ActiveRunsFilterDescription from './runs-info/filter-description';
+import styles from './AllRuns.css';
 
 const getStatusForServer = active => active
   ? ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
@@ -57,6 +63,9 @@ const DEFAULT_COMPLETED_FILTERS = {
   showPersonalRuns: false
 };
 
+const CHARTS_INFO_TAB = 'info';
+const CHARTS_INFO_DETAILS = 'details';
+
 @roleModel.authenticationInfo
 @inject('counter', 'preferences')
 @inject(({routing}, {params}) => {
@@ -73,7 +82,10 @@ const DEFAULT_COMPLETED_FILTERS = {
 @observer
 class AllRuns extends React.Component {
   state = {
-    counters: {}
+    counters: {},
+    details: undefined,
+    chartsFilters: undefined,
+    exportPending: false
   };
 
   countersManagementToken = 0;
@@ -83,10 +95,24 @@ class AllRuns extends React.Component {
     (this.manageCounters)();
   }
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.status !== this.props.status &&
+      this.props.status !== CHARTS_INFO_TAB && this.props.status !== CHARTS_INFO_DETAILS) {
+      this.clearFilters();
+    }
+  }
+
   componentWillUnmount () {
     this.countersManagementToken += 1;
     this.stopCounters();
   }
+
+  clearFilters = () => {
+    this.setState({
+      chartsFilters: undefined
+    });
+  };
 
   manageCounters = async () => {
     this.countersManagementToken += 1;
@@ -173,6 +199,17 @@ class AllRuns extends React.Component {
     return runsFilters;
   }
 
+  @computed
+  get runsInfoChartsAvailable () {
+    const {
+      authenticatedUserInfo
+    } = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
   get currentFilters () {
     const {
       status
@@ -182,9 +219,17 @@ class AllRuns extends React.Component {
       .find((aFilter) => aFilter.key.toLowerCase() === (status || '').toLowerCase());
   }
 
+  get additionalFilters () {
+    return (this.currentFilters || {}).additionalFilters;
+  }
+
   navigateToRuns = (status, my = false) => {
     SessionStorageWrapper.setItem(SessionStorageWrapper.ACTIVE_RUNS_KEY, my);
     SessionStorageWrapper.navigateToRuns(this.props.router, status);
+  };
+
+  onChangeRunTableFilters = filters => {
+    this.setState({runTableFilters: filters});
   };
 
   renderOwnersSwitch = (total) => {
@@ -266,19 +311,122 @@ class AllRuns extends React.Component {
     }
     return (
       <RunTable
+        additionalFilters={this.additionalFilters}
         filters={filters}
         autoUpdate={current.autoUpdate}
         disableFilters={current.showPersonalRuns && !all ? [Columns.owner] : []}
         beforeTable={({total}) => this.renderOwnersSwitch(total)}
+        onChangeFilters={this.onChangeRunTableFilters}
       />
     );
+  };
+
+  renderRunsInfoChartsDetailsTable = () => {
+    const {
+      details
+    } = this.state;
+    if (!details) {
+      return null;
+    }
+    const filters = {
+      ...details,
+      onlyMasterJobs: false
+    };
+    return (
+      <div style={{paddingTop: 5}}>
+        <div style={{margin: 5}}>
+          <ActiveRunsFilterDescription filters={details} postfix={'. '} />
+          <Link
+            to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+          >
+            Back to active runs info
+          </Link>
+        </div>
+        <RunTable
+          filters={filters}
+          autoUpdate={false}
+          disableFilters={[]}
+        />
+      </div>
+    );
+  };
+
+  onRunsChartsApplyFilters = (filters) => {
+    const {
+      owners,
+      dockerImages,
+      instanceTypes,
+      tags = [],
+      statuses
+    } = filters || {};
+    this.setState({details: {
+      owners,
+      instanceTypes,
+      dockerImages,
+      tags: Object.fromEntries(tags.map(tag => ([tag, true]))),
+      statuses
+    }});
+    this.navigateToRuns(CHARTS_INFO_DETAILS);
+  };
+
+  onChangeChartsFilters = (newFilters) => {
+    this.setState({
+      chartsFilters: newFilters
+    });
+  };
+
+  exportRuns = () => {
+    this.setState({exportPending: true}, async () => {
+      try {
+        const {runTableFilters = {}} = this.state;
+        const {pageSize, page, filters, userFilters, tags} = runTableFilters;
+        const request = new PipelineRunExport();
+        const payload = getFiltersPayload({
+          ...filters,
+          ...userFilters,
+          tags,
+          page: page + 1,
+          pageSize
+        });
+        await request.send(payload);
+        if (request.value instanceof Blob) {
+          const error = await checkBlob(request.value, 'Error downloading runs');
+          if (error) {
+            throw new Error(error);
+          }
+          FileSaver.saveAs(request.value, 'pipeline-runs.csv');
+        } else {
+          throw new Error(request.error || 'Error downloading runs');
+        }
+      } catch (error) {
+        message.error(error.message, 5);
+      } finally {
+        this.setState({
+          exportPending: false
+        });
+      }
+    });
   };
 
   render () {
     const current = this.currentFilters;
     const {
-      counters = {}
+      status
+    } = this.props;
+    const {
+      counters = {},
+      details
     } = this.state;
+    const isRunsInfoChartsDetailsPage = /^details$/i.test(status) && details;
+    const isRunsInfoChartsPage = /^info$/i.test(status) || (/^details$/i.test(status) && !details);
+    let selectedKeys = [];
+    if (current) {
+      selectedKeys = [current.key];
+    } else if (this.runsInfoChartsAvailable && isRunsInfoChartsPage) {
+      selectedKeys = [CHARTS_INFO_TAB];
+    } else if (this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage) {
+      selectedKeys = [CHARTS_INFO_DETAILS];
+    }
     return (
       <Card
         className={
@@ -291,58 +439,109 @@ class AllRuns extends React.Component {
         }
         bodyStyle={{padding: 15}}
       >
-        <Row type="flex" align="bottom">
-          <Col offset={2} span={20}>
-            <Row type="flex" justify="center">
-              <Menu
-                mode="horizontal"
-                selectedKeys={current ? [current.key] : []}
-                className={styles.tabsMenu}
-              >
-                {
-                  this.uiRunsFilters.map((filter) => (
-                    <Menu.Item key={filter.key}>
-                      <Popover
-                        content={(
-                          <RunsFilterDescription
-                            filters={filter.filters}
-                            style={{maxWidth: 200}}
-                          />
-                        )}
-                        trigger={['hover']}
-                      >
-                        <Link
-                          id={`${filter.key}-runs-button`}
-                          to={SessionStorageWrapper.getRunsLink(filter.key)}
-                        >
-                          {filter.title || `${filter.key} runs`}
-                          {
-                            filter.showCount && counters[filter.key] > 0
-                              ? ` (${counters[filter.key]})`
-                              : ''
-                          }
-                        </Link>
-                      </Popover>
-                    </Menu.Item>
-                  ))
-                }
-              </Menu>
-            </Row>
-          </Col>
-          <Col
-            span={2}
-            type="flex"
-            style={{textAlign: 'right', padding: 5, textTransform: 'uppercase'}}>
+        <div className={styles.headerRow}>
+          <Menu
+            mode="horizontal"
+            selectedKeys={selectedKeys}
+            className={styles.tabsMenu}
+          >
+            {
+              this.uiRunsFilters.map((filter) => (
+                <Menu.Item key={filter.key}>
+                  <Popover
+                    content={(
+                      <RunsFilterDescription
+                        filters={filter.filters}
+                        style={{maxWidth: 200}}
+                      />
+                    )}
+                    trigger={['hover']}
+                  >
+                    <Link
+                      id={`${filter.key}-runs-button`}
+                      to={SessionStorageWrapper.getRunsLink(filter.key)}
+                    >
+                      {filter.title || `${filter.key} runs`}
+                      {
+                        filter.showCount && counters[filter.key] > 0
+                          ? ` (${counters[filter.key]})`
+                          : ''
+                      }
+                    </Link>
+                  </Popover>
+                </Menu.Item>
+              ))
+            }
+            {
+              this.runsInfoChartsAvailable && (
+                <Menu.Item key="info">
+                  <Link
+                    id={`runs-info-charts-button`}
+                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_TAB)}
+                  >
+                    Info
+                  </Link>
+                </Menu.Item>
+              )
+            }
+            {
+              this.runsInfoChartsAvailable && isRunsInfoChartsDetailsPage && (
+                <Menu.Item key="details">
+                  <Link
+                    id={`runs-info-charts-details-button`}
+                    to={SessionStorageWrapper.getRunsLink(CHARTS_INFO_DETAILS)}
+                  >
+                    Details
+                  </Link>
+                </Menu.Item>
+              )
+            }
+          </Menu>
+          <div style={{
+            textTransform: 'uppercase',
+            height: 36,
+            lineHeight: '46px'
+          }}>
+            <Link
+              id="export-button"
+              style={{marginRight: 15}}
+              onClick={this.exportRuns}
+              disabled={this.state.exportPending}
+            >
+              Export
+            </Link>
             <Link
               id="advanced-runs-filter-button"
               to={'/runs/filter'}
+              style={{whiteSpace: 'nowrap'}}
             >
               Advanced filter
             </Link>
-          </Col>
-        </Row>
+          </div>
+        </div>
         {
-          this.renderTable()
+          !isRunsInfoChartsPage && !isRunsInfoChartsDetailsPage && this.renderTable()
+        }
+        {
+          isRunsInfoChartsPage && this.runsInfoChartsAvailable && (
+            <RunsInfo
+              onApplyFilters={this.onRunsChartsApplyFilters}
+              style={{paddingTop: 5}}
+              filters={this.state.chartsFilters}
+              onFiltersChange={this.onChangeChartsFilters}
+            />
+          )
+        }
+        {
+          isRunsInfoChartsDetailsPage &&
+          this.runsInfoChartsAvailable &&
+          this.renderRunsInfoChartsDetailsTable()
+        }
+        {
+          (isRunsInfoChartsPage || isRunsInfoChartsDetailsPage) &&
+          !this.runsInfoChartsAvailable && (
+            <Alert message="Access denied" type="warning" />
+          )
         }
       </Card>
     );

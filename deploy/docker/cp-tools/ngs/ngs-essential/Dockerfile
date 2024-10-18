@@ -63,7 +63,7 @@ RUN     apt-get install -y r-base \
 ## Python 3
 #  - Set it up using conda, otherwise it may clash with the system-level py2
 ENV CONDA_HOME=$BFX_INSTALL_ROOT/conda
-RUN wget -q "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+RUN wget -q "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
     bash /tmp/Anaconda_Install.sh -f -b -p $CONDA_HOME && \
     rm -f /tmp/Anaconda_Install.sh && \
     $CONDA_HOME/bin/conda create -y -n py3 python=3.8 && \

@@ -1,0 +1,10 @@
+[version]
+format=1.0
+
+[connect]
+proxytype=HTTP
+proxyhost={CP_PROXY}
+proxyport={CP_PROXY_PORT}
+host={CP_HOST}
+port={CP_HOST_PORT}
+sessionid=session

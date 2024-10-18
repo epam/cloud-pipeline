@@ -14,6 +14,11 @@
 
 FROM centos:7
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 # Prerequisites
 RUN yum install -y \
                 wget \
@@ -24,12 +29,14 @@ RUN yum install -y \
 # API distribution
 ARG CP_API_DIST_URL=""
 ENV CP_MONITORING_HOME="/opt/monitoring"
+ENV CP_MONITOR_SRV_INDEX_MAPPINGS_LOCATION="$CP_MONITORING_HOME/monitoring-index-mappings"
 
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     mkdir -p $CP_MONITORING_HOME && \
     mv bin/monitoring-service.jar $CP_MONITORING_HOME/ && \
+    mv bin/monitoring-index-mappings $CP_MONITOR_SRV_INDEX_MAPPINGS_LOCATION && \
     rm -rf /tmp/*
 
 ADD config $CP_MONITORING_HOME/config

@@ -60,3 +60,36 @@ export const COMPUTED_DAYS = {
   day: {key: 'day', title: 'Day'},
   weekday: {key: 'weekday', title: 'Weekday'}
 };
+
+export function getMaximumDaysInMonth (monthKey) {
+  if (!monthKey || isNaN(monthKey)) {
+    return null;
+  }
+  let days = 31; // Jan, March, May, July, August, October, December
+  switch (Number(monthKey)) {
+    case 2: // February
+      days = 28;
+      break;
+    case 4: // April
+    case 6: // June
+    case 9: // September
+    case 11: // November
+      days = 30;
+      break;
+  }
+  return days;
+}
+
+export function getOrdinalSuffix (number) {
+  if (Number.isNaN(number)) {
+    return '';
+  }
+  const n = Number(number);
+  if (n > 3 && n < 21) return 'th';
+  switch (n % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
+}

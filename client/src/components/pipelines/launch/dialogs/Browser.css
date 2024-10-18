@@ -98,3 +98,12 @@
   padding: 1px 3px;
   vertical-align: middle;
 }
+
+.label {
+  margin-right: 4px;
+  padding: 1px 4px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  vertical-align: middle;
+  margin-left: 5px;
+}

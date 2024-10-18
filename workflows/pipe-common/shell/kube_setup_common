@@ -82,6 +82,7 @@
 #############################
 # Kube RPMs download command
 #############################
+# EL7
 # yum install epel-release -y
 # cat <<EOF >/etc/yum.repos.d/kubernetes.repo
 # [kubernetes]
@@ -121,7 +122,49 @@
 #             tcp_wrappers-libs && \
 # cd .. && \
 # tar -zcvf kube-1.28.2.tgz kube && \
-# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.tgz
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.tgz && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el7.tgz
+
+
+# EL8
+#
+# yum install epel-release -y
+# cat <<EOF >/etc/yum.repos.d/kubernetes.repo
+# [kubernetes]
+# name=Kubernetes
+# baseurl=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/
+# enabled=1
+# gpgcheck=1
+# gpgkey=https://pkgs.k8s.io/core:/stable:/v1.28/rpm/repodata/repomd.xml.key
+# EOF
+# yum -q makecache -y --enablerepo kubernetes --nogpg && \
+# mkdir kube && \
+# yum install --downloadonly \
+#             --downloaddir=$(pwd)/kube \
+#             kubeadm-1.28.2 \
+#             kubectl-1.28.2 \
+#             kubelet-1.28.2 \
+#             cpp \
+#             gcc \
+#             libgcc \
+#             glibc \
+#             glibc-common \
+#             gettext \
+#             gettext-libs \
+#             iproute \
+#             iptables \
+#             kernel-headers \
+#             libcroco \
+#             libmnl \
+#             libmpc \
+#             libnetfilter_conntrack \
+#             libnfnetlink \
+#             libunistring \
+#             mpfr \
+#             tcp_wrappers-libs && \
+# tar -zcvf kube-1.28.2.tgz kube && \
+# aws s3 cp kube-1.28.2.tgz s3://cloud-pipeline-oss-builds/tools/kube/1.28.2/rpm/kube-1.28.2.el8.tgz
+
 
 ##########################################
 # Kube system pods images download command
@@ -195,12 +238,13 @@ function download_distr() {
 _pkg_mngr=$(which_pkg_manager)
 if [ "$_pkg_mngr" == "yum" ]; then
     _pkg_type="rpm"
+    _pkg_distro=el$(. /etc/os-release; echo $VERSION_ID | cut -d'.' -f1)
 else
     pipe_log_fail "[ERROR] Only RPM-based Linux distibutions are supported for the kubernetes installation" "$_kube_common_setup_task_name"
     exit 1
 fi
 export CP_CAP_KUBE_DISTR_PREFIX="${CP_CAP_KUBE_DISTR_PREFIX:-"${GLOBAL_DISTRIBUTION_URL}tools/kube"}"
-export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/$_pkg_type/kube-${_kube_version}.tgz}"
+export CP_CAP_KUBE_PACKAGES_DISTR_URL="${CP_CAP_KUBE_PACKAGES_DISTR_URL:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/$_pkg_type/kube-${_kube_version}.${_pkg_distro}.tgz}"
 export CP_CAP_KUBE_SYSTEM_PODS_DISTR="${CP_CAP_KUBE_SYSTEM_PODS_DISTR:-$CP_CAP_KUBE_DISTR_PREFIX/${_kube_version}/docker/kube-dockers-${_kube_version}.tgz}"
 
 _node_gpus_count=$(nvidia-smi -L 2>/dev/null | wc -l)
