@@ -34,7 +34,8 @@ const KNOWN_TAG_NAMES = {
   node_unavailable: 'node_unavailable',
   proc_out_of_memory: 'proc_out_of_memory',
   network_limit: 'network_limit',
-  network_pressure: 'network_pressure'
+  network_pressure: 'network_pressure',
+  long_running: 'long_running'
 };
 
 const KNOWN_TAG_RENDER = {
@@ -91,6 +92,9 @@ const PREDEFINED_TAGS = [{
 }, {
   tag: KNOWN_TAG_NAMES.network_pressure,
   color: 'critical'
+}, {
+  tag: KNOWN_TAG_NAMES.long_running,
+  color: 'warning'
 }];
 
 const KNOWN_COLORS = {
