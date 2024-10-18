@@ -27,5 +27,10 @@ public enum StorageServiceType {
     /**
      * S3 for AWS, Blob Storage for Azure
      */
-    OBJECT_STORAGE;
+    OBJECT_STORAGE,
+    /**
+     * AWS Omics stores
+     */
+    AWS_OMICS_REF,
+    AWS_OMICS_SEQ;
 }

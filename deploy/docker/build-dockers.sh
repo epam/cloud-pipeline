@@ -433,6 +433,9 @@ build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_R
 build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:7-cuda11" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 build_and_push_tool "$BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC" "$CP_DIST_REPO_NAME:tools-base-centos-novnc-7-cuda11-${DOCKERS_VERSION}" "library/centos-novnc-cuda:latest" --file "centos/Dockerfile" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 
+## AWS HealthOmics Workflow
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/aws-healthomics-workflow "$CP_DIST_REPO_NAME:aws-healthomics-workflow-${DOCKERS_VERSION}" "library/aws-healthomics-workflow:latest"
+
 ########################
 # NGS tools dockers
 ########################

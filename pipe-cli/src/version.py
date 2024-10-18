@@ -13,5 +13,5 @@
 # limitations under the License.
 
 __version__='0.17'
-__bundle_info__ = { 'bundle_type': 'source', 'build_os_id': 'generic', 'build_os_version_id': 'generic' }
-__component_version__='1111111111111111111111111111111111111111'
+__bundle_info__ = { 'bundle_type': 'one-folder', 'build_os_id': 'debian', 'build_os_version_id': '9' }
+__component_version__='fe7c4c74f7ae2e7c62ac2429c2ab213b6bb55133'

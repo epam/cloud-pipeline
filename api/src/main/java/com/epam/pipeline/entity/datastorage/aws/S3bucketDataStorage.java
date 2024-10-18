@@ -17,7 +17,6 @@
 package com.epam.pipeline.entity.datastorage.aws;
 
 import com.epam.pipeline.controller.vo.DataStorageVO;
-import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
@@ -33,21 +32,12 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-public class S3bucketDataStorage extends AbstractDataStorage {
+public class S3bucketDataStorage extends AbstractAWSDataStorage {
 
-    /**
-     * Id of AWS region in which bucket is created.
-     * If null bucket is assumed to be created in default regions (for backward compatibility only).
-     */
-    private Long regionId;
     /**
      * A list of allowed CIDR strings, that define access control
      */
     private List<String> allowedCidrs;
-
-    private String tempCredentialsRole;
-    private String kmsKeyArn;
-    private boolean useAssumedCredentials;
 
     public S3bucketDataStorage(final Long id, final String name, final String path) {
         this(id, name, ProviderUtils.normalizeBucketName(path), DEFAULT_POLICY, "");
@@ -61,16 +51,6 @@ public class S3bucketDataStorage extends AbstractDataStorage {
     public S3bucketDataStorage(final DataStorageVO vo) {
         super(vo.getId(), vo.getName(), ProviderUtils.normalizeBucketName(vo.getPath()),
                 DataStorageType.S3, vo.getStoragePolicy(), vo.getMountPoint());
-    }
-
-    @Override
-    public String getMountOptions() {
-        return "";
-    }
-
-    @Override
-    public String getDelimiter() {
-        return ProviderUtils.DELIMITER;
     }
 
     @Override

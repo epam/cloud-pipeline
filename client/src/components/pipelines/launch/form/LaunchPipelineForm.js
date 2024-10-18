@@ -358,6 +358,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     useResolvedParameters: false,
     runNameAlias: undefined,
     isRawEditEnabled: false,
+    parameterType: undefined,
     selectedParameter: undefined,
     highlightedParameterSection: undefined
   };
@@ -2182,7 +2183,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       bucketPathParameterKey: key,
       bucketPathParameterSection: sectionName,
       showOnlyFolderInBucketBrowser: type === 'output',
-      allowBucketSelectionInBucketBrowser: /^path$/i.test(type)
+      allowBucketSelectionInBucketBrowser: /^path$/i.test(type),
+      parameterType: type
     });
   };
 
@@ -2193,7 +2195,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       bucketPathParameterKey: null,
       bucketPathParameterSection: null,
       showOnlyFolderInBucketBrowser: false,
-      allowBucketSelectionInBucketBrowser: false
+      allowBucketSelectionInBucketBrowser: false,
+      parameterType: undefined
     });
   };
 
@@ -5921,6 +5924,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         ];
       }
     };
+    const bucketTypes = ['AZ', 'S3', 'GS', 'DTS', 'NFS'];
+    if (this.state.parameterType === 'path' || this.state.parameterType === 'input') {
+      bucketTypes.push('AWS_OMICS_SEQ', 'AWS_OMICS_REF');
+    }
     return (
       <Form onSubmit={this.handleSubmit}>
         <div className={styles.layout}>
@@ -6109,7 +6116,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           showOnlyFolder={this.state.showOnlyFolderInBucketBrowser}
           allowBucketSelection={this.state.allowBucketSelectionInBucketBrowser}
           checkWritePermissions={this.state.showOnlyFolderInBucketBrowser}
-          bucketTypes={['AZ', 'S3', 'GS', 'DTS', 'NFS']} />
+          bucketTypes={bucketTypes} />
         <PipelineBrowser
           multiple={false}
           onCancel={this.closePipelineBrowser}
