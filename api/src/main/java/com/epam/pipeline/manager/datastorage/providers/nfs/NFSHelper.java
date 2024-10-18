@@ -116,9 +116,13 @@ public final class NFSHelper {
     }
 
     public static String normalizeMountPath(final MountType mountType, final String mountPath) {
+        return normalizeMountPath(mountType, mountPath, false);
+    }
+
+    public static String normalizeMountPath(final MountType mountType, final String mountPath, final boolean flat) {
         return MountType.LUSTRE == mountType
-                ? normalizeLustrePath(mountPath)
-                : normalizePath(mountPath);
+                ? normalizeLustrePath(mountPath, flat)
+                : normalizePath(mountPath, flat);
     }
 
     public static List<String> findIpAddresses(final FileShareMount fileShareMount) {
@@ -179,12 +183,20 @@ public final class NFSHelper {
         }
     }
 
-    private static String normalizePath(final String nfsPath) {
-        return nfsPath.replace(":", "/");
+    private static String normalizePath(final String nfsPath, boolean flat) {
+        if (flat) {
+            return nfsPath.replace(":", PATH_SEPARATOR)
+                    .replace(PATH_SEPARATOR, "_");
+        }
+        return nfsPath.replace(":", PATH_SEPARATOR);
     }
 
-    private static String normalizeLustrePath(final String nfsPath) {
-        return nfsPath.replaceAll(":/", "/").replace(":", LUSTRE_MOUNTS_DELIMITER);
+    private static String normalizeLustrePath(final String nfsPath, boolean flat) {
+        if (flat) {
+            return  nfsPath.replaceAll(NFS_HOST_DELIMITER, PATH_SEPARATOR).replace(":", LUSTRE_MOUNTS_DELIMITER)
+                    .replace(PATH_SEPARATOR, "_");
+        }
+        return nfsPath.replaceAll(NFS_HOST_DELIMITER, PATH_SEPARATOR).replace(":", LUSTRE_MOUNTS_DELIMITER);
     }
 
     private static List<String> determineIpAddresses(final String mountRoot) {

@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.search;
 
 import com.epam.pipeline.controller.vo.search.ElasticSearchRequest;
-import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
@@ -53,12 +52,11 @@ import java.util.Set;
 public class SearchManager {
 
     private static final String TYPE_AGGREGATION = "by_type";
-    
+
     private final PreferenceManager preferenceManager;
     private final GlobalSearchElasticHelper globalSearchElasticHelper;
     private final SearchResultConverter resultConverter;
     private final SearchRequestBuilder requestBuilder;
-    private final SearchResultExportManager searchExportManager;
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
         validateRequest(searchRequest);
@@ -118,24 +116,23 @@ public class SearchManager {
         }
     }
 
-    public byte[] export(final FacetedSearchExportRequest request) {
-        Assert.notNull(request.getFacetedSearchRequest(), "Faceted search request is required");
-        if (Objects.isNull(request.getFacetedSearchRequest().getPageSize())) {
+    public FacetedSearchResult getFacetedSearchResult(final FacetedSearchRequest facetedSearchRequest) {
+        Assert.notNull(facetedSearchRequest, "Faceted search request is required");
+        if (Objects.isNull(facetedSearchRequest.getPageSize())) {
             final Integer searchExportPageSize = Optional.ofNullable(
                     preferenceManager.getPreference(SystemPreferences.SEARCH_EXPORT_PAGE_SIZE))
                     .orElseThrow(() -> new IllegalArgumentException(
                             String.format("System preference %s or page size are not provided",
                                     SystemPreferences.SEARCH_EXPORT_PAGE_SIZE.getKey())));
-            request.getFacetedSearchRequest().setPageSize(searchExportPageSize);
+            facetedSearchRequest.setPageSize(searchExportPageSize);
         }
         final String searchResultDisplayNameTag = preferenceManager.getPreference(
                 SystemPreferences.FACETED_FILTER_DISPLAY_NAME_TAG);
         if (StringUtils.isNotBlank(searchResultDisplayNameTag)) {
-            Optional.ofNullable(request.getFacetedSearchRequest().getMetadataFields())
+            Optional.ofNullable(facetedSearchRequest.getMetadataFields())
                     .orElseGet(ArrayList::new).add(searchResultDisplayNameTag);
         }
-        final FacetedSearchResult facetedSearchResult = facetedSearch(request.getFacetedSearchRequest());
-        return searchExportManager.export(request, facetedSearchResult);
+        return facetedSearch(facetedSearchRequest);
     }
 
     private Set<String> getAclFilterFields() {

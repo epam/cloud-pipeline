@@ -19,6 +19,7 @@ import com.epam.pipeline.autotests.ao.NotificationAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -340,13 +341,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForIP();
-    }
-
-    private boolean hasOnPage(String customTag) {
-        return $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
-                        customTag)))
-                .exists();
     }
 
     private RunsMenuAO launchToolOnDemand() {

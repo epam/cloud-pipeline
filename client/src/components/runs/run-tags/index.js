@@ -21,28 +21,75 @@ import classNames from 'classnames';
 import {Link} from 'react-router';
 import styles from './run-tags.css';
 import moment from 'moment-timezone';
-import RunTagDatePopover from './run-tag-date-popover';
+import RunTagPopover from './run-tag-popover';
 
 const activeRunStatuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING'];
+
+const KNOWN_TAG_NAMES = {
+  idle: 'idle',
+  pressure: 'pressure',
+  sge_in_use: 'sge_in_use',
+  slurm_in_use: 'slurm_in_use',
+  recovered: 'recovered',
+  node_unavailable: 'node_unavailable',
+  proc_out_of_memory: 'proc_out_of_memory',
+  network_limit: 'network_limit',
+  network_pressure: 'network_pressure'
+};
+
+const KNOWN_TAG_RENDER = {
+  [KNOWN_TAG_NAMES.network_limit]: (name) => name
+};
+
+export function networkLimitValueRender (value) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  let str = value;
+  if (typeof str === 'string') {
+    str = str.trim();
+  }
+  const bytes = Number(str);
+  if (Number.isNaN(bytes)) {
+    return `${str}`;
+  }
+  const minimalValue = 0.01;
+  const mb = bytes / Math.pow(1024, 2);
+  if (mb > 0 && mb < minimalValue) {
+    return `< ${minimalValue} Mb/s`;
+  }
+  return `${mb.toFixed(2)} Mb/s`;
+}
+
+const KNOWN_TAG_VALUE_RENDER = {
+  [KNOWN_TAG_NAMES.network_limit]: (name, value) => networkLimitValueRender(value)
+};
+
 const PREDEFINED_TAGS = [{
-  tag: 'idle',
+  tag: KNOWN_TAG_NAMES.idle,
   color: 'warning'
 }, {
-  tag: 'pressure',
+  tag: KNOWN_TAG_NAMES.pressure,
   color: 'critical'
 }, {
-  tag: 'sge_in_use',
+  tag: KNOWN_TAG_NAMES.sge_in_use,
   color: 'primary'
 }, {
-  tag: 'slurm_in_use',
+  tag: KNOWN_TAG_NAMES.slurm_in_use,
   color: 'primary'
 }, {
-  tag: 'recovered',
+  tag: KNOWN_TAG_NAMES.recovered,
   color: 'critical, hovered'
 }, {
-  tag: 'node_unavailable'
+  tag: KNOWN_TAG_NAMES.node_unavailable
 }, {
-  tag: 'proc_out_of_memory',
+  tag: KNOWN_TAG_NAMES.proc_out_of_memory,
+  color: 'critical'
+}, {
+  tag: KNOWN_TAG_NAMES.network_limit,
+  color: 'critical, accent'
+}, {
+  tag: KNOWN_TAG_NAMES.network_pressure,
   color: 'critical'
 }];
 
@@ -96,6 +143,14 @@ const getDateInfo = (tags, tag, preferences) => {
   return undefined;
 };
 
+const getValue = (tags, tag) => {
+  const valueRenderer = KNOWN_TAG_VALUE_RENDER[tag];
+  if (valueRenderer && typeof valueRenderer === 'function') {
+    return valueRenderer(tag, (tags || {})[tag]);
+  }
+  return undefined;
+};
+
 const skipTag = (tag, tags, preferences) => {
   return `${tags[tag]}` === 'false' ||
     /^alias$/i.test(tag) ||
@@ -128,6 +183,10 @@ function Tag (
   let display = value;
   if (`${value}` === 'true') {
     display = tagName;
+  }
+  const tagRenderFn = KNOWN_TAG_RENDER[tagName.toLowerCase()];
+  if (tagRenderFn && typeof tagRenderFn === 'function') {
+    display = tagRenderFn(tagName, value);
   }
   const tagOptions = predefinedTags
     .find(({tag}) => tag.toLowerCase() === tagName.toLowerCase()) || {};
@@ -204,7 +263,8 @@ function RunTagsComponent (
     tagClassName,
     run,
     theme,
-    preferences
+    preferences,
+    excludeTags = []
   }
 ) {
   if (!run) {
@@ -219,18 +279,33 @@ function RunTagsComponent (
     PREDEFINED_TAGS,
     preferences.uiRunsTags || []
   );
+  const timestampTagHasCounterpart = (tagName) => {
+    const suffix = preferences.systemRunTagDateSuffix;
+    return suffix &&
+      suffix.length > 0 &&
+      tagName.toLowerCase().endsWith(suffix.toLowerCase()) &&
+      Object.prototype.hasOwnProperty.call(tags, tagName.slice(0, tagName.length - suffix.length));
+  };
   for (let tagName in tags) {
     if (
       Object.prototype.hasOwnProperty.call(tags, tagName) &&
       !skipTag(tagName, tags, preferences) &&
       (!onlyKnown || isKnownTag(tagName, preferences))
     ) {
+      if (
+        timestampTagHasCounterpart(tagName) ||
+        excludeTags.includes(tagName.toLowerCase())
+      ) {
+        continue;
+      }
       const info = getDateInfo(tags, tagName, preferences);
+      const value = getValue(tags, tagName);
       result.push({
         isKnown: isKnownTag(tagName, preferences),
         element: (
-          <RunTagDatePopover
+          <RunTagPopover
             date={info}
+            value={value}
             key={tagName}
             tag={tagName}
           >
@@ -242,7 +317,7 @@ function RunTagsComponent (
               theme={theme}
               predefinedTags={predefinedTags}
             />
-          </RunTagDatePopover>
+          </RunTagPopover>
         )
       });
     }
@@ -319,4 +394,5 @@ RunTags.shouldDisplayTags = function (run, preferences, onlyKnown = false) {
   return false;
 };
 
+export {KNOWN_TAG_NAMES};
 export default RunTags;

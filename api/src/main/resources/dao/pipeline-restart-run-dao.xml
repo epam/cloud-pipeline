@@ -151,5 +151,12 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteRestartRunByIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM pipeline.restart_run WHERE parent_run_id IN (:list)
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

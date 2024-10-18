@@ -17,9 +17,11 @@
 package com.epam.pipeline.manager.user;
 
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.mapper.user.RunnerSidMapper;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import org.junit.Test;
@@ -44,9 +46,11 @@ public class UserRunnersManagerTest {
 
     private final PipelineUserRepository pipelineUserRepository = mock(PipelineUserRepository.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final UserRunnersManager manager = new UserRunnersManager(pipelineUserRepository, messageHelper);
-
+    private final RunnerSidMapper runnerSidMapper = mock(RunnerSidMapper.class);
+    private final UserRunnersManager manager = new UserRunnersManager(
+            pipelineUserRepository, messageHelper, runnerSidMapper);
     private final RunnerSid userRunnerSid = RunnerSid.builder().name(USER_NAME).principal(true).build();
+    private final RunnerSidVO userRunnerSidVO = RunnerSidVO.builder().name(USER_NAME).principal(true).build();
     private final RunnerSid roleRunnerSid = RunnerSid.builder().name(ROLE_NAME).principal(false).build();
 
     @Test
@@ -61,11 +65,11 @@ public class UserRunnersManagerTest {
     @Test
     public void shouldSaveRunners() {
         when(pipelineUserRepository.findOne(ID)).thenReturn(UserCreatorUtils.getPipelineUser());
-
-        final List<RunnerSid> runners = manager.saveRunners(ID, Collections.singletonList(userRunnerSid));
+        when(runnerSidMapper.toEntity(userRunnerSidVO)).thenReturn(userRunnerSid);
+        final List<RunnerSidVO> runners = manager.saveRunners(ID, Collections.singletonList(userRunnerSidVO));
 
         verify(pipelineUserRepository).save((PipelineUser) any());
-        assertThat(runners).hasSize(1).contains(userRunnerSid);
+        assertThat(runners).hasSize(1).contains(userRunnerSidVO);
     }
 
     @Test

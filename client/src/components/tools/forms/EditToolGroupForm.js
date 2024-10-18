@@ -210,7 +210,7 @@ export default class EditToolGroupForm extends React.Component {
             : 'Edit group'
         }
         onCancel={this.props.onCancel}
-        footer={modalFooter}>
+        footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
           <Form className="edit-tool-group-form">
             <Tabs

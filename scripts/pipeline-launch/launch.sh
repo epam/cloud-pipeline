@@ -464,7 +464,7 @@ function define_distro_name_and_version {
           ubuntu | debian)
             CP_OS_FAMILY=debian
             ;;
-          centos | rocky | fedora | ol | amzn)
+          centos | rocky | fedora | ol | amzn | rhel)
             CP_OS_FAMILY=rhel
             ;;
           *)
@@ -498,7 +498,7 @@ function configure_package_manager {
             # System package manager setup
             local CP_REPO_BASE_URL_DEFAULT="${CP_REPO_BASE_URL_DEFAULT:-"${GLOBAL_DISTRIBUTION_URL}tools/repos"}"
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
-            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+            if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/yum.repos.d/cuda.repo
@@ -520,13 +520,25 @@ function configure_package_manager {
                                     sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
                               fi
                               # Use the "base" url for the other repos, as the mirrors may cause issues
-                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
-                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+                              for repo_file in /etc/yum.repos.d/*.repo; do
+                                    sed -i '/download.example/d' "$repo_file"
+                                    sed -i 's/mirror.centos.org/vault.centos.org/g' "$repo_file"
+                                    if grep -q 'baseurl' "$repo_file"; then
+                                          sed -i 's/^#baseurl=/baseurl=/g' "$repo_file"
+                                          sed -i 's/^metalink=/#metalink=/g' "$repo_file"
+                                          sed -i 's/^mirrorlist=/#mirrorlist=/g' "$repo_file"
+                                    fi
+                              done
+
                               break
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
+                  if [ "$CP_REPO_ACCESS_TIMEOUT_SEC" ]; then
+                        mkdir -p /etc/apt/apt.conf.d
+                        echo "Acquire::http::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                        echo "Acquire::https::timeout \"$CP_REPO_ACCESS_TIMEOUT_SEC\";" >> /etc/apt/apt.conf.d/99cp_timeouts
+                  fi
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         # Remove nvidia repositories, as they cause run initialization failure
                         rm -f /etc/apt/sources.list.d/cuda.list \
@@ -581,9 +593,15 @@ function get_install_command_by_current_distr {
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
       if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
-         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; } && \
+         { [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; } && \
          { [[ "$CP_VER" == "8"* ]] || [[ "$CP_VER" == "9"* ]]; }; then
             _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
+      if [[ "$_TOOLS_TO_INSTALL" == *"coreutils"* ]] && [ "$CP_OS" == "rocky" ]; then
+            _TOOLS_TO_INSTALL="$(sed -e "s/coreutils/coreutils-single/g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
+      if [[ "$_TOOLS_TO_INSTALL" == *"procps"* ]] && [ "$CP_OS" == "rocky" ]; then
+            _TOOLS_TO_INSTALL="$(sed -e "s/procps/procps-ng/g" <<< "$_TOOLS_TO_INSTALL")"
       fi
 
       local _TOOL_TO_CHECK=
@@ -986,32 +1004,9 @@ function configureHyperThreading() {
     fi
 }
 
-function self_terminate_on_cleanup_timeout() {
-      local _min_terminate_timeout_min=1
-      if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
-            return 0
-      fi
-      if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
-            pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
-            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
-      fi
-
-      local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
-      if [ -z "$_node_name" ]; then
-            pipe_log_fail "Cannot get node name for a current run" "CleanupEnvironment"
-            return 1
-      fi
-
-      pipe_log_info "Will wait for ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min to let the run stop normally. Otherwise it will be terminated." "CleanupEnvironment"
-
-      sleep $(( $CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN * 60 ))
-
-      local _run_status_after_timeout=$(echo $(pipe view-runs $RUN_ID | grep Status) | cut -d' ' -f2)
-      if [ "$_run_status_after_timeout" == "RUNNING" ]; then
-            pipe_log_success "Run #${RUN_ID} is still running after ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min. Terminating a node." "CleanupEnvironment"
-            pipe terminate-node -y "$_node_name"
-            return 0
-      fi
+function mark_run_as_completed() {
+    pipe_log_info "Marking run as finished." "CleanupEnvironment"
+    tag_run "$CP_CAP_RUN_WORK_FINISHED_TAG" "$(date +"%F %T.%3N" -u)"
 }
 
 function exit_stage() {
@@ -1070,14 +1065,14 @@ function call_api() {
             --header 'Authorization: Bearer '"$API_TOKEN" \
             --header 'Content-Type: application/json' \
             "$API$_API_METHOD" \
-            >>"$LOG_DIR/launch.sh.call_api.log" 2>&1
+            2>>"$LOG_DIR/launch.sh.call_api.log"
     fi
 }
 
 function tag_run() {
     local _KEY="$1"
     local _VALUE="$2"
-    call_api "POST" "run/$RUN_ID/tag" '{
+    call_api "POST" "run/$RUN_ID/tag?overwrite=false" '{
         "tags": {
             "'"$_KEY"'": "'"$_VALUE"'"
         }
@@ -1164,6 +1159,8 @@ export CP_CAP_RECOVERY_TAG="${CP_CAP_RECOVERY_TAG:-RECOVERED}"
 if check_cp_cap CP_SENSITIVE_RUN; then
     export CP_CAP_OFFLINE="true"
 fi
+
+export CP_CAP_RUN_WORK_FINISHED_TAG="${CP_CAP_RUN_WORK_FINISHED_TAG:-WORK_FINISHED}"
 
 ######################################################
 # Configure Hyperthreading
@@ -1529,6 +1526,10 @@ fi
 if check_cp_cap "CP_CAP_DCV"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
+
+# Get general run information from the API
+CP_API_RUN_INFO_JSON=$(call_api "GET" "run/$RUN_ID")
+export CP_API_POD_IP=$(echo "$CP_API_RUN_INFO_JSON" | jq -r '.podIP')
 
 echo "------"
 echo
@@ -2192,11 +2193,18 @@ echo "------"
 ######################################################
 MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
 DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE=${CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE:-true}
 
 echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
 rm -Rf $DATA_STORAGE_MOUNT_ROOT
 create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
+if ! mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME; then
+    if check_cp_cap CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE; then
+        echo "--> It is requested to continue running on storage mount failure"
+    else
+        exit_init 1
+    fi
+fi
 
 echo "------"
 echo
@@ -2299,7 +2307,7 @@ echo "-"
 # Force SystemD capability if the Kubernetes is requested
 if ( check_cp_cap "CP_CAP_SYSTEMD_CONTAINER" || check_cp_cap "CP_CAP_KUBE" ) \
     && check_installed "systemctl" && \
-    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ]; then
+    [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
 
         # Make sure sysctl is available
         _SYSCTL_INSTALL_COMMAND=
@@ -2441,7 +2449,7 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
       if [ "$CP_CAP_EXTRA_PKG" ]; then
             get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
       fi
-      if [ "$CP_OS" == "centos" ]; then
+      if [ "$CP_OS" == "centos" ] || [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
             if [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
                   get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
             fi
@@ -2472,6 +2480,12 @@ if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
             _old_pwd=$(pwd)
             cd "$CP_USR_BIN"
             for _pkg in $CP_CAP_EXTRA_PKG_URL; do
+                  _pkg_os=$(echo $_pkg | cut -d";" -f1)
+                  _pkg_os_url=$(echo $_pkg | cut -d";" -f2)
+                  if [ "$_pkg_os" != "$_pkg_os_url" ] && [ "$_pkg_os" != "$CP_VER_MAJOR" ]; then
+                        continue
+                  fi
+                  _pkg="$_pkg_os_url"
                   _pkg_filename=$(basename "$_pkg")
                   _pkg_filename_ext="${_pkg_filename##*.}"
                   if [ -f "$_pkg_filename" ]; then
@@ -2567,6 +2581,18 @@ fi
 
 
 ######################################################
+# Custom shells
+######################################################
+
+echo "'Sync to storage' daemon start"
+echo "-"
+
+if [ "$CP_SYNC_TO_STORAGE_ENABLED" == "true" ]; then
+      sync_to_storage start
+fi
+
+
+######################################################
 
 ######################################################
 echo Executing task
@@ -2620,17 +2646,34 @@ pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"
 echo "Command text:"
 echo "${SCRIPT}"
 
-if [ ! -z "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ];
-then
-  timeout ${CP_EXEC_TIMEOUT}m bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
-  if [ $CP_EXEC_RESULT -eq 124 ];
-  then
+CP_EXEC_SCRIPT_PATH="${CP_EXEC_SCRIPT_PATH:-/cp-main.sh}"
+CP_USER_SCRIPT_PATH="${CP_USER_SCRIPT_PATH:-/cp-user.sh}"
+
+if [ "$CP_EXEC_AS_OWNER" == "true" ]; then
+    _RUN_AS_OWNER_COMMAND_PREFIX="su - "$OWNER" -c '"
+    _RUN_AS_OWNER_COMMAND_SUFFIX="'"
+fi
+if [ "${CP_EXEC_TIMEOUT}" ] && [ "${CP_EXEC_TIMEOUT}" -gt 0 ]; then
+    _TIMEOUT_COMMAND_PREFIX="timeout ${CP_EXEC_TIMEOUT}m"
+fi
+
+echo "${SCRIPT}" > "$CP_USER_SCRIPT_PATH"
+echo "$_RUN_AS_OWNER_COMMAND_PREFIX" \
+        "$_TIMEOUT_COMMAND_PREFIX" \
+        "bash \"$CP_USER_SCRIPT_PATH\"" \
+        "$_RUN_AS_OWNER_COMMAND_SUFFIX" > "$CP_EXEC_SCRIPT_PATH"
+
+echo "Exec script text:"
+cat "$CP_EXEC_SCRIPT_PATH"
+
+echo "User script text:"
+cat "$CP_USER_SCRIPT_PATH"
+
+bash "$CP_EXEC_SCRIPT_PATH"
+
+CP_EXEC_RESULT=$?
+if [ "$CP_EXEC_TIMEOUT" ] && [ $CP_EXEC_RESULT -eq 124 ]; then
     echo "Timeout was elapsed"
-  fi
-else
-  bash -c "${SCRIPT}"
-  CP_EXEC_RESULT=$?
 fi
 
 if [ "$CP_EXEC_RESULT" != "0" ]; then
@@ -2669,10 +2712,12 @@ else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
 fi
 
-# It may happen that the shared filesystem may cause a job to "hang" indefinitely
-# even if the script has exited. To address this, we wait a preconfigured amount of minutes
-# and *terminate* an underlying node. So that it won't be reassigned in that bad state
-self_terminate_on_cleanup_timeout &
+if [ "$CP_CAP_RECOVERY_MODE_TERM" != "sleep" ]; then
+    # It may happen that the shared filesystem may cause a job to "hang" indefinitely
+    # even if the script has exited. To address this, tag the run as completed and then API
+    # will watch for it in ResourceMonitoringManager.processStuckRuns and terminate it if it was configured
+    mark_run_as_completed
+fi
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \

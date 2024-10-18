@@ -147,6 +147,7 @@ fi
 if [ -d /etc/nginx/ext/external-apps ]; then
     echo "Copying /etc/nginx/ext/external-apps -> /etc/nginx/external-apps..."
     cp -r /etc/nginx/ext/external-apps /etc/nginx/external-apps
+    cp -r /etc/nginx/ext/external-locs /etc/nginx/external-locs
 fi
 
 # Copy the "pki" service keys to a docker filesystem

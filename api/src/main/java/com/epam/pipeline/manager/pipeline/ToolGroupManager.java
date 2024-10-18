@@ -171,15 +171,19 @@ public class ToolGroupManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public ToolGroup createPrivate(Long registryId) {
-        ToolGroup privateGroup = new ToolGroup();
-        String privateGroupName = makePrivateGroupName();
-        privateGroup.setName(privateGroupName);
+    public ToolGroup createPrivate(final Long registryId) {
+        return createPrivate(registryId, authManager.getAuthorizedUser());
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public ToolGroup createPrivate(final Long registryId, final String userName) {
+        final ToolGroup privateGroup = new ToolGroup();
+        privateGroup.setName(makePrivateGroupName(userName));
         privateGroup.setRegistryId(registryId);
-        privateGroup.setOwner(authManager.getAuthorizedUser());
+        privateGroup.setOwner(userName);
         privateGroup.setPrivateGroup(true);
 
-        DockerRegistry registry = dockerRegistryManager.load(registryId);
+        final DockerRegistry registry = dockerRegistryManager.load(registryId);
         Assert.notNull(registry, messageHelper.getMessage(MessageConstants.ERROR_REGISTRY_NOT_FOUND, registryId));
 
         Assert.isTrue(!toolGroupDao.loadToolGroup(privateGroup.getName(), privateGroup.getRegistryId()).isPresent(),
@@ -187,11 +191,8 @@ public class ToolGroupManager implements SecuredEntityManager {
                         registry.getName()));
 
         privateGroup.setParent(registry);
-
         toolGroupDao.createToolGroup(privateGroup);
-
         makePrivate(privateGroup);
-
         return privateGroup;
     }
 
@@ -312,6 +313,14 @@ public class ToolGroupManager implements SecuredEntityManager {
         List<ToolGroup> groups = toolGroupDao.loadToolGroupsByNameAndRegistryName(groupName, registryName);
         return CollectionUtils.isNotEmpty(groups);
     }
+
+    public boolean doesUserToolGroupExist(final Long registryId, final String userName) {
+        return doesToolGroupExist(registryId, makePrivateGroupName(userName));
+    }
+
+    public boolean doesToolGroupExist(final Long registryId, final String groupName) {
+        return toolGroupDao.loadToolGroup(groupName, registryId).isPresent();
+    }
     
     public boolean isGroupPrivate(ToolGroup group) {
         return group.getName().equalsIgnoreCase(makePrivateGroupName());
@@ -344,7 +353,10 @@ public class ToolGroupManager implements SecuredEntityManager {
     }
 
     private String makePrivateGroupName() {
-        String userName = authManager.getAuthorizedUser();
+        return makePrivateGroupName(authManager.getAuthorizedUser());
+    }
+
+    private String makePrivateGroupName(final String userName) {
         String groupName = userName.trim().toLowerCase();
         return groupName.replaceAll("[^a-z0-9\\-]+", "-");
     }

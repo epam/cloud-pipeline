@@ -19,18 +19,7 @@ import com.amazonaws.services.ec2.model.Instance;
 import com.amazonaws.services.ec2.model.NetworkInterface;
 import com.amazonaws.services.fsx.AmazonFSx;
 import com.amazonaws.services.fsx.AmazonFSxClient;
-import com.amazonaws.services.fsx.model.CreateFileSystemLustreConfiguration;
-import com.amazonaws.services.fsx.model.CreateFileSystemRequest;
-import com.amazonaws.services.fsx.model.CreateFileSystemResult;
-import com.amazonaws.services.fsx.model.DeleteFileSystemRequest;
-import com.amazonaws.services.fsx.model.DescribeFileSystemsRequest;
-import com.amazonaws.services.fsx.model.DescribeFileSystemsResult;
-import com.amazonaws.services.fsx.model.FileSystem;
-import com.amazonaws.services.fsx.model.FileSystemType;
-import com.amazonaws.services.fsx.model.LustreDeploymentType;
-import com.amazonaws.services.fsx.model.StorageType;
-import com.amazonaws.services.fsx.model.Tag;
-import com.amazonaws.services.fsx.model.UpdateFileSystemRequest;
+import com.amazonaws.services.fsx.model.*;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -43,6 +32,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.exception.datastorage.exception.LustreFSException;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloud.aws.EC2Helper;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunCRUDService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -61,6 +51,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -76,20 +67,26 @@ public class LustreFSManager {
     private static final String PERSISTENT_PREFIX = "PERSISTENT_";
     private static final List<Integer> PERSISTENT_1_THROUGHPUT = Arrays.asList(50, 100, 200);
     private static final List<Integer> PERSISTENT_2_THROUGHPUT = Arrays.asList(125, 250, 500, 1000);
+    private static final List<Integer> IOPS_POSSIBLE_VALUES = Arrays.asList(
+            1500, 3000, 6000, 12000, 24000, 36000, 48000, 60000, 72000, 84000, 96000,
+            108000, 120000, 132000, 144000, 156000, 168000, 180000, 192000
+    );
 
     private final PipelineRunCRUDService runService;
     private final CloudRegionManager regionManager;
     private final PreferenceManager preferenceManager;
     private final EC2Helper ec2Helper;
     private final MessageHelper messageHelper;
+    private final MetadataManager metadataManager;
 
     public LustreFS getOrCreateLustreFS(final Long runId, final Integer size,
-                                        final String type, final Integer throughput) {
+                                        final String type, final Integer throughput,
+                                        final Integer iops) {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
         return findFsForRun(runId, null, fsxClient)
                 .map(fs -> convert(fs, region))
-                .orElseGet(() -> createLustreFs(runId, size, type, throughput, fsxClient));
+                .orElseGet(() -> createLustreFs(runId, size, type, throughput, iops, fsxClient));
     }
 
     public LustreFS updateLustreFsSize(final Long runId, final Integer size) {
@@ -165,21 +162,23 @@ public class LustreFSManager {
         return result;
     }
 
-    private LustreFS createLustreFs(final Long runId, final Integer size,
-                                    final String type, final Integer throughput,
-                                    final AmazonFSx fsxClient) {
+    private LustreFS createLustreFs(final Long runId, final Integer size, final String type,
+                                    final Integer throughput, final Integer iops, final AmazonFSx fsxClient) {
         log.debug("Creating a new lustre fs for run id {}.", runId);
         final PipelineRun pipelineRun = runService.loadRunById(runId);
         final AwsRegion regionForRun = getRegion(pipelineRun);
         final LustreDeploymentType deploymentType = getDeploymentType(type);
-        final CreateFileSystemLustreConfiguration lustreConfiguration = getLustreConfig(deploymentType, throughput);
+        final CreateFileSystemLustreConfiguration lustreConfiguration =
+                getLustreConfig(deploymentType, throughput, iops);
+        final List<Tag> tags = buildResourceTags(pipelineRun);
+        tags.add(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)));
         final CreateFileSystemRequest createFileSystemRequest = new CreateFileSystemRequest()
                 .withFileSystemType(FileSystemType.LUSTRE)
                 .withStorageCapacity(getFSSize(size, deploymentType))
                 .withStorageType(StorageType.SSD)
                 .withSecurityGroupIds(getSecurityGroups(regionForRun))
                 .withSubnetIds(getSubnetId(pipelineRun, regionForRun))
-                .withTags(new Tag().withKey(RUN_ID_TAG_NAME).withValue(String.valueOf(runId)))
+                .withTags(tags)
                 .withLustreConfiguration(lustreConfiguration);
         if (isPersistent(deploymentType)) {
             createFileSystemRequest.withKmsKeyId(regionForRun.getKmsKeyArn());
@@ -199,7 +198,7 @@ public class LustreFSManager {
 
     private CreateFileSystemLustreConfiguration getLustreConfig(
             final LustreDeploymentType deploymentType,
-            final Integer throughput) {
+            final Integer throughput, final Integer iops) {
         final CreateFileSystemLustreConfiguration lustreConfiguration = new CreateFileSystemLustreConfiguration()
                 .withDeploymentType(deploymentType);
         if (isPersistent(deploymentType)) {
@@ -209,7 +208,28 @@ public class LustreFSManager {
                     .withAutomaticBackupRetentionDays(preferenceManager.getPreference(
                             SystemPreferences.LUSTRE_FS_BKP_RETENTION_DAYS));
         }
+        if (checkIOPSValue(deploymentType, iops)) {
+            lustreConfiguration.withMetadataConfiguration(
+                    new CreateFileSystemLustreMetadataConfiguration()
+                            .withMode(MetadataConfigurationMode.USER_PROVISIONED)
+                            .withIops(iops)
+            );
+        }
         return lustreConfiguration;
+    }
+
+    private boolean checkIOPSValue(final LustreDeploymentType deploymentType, final Integer iops) {
+        if (!deploymentType.equals(LustreDeploymentType.PERSISTENT_2) || iops == null) {
+            return false;
+        }
+
+        if (IOPS_POSSIBLE_VALUES.contains(iops)) {
+            return true;
+        } else {
+            log.debug("Lustre iops value is incorrect: {}. Correct values are: {}", iops,
+                    IOPS_POSSIBLE_VALUES.stream().map(String::valueOf).collect(Collectors.joining(", ")));
+            return false;
+        }
     }
 
     private LustreDeploymentType getDeploymentType(final String type) {
@@ -371,5 +391,11 @@ public class LustreFSManager {
         } else {
             throw new LustreFSException(messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_REGION_NOT_SUPPORTED));
         }
+    }
+
+    private List<Tag> buildResourceTags(final PipelineRun run) {
+        return metadataManager.prepareCloudResourceTags(run).entrySet().stream()
+                .map(entry -> new Tag().withKey(entry.getKey()).withValue(entry.getValue()))
+                .collect(Collectors.toList());
     }
 }

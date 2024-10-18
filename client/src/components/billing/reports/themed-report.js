@@ -110,6 +110,11 @@ class ThemedReportConfiguration {
   }
 
   @computed
+  get lightPrevious () {
+    return fadeout(this.previous, 0.5);
+  }
+
+  @computed
   get blue () {
     if (this.themes && this.themes.currentThemeConfiguration) {
       return undefinedOnInherit(

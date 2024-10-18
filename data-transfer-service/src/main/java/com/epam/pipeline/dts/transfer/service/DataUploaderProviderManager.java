@@ -20,5 +20,5 @@ import com.epam.pipeline.dts.transfer.model.TransferTask;
 
 public interface DataUploaderProviderManager {
 
-    void transferData(TransferTask transferTask);
+    void transferData(TransferTask transferTask, boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
 }

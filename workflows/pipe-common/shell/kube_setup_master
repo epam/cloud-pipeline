@@ -111,7 +111,7 @@ export CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC="${CP_CAP_KUBE_MASTER_EXEC_WAIT_SEC:-10}
 export CP_CAP_KUBE_MASTER_NODE_NAME="${CP_CAP_KUBE_MASTER_NODE_NAME:-$(hostname)}"
 
 pipe_log_info "Getting current IP from getent" "$KUBE_MASTER_SETUP_TASK"
-export CP_CAP_KUBE_MASTER_NODE_IP=$(getent hosts "$CP_CAP_KUBE_MASTER_NODE_NAME" | awk '{ print $1 }')
+export CP_CAP_KUBE_MASTER_NODE_IP=$(util_get_pod_ip "$CP_CAP_KUBE_MASTER_NODE_NAME")
 if ! check_is_ip "$CP_CAP_KUBE_MASTER_NODE_IP"; then
     pipe_log_info "Getting current IP from hostname" "$KUBE_MASTER_SETUP_TASK"
     CP_CAP_KUBE_MASTER_NODE_IP=$(hostname -i)

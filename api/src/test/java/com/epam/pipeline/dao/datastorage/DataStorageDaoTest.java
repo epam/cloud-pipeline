@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.dao.datastorage;
 
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
+import com.epam.pipeline.dao.metadata.MetadataDao;
 import com.epam.pipeline.dao.pipeline.FolderDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
@@ -24,20 +27,26 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.epam.pipeline.assertions.ProjectAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +61,12 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
     private static final int LTS_DURATION = 2;
     private static final int STS_DURATION = 3;
     private static final String UPDATED_VALUE = "UPDATED";
+    private static final String STRING = "string";
+    private static final String KEY_1 = "key1";
+    private static final String VALUE_1 = "value1";
+    private static final String VALUE_2 = "value2";
+    private static final String VALUE_3 = "value3";
+    private static final String KEY_2 = "key2";
 
     @Autowired
     private DataStorageDao dataStorageDao;
@@ -61,6 +76,9 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
 
     @Autowired
     private CloudRegionDao cloudRegionDao;
+
+    @Autowired
+    private MetadataDao metadataDao;
 
     private Folder testFolder;
     private S3bucketDataStorage s3Bucket;
@@ -370,6 +388,80 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         verifyFolderTree(parent, loaded.getParent());
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadStoragesByTagsFilter() {
+        createStorageWithMetadata();
+        createStorageWithMetadata();
+        dataStorageDao.createDataStorage(getS3Storage());
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
+
+        final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
+        assertThat(actual).hasSize(2);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadStoragesByTagsFilterWithMultipleMetadataValues() {
+        final S3bucketDataStorage storage1 = createStorageWithMetadata(VALUE_1, VALUE_2);
+        final S3bucketDataStorage storage2 = createStorageWithMetadata(VALUE_1, VALUE_3);
+        createStorageWithMetadata(VALUE_2, VALUE_3);
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
+
+        final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
+        assertThat(actual).hasSize(2);
+        assertThat(actual.stream().map(AbstractDataStorage::getId).collect(Collectors.toList()))
+                .containsOnly(storage1.getId(), storage2.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadPipelinesByTagsFilterWithMultipleFilterValues() {
+        final S3bucketDataStorage storage1 = createStorageWithMetadata(VALUE_1, VALUE_2);
+        createStorageWithMetadata(VALUE_3, VALUE_2);
+        final S3bucketDataStorage storage3 = createStorageWithMetadata(VALUE_2, VALUE_1);
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
+
+        final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
+        assertThat(actual).hasSize(2);
+        assertThat(actual.stream().map(AbstractDataStorage::getId).collect(Collectors.toList()))
+                .containsOnly(storage1.getId(), storage3.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldNotLoadPipelinesByTagsFilterIfNotSuchKey() {
+        createStorageWithMetadata();
+        createStorageWithMetadata();
+        dataStorageDao.createDataStorage(getS3Storage());
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_2, Collections.singletonList(VALUE_1)));
+
+        final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
+        assertThat(actual).hasSize(0);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldNotLoadPipelinesByTagsFilterIfNotSuchValue() {
+        createStorageWithMetadata();
+        createStorageWithMetadata();
+        dataStorageDao.createDataStorage(getS3Storage());
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_2)));
+
+        final List<AbstractDataStorage> actual = dataStorageDao.loadAllDataStorages(filter);
+        assertThat(actual).hasSize(0);
+    }
+
     private void validateCreatedStorage(AbstractDataStorage actual) {
         assertThat(actual.getId())
                 .isNotNull()
@@ -430,5 +522,38 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }
+    }
+
+    private void createStorageWithMetadata() {
+        final S3bucketDataStorage storage = getS3Storage();
+        dataStorageDao.createDataStorage(storage);
+
+        final MetadataEntry metadata = new MetadataEntry();
+        metadata.setEntity(new EntityVO(storage.getId(), AclClass.DATA_STORAGE));
+        metadata.setData(Collections.singletonMap(KEY_1, new PipeConfValue(STRING, VALUE_1)));
+        metadataDao.registerMetadataItem(metadata);
+    }
+
+    private S3bucketDataStorage createStorageWithMetadata(final String value1, final String value2) {
+        final S3bucketDataStorage storage = getS3Storage();
+        dataStorageDao.createDataStorage(storage);
+
+        final MetadataEntry metadata = new MetadataEntry();
+        metadata.setEntity(new EntityVO(storage.getId(), AclClass.DATA_STORAGE));
+        metadata.setData(new HashMap<String, PipeConfValue>() {{
+                put(KEY_1, new PipeConfValue(STRING, value1));
+                put(KEY_2, new PipeConfValue(STRING, value2));
+            }});
+        metadataDao.registerMetadataItem(metadata);
+
+        return storage;
+    }
+
+    private S3bucketDataStorage getS3Storage() {
+        final S3bucketDataStorage storage = new S3bucketDataStorage(null, TEST_STORAGE_NAME, TEST_STORAGE_PATH);
+        storage.setDescription("testDescription");
+        storage.setRegionId(awsRegion.getId());
+        storage.setOwner(TEST_OWNER);
+        return storage;
     }
 }

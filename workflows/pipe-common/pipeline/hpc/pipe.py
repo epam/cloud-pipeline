@@ -12,100 +12,71 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import math
 import traceback
 from datetime import datetime, timedelta
 
-import requests
-import time
-
+from pipeline.api.api import APIError
 from pipeline.hpc.event import InsufficientInstanceEvent, FailingInstanceEvent, AvailableInstanceEvent
 from pipeline.hpc.instance.provider import GridEngineInstanceProvider, Instance
 from pipeline.hpc.logger import Logger
-
-
-class ServerError(RuntimeError):
-    pass
-
-
-class HTTPError(ServerError):
-    pass
-
-
-class APIError(ServerError):
-    pass
-
-
-class CloudPipelineAPI:
-
-    def __init__(self, pipe):
-        """
-        Cloud pipeline client.
-
-        :param pipe: Cloud pipeline raw client.
-        """
-        self.pipe = pipe
-
-    def retrieve_preference(self, preference, default):
-        try:
-            return self.pipe.get_preference(preference)['value']
-        except:
-            Logger.warn('Pipeline preference %s retrieving has failed. Using default value: %s.'
-                        % (preference, default))
-            return default
-
-    def load_run(self, run_id):
-        result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_RUN_URL.format(run_id))
-        return result or {}
-
-    def load_task(self, run_id, task):
-        result = self._execute_request(str(self.pipe.api_url) + self.pipe.GET_TASK_URL.format(run_id, task))
-        return result or []
-
-    def update_pipeline_run_tags(self, run_id, tags):
-        body = {'tags': tags}
-        self.pipe.update_pipeline_run_tags(run_id, body)
-
-    def _execute_request(self, url):
-        count = 0
-        exceptions = []
-        while count < self.pipe.attempts:
-            count += 1
-            try:
-                response = requests.get(url, headers=self.pipe.header, verify=False, timeout=self.pipe.connection_timeout)
-                if response.status_code != 200:
-                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
-                data = response.json()
-                status = data.get('status')
-                message = data.get('message')
-                if not status:
-                    raise APIError('API responded without any status.')
-                if status != self.pipe.RESPONSE_STATUS_OK:
-                    if message:
-                        raise APIError('API responded with status %s and error message: %s.' % (status, message))
-                    else:
-                        raise APIError('API responded with status %s.' % status)
-                return data.get('payload')
-            except Exception as e:
-                exceptions.append(e)
-                Logger.warn('An error has occurred during request %s/%s to API: %s'
-                            % (count, self.pipe.attempts, str(e)))
-            time.sleep(self.pipe.timeout)
-        err_msg = 'Exceeded maximum retry count %s for API request.' % self.pipe.attempts
-        Logger.warn(err_msg)
-        raise exceptions[-1]
+from pipeline.hpc.valid import WorkerValidator, WorkerValidatorHandler
 
 
 class CloudPipelineInstanceProvider(GridEngineInstanceProvider):
 
-    def __init__(self, pipe, region_id, price_type):
-        self.pipe = pipe
+    def __init__(self, api, region_id, price_type):
+        self.api = api
         self.region_id = region_id
         self.price_type = price_type
 
     def provide(self):
-        allowed_instance_types = self.pipe.get_allowed_instance_types(self.region_id, self.price_type == 'spot')
+        allowed_instance_types = self.api.get_allowed_instance_types(self.region_id, self.price_type == 'spot')
         docker_instance_types = allowed_instance_types['cluster.allowed.instance.types.docker']
         return [Instance.from_cp_response(instance) for instance in docker_instance_types]
+
+
+class CloudPipelineReservationInstanceProvider(GridEngineInstanceProvider):
+
+    def __init__(self, inner,
+                 kube_mem_ratio, kube_mem_min_mib, kube_mem_max_mib,
+                 system_mem_ratio, system_mem_min_mib, system_mem_max_mib,
+                 extra_mem_ratio, extra_mem_min_mib, extra_mem_max_mib):
+        self.inner = inner
+        self.kube_mem_ratio = kube_mem_ratio
+        self.kube_mem_min_mib = kube_mem_min_mib
+        self.kube_mem_max_mib = kube_mem_max_mib
+        self.system_mem_ratio = system_mem_ratio
+        self.system_mem_min_mib = system_mem_min_mib
+        self.system_mem_max_mib = system_mem_max_mib
+        self.extra_mem_ratio = extra_mem_ratio
+        self.extra_mem_min_mib = extra_mem_min_mib
+        self.extra_mem_max_mib = extra_mem_max_mib
+
+    def provide(self):
+        for instance in self.inner.provide():
+            total_mem_gib = instance.mem
+            total_mem_mib = total_mem_gib * 1024
+
+            kube_mem_mib = self._resolve(total_mem_mib,
+                                         self.kube_mem_ratio, self.kube_mem_min_mib, self.kube_mem_max_mib)
+            system_mem_mib = self._resolve(total_mem_mib,
+                                           self.system_mem_ratio, self.system_mem_min_mib, self.system_mem_max_mib)
+            extra_mem_mib = self._resolve(total_mem_mib,
+                                          self.extra_mem_ratio, self.extra_mem_min_mib, self.extra_mem_max_mib)
+
+            container_limit_mem_mib = max(0, total_mem_mib - kube_mem_mib - system_mem_mib - extra_mem_mib)
+            container_limit_mem_gib = int(container_limit_mem_mib / 1024)
+
+            yield Instance(name=instance.name,
+                           price_type=instance.price_type,
+                           cpu=instance.cpu,
+                           mem=container_limit_mem_gib,
+                           gpu=instance.gpu,
+                           gpu_device=instance.gpu_device)
+
+    def _resolve(self, total, ratio, min_, max_):
+        return int(min(max(min_, math.ceil(total * ratio)), max_))
 
 
 class GridEngineWorkerRecorder:
@@ -125,7 +96,7 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
     def record(self, run_id):
         try:
             Logger.info('Recording details of additional worker #%s...' % run_id)
-            run = self._api.load_run(run_id)
+            run = self._api.load_run_efficiently(run_id)
             run_stopped = self._to_datetime(run.get('endDate'))
             instance_type = run.get('instance', {}).get('nodeType')
             run_status = run.get('status')
@@ -153,19 +124,10 @@ class CloudPipelineWorkerRecorder(GridEngineWorkerRecorder):
         return datetime.strptime(run_started, self._datetime_format)
 
 
-class GridEngineWorkerValidator:
+class CloudPipelineWorkerValidator(WorkerValidator):
 
-    def validate(self):
-        pass
-
-
-class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
-
-    _STOP_RUN = 'pipe stop --yes %s'
-    _SHOW_RUN_STATUS = 'pipe view-runs %s | grep Status | awk \'{print $2}\''
-    _RUNNING_STATUS = 'RUNNING'
-
-    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, common_utils, dry_run):
+    def __init__(self, cmd_executor, api, host_storage, grid_engine, scale_down_handler, handlers,
+                 common_utils, dry_run):
         """
         Grid engine worker validator.
 
@@ -173,19 +135,21 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
         F.e. autoscaler has failed while configuring additional host so it is partly configured and has to be stopped.
         F.e. a spot worker instance was preempted and it has to be removed from its autoscaled cluster.
 
-        :param grid_engine: Grid engine.
-        :param api: Cloud pipeline client.
         :param cmd_executor: Cmd executor.
+        :param api: Cloud pipeline client.
         :param host_storage: Additional hosts storage.
+        :param grid_engine: Grid engine.
         :param scale_down_handler: Scale down handler.
+        :param handlers: Validation handlers.
         :param common_utils: helpful stuff
         :param dry_run: Dry run flag.
         """
-        self.grid_engine = grid_engine
-        self.api = api
         self.executor = cmd_executor
+        self.api = api
         self.host_storage = host_storage
+        self.grid_engine = grid_engine
         self.scale_down_handler = scale_down_handler
+        self.handlers = handlers
         self.common_utils = common_utils
         self.dry_run = dry_run
 
@@ -200,12 +164,14 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
         Logger.info('Init: Workers validation.')
         valid_hosts, invalid_hosts = [], []
         for host in hosts:
-            run_id = self.common_utils.get_run_id_from_host(host)
-            if (not self.grid_engine.is_valid(host)) or (not self._is_running(run_id)):
-                invalid_hosts.append((host, run_id))
+            if any(not handler.is_valid(host) for handler in self.handlers):
+                invalid_hosts.append(host)
                 continue
-        for host, run_id in invalid_hosts:
-            Logger.warn('Invalid additional host %s was found. It will be downscaled.' % host, crucial=True)
+        for host in invalid_hosts:
+            run_id = self.common_utils.get_run_id_from_host(host)
+            Logger.warn('Invalid additional host %s was found. '
+                        'It will be downscaled.' % host,
+                        crucial=True)
             if self.dry_run:
                 continue
             self._try_stop_worker(run_id)
@@ -216,28 +182,10 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
             self.host_storage.remove_host(host)
         Logger.info('Done: Workers validation.')
 
-    def _is_running(self, run_id):
-        try:
-            run_info = self.api.load_run(run_id)
-            status = run_info.get('status', 'not found').strip().upper()
-            if status == self._RUNNING_STATUS:
-                return True
-            Logger.warn('Additional worker #%s status is not %s but %s.'
-                        % (run_id, self._RUNNING_STATUS, status))
-            return False
-        except APIError as e:
-            Logger.warn('Additional worker #%s status retrieving has failed '
-                        'and it is considered not running: %s' % (run_id, str(e)))
-            return False
-        except Exception as e:
-            Logger.warn('Additional worker #%s status retrieving has failed '
-                        'but it is temporary considered running: %s' % (run_id, str(e)))
-            return True
-
     def _try_stop_worker(self, run_id):
         try:
             Logger.info('Stopping run #%s...' % run_id)
-            self.executor.execute(CloudPipelineWorkerValidator._STOP_RUN % run_id)
+            self.api.stop_run(run_id)
         except:
             Logger.warn('Invalid additional worker run stopping has failed.')
 
@@ -256,6 +204,40 @@ class CloudPipelineWorkerValidator(GridEngineWorkerValidator):
     def _remove_worker_from_hosts(self, host):
         Logger.info('Removing additional worker %s from the well-known hosts.' % host)
         self.scale_down_handler._remove_host_from_hosts(host)
+
+
+class CloudPipelineWorkerValidatorHandler(WorkerValidatorHandler):
+
+    _RUNNING_STATUS = 'RUNNING'
+
+    def __init__(self, api, common_utils):
+        self._api = api
+        self._common_utils = common_utils
+
+    def is_valid(self, host):
+        run_id = self._common_utils.get_run_id_from_host(host)
+        if self._is_running(run_id):
+            return True
+        Logger.warn('Not running additional host %s was found.' % host, crucial=True)
+        return False
+
+    def _is_running(self, run_id):
+        try:
+            run_info = self._api.load_run_efficiently(run_id)
+            status = run_info.get('status', 'not found').strip().upper()
+            if status == self._RUNNING_STATUS:
+                return True
+            Logger.warn('Additional worker #%s status is not %s but %s.'
+                        % (run_id, self._RUNNING_STATUS, status))
+            return False
+        except APIError as e:
+            Logger.warn('Additional worker #%s status retrieving has failed '
+                        'and it is considered not running: %s' % (run_id, str(e)))
+            return False
+        except Exception as e:
+            Logger.warn('Additional worker #%s status retrieving has failed '
+                        'but it is temporary considered running: %s' % (run_id, str(e)))
+            return True
 
 
 class LastActionMarker:
@@ -364,13 +346,13 @@ class CloudPipelineWorkerTagsHandler(GridEngineWorkerTagsHandler):
                 self._untag_run(monitored_host)
 
     def _add_worker_tag(self, run_id):
-        run = self.api.load_run(run_id)
+        run = self.api.load_run_efficiently(run_id)
         tags = run.get('tags') or {}
         tags.update({self.active_tag: 'true'})
         self.api.update_pipeline_run_tags(run_id, tags)
 
     def _remove_worker_tag(self, run_id):
-        run = self.api.load_run(run_id)
+        run = self.api.load_run_efficiently(run_id)
         tags = run.get('tags') or {}
         if self.active_tag in tags:
             del tags[self.active_tag]

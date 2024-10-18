@@ -31,8 +31,10 @@ class AttributesChangingStorageOperations(StorageOperations):
     def prepare_bucket_if_needed(self, region, storage_container):
         self.cloud_operations.prepare_bucket_if_needed(region, storage_container)
 
-    def list_objects_by_prefix(self, region, storage_container, list_versions=False, convert_paths=True):
+    def list_objects_by_prefix(self, region, storage_container, classes_to_list=None,
+                               list_versions=False, convert_paths=True):
         intermediate_result = self.cloud_operations.list_objects_by_prefix(region, storage_container,
+                                                                           classes_to_list=classes_to_list,
                                                                            list_versions=list_versions,
                                                                            convert_paths=convert_paths)
         for file in intermediate_result:
@@ -40,7 +42,8 @@ class AttributesChangingStorageOperations(StorageOperations):
                 file.storage_class = self.watched_files_by_storages[storage_container.bucket][file.path].storage_class
                 file.creation_date = file.creation_date - datetime.timedelta(
                     days=self.watched_files_by_storages[storage_container.bucket][file.path].storage_date_shift)
-        return intermediate_result
+
+        return [f for f in intermediate_result if classes_to_list is None or f.storage_class in classes_to_list]
 
     def tag_files_to_transit(self, region, storage_container, files, storage_class, transit_id):
         return self.cloud_operations.tag_files_to_transit(region, storage_container, files, storage_class, transit_id)

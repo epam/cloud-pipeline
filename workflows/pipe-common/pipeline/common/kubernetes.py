@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
@@ -37,6 +39,8 @@ class PodModel:
 class Kubernetes:
 
     def __init__(self):
+        if os.getenv('CP_PYKUBE_SKIP_REQUESTS_CA_BUNDLE', None) == "true":
+            os.environ['REQUESTS_CA_BUNDLE'] = ''
         self.__kube_api = HTTPClient(KubeConfig.from_service_account())
         self.__kube_api.session.verify = False
 

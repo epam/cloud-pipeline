@@ -41,6 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.util.TextUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -319,7 +320,7 @@ public class PipelineVersionManager {
     }
 
     private PipelineSourceItemVO createConfigVO(List<ConfigurationEntry> currentConfigurations,
-            String updatedConfig, String message) {
+            String updatedConfig, String message, String configPath) {
         String configContent;
         try {
             configContent = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(currentConfigurations);
@@ -327,7 +328,7 @@ public class PipelineVersionManager {
             throw new ConfigDecodingException(updatedConfig, e);
         }
         PipelineSourceItemVO source = new PipelineSourceItemVO();
-        source.setPath(CONFIG_FILE_NAME);
+        source.setPath(TextUtils.isEmpty(configPath) ? CONFIG_FILE_NAME : configPath);
         source.setContents(configContent);
         source.setComment(message);
         return source;
@@ -344,7 +345,8 @@ public class PipelineVersionManager {
 
     private List<ConfigurationEntry> saveUpdatedConfiguration(String configName, Pipeline pipeline,
             List<ConfigurationEntry> updatedConf, String message) throws GitClientException {
-        PipelineSourceItemVO configCommit = createConfigVO(updatedConf, configName, message);
+        PipelineSourceItemVO configCommit = createConfigVO(updatedConf, configName, message,
+                pipeline.getConfigurationPath());
         gitManager.modifyFile(pipeline, configCommit);
         return updatedConf;
     }

@@ -21,7 +21,7 @@ import classNames from 'classnames';
 import styles from './storage-pagination.css';
 
 function StoragePagination ({className, style, storage}) {
-  if (!storage || !storage.infoLoaded) {
+  if (!storage || !storage.infoLoaded || storage.filtersApplied) {
     return null;
   }
   return (

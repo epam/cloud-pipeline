@@ -58,6 +58,7 @@ pipe_log_info "Will localize any remotes from the config files, defined by the f
 CP_LOCALIZE_FROM_FILES_EXT="${CP_LOCALIZE_FROM_FILES_EXT:-*}"
 CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX="${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX:-_PARAM_TYPE_FROM_FILE}"
 CP_LOCALIZE_FROM_FILES_RE_PATTERN="${CP_LOCALIZE_FROM_FILES_RE_PATTERN:-((s3|gs|az):\/\/.*(,|;|$))}"
+CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE="${CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE:-1000}"
 
 pipe_log_info "--> Files extensions: $CP_LOCALIZE_FROM_FILES_EXT" "$LOCALIZE_FROM_FILES_TASK_NAME"
 pipe_log_info "--> Env vars suffix: $CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX" "$LOCALIZE_FROM_FILES_TASK_NAME"
@@ -178,7 +179,7 @@ for _path in ${_files_to_localize[@]}; do
 
         i=$((i+1))
 
-        if (($i>1000)); then
+        if (($i>$CP_LOCALIZE_FROM_FILES_MAX_ENTRIES_PER_FILE)); then
             pipe_log_warn "Looks like we've ran into an endless loop for ${_real_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
             break
         fi

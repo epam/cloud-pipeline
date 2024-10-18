@@ -58,6 +58,12 @@ public class GSJavaClientDataUploader extends AbstractDataUploader {
         upload(source.getPath(), destination.getPath(), destination.getCredentials());
     }
 
+    @Override
+    public void upload(StorageItem source, StorageItem destination, List<String> include, String username,
+                       boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix) {
+        upload(source.getPath(), destination.getPath(), destination.getCredentials());
+    }
+
     private void upload(String source, String destination, String credentials) {
         File sourceFile = new File(source);
         GoogleCredentials googleCredentials = GoogleCredentials.from(credentials);
@@ -87,6 +93,12 @@ public class GSJavaClientDataUploader extends AbstractDataUploader {
     @Override
     public void download(final StorageItem source, final StorageItem destination, final List<String> include,
                          final String username, final boolean deleteSource) {
+        download(source.getPath(), destination.getPath(), source.getCredentials());
+    }
+
+    @Override
+    public void download(StorageItem source, StorageItem destination, List<String> include, String username,
+                         boolean deleteSource, boolean logEnabled, String pipeCmd, String pipeCmdSuffix) {
         download(source.getPath(), destination.getPath(), source.getCredentials());
     }
 

@@ -26,6 +26,7 @@ import org.springframework.util.Assert;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -70,8 +71,7 @@ public class NFSStorageMounter {
     public synchronized File mount(final NFSDataStorage dataStorage) {
         try {
             final FileShareMount fileShareMount = shareMountManager.load(dataStorage.getFileShareMountId());
-            final File mntDir = getStorageMountRoot(dataStorage, fileShareMount);
-            final File rootMount = getShareRootMount(fileShareMount);
+            final File rootMount = getShareRootMount(dataStorage, fileShareMount);
             if (!rootMount.exists()) {
                 Assert.isTrue(rootMount.mkdirs(), messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT_DIRECTORY_NOT_CREATED));
@@ -87,7 +87,10 @@ public class NFSStorageMounter {
                 final String mountOptions = NFSHelper.getNFSMountOption(cloudRegion, credentials,
                         defaultMountOptions, protocol);
 
-                final String rootNfsPath = formatNfsPath(fileShareMount.getMountRoot(), protocol);
+                final String rootNfsPath = formatNfsPath(
+                        dataStorage.isMountExactPath() ? dataStorage.getPath() : fileShareMount.getMountRoot(),
+                        protocol
+                );
 
                 final String mountCmd = String.format(NFS_MOUNT_CMD_PATTERN, protocol, mountOptions,
                         rootNfsPath, rootMount.getAbsolutePath());
@@ -102,8 +105,7 @@ public class NFSStorageMounter {
                             dataStorage.getPath()), e);
                 }
             }
-            String storageName = getStorageName(dataStorage.getPath());
-            return new File(mntDir, storageName);
+            return getStorageMountPath(dataStorage, fileShareMount);
         } catch (IOException e) {
             throw new DataStorageException(messageHelper.getMessage(
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NFS_MOUNT, dataStorage.getName(),
@@ -111,11 +113,13 @@ public class NFSStorageMounter {
         }
     }
 
-    public synchronized void unmountNFSIfEmpty(AbstractDataStorage storage) {
+    public synchronized void unmountNFSIfEmpty(NFSDataStorage storage) {
         final FileShareMount fileShareMount = shareMountManager.load(storage.getFileShareMountId());
-        final File rootMount = getShareRootMount(fileShareMount);
-        final List<AbstractDataStorage> remaining = dataStorageDao.loadDataStoragesByFileShareMountID(
-                storage.getFileShareMountId());
+        final File rootMount = getShareRootMount(storage, fileShareMount);
+        // if mount exact path, storage will be mounted to the unique dir
+        final List<AbstractDataStorage> remaining = storage.isMountExactPath()
+                ? Collections.singletonList(storage)
+                : dataStorageDao.loadDataStoragesByFileShareMountID(storage.getFileShareMountId());
         LOGGER.debug("Remaining NFS: " + remaining.stream().map(AbstractDataStorage::getPath)
                 .collect(Collectors.joining(";")) + " related with current file share mount");
 
@@ -143,14 +147,27 @@ public class NFSStorageMounter {
         }
     }
 
-    private File getStorageMountRoot(final NFSDataStorage dataStorage, final FileShareMount fileShareMount) {
-        final String storageMountPath = normalizeMountPath(fileShareMount.getMountType(),
-                getNfsRootPath(dataStorage.getPath()));
-        return Paths.get(rootMountPoint, storageMountPath).toFile();
+    private File getStorageMountPath(final NFSDataStorage storage, final FileShareMount fileShareMount) {
+        if (storage.isMountExactPath()) {
+            final String flatStorageMountPAth =
+                    normalizeMountPath(fileShareMount.getMountType(), storage.getPath(), true);
+            return Paths.get(rootMountPoint, flatStorageMountPAth).toFile();
+        } else {
+            final String storageMountPath = normalizeMountPath(fileShareMount.getMountType(),
+                    getNfsRootPath(storage.getPath()));
+            return Paths.get(rootMountPoint, storageMountPath, getStorageName(storage.getPath())).toFile();
+        }
     }
 
-    private File getShareRootMount(final FileShareMount fileShareMount) {
-        final String shareMountPath = normalizeMountPath(fileShareMount.getMountType(), fileShareMount.getMountRoot());
+    private File getShareRootMount(final NFSDataStorage storage, final FileShareMount fileShareMount) {
+        final String shareMountPath;
+        if (storage.isMountExactPath()) {
+            shareMountPath = normalizeMountPath(
+                    fileShareMount.getMountType(), storage.getPath(), true);
+        } else {
+            shareMountPath = normalizeMountPath(
+                    fileShareMount.getMountType(), fileShareMount.getMountRoot());
+        }
         return Paths.get(rootMountPoint, shareMountPath).toFile();
     }
 

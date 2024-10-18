@@ -179,3 +179,17 @@ export function getParameterAllowedStructs (parameter) {
   }
   return (parameter && parameter.document ? parameter.document.globalStructs : []) || [];
 }
+
+export function generateNewRuntimePropertyName (runtime = []) {
+  let newPropertyName = `property`;
+  let propertyIndex = 0;
+  const generateProperty = () => propertyIndex
+    ? `${newPropertyName}_${propertyIndex}`
+    : newPropertyName;
+  let result = generateProperty();
+  while (runtime.find(r => r.property === result)) {
+    propertyIndex += 1;
+    result = generateProperty();
+  }
+  return result;
+}

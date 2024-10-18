@@ -67,8 +67,10 @@ def setup_function():
     not_initialized_run = {'initialized': False, 'podId': HOSTNAME}
     initialized_pod_run = {'initialized': False, 'podId': HOSTNAME, 'podIP': POD_IP}
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
-    api.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
+    api.load_run_efficiently = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
     api.load_task = MagicMock(return_value=[{'status': 'SUCCESS'}])
+    api.token = Mock()
+    api.token.get = MagicMock(return_value='token')
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
     instance_helper.select_instance = MagicMock(return_value=
         Instance.from_cp_response({
@@ -91,8 +93,8 @@ def setup_function():
 def test_waiting_for_run_to_initialize():
     scale_up_handler.scale_up(instance, owner, run_id_queue)
 
-    api.load_run.assert_called()
-    assert api.load_run.call_count == 9
+    api.load_run_efficiently.assert_called()
+    assert api.load_run_efficiently.call_count == 9
 
 
 def test_enabling_worker_in_grid_engine():

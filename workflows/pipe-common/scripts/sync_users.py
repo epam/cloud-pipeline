@@ -25,7 +25,8 @@ import sys
 import time
 
 from pipeline.api import PipelineAPI, APIError
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.api.token import RefreshingToken
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ResilientLogger
 from pipeline.utils.account import create_user
 from pipeline.utils.path import mkdir
 from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
@@ -457,11 +458,12 @@ def get_daemon():
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
-    api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
+    api = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     executor = LocalExecutor()
     executor = LoggingExecutor(logger=logger, inner=executor)

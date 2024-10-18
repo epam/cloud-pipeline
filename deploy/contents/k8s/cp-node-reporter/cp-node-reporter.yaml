@@ -60,6 +60,10 @@ spec:
           value: "10"
         - name: CP_RESOURCES_DIR
           value: "/opt/node-reporter/resources"
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
       volumes:
       - name: cp-node-reporter-logs
         hostPath:

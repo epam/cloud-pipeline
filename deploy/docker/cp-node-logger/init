@@ -35,6 +35,13 @@ chmod +x /pipe
                  --timezone local \
                  --proxy ''
 
+export CP_NODE_LOGGER_SYNC_MODE=${CP_NODE_LOGGER_SYNC_MODE:-"mount"}
+export CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED=${CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED:-false}
+if [ "$CP_NODE_LOGGER_SYNC_MODE_AUDIT_ENABLED" == "false" ]; then
+    # Disable audit for pipe-fuse
+    export CP_PIPE_FUSE_AUDIT_BUFFER_TTL="-1"
+fi
+
 echo "Getting system storage name"
 if [ -z "$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME" ]; then
     echo "Trying to get a system storage name from the API preference"
@@ -53,9 +60,21 @@ else
     CP_LOGGER_SYSTEM_STORAGE_NAME=$CP_PREF_STORAGE_SYSTEM_STORAGE_NAME
 fi
 
+echo "CP_NODE_LOGGER_SYNC_MODE configured as ${CP_NODE_LOGGER_SYNC_MODE}."
 CP_PREF_STORAGE_SCHEMA=${CP_PREF_STORAGE_SCHEMA:-"cp"}
 CP_LOGGER_CYCLE_TIMEOUT=${CP_LOGGER_CYCLE_TIMEOUT:-30}
 CP_LOGGER_SOURCE_DIRECTORY=${CP_LOGGER_SOURCE_DIRECTORY:-"/var/log/kubelet"}
+
+if [ "$CP_NODE_LOGGER_SYNC_MODE" == "mount" ]; then
+  CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY=${CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY:-"/opt/system-storage-mountpoint"}
+  mkdir -p "$CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY"
+  /pipe storage mount -b "$CP_LOGGER_SYSTEM_STORAGE_NAME" -m 640 "$CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY"
+  if [ "$?" -ne 0 ]; then
+    echo "Failed to mount $CP_LOGGER_SYSTEM_STORAGE_NAME to ${CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY}. CP_NODE_LOGGER_SYNC_MODE will be changed to 'copy'."
+    export CP_NODE_LOGGER_SYNC_MODE="copy"
+  fi
+fi
+
 echo "Starting copy loop. Logs transfer will occur each $CP_LOGGER_CYCLE_TIMEOUT seconds"
 while : ; do
     if [ ! -d "$CP_LOGGER_SOURCE_DIRECTORY" ]; then
@@ -66,12 +85,17 @@ while : ; do
         IFS="." read -ra log_file_parts <<< $(ls $CP_LOGGER_SOURCE_DIRECTORY/kubelet.*.log.* | head -n 1)
         CP_LOGGER_NODE_NAME="${log_file_parts[1]}"
 
-        CP_LOGGER_COPY_CMD="/pipe storage cp \"$CP_LOGGER_SOURCE_DIRECTORY/\" \
-                            \"$CP_PREF_STORAGE_SCHEMA://$CP_LOGGER_SYSTEM_STORAGE_NAME/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\" \
-                            --recursive \
-                            --force  \
-                            --include \"kubelet.*.log.*\" \
-                            --quiet"
+        if [ "$CP_NODE_LOGGER_SYNC_MODE" == "mount" ]; then
+          CP_LOGGER_COPY_CMD="cp -uf \$(find $CP_LOGGER_SOURCE_DIRECTORY -name 'kubelet.*.log.*') \
+                              \"$CP_LOGGER_SYSTEM_STORAGE_MOUNT_DIRECTORY/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\""
+        else
+          CP_LOGGER_COPY_CMD="/pipe storage cp \"$CP_LOGGER_SOURCE_DIRECTORY/\" \
+                              \"$CP_PREF_STORAGE_SCHEMA://$CP_LOGGER_SYSTEM_STORAGE_NAME/logs/nodes/$CP_LOGGER_NODE_NAME/$(basename $CP_LOGGER_SOURCE_DIRECTORY)/\" \
+                              --recursive \
+                              --force  \
+                              --include \"kubelet.*.log.*\" \
+                              --quiet"
+        fi
         echo "Copying logs using a command:"
         echo "$CP_LOGGER_COPY_CMD"
         eval $CP_LOGGER_COPY_CMD

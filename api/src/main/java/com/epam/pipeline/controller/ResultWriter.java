@@ -27,7 +27,11 @@ public class ResultWriter {
     }
 
     public void write(final HttpServletResponse response) throws IOException {
-        consumer.accept(response.getOutputStream());
+        write(response.getOutputStream());
+    }
+
+    public void write(final OutputStream os) throws IOException {
+        consumer.accept(os);
     }
 
     public interface IOConsumer<T> {

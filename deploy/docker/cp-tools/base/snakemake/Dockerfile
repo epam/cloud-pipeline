@@ -89,7 +89,7 @@ RUN yum -y install lizardfs-master lizardfs-chunkserver lizardfs-client
 
 ########################################################################
 
-RUN wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh && \
+RUN wget "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/miniconda.sh --no-check-certificate && \
     bash /tmp/miniconda.sh -b -p /opt/local/miniconda && \
     rm -f /tmp/miniconda.sh && \
     source /opt/local/miniconda/etc/profile.d/conda.sh && \

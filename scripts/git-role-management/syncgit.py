@@ -89,7 +89,7 @@ def main(argv):
             configure(argv[1:])
         elif command == 'sync':
             try:
-                config = Config.instance()
+                config = Config.instance(show=True)
                 if config.api is None:
                     print 'API path is not configured'
                     help()
@@ -112,7 +112,7 @@ def main(argv):
             print 'Synchronization time: {} seconds'.format(time.time() - start)
         elif command == 'sync-users':
             try:
-                config = Config.instance()
+                config = Config.instance(show=True)
                 if config.api is None:
                     print 'API path is not configured'
                     help()
@@ -135,7 +135,7 @@ def main(argv):
             print 'Synchronization time: {} seconds'.format(time.time() - start)
         elif command == 'purge':
             try:
-                config = Config.instance()
+                config = Config.instance(show=True)
                 if config.api is None:
                     print 'API path is not configured'
                     help()

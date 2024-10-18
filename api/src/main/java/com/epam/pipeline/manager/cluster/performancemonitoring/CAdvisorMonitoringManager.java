@@ -22,6 +22,8 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.NodeInstanceAddress;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import com.epam.pipeline.entity.cluster.monitoring.RawMonitoringStats;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMetricsGranularity;
+import com.epam.pipeline.entity.cluster.monitoring.gpu.GpuMonitoringStats;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.MonitoringReportType;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -112,6 +114,14 @@ public class CAdvisorMonitoringManager implements UsageMonitoringManager {
         final LocalDateTime start = Optional.ofNullable(from).orElse(LocalDateTime.MIN);
         final LocalDateTime end = Optional.ofNullable(to).orElse(LocalDateTime.MAX);
         return getStats(nodeName, start, end);
+    }
+
+    @Override
+    public GpuMonitoringStats getGpuStatsForNode(final String nodeName, final LocalDateTime from,
+                                                 final LocalDateTime to,
+                                                 final List<GpuMetricsGranularity> granularity,
+                                                 final boolean squashCharts) {
+        throw new UnsupportedOperationException("GPU statistic is not available for CAdvisor metrics");
     }
 
     @Override

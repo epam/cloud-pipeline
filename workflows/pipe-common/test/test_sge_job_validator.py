@@ -59,9 +59,9 @@ def test_validate_empty_jobs():
 
 def test_validate_valid_jobs():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=2, gpu=3, mem=4, pe=LOCAL_PE),
-        GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
+        GridEngineJob(id='2', root_id='2', name='', user='', state='', datetime='',
                       cpu=20, gpu=30, mem=40, pe=MPI_PE),
     ]
 
@@ -73,9 +73,9 @@ def test_validate_valid_jobs():
 
 def test_validate_invalid_jobs():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=3, gpu=4, mem=5, pe=LOCAL_PE),
-        GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
+        GridEngineJob(id='2', root_id='2', name='', user='', state='', datetime='',
                       cpu=30, gpu=40, mem=50, pe=MPI_PE),
     ]
 
@@ -87,13 +87,13 @@ def test_validate_invalid_jobs():
 
 def test_validate_both_valid_invalid_jobs():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=2, gpu=3, mem=4, pe=LOCAL_PE),
-        GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='',
+        GridEngineJob(id='2', root_id='2', name='', user='', state='', datetime='',
                       cpu=3, gpu=4, mem=5, pe=LOCAL_PE),
-        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+        GridEngineJob(id='3', root_id='3', name='', user='', state='', datetime='',
                       cpu=20, gpu=30, mem=40, pe=MPI_PE),
-        GridEngineJob(id='4', root_id=4, name='', user='', state='', datetime='',
+        GridEngineJob(id='4', root_id='4', name='', user='', state='', datetime='',
                       cpu=30, gpu=40, mem=50, pe=MPI_PE),
     ]
 
@@ -105,9 +105,9 @@ def test_validate_both_valid_invalid_jobs():
 
 def test_validate_invalid_cpu_job():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=100, gpu=3, mem=4, pe=LOCAL_PE),
-        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+        GridEngineJob(id='3', root_id='3', name='', user='', state='', datetime='',
                       cpu=100, gpu=30, mem=40, pe=MPI_PE),
     ]
 
@@ -119,9 +119,9 @@ def test_validate_invalid_cpu_job():
 
 def test_validate_invalid_gpu_job():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=2, gpu=100, mem=4, pe=LOCAL_PE),
-        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+        GridEngineJob(id='3', root_id='3', name='', user='', state='', datetime='',
                       cpu=20, gpu=100, mem=40, pe=MPI_PE),
     ]
 
@@ -133,9 +133,9 @@ def test_validate_invalid_gpu_job():
 
 def test_validate_invalid_mem_job():
     jobs = [
-        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='',
+        GridEngineJob(id='1', root_id='1', name='', user='', state='', datetime='',
                       cpu=2, gpu=3, mem=100, pe=LOCAL_PE),
-        GridEngineJob(id='3', root_id=3, name='', user='', state='', datetime='',
+        GridEngineJob(id='3', root_id='3', name='', user='', state='', datetime='',
                       cpu=20, gpu=30, mem=100, pe=MPI_PE),
     ]
 

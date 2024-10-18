@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import re
 
 
 def determinate_prefix_from_glob(_glob_str):
@@ -62,3 +63,4 @@ def join_paths(prefix, suffix, delimiter="/"):
     formatted_prefix = prefix[:-len(delimiter)] if prefix.endswith(delimiter) else prefix
     formatted_suffix = suffix[len(delimiter)::] if suffix.startswith(delimiter) else suffix
     return delimiter.join([formatted_prefix, formatted_suffix])
+

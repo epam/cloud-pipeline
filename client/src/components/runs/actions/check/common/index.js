@@ -102,6 +102,7 @@ export default function generateProvider (options) {
         (
           prevProps.objectId !== this.props.objectId ||
           prevProps.active !== this.props.active ||
+          prevProps.skipContainerCheck !== this.props.skipContainerCheck ||
           !checkOptionsComparator(prevProps.options, this.props.options)
         ) &&
         this.props.active
@@ -111,13 +112,13 @@ export default function generateProvider (options) {
     }
 
     checkRun () {
-      const {active, objectId, options} = this.props;
+      const {active, objectId, options, skipContainerCheck = false} = this.props;
       this.storeObj.objectId = objectId;
       this.storeObj.options = options;
       if (active && objectId && typeof check === 'function') {
         this.storeObj.pending = true;
         this.storeObj.checkResult = {result: false};
-        asyncFunctionCall(check, objectId, options)
+        asyncFunctionCall(check, objectId, options, skipContainerCheck)
           .catch(() => Promise.resolve(false))
           .then(result => {
             if (
@@ -150,7 +151,8 @@ export default function generateProvider (options) {
     objectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     options: PropTypes.any,
     children: PropTypes.node,
-    active: PropTypes.bool
+    active: PropTypes.bool,
+    skipContainerCheck: PropTypes.bool
   };
 
   RunOperationCheckProvider.defaultProps = {
@@ -187,9 +189,10 @@ export default function generateProvider (options) {
       checkResult = {}
     } = getCheckInfo(props);
     const {
-      result
+      result,
+      message: checkResultMessage = []
     } = checkResult;
-    if (pending || result) {
+    if (pending || (result && !checkResultMessage.length)) {
       return null;
     }
     return (
@@ -198,7 +201,7 @@ export default function generateProvider (options) {
         style={style}
         type={type}
         showIcon={showIcon}
-        message={warning}
+        message={checkResultMessage || warning}
         checkResult={checkResult}
       />
     );

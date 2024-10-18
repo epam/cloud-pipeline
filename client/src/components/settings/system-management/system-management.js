@@ -15,13 +15,19 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
+import {observer} from 'mobx-react';
 import {Modal} from 'antd';
 
+import roleModel from '../../../utils/roleModel';
 import SystemLogs from './system-logs';
 import NATGateway from './nat-gateway-configuration/nat-gateway-configuration';
 import SystemJobs from './system-jobs';
 import SubSettings from '../sub-settings';
+import DtsManagement from './dts';
 
+@roleModel.authenticationInfo
+@observer
 export default class SystemManagement extends React.Component {
   state={
     modified: false,
@@ -39,6 +45,27 @@ export default class SystemManagement extends React.Component {
     this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
   }
 
+  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo &&
+      authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  @computed
+  get dtsAllowed () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo &&
+      authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin ||
+        roleModel.isManager.dtsManager(this);
+    }
+    return false;
+  }
+
   handleModified = (modified) => {
     if (this.state.modified !== modified) {
       this.setState({modified});
@@ -53,7 +80,8 @@ export default class SystemManagement extends React.Component {
           style: {
             wordWrap: 'break-word'
           },
-          onOk () {
+          onOk: () => {
+            this.setState({modified: false});
             resolve(true);
           },
           onCancel () {
@@ -96,23 +124,32 @@ export default class SystemManagement extends React.Component {
     return (
       <SubSettings
         sections={[
-          {
-            key: 'logs',
-            title: 'LOGS',
-            default: true,
-            render: () => (<SystemLogs />)
-          },
-          {
-            key: 'nat',
-            title: 'NAT GATEWAY',
-            render: () => (<NATGateway handleModified={this.handleModified} />)
-          },
-          {
-            key: 'jobs',
-            title: 'SYSTEM JOBS',
-            render: () => (<SystemJobs router={this.props.router} />)
-          }
-        ]}
+          ...(this.isAdmin ? [
+            {
+              key: 'logs',
+              title: 'LOGS',
+              default: true,
+              render: () => (<SystemLogs />)
+            },
+            {
+              key: 'nat',
+              title: 'NAT GATEWAY',
+              render: () => (<NATGateway handleModified={this.handleModified} />)
+            },
+            {
+              key: 'jobs',
+              title: 'SYSTEM JOBS',
+              render: () => (<SystemJobs router={this.props.router} />)
+            }
+          ] : []),
+          this.dtsAllowed ? (
+            {
+              key: 'dts',
+              title: 'DTS',
+              render: () => (<DtsManagement handleModified={this.handleModified} />)
+            }
+          ) : undefined
+        ].filter(Boolean)}
         router={this.props.router}
         canNavigate={this.confirmChangeURL}
         root="system"

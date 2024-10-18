@@ -36,7 +36,7 @@ public interface PipelineCLI {
     }
 
     default String uploadData(String source, String destination, List<String> include, String username) {
-        return uploadData(source, destination, include, username, false);
+        return uploadData(source, destination, include, username, false, false, null, null);
     }
 
     /**
@@ -46,7 +46,8 @@ public interface PipelineCLI {
      * @param destination Destination S3 file path.
      * @return Url of the file in bucket.
      */
-    String uploadData(String source, String destination, List<String> include, String username, boolean deleteSource);
+    String uploadData(String source, String destination, List<String> include, String username, boolean deleteSource,
+                      boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
 
     default void downloadData(String source, Path destination) {
         downloadData(source, destination.toString());
@@ -61,7 +62,7 @@ public interface PipelineCLI {
     }
 
     default void downloadData(String source, String destination, List<String> include, String username) {
-        downloadData(source, destination, include, username, false);
+        downloadData(source, destination, include, username, false, false, null, null);
     }
 
     /**
@@ -70,7 +71,8 @@ public interface PipelineCLI {
      * @param source S3 file path.
      * @param destination Path to a file to be downloaded.
      */
-    void downloadData(String source, String destination, List<String> include, String username, boolean deleteSource);
+    void downloadData(String source, String destination, List<String> include, String username, boolean deleteSource,
+                      boolean logEnabled, String pipeCmd, String pipeCmdSuffix);
 
     /**
      * Retrieves a remote file description if one exists.

@@ -69,8 +69,8 @@ public class FSRequester extends AbstractMetricRequester {
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .subAggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                         .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
-                                        .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT))
-                                        .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE)))));
+                                        .subAggregation(average(LIMIT, LIMIT))
+                                        .subAggregation(average(USAGE, USAGE)))));
     }
 
     @Override
@@ -112,8 +112,8 @@ public class FSRequester extends AbstractMetricRequester {
                         .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                 .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
-                                        .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))
-                                        .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT)))));
+                                        .subAggregation(average(USAGE, USAGE))
+                                        .subAggregation(average(LIMIT, LIMIT)))));
     }
 
     @Override

@@ -30,4 +30,7 @@ public class TaskCreationDTO {
     private StorageItemWithCredentialsDTO destination;
     private List<String> included = new ArrayList<>();
     private boolean deleteSource;
+    private boolean logEnabled;
+    private String pipeCmd;
+    private String pipeCmdSuffix;
 }

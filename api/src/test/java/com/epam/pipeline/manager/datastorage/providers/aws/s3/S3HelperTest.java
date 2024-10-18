@@ -23,9 +23,11 @@ import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.providers.StorageEventCollector;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -60,6 +63,8 @@ public class S3HelperTest {
     private static final String SIZE_EXCEEDS_EXCEPTION_MESSAGE = "size exceeds the limit";
     private static final String ARCHIVE_STORAGE_EXCEPTION_MESSAGE = "storage class";
     public static final String DEEP_ARCHIVE = "DEEP_ARCHIVE";
+    public static final String X_AMZ_STORAGE_CLASS = "x-amz-storage-class";
+    public static final String MOCK_MESSAGE = "mock message";
 
 
     private final AmazonS3 amazonS3 = mock(AmazonS3.class);
@@ -139,6 +144,20 @@ public class S3HelperTest {
 
         assertThrows(e -> e instanceof DataStorageException && e.getMessage().contains(SIZE_EXCEEDS_EXCEPTION_MESSAGE),
             () -> helper.moveFile(storage, OLD_PATH, NEW_PATH));
+    }
+
+    @Test
+    public void testVerifyArchiveStateWorksCorrectlyWithRestoredFiles() {
+        when(messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ARCHIVE_ACCESS)).thenReturn(MOCK_MESSAGE);
+        ObjectMetadata fileMetadata = new ObjectMetadata();
+        fileMetadata.setHeader(X_AMZ_STORAGE_CLASS, DEEP_ARCHIVE);
+        assertThrows(DataStorageException.class, () -> helper.verifyArchiveState(fileMetadata));
+
+        fileMetadata.setRestoreExpirationTime(Date.from(DateUtils.now().toInstant().minus(1, ChronoUnit.MINUTES)));
+        assertThrows(DataStorageException.class, () -> helper.verifyArchiveState(fileMetadata));
+
+        fileMetadata.setRestoreExpirationTime(Date.from(DateUtils.now().toInstant().plus(1, ChronoUnit.MINUTES)));
+        helper.verifyArchiveState(fileMetadata);
     }
 
     @Test

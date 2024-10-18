@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,6 +195,7 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     @TestCase("EPMCMBIBPC-337")
     public void expandFolderTest() {
         pipelinesLibrary()
+            .performIf(parentItem, expandedItem, tree -> tree.click(switcherOf(parentItem)))
             .ensure(parentItem, collapsedItem)
             .ensure(childItem, not(visible))
             .click(switcherOf(parentItem))
@@ -242,9 +243,11 @@ public class FolderNavigationTest extends AbstractAutoRemovingPipelineRunningTes
     @TestCase("EPMCMBIBPC-394")
     public void collapsePipelineTest() {
         pipelinesLibrary()
+            .scrollToItem(parentFolder)
             .click(parentItem)
             .click(childItem)
             .click(pipelineItem)
+            .waitUntilPipelineVersionsOpened(pipeline)
             .ensure(pipelineItem, expandedItem, selectedItem, backgroundColorNotBlackOrWhite)
             .click(switcherOf(pipelineItem))
             .ensure(pipelineItem, collapsedItem, selectedItem, backgroundColorNotBlackOrWhite)

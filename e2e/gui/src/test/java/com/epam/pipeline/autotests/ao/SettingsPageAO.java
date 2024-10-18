@@ -1792,6 +1792,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     }
 
     private void addAllowedLaunchOptions(final String option, final String mask) {
+        $(byText("Allowed price types")).shouldBe(visible, enabled);
         final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);

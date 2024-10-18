@@ -26,7 +26,9 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-echo "Executing Cloud Pipeline prolog script as $(whoami)..."
+exec &> >(tee -a "${COMMON_DIR:-/common}/sge/logs/${HOSTNAME}_prolog_${JOB_ID}")
+
+echo "Executing Cloud Pipeline prolog script as $(whoami) on ${HOSTNAME} for job ${JOB_ID}..."
 
 JOB_ENV_FILE="$SGE_JOB_SPOOL_DIR/environment"
 
@@ -54,9 +56,10 @@ for GPU_DEVICE in "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/total/"*; do
         echo "NOT OK"
         continue
     fi
-    echo "OK"
+    mkdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE/$JOB_ID"
     JOB_GPU_DEVICES="$JOB_GPU_DEVICES $GPU_DEVICE"
     JOB_GPU_DEVICES_NUMBER="$(( JOB_GPU_DEVICES_NUMBER + 1 ))"
+    echo "OK"
     if [ "$JOB_GPU_DEVICES_NUMBER" -ge "$JOB_GPUS_NUMBER" ]; then
         break
     fi
@@ -66,7 +69,8 @@ if [ "$JOB_GPU_DEVICES_NUMBER" -lt "$JOB_GPUS_NUMBER" ]; then
     echo "ERROR: Insufficient amount of available GPU devices at $CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU ($JOB_GPU_DEVICES_NUMBER/$JOB_GPUS_NUMBER)"
     for GPU_DEVICE in $JOB_GPU_DEVICES; do
         echo -n "Releasing GPU device $GPU_DEVICE... "
-        if ! rmdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE" 2>/dev/null; then
+        if ! rmdir "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE/$JOB_ID" \
+                   "$CP_CAP_GE_CONSUMABLE_RESOURCE_LOCKS_GPU/inuse/$GPU_DEVICE" 2>/dev/null; then
             echo "NOT OK"
             continue
         fi

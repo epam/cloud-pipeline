@@ -17,6 +17,7 @@
 import React from 'react';
 
 const HighConsumedResourcesType = 'HIGH_CONSUMED_RESOURCES';
+const HighConsumedNetworkBandwidthType = 'HIGH_CONSUMED_NETWORK_BANDWIDTH';
 const IdleRunType = 'IDLE_RUN';
 const IdleRunPausedType = 'IDLE_RUN_PAUSED';
 const IdleRunStoppedType = 'IDLE_RUN_STOPPED';
@@ -25,6 +26,7 @@ const LongPausedStoppedType = 'LONG_PAUSED_STOPPED';
 
 const NotificationTypes = {
   HighConsumedResourcesType,
+  HighConsumedNetworkBandwidthType,
   IdleRunType,
   IdleRunPausedType,
   IdleRunStoppedType,
@@ -221,6 +223,59 @@ const SystemNotificationsExcludeParamsPreference = {
   )
 };
 
+// system.max.pod.bandwidth.minutes
+const SystemMaxPodBandwidthMinutesPreference = {
+  preference: 'system.max.pod.bandwidth.minutes',
+  type: 'number',
+  min: 0,
+  name: 'Network bandwidth measurement period (min)',
+  hint: (
+    <div>
+      Network bandwidth is calculated as an average within specified <b>period</b>
+    </div>
+  )
+};
+// system.pod.bandwidth.limit
+const SystemPodBandwidthLimitPreference = {
+  preference: 'system.pod.bandwidth.limit',
+  type: 'number',
+  min: 0,
+  name: 'Network bandwidth limit (bytes/sec)',
+  hint: (
+    <div>
+      If the network bandwidth is more than specified <b>limit</b>,
+      the configured <b>action</b> will be performed
+    </div>
+  )
+};
+// system.pod.bandwidth.action
+const SystemPodBandwidthActionPreference = {
+  preference: 'system.pod.bandwidth.action',
+  type: 'enum',
+  name: 'Action',
+  enum: ['NOTIFY', 'LIMIT_BANDWIDTH'],
+  hint: (
+    <div>
+      Sets the <b>action</b> to perform with the instance having the high network bandwidth
+      (above the configured limit).
+    </div>
+  )
+};
+// system.pod.bandwidth.action.backoff.period
+const SystemPodBandwidthActionBackoffPeriodPreference = {
+  preference: 'system.pod.bandwidth.action.backoff.period',
+  type: 'number',
+  min: -1,
+  name: 'Action delay (min)',
+  hint: (
+    <div>
+      <b>Specifies a duration in minutes.</b><br />
+      This duration starts after the <b>high network bandwidth</b> event is registered.<br />
+      This is a delay before the configured action will be performed.
+    </div>
+  )
+};
+
 const Preferences = [
   SystemDiskConsumeThresholdPreference,
   SystemMemoryConsumeThresholdPreference,
@@ -232,13 +287,23 @@ const Preferences = [
   SystemLongPausedActionTimeoutMinutesPreference,
   SystemLongPausedActionPreference,
   SystemNotificationsExcludeInstanceTypesPreference,
-  SystemNotificationsExcludeParamsPreference
+  SystemNotificationsExcludeParamsPreference,
+  SystemMaxPodBandwidthMinutesPreference,
+  SystemPodBandwidthLimitPreference,
+  SystemPodBandwidthActionPreference,
+  SystemPodBandwidthActionBackoffPeriodPreference
 ];
 
 const NotificationPreferences = {
   [HighConsumedResourcesType]: [
     SystemDiskConsumeThresholdPreference.preference,
     SystemMemoryConsumeThresholdPreference.preference
+  ],
+  [HighConsumedNetworkBandwidthType]: [
+    SystemMaxPodBandwidthMinutesPreference.preference,
+    SystemPodBandwidthLimitPreference.preference,
+    SystemPodBandwidthActionPreference.preference,
+    SystemPodBandwidthActionBackoffPeriodPreference.preference
   ],
   [IdleRunType]: [
     SystemMaxIdleTimeoutMinutesPreference.preference,

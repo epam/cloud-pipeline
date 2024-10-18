@@ -22,6 +22,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -37,14 +38,18 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.google.common.collect.Maps;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -66,6 +71,8 @@ import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE_STRING;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_NAME_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
@@ -92,6 +99,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("unused")
 public class PipelineRunManagerUnitTest {
     private static final Long RUN_ID = 1L;
     private static final long NOT_EXISTING_RUN_ID = -1L;
@@ -105,6 +113,8 @@ public class PipelineRunManagerUnitTest {
     private static final String PROCESSED_VALUE = "Processed";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    public static final String DOCKER_IMAGE = "Docker Image";
+    private static final int MAX_PAGE_SIZE = 100;
 
     @Mock
     private NodesManager nodesManager;
@@ -148,6 +158,9 @@ public class PipelineRunManagerUnitTest {
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
+
+    @Mock
+    private MetadataManager metadataManager;
 
     private final Map<String, String> envVars = singletonMap(ENV_VAR_NAME, ENV_VAR_VALUE);
     private final List<PipelineRunParameter> parameters = singletonList(
@@ -445,6 +458,83 @@ public class PipelineRunManagerUnitTest {
                 .contains(expectedRestartRun2);
     }
 
+    @Test
+    public void shouldLoadActiveRunsChart() {
+        final RunChartInfoEntity runningUser1 = runningChart(RunChartInfoEntity.ColumnName.owner, TEST_NAME);
+        final RunChartInfoEntity runningUser2 = runningChart(RunChartInfoEntity.ColumnName.owner, TEST_NAME_2);
+        final RunChartInfoEntity pausingUser = pausingChart(RunChartInfoEntity.ColumnName.owner, TEST_NAME);
+
+        final RunChartInfoEntity runningDocker1 = runningChart(RunChartInfoEntity.ColumnName.docker_image, TEST_NAME);
+        final RunChartInfoEntity runningDocker2 = runningChart(RunChartInfoEntity.ColumnName.docker_image, TEST_NAME_2);
+        final RunChartInfoEntity pausingDocker = pausingChart(RunChartInfoEntity.ColumnName.docker_image, TEST_NAME);
+
+        final RunChartInfoEntity runningInstance1 = runningChart(RunChartInfoEntity.ColumnName.node_type, TEST_NAME);
+        final RunChartInfoEntity runningInstance2 = runningChart(RunChartInfoEntity.ColumnName.node_type, TEST_NAME_2);
+        final RunChartInfoEntity pausingInstance = pausingChart(RunChartInfoEntity.ColumnName.node_type, TEST_NAME);
+
+        final RunChartInfoEntity runningTags1 = runningChart(RunChartInfoEntity.ColumnName.tags, TEST_NAME);
+        final RunChartInfoEntity runningTags2 = runningChart(RunChartInfoEntity.ColumnName.tags, TEST_NAME_2);
+        final RunChartInfoEntity pausingTags = pausingChart(RunChartInfoEntity.ColumnName.tags, TEST_NAME);
+
+        final RunChartFilterVO runChartFilterVO = new RunChartFilterVO();
+        runChartFilterVO.setStatuses(Arrays.asList(TaskStatus.RUNNING, TaskStatus.PAUSING, TaskStatus.PAUSED,
+                        TaskStatus.RESUMING));
+        final List<RunChartInfoEntity> entities = Arrays.asList(
+                runningUser1, runningUser2, pausingUser,
+                runningDocker1, runningDocker2, pausingDocker,
+                runningInstance1, runningInstance2, pausingInstance,
+                runningTags1, runningTags2, pausingTags);
+        doReturn(entities).when(pipelineRunDao).loadRunsCharts(runChartFilterVO);
+
+        final RunChartInfo resultChart = pipelineRunManager.loadActiveRunsCharts(new RunChartFilterVO());
+        assertRunChartElements(resultChart.getOwners());
+        assertRunChartElements(resultChart.getDockerImages());
+        assertRunChartElements(resultChart.getInstanceTypes());
+        assertRunChartElements(resultChart.getTags());
+    }
+
+    @Test
+    public void testShouldExportPipelineRuns() {
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(10);
+
+        final RunInstance runInstance = new RunInstance();
+        runInstance.setNodeType("node_type");
+
+        final PipelineRun parentRun = pipelineRun(ID, DOCKER_IMAGE);
+
+        final PipelineRun pipelineRun1 = pipelineRun(ID_2, DOCKER_IMAGE);
+        pipelineRun1.setPipelineName("Pipeline name");
+        pipelineRun1.setVersion("draft");
+        pipelineRun1.setInstance(runInstance);
+
+        final PipelineRun pipelineRun2 = pipelineRun(ID_3, DOCKER_IMAGE);
+        final Map<String, String> tags = new HashMap<>();
+        tags.put("key", "value");
+        tags.put("key1", "value1");
+        pipelineRun2.setTags(tags);
+
+        final PipelineRun pipelineRun3 = pipelineRun(ID_4, DOCKER_IMAGE);
+        pipelineRun3.setParentRunId(ID);
+
+        final List<PipelineRun> loadedRuns = Arrays.asList(pipelineRun1, pipelineRun2, pipelineRun3);
+        doReturn(MAX_PAGE_SIZE).when(preferenceManager).getPreference(any());
+        when(pipelineRunDao.eagerSearchPipelineParentRuns(any(), any())).thenReturn(loadedRuns);
+        final String[] result = new String(pipelineRunManager.exportPipelineRuns(filter, ",", "|"))
+                .split("\n");
+        assertEquals(4, result.length);
+    }
+
+    @Test
+    public void testThrowExceptionOnSearchWithMaxPageSizeExceeded() {
+        final PagingRunFilterVO filter = new PagingRunFilterVO();
+        filter.setPage(1);
+        filter.setPageSize(MAX_PAGE_SIZE + 1);
+        doReturn(MAX_PAGE_SIZE).when(preferenceManager).getPreference(any());
+        assertThrows(() -> pipelineRunManager.searchPipelineRuns(filter, false));
+    }
+
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {
         final String paramValue = String.format(paramValuePattern, ENV_VAR_NAME);
         final String expectedValue = String.format(expectedValuePattern, ENV_VAR_VALUE);
@@ -472,7 +562,7 @@ public class PipelineRunManagerUnitTest {
         when(pipelineRunDao.loadPipelineRun(eq(RUN_ID))).thenReturn(run);
         pipelineRunManager.attachDisk(RUN_ID, diskAttachRequest());
         verify(nodesManager).attachDisk(argThat(matches(r -> r.getStatus() == run.getStatus())),
-                eq(diskAttachRequest()));
+                eq(diskAttachRequest()), any());
     }
 
     private PipelineRun run(final TaskStatus status) {
@@ -528,5 +618,36 @@ public class PipelineRunManagerUnitTest {
 
     private String buildDockerImage(final String registry, final String image) {
         return String.format("%s/%s", registry, image);
+    }
+
+    private RunChartInfoEntity runChart(final TaskStatus status, final RunChartInfoEntity.ColumnName columnName,
+                                        final String value) {
+        return RunChartInfoEntity.builder()
+                .columnName(columnName)
+                .status(status)
+                .value(value)
+                .count(SIZE)
+                .build();
+    }
+
+    private RunChartInfoEntity runningChart(final RunChartInfoEntity.ColumnName columnName, final String value) {
+        return runChart(TaskStatus.RUNNING, columnName, value);
+    }
+
+    private RunChartInfoEntity pausingChart(final RunChartInfoEntity.ColumnName columnName, final String value) {
+        return runChart(TaskStatus.PAUSING, columnName, value);
+    }
+
+    private void assertRunChartElements(final Map<TaskStatus, Map<String, Long>> elements) {
+        assertThat(elements)
+                .hasSize(2)
+                .containsKeys(TaskStatus.RUNNING, TaskStatus.PAUSING);
+        assertThat(elements.get(TaskStatus.RUNNING))
+                .hasSize(2)
+                .contains(Maps.immutableEntry(TEST_NAME, SIZE))
+                .contains(Maps.immutableEntry(TEST_NAME_2, SIZE));
+        assertThat(elements.get(TaskStatus.PAUSING))
+                .hasSize(1)
+                .contains(Maps.immutableEntry(TEST_NAME, SIZE));
     }
 }

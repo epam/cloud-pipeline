@@ -23,12 +23,12 @@ import lombok.Value;
 @Value
 public class AllowedInstanceAndPriceTypes {
 
-    @JsonProperty("allowed.instance.types")
-    private final List<InstanceType> allowedInstanceTypes;
+    @JsonProperty("cluster.allowed.instance.types")
+    List<InstanceType> allowedInstanceTypes;
 
-    @JsonProperty("allowed.instance.docker.types")
-    private final List<InstanceType> allowedInstanceDockerTypes;
+    @JsonProperty("cluster.allowed.instance.types.docker")
+    List<InstanceType> allowedInstanceDockerTypes;
 
-    @JsonProperty("allowed.price.types")
-    private final List<String> allowedPriceTypes;
+    @JsonProperty("cluster.allowed.price.types")
+    List<String> allowedPriceTypes;
 }

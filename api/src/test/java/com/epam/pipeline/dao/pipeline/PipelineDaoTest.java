@@ -16,15 +16,24 @@
 
 package com.epam.pipeline.dao.pipeline;
 
+import com.epam.pipeline.controller.vo.EntityVO;
+import com.epam.pipeline.controller.vo.EntityFilterVO;
+import com.epam.pipeline.dao.metadata.MetadataDao;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.run.RunVisibilityPolicy;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +41,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
@@ -43,12 +53,21 @@ public class PipelineDaoTest extends AbstractJdbcTest {
     private static final String TEST_REPO_SSH = "git@test";
     private static final String TEST_CODE_PATH = "/src";
     private static final String TEST_DOCS_PATH = "/docs";
+    private static final String STRING = "string";
+    private static final String KEY_1 = "key1";
+    private static final String VALUE_1 = "value1";
+    private static final String VALUE_2 = "value2";
+    private static final String VALUE_3 = "value3";
+    private static final String KEY_2 = "key2";
 
     @Autowired
     private PipelineDao pipelineDao;
 
     @Autowired
     private FolderDao folderDao;
+
+    @Autowired
+    private MetadataDao metadataDao;
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
@@ -154,6 +173,80 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         verifyFolderTree(loaded.getParent(), parent);
     }
 
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadPipelinesByTagsFilter() {
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
+        pipelineDao.createPipeline(getPipeline(TEST_NAME));
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
+
+        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        assertThat(actual).hasSize(2);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadPipelinesByTagsFilterWithMultipleMetadataValues() {
+        final Pipeline pipeline1 = createPipelineWithMetadata(VALUE_1, VALUE_2);
+        final Pipeline pipeline2 = createPipelineWithMetadata(VALUE_1, VALUE_3);
+        createPipelineWithMetadata(VALUE_2, VALUE_3);
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_1)));
+
+        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        assertThat(actual).hasSize(2);
+        assertThat(actual.stream().map(Pipeline::getId).collect(Collectors.toList()))
+                .containsOnly(pipeline1.getId(), pipeline2.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldLoadPipelinesByTagsFilterWithMultipleFilterValues() {
+        final Pipeline pipeline1 = createPipelineWithMetadata(VALUE_1, VALUE_2);
+        createPipelineWithMetadata(VALUE_3, VALUE_2);
+        final Pipeline pipeline3 = createPipelineWithMetadata(VALUE_2, VALUE_1);
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Arrays.asList(VALUE_1, VALUE_2)));
+
+        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        assertThat(actual).hasSize(2);
+        assertThat(actual.stream().map(Pipeline::getId).collect(Collectors.toList()))
+                .containsOnly(pipeline1.getId(), pipeline3.getId());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldNotLoadPipelinesByTagsFilterIfNotSuchKey() {
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
+        pipelineDao.createPipeline(getPipeline(TEST_NAME));
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_2, Collections.singletonList(VALUE_1)));
+
+        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        assertThat(actual).hasSize(0);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldNotLoadPipelinesByTagsFilterIfNotSuchValue() {
+        createPipelineWithMetadata();
+        createPipelineWithMetadata();
+        pipelineDao.createPipeline(getPipeline(TEST_NAME));
+
+        final EntityFilterVO filter = new EntityFilterVO();
+        filter.setTags(Collections.singletonMap(KEY_1, Collections.singletonList(VALUE_2)));
+
+        final List<Pipeline> actual = pipelineDao.loadAllPipelines(filter);
+        assertThat(actual).hasSize(0);
+    }
+
     private void assertPipelineWithParameters(List<Pipeline> expected, Integer pageNum, Integer pageSize) {
         Set<Pipeline> loaded = pipelineDao.loadAllPipelinesWithParents(pageNum, pageSize);
         assertEquals(expected.size(), loaded.size());
@@ -201,5 +294,28 @@ public class PipelineDaoTest extends AbstractJdbcTest {
         if (expected.getParent() != null) {
             verifyFolderTree(expected.getParent(), actual.getParent());
         }
+    }
+
+    private void createPipelineWithMetadata() {
+        final Pipeline pipeline = getPipeline(TEST_NAME);
+        pipelineDao.createPipeline(pipeline);
+        final MetadataEntry metadata = new MetadataEntry();
+        metadata.setEntity(new EntityVO(pipeline.getId(), AclClass.PIPELINE));
+        metadata.setData(Collections.singletonMap(KEY_1, new PipeConfValue(STRING, VALUE_1)));
+        metadataDao.registerMetadataItem(metadata);
+    }
+
+    private Pipeline createPipelineWithMetadata(final String value1, final String value2) {
+        final Pipeline pipeline = getPipeline(TEST_NAME);
+        pipelineDao.createPipeline(pipeline);
+        final MetadataEntry metadata = new MetadataEntry();
+        metadata.setEntity(new EntityVO(pipeline.getId(), AclClass.PIPELINE));
+        metadata.setData(new HashMap<String, PipeConfValue>() {{
+                put(KEY_1, new PipeConfValue(STRING, value1));
+                put(KEY_2, new PipeConfValue(STRING, value2));
+            }});
+        metadataDao.registerMetadataItem(metadata);
+
+        return pipeline;
     }
 }

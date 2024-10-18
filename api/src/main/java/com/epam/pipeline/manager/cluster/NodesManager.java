@@ -354,7 +354,7 @@ public class NodesManager {
     /**
      * Creates and attaches new disk to the run cloud instance.
      */
-    public void attachDisk(final PipelineRun run, final DiskAttachRequest request) {
+    public void attachDisk(final PipelineRun run, final DiskAttachRequest request, final Map<String, String> tags) {
         final Optional<RunInstance> instance = Optional.ofNullable(run.getInstance());
         final String nodeId = instance.map(RunInstance::getNodeId)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
@@ -362,7 +362,7 @@ public class NodesManager {
         final AbstractCloudRegion region = instance.map(RunInstance::getCloudRegionId)
                 .map(regionManager::load)
                 .orElseGet(regionManager::loadDefaultRegion);
-        cloudFacade.attachDisk(region.getId(), run.getId(), request);
+        cloudFacade.attachDisk(region.getId(), run.getId(), request, tags);
         nodeDiskManager.register(nodeId, DiskRegistrationRequest.from(request));
     }
 

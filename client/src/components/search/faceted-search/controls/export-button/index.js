@@ -16,12 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
+import {Link} from 'react-router';
 import {
   Dropdown,
   Icon,
-  message
+  message,
+  Button,
+  Modal
 } from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, {MenuItem, Divider} from 'rc-menu';
 import FileSaver from 'file-saver';
 import ExportConfigurationModal from './configuration-modal';
 import {getSortingPayload} from '../../utilities';
@@ -34,8 +39,14 @@ import {
   CloudPath,
   MountPath
 } from '../../utilities/document-columns';
+import roleModel from '../../../../../utils/roleModel';
 import FacetedSearchExport from '../../../../../models/search/faceted-search-export';
+// eslint-disable-next-line max-len
+import FacetedSearchExportTemplatesSave from '../../../../../models/search/faceted-search-export-templates-save';
+// eslint-disable-next-line max-len
+import FacetedSearchExportTemplates from '../../../../../models/search/faceted-search-export-templates';
 import checkBlob from '../../../../../utils/check-blob';
+import displayDate from '../../../../../utils/displayDate';
 
 const exportVOColumns = {
   [Name.key]: 'includeName',
@@ -47,9 +58,33 @@ const exportVOColumns = {
   [MountPath.key]: 'includeMountPath'
 };
 
-function ExportMenu ({onExport, onConfigure}) {
+function parseExportTemplates (rawTemplates = {}) {
+  return Object.entries(rawTemplates).map(([key, template]) => ({
+    ...template,
+    key
+  }));
+}
+
+function checkTemplatePermissions (userInfo, template) {
+  if (!userInfo) {
+    return false;
+  }
+  const {userName, groups = []} = userInfo;
+  return template.permissions.some(permission => {
+    if (permission.principal) {
+      return permission.name === userName;
+    }
+    return roleModel.userHasRole(
+      userInfo,
+      (permission.name || '').toUpperCase()
+    ) || groups.includes(permission.nzme);
+  });
+}
+
+function ExportMenu ({onExport, onExportTemplate, onConfigure, templates, selectedItems = []}) {
   const handle = ({key}) => {
-    switch (key) {
+    const [exportType, exportKey] = key.split('|');
+    switch (exportType) {
       case 'export':
         if (typeof onExport === 'function') {
           onExport();
@@ -60,10 +95,28 @@ function ExportMenu ({onExport, onConfigure}) {
           onConfigure();
         }
         break;
+      case 'template':
+        if (typeof onExportTemplate === 'function') {
+          const currentTemplate = templates.find(({key}) => key === exportKey);
+          onExportTemplate(currentTemplate);
+        }
+        break;
       default:
         break;
     }
   };
+  const selected = selectedItems.length;
+  const templatesSection = templates.length ? [
+    <Divider key="divider" />,
+    ...templates.map(template => (
+      <MenuItem key={`template|${template.key}`}>
+        {template['friendly_name'] || template.key}
+        <span className="cp-text-not-important">
+          {selected ? ` - ${selected} file${selected > 1 ? 's' : ''}` : ''}
+        </span>
+      </MenuItem>
+    ))
+  ] : [];
   return (
     <Menu
       onClick={handle}
@@ -78,15 +131,62 @@ function ExportMenu ({onExport, onConfigure}) {
         <Icon type="bars" style={{marginRight: 10}} />
         Custom configuration
       </MenuItem>
+      {templatesSection}
     </Menu>
   );
 }
 
+@inject('preferences', 'authenticatedUserInfo', 'dataStorages')
+@observer
 class ExportButton extends React.Component {
   state = {
     pending: false,
     modalVisible: false,
     dropdownVisible: false
+  };
+
+  @computed
+  get exportTemplates () {
+    const {preferences} = this.props;
+    if (preferences?.loaded) {
+      return preferences.searchExportTemplates;
+    }
+    return undefined;
+  }
+
+  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  getFacetedSearchExportPayload = (configuration) => {
+    const {
+      advanced,
+      columns = [],
+      query: currentQuery,
+      filters = {},
+      sorting = [],
+      facets = []
+    } = this.props;
+    const columnsToExport = configuration && configuration.length
+      ? columns.filter((aColumn) => configuration.includes(aColumn.key))
+      : columns.slice();
+    const keys = columnsToExport.map((column) => column.key);
+    const metadataFields = keys.filter((key) => !exportVOColumns[key]);
+    return {
+      query: !advanced && currentQuery
+        ? `*${currentQuery}*`
+        : (currentQuery || '*'),
+      filters,
+      sorts: getSortingPayload(sorting),
+      metadataFields,
+      facets: facets.map((facet) => facet.name),
+      highlight: false
+    };
   };
 
   openModal = () => {
@@ -118,20 +218,12 @@ class ExportButton extends React.Component {
         this.setState(state, () => resolve()));
     const hide = message.loading('Exporting...', 0);
     await setStateAwaited({pending: true});
-    const {
-      advanced,
-      columns = [],
-      query: currentQuery,
-      filters = {},
-      sorting = [],
-      facets = []
-    } = this.props;
+    const {columns = []} = this.props;
     const columnsToExport = configuration && configuration.length
       ? columns.filter((aColumn) => configuration.includes(aColumn.key))
       : columns.slice();
     try {
       const keys = columnsToExport.map((column) => column.key);
-      const metadataFields = keys.filter((key) => !exportVOColumns[key]);
       const facetedSearchExportVO = Object.entries(exportVOColumns)
         .reduce((acc, [key, exportVOKey]) => ({
           ...acc,
@@ -139,18 +231,9 @@ class ExportButton extends React.Component {
         }), {delimiter: ','});
       const csvFileName = 'export.csv';
       const payload = {
-        csvFileName: 'export.csv',
+        csvFileName,
         facetedSearchExportVO,
-        facetedSearchRequest: {
-          query: !advanced && currentQuery
-            ? `*${currentQuery}*`
-            : (currentQuery || '*'),
-          filters,
-          sorts: getSortingPayload(sorting),
-          metadataFields,
-          facets: facets.map((facet) => facet.name),
-          highlight: false
-        }
+        facetedSearchRequest: this.getFacetedSearchExportPayload(configuration)
       };
       const request = new FacetedSearchExport();
       await request.send(payload);
@@ -175,6 +258,95 @@ class ExportButton extends React.Component {
 
   onDefaultExport = () => this.onExport();
 
+  onExportTemplate = async (template, payload) => {
+    const downloadExport = async (template) => {
+      const request = new FacetedSearchExportTemplates(template.key);
+      await request.send(payload);
+      if (request.error) {
+        return message.error(request.error, 5);
+      }
+      if (request.value instanceof Blob) {
+        const error = await checkBlob(request.value, 'Error exporting search results');
+        if (error) {
+          return message.error(error.message, 5);
+        }
+        const fileName = `${template.key}-${displayDate(Date.now(), 'YYYY-MM-DD HH:mm:ss')}.xls`;
+        FileSaver.saveAs(request.value, fileName);
+      }
+    };
+    const saveExport = async (template, payload) => {
+      const request = new FacetedSearchExportTemplatesSave(template.key);
+      await request.send(payload);
+      if (request.error) {
+        return message.error(request.error, 5);
+      }
+      this.setState({savedExport: request.value});
+    };
+    const uploadToBucket = !!template.save_to;
+    this.closeModal();
+    const setStateAwaited = (state) =>
+      new Promise((resolve) =>
+        this.setState(state, () => resolve()));
+    const hide = message.loading(uploadToBucket ? 'Exporting...' : 'Downloading...', 0);
+    await setStateAwaited({pending: true});
+    try {
+      const payload = {
+        ...this.getFacetedSearchExportPayload(),
+        files: (this.props.selectedItems || []).map(item => ({
+          path: item.path,
+          storageId: item.parentId
+        }))
+      };
+      if (uploadToBucket) {
+        await saveExport(template, payload);
+      } else {
+        await downloadExport(template, payload);
+      }
+    } catch (e) {
+      message.error(e.message, 5);
+    } finally {
+      hide();
+      this.setState({
+        pending: false
+      });
+    }
+  };
+
+  closeExportResultModal = () => this.setState({savedExport: undefined});
+
+  openExportResultModal = template => this.setState({savedExport: template});
+
+  renderSavedExportContent = () => {
+    const {savedExport} = this.state;
+    const getStorageById = (id) => {
+      const {
+        dataStorages
+      } = this.props;
+      if (dataStorages.loaded) {
+        return (dataStorages.value || []).find(d => Number(d.id) === Number(id));
+      }
+      return undefined;
+    };
+    if (!savedExport) {
+      return null;
+    }
+    const storage = getStorageById(savedExport.storageId);
+    const path = savedExport.storagePath.split('/');
+    const file = path.pop();
+    const folder = path.join('/');
+    return (
+      <div style={{paddingRight: 25}}>
+        Data exported to
+        <Link
+          style={{marginLeft: 5}}
+          to={`storage/${savedExport.storageId}?path=${folder}`}
+        >
+          {`${storage?.name || savedExport.storageId}/${folder}/${file}`}
+        </Link>.
+      </div>
+    );
+  };
+
   render () {
     const {
       columns,
@@ -187,12 +359,26 @@ class ExportButton extends React.Component {
       modalVisible,
       dropdownVisible
     } = this.state;
+    const templates = parseExportTemplates(this.exportTemplates)
+      .filter(template => {
+        if (!template.permissions || this.isAdmin) {
+          return true;
+        }
+        if (!this.props.authenticatedUserInfo.loaded) {
+          return false;
+        }
+        return checkTemplatePermissions(this.props.authenticatedUserInfo.value, template);
+      });
     return (
       <Dropdown.Button
         overlay={(
           <ExportMenu
             onExport={this.onDefaultExport}
+            onExportTemplate={this.onExportTemplate}
             onConfigure={this.onConfigure}
+            templates={templates}
+            storages={this.storages}
+            selectedItems={this.props.selectedItems}
           />
         )}
         className={className}
@@ -212,6 +398,25 @@ class ExportButton extends React.Component {
           onExport={this.onExport}
           columns={columns}
         />
+        <Modal
+          title={null}
+          visible={!!this.state.savedExport}
+          onCancel={this.closeExportResultModal}
+          width="fit-content"
+          style={{
+            minWidth: '30vw',
+            maxWidth: '80vw'
+          }}
+          footer={
+            <Button
+              type="primary"
+              onClick={this.closeExportResultModal}>
+              OK
+            </Button>
+          }
+        >
+          {this.renderSavedExportContent()}
+        </Modal>
       </Dropdown.Button>
     );
   }
@@ -231,7 +436,8 @@ ExportButton.propTypes = {
   query: PropTypes.string,
   filters: PropTypes.object,
   sorting: PropTypes.array,
-  facets: PropTypes.array
+  facets: PropTypes.array,
+  selectedItems: PropTypes.array
 };
 
 export default ExportButton;

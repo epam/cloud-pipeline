@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.utils.*;
 import org.testng.annotations.Test;
@@ -60,7 +61,7 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
                 .runPipeline()
                 .ensure(INSTANCE_TYPE, text(instanceType))
                 .ensure(byText(getPipelineName()), visible)
-                .ensure(byText("Estimated price per hour:"), visible)
+                .ensure(ESTIMATED_PRICE, visible)
                 .ensure(button("Launch"), visible, enabled)
                 .ensure(collapsiblePanel("Exec environment"), visible, expandedTab)
                 .ensure(collapsiblePanel("Advanced"), visible, expandedTab)

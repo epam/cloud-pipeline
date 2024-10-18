@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,15 +28,21 @@ import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.execution.OSSpecificLaunchCommandTemplate;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
+import com.epam.pipeline.entity.monitoring.NetworkConsumingRunAction;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
+import com.epam.pipeline.entity.search.SearchTemplateExportSheetMapping;
 import com.epam.pipeline.security.ExternalServiceEndpoint;
+import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.util.Assert;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -45,8 +51,12 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 
 import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL;
@@ -56,6 +66,7 @@ import static com.epam.pipeline.manager.preference.SystemPreferences.DOCKER_SECU
  * Validator functions for SystemPreferences
  */
 public final class PreferenceValidators {
+    private static final String NOT_ALLOWED_INSTANCE_TAG = "NAME";
     // CHECKSTYLE:OFF
     /**
      * Checks that a preference is a valid URL and it is accessible
@@ -153,14 +164,14 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isNullOrGreaterThan(int x) {
         return (pref, dependencies) -> StringUtils.isBlank(pref)
-                || StringUtils.isNumeric(pref) && Long.parseLong(pref) > x;
+                || (StringUtils.isNumeric(pref) && Long.parseLong(pref) > x);
     }
 
     public static BiPredicate<String, Map<String, Preference>> isNotLessThanValueOrNull(String key) {
         return (pref, dependencies) -> {
             Long valueToCompare = dependencies.containsKey(key) ? dependencies.get(key).get(Long::parseLong) : Long.MIN_VALUE;
             return StringUtils.isBlank(pref) ||
-                    StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare;
+                    (StringUtils.isNumeric(pref) && Long.parseLong(pref) >= valueToCompare);
         };
     }
 
@@ -174,6 +185,10 @@ public final class PreferenceValidators {
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThan(float x) {
         return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) > x;
+    }
+
+    public static BiPredicate<String, Map<String, Preference>> isGreaterThanOrEquals(float x) {
+        return (pref, dependencies) -> NumberUtils.isNumber(pref) && Float.parseFloat(pref) >= x;
     }
 
     public static BiPredicate<String, Map<String, Preference>> isGreaterThanOrEquals(int x) {
@@ -267,6 +282,9 @@ public final class PreferenceValidators {
     public static final BiPredicate<String, Map<String, Preference>> isValidIdleAction =
         (pref, ignored) -> IdleRunAction.contains(pref);
 
+    public static final BiPredicate<String, Map<String, Preference>> isValidNetworkConsumptionAction =
+        (pref, ignored) -> NetworkConsumingRunAction.contains(pref);
+
     public static final BiPredicate<String, Map<String, Preference>> isValidLongPauseRunAction =
             (pref, ignored) -> LongPausedRunAction.contains(pref);
 
@@ -298,6 +316,39 @@ public final class PreferenceValidators {
                     return true;
                 })
         );
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidInstanceTags =
+            (pref, dependencies) -> {
+        if (PipelineStringUtils.parseCommaSeparatedSet(Optional.ofNullable(pref)).stream()
+                .anyMatch(tag -> tag.toUpperCase(Locale.ROOT).equals(NOT_ALLOWED_INSTANCE_TAG))) {
+            throw new IllegalArgumentException("Tag 'Name' is not allowed for custom instance tags.");
+        }
+        return true;
+    };
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidSearchExportTemplateConfig =
+            isNullOrValidJson(new TypeReference<Map<String, SearchTemplateExportConfig>>() {})
+                    .and((pref, dependencies) -> {
+                        final Map<String, SearchTemplateExportConfig> configurations = JsonMapper.parseData(pref,
+                                new TypeReference<Map<String, SearchTemplateExportConfig>>() {});
+                        configurations.forEach(PreferenceValidators::validateSearchExportTemplate);
+                        return true;
+                    });
+
+    private static void validateSearchExportTemplate(final String templateId,
+                                                     final SearchTemplateExportConfig configuration) {
+        final String messagePattern = "Failed to persist template '%s': %s.";
+        Assert.state(StringUtils.isNotBlank(configuration.getTemplatePath()),
+                String.format(messagePattern, templateId, "'template_path' field is required."));
+        Assert.state(MapUtils.isNotEmpty(configuration.getMapping()),
+                String.format(messagePattern, templateId, "No mappings provided."));
+        Assert.state(configuration.getMapping().values().stream()
+                        .flatMap(Collection::stream)
+                        .map(SearchTemplateExportSheetMapping::getStartRow)
+                        .filter(Objects::nonNull)
+                        .noneMatch(value -> value < 1),
+                String.format(messagePattern, templateId, "Row start value shall be greater that 0."));
+    }
 
     private PreferenceValidators() {
         // No-op

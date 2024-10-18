@@ -92,6 +92,10 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        return self.list_items(relative_path, recursive, page_size, show_all=False, show_archive=show_archive), None
+
     def get_summary(self, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
@@ -113,6 +117,9 @@ class AzureListingManager(AzureManager, AbstractListingManager):
                 name = blob.name
                 accumulator.add_path(name, AbstractListingManager.STANDARD_TIER, size)
         return accumulator.get_tree()
+
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        raise NotImplementedError("List items with depth is not implemented yet")
 
     def _to_storage_item(self, blob):
         item = DataStorageItemModel()
@@ -148,7 +155,8 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         if version or hard_delete:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         prefix = StorageOperations.get_prefix(relative_path)
@@ -217,11 +225,14 @@ class TransferBetweenAzureBucketsManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         full_path = path
         destination_path = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -277,11 +288,15 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return StorageOperations.get_local_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return StorageOperations.get_local_file_size(destination_key), \
+            StorageOperations.get_local_file_modification_datetime(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
-    def transfer(self, source_wrapper, destination_wrapper, path=None,
-                 relative_path=None, clean=False, quiet=False, size=None, tags=None, io_threads=None, lock=None):
+    def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
+                 size=None, tags=None, io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -303,6 +318,9 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         if source_path:
             return os.path.join(source_wrapper.path, source_path)
@@ -310,7 +328,7 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
             return source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
@@ -349,11 +367,14 @@ class TransferFromHttpOrFtpToAzureManager(AzureManager, AbstractTransferManager)
     def get_destination_size(self, destination_wrapper, destination_key):
         return destination_wrapper.get_list_manager().get_file_size(destination_key)
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        return destination_wrapper.get_list_manager().get_file_object_head(destination_key)
+
     def get_source_key(self, source_wrapper, source_path):
         return source_path or source_wrapper.path
 
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False, quiet=False,
-                 size=None, tags=(), io_threads=None, lock=None):
+                 size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5', checksum_skip=False):
         if clean:
             raise AttributeError('Cannot perform \'mv\' operation due to deletion remote files '
                                  'is not supported for ftp/http sources.')

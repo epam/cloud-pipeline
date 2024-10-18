@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cp-search-elk
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-search-elk: "true"
+  serviceName: "cp-search-elk"
+  replicas: 1
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-search-elk: "true"
+        cloud-pipeline/core-component: "StatefulSet"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-search-elk: "true"
+      containers:
+        - name: cp-search-elk
+          securityContext:
+            privileged: true
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:search-elk-$CP_VERSION
+          imagePullPolicy: IfNotPresent
+          command: [ "bash" ]
+          args: [ "-c", "/init.sh" ]
+          env:
+            - name: ES_JAVA_OPTS
+              value: "-Xms4g -Xmx4g -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly"
+            - name: ES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - name: search-elk-data
+              mountPath: "/usr/share/elasticsearch/data"
+            - name: search-elk-backup
+              mountPath: "/usr/share/elasticsearch/backup"
+            - name: search-elk-logs
+              mountPath: "/var/log/elasticsearch"
+            - name: search-elk-curator-logs
+              mountPath: "/var/log/curator"
+            - name: cp-cloud-credentials
+              mountPath: "/root/.cloud"
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9200
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: search-elk-data
+          hostPath:
+            path: "/opt/search-elk/data-cluster"
+        - name: search-elk-backup
+          hostPath:
+            path: "/opt/search-elk/backup"
+        - name: search-elk-logs
+          hostPath:
+            path: "/opt/search-elk/logs"
+        - name: search-elk-curator-logs
+          hostPath:
+            path: "/opt/search-elk/logs/curator"
+        - name: cp-cloud-credentials
+          secret:
+            secretName: cp-cloud-credentials

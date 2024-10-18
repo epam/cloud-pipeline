@@ -17,10 +17,10 @@ import re
 
 from abc import abstractmethod, ABCMeta
 from collections import namedtuple
-
+import pytz
 import click
 import jwt
-
+import datetime
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.encoding_utilities import is_safe_chars, to_ascii, to_string
@@ -132,6 +132,17 @@ class StorageOperations:
             return None
 
     @classmethod
+    def get_local_file_modification_datetime(cls, path):
+        try:
+            return pytz.UTC.localize(datetime.datetime.utcfromtimestamp(os.path.getmtime(path)))
+        except OSError:
+            return None
+
+    @classmethod
+    def get_item_modification_datetime_utc(cls, item):
+        return item.changed.astimezone(pytz.utc)
+
+    @classmethod
     def without_prefix(cls, string, prefix):
         if string.startswith(prefix):
             return string[len(prefix):]
@@ -228,7 +239,8 @@ class StorageOperations:
                 item_relative_path = os.path.basename(item.name)
             else:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + delimiter)
-            yield ('File', item.name, item_relative_path, item.size)
+            yield ('File', item.name, item_relative_path, item.size,
+                   StorageOperations.get_item_modification_datetime_utc(item))
 
     @classmethod
     def file_is_empty(cls, size):
@@ -250,9 +262,19 @@ class AbstractTransferManager:
     def get_destination_size(self, destination_wrapper, destination_key):
         pass
 
+    def get_destination_object_head(self, destination_wrapper, destination_key):
+        """
+        Returns:
+        - destination file size
+        - destination file last modification datetime in UTC format
+
+        """
+        return None, None
+
     @abstractmethod
     def transfer(self, source_wrapper, destination_wrapper, path=None, relative_path=None, clean=False,
-                 quiet=False, size=None, tags=(), io_threads=None, lock=None):
+                 quiet=False, size=None, tags=(), io_threads=None, lock=None, checksum_algorithm='md5',
+                 checksum_skip=False):
         """
         Transfers data from the source storage to the destination storage.
 
@@ -270,15 +292,21 @@ class AbstractTransferManager:
         :param io_threads: Number of threads to be used for a single file io operations.
         :param lock: The lock object if multithreaded transfer is requested
         :type lock: multiprocessing.Lock
+        :param checksum_algorithm: The name of the algorithm to create checksums for objects
+        :param checksum_skip: Enables ability to skip objects integrity checks
         """
         pass
 
     @staticmethod
-    def skip_existing(source_key, source_size, destination_key, destination_size, quiet):
+    def skip_existing(source_key, source_size, source_modification_datetime, destination_key, destination_size,
+                      destination_modification_datetime, sync_newer, quiet):
         if destination_size is not None and destination_size == source_size:
-            if not quiet:
-                click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
-            return True
+            if not sync_newer or sync_newer and (destination_modification_datetime is not None
+                                                 and source_modification_datetime is not None
+                                                 and source_modification_datetime < destination_modification_datetime):
+                if not quiet:
+                    click.echo('Skipping file %s since it exists in the destination %s' % (source_key, destination_key))
+                return True
         return False
 
     @staticmethod
@@ -314,6 +342,20 @@ class AbstractListingManager:
         pass
 
     @abstractmethod
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None, show_archive=False):
+        """
+        Lists files and folders on the specified page by a relative path in the current storage.
+
+        :param relative_path: Storage relative path to be listed.
+        :param recursive: Specifies if the listing has to be recursive.
+        :param page_size: Max number of items on the page.
+        :param start_token: Paging continuation token.
+        :param show_archive: Specifies if archived items have to be listed
+        """
+        pass
+
+    @abstractmethod
     def get_summary_with_depth(self, max_depth, relative_path=None):
         """
         Returns tree with storage usage statistic under the given relative path and according to given depth.
@@ -321,6 +363,17 @@ class AbstractListingManager:
         :param max_depth: returns N or fewer levels below
         :param relative_path: Storage relative path to be processed
         :return: tree with storage usage statistic
+        """
+        pass
+
+    @abstractmethod
+    def get_listing_with_depth(self, max_depth, relative_path=None):
+        """
+        Returns paths list under the given relative path and according to given depth.
+
+        :param max_depth: returns N or fewer levels below
+        :param relative_path: Storage relative path to be processed
+        :return: the list of paths
         """
         pass
 
@@ -337,7 +390,9 @@ class AbstractListingManager:
     def get_items(self, relative_path):
         """
         Returns all files under the given relative path in forms of tuples with the following structure:
-        ('File', full_path, relative_path, size)
+        ('File', full_path, relative_path, size, modification_date)
+        where <modification_date> - a file last modification datetime in UTC format or None if not applicable
+        NOTE: shall be calculated for cloud sources only
 
         :param relative_path: Path to a folder or a file.
         :return: Generator of file tuples.
@@ -350,7 +405,8 @@ class AbstractListingManager:
                 item_relative_path = os.path.basename(item.name)
             else:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + StorageOperations.PATH_SEPARATOR)
-            yield ('File', item.name, item_relative_path, item.size)
+            yield ('File', item.name, item_relative_path, item.size,
+                   StorageOperations.get_item_modification_datetime_utc(item))
 
     def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
         prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
@@ -370,12 +426,20 @@ class AbstractListingManager:
                 return item.size
         return None
 
+    def get_file_object_head(self, relative_path):
+        items = self.list_items(relative_path, show_all=True, recursive=True)
+        for item in items:
+            if item.name == relative_path:
+                return item.size, StorageOperations.get_item_modification_datetime_utc(item)
+        return None, None
+
 
 class AbstractDeleteManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         """
         Deletes all items under the given path.
 
@@ -385,6 +449,7 @@ class AbstractDeleteManager:
         :param include: Include item pattern.
         :param version: Version to be deleted.
         :param hard_delete: Specifies if all item versions have to be deleted.
+        :param page_size: Specifies page size for listing objects.
         """
         pass
 

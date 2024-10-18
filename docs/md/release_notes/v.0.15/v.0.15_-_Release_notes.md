@@ -50,7 +50,7 @@
 
 - [Notable Bug fixes](#notable-bug-fixes)
     - [Incorrect behavior of the global search filter](#incorrect-behavior-of-the-global-search-filter)
-    - ["COMMITING..." status hangs](#commiting-status-hangs)
+    - ["COMMITING..." status hangs](#committing-status-hangs)
     - [Instances of Metadata entity aren't correctly sorted](#instances-of-metadata-entity-arent-correctly-sorted)
     - [Tool group cannot be deleted until all child tools are removed](#tool-group-cannot-be-deleted-until-all-child-tools-are-removed)
     - [Missing region while estimating a run price](#missing-region-while-estimating-a-run-price)
@@ -288,7 +288,7 @@ Two preferences are introduced:
     - This hook can be used to perform any filesystem cleanup or other operations, that shall not affect the currently running processes.
 - If a corresponding pre/post script is not found in the docker image - it will not be executed.
 
-For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#committing-features).
+For more details see [here](../../manual/10_Manage_Tools/10.4._Edit_a_Tool.md#prepost-commit-hooks).
 
 ## Restricting manual installation of the nvidia tools
 

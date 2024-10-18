@@ -19,7 +19,7 @@ import sys
 
 from pipeline.api import PipelineAPI
 from pipeline.hpc.param import GridEngineParameters
-from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
+from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger, ResilientLogger
 from pipeline.utils.profile import suffix_non_unique, build_environment_profiles
 
 PROFILE_QUEUE_FORMAT = 'sge_profile_{}_queue.sh'
@@ -30,8 +30,8 @@ PROFILE_AUTOSCALING_PATTERN = '^sge_profile_(.+)_autoscaling\\.sh$'
 
 def generate_sge_profiles():
     logging_dir = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOG_DIR', default=os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL', default='INFO')
-    logging_level_local = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_LOCAL', default='DEBUG')
+    logging_level_run = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_RUN', default='INFO')
+    logging_level_file = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_FILE', default='DEBUG')
     logging_level_console = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_LEVEL_CONSOLE', default='INFO')
     logging_format = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
     logging_task = os.getenv('CP_CAP_SGE_PROFILE_GENERATION_LOGGING_TASK', default='GenerateSGEProfiles')
@@ -49,7 +49,7 @@ def generate_sge_profiles():
     logging_logger_root.setLevel(logging.WARNING)
 
     logging_logger = logging.getLogger(name=logging_task)
-    logging_logger.setLevel(logging_level_local)
+    logging_logger.setLevel(logging_level_file)
 
     if not logging_logger.handlers:
         console_handler = logging.StreamHandler(sys.stdout)
@@ -58,15 +58,16 @@ def generate_sge_profiles():
         logging_logger.addHandler(console_handler)
 
         file_handler = logging.FileHandler(os.path.join(logging_dir, logging_file))
-        file_handler.setLevel(logging_level_local)
+        file_handler.setLevel(logging_level_file)
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_dir)
     logger = RunLogger(api=api, run_id=run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
-    logger = LevelLogger(level=logging_level, inner=logger)
+    logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     params = GridEngineParameters()
     profiles = _generate_profiles(default_queue_disabled, logger)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
-import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
+import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATED_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
@@ -79,7 +79,7 @@ public class Profile implements AccessObject<Profile> {
                 entry(SET_AS_DEFAULT, context().find(byId("set-pipeline-configuration-as-default-button"))),
                 entry(SAVE, context().find(byId("save-pipeline-configuration-button"))),
                 entry(NAME, context().find(byId("configuration.name"))),
-                entry(ESTIMATE_PRICE, context().find(byText("Estimated price per hour:"))),
+                entry(ESTIMATED_PRICE, context().find(byText("Estimated price per hour:"))),
                 entry(INSTANCE, context().find(byId("launch-pipeline-advanced-panel"))),
                 entry(IMAGE, context().find(inputOf(fieldWithLabel("Docker image")))),
                 entry(DISK, context().find(byId("exec.disk"))),

@@ -37,23 +37,24 @@ public class RunStatusManager {
     private final RunStatusDao runStatusDao;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void saveStatus(final RunStatus runStatus) {
+    public boolean saveStatus(final RunStatus runStatus) {
         List<RunStatus> runStatuses = loadRunStatus(runStatus.getRunId());
         Optional<RunStatus> lastStatus = ListUtils.emptyIfNull(runStatuses).stream()
                 .max(Comparator.comparing(RunStatus::getTimestamp));
         //check that status really changed
         if (lastStatus.isPresent() && lastStatus.get().getStatus() == runStatus.getStatus()) {
-            return;
+            return false;
         }
         runStatusDao.saveStatus(runStatus);
+        return true;
     }
 
     public List<RunStatus> loadRunStatus(final Long runId) {
         return runStatusDao.loadRunStatus(runId);
     }
 
-    public Map<Long, List<RunStatus>> loadRunStatus(final List<Long> runId) {
-        return runStatusDao.loadRunStatus(runId).stream().collect(Collectors.groupingBy(RunStatus::getRunId));
+    public Map<Long, List<RunStatus>> loadRunStatus(final List<Long> runIds, final boolean archive) {
+        return runStatusDao.loadRunStatus(runIds, archive).stream().collect(Collectors.groupingBy(RunStatus::getRunId));
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

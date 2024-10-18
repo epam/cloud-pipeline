@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import CommitCheckProvider from '../../actions/check/commit/provider';
 @localization.localizedComponent
 @CommitCheckProvider.inject
 @LayersCheckProvider.inject
-@inject('dockerRegistries')
+@inject('dockerRegistries', 'preferences')
 @HiddenObjects.injectToolsFilters
 @observer
 class CommitRunForm extends localization.LocalizedReactComponent {
@@ -58,6 +58,18 @@ class CommitRunForm extends localization.LocalizedReactComponent {
   @computed
   get layersCheckPassed () {
     return LayersCheckProvider.getCheckResult(this.props);
+  }
+
+  @computed
+  get commitCheckPassed () {
+    return CommitCheckProvider.getCheckResult(this.props);
+  }
+
+  @computed
+  get allowCommitToOtherPersonalGroups () {
+    return this.props.preferences.loaded
+      ? this.props.preferences.allowCommitToOtherPersonalGroups
+      : false;
   }
 
   validate = async () => {
@@ -268,7 +280,6 @@ class CommitRunForm extends localization.LocalizedReactComponent {
     const {pending: layersCheckPending} = LayersCheckProvider.getCheckInfo(this.props);
     const {pending: commitCheckPending} = CommitCheckProvider.getCheckInfo(this.props);
     const pending = this.props.pending || layersCheckPending || commitCheckPending;
-
     return (
       <Spin spinning={pending}>
         {this.canCommitIntoRegistry ? (
@@ -300,6 +311,7 @@ class CommitRunForm extends localization.LocalizedReactComponent {
                   onPressEnter={this.props.onPressEnter}
                   registries={this.registries}
                   disabled={pending}
+                  showOtherPersonalGroups={this.allowCommitToOtherPersonalGroups}
                 />
               )}
             </Form.Item>

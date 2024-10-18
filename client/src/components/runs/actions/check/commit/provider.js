@@ -32,9 +32,13 @@ const {
   warning: WarningMessage
 });
 
-function CommitCheckProvider ({active, children, runId}) {
+function CommitCheckProvider ({active, children, runId, skipContainerCheck}) {
   return (
-    <CheckProvider active={active} objectId={runId}>
+    <CheckProvider
+      active={active}
+      objectId={runId}
+      skipContainerCheck={skipContainerCheck}
+    >
       {children}
     </CheckProvider>
   );

@@ -61,6 +61,11 @@ public interface NotificationService {
 
     }
 
+    default void notifyHighNetworkConsumingRuns(List<Pair<PipelineRun, Double>> pipelineCpuRatePairs,
+                                                NotificationType type) {
+
+    }
+
     default void notifyHighResourceConsumingRuns(
             List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics,
             NotificationType notificationType) {

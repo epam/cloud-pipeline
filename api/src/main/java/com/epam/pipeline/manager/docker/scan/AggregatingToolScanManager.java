@@ -32,15 +32,18 @@ import com.epam.pipeline.entity.scan.ToolScanPolicy;
 import com.epam.pipeline.entity.scan.ToolVersionScanResult;
 import com.epam.pipeline.entity.scan.Vulnerability;
 import com.epam.pipeline.entity.scan.VulnerabilitySeverity;
+import com.epam.pipeline.entity.scan.clair.ClairVulnerabilities;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.ToolScanExternalServiceException;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
-import com.epam.pipeline.manager.docker.scan.clair.ClairScanRequest;
-import com.epam.pipeline.manager.docker.scan.clair.ClairScanResult;
-import com.epam.pipeline.manager.docker.scan.clair.ClairService;
+import com.epam.pipeline.manager.docker.scan.clair.ClairClient;
+import com.epam.pipeline.manager.docker.scan.clair.v2.ClairV2Api;
+import com.epam.pipeline.manager.docker.scan.clair.v2.ClairV2Client;
+import com.epam.pipeline.manager.docker.scan.clair.v4.ClairV4Api;
+import com.epam.pipeline.manager.docker.scan.clair.v4.ClairV4Client;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanRequest;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanResult;
 import com.epam.pipeline.manager.docker.scan.dockercompscan.DockerComponentScanService;
@@ -53,8 +56,8 @@ import com.epam.pipeline.utils.URLUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
-import okhttp3.ResponseBody;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -64,8 +67,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import retrofit2.Call;
-import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
@@ -75,14 +76,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -93,6 +94,7 @@ import static com.epam.pipeline.manager.preference.AbstractSystemPreference.Stri
  * It uses Retrofit2 to connect to Clair's REST API
  */
 @Service
+@Slf4j
 public class AggregatingToolScanManager implements ToolScanManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AggregatingToolScanManager.class);
@@ -100,6 +102,8 @@ public class AggregatingToolScanManager implements ToolScanManager {
     private static final int DISABLED = -1;
     private static final long SECONDS_IN_HOUR = 3600;
     private static final String WINDOWS_PLATFORM = "Windows";
+    private static final String CLAIR_V2 = "v2";
+    private static final String CLAIR_V4 = "v4";
     public static final String NOT_DETERMINED = "NotDetermined";
 
     @Autowired
@@ -123,7 +127,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
     @Autowired
     private ToolVersionManager toolVersionManager;
 
-    private ClairService clairService;
+    private ClairClient clairService;
     private DockerComponentScanService dockerComponentService;
 
     @PostConstruct
@@ -131,10 +135,10 @@ public class AggregatingToolScanManager implements ToolScanManager {
         initClients();
         Arrays.asList(
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED,
-                SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_ENABLED,
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL,
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_CONNECT_TIMEOUT,
                 SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_READ_TIMEOUT,
+                SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION,
                 SystemPreferences.DOCKER_COMP_SCAN_ROOT_URL)
                 .forEach(this::subscribePreference);
     }
@@ -145,7 +149,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
     }
 
     private void initClients() {
-        clairService = initClient(SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL, ClairService.class);
+        clairService = initClairClient();
         dockerComponentService = initClient(
                 SystemPreferences.DOCKER_COMP_SCAN_ROOT_URL, DockerComponentScanService.class);
 
@@ -266,7 +270,7 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
             LOGGER.debug("Tool: {} version: {} Check tool os version.", tool.getId(), tag);
             if (toolVersionScanResult.getToolOSVersion() != null
-                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion())) {
+                    && !toolManager.isToolOSVersionAllowed(toolVersionScanResult.getToolOSVersion()).isAllowed()) {
                 LOGGER.warn("Tool: {} version: {}. Tool os version isn't allowed, check preference {} ! Cancel run.",
                         tool.getId(), tag, SystemPreferences.DOCKER_SECURITY_TOOL_OS.getKey());
                 return ToolExecutionCheckStatus.fail("This type of OS is not supported.");
@@ -307,32 +311,21 @@ public class AggregatingToolScanManager implements ToolScanManager {
     private ToolVersionScanResult doScan(final Tool tool, final String tag, final DockerRegistry registry)
             throws ToolScanExternalServiceException {
         try {
-            final String lastLayerRef = scanLayers(tool, tag, registry);
+            final ManifestV2 manifest = getManifest(tool, tag, registry);
+            final List<String> layers = fetchLayers(manifest);
+            final Optional<ClairVulnerabilities> clairResults = getClairScanResults(tool, tag, registry, layers,
+                    manifest);
+            final String lastLayerRef = scanDockerComp(tool, tag, registry, layers);
             final DockerClient client = getDockerClient(tool.getImage(), registry);
             final String digest = client.getVersionAttributes(registry, tool.getImage(), tag).getDigest();
             final List<ImageHistoryLayer> imageHistory = client.getImageHistory(registry, tool.getImage(), tag);
             final boolean hasNvidiaMark = hasNvidiaMark(client, registry, tool.getImage(), tag);
             final String defaultCmd = toolManager.loadToolDefaultCommand(imageHistory);
-            return gatherResults(tool, tag, lastLayerRef, digest, defaultCmd, imageHistory.size(), hasNvidiaMark);
+            return gatherResults(tool, tag, lastLayerRef, digest, defaultCmd, imageHistory.size(), hasNvidiaMark,
+                    clairResults);
         } catch (IOException e) {
             throw new ToolScanExternalServiceException(tool, e);
         }
-    }
-
-    private <T> Optional<T> getScanResult(final boolean initialized,
-                                          final Supplier<Call<T>> call) throws IOException {
-        if (!initialized) {
-            return Optional.empty();
-        }
-
-        final Response<T> response = call.get().execute();
-        if (!response.isSuccessful()) {
-            try (ResponseBody erroredBody = response.errorBody()) {
-                LOGGER.error(erroredBody != null ? "Error while getting scan result: " + erroredBody.string() : "");
-                return Optional.empty();
-            }
-        }
-        return Optional.of(response.body());
     }
 
     private Optional<ToolVersionScanResult> getActualScan(Tool tool, String tag, DockerRegistry registry) {
@@ -356,23 +349,20 @@ public class AggregatingToolScanManager implements ToolScanManager {
         return Optional.empty();
     }
 
-    private String scanLayers(final Tool tool, final String tag, final DockerRegistry registry)
-        throws IOException, ToolScanExternalServiceException {
-        final List<String> layers = fetchLayers(tool, tag, registry);
-
+    private String scanDockerComp(final Tool tool, final String tag, final DockerRegistry registry,
+                                  final List<String> layers) throws IOException {
         String lastLayer = null;
         for (int i = 0; i < layers.size(); i++) {
-            LOGGER.debug("Scanning {}:{}, started for {} of {} layers", tool.getImage(), tag, i + 1, layers.size());
-            String layerDigest = layers.get(i);
-            // Debug: use "172.31.38.143:5000" as registry path
-            String layerRef = getLayerName(tool.getImage(), tag);
+            log.debug("Scanning docker component {}:{}, started for {} of {} layers", tool.getImage(), tag, i + 1,
+                    layers.size());
+            final String layerDigest = layers.get(i);
+            final String layerRef = getLayerName(tool.getImage(), tag);
 
-            executeClairLayerScan(tool, tag, registry, lastLayer, layerDigest, layerRef);
             executeDockerCompLayerScan(tool, tag, registry, lastLayer, layerDigest, layerRef);
 
             lastLayer = layerRef;
         }
-        LOGGER.debug("Scanning {}:{} done.", tool.getImage(), tag);
+        log.debug("Scanning docker components {}:{} done.", tool.getImage(), tag);
         return lastLayer;
     }
 
@@ -390,51 +380,20 @@ public class AggregatingToolScanManager implements ToolScanManager {
             dockerComponentScanRequest = new DockerComponentScanRequest(layerRef, layerDigest, registry.getPath(),
                     tool.getImage(), lastLayer, registry.getUserName(), registry.getPassword());
         }
-        checkExecutionStatus(
+        ToolScanRestApiUtils.checkExecutionStatus(
                 dockerComponentService.scanLayer(dockerComponentScanRequest).execute(), tool.getImage(), tag, layerRef);
 
     }
 
-    private void executeClairLayerScan(final Tool tool, final String tag, final DockerRegistry registry,
-                                       final String prevLayer, final String layerDigest, final String layerRef)
-            throws IOException {
-        if (clairService == null) {
-            return;
-        }
-        final ClairScanRequest clairRequest;
-        if (registry.isPipelineAuth()) {
-            clairRequest = new ClairScanRequest(layerRef, layerDigest, registry.getPath(),
-                    tool.getImage(), prevLayer, dockerRegistryManager.getImageToken(registry, tool.getImage()));
-        } else {
-            clairRequest = new ClairScanRequest(layerRef, layerDigest, registry.getPath(),
-                    tool.getImage(), prevLayer, registry.getUserName(), registry.getPassword());
-        }
-        checkExecutionStatus(clairService.scanLayer(clairRequest).execute(), tool.getImage(), tag, layerRef);
-    }
-
-    private <T> void checkExecutionStatus(final Response<T> response, final String image,
-                                          final String tag, final String layerRef) throws IOException {
-        if (!response.isSuccessful()) {
-            try (ResponseBody error = response.errorBody()) {
-                final String errorBody = error != null ? error.string() : null;
-                LOGGER.error(
-                        String.format(
-                                "Service: %s : Failed for %s:%s on %s layer: %s:%s response code: %d",
-                                ClairService.class, image, tag, layerRef, response.message(),
-                                errorBody, response.code()
-                        )
-                );
-            }
-        }
-    }
-
-    private List<String> fetchLayers(Tool tool, String tag, DockerRegistry registry)
+    private ManifestV2 getManifest(final Tool tool, final String tag, final DockerRegistry registry)
             throws ToolScanExternalServiceException {
-        DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
-        ManifestV2 manifest = dockerClient.getManifest(registry, tool.getImage(), tag)
-            .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
-                MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+        final DockerClient dockerClient = getDockerClient(tool.getImage(), registry);
+        return dockerClient.getManifest(registry, tool.getImage(), tag)
+                .orElseThrow(() -> new ToolScanExternalServiceException(tool, messageHelper.getMessage(
+                        MessageConstants.ERROR_REGISTRY_COULD_NOT_GET_MANIFEST, tool.getImage())));
+    }
 
+    private List<String> fetchLayers(final ManifestV2 manifest) {
         return manifest.getLayers()
             .stream()
             .map(ManifestV2.Config::getDigest)
@@ -449,38 +408,26 @@ public class AggregatingToolScanManager implements ToolScanManager {
     private ToolVersionScanResult gatherResults(final Tool tool, final String tag,
                                                 final String lastLayerRef, final String digest,
                                                 final String defaultCmd, final int layersCount,
-                                                final boolean hasNvidiaMark) throws IOException {
-
+                                                final boolean hasNvidiaMark,
+                                                final Optional<ClairVulnerabilities> clairResults)
+            throws IOException {
         ToolScanStatus toolScanStatus = ToolScanStatus.COMPLETED;
-
-        final Optional<ClairScanResult> clairScanResult =
-                getScanResult(clairService != null, () -> clairService.getScanResult(lastLayerRef));
-
-        if (!clairScanResult.isPresent()) {
+        if (!clairResults.isPresent()) {
             toolScanStatus = ToolScanStatus.FAILED;
         }
 
-        final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = new HashMap<>();
-        final List<Vulnerability> vulnerabilities = clairScanResult
-                .map(result -> ListUtils.emptyIfNull(result.getFeatures()).stream())
-                .orElse(Stream.empty())
-                .flatMap(f -> f.getVulnerabilities() != null ? f.getVulnerabilities().stream().map(v -> {
-                    Vulnerability vulnerability = new Vulnerability();
-                    vulnerability.setName(v.getName());
-                    vulnerability.setDescription(v.getDescription());
-                    vulnerability.setFixedBy(v.getFixedBy());
-                    vulnerability.setLink(v.getLink());
-                    vulnerability.setSeverity(v.getSeverity());
-                    vulnerability.setFeature(f.getName());
-                    vulnerability.setFeatureVersion(f.getVersion());
-                    vulnerabilitiesCount.merge(v.getSeverity(), 1,  (oldVal, newVal) -> oldVal + 1);
-                    return vulnerability;
-                }) : Stream.empty())
-                .collect(Collectors.toList());
+        final Map<VulnerabilitySeverity, Integer> vulnerabilitiesCount = clairResults
+                .map(ClairVulnerabilities::getVulnerabilitiesCount)
+                .map(MapUtils::emptyIfNull)
+                .orElse(Collections.emptyMap());
+        final List<Vulnerability> vulnerabilities = clairResults
+                .map(ClairVulnerabilities::getVulnerabilities)
+                .map(ListUtils::emptyIfNull)
+                .orElse(Collections.emptyList());
 
         LOGGER.debug("Found: " + vulnerabilities.size() + " vulnerabilities for " + tool.getImage() + ":" + tag);
 
-        final Optional<DockerComponentScanResult> compScanResult = getScanResult(
+        final Optional<DockerComponentScanResult> compScanResult = ToolScanRestApiUtils.getScanResult(
                 dockerComponentService != null, () -> dockerComponentService.getScanResult(lastLayerRef));
 
         if (!compScanResult.isPresent()) {
@@ -489,19 +436,17 @@ public class AggregatingToolScanManager implements ToolScanManager {
 
         //Concat dependencies from Clair and DockerCompScan
         final List<ToolDependency> dependencies = Stream.concat(
-            compScanResult.map(result ->
-                            ListUtils.emptyIfNull(result.getLayers()).stream())
-                    .orElse(Stream.empty())
-                    .flatMap(l -> l.getDependencies().stream().peek(dependency -> {
-                        dependency.setToolVersion(tag);
-                        dependency.setToolId(tool.getId());
-                    })),
-
-            clairScanResult.map(result -> ListUtils.emptyIfNull(result.getFeatures())
-                    .stream())
-                    .orElse(Stream.empty())
-                    .map(f -> new ToolDependency(tool.getId(), tag, f.getName(),
-                            f.getVersion(), ToolDependency.Ecosystem.SYSTEM, null))
+                compScanResult.map(result ->
+                                ListUtils.emptyIfNull(result.getLayers()).stream())
+                        .orElse(Stream.empty())
+                        .flatMap(l -> l.getDependencies().stream().peek(dependency -> {
+                            dependency.setToolVersion(tag);
+                            dependency.setToolId(tool.getId());
+                        })),
+                clairResults
+                        .map(ClairVulnerabilities::getDependencies)
+                        .map(ListUtils::emptyIfNull)
+                        .orElse(Collections.emptyList()).stream()
         ).distinct().collect(Collectors.toList());
 
         LOGGER.debug("Found: " + dependencies.size() + " dependencies for " + tool.getImage() + ":" + tag);
@@ -557,5 +502,43 @@ public class AggregatingToolScanManager implements ToolScanManager {
             LOGGER.debug("Found nvidia version file for tool '{}:{}'", tool.getImage(), tag);
         }
         return nvidiaInstalled;
+    }
+
+    private ClairClient initClairClient() {
+        final String clairVersion = preferenceManager.getPreference(
+                SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_VERSION);
+        if (StringUtils.isBlank(clairVersion)) {
+            return null;
+        }
+        if (CLAIR_V2.equalsIgnoreCase(clairVersion)) {
+            final ClairV2Api client = initClient(
+                    SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL, ClairV2Api.class);
+            return Objects.isNull(client) ? null : new ClairV2Client(client);
+        }
+        if (CLAIR_V4.equalsIgnoreCase(clairVersion)) {
+            final ClairV4Api client = initClient(
+                    SystemPreferences.DOCKER_SECURITY_TOOL_SCAN_CLAIR_ROOT_URL, ClairV4Api.class);
+            return Objects.isNull(client) ? null : new ClairV4Client(client);
+        }
+        log.warn("Unsupported Clair version: '{}'", clairVersion);
+        return null;
+    }
+
+    private Optional<ClairVulnerabilities> getClairScanResults(final Tool tool, final String tag,
+                                                               final DockerRegistry registry, final List<String> layers,
+                                                               final ManifestV2 manifest) throws IOException {
+        if (Objects.isNull(clairService)) {
+            return Optional.empty();
+        }
+
+        final String imageToken = registry.isPipelineAuth()
+                ? dockerRegistryManager.getImageToken(registry, tool.getImage())
+                : null;
+
+        final String resultsMark = clairService.scanLayers(tool.getImage(), registry, layers, manifest.getDigest(),
+                imageToken, tag);
+        return Objects.isNull(resultsMark)
+                ? Optional.empty()
+                : clairService.getScanResult(resultsMark, tool.getId(), tag);
     }
 }

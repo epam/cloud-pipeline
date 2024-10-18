@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunServiceUrlVO;
 import com.epam.pipeline.controller.vo.TagsVO;
+import com.epam.pipeline.controller.vo.run.RunChartFilterVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
@@ -59,15 +60,18 @@ import com.epam.pipeline.entity.pipeline.run.PipelineStart;
 import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.entity.pipeline.run.RestartRun;
 import com.epam.pipeline.entity.pipeline.run.RunAssignPolicy;
+import com.epam.pipeline.entity.pipeline.run.RunChartInfo;
 import com.epam.pipeline.entity.pipeline.run.RunInfo;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunSid;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.run.RunChartInfoEntity;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -78,6 +82,7 @@ import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
@@ -108,6 +113,7 @@ import org.springframework.util.Assert;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,11 +152,13 @@ public class PipelineRunManager {
     private static final int DIVIDER_TO_GB = 1024 * 1024 * 1024;
     private static final int USER_PRICE_SCALE = 2;
     private static final int BILLING_PRICE_SCALE = 5;
-    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
     private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
     private static final String CP_GPU_COUNT = "CP_GPU_COUNT";
+
+    public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
+    public static final String NETWORK_LIMIT = "NETWORK_LIMIT";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -235,6 +243,12 @@ public class PipelineRunManager {
 
     @Autowired
     private MetadataEntityManager metadataEntityManager;
+
+    @Autowired
+    private MetadataManager metadataManager;
+
+    @Autowired
+    private CloudFacade cloudFacade;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -359,7 +373,6 @@ public class PipelineRunManager {
         run.setProlongedAtTime(DateUtils.nowUTC());
         updateProlongIdleRunAndLastIdleNotificationTime(run);
     }
-
 
     /**
      * Internal method for creating a pipeline run,
@@ -664,6 +677,9 @@ public class PipelineRunManager {
                     pipelineRun.getId(), pipelineRun.getStatus());
             return pipelineRun;
         }
+        if (status.isFinal()) {
+            tryRemoveInstanceTags(pipelineRun);
+        }
         if (pipelineRun.getExecutionPreferences().getEnvironment() == ExecutionEnvironment.DTS
                 && status == TaskStatus.STOPPED) {
             configurationProviderManager.stop(runId, pipelineRun.getExecutionPreferences());
@@ -780,12 +796,25 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter, boolean loadStorageLinks) {
+        return searchPipelineRuns(filter, loadStorageLinks, true);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public PagedResult<List<PipelineRun>> searchPipelineRuns(PagingRunFilterVO filter,
+                                                             boolean loadStorageLinks,
+                                                             boolean checkMaxPageSize) {
         Assert.isTrue(filter.getPage() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_INDEX));
         Assert.isTrue(filter.getPageSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_PAGE_SIZE));
+        if (checkMaxPageSize) {
+            final Integer maxPageSize = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RUN_FILTER_MAX_PAGE_SIZE);
+            Assert.isTrue(filter.getPageSize() <= maxPageSize,
+                    messageHelper.getMessage(MessageConstants.ERROR_MAX_PAGE_SIZE_EXCEEDED));
+        }
         PipelineRunFilterVO.ProjectFilter projectFilter = resolveProjectFiltering(filter);
-        if (projectFilter!= null && projectFilter.isEmpty()) {
+        if (projectFilter != null && projectFilter.isEmpty()) {
             return new PagedResult<>(Collections.emptyList(), 0);
         }
         PagedResult<List<PipelineRun>> result;
@@ -807,12 +836,20 @@ public class PipelineRunManager {
         }
         if (CollectionUtils.isNotEmpty(result.getElements())) {
             Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(result.getElements().stream()
-                    .map(PipelineRun::getId).collect(Collectors.toList()));
+                    .map(PipelineRun::getId).collect(Collectors.toList()), false);
             for (final PipelineRun run : result.getElements()) {
                 run.setRunStatuses(runStatuses.get(run.getId()));
             }
         }
         return result;
+    }
+
+    public byte[] exportPipelineRuns(final PagingRunFilterVO filter,
+                                     final String delimiter,
+                                     final String fieldDelimiter) {
+        final PagedResult<List<PipelineRun>> runs = searchPipelineRuns(filter, false);
+        return new PipelineRunExporter().export(runs.getElements(), delimiter, fieldDelimiter)
+                .getBytes(Charset.defaultCharset());
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -940,6 +977,8 @@ public class PipelineRunManager {
         setRunPrice(instance, run);
         run.setSshPassword(PasswordGenerator.generatePassword());
         run.setOwner(authManager.getAuthorizedUser());
+        run.setOriginalOwner(calculateOriginalOwner(configuration, parentRun));
+
         if (CollectionUtils.isNotEmpty(entityIds)) {
             run.setEntitiesIds(entityIds);
         }
@@ -955,6 +994,20 @@ public class PipelineRunManager {
             run.setNonPause(configuration.isNonPause());
         }
         return run;
+    }
+
+    private String calculateOriginalOwner(final PipelineConfiguration configuration, final PipelineRun parentRun) {
+        final String originalOwnerParam = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_ORIGINAL_OWNER_PARAMETER);
+        return Optional.ofNullable(
+                configuration.getParameters().get(originalOwnerParam)
+                ).map(PipeConfValueVO::getValue)
+                .orElseGet(() -> {
+                    if (parentRun != null && StringUtils.isNotBlank(parentRun.getOriginalOwner())) {
+                        return parentRun.getOriginalOwner();
+                    }
+                    return authManager.getAuthorizedUser();
+                });
     }
 
     private boolean checkRunForSensitivity(final Map<String, PipeConfValueVO> parameters) {
@@ -1058,11 +1111,13 @@ public class PipelineRunManager {
      *
      * @param start beginning of evaluating period
      * @param end ending of evaluating period
+     * @param archive optional archived runs loading
      * @return run with statuses adjusted
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end) {
-        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end);
+    public List<PipelineRun> loadRunsActivityStats(final LocalDateTime start, final LocalDateTime end,
+                                                   final boolean archive) {
+        final List<PipelineRun> runs = pipelineRunDao.loadPipelineRunsActiveInPeriod(start, end, archive);
         final List<Long> runIds = runs.stream()
             .map(BaseEntity::getId)
             .collect(Collectors.toList());
@@ -1071,7 +1126,7 @@ public class PipelineRunManager {
             return Collections.emptyList();
         }
 
-        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds);
+        final Map<Long, List<RunStatus>> runStatuses = runStatusManager.loadRunStatus(runIds, archive);
 
         return runs.stream()
             .peek(run -> run.setRunStatuses(runStatuses.get(run.getId())))
@@ -1184,7 +1239,8 @@ public class PipelineRunManager {
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_DISK_SIZE_NOT_FOUND));
         Assert.isTrue(request.getSize() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_IS_INVALID, request.getSize()));
-        nodesManager.attachDisk(pipelineRun, request);
+        final Map<String, String> resourceTags = metadataManager.prepareCloudResourceTags(pipelineRun);
+        nodesManager.attachDisk(pipelineRun, request, resourceTags);
         return pipelineRun;
     }
 
@@ -1301,6 +1357,47 @@ public class PipelineRunManager {
                         .endDate(run.getEndDate())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public RunChartInfo loadActiveRunsCharts(final RunChartFilterVO filter) {
+        if (CollectionUtils.isEmpty(filter.getStatuses())) {
+            filter.setStatuses(Arrays.stream(TaskStatus.values())
+                    .filter(status -> !status.isFinal())
+                    .collect(Collectors.toList()));
+        }
+        final Map<RunChartInfoEntity.ColumnName, Map<TaskStatus, Map<String, Long>>> charts =
+                pipelineRunDao.loadRunsCharts(filter).stream()
+                        .filter(entity -> Objects.nonNull(entity.getValue()))
+                        .collect(Collectors.groupingBy(RunChartInfoEntity::getColumnName,
+                                Collectors.groupingBy(RunChartInfoEntity::getStatus,
+                                        Collectors.toMap(RunChartInfoEntity::getValue, RunChartInfoEntity::getCount))));
+        return RunChartInfo.builder()
+                .owners(charts.get(RunChartInfoEntity.ColumnName.owner))
+                .dockerImages(charts.get(RunChartInfoEntity.ColumnName.docker_image))
+                .instanceTypes(charts.get(RunChartInfoEntity.ColumnName.node_type))
+                .tags(charts.get(RunChartInfoEntity.ColumnName.tags))
+                .build();
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void setLimitBoundary(final Long runId, final Boolean enable, final Integer boundary) {
+        Assert.isTrue(!enable || boundary != null, "Boundary value should be specified to limit network bandwidth");
+        final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
+        Assert.notNull(run,
+                messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
+        final Map<String, String> tags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+        if (enable) {
+            tags.put(NETWORK_LIMIT, String.valueOf(boundary));
+            // Clear tag with timestamp of applied limit, to re-enable it with a new bound.
+            final String timestampTagSuffix = preferenceManager.getPreference(
+                    SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX
+            );
+            tags.remove(String.format("%s%s", NETWORK_LIMIT, timestampTagSuffix));
+        } else {
+            tags.remove(NETWORK_LIMIT);
+        }
+        run.setTags(tags);
+        pipelineRunDao.updateRunTags(run);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
@@ -1797,5 +1894,18 @@ public class PipelineRunManager {
                 ? cloudRegionManager.loadDefaultRegion().getId().toString()
                 : regionId.toString();
         return new ContextualPreferenceExternalResource(ContextualPreferenceLevel.REGION, regionIdStr);
+    }
+
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
+    private void tryRemoveInstanceTags(final PipelineRun run) {
+        try {
+            final Map<String, String> tags = metadataManager.prepareCloudResourceTags(run);
+            if (MapUtils.isNotEmpty(tags)) {
+                final RunInstance instance = run.getInstance();
+                cloudFacade.deleteInstanceTags(instance.getCloudRegionId(), run.getId().toString(), tags.keySet());
+            }
+        } catch (Exception e) {
+            log.error("An error occurred during cloud resource tags removal for run '{}'", run.getId(), e);
+        }
     }
 }

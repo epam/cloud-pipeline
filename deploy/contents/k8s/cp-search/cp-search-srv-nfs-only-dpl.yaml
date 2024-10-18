@@ -14,6 +14,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-search-srv: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-search-srv: "true"

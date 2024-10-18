@@ -234,7 +234,8 @@ public class GitManager {
             final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
             entries = pipelineRepositoryService.getRepositoryContents(
                     pipeline, findRepoSrcPath(pipeline), version, recursive);
-            if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
+            if (RepositoryType.GITLAB.equals(pipeline.getRepositoryType()) &&
+                    appendConfigurationFileIfNeeded) {
                 final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
                         pipeline.getConfigurationPath());
                 if (configurationEntry != null) {

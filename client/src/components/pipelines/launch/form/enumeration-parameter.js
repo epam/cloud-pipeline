@@ -45,28 +45,30 @@ class EnumerationParameter extends React.PureComponent {
       );
     }
     return (
-      <Select
-        disabled={disabled}
-        placeholder={placeholder}
-        className={className}
-        onChange={onChange}
-        style={style}
-        value={value}
-        size={size}
-      >
-        {
-          (enumeration || [])
-            .filter(e => e.isVisible(parameters))
-            .map(e => (
-              <Select.Option
-                key={e.name}
-                value={e.name}
-              >
-                {e.name}
-              </Select.Option>
-            ))
-        }
-      </Select>
+      <div>
+        <Select
+          disabled={disabled}
+          placeholder={placeholder}
+          className={className}
+          onChange={onChange}
+          style={style}
+          value={value}
+          size={size}
+        >
+          {
+            (enumeration || [])
+              .filter(e => e.isVisible(parameters))
+              .map(e => (
+                <Select.Option
+                  key={e.name}
+                  value={e.name}
+                >
+                  {e.name}
+                </Select.Option>
+              ))
+          }
+        </Select>
+      </div>
     );
   }
 }

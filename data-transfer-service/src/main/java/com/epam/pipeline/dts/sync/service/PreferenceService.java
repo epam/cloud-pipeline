@@ -28,4 +28,7 @@ public interface PreferenceService {
     boolean isHeartbeatEnabled();
     boolean isSourceDeletionEnabled();
     void clearShutdownFlag();
+    boolean isLogEnabled();
+    String getPipeCmd();
+    String getPipeCmdSuffix();
 }

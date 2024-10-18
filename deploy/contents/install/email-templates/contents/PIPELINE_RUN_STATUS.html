@@ -18,6 +18,10 @@
     <p>*** This is a system generated email, do not reply to this email ***</p>
     <p>A job with ID ${CP_DOLLAR}templateParameters["id"], launched from ${CP_DOLLAR}templateParameters.get("owner") account, has changed the status to <b>${CP_DOLLAR}templateParameters["status"]</b></p>
     <br />
+    #set(${CP_DOLLAR}statusesToSendLogs = ["FAILED", "SUCCESS"])
+    #if( ${CP_DOLLAR}statusesToSendLogs.contains(${CP_DOLLAR}templateParameters["status"]) )
+    <p>You can <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/run/${CP_DOLLAR}templateParameters.get("id")/logfile">download logs</a> of this run.</p>
+    #end
     <p><b>Job details:</b></p>
     <table>
         <tr>

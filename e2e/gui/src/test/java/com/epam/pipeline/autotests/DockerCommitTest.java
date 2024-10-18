@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.*;
+import static com.epam.pipeline.autotests.ao.ToolVersions.hasOnPage;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -431,12 +432,6 @@ public class DockerCommitTest
 
     private Consumer<ToolGroup> deleteGroup(final String groupName) {
         return group -> group.deleteGroup(deletion -> deletion.ensureGroupNameIs(groupName).ok());
-    }
-
-    public boolean hasOnPage(String customTag) {
-        return $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
-                .exists();
     }
 
     private boolean groupHasNoText(String text) {

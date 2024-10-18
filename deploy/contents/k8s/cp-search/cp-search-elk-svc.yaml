@@ -7,9 +7,13 @@ metadata:
   namespace: default
 spec:
   ports:
-  - protocol: TCP
-    port: ${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}
-    targetPort: 9200
-    name: cp-search-elk-elastic-port
+    - protocol: TCP
+      port: ${CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT}
+      targetPort: 9200
+      name: cp-search-elk-elastic-port
+    - protocol: TCP
+      port: ${CP_SEARCH_ELK_TRANSPORT_INTERNAL_PORT}
+      targetPort: 9300
+      name: cp-search-elk-transport-port
   selector:
     cloud-pipeline/cp-search-elk: "true"

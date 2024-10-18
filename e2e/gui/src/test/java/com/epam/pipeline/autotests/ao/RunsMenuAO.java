@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public ElementsCollection allRuns() {
-        return $("tbody").shouldBe(visible).findAll("tr");
+        return $("tbody").shouldBe(visible).findAll("tr").filter(visible);
     }
 
     public RunsMenuAO ensureHasOwner(String owner) {

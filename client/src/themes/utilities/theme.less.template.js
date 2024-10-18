@@ -490,6 +490,10 @@ export default `
 @THEME .has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
+@THEME .launch-form-pipeline-name-form-item .ant-form-item-control,
+@THEME .launch-form-pipeline-name-form-item .ant-form-item-title {
+  line-height: 24px;
+}
 @THEME .cp-text-not-important {
   color: @application-color-faded;
 }
@@ -2892,11 +2896,11 @@ export default `
 @THEME .cp-nat-route-port-control {
   border-bottom: 1px solid @table-border-color;
 }
-@THEME .cp-user-status-online {
+@THEME .cp-status-online {
   fill: @color-green;
   stroke: @color-green;
 }
-@THEME .cp-user-status-offline {
+@THEME .cp-status-offline {
   stroke: @color-grey;
   fill: transparent;
 }

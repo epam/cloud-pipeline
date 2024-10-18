@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {isObservableArray} from 'mobx';
 import {Alert} from 'antd';
 import classNames from 'classnames';
 import styles from './warning.css';
@@ -37,6 +38,27 @@ function RunOperationWarningAlert (
     checkResult
   }
 ) {
+  if (Array.isArray(message) || isObservableArray(message)) {
+    return (
+      <div style={{display: 'flex', flexDirection: 'column'}}>
+        {message.map(({type, text}) => (
+          <Alert
+            className={
+              classNames(
+                className,
+                styles.alert
+              )
+            }
+            key={text}
+            style={style}
+            type={type}
+            showIcon={showIcon}
+            message={wrapWarningProp(text)(checkResult)}
+          />
+        ))}
+      </div>
+    );
+  }
   return (
     <Alert
       className={

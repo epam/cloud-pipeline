@@ -21,6 +21,13 @@
   overflow: auto;
 }
 
+.disabled-row,
+.disabled-row:hover,
+.disabled-row td,
+.disabled-row td:hover {
+  background: unset !important;
+}
+
 .list-container {
   height: 100%;
   overflow: auto;
@@ -32,7 +39,8 @@
 
 .list-search {
   margin-bottom: 5px;
-  padding: 0 2px;
+  display: flex;
+  flex-wrap: nowrap;
 }
 
 .list {

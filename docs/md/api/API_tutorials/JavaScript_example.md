@@ -2,14 +2,14 @@
 
 The JavaScript example implementation of the [Usage scenario](API_tutorials.md) offers a Web form, that allows to specify the job input parameters and submit it into the Cloud Pipeline via the API.
 
-# Prerequisites
+## Prerequisites
 
 * NodeJS 10.15.3+
 * npm 6.4.1+
 
-# Setup the configuration
+## Setup the configuration
 
-Locate the JavaScript sample application at [js_example](../attachments/js_example/) or clone the the Cloud Pipeline repository
+Locate the JavaScript sample application at [js_example](https://github.com/epam/cloud-pipeline/tree/develop/docs/md/api/API_tutorials/attachments/js_example) or clone it from the Cloud Pipeline repository:
 
 ```bash
 git clone https://github.com/epam/cloud-pipeline
@@ -19,10 +19,9 @@ cd cloud-pipeline/docs/md/api/API_tutorials/attachments/js_example/
 Open the configuration file [config.js](attachments/js_example/src/api/config.js) and replace the following values:
 
 * `<host>` - set to the host of the Cloud Pipeline API
-* `<storage_id>` - set to the ID of the bucket, that is going to be used as a "working directory"
-FASTQ files and processing results will placed into this bucket
+* `<storage_id>` - set to the ID of the bucket, that is going to be used as a "working directory". FASTQ files and processing results will placed into this bucket
 
-# Start the application
+## Start the application
 
 ```bash
 # Install dependencies and start the app
@@ -31,14 +30,14 @@ npm install
 npm run start
 ```
 
-# Application description
+## Application description
 
 Once app is built and loaded in the web-browser one can perform the following operations:
 
 * Setup the cellranger parameters
-  * Set the location of the FASTQ files
-  * Choose the transcriptome
-  * Specify the "workdir", where the job will keep the results
+    * Set the location of the FASTQ files
+    * Choose the transcriptome
+    * Specify the "workdir", where the job will keep the results
 
 ![API_tutorials_01](attachments/png/API_tutorials_01.png)
 

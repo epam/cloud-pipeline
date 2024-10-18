@@ -22,6 +22,7 @@ import styles from './TaskLink.css';
 import StatusIcon from '../../../special/run-status-icon';
 import displayDate from '../../../../utils/displayDate';
 import displayDuration from '../../../../utils/displayDuration';
+import highlightText from '../../../special/highlightText';
 
 export class TaskLink extends Component {
   static propTypes = {
@@ -33,7 +34,8 @@ export class TaskLink extends Component {
     location: PropTypes.shape({
       pathinfo: PropTypes.string
     }),
-    timings: PropTypes.bool
+    timings: PropTypes.bool,
+    searchText: PropTypes.string
   };
 
   @computed
@@ -60,7 +62,12 @@ export class TaskLink extends Component {
   }
 
   render () {
-    const {to, task: {name, status}, location: {pathinfo}} = this.props;
+    const {
+      to,
+      task: {name, status},
+      location: {pathinfo},
+      searchText
+    } = this.props;
     const taskNameClass = 'default';
     const infos = [];
     if (this.props.timings) {
@@ -113,7 +120,7 @@ export class TaskLink extends Component {
         <div>
           <StatusIcon status={status} small displayTooltip={false} />
           <span>
-            <b>{name}</b>
+            <b>{highlightText(name, searchText)}</b>
           </span>
           <br />
           {infos}
@@ -125,7 +132,7 @@ export class TaskLink extends Component {
       <Link to={to}>
         <StatusIcon status={status} small />
         <span className={styles[taskNameClass]}>
-          <b>{name}</b>
+          <b>{highlightText(name, searchText)}</b>
         </span>
         <br />
         {infos}

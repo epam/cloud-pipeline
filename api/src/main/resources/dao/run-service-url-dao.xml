@@ -117,5 +117,15 @@
                 ]]>
             </value>
         </constructor-arg>
+        <constructor-arg>
+            <value>
+                <!--deleteServiceUrlByRunIdsQuery-->
+                <![CDATA[
+                   DELETE FROM
+                       pipeline.pipeline_run_service_url s
+                   WHERE s.pipeline_run_id IN (:list)
+                ]]>
+            </value>
+        </constructor-arg>
     </bean>
 </beans>

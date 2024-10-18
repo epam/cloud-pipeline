@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# Copyright 2024 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Waits until the given host resolves to some ip address.
+# Optionally waits until the host resolves to an ip address provided as a second argument.
+# Can be used for waiting for a remote dns server to configure the required host record.
+# Notice that the resolving also considers local /etc/hosts.
+
+_hostname="$1"
+
+function check_ipv4() {
+    ip="$1"
+    if [[ $ip =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+if [ -z "$_hostname" ] || [ "$_hostname" == "$(hostname)" ]; then
+    _hostname="$(hostname)"
+    _resolve_my_ip=true
+fi
+
+if [ "$_resolve_my_ip" == "true" ]; then
+    if [ "$CP_API_POD_IP" ]; then
+        echo "$CP_API_POD_IP"
+        exit 0
+    fi
+
+    CP_API_POD_IP=$(hostname --ip-address)
+    if [ "$CP_API_POD_IP" ] && check_ipv4 "$CP_API_POD_IP"; then
+        echo "$CP_API_POD_IP"
+        exit 0
+    fi
+fi
+
+CP_API_POD_IP=$(getent ahostsv4 "$_hostname" | grep RAW | awk '{ print $1; exit }')
+if [ "$CP_API_POD_IP" ] && check_ipv4 "$CP_API_POD_IP"; then
+    echo "$CP_API_POD_IP"
+    exit 0
+fi
+

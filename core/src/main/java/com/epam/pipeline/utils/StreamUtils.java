@@ -56,4 +56,8 @@ public final class StreamUtils {
         return t -> seen.add(keyExtractor.apply(t));
     }
 
+    public static <T> Stream<T> takeWhile(final Stream<T> stream, final Predicate<T> predicate) {
+        return from(IteratorUtils.takeWhile(stream.iterator(), predicate));
+    }
+
 }

@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
+import com.epam.pipeline.controller.vo.user.RunnerSidVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
@@ -422,8 +423,8 @@ public class UserController extends AbstractRestController {
             notes = "Updates runners to user",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<RunnerSid>> updateRunners(@PathVariable final Long id,
-                                                 @RequestBody final List<RunnerSid> runners) {
+    public Result<List<RunnerSidVO>> updateRunners(@PathVariable final Long id,
+                                                 @RequestBody final List<RunnerSidVO> runners) {
         return Result.success(userApiService.updateRunners(id, runners));
     }
 

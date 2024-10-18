@@ -526,6 +526,12 @@
         </classes>
     </test>
 
+    <test name="DnsHostsManagementTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.DnsHostsManagementTest"/>
+        </classes>
+    </test>
+
     <test name="EnvironmentTest">
         <classes>
             <class name="com.epam.pipeline.autotests.EnvironmentTest"/>

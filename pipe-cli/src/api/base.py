@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import os
 import sys
 import time
 
@@ -47,8 +48,8 @@ class API(object):
             self.__proxies__ = self.__config__.resolve_proxy()
         else:
             self.__proxies__ = None
-        self.__attempts__ = 3
-        self.__timeout__ = 5
+        self.__attempts__ = int(os.getenv('CP_CLI_API_CALL_RETRY_ATTEMPTS') or 3)
+        self.__timeout__ = int(os.getenv('CP_CLI_API_CALL_RETRY_TIMEOUT') or 5)
         self.__connection_timeout__ = 10
 
     def get_url_for_method(self, method):
