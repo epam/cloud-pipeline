@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,6 +89,8 @@ public class DockerContainerOperationManager {
     private static final String GLOBAL_KNOWN_HOSTS_FILE = "GlobalKnownHostsFile=/dev/null";
     private static final String USER_KNOWN_HOSTS_FILE = "UserKnownHostsFile=/dev/null";
     private static final String COMMIT_COMMAND_DESCRIPTION = "ssh session to commit pipeline run";
+    private static final String LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION =
+            "ssh session to limit pipeline run network bandwidth";
     private static final String CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION =
             "ssh session to get docker container layers count";
     private static final String PAUSE_COMMAND_DESCRIPTION = "Error is occurred during to pause pipeline run";
@@ -103,6 +105,7 @@ public class DockerContainerOperationManager {
     private static final String CP_NODE_SSH_PORT = "CP_NODE_SSH_PORT";
 
     public static final String PAUSE_RUN_TASK = "PausePipelineRun";
+    private static final int BYTES_IN_KB = 1024;
 
     @Autowired
     private PipelineRunManager runManager;
@@ -152,8 +155,14 @@ public class DockerContainerOperationManager {
     @Value("${container.layers.script.url}")
     private String containerLayersCountScriptUrl;
 
+    @Value("${container.size.script.url}")
+    private String containerSizeScriptUrl;
+
     @Value("${pause.run.script.url}")
     private String pauseRunScriptUrl;
+
+    @Value("${limit.run.bandwidth.script.url}")
+    private String limitRunBandwidthScriptUrl;
 
     private Lock resumeLock = new ReentrantLock();
 
@@ -242,21 +251,21 @@ public class DockerContainerOperationManager {
         try {
             Assert.notNull(containerId,
                     messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
-            final String containerLayersCommand = DockerContainerLayersCommand.builder()
+            final String containerLayersCommand = SimpleDockerContainerCommand.builder()
                     .runScriptUrl(containerLayersCountScriptUrl)
                     .containerId(containerId)
                     .build()
                     .getCommand();
-            Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), containerLayersCommand,
                     getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
                 final String result = reader.lines().collect(Collectors.joining());
                 layersCount = Long.parseLong(result);
             }
-            boolean isFinished = sshConnection.waitFor(
-                    preferenceManager.getPreference(SystemPreferences.GET_LAYERS_COUNT_TIMEOUT), TimeUnit.SECONDS);
-            Assert.state(isFinished && sshConnection.exitValue() == 0,
-                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_LAYERS_COUNT_FAILED, run.getId()));
         } catch (IllegalStateException | IllegalArgumentException | IOException e) {
             log.error(e.getMessage());
             throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
@@ -265,6 +274,75 @@ public class DockerContainerOperationManager {
             throw new CmdExecutionException(CONTAINER_LAYERS_COUNT_COMMAND_DESCRIPTION, e);
         }
         return layersCount;
+    }
+
+    public long getContainerSize(final PipelineRun run) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        final long size;
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+            final String getSizeCommand = SimpleDockerContainerCommand.builder()
+                    .runScriptUrl(containerSizeScriptUrl)
+                    .containerId(containerId)
+                    .build()
+                    .getCommand();
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), getSizeCommand,
+                    getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.GET_CONTAINER_SIZE_TIMEOUT), TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_GET_CONTAINER_SIZE_FAILED, run.getId()));
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(sshConnection.getInputStream()))) {
+                final String result = reader.lines().collect(Collectors.joining()).trim();
+                size = Long.parseLong(result);
+            }
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            log.error(e.getMessage());
+            return -1;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return -1;
+        }
+        return size;
+    }
+
+    public void limitNetworkBandwidth(final PipelineRun run, final Integer boundary, final Boolean enable) {
+        final String containerId = kubernetesManager.getContainerIdFromKubernetesPod(run.getPodId(),
+                run.getActualDockerImage());
+        try {
+            Assert.notNull(containerId,
+                    messageHelper.getMessage(MessageConstants.ERROR_CONTAINER_ID_FOR_RUN_NOT_FOUND, run.getId()));
+
+            final String apiToken = authManager.issueTokenForCurrentUser(null).getToken();
+
+            final int boundaryKBitsPerSec = enable ? boundary * 8 / BYTES_IN_KB : 0;
+            final String limitNetworkCommand = LimitBandwidthCommand.builder()
+                    .runScriptUrl(limitRunBandwidthScriptUrl)
+                    .runId(String.valueOf(run.getId()))
+                    .api(preferenceManager.getPreference(SystemPreferences.BASE_API_HOST))
+                    .apiToken(apiToken)
+                    .containerId(containerId)
+                    .enable(String.valueOf(enable))
+                    .uploadRate(String.valueOf(boundaryKBitsPerSec))
+                    .downloadRate(String.valueOf(boundaryKBitsPerSec))
+                    .build()
+                    .getCommand();
+            final Process sshConnection = submitCommandViaSSH(run.getInstance().getNodeIP(), limitNetworkCommand,
+                    getSshPort(run));
+            final boolean isFinished = sshConnection.waitFor(
+                    preferenceManager.getPreference(SystemPreferences.LIMIT_NETWORK_BANDWIDTH_COMMAND_TIMEOUT),
+                    TimeUnit.SECONDS);
+            Assert.state(isFinished && sshConnection.exitValue() == 0,
+                    messageHelper.getMessage(MessageConstants.ERROR_LIMIT_NETWORK_BANDWIDTH_FAILED, run.getId()));
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+            log.error(e.getMessage());
+            throw new CmdExecutionException(LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new CmdExecutionException(LIMIT_NETWORK_BANDWIDTH_COMMAND_DESCRIPTION, e);
+        }
     }
 
     @Async("pauseRunExecutor")
@@ -430,8 +508,11 @@ public class DockerContainerOperationManager {
         final String suffix = preferenceManager.getPreference(SystemPreferences.SYSTEM_RUN_TAG_DATE_SUFFIX);
         Stream.of(ResourceMonitoringManager.UTILIZATION_LEVEL_LOW,
                   ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH,
+                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH,
                   ResourceMonitoringManager.UTILIZATION_LEVEL_LOW + suffix,
-                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix)
+                  ResourceMonitoringManager.UTILIZATION_LEVEL_HIGH + suffix,
+                  ResourceMonitoringManager.NETWORK_CONSUMING_LEVEL_HIGH + suffix,
+                  PipelineRunManager.NETWORK_LIMIT + suffix)
             .filter(run::hasTag)
             .forEach(run::removeTag);
     }

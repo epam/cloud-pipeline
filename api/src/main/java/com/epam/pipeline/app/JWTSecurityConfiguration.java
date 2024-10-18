@@ -74,6 +74,9 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Value("#{'${api.security.public.urls}'.split(',')}")
     private List<String> excludeScripts;
 
+    @Value("${api.security.swagger.access.roles:ROLE_ADMIN,ROLE_USER}")
+    private String[] swaggerAccessRoles;
+
     @Autowired
     private SAMLAuthenticationProvider samlAuthenticationProvider;
 
@@ -109,6 +112,8 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers(getAnonymousResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName(), 
                             DefaultRoles.ROLE_ANONYMOUS_USER.getName())
+                .antMatchers(getSwaggerResources())
+                .hasAnyAuthority(swaggerAccessRoles)
                 .antMatchers(getSecuredResources())
                     .hasAnyAuthority(DefaultRoles.ROLE_ADMIN.getName(), DefaultRoles.ROLE_USER.getName())
                 .and()
@@ -144,14 +149,19 @@ public class JWTSecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected String[] getUnsecuredResources() {
         final List<String> excludePaths = Arrays.asList(
                 "/restapi/dockerRegistry/oauth",
-                "/restapi/swagger-resources/**",
-                "/restapi/swagger-ui.html",
-                "/restapi/webjars/springfox-swagger-ui/**",
-                "/restapi/v2/api-docs/**",
                 "/restapi/proxy/**",
                 "/error",
                 "/error/**");
         return ListUtils.union(excludePaths, ListUtils.emptyIfNull(excludeScripts)).toArray(new String[0]);
+    }
+
+    protected String[] getSwaggerResources() {
+        final List<String> paths = Arrays.asList(
+                "/restapi/swagger-resources/**",
+                "/restapi/swagger-ui.html",
+                "/restapi/webjars/springfox-swagger-ui/**",
+                "/restapi/v2/api-docs/**");
+        return paths.toArray(new String[0]);
     }
 
     public String[] getAnonymousResources() {

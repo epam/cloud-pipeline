@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,7 +142,6 @@ public enum Primitive {
     FILES_PANEL,
     CROSS,
     CONFIGURATION,
-    ESTIMATE_PRICE,
     INSTANCE,
     EXEC_ENVIRONMENT,
     PARAMETERS,
@@ -323,5 +322,6 @@ public enum Primitive {
     REINDEX,
     CONDITION,
     SHOW_TIMINGS,
-    SELECTION_ACTIONS
+    SELECTION_ACTIONS,
+    EDITOR
 }

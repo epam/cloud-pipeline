@@ -119,4 +119,10 @@ public final class CommonUtils {
         result.removeAll(right);
         return result;
     }
+
+    public static <T> List<T> reversed(final List<T> items) {
+        final List<T> result = new ArrayList<>(items);
+        Collections.reverse(result);
+        return result;
+    }
 }

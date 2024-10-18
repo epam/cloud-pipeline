@@ -50,9 +50,7 @@ public class PipelineRepositoryProviderService {
         if (Objects.isNull(repositoryType)) {
             return providers.get(RepositoryType.GITLAB);
         }
-        final GitClientService provider = RepositoryType.GITHUB.equals(repositoryType)
-                ? providers.get(RepositoryType.GITLAB)
-                : providers.get(repositoryType);
+        final GitClientService provider = providers.get(repositoryType);
         if (provider == null) {
             throw new IllegalArgumentException(String.format("Repository provider '%s' not supported", repositoryType));
         }

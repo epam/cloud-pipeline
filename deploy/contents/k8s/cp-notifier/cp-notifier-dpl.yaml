@@ -11,6 +11,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-notifier: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-notifier: "true"

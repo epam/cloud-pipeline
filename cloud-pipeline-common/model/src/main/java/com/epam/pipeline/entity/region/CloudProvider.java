@@ -21,5 +21,5 @@ package com.epam.pipeline.entity.region;
  */
 
 public enum  CloudProvider {
-    AWS, AZURE, GCP
+    AWS, AZURE, GCP, LOCAL
 }

@@ -222,7 +222,8 @@ class HcsFileSgeParser:
         export JAVA_OPTS="{}"
         export HCS_PARSER_PROCESSING_THREADS=1
         export PATH="{}"
-        '''.format(self.hcs_root_path, self.hcs_img_path, jvm_parameters, os.getenv('PATH'))
+        export BF_MAX_MEM="{}G"
+        '''.format(self.hcs_root_path, self.hcs_img_path, jvm_parameters, os.getenv('PATH'), str(heap_limit_gb))
         for key, value in os.environ.items():
             if key.startswith('HCS_PARSING_'):
                 if key == 'HCS_PARSING_PLATE_DETAILS_DICT':

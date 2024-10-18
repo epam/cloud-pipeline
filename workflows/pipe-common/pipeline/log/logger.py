@@ -372,3 +372,34 @@ class RunLogger(CloudPipelineLogger):
             stacktrace = traceback.format_exc()
             message += ' ' + stacktrace
         self._api.log_efficiently(run_id=self._run_id, message=message, task=task, status=status, date=formatted_dt)
+
+
+class ResilientLogger(CloudPipelineLogger):
+
+    def __init__(self, inner, fallback):
+        self._inner = inner
+        self._fallback = fallback
+
+    def info(self, message, task=None, trace=False):
+        self._log(self._inner.info, self._fallback.error, message, task=task, trace=trace)
+
+    def debug(self, message, task=None, trace=False):
+        self._log(self._inner.debug, self._fallback.error, message, task=task, trace=trace)
+
+    def warning(self, message, task=None, trace=False):
+        self._log(self._inner.warning, self._fallback.error, message, task=task, trace=trace)
+
+    def success(self, message, task=None, trace=False):
+        self._log(self._inner.success, self._fallback.error, message, task=task, trace=trace)
+
+    def error(self, message, task=None, trace=False):
+        self._log(self._inner.error, self._fallback.error, message, task=task, trace=trace)
+
+    def _log(self, inner_method, fallback_method, message, task=None, trace=False):
+        try:
+            inner_method(message, task=task, trace=trace)
+        except Exception:
+            try:
+                fallback_method('Logging error', task=task, trace=True)
+            except Exception:
+                pass

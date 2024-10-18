@@ -29314,10 +29314,19 @@ class Expression extends wdl_entity_1.default {
         if (ref === dependency) {
             return true;
         }
+        const [refPart, ...parts] = dependency.split('.');
+        const checkStructs = (_parameter, path) => {
+            var _a, _b;
+            const [propName, ...rest] = path;
+            const nextParameter = (_b = (_a = _parameter === null || _parameter === void 0 ? void 0 : _parameter.struct) === null || _a === void 0 ? void 0 : _a.properties) === null || _b === void 0 ? void 0 : _b.find((p) => p.name === propName);
+            if (nextParameter && rest.length > 0) {
+                return checkStructs(nextParameter, rest);
+            }
+            return propName === nextParameter.name;
+        };
         if (parameter.struct
-            && parameter.struct
-                .properties
-                .some((p) => `${ref}.${p.name}` === dependency)) {
+            && refPart === ref
+            && checkStructs(parameter, parts)) {
             return true;
         }
         return parameter.isObject
@@ -36723,9 +36732,10 @@ const ParserListenerEvents = {
 /**
  * @param {antlr4.ParseTreeListener.constructor} TreeWalker
  * @param {{[event: ParserListenerEvents]: string}} [processors]
+ * @param {string} version
  * @returns {CommonListener}
  */
-function createCommonListener(TreeWalker, processors = {}) {
+function createCommonListener(TreeWalker, processors = {}, version) {
     function getProcessorProperties(event, defaultProperties) {
         if (typeof processors[event] === 'object') {
             const _a = processors[event], { handler } = _a, rest = __rest(_a, ["handler"]);
@@ -36848,7 +36858,11 @@ function createCommonListener(TreeWalker, processors = {}) {
             if (obj) {
                 const { elements = [], } = obj;
                 obj.declarations = elements.filter((element) => element[context_types_1.ContextTypeSymbol] === context_types_1.ContextTypes.declaration);
-                obj.actions = elements.filter((element) => element[context_types_1.ContextTypeSymbol] !== context_types_1.ContextTypes.declaration);
+                if (version === 'draft-2' || version === 'draft-1') {
+                    obj.inputs = elements.filter((element) => element[context_types_1.ContextTypeSymbol] === context_types_1.ContextTypes.input);
+                }
+                obj.actions = elements.filter((element) => element[context_types_1.ContextTypeSymbol] !== context_types_1.ContextTypes.declaration &&
+                    element[context_types_1.ContextTypeSymbol] !== context_types_1.ContextTypes.input);
                 delete obj.elements;
             }
         }
@@ -37052,6 +37066,10 @@ function createCommonListener(TreeWalker, processors = {}) {
             if (!current) {
                 return context_types_1.ContextTypes.declaration;
             }
+            if ((version === 'draft-2' || version === 'draft-1') &&
+                current[context_types_1.ContextTypeSymbol] === context_types_1.ContextTypes.task) {
+                return context_types_1.ContextTypes.input;
+            }
             switch (current[context_types_1.ContextTypeSymbol]) {
                 case context_types_1.ContextTypes.inputs:
                     return context_types_1.ContextTypes.input;
@@ -37098,7 +37116,7 @@ function createParser(Lexer, Parser, ParserListener, version) {
         parser.addErrorListener(errorListener);
         try {
             const wdl = parser.document();
-            const listener = createCommonListener(ParserListener);
+            const listener = createCommonListener(ParserListener, undefined, version);
             antlr4_1.ParseTreeWalker.DEFAULT.walk(listener, wdl);
             if (errorListener.errors.length > 0) {
                 throw new parser_error_1.default(errorListener.errors);

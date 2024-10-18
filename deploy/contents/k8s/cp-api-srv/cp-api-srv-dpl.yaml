@@ -4,12 +4,13 @@ metadata:
   name: cp-api-srv
   namespace: default
 spec:
-  replicas: 1
+  replicas: ${CP_API_SRV_REPLICAS}
   template:
     metadata:
       namespace: default
       labels:
         cloud-pipeline/cp-api-srv: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       affinity:
         podAntiAffinity:

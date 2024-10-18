@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,9 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import static com.codeborne.selenide.Condition.enabled;
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.C;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import com.epam.pipeline.autotests.utils.Utils;
 
 import java.lang.reflect.Constructor;
@@ -105,7 +106,8 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
     }
 
     protected void changeTabTo(Primitive tab) {
-        sleep(2, SECONDS).click(tab).tabShouldBeActive(tab);
+        sleep(2, SECONDS).get(tab).waitUntil(enabled, DEFAULT_TIMEOUT);
+        click(tab).tabShouldBeActive(tab);
     }
 
     protected abstract TAB_AO open();
@@ -116,7 +118,7 @@ public abstract class AbstractPipelineTabAO<TAB_AO extends AbstractPipelineTabAO
 
     public PipelineRunFormAO runPipeline() {
         sleep(2, SECONDS);
-        get(RUN).waitUntil(not(disabled), C.DEFAULT_TIMEOUT);
+        get(RUN).waitUntil(not(disabled), DEFAULT_TIMEOUT);
         sleep(2, SECONDS);
         click(RUN);
         sleep(1, SECONDS);

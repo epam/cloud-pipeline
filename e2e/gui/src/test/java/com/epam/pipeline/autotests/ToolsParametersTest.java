@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,6 @@ import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Selectors.byTitle;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
-import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -57,7 +56,6 @@ public class ToolsParametersTest
     private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private static final String CUSTOM_CAPABILITIES_3_JSON = "/customCapabilities3.json";
     private static final String SYSTEM_D = "SystemD";
-    private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
             "centos 8";
     private static final String CUSTOM_CAPABILITY_DESC_1 = "Custom test capability 1";
@@ -195,7 +193,7 @@ public class ToolsParametersTest
                 .ensure(configurationParameter("MY_PARAM1", "MY_VALUE1"), exist)
                 .ensure(configurationParameter("MY_PARAM2", "MY_VALUE2"), exist)
                 .ensure(configurationParameter("MY_BOOLEAN_PARAM", "false"), exist)
-                .ensure(configurationParameter("MY_NUMBER_PARAM", "21"), exist);
+                .ensure(configurationParameter("MY_NUMBER_PARAM", "12"), exist);
     }
 
     @Test

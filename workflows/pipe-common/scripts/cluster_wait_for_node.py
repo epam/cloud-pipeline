@@ -42,7 +42,7 @@ class WaitForNode:
             Logger.info('Waiting for node with parameters = {}, task: {}'.format(','.join(parameters if parameters else ['NA']), task_name),
                         task_name=self.task_name)
             # approximately 20 minutes
-            attempts = os.environ.get('CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS', 120)
+            attempts = int(os.getenv('CP_CLUSTER_WAIT_FOR_NODE_ATTEMPTS', 120))
             master = self.get_node_info(task_name, run_id, parameters=parameters)
             while (not master or not master.ip or not master.name) and attempts > 0:
                 master = self.get_node_info(task_name, run_id, parameters=parameters)

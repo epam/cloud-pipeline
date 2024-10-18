@@ -16,6 +16,7 @@ import math
 from datetime import datetime
 
 from pipeline.hpc.logger import Logger
+from pipeline.hpc.valid import WorkerValidatorHandler
 
 
 def _perform_command(action, msg, error_msg, skip_on_failure):
@@ -98,7 +99,7 @@ class GridEngineJobState:
 class GridEngineJob:
 
     def __init__(self, id, root_id, name, user, state, datetime, hosts=None,
-                 cpu=0, gpu=0, mem=0, requests=None,
+                 cpu=0, gpu=0, mem=0, exc=0, requests=None,
                  pe='local'):
         self.id = id
         self.root_id = root_id
@@ -110,6 +111,7 @@ class GridEngineJob:
         self.cpu = cpu
         self.gpu = gpu
         self.mem = mem
+        self.exc = exc
         self.requests = requests or {}
         self.pe = pe
 
@@ -117,7 +119,7 @@ class GridEngineJob:
         return str(self.__dict__)
 
 
-class GridEngine:
+class GridEngine(WorkerValidatorHandler):
 
     def get_jobs(self):
         pass
@@ -200,6 +202,19 @@ class GridEngineJobValidator:
 
     def validate(self, jobs):
         pass
+
+
+class GridEngineJobProcessor:
+
+    def process(self, jobs):
+        pass
+
+
+class DoNothingGridEngineJobProcessor(GridEngineJobProcessor):
+
+    def process(self, jobs):
+        relevant_jobs, irrelevant_jobs = jobs, []
+        return relevant_jobs, irrelevant_jobs
 
 
 class GridEngineLaunchAdapter:

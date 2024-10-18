@@ -313,6 +313,73 @@ test_cases = [
      10 * [IntegralDemand(cpu=1, gpu=1, owner=owner)],
      [InstanceDemand(instance=instance_64cpu8gpu, owner=owner),
       InstanceDemand(instance=instance_32cpu4gpu, owner=owner)]],
+
+    ['1cpu,1exc job using 2cpu instances',
+     [instance_2cpu],
+     [IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['1cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     [IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['2x1cpu,1exc job using 2cpu instances',
+     [instance_2cpu],
+     2 * [IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['2x1cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     2 * [IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['4x1cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     4 * [IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['4cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     [IntegralDemand(cpu=4, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['1cpu,1exc and 3cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     [IntegralDemand(cpu=1, exc=1, owner=owner),
+      IntegralDemand(cpu=3, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner),
+      InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['1cpu and 1cpu,1exc job using 2cpu instances',
+     [instance_2cpu],
+     [IntegralDemand(cpu=1, owner=owner),
+      IntegralDemand(cpu=1, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_2cpu, owner=owner)]],
+
+    ['1cpu and 3cpu,1exc job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     [IntegralDemand(cpu=1, owner=owner),
+      IntegralDemand(cpu=3, exc=1, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['1cpu,1exc and 3cpu job using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     [IntegralDemand(cpu=1, exc=1, owner=owner),
+      IntegralDemand(cpu=3, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner)]],
 ]
 
 

@@ -36,7 +36,7 @@ local function dict_contains(dict, key)
     return dict[key] ~= nil
 end
 
-local function check_run_permissions(username, token)
+local function post_api(username, token, api_request_url, api_request_data)
     local run_api_url = os.getenv("API")
     if not run_api_url or not token then
         ngx.log(ngx.ERR, "[SECURITY] Application: Request: " .. ngx.var.request .. "; User: " .. username ..
@@ -50,32 +50,10 @@ local function check_run_permissions(username, token)
     local httpc = http.new()
 
     -- Perform the <API>/run/search request
-    local run_id_api_url = run_api_url .. 'run/search'
-    local connect_host = ngx.var.connect_host
-    local body_content = [[{
-                            "filterExpression": {
-                                "filterExpressionType": "AND",
-                                "expressions": [
-                                    {
-                                        "field": "pod.ip",
-                                        "value": "']] .. connect_host .. [['",
-                                        "operand": "=",
-                                        "filterExpressionType": "LOGICAL"
-                                    },
-                                    {
-                                        "field": "status",
-                                        "value": "RUNNING",
-                                        "operand": "=",
-                                        "filterExpressionType": "LOGICAL"
-                                    }
-                                ]
-                            },
-                            "page": 1,
-                            "pageSize": 1
-                          }]]
+    local run_id_api_url = run_api_url .. api_request_url
     local res, err = httpc:request_uri(run_id_api_url, {
         method = "POST",
-        body = body_content,
+        body = api_request_data,
         headers = {
             ["Authorization"] = "Bearer " .. token,
             ["Content-Type"] = 'application/json'
@@ -93,24 +71,94 @@ local function check_run_permissions(username, token)
     end
 
     local cjson = require "cjson"
+    return cjson.decode(res.body)
+end
 
-    -- Parse the response and get run id
-    local data = cjson.decode(res.body)
+local function check_run_permissions(username, token)
+    local connect_host = ngx.var.connect_host
+
+    local api_search_url = 'run/search'
+    local api_services_url = 'services'
+
+    local api_search_body_content = [[{
+        "filterExpression": {
+            "filterExpressionType": "AND",
+            "expressions": [
+                {
+                    "field": "pod.ip",
+                    "value": "']] .. connect_host .. [['",
+                    "operand": "=",
+                    "filterExpressionType": "LOGICAL"
+                },
+                {
+                    "field": "status",
+                    "value": "RUNNING",
+                    "operand": "=",
+                    "filterExpressionType": "LOGICAL"
+                }
+            ]
+        },
+        "page": 1,
+        "pageSize": 1
+      }]]
+
+    local api_services_body_content = [[{
+        "eagerGrouping": false,
+        "page": 1,
+        "pageSize": 1000,
+        "userModified": false,
+        "statuses": [ "RUNNING" ]
+    }]]
+
+    -- First we try to get Run ID from the API run search
+    local data = post_api(username, token, api_search_url, api_search_body_content)
     local run_id = ''
     if not dict_contains(data, 'payload') or
        not dict_contains(data.payload, 'elements') or
        is_empty(data.payload.elements[1]) or
        is_empty(data.payload.elements[1].id) then
         ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
-                "; Status: Authentication failed; Message: Requested from pod IP run is not found.")
-        ngx.status = ngx.HTTP_UNAUTHORIZED
-        ngx.exit(ngx.HTTP_UNAUTHORIZED)
-        return
+                "; Status: Authentication failed; Message: Requested from pod IP run is not found via API search call.")
     else
         run_id = data.payload.elements[1].id
+        ngx.log(ngx.ERR, "RUN ID FOUND VIA SEARCH " .. run_id)
+    end
+
+    -- If the search call fails - we may find a run from the services API
+    -- E.g. if a run is shared with a user, it is not available via search
+    if is_empty(run_id) then
+        data = post_api(username, token, api_services_url, api_services_body_content)
+        if dict_contains(data, 'payload') or
+           dict_contains(data.payload, 'elements') then
+            
+            for service_item_idx, service_item in pairs(data.payload.elements) do
+                if dict_contains(service_item, 'podIP') and
+                   dict_contains(service_item, 'id') and
+                   service_item['podIP'] == connect_host then
+                    run_id = service_item['id']
+                    ngx.log(ngx.ERR, "RUN ID FOUND VIA SERVICES " .. run_id)
+                    break
+                end
+            end
+            
+            if is_empty(run_id) then
+                ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
+                        "; Status: Authentication failed; Message: Requested from IP is not found via API services call.")
+            end
+        end
+    end
+
+    if is_empty(run_id) then
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return 
     end
 
     -- Perform the <API>/run/<run_id> request
+    local run_api_url = os.getenv("API")
+    local http = require "resty.http"
+    local httpc = http.new()
+
     local run_sshpassword_api_url = run_api_url .. 'run/' .. run_id
     local res, err = httpc:request_uri(run_sshpassword_api_url, {
         method = "GET",
@@ -131,6 +179,7 @@ local function check_run_permissions(username, token)
     end
 
     -- Parse the response and get the sshPassword parameter
+    local cjson = require "cjson"
     local data = cjson.decode(res.body)
     if not dict_contains(data, 'payload') or is_empty(data.payload.sshPassword) then
         if is_empty(data[message]) then

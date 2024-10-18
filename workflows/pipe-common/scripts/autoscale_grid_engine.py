@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import json
 import logging
 import multiprocessing
@@ -28,11 +29,12 @@ from pipeline.hpc.autoscaler import \
     DoNothingAutoscalingDaemon, DoNothingScaleUpHandler, DoNothingScaleDownHandler
 from pipeline.hpc.cloud import CloudProvider
 from pipeline.hpc.cmd import CmdExecutor
-from pipeline.hpc.engine.gridengine import GridEngineType
+from pipeline.hpc.engine.gridengine import GridEngineType, DoNothingGridEngineJobProcessor
 from pipeline.hpc.engine.kube import KubeGridEngine, KubeJobValidator, KubeDefaultDemandSelector, KubeLaunchAdapter, \
     KubeResourceParser, get_kube_client
 from pipeline.hpc.engine.sge import SunGridEngine, SunGridEngineDefaultDemandSelector, SunGridEngineJobValidator, \
-    SunGridEngineCustomDemandSelector, SunGridEngineLaunchAdapter
+    SunGridEngineHostWorkerValidatorHandler, SunGridEngineStateWorkerValidatorHandler, \
+    SunGridEngineGlobalDemandSelector, SunGridEngineLaunchAdapter, SunGridEngineCustomRequestsPurgeJobProcessor
 from pipeline.hpc.engine.slurm import SlurmGridEngine, SlurmDemandSelector, SlurmJobValidator, \
     SlurmLaunchAdapter
 from pipeline.hpc.event import GridEngineEventManager
@@ -45,12 +47,16 @@ from pipeline.hpc.instance.select import CpuCapacityInstanceSelector, NaiveCpuCa
     BackwardCompatibleInstanceSelector
 from pipeline.hpc.logger import Logger
 from pipeline.hpc.param import GridEngineParameters, ValidationError
-from pipeline.hpc.pipe import CloudPipelineAPI, \
-    CloudPipelineWorkerRecorder, CloudPipelineInstanceProvider, \
-    CloudPipelineWorkerValidator, CloudPipelineWorkerTagsHandler
+from pipeline.hpc.pipe import CloudPipelineWorkerRecorder, \
+    CloudPipelineInstanceProvider, CloudPipelineReservationInstanceProvider, \
+    CloudPipelineWorkerValidator, CloudPipelineWorkerValidatorHandler, \
+    CloudPipelineWorkerTagsHandler
 from pipeline.hpc.resource import ResourceSupply
 from pipeline.hpc.utils import Clock, ScaleCommonUtils
-from pipeline.log.logger import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger
+from pipeline.hpc.valid import GracePeriodWorkerValidatorHandler
+from pipeline.api.api import PipelineAPI
+from pipeline.api.token import RefreshingToken
+from pipeline.log.logger import RunLogger, TaskLogger, LevelLogger, LocalLogger, ResilientLogger
 from pipeline.utils.path import mkdir
 
 
@@ -79,7 +85,7 @@ def get_inherited_worker_launch_params(api, run_id, inheritable_explicit_param_n
 
 
 def get_inheritable_system_param_names(api):
-    system_launch_params_string = api.retrieve_preference('launch.system.parameters', default='[]')
+    system_launch_params_string = resolve_preference(api, 'launch.system.parameters', default='[]')
     system_launch_params = json.loads(system_launch_params_string)
     params = []
     prefixes = []
@@ -97,7 +103,7 @@ def get_inheritable_system_param_names(api):
 
 
 def get_run_params(api, run_id):
-    run = api.load_run(run_id)
+    run = api.load_run_efficiently(run_id)
     return {param.get('name'): param.get('resolvedValue') for param in run.get('pipelineRunParameters', [])}
 
 
@@ -155,6 +161,16 @@ def init_static_hosts(default_hostfile, static_host_storage, clock, active_timeo
         Logger.warn(traceback.format_exc())
 
 
+def resolve_preference(api, name, default):
+    try:
+        return api.get_preference_value(name) or default
+    except Exception:
+        Logger.warn('Pipeline preference %s retrieving has failed. Using default value: %s.'
+                    % (name, default))
+        Logger.warn(traceback.format_exc())
+        return default
+
+
 def get_daemon():
     params = GridEngineParameters()
 
@@ -191,8 +207,7 @@ def get_daemon():
         logging_level_run = 'DEBUG'
 
     # TODO: Git rid of CloudPipelineAPI usage in favor of PipelineAPI
-    pipe = PipelineAPI(api_url=api_url, log_dir=logging_dir)
-    api = CloudPipelineAPI(pipe=pipe)
+    api = PipelineAPI(api_url=api_url, log_dir=logging_dir, token=RefreshingToken())
 
     mkdir(os.path.dirname(logging_file))
 
@@ -215,10 +230,11 @@ def get_daemon():
         file_handler.setFormatter(logging_formatter)
         logging_logger.addHandler(file_handler)
 
-    logger = RunLogger(api=pipe, run_id=cluster_master_run_id)
+    logger = RunLogger(api=api, run_id=cluster_master_run_id)
     logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level_run, inner=logger)
     logger = LocalLogger(logger=logging_logger, inner=logger)
+    logger = ResilientLogger(inner=logger, fallback=LocalLogger(logger=logging_logger))
 
     # todo: Get rid of Logger usage in favor of logger
     Logger.inner = logger
@@ -259,12 +275,14 @@ def get_daemon():
     scale_up_unavail_delay = params.autoscaling.scale_up_unavail_delay.get()
     scale_up_unavail_count_insufficient = params.autoscaling.scale_up_unavail_count_insufficient.get()
     scale_up_unavail_count_failure = params.autoscaling.scale_up_unavail_count_failure.get()
-    scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default=30))
-    scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout', default=900))
+
+    scale_up_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.up.timeout', default=30))
+    scale_up_polling_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.up.polling.timeout', default=900))
 
     scale_down_batch_size = params.autoscaling.scale_down_batch_size.get()
-    scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default=30))
+    scale_down_timeout = int(resolve_preference(api, 'ge.autoscaling.scale.down.timeout', default=30))
     scale_down_idle_timeout = params.autoscaling.scale_down_idle_timeout.get()
+    scale_down_invalid_timeout = params.autoscaling.scale_down_invalid_timeout.get()
 
     active_timeout = params.autoscaling_advanced.active_timeout.get()
 
@@ -274,15 +292,18 @@ def get_daemon():
     event_ttl = params.autoscaling_advanced.event_ttl.get()
 
     custom_requirements = params.autoscaling_advanced.custom_requirements.get()
+    custom_requirements_purge = params.autoscaling_advanced.custom_requirements_purge.get()
+
+    node_mem_reservations = params.autoscaling_advanced.node_mem_reservations.get()
 
     queue_static = params.queue.queue_static.get()
     queue_default = params.queue.queue_default.get()
     queue_hostlist_name = params.queue.hostlist_name.get()
     queue_reserved_cpu = params.queue.hosts_free_cores.get()
     queue_master_cpu = params.queue.master_cores.get() or static_instance_cpus
-    queue_master_effective_cpu = queue_master_cpu - queue_reserved_cpu \
-        if queue_master_cpu - queue_reserved_cpu > 0 \
-        else queue_master_cpu
+    queue_gpu_resource_name = params.queue.gpu_resource_name.get()
+    queue_mem_resource_name = params.queue.mem_resource_name.get()
+    queue_exc_resource_name = params.queue.exc_resource_name.get()
 
     host_storage_file = os.path.join(cluster_work_dir, '.autoscaler.%s.storage' % queue_name)
     host_storage_static_file = os.path.join(cluster_work_dir, '.autoscaler.%s.static.storage' % queue_name)
@@ -311,8 +332,20 @@ def get_daemon():
                                                        unavail_delay=scale_up_unavail_delay,
                                                        unavail_count_insufficient=scale_up_unavail_count_insufficient,
                                                        unavail_count_failure=scale_up_unavail_count_failure)
-    cloud_instance_provider = CloudPipelineInstanceProvider(pipe=pipe, region_id=instance_region_id,
+    cloud_instance_provider = CloudPipelineInstanceProvider(api=api, region_id=instance_region_id,
                                                             price_type=instance_price_type)
+    if node_mem_reservations:
+        cloud_instance_provider = CloudPipelineReservationInstanceProvider(
+            inner=cloud_instance_provider,
+            kube_mem_ratio=float(resolve_preference(api, 'cluster.node.kube.mem.ratio', default=0.025)),
+            kube_mem_min_mib=int(resolve_preference(api, 'cluster.node.kube.mem.min.mib', default=256)),
+            kube_mem_max_mib=int(resolve_preference(api, 'cluster.node.kube.mem.max.mib', default=1024)),
+            system_mem_ratio=float(resolve_preference(api, 'cluster.node.system.mem.ratio', default=0.025)),
+            system_mem_min_mib=int(resolve_preference(api, 'cluster.node.system.mem.min.mib', default=256)),
+            system_mem_max_mib=int(resolve_preference(api, 'cluster.node.system.mem.max.mib', default=1024)),
+            extra_mem_ratio=float(resolve_preference(api, 'cluster.node.extra.mem.ratio', default=0.05)),
+            extra_mem_min_mib=int(resolve_preference(api, 'cluster.node.extra.mem.min.mib', default=512)),
+            extra_mem_max_mib=int(resolve_preference(api, 'cluster.node.extra.mem.max.mib', default=sys.maxsize)))
     default_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
                                                         instance_type=instance_type)
     static_instance_provider = DefaultInstanceProvider(inner=cloud_instance_provider,
@@ -409,12 +442,11 @@ def get_daemon():
                                                                reserved_supply=reserved_supply,
                                                                batch_size=scale_up_batch_size)
 
-    available_instances = instance_provider.provide()
-    if not available_instances:
+    instances = instance_provider.provide()
+    if not instances:
         raise ValidationError('Grid engine autoscaler configuration is invalid. '
                               'There are no required instance types available. '
                               'Please use different configuration parameters.')
-    biggest_instance = sorted(available_instances, key=lambda instance: instance.cpu).pop()
 
     static_instances = static_instance_provider.provide()
     if not static_instances:
@@ -427,17 +459,20 @@ def get_daemon():
                                       help=params.autoscaling_advanced.static_instance_type.help))
     static_instance = static_instances.pop()
 
-    biggest_instance_supply = ResourceSupply.of(biggest_instance) - reserved_supply
+    instance_supplies = [ResourceSupply.of(available_instance) - reserved_supply for available_instance in instances]
+    biggest_instance_supply = sorted(instance_supplies, key=lambda supply: supply.cpu).pop()
     static_instance_supply = ResourceSupply.of(static_instance) - reserved_supply
-    master_instance_supply = ResourceSupply(cpu=queue_master_effective_cpu,
-                                            gpu=static_instance_supply.gpu,
-                                            mem=static_instance_supply.mem)
+    master_instance_supply = copy.deepcopy(static_instance_supply)
+    master_instance_supply.cpu = queue_master_cpu - queue_reserved_cpu \
+        if queue_master_cpu - queue_reserved_cpu > 0 \
+        else queue_master_cpu
     cluster_supply = biggest_instance_supply * autoscale_instance_number
     if queue_static:
         cluster_supply += master_instance_supply + static_instance_supply * static_instance_number
 
     if grid_engine_type == GridEngineType.SLURM:
         grid_engine = SlurmGridEngine(cmd_executor=cmd_executor)
+        job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = SlurmJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                           cluster_max_supply=cluster_supply)
         demand_selector = SlurmDemandSelector(grid_engine=grid_engine)
@@ -446,19 +481,32 @@ def get_daemon():
         kube_client = get_kube_client()
         resource_parser = KubeResourceParser()
         grid_engine = KubeGridEngine(kube=kube_client, resource_parser=resource_parser, owner=cluster_owner)
+        job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = KubeJobValidator(grid_engine=grid_engine, instance_max_supply=biggest_instance_supply,
                                          cluster_max_supply=cluster_supply)
         demand_selector = KubeDefaultDemandSelector(grid_engine=grid_engine)
         launch_adapter = KubeLaunchAdapter()
     else:
         grid_engine = SunGridEngine(cmd_executor=cmd_executor, queue=queue_name, hostlist=queue_hostlist_name,
-                                    queue_default=queue_default)
+                                    queue_default=queue_default,
+                                    gpu_resource_name=queue_gpu_resource_name,
+                                    mem_resource_name=queue_mem_resource_name,
+                                    exc_resource_name=queue_exc_resource_name)
+        if custom_requirements_purge:
+            job_preprocessor = SunGridEngineCustomRequestsPurgeJobProcessor(
+                cmd_executor=cmd_executor,
+                gpu_resource_name=queue_gpu_resource_name,
+                mem_resource_name=queue_mem_resource_name,
+                exc_resource_name=queue_exc_resource_name,
+                dry_run=dry_run)
+        else:
+            job_preprocessor = DoNothingGridEngineJobProcessor()
         job_validator = SunGridEngineJobValidator(grid_engine=grid_engine,
                                                   instance_max_supply=biggest_instance_supply,
                                                   cluster_max_supply=cluster_supply)
         demand_selector = SunGridEngineDefaultDemandSelector(grid_engine=grid_engine)
         if custom_requirements:
-            demand_selector = SunGridEngineCustomDemandSelector(inner=demand_selector, grid_engine=grid_engine)
+            demand_selector = SunGridEngineGlobalDemandSelector(inner=demand_selector, grid_engine=grid_engine)
         launch_adapter = SunGridEngineLaunchAdapter(queue=queue_name, hostlist=queue_hostlist_name)
 
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=host_storage_file, clock=clock)
@@ -470,23 +518,30 @@ def get_daemon():
 
     if queue_static:
         Logger.info('Using static workers:\n{}\n{}'
-                    .format('- {} {} ({} cpu, {} gpu, {} mem)'
+                    .format('- {} {} ({} cpu, {} gpu, {} mem, {} exc)'
                             .format(cluster_master_name, static_instance.name,
                                     master_instance_supply.cpu,
                                     master_instance_supply.gpu,
-                                    master_instance_supply.mem),
-                            '\n'.join('- {} {} ({} cpu, {} gpu, {} mem)'
+                                    master_instance_supply.mem,
+                                    master_instance_supply.exc),
+                            '\n'.join('- {} {} ({} cpu, {} gpu, {} mem, {} exc)'
                                       .format(host, static_instance.name,
                                               static_instance_supply.cpu,
                                               static_instance_supply.gpu,
-                                              static_instance_supply.mem)
+                                              static_instance_supply.mem,
+                                              static_instance_supply.exc)
                                       for host in static_host_storage.load_hosts()
                                       if host != cluster_master_name))
                     .strip())
     Logger.info('Using autoscaling instance types:\n{}'
-                .format('\n'.join('- {} ({} cpu, {} gpu, {} mem)'
-                                  .format(instance.name, instance.cpu, instance.gpu, instance.mem)
-                                  for instance in available_instances)))
+                .format('\n'.join('- {} ({} cpu, {} gpu, {} mem, {} exc)'
+                                  .format(instance.name,
+                                          instance_supply.cpu,
+                                          instance_supply.gpu,
+                                          instance_supply.mem,
+                                          instance_supply.exc)
+                                  for instance, instance_supply
+                                  in zip(instances, instance_supplies))))
 
     instance_launch_params = fetch_instance_launch_params(api, launch_adapter, cluster_master_run_id,
                                                           instance_inheritable_params,
@@ -522,7 +577,7 @@ def get_daemon():
                                                           batch_size=scale_up_batch_size,
                                                           polling_delay=scale_up_polling_delay,
                                                           clock=clock)
-    scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, grid_engine=grid_engine,
+    scale_down_handler = GridEngineScaleDownHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
                                                     common_utils=common_utils)
     if dry_run:
         scale_down_handler = DoNothingScaleDownHandler()
@@ -530,10 +585,34 @@ def get_daemon():
                                                               grid_engine=grid_engine,
                                                               host_storage=host_storage,
                                                               batch_size=scale_down_batch_size)
+    worker_validator_handlers = [
+        CloudPipelineWorkerValidatorHandler(api=api, common_utils=common_utils),
+    ]
+
+    if grid_engine_type == GridEngineType.SLURM:
+        worker_validator_handlers.extend([
+            GracePeriodWorkerValidatorHandler(inner=grid_engine, grace_period=scale_down_invalid_timeout, clock=clock)
+        ])
+    elif grid_engine_type == GridEngineType.KUBE:
+        worker_validator_handlers.extend([
+            GracePeriodWorkerValidatorHandler(inner=grid_engine, grace_period=scale_down_invalid_timeout, clock=clock)
+        ])
+    else:
+        worker_validator_handlers.extend([
+            SunGridEngineHostWorkerValidatorHandler(cmd_executor=cmd_executor),
+            GracePeriodWorkerValidatorHandler(
+                inner=SunGridEngineStateWorkerValidatorHandler(cmd_executor=cmd_executor, queue=queue_name),
+                grace_period=scale_down_invalid_timeout,
+                clock=clock)
+        ])
+
     worker_validator = CloudPipelineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                     grid_engine=grid_engine, scale_down_handler=scale_down_handler,
+                                                    handlers=worker_validator_handlers,
                                                     common_utils=common_utils, dry_run=dry_run)
-    autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, job_validator=job_validator,
+    autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
+                                      job_preprocessor=job_preprocessor,
+                                      job_validator=job_validator,
                                       demand_selector=demand_selector,
                                       cmd_executor=cmd_executor,
                                       scale_up_orchestrator=scale_up_orchestrator,

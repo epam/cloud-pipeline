@@ -65,6 +65,31 @@
                 ]]>
             </value>
         </property>
+        <property name="loadRunStatusByListWithArchivedQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        run_id,
+                        status,
+                        reason,
+                        date
+                    FROM
+                        pipeline.run_status_change
+                    WHERE
+                        run_id IN (:IDS)
+                    UNION ALL
+                    SELECT
+                        run_id,
+                        status,
+                        reason,
+                        date
+                    FROM
+                        pipeline.archive_run_status_change
+                    WHERE
+                        run_id IN (:IDS)
+                ]]>
+            </value>
+        </property>
         <property name="deleteRunStatusQuery">
             <value>
                 <![CDATA[
@@ -72,6 +97,16 @@
                         pipeline.run_status_change
                     WHERE
                         run_id = ?
+                ]]>
+            </value>
+        </property>
+        <property name="deleteRunStatusByIdsQuery">
+            <value>
+                <![CDATA[
+                    DELETE FROM
+                        pipeline.run_status_change
+                    WHERE
+                        run_id IN (:list)
                 ]]>
             </value>
         </property>

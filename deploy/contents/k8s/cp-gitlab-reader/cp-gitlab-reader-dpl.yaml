@@ -11,6 +11,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-gitlab-reader: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-gitlab-reader: "true"

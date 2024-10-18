@@ -478,7 +478,7 @@ class StandardStreamWrapper(LocationWrapper, DataStorageWrapper):
         return True
 
     def get_items(self, quiet=False):
-        return [(FILE, self.path, self.path, 0)]
+        return [(FILE, self.path, self.path, 0, None)]
 
     def delete_item(self, relative_path):
         pass
@@ -522,17 +522,18 @@ class LocalFileSystemWrapper(DataStorageWrapper):
 
         if os.path.isfile(self.path):
             if os.path.islink(self.path) and self.symlinks == AllowedSymlinkValues.SKIP:
-                return []
-            return [(FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path))]
-
-        return self._list_items(self.path, self._leaf_path(self.path), result=[], visited_symlinks=set(),
-                                root=True, quiet=quiet)
+                return
+            yield (FILE, self.path, self._leaf_path(self.path), os.path.getsize(self.path), None)
+        else:
+            for item in self._list_items(self.path, self._leaf_path(self.path), visited_symlinks=set(), root=True,
+                                         quiet=quiet):
+                yield item
 
     def _leaf_path(self, source_path):
         head, tail = os.path.split(source_path)
         return tail or os.path.basename(head)
 
-    def _list_items(self, path, parent, result, visited_symlinks, root, quiet):
+    def _list_items(self, path, parent, visited_symlinks, root, quiet):
         logging.debug(u'Listing directory {}...'.format(path))
         path = to_unicode(path)
         parent = to_unicode(parent)
@@ -542,7 +543,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             while attempts > 0:
                 attempts -= 1
                 try:
-                    self._collect_item(path, parent, item, result, visited_symlinks, root, quiet)
+                    for result_item in self._collect_item(path, parent, item, visited_symlinks, root, quiet):
+                        yield result_item
                     break
                 except DefectiveFileSystemError:
                     if attempts > 0:
@@ -551,8 +553,6 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                         time.sleep(self.listing_retry_delay)
                     else:
                         raise
-
-        return result
 
     def _os_listdir(self, path):
         try:
@@ -564,7 +564,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                 raise DefectiveFileSystemError(err_msg)
             raise
 
-    def _collect_item(self, path, parent, item, result, visited_symlinks, root, quiet):
+    def _collect_item(self, path, parent, item, visited_symlinks, root, quiet):
         safe_item = to_unicode(item, replacing=True)
         safe_absolute_path = os.path.join(path, safe_item)
 
@@ -602,9 +602,10 @@ class LocalFileSystemWrapper(DataStorageWrapper):
 
         if os.path.isfile(to_string(absolute_path)):
             logging.debug(u'Collected file {}.'.format(safe_absolute_path))
-            result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
+            yield tuple([FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path)), None])
         elif os.path.isdir(to_string(absolute_path)):
-            self._list_items(absolute_path, relative_path, result, visited_symlinks, root=False, quiet=quiet)
+            for folder_item in self._list_items(absolute_path, relative_path, visited_symlinks, root=False, quiet=quiet):
+                yield folder_item
 
         if symlink_target and os.path.islink(to_string(path)) and symlink_target in visited_symlinks:
             visited_symlinks.remove(symlink_target)
@@ -732,7 +733,7 @@ class FtpSourceWrapper(DataStorageWrapper):
         if len(remote_files) == 1:
             self.ftp.voidcmd('TYPE I')  # change ftp connection to binary mode to get file size
             files.append((FILE, "%s://%s%s" % (self.scheme, self.host, path),
-                          self._get_relative_path(path).strip("/"), self.ftp.size(path)))
+                          self._get_relative_path(path).strip("/"), self.ftp.size(path), None))
         else:
             for file_path in remote_files:
                 self._get_files(files, file_path)
@@ -796,7 +797,7 @@ class HttpSourceWrapper(DataStorageWrapper):
             head = self._head(path)
             content_length = head.headers.get('Content-Length')
             files.append((FILE, str(path), self._get_relative_path(path).strip("/"),
-                          content_length if content_length is None else int(content_length)))
+                          content_length if content_length is None else int(content_length), None))
         else:
             response = self._get(path)
             soup = BeautifulSoup(response.content, "html.parser", parse_only=SoupStrainer('a'))

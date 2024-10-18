@@ -40,7 +40,7 @@ public abstract class AbstractDataStorageFactory {
     public abstract AbstractDataStorage convertToDataStorage(
             Long id, String name, String path, DataStorageType type,
             StoragePolicy policy, String mountOptions, String mountPoint,
-            List<String> allowedCidrs, Long regionId, Long fileShareMountId,
+            List<String> allowedCidrs, Long regionId, Long fileShareMountId, boolean mountExactPath,
             String kmsKey, String tempRole, boolean useAssumedCreds, String mountStatus,
             Set<String> masks, Long sourceStorageId);
 
@@ -49,7 +49,7 @@ public abstract class AbstractDataStorageFactory {
         AbstractDataStorage storage =
                 convertToDataStorage(vo.getId(), vo.getName(), vo.getPath(), type, vo.getStoragePolicy(),
                         vo.getMountOptions(), vo.getMountPoint(), vo.getAllowedCidrs(),
-                        vo.getRegionId(), vo.getFileShareMountId(),
+                        vo.getRegionId(), vo.getFileShareMountId(), vo.isMountExactPath(),
                         vo.getKmsKeyArn(), vo.getTempCredentialsRole(), vo.isUseAssumedCredentials(),
                         NFSStorageMountStatus.ACTIVE.name(), vo.getLinkingMasks(), vo.getSourceStorageId());
         storage.setDescription(vo.getDescription());
@@ -79,6 +79,7 @@ public abstract class AbstractDataStorageFactory {
                                                         final StoragePolicy policy, final String mountOptions,
                                                         final String mountPoint, final List<String> allowedCidrs,
                                                         final Long regionId, final Long fileShareMountId,
+                                                        final boolean mountExactPath,
                                                         final String kmsKey, final String tempRole,
                                                         final boolean useAssumedCreds,
                                                         final String mountStatus,
@@ -99,6 +100,7 @@ public abstract class AbstractDataStorageFactory {
                     NFSDataStorage storage = new NFSDataStorage(id, name, path, policy, mountPoint);
                     storage.setMountOptions(mountOptions);
                     storage.setFileShareMountId(fileShareMountId);
+                    storage.setMountExactPath(mountExactPath);
                     storage.setMountStatus(NFSStorageMountStatus.fromName(mountStatus));
                     resultStorage = storage;
                     break;

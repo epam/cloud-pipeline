@@ -122,7 +122,7 @@ yum install -y \
             kubelet-1.15.4-0.x86_64
 
 # Install nvidia driver
-wget https://us.download.nvidia.com/tesla/535.129.03/NVIDIA-Linux-x86_64-535.129.03.run && \
+wget https://us.download.nvidia.com/tesla/550.54.15/NVIDIA-Linux-x86_64-550.54.15.run && \
 sh NVIDIA-*.run --silent && \
 rm -f NVIDIA-*.run
 

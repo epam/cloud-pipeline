@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.PipelineTask;
+import org.apache.commons.lang3.StringUtils;
 
 public class LogsFormatter {
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
@@ -38,8 +39,8 @@ public class LogsFormatter {
         if (task.getParameters() != null) {
             builder.append(task.getParameters()).append(NEW_LINE_DELIMITER);
         }
-        builder.append(log.getLogText());
-        if (!log.getLogText().endsWith(NEW_LINE_DELIMITER)) {
+        builder.append(StringUtils.defaultIfBlank(log.getLogText(), StringUtils.EMPTY));
+        if (StringUtils.isEmpty(log.getLogText()) || !log.getLogText().endsWith(NEW_LINE_DELIMITER)) {
             builder.append(NEW_LINE_DELIMITER);
         }
         return builder.toString();

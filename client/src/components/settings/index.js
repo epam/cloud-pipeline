@@ -84,7 +84,7 @@ const SettingsTabs = [
     key: 'system',
     path: '/settings/system',
     title: 'System Management',
-    available: (user) => user ? user.admin : false
+    available: (user) => user ? user.admin || roleModel.userIs.dtsManager(user) : false
   },
   {
     key: 'profile',

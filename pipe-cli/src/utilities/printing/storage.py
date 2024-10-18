@@ -15,20 +15,24 @@
 import click
 
 import datetime
+
 from prettytable import prettytable
+
 from src.model.data_storage_wrapper_type import WrapperType
 
 STORAGE_DETAILS_SEPARATOR = ', '
 
+def init_items_table(fields):
+    items_table = prettytable.PrettyTable()
+    items_table.field_names = fields
+    items_table.align = "l"
+    items_table.border = False
+    items_table.padding_width = 2
+    items_table.align['Size'] = 'r'
+    return items_table
 
-def print_storage_listing(fields, items, bucket_model, show_details, show_extended, show_versions):
+def print_storage_items(bucket_model, items, show_details, items_table, show_extended, show_versions=False):
     if show_details:
-        items_table = prettytable.PrettyTable()
-        items_table.field_names = fields
-        items_table.align = "l"
-        items_table.border = False
-        items_table.padding_width = 2
-        items_table.align['Size'] = 'r'
         for item in items:
             name = item.name
             changed = ''
@@ -73,8 +77,7 @@ def print_storage_listing(fields, items, bucket_model, show_details, show_extend
                     items_table.add_row(row)
 
         click.echo(items_table)
-        click.echo()
+        items_table.clear_rows()
     else:
         for item in items:
             click.echo('{}\t\t'.format(item.path), nl=False)
-        click.echo()

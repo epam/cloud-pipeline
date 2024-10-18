@@ -15,6 +15,11 @@
 ARG BASE_IMAGE="centos:7"
 FROM $BASE_IMAGE
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE=en_US
 
@@ -38,7 +43,7 @@ ARG CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-u
 
 RUN mkdir -p "$ANACONDA_HOME" && \
     setfacl -d -m g::rwx "$ANACONDA_HOME" && \
-    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
     bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
     rm -f /tmp/Anaconda_Install.sh && \
     conda init bash && \
@@ -80,8 +85,8 @@ RUN mkdir -p "$HCS_TOOLS_HOME" && \
 
 ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bin:$HCS_TOOLS_HOME/raw2ometiff/bin:$PATH"
 
-COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/process_hcs_files.py"
-COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/process_hcs_files_cluster.py"
+COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files.py"
+COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/parser/process_hcs_files_cluster.py"
 COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
 COPY start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
 COPY start_cluster.sh "$HCS_TOOLS_HOME/scripts/start_cluster.sh"

@@ -11,6 +11,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-storage-lifecycle-service: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-storage-lifecycle-service: "true"

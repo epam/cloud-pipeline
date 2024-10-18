@@ -14,6 +14,11 @@
 
 FROM library/centos:7.7.1908
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ENV LANG="en_US.UTF-8" \
 	LC_ALL="en_US.UTF-8" \
 	LC_CTYPE="en_US.UTF-8"

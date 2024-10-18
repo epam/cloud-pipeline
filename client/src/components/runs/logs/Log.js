@@ -26,6 +26,7 @@ import {
   Col,
   Collapse,
   Icon,
+  Input,
   Menu,
   message,
   Modal,
@@ -66,6 +67,7 @@ import {getRunSpotTypeName} from '../../special/spot-instance-names';
 import {TaskLink} from './tasks/TaskLink';
 import RunTaskLogs from '../run-task-logs';
 import StatusIcon, {Statuses} from '../../special/run-status-icon';
+import runStatusTooltips from '../../special/run-status-icon/run-status-tooltips';
 import UserName from '../../special/UserName';
 import WorkflowGraph from '../../pipelines/version/graph/WorkflowGraph';
 import {graphIsSupportedForLanguage} from '../../pipelines/version/graph/visualization';
@@ -76,7 +78,7 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm, {ROLE_ALL, shouldCombineRoles} from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import {getResumeFailureReason} from '../utilities/map-resume-failure-reason';
-import RunTags from '../run-tags';
+import RunTags, {KNOWN_TAG_NAMES, networkLimitValueRender} from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
 import RemoveRunSchedules from '../../../models/runSchedule/RemoveRunSchedules';
@@ -98,6 +100,7 @@ import DataStorageLink from '../../special/data-storage-link';
 import fetchRunInfo from './misc/fetch-run-info';
 import RestartedRunsInfo from './misc/restarted-runs-info';
 import NestedRunsModal from './forms/NestedRunsModal';
+import RunStatuses, {isRunStatusNodePending} from '../../special/run-status-icon/run-statuses';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -148,6 +151,7 @@ class Logs extends localization.LocalizedReactComponent {
     totalNestedRuns: 0,
     nestedRunsPending: false,
     runTasks: [],
+    searchTasks: '',
     language: undefined,
     timings: false,
     commitRun: false,
@@ -613,6 +617,7 @@ class Logs extends localization.LocalizedReactComponent {
             <RunTags
               run={run}
               onlyKnown
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           ),
           additionalStyle: {backgroundColor: 'transparent', border: '1px solid transparent'}
@@ -820,6 +825,7 @@ class Logs extends localization.LocalizedReactComponent {
               run={run}
               location={location}
               overflow={false}
+              excludeTags={[KNOWN_TAG_NAMES.network_limit]}
             />
           )
         });
@@ -1051,6 +1057,7 @@ class Logs extends localization.LocalizedReactComponent {
                 taskParameters={this.props.task ? this.props.task.parameters : undefined}
                 taskInstance={this.props.task ? this.props.task.instance : undefined}
                 autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+                fetchAllLogs={false}
               />
             </div>
           </SplitPane>
@@ -1080,13 +1087,18 @@ class Logs extends localization.LocalizedReactComponent {
     return url;
   };
 
+  onSearchTasksChanged = (e) => {
+    this.setState({searchTasks: e.target.value});
+  }
+
   renderContentPlainMode () {
     const {runId} = this.props.params;
     const {
       timings,
       run,
       pending,
-      runTasks = []
+      runTasks = [],
+      searchTasks
     } = this.state;
     const {
       status
@@ -1099,15 +1111,20 @@ class Logs extends localization.LocalizedReactComponent {
     } else if (runTasks.length === 0) {
       Tasks = <Menu.Item key={-2}>No tasks</Menu.Item>;
     } else {
-      Tasks = runTasks.map((task, index) => (
-        <Menu.Item key={this.getTaskUrl(task, index)}>
-          <TaskLink
-            to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
-            location={location}
-            task={task}
-            timings={timings} />
-        </Menu.Item>
-      ));
+      Tasks = runTasks
+        .filter(task => searchTasks
+          ? (task.name || '').toLowerCase().includes((searchTasks || '').toLowerCase())
+          : true
+        ).map((task, index) => (
+          <Menu.Item key={this.getTaskUrl(task, index)}>
+            <TaskLink
+              to={`/run/${runId}/${this.props.params.mode}/${this.getTaskUrl(task)}`}
+              location={location}
+              task={task}
+              searchText={searchTasks}
+              timings={timings} />
+          </Menu.Item>
+        ));
     }
 
     const SwitchTimingsButton = (
@@ -1135,14 +1152,25 @@ class Logs extends localization.LocalizedReactComponent {
             backgroundClip: 'padding',
             zIndex: 1
           }}>
-          <div style={{display: 'flex', flex: 1, height: '100%', overflowY: 'auto'}}>
-            {SwitchTimingsButton}
-            <Menu
-              selectedKeys={selectedTask ? [selectedTask] : []}
-              mode="inline"
-              className={this.state.timings ? styles.taskListTimings : styles.taskList}>
-              {Tasks}
-            </Menu>
+          <div className={styles.tasksNavigationContainer}>
+            <Input.Search
+              placeholder="Search tasks"
+              onChange={this.onSearchTasksChanged}
+              style={{
+                width: 'calc(100% - 20px)',
+                alignSelf: 'center',
+                marginBottom: 5
+              }}
+            />
+            <div style={{position: 'relative'}}>
+              {SwitchTimingsButton}
+              <Menu
+                selectedKeys={selectedTask ? [selectedTask] : []}
+                mode="inline"
+                className={this.state.timings ? styles.taskListTimings : styles.taskList}>
+                {Tasks}
+              </Menu>
+            </div>
           </div>
           <div
             className={styles.logContent}>
@@ -1153,6 +1181,7 @@ class Logs extends localization.LocalizedReactComponent {
               taskParameters={this.props.task ? this.props.task.parameters : undefined}
               taskInstance={this.props.task ? this.props.task.instance : undefined}
               autoUpdate={/^(running|pausing|resuming)$/i.test(status)}
+              fetchAllLogs={false}
             />
           </div>
         </SplitPane>
@@ -1541,6 +1570,7 @@ class Logs extends localization.LocalizedReactComponent {
     let CommitStatusButton;
     let ResumeFailureReason;
     let ShowMonitorButton;
+    let NodePendingAlert;
 
     let selectedTask = null;
     if (this.props.task) {
@@ -2213,6 +2243,52 @@ class Logs extends localization.LocalizedReactComponent {
       }
     };
 
+    if (
+      isRunStatusNodePending(run) &&
+      runStatusTooltips[RunStatuses.nodePending] &&
+      runStatusTooltips[RunStatuses.nodePending].description
+    ) {
+      NodePendingAlert = (
+        <Alert
+          message={(<div>{runStatusTooltips[RunStatuses.nodePending].description}</div>)}
+          type="warning"
+        />
+      );
+    }
+    const renderNetworkLimitAlert = () => {
+      const {preferences} = this.props;
+      const tags = run?.tags || {};
+      let networkLimitTag = tags[KNOWN_TAG_NAMES.network_limit.toUpperCase()];
+      const suffix = preferences?.systemRunTagDateSuffix || '';
+      const networkLimitTagTimestamp = suffix
+        ? tags[`${KNOWN_TAG_NAMES.network_limit.toUpperCase()}${suffix}`]
+        : undefined;
+      if (
+        networkLimitTag === undefined ||
+        !RunTags.shouldDisplayTags(run, this.props.preferences, true)
+      ) {
+        return null;
+      }
+      return (
+        <Row
+          type="flex"
+          align="middle"
+          className="cp-error"
+          style={{gap: '5px', fontSize: 'larger'}}
+        >
+          <Icon type="exclamation-circle-o" />
+          Network is limited to
+          <b>
+            {networkLimitValueRender(networkLimitTag)}
+          </b>
+          {networkLimitTagTimestamp ? (
+            <span>
+              {`(on ${displayDate(networkLimitTagTimestamp)})`}
+            </span>
+          ) : null}
+        </Row>
+      );
+    };
     return (
       <Card
         className={
@@ -2235,6 +2311,7 @@ class Logs extends localization.LocalizedReactComponent {
             <Row type="flex" justify="space-between">
               {Title}
             </Row>
+            {renderNetworkLimitAlert()}
             {
               stateReasonMessage && (
                 <Alert
@@ -2248,6 +2325,9 @@ class Logs extends localization.LocalizedReactComponent {
               style={{margin: '5px 0'}}
               run={run}
             />
+            {
+              NodePendingAlert && (<Row>{NodePendingAlert}</Row>)
+            }
             <Row>
               {Details}
             </Row>
@@ -2341,10 +2421,17 @@ class Logs extends localization.LocalizedReactComponent {
       this.updateFromProps();
     }
     const {
-      pending
+      pending,
+      runTasks
     } = this.state;
     if (!pending && this.graph) {
       this.graph.updateData();
+    }
+    if (!this.props.task && runTasks && runTasks.length > 0) {
+      // navigate to first task
+      const taskUrl = this.getTaskUrl(runTasks[0]);
+      const url = `/run/${this.props.params.runId}/${this.props.params.mode}/${taskUrl}`;
+      this.props.router.push(url);
     }
   }
 }

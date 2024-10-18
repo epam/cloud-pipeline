@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-search-elk: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-search-elk: "true"
@@ -33,6 +34,8 @@ spec:
           volumeMounts:
             - mountPath: /usr/share/elasticsearch/data
               name: search-elk-data
+            - mountPath: /usr/share/elasticsearch/backup
+              name: search-elk-backup
             - mountPath: /var/log/curator
               name: search-elk-curator-log
             - name: cp-cloud-credentials
@@ -49,6 +52,9 @@ spec:
         - name: search-elk-data
           hostPath:
             path: /opt/search-elk/data
+        - name: search-elk-backup
+          hostPath:
+            path: /opt/search-elk/backup
         - name: search-elk-curator-log
           hostPath:
             path: /opt/search-elk/log/curator

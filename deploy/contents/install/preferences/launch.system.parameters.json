@@ -331,6 +331,12 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_CAP_SHARE_FS_IOPS",
+        "type": "int",
+        "description": "Allows to specify shared file system IOPS (supported for persistent Lustre FS only). Possible values are: [1500, 3000, 6000, 12000, 24000, 36000, 48000, 60000, 72000, 84000, 96000, 108000, 120000, 132000, 144000, 156000, 168000, 180000, 192000]",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_CAP_HW_ADDR",
         "type": "string",
         "description": "Allows to override the MAC address of the instance, running a job. Format: XX:XX:XX:XX:XX:XX",
@@ -625,6 +631,27 @@
         "type": "string",
         "description": "Specifies run network policy type. Allowed values are: common and internal.",
         "defaultValue": "common",
+        "passToWorkers": true
+    },
+    {
+        "name": "NODE_UNAVAILABLE_GRACE_PERIOD_MINUTES",
+        "type": "int",
+        "description": "Configures a grace period in minutes after which unavailable nodes are terminated.",
+        "defaultValue": "30",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_SSH_EXTRA_ARGS",
+        "type": "string",
+        "description": "Configures ssh extra args.",
+        "defaultValue": "-o ConnectTimeout=10 -o ConnectionAttempts=30 -v",
+        "passToWorkers": true
+    },
+    {
+        "name": "CP_DATA_STORAGE_MOUNT_KEEP_JOB_ON_FAILURE",
+        "type": "boolean",
+        "description": "Keeps job running even if storages mounting has failed.",
+        "defaultValue": "true",
         "passToWorkers": true
     }
 ]

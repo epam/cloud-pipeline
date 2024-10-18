@@ -16,6 +16,11 @@ ARG BASE_IMAGE="library/centos:7.7.1908"
 
 FROM $BASE_IMAGE
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ENV LANG="en_US.UTF-8" 
 ENV LANGUAGE=en_US
 
@@ -88,9 +93,10 @@ ADD centos/scripts/libreoffice.sh /opt/libreoffice.sh
 RUN chmod +x /opt/libreoffice.sh && /opt/libreoffice.sh && rm -f /opt/libreoffice.sh
 
 # Install Chrome
-RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
-    yum install -y /opt/google-chrome-stable_current_*.rpm && \
-    rm -f /opt/google-chrome-stable_current_*.rpm
+# Does not work anymore on centos
+# RUN wget -q "https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm" -O /opt/google-chrome-stable_current_x86_64.rpm && \
+#     yum install -y /opt/google-chrome-stable_current_*.rpm && \
+#     rm -f /opt/google-chrome-stable_current_*.rpm
 
 
 # Add Chrome desktop icon

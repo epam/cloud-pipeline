@@ -208,6 +208,7 @@ function parametersCheck (form, parameters, state, preferences) {
   const formParams = form.getFieldValue(PARAMETERS);
   const formSystemParams = form.getFieldValue(SYSTEM_PARAMETERS);
   const formValue = {};
+  const prettyNames = {};
   if (formParams && formParams.keys) {
     for (let i = 0; i < formParams.keys.length; i++) {
       const key = formParams.keys[i];
@@ -217,6 +218,7 @@ function parametersCheck (form, parameters, state, preferences) {
       const parameter = formParams.params[key];
       if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
+        prettyNames[parameter.name] = parameter.pretty_name || '';
       }
     }
   } else {
@@ -233,17 +235,23 @@ function parametersCheck (form, parameters, state, preferences) {
       const parameter = formSystemParams.params[key];
       if (parameter && parameter.name && !isCustomCapability(parameter.name, preferences)) {
         formValue[parameter.name] = parameter.value || '';
+        prettyNames[parameter.name] = parameter.pretty_name || '';
       }
     }
   }
-  const initialValue = Object.keys(parameters.parameters || {})
+  const initialData = Object.keys(parameters.parameters || {})
     .filter(key => [
       CP_CAP_LIMIT_MOUNTS,
       ...getSkippedSystemParametersList({state, props: {preferences}})
     ].indexOf(key) === -1)
     .filter(key => !isCustomCapability(key, preferences))
-    .map(key => ({key, value: parameters.parameters[key].value || ''}))
-    .reduce((r, c) => ({...r, [c.key]: c.value}), {});
+    .map(key => ({
+      key,
+      value: parameters.parameters[key].value || '',
+      prettyName: parameters.parameters[key].pretty_name || ''
+    }));
+  const initialValue = initialData.reduce((r, c) => ({...r, [c.key]: c.value}), {});
+  const initialPrettyName = initialData.reduce((r, c) => ({...r, [c.key]: c.prettyName}), {});
   const check = (source, test) => {
     const sourceEntries = Object.entries(source);
     for (let i = 0; i < sourceEntries.length; i++) {
@@ -256,7 +264,9 @@ function parametersCheck (form, parameters, state, preferences) {
   };
   return Object.keys(formValue).length !== Object.keys(initialValue).length ||
     check(formValue, initialValue) ||
-    check(initialValue, formValue);
+    check(initialValue, formValue) ||
+    check(initialPrettyName, prettyNames) ||
+    check(prettyNames, initialPrettyName);
 }
 
 function runCapabilitiesCheck (state, parameters, preferences) {

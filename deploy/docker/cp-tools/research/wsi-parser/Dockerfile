@@ -15,6 +15,11 @@
 ARG BASE_IMAGE="library/centos:7"
 FROM $BASE_IMAGE
 
+RUN sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo && \
+    sed -i 's/mirror.centos.org/vault.centos.org/g' /etc/yum.repos.d/*.repo
+
 ENV LANG="en_US.UTF-8"
 ENV LANGUAGE=en_US
 
@@ -60,7 +65,7 @@ ENV PATH="$PATH:$ANACONDA_HOME/bin"
 
 RUN mkdir -p "$ANACONDA_HOME" && \
     setfacl -d -m g::rwx "$ANACONDA_HOME" && \
-    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh --no-check-certificate && \
     bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
     rm -f /tmp/Anaconda_Install.sh && \
     conda init bash

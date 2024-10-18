@@ -20,6 +20,8 @@ import com.epam.pipeline.controller.vo.search.FacetedSearchExportRequest;
 import com.epam.pipeline.controller.vo.search.FacetedSearchExportVO;
 import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchDocument;
+import com.epam.pipeline.entity.search.SearchTemplateExportColumnData;
+import com.epam.pipeline.entity.search.SearchTemplateExportConfig;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -30,6 +32,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -94,6 +97,23 @@ public class SearchResultExportManager {
             return writer.toString().getBytes(Charset.defaultCharset());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    public byte[] templateExport(final FacetedSearchResult searchResult,
+                                 final SearchTemplateExportConfig templateConfig) {
+        final SearchTemplateMappingResolver mappingResolver = new SearchTemplateMappingResolver();
+        final Map<String, List<SearchTemplateExportColumnData>> sheetData =
+                MapUtils.emptyIfNull(templateConfig.getMapping()).entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream()
+                        .map(columnMapping -> mappingResolver.prepareColumnData(
+                                searchResult.getDocuments(), columnMapping))
+                        .collect(Collectors.toList())));
+
+        try {
+            return new XlsSearchTemplateExportWriter().write(sheetData, templateConfig.getTemplatePath());
+        } catch (IOException | InvalidFormatException e) {
             throw new SearchException(e.getMessage(), e);
         }
     }

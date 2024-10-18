@@ -10,6 +10,7 @@ spec:
       namespace: default
       labels:
         cloud-pipeline/cp-api-db: "true"
+        cloud-pipeline/core-component: "Deployment"
     spec:
       nodeSelector:
         cloud-pipeline/cp-api-db: "true"
@@ -18,7 +19,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: cp-api-db
-          image: postgres:9.6
+          image: postgres:${PSG_VERSION}
           imagePullPolicy: "IfNotPresent"
           args:
             - --shared_buffers=${PSG_SHARED_BUFFERS}

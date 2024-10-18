@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ DIND_SETUP_TASK="SetupDinD"
 
 pipe_log_info "Started DIND setup" "$DIND_SETUP_TASK"
 
-if [ "$CP_OS" == "rocky" ]; then
+if [ "$CP_OS" == "rocky" ] || [ "$CP_OS" == "rhel" ]; then
     _CP_CAP_DIND_VERSION_DEFAULT="20.10.24"
 else
     _CP_CAP_DIND_VERSION_DEFAULT="18.09.6"
@@ -51,11 +51,18 @@ if [ $IS_RPM_BASED -eq 0 ]; then
     if util_version_compare "$CP_CAP_DIND_VERSION" "20.10.24" "<"; then
         _extra_packages="btrfs-progs"
     fi
-    yum install -y -q \
+    if [ "$CP_OS" == "rhel" ]; then
+       yum --nogpgcheck --repofrompath=centos,http://mirror.centos.org/centos/8-stream/BaseOS/x86_64/os/ install -y -q \
                 e2fsprogs \
+                xfsprogs
+    else
+       yum install -y -q \
+                e2fsprogs \
+                xfsprogs
+    fi
+    yum install -y -q \
                 iptables \
                 iproute \
-                xfsprogs \
                 xz \
                 pigz \
                 kmod \
@@ -153,13 +160,14 @@ chmod +x /usr/local/bin/modprobe
 # Setup docker daemon options
 ######################################################
 DIND_DATA_ROOT="${DIND_DATA_ROOT:-"$RUNS_ROOT/docker"}"
+DIND_STORAGE_DRIVER="${DIND_STORAGE_DRIVER:-"btrfs"}"
 pipe_log_info "DIND data root is set to: $DIND_DATA_ROOT" "$DIND_SETUP_TASK"
 mkdir -p "$DIND_DATA_ROOT"
 mkdir -p "/etc/docker"
 cat <<EOT > /etc/docker/daemon.json
 {
   "data-root": "$DIND_DATA_ROOT",
-  "storage-driver": "btrfs"
+  "storage-driver": "$DIND_STORAGE_DRIVER"
 }
 EOT
 if [ $REQUIRES_GPU_DIND -eq 0 ] && [ $_DIND_NVIDIA_DEP_INSTALL_RESULT -eq 0 ]; then

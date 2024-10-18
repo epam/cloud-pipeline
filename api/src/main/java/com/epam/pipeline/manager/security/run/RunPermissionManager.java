@@ -90,6 +90,12 @@ public class RunPermissionManager {
         if (permissionsHelper.isOwnerOrAdmin(run.getOwner()) || isRunSshAllowed(run)) {
             return true;
         }
+
+        // allow for user, who initially execute this run, to access it with READ
+        if (permissionName.equals(AclPermission.READ_NAME) && permissionsHelper.isOwner(run.getOriginalOwner())) {
+            return true;
+        }
+
         return Optional.ofNullable(runManager.loadRunParent(run))
                 .map(parent -> pipelineInheritPermissions(permissionName, (Pipeline) parent))
                 .orElse(false);

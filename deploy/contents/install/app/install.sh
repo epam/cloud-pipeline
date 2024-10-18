@@ -264,11 +264,6 @@ CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-search-srv to $CP_SEARCH_KUBE_NODE_NAME"
 kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-srv="true" --overwrite
 
-# Allow to schedule Kibana service to the master
-CP_SEARCH_KUBE_NODE_NAME=${CP_SEARCH_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
-print_info "-> Assigning cloud-pipeline/cp-search-kibana to $CP_SEARCH_KUBE_NODE_NAME"
-kubectl label nodes "$CP_SEARCH_KUBE_NODE_NAME" cloud-pipeline/cp-search-kibana="true" --overwrite
-
 # Allow to schedule Heapster ELK to the master
 CP_HEAPSTER_ELK_KUBE_NODE_NAME=${CP_HEAPSTER_ELK_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-heapster-elk to $CP_HEAPSTER_ELK_KUBE_NODE_NAME"
@@ -683,7 +678,18 @@ if is_service_requested cp-docker-registry; then
         fi
 
         print_info "-> Push base tools images into the docker registry"
-        CP_DOCKER_MANIFEST_PATH=${CP_DOCKER_MANIFEST_PATH:-"$INSTALL_SCRIPT_PATH/../../dockers-manifest"}
+
+        # if CP_DOCKER_MANIFEST_PATH provided explicitly - use it, otherwise check for the manifest
+        # from point-in-time configuration or use default value
+        if [ -z "${CP_DOCKER_MANIFEST_PATH}" ]; then
+          docker_manifest_from_point_in_time_configuration=$(is_module_available_in_point_in_time_configuration tools)
+          if [ "${docker_manifest_from_point_in_time_configuration}" ]; then
+             CP_DOCKER_MANIFEST_PATH=$(dirname "$docker_manifest_from_point_in_time_configuration")
+          else
+             CP_DOCKER_MANIFEST_PATH="$INSTALL_SCRIPT_PATH/../../dockers-manifest"
+          fi   
+        fi
+
         if [ $CP_DOCKER_INSTALLED -eq 0 ] && [ -d "$CP_DOCKER_MANIFEST_PATH" ]; then
             docker_push_manifest "$(realpath $CP_DOCKER_MANIFEST_PATH)" "$CP_DOCKER_REGISTRY_ID"
             if [ $? -ne 0 ]; then
@@ -795,6 +801,20 @@ fi
 if is_service_requested cp-gitlab-db; then
     print_ok "[Starting GitLab postgres DB deployment]"
 
+    if [ "$CP_GITLAB_VERSION" == "9" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "9.6" ]; then
+            print_warn "CP_GITLAB_VERSION is 9 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 9.6! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "15" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "12.4" ]; then
+            print_warn "CP_GITLAB_VERSION is 15 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 12.4! Installation will continue, but may fail."
+        fi
+    elif [ "$CP_GITLAB_VERSION" == "17" ]; then
+        if [ "$GITLAB_DATABASE_VERSION" != "14.11" ]; then
+            print_warn "CP_GITLAB_VERSION is 17 and GITLAB_DATABASE_VERSION is $GITLAB_DATABASE_VERSION, but probably should be 14.11! Installation will continue, but may fail."
+        fi
+    fi
+
     print_info "-> Deleting existing instance of GitLab postgres DB"
     delete_deployment_and_service   "cp-gitlab-db" \
                                     "/opt/gitlab-postgresql"
@@ -851,6 +871,20 @@ if is_service_requested cp-git; then
                                         $CP_GITLAB_INTERNAL_HOST
 
         print_info "-> Deploying GitLab"
+
+        if [ "$CP_GITLAB_VERSION" == "17" ]; then
+            export CP_GITLAB_SESSION_API_DISABLE="true"
+            if [ "$GITLAB_ROOT_PASSWORD" == "Passw0rd" ]; then
+                print_ok "CP_GITLAB_VERSION is 17 and GITLAB_ROOT_PASSWORD was not provided, will generate random password."
+                GITLAB_ROOT_PASSWORD=$(openssl rand -hex 8)
+                export GITLAB_ROOT_PASSWORD
+                update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                                               "GITLAB_ROOT_PASSWORD" \
+                                               "$GITLAB_ROOT_PASSWORD"
+                init_kube_config_map
+            fi
+        fi
+
         set_kube_service_external_ip CP_GITLAB_SVC_EXTERNAL_IP_LIST \
                                      CP_GITLAB_NODE_IP \
                                      CP_GITLAB_KUBE_NODE_NAME \
@@ -886,9 +920,14 @@ if is_service_requested cp-git; then
             done
         else
             print_info "-> Setting GitLab root's private_token"
+            gitlab_token_expiration=""
+            if [ "$CP_GITLAB_VERSION" == "17" ]; then
+              gitlab_token_expiration=", expires_at: 365.days.from_now"
+            fi
+
             GITLAB_ROOT_TOKEN=$(openssl rand -hex 20)
-            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-":read_user,:read_repository,:api,:read_api,:write_repository,:sudo"}
-            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
+            gitlab_access_tokens_scopes=${CP_GITLAB_ACCESS_TOKEN_SCOPES:-"'read_user','read_repository','api','read_api','write_repository','sudo'"}
+            gitlab_set_token_cmd="token=User.find_by_username('$GITLAB_ROOT_USER').personal_access_tokens.create(scopes:[$gitlab_access_tokens_scopes], name:'CloudPipelineRootToken'$gitlab_token_expiration); token.set_token('$GITLAB_ROOT_TOKEN'); token.save!"
             gitlab_set_token_response=$(execute_deployment_command cp-git cp-git "gitlab-rails runner \"$gitlab_set_token_cmd\"")
             if [ $? -ne 0 ]; then
                 print_err "Error occurred during adding GitLab root's private_token"
@@ -907,14 +946,35 @@ if is_service_requested cp-git; then
             init_kube_config_map
 
             print_info "Waiting $CP_GITLAB_INIT_TIMEOUT seconds, before getting impersonation token (while root token is retrieved - gitlab may still fail with 502)"
-            print_info "-> Getting GitLab root's impersonation token"
             sleep $CP_GITLAB_INIT_TIMEOUT
-            GITLAB_IMP_TOKEN=$(curl -k \
-                                    --request POST \
-                                    --silent \
-                                    --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
-                                    --data "name=CloudPipeline" \
-                                    --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            # Enable web hooks to enable repository indexing for elastic search agent
+            if [ "$CP_GITLAB_VERSION" != "9" ]; then
+                print_info "-> Enabling allow_local_requests_from_web_hooks_and_services in GitLab settings..."
+                curl -k \
+                     --request PUT --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                     "https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/application/settings?allow_local_requests_from_web_hooks_and_services=true" &> /dev/null
+            fi
+
+            print_info "-> Getting GitLab root's impersonation token"
+            if [ "$CP_GITLAB_VERSION" == "17" ]; then
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "expires_at=$(date +%Y-%m-%d -d'1 year')" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+
+            else
+                GITLAB_IMP_TOKEN=$(curl -k \
+                                      --request POST \
+                                      --silent \
+                                      --header "PRIVATE-TOKEN: $GITLAB_ROOT_TOKEN" \
+                                      --data "name=CloudPipeline" \
+                                      --data "scopes[]=api" https://$CP_GITLAB_INTERNAL_HOST:$CP_GITLAB_EXTERNAL_PORT/api/v4/users/1/impersonation_tokens | jq -r '.token')
+            fi
+
             if [ "$GITLAB_IMP_TOKEN" ] && [ "$GITLAB_IMP_TOKEN" != "null" ]; then
                 print_ok "GitLab impersonation token retrieved: $GITLAB_IMP_TOKEN"
                 export GITLAB_IMP_TOKEN
@@ -1040,6 +1100,20 @@ fi
 if is_service_requested cp-clair; then
     print_ok "[Starting Clair deployment]"
 
+    if [ ! -n "${CP_CLAIR_VERSION}" ]; then CP_CLAIR_VERSION="v4"; fi
+    if [ "${CP_CLAIR_VERSION}" == "v4" ] || [ "${CP_CLAIR_VERSION}" == "V4" ];
+    then
+        CP_CLAIR_DOCKER_NAME="clair-v4"
+        CP_CLAIR_HEALTH_ENDPOINT="/healthz"
+    elif [ "${CP_CLAIR_VERSION}" == "v2" ] || [ "${CP_CLAIR_VERSION}" == "V2" ];
+    then
+    	  CP_CLAIR_DOCKER_NAME="clair"
+    	  CP_CLAIR_HEALTH_ENDPOINT="/health"
+    else
+    	  print_err "Unexpected Clair version: ${CP_CLAIR_VERSION}."
+    	  exit 1
+    fi
+
     print_info "-> Deleting existing instance of Clair"
     delete_deployment_and_service   "cp-clair" \
                                     "/opt/clair"
@@ -1052,6 +1126,17 @@ if is_service_requested cp-clair; then
                             "$CP_CLAIR_DATABASE_DATABASE"
 
         print_info "-> Deploying Clair"
+
+        export CP_CLAIR_DOCKER_NAME
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_DOCKER_NAME" \
+                            "$CP_CLAIR_DOCKER_NAME"
+        export CP_CLAIR_HEALTH_ENDPOINT
+        update_config_value "$CP_INSTALL_CONFIG_FILE" \
+                            "CP_CLAIR_HEALTH_ENDPOINT" \
+                            "$CP_CLAIR_HEALTH_ENDPOINT"
+        init_kube_config_map
+
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-dpl.yaml
         create_kube_resource $K8S_SPECS_HOME/cp-clair/cp-clair-svc.yaml
 
@@ -1107,9 +1192,7 @@ if is_service_requested cp-search; then
     delete_deployment_and_service   "cp-search-elk" \
                                     "/opt/search-elk"
 
-     print_info "-> Deleting existing instance of Search KIBANA service"
-    delete_deployment_and_service   "cp-search-kibana" \
-                                    "/opt/search-kibana"
+
 
     if is_install_requested; then
         print_info "-> Deploying Search ELK service"
@@ -1119,16 +1202,8 @@ if is_service_requested cp-search; then
         print_info "-> Waiting for Search ELK service to initialize"
         wait_for_deployment "cp-search-elk"
 
-        print_info "-> Deploying Search KIBANA service"
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-dpl.yaml
-        create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-kibana-svc.yaml
-
-        print_info "-> Waiting for Search KIBANA service to initialize"
-        wait_for_deployment "cp-search-kibana"
-
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-search-elk:"
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nElastic:   http://$CP_SEARCH_ELK_INTERNAL_HOST:$CP_SEARCH_ELK_ELASTIC_INTERNAL_PORT"
-        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\nKibana:    http://$CP_SEARCH_KIBANA_INTERNAL_HOST:$CP_SEARCH_KIBANA_INTERNAL_PORT"
 
         print_info "-> Deploying Search service"
         create_kube_resource $K8S_SPECS_HOME/cp-search/cp-search-srv-dpl.yaml
@@ -1368,6 +1443,9 @@ if is_service_requested cp-storage-lifecycle-service; then
     fi
     echo
 fi
+
+set_preferences_from_point_in_time_configuration
+import_users_from_point_in_time_configuration
 
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY

@@ -18,6 +18,8 @@ spec:
       - name: cp-node-logger
         image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:node-logger-$CP_VERSION
         imagePullPolicy: "IfNotPresent"
+        securityContext:
+          privileged: true
         volumeMounts:
         - name: kubelet-log
           mountPath: /var/log/kubelet

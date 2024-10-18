@@ -26,7 +26,6 @@ import com.google.auth.oauth2.AccessToken;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageClass;
 import com.google.cloud.storage.StorageOptions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -143,10 +142,6 @@ public class GsBucketFileManager implements ObjectStorageFileManager {
         file.setVersion(null);
         file.setDeleteMarker(null);
         final Map<String, String> labels = new HashMap<>(MapUtils.emptyIfNull(blob.getMetadata()));
-        final StorageClass storageClass = blob.getStorageClass();
-        if (storageClass != null) {
-            labels.put(ESConstants.STORAGE_CLASS_LABEL, storageClass.name());
-        }
         file.setLabels(labels);
         return file;
     }

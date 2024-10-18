@@ -44,6 +44,8 @@ if [[ "$IS_XSET_INSTALLED" = 0 ]]; then
     sleep 1; xset s off
     sleep 1; xset s noblank
 
+    pkill -f screensaver
+
     echo "Screensaver-fix is applied"
 fi
 

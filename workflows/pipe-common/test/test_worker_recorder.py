@@ -43,7 +43,7 @@ def setup_function():
 
 
 def test_record_sufficient_instance_type():
-    api.load_run = MagicMock(return_value=_sufficient_capacity_run())
+    api.load_run_efficiently = MagicMock(return_value=_sufficient_capacity_run())
 
     worker_recorder.record(run_id)
 
@@ -52,7 +52,7 @@ def test_record_sufficient_instance_type():
 
 
 def test_record_insufficient_instance_type():
-    api.load_run = MagicMock(return_value=_insufficient_capacity_run())
+    api.load_run_efficiently = MagicMock(return_value=_insufficient_capacity_run())
 
     worker_recorder.record(run_id)
 
@@ -61,7 +61,7 @@ def test_record_insufficient_instance_type():
 
 
 def test_record_failing_instance_type():
-    api.load_run = MagicMock(return_value=_failing_run())
+    api.load_run_efficiently = MagicMock(return_value=_failing_run())
 
     worker_recorder.record(run_id)
 

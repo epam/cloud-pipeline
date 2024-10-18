@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2023 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2024 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,6 +143,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
                 .count() == 1, isVisible, format("Message '%s' isn't [%s] visible", message, isVisible));
+        return this;
+    }
+
+    public PipelineRunFormAO checkEstimatedPriceTooltip(String message) {
+        get(INFORMATION_ICON).hover();
+        $(byText(message)).shouldBe(exist);
         return this;
     }
 
@@ -330,7 +336,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO launch() {
-        ensure(byText("Estimated price per hour:"), visible);
+        ensure(ESTIMATED_PRICE, visible);
         $$(byClassName("ant-btn")).filterBy(text("Launch")).first().shouldBe(visible).click();
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(byClassName("ob-estimated-price-info__info")).shouldBe(visible);
         $$(byClassName("ant-modal-body")).findBy(text("Launch")).find(button("Launch")).shouldBe(enabled).click();
@@ -385,6 +391,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public RunParameterAO clickAddStringParameter() {
         return clickAddParameter("String parameter");
+    }
+
+    public RunParameterAO clickAddBooleanParameter() {
+        return clickAddParameter("Boolean parameter");
     }
 
     private RunParameterAO clickAddParameter(String parameterType) {
@@ -519,6 +529,11 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .setServiceName(dnsName)
                 .setPort(port)
                 .save();
+    }
+
+    public PipelineRunFormAO checkEstimatedPriceValue(String expected_value) {
+        ensure(className("launch-pipeline-form__price"), text(expected_value));
+        return this;
     }
 
     @Override
