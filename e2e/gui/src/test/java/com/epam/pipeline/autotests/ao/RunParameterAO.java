@@ -32,7 +32,7 @@ public class RunParameterAO
     private final PipelineRunFormAO pipelineRunFormAO;
 
     public RunParameterAO(PipelineRunFormAO pipelineRunFormAO, int parameterIndex) {
-        super(parameterByOrder(parameterIndex));
+        super(parameterByIndex(parameterIndex));
         this.pipelineRunFormAO = pipelineRunFormAO;
 
         this.elements = initialiseElements(

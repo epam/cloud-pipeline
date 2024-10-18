@@ -29,6 +29,7 @@ import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchWindowException;
 
@@ -404,7 +405,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         $(byId("add-parameter-dropdown-button")).shouldBe(visible).hover();
         $(byText(parameterType)).shouldBe(visible).click();
 
-        parameterIndex += 1;
+        String str = $(byId("launch-pipeline-parameters-panel"))
+                .$$(byClassName("launch-pipeline-form__parameter-name-container")).last().$x(".//input").getAttribute("id");
+
+        parameterIndex = Integer.valueOf(str.replaceAll("\\D+", ""));
+
+
         return new RunParameterAO(this, parameterIndex);
     }
 
